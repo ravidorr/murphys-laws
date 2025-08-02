@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sod's Law Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="calculator-container">
+        <header>
+            <h1>Sod's Law Calculator</h1>
+            <p class="subtitle">Quantifying the likelihood of things going wrong, based on the official formula.</p>
+            <pre>
+                The formula ((U+C+I) x (10-S))/20 x A x 1/(1-sin(F/10)) is a mathematical representation of Sod's Law, developed by a panel of experts commissioned by British Gas. It aims to quantify the likelihood of "anything that can go wrong, will go wrong". 
+                Here's a breakdown of the formula:
+                U = Urgency: Assigned a score between 1 and 9, indicating how critical the situation is. 
+                C = Complexity: Assigned a score between 1 and 9, indicating how complicated the task is. 
+                I = Importance: Assigned a score between 1 and 9, indicating how vital the task is. 
+                S = Skill: Assigned a score between 1 and 9, indicating the level of expertise involved. 
+                A = Activity: This variable represents a separate factor that can influence the outcome, but its specific role in the calculation isn't detailed in the provided information. 
+                F = Frequency: Assigned a score between 1 and 9, indicating how often the task is performed. 
+                sin(F/10): This part of the formula uses the sine function and the frequency score to introduce a cyclical or periodic element to the calculation, potentially reflecting how frequently errors occur in a repeating process. 
+                The formula essentially multiplies the combined urgency, complexity, and importance (adjusted by skill) by a factor related to the frequency of the activity, aiming to produce a score that reflects the probability of something going wrong.
+
+                Factor      Explanation
+                Urgency:    how urgent is this task?            (9 = right away, 1 = sometime this year, maybe)
+                Importance: how important is this task?         (9 = absolutely critical, 1 = complete waste of time)
+                Complexity: how complex is this task?           (2 = "a child could do it", 8 = brain surgery)
+                Skill:      what is your skill level for this?  (1 = complete klutz, 9 = expert)
+                Frequency:  how often do you have to do this?   (1 = just once, 9 = every day)
+            </pre>
+        </header>
+        
+        <div class="input-grid">
+            <!-- Urgency -->
+            <div class="slider-group">
+                <label for="urgency">Urgency (U)</label>
+                <input type="range" id="urgency" min="1" max="9" value="5">
+                <span class="slider-value" id="urgency-value">5</span>
+            </div>
+
+            <!-- Complexity -->
+            <div class="slider-group">
+                <label for="complexity">Complexity (C)</label>
+                <input type="range" id="complexity" min="1" max="9" value="5">
+                <span class="slider-value" id="complexity-value">5</span>
+            </div>
+
+            <!-- Importance -->
+            <div class="slider-group">
+                <label for="importance">Importance (I)</label>
+                <input type="range" id="importance" min="1" max="9" value="5">
+                <span class="slider-value" id="importance-value">5</span>
+            </div>
+
+            <!-- Skill -->
+            <div class="slider-group">
+                <label for="skill">Your Skill (S)</label>
+                <input type="range" id="skill" min="1" max="9" value="5">
+                <span class="slider-value" id="skill-value">5</span>
+            </div>
+
+            <!-- Frequency -->
+            <div class="slider-group">
+                <label for="frequency">Frequency (F)</label>
+                <input type="range" id="frequency" min="1" max="9" value="5">
+                <span class="slider-value" id="frequency-value">5</span>
+            </div>
+        </div>
+
+        <button id="calculate-btn">Calculate Sod's Law Score</button>
+
+        <section id="result-section" class="result-section">
+            <h2>The Verdict</h2>
+            <div id="result-display" class="result-display">
+                <span id="score-value">0.0</span>
+                <p id="score-interpretation">Enter your values and see your fate.</p>
+            </div>
+            <div class="info">
+                <p>This calculator uses the formula commissioned by British Gas. The 'Activity' (A) factor is set to a constant of 0.7. Scores are on a scale of 0 to ~8.6.</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
