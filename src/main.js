@@ -86,7 +86,7 @@ function layout(node) {
           <p class="small">A platform for sharing the wisdom of things going wrong.</p>
         </div>
       </div>
-      <div class="border-t" style="margin-top:2rem; padding-top:2rem; text-align:center;">
+      <div class="border-t mt-8 pt-8 text-center">
         <p class="small">© 2024 Murphy's Law Archive.</p>
       </div>
     </div>`;

@@ -3,23 +3,22 @@ import { mockLaws } from '../data.js';
 export function LawDetail({ lawId, isLoggedIn, currentUser, onNavigate, onVote }) {
   const law = mockLaws.find(l => l.id === lawId);
   const el = document.createElement('div');
-  el.className = 'container';
-  el.style.padding = '2rem 1rem';
+  el.className = 'container page';
 
   if (!law) {
     el.innerHTML = `
-      <div class="card"><div class="card-content" style="text-align:center;">
-        <h2 style="font-size:1.25rem; margin-bottom:1rem;">Law Not Found</h2>
+      <div class="card"><div class="card-content text-center">
+        <h2 class="mb-4">Law Not Found</h2>
         <button data-nav="browse">Browse All Laws</button>
       </div></div>
     `;
   } else {
     el.innerHTML = `
       <div class="card"><div class="card-content">
-        <h2 style="font-size:1.5rem; margin-bottom:.5rem;">${law.title}</h2>
-        <blockquote style="font-style:italic; border-left:4px solid var(--primary); padding-left:1rem; margin:.5rem 0 1rem;">"${law.text}"</blockquote>
-        ${law.author ? `<p class="small">— ${law.author}</p>` : ''}
-        <div class="small" style="display:flex; gap:1rem; margin:.5rem 0;">
+        <h2 class="mb-4">${law.title}</h2>
+        <blockquote class="blockquote">"${law.text}"</blockquote>
+        ${law.author ? `<p class="small mb-4">— ${law.author}</p>` : ''}
+        <div class="small law-meta mb-4">
           <span>Score: +${law.score}</span>
           <span>Submitted by ${law.submittedBy}</span>
         </div>

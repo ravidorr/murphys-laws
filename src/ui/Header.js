@@ -13,7 +13,7 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
           <span class="font-semibold">Murphy's Law Archive</span>
         </div>
 
-        <form class="flex-1" style="max-width:28rem; margin: 0 1rem;">
+        <form class="flex-1 search-form">
           <input type="text" placeholder="Search laws..." aria-label="Search" />
         </form>
 
