@@ -1,4 +1,2 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
+node scripts/sanitize-husky-hooks.mjs
 npx lint-staged

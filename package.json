@@ -12,7 +12,8 @@
     "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"**/*.css\"",
     "lint:css:fix": "stylelint \"**/*.css\" --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postprepare": "node scripts/sanitize-husky-hooks.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --fix",
