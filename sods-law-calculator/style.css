@@ -12,10 +12,10 @@ body {
 }
 
 .calculator-container {
-    background: #ffffff;
+    background: #fff;
     padding: 40px;
     border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 30px rgb(0 0 0 / 10%);
     width: 100%;
     max-width: 600px;
     text-align: center;
@@ -41,7 +41,7 @@ header h1 {
     margin-bottom: 30px;
 }
 
-@media (min-width: 600px) {
+@media (width >= 600px) {
     .input-grid {
         grid-template-columns: 1fr 1fr;
     }
@@ -59,7 +59,6 @@ header h1 {
 
 .slider-group input[type="range"] {
     width: 100%;
-    -webkit-appearance: none;
     appearance: none;
     height: 8px;
     background: #e4e6eb;
@@ -69,7 +68,6 @@ header h1 {
 }
 
 .slider-group input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
     appearance: none;
     width: 20px;
     height: 20px;
