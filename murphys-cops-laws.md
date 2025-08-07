@@ -1,4 +1,4 @@
-# Murphy's Cops Laws
+#Murphy's Cops Laws
 * Bullet Proof vests aren't.
 * The bigger they are, the harder they fall. They punch, kick and choke harder too.
 * The speed at which you respond to a fight call is inversely proportional to how long you've been a cop.

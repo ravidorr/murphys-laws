@@ -1,4 +1,4 @@
-# Murphy's Commerce Laws
+#Murphy's Commerce Laws
 * The first 90% of a project takes 90% of the time, the last 10% takes the other 90% of the time.
 * If you can't get your work done in the first 24 hours, work nights.
 * A pat on the back is only a few inches from a kick in the pants.
