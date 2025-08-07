@@ -1,21 +1,20 @@
 export function Auth({ type, onNavigate, onAuth }) {
   const el = document.createElement('div');
-  el.className = 'container';
-  el.style.padding = '2rem 1rem';
+  el.className = 'container page';
   const title = type === 'signup' ? 'Sign Up' : 'Log In';
   el.innerHTML = `
-    <h2 style="font-size:1.5rem; margin-bottom:1rem;">${title}</h2>
+    <h2 class="mb-4">${title}</h2>
     <form class="card"><div class="card-content">
-      <div style="margin-bottom:.75rem;">
+      <div class="mb-4">
         <label class="small" for="username">Username</label><br/>
         <input id="username" type="text" placeholder="yourname" />
       </div>
-      <div style="margin-bottom:.75rem;">
+      <div class="mb-4">
         <label class="small" for="password">Password</label><br/>
         <input id="password" type="password" placeholder="••••••••" />
       </div>
       <button type="submit">${title}</button>
-      <button type="button" class="outline" data-nav="home" style="margin-left:.5rem;">Cancel</button>
+      <button type="button" class="outline" data-nav="home">Cancel</button>
     </div></form>
   `;
   el.addEventListener('click', (e) => {

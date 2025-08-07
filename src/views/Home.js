@@ -3,8 +3,7 @@ import { mockLaws } from '../data.js';
 
 export function Home({ isLoggedIn, onNavigate, onVote }) {
   const el = document.createElement('div');
-  el.className = 'container';
-  el.style.padding = '2rem 1rem';
+  el.className = 'container page';
 
   // Compute sections
   const sortedByScore = [...mockLaws].sort((a,b) => b.score - a.score);
@@ -19,8 +18,8 @@ export function Home({ isLoggedIn, onNavigate, onVote }) {
 
   el.innerHTML = `
     <div class="text-center mb-12">
-      <h1 style="font-size:2.5rem; margin:0 0 1rem; background:linear-gradient(90deg,var(--primary), #4b5563); -webkit-background-clip:text; color:transparent;">Murphy's Law Archive</h1>
-      <p class="small" style="margin-bottom:2rem;">If it can go wrong, you'll find it here.</p>
+      <h1 class="gradient-title">Murphy's Law Archive</h1>
+      <p class="small mb-8">If it can go wrong, you'll find it here.</p>
       <div class="flex gap-4 justify-center">
         <button data-nav="submit">Submit a Law</button>
         <button class="outline" data-nav="browse">Browse All Laws</button>
@@ -28,18 +27,18 @@ export function Home({ isLoggedIn, onNavigate, onVote }) {
     </div>
 
     ${lawOfTheDay ? `
-      <div class="card mb-12" style="border-width:2px;">
+      <div class="card mb-12 thick-border">
         <div class="card-content">
-          <h3 style="display:flex; align-items:center; gap:.5rem; font-size:1.25rem;">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
-          <div class="p-2" data-law-id="${lawOfTheDay.id}" style="cursor:pointer;">
-            <blockquote style="font-size:1.25rem; font-style:italic; border-left:4px solid var(--primary); padding-left:1rem; margin: .5rem 0 1rem;">"${lawOfTheDay.text}"</blockquote>
-            ${lawOfTheDay.author ? `<p class="small" style="margin-bottom:.5rem;">— ${lawOfTheDay.author}</p>` : ''}
-            <div class="small" style="display:flex; gap:1rem;">
+          <h3 class="card-title">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
+          <div class="p-2 cursor-pointer" data-law-id="${lawOfTheDay.id}">
+            <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
+            ${lawOfTheDay.author ? `<p class="small mb-4">— ${lawOfTheDay.author}</p>` : ''}
+            <div class="small law-meta">
               <span>Score: +${lawOfTheDay.score}</span>
               <span>Submitted by ${lawOfTheDay.submittedBy}</span>
               ${lawOfTheDay.stories.length > 0 ? `<span>${lawOfTheDay.stories.length} stories</span>` : ''}
             </div>
-            <div style="margin-top:.5rem;">
+            <div class="mt-8">
               <button class="link" data-nav="law-history">View History →</button>
             </div>
           </div>
@@ -47,17 +46,17 @@ export function Home({ isLoggedIn, onNavigate, onVote }) {
       </div>
     ` : ''}
 
-    <div class="grid mb-12" style="grid-template-columns: repeat(1,minmax(0,1fr)); gap:2rem;">
+    <div class="grid mb-12 section-grid">
       <div class="card"><div class="card-content">
-        <h4 style="display:flex; align-items:center; gap:.5rem;">Top Voted</h4>
+        <h4 class="card-title">Top Voted</h4>
         <div>
           ${topVoted.map((law,i) => `
-            <div class="p-2 rounded" data-law-id="${law.id}" style="cursor:pointer;">
+            <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <div class="flex items-start gap-2">
-                <span style="width:1.5rem; color:var(--primary); font-weight:700;">#${i+1}</span>
+                <span class="rank">#${i+1}</span>
                 <div style="flex:1; min-width:0;">
-                  <p class="small" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${law.text}</p>
-                  <div class="small" style="display:flex; gap:.5rem; margin-top:.25rem;">
+                  <p class="small text-ellipsis">${law.text}</p>
+                  <div class="small flex gap-2 mt-8">
                     <span>+${law.score}</span>
                     ${law.author ? `<span>— ${law.author}</span>` : ''}
                   </div>
@@ -69,12 +68,12 @@ export function Home({ isLoggedIn, onNavigate, onVote }) {
       </div></div>
 
       <div class="card"><div class="card-content">
-        <h4 style="display:flex; align-items:center; gap:.5rem;">Trending Now</h4>
+        <h4 class="card-title">Trending Now</h4>
         <div>
           ${trending.map((law) => `
-            <div class="p-2 rounded" data-law-id="${law.id}" style="cursor:pointer;">
+            <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
-              <div class="small" style="display:flex; gap:.5rem; margin-top:.25rem;">
+              <div class="small flex gap-2 mt-8">
                 <span>+${law.score}</span>
                 ${law.author ? `<span>— ${law.author}</span>` : ''}
               </div>
@@ -84,12 +83,12 @@ export function Home({ isLoggedIn, onNavigate, onVote }) {
       </div></div>
 
       <div class="card"><div class="card-content">
-        <h4 style="display:flex; align-items:center; gap:.5rem;">Recently Added</h4>
+        <h4 class="card-title">Recently Added</h4>
         <div>
           ${recent.map((law) => `
-            <div class="p-2 rounded" data-law-id="${law.id}" style="cursor:pointer;">
+            <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
-              <div class="small" style="display:flex; gap:.5rem; margin-top:.25rem; align-items:center;">
+              <div class="small flex gap-2 items-center mt-8">
                 <span>+${law.score}</span>
                 <span>${fmtDate(law.publishDate)}</span>
               </div>
@@ -101,8 +100,8 @@ export function Home({ isLoggedIn, onNavigate, onVote }) {
 
     <div class="card">
       <div class="card-content text-center">
-        <h3 style="font-size:1.25rem; margin-bottom:.5rem;">Join the Community</h3>
-        <p class="small" style="margin-bottom:1rem;">Contribute to the definitive collection of Murphy's Laws. Share your discoveries, vote on the best laws, and tell your stories of when things went wonderfully wrong.</p>
+        <h3 class="mb-4">Join the Community</h3>
+        <p class="small mb-8">Contribute to the definitive collection of Murphy's Laws. Share your discoveries, vote on the best laws, and tell your stories of when things went wonderfully wrong.</p>
         <div class="flex gap-4 justify-center">
           ${!isLoggedIn ? '<button data-nav="signup">Sign Up to Contribute</button>' : ''}
           <button class="outline" data-nav="submit">Submit a New Law</button>
