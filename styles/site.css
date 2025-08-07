@@ -1,0 +1,69 @@
+/* Minimal, framework-free styles; reuses your CSS variables if present */
+:root {
+  --bg: #ffffff;
+  --fg: #111827;
+  --muted-fg: #6b7280;
+  --primary: #030213;
+  --border: rgba(0,0,0,0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0b11;
+    --fg: #f3f4f6;
+    --muted-fg: #9ca3af;
+    --border: rgba(255,255,255,0.12);
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Utility classes needed by the app layout */
+.container { max-width: 72rem; margin: 0 auto; padding: 0 1rem; }
+.hidden { display: none; }
+.text-center { text-align: center; }
+.mt-16 { margin-top: 4rem; }
+.mb-12 { margin-bottom: 3rem; }
+.mb-4 { margin-bottom: 1rem; }
+.gap-2 { gap: .5rem; }
+.gap-4 { gap: 1rem; }
+.grid { display: grid; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1 1 auto; }
+.min-h-screen { min-height: 100vh; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.rounded { border-radius: .5rem; }
+.border { border: 1px solid var(--border); }
+.border-t { border-top: 1px solid var(--border); }
+.p-2 { padding: .5rem; }
+.p-4 { padding: 1rem; }
+.p-8 { padding: 2rem; }
+.h-16 { height: 4rem; }
+
+header.sticky { position: sticky; top: 0; backdrop-filter: blur(6px); background: color-mix(in oklab, var(--bg) 92%, transparent); z-index: 50; border-bottom: 1px solid var(--border); }
+.brand { display:flex; align-items:center; gap:.5rem; cursor:pointer; }
+.brand-badge { width: 2rem; height: 2rem; background: var(--primary); color: white; display:flex; align-items:center; justify-content:center; border-radius:.375rem; font-weight: 700; }
+
+button { background: var(--primary); color: white; border: 1px solid var(--primary); border-radius: .5rem; padding: .5rem .875rem; cursor: pointer; }
+button.outline { background: transparent; color: var(--fg); border-color: var(--border); }
+button.link { background: none; border: none; color: var(--primary); padding: 0; }
+input[type="text"] { border: 1px solid var(--border); border-radius: .5rem; padding: .5rem .75rem; width: 100%; }
+
+.card { border: 1px solid var(--border); border-radius: .75rem; background: color-mix(in oklab, var(--bg) 96%, white 4%); }
+.card .card-content { padding: 1.25rem; }
+
+.footer { background: color-mix(in oklab, var(--bg) 92%, white 8%); padding: 3rem 0; margin-top: 4rem; border-top: 1px solid var(--border); }
+.footer .grid { grid-template-columns: repeat(1, minmax(0,1fr)); gap: 2rem; }
+@media (min-width: 768px) { .footer .grid { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+
+.small { font-size: .875rem; color: var(--muted-fg); }
+
