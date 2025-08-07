@@ -1,4 +1,4 @@
-# Murphy's Cowboy Action Shooting (CAS) Laws[^1]
+#Murphy's Cowboy Action Shooting (CAS) Laws[^1]
 * No matter how the plate is positioned, fragment will always reflect forward towards the stage. Sent by [Kit Dalton](mailto:kitdalton@aol.com).
 * The most expensive and hard to find (38-40/32-20) cartridges will always land forward of the firing line. Sent by [Kit Dalton](mailto:kitdalton@aol.com).
 * No matter which side the buckle is on; spurs can be put on backwards and upside down. Sent by [Kit Dalton](mailto:kitdalton@aol.com).

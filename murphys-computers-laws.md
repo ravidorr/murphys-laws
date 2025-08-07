@@ -1,4 +1,4 @@
-# Murphy's Computer Laws
+#Murphy's Computer Laws
 * Any given program, when running, is obsolete.
 * Any given program costs more and takes longer each time it is run.
 * If a program is useful, it will have to be changed.
