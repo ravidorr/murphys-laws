@@ -1,3 +1,0 @@
-#Murphy's Repairmen laws
-* The rate of instrument failure/breakdown is inversely proportional to the ease of finding a repairman. Sent by [Gaylen Hayes](mailto:hayesfam@cox-internet.com), D.O., Paris, Texas.
-* Murphy's Law of the Hammer: Any instrument can be used as a hammer, the more delicate or expensive the instrument, the better hammer it becomes. Sent by [Gaylen Hayes](mailto:hayesfam@cox-internet.com), D.O., Paris, Texas.

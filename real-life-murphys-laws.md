@@ -1,6 +1,6 @@
 # Murphy's Laws \- Living By Them
 
-I'm looking for your stories that show Murphy laws in action. Those stories will be entered here, with credit to you (if you want it).
+We are looking for your stories that show Murphy laws in action. Those stories will be entered here, with credit to you (if you want it).
 
 ## Stories from the Front Lines of Life
 
@@ -265,9 +265,9 @@ Ravidor, I was researching for a speech on Murphy's Law when I came upon your we
 Hello Sarah. The first thing I wanted to write you was "Who died and made you god?" You are so opinionated, rude and wrong. Examples: "site is purely informational" \- No it's not, this site isn't only about information, it's also here to make you laugh, to make you think. "Mr. "I" is just a little too 'anal.'" \- I don't think so, I think he truly believes what he says, I don't. "Murphy's Law has absolutely nothing to do with religion" \- Don't they? So why are there so many Christian comments about this site (your e-mail included)? "These people need to get a life" \- They have one, with a different belief system then yours, that is all. "I hope that you take down your postings" \- Never. Why should I? because you don't like them? They make people think, they make people react. When you send an e-mail to me, about this site, you know that it might get posted (you've seen other e-mail posted on the site). "try not to be so rude about the mistaken Mr. "I"." \- I don't think I was rude to Mr. Imuetinyan Igbinnosa, you are, he has a name, use it. I am rude to you, because it's the only way I know to treat rude people. Sincerely yours.
 
   , ,  
- (OO) Raanan Avidor \- [ravidor@hotmail.com](mailto:ravidor@hotmail.com)  
-(    ) Murphy's Laws \- [http://murphys-laws.com](http://murphys-laws.com)  
-\-"---"--------------------------------------------------------------------------------------------  
+  (OO) Raanan Avidor \- [ravidor@hotmail.com](mailto:ravidor@hotmail.com)  
+  (    ) Murphy's Laws \- [http://murphys-laws.com](http://murphys-laws.com)  
+  \-"---"--------------------------------------------------------------------------------------------
 ---
 
 ### From [Bassey Essien](mailto:basseyessien@hotmail.com):
@@ -299,3 +299,4 @@ Just dropping a line, after reading your short debate with the one fellow on Mur
 
 man everyone is lookin way to much in to this whole thing. This is not the law as in something we have to follow, this is like the laws of gravity, it's a part of life we just put it in to a funny saying. great site man but ppl be gettin carried away\! o love, look into religon man we're not all as wacky as him, Missy  
 ---
+
