@@ -8,7 +8,7 @@ function stripDeprecated(content) {
   // Remove shebang
   let out = content.replace(/^#!\/usr\/bin\/env sh\s*\n/gm, '');
   // Remove sourcing of husky.sh
-  out = out.replace(/^\.\s+"\$\(dirname -- \"\$0\"\)\/_\/husky\.sh"\s*\n/gm, '');
+  out = out.replace(/^\.\s+"\$\(dirname -- "\$0"\)\/_\/husky\.sh"\s*\n/gm, '');
   // Also handle any variant that references _/husky.sh
   out = out
     .split('\n')

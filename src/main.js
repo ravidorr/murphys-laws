@@ -26,7 +26,7 @@ function onAuth(username) {
   state.currentUser = username;
   navigate('home');
 }
-function onLogout() {
+function _onLogout() {
   state.isLoggedIn = false;
   state.currentUser = null;
   navigate('home');

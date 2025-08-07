@@ -1,5 +1,5 @@
 // Header component in plain JS
-import { navigate } from '../router.js';
+import { navigate as _navigate } from '../router.js';
 
 export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentUser }) {
   const el = document.createElement('header');

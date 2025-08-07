@@ -1,5 +1,5 @@
 // Placeholder simple views to complete the router. You can enhance later.
-export function Browse({ isLoggedIn, searchQuery, onNavigate, onVote }) {
+export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   const el = document.createElement('div');
   el.className = 'container page';
   el.innerHTML = `

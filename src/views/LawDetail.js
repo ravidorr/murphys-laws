@@ -1,6 +1,6 @@
 import { mockLaws } from '../data.js';
 
-export function LawDetail({ lawId, isLoggedIn, currentUser, onNavigate, onVote }) {
+export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote }) {
   const law = mockLaws.find(l => l.id === lawId);
   const el = document.createElement('div');
   el.className = 'container page';
