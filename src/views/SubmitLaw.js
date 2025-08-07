@@ -1,4 +1,4 @@
-export function SubmitLaw({ isLoggedIn, currentUser, onNavigate }) {
+export function SubmitLaw({ isLoggedIn, _currentUser, onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page';
   el.innerHTML = `

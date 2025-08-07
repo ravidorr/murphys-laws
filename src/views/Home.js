@@ -1,7 +1,7 @@
 // Home view: mirrors HomePage.tsx sections using mock data
 import { mockLaws } from '../data.js';
 
-export function Home({ isLoggedIn, onNavigate, onVote }) {
+export function Home({ isLoggedIn, onNavigate, _onVote }) {
   const el = document.createElement('div');
   el.className = 'container page';
 
