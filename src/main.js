@@ -1,3 +1,5 @@
+// chore: trigger lint-staged verification
+
 import { defineRoute, navigate, startRouter } from './router.js';
 import { Header } from './ui/Header.js';
 import { Home } from './views/Home.js';
