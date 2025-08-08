@@ -27,7 +27,7 @@ function formatScore(val) {
   return `${n > 0 ? '+' : ''}${n}`;
 }
 
-function renderHome(el, isLoggedIn, laws = []) {
+function renderHome(el, laws = []) {
   const data = Array.isArray(laws) ? laws : [];
   const sortedByScore = [...data].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const lawOfTheDay = sortedByScore[0] || null;
@@ -42,27 +42,27 @@ function renderHome(el, isLoggedIn, laws = []) {
     </div>
 
     ${lawOfTheDay ? `
-      <div class="card mb-12 thick-border">
-        <div class="card-content">
-          <h3 class="card-title">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
-          <div class="p-2 cursor-pointer" data-law-id="${lawOfTheDay.id}">
-            <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
-            <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
-            <div class="small law-meta">
-              <span>${formatScore(lawOfTheDay.score)}</span>
-              ${lawOfTheDay.submittedBy ? `<span>Submitted by ${lawOfTheDay.submittedBy}</span>` : ''}
-            </div>
-            
+    <div class="card mb-12 thick-border">
+      <div class="card-content">
+        <h3 class="card-title">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
+        <div class="p-2 cursor-pointer" data-law-id="${lawOfTheDay.id}">
+          <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
+          <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
+          <div class="small law-meta">
+            <span>${formatScore(lawOfTheDay.score)}</span>
+            ${lawOfTheDay.submittedBy ? `<span>Submitted by ${lawOfTheDay.submittedBy}</span>` : ''}
           </div>
         </div>
       </div>
+    </div>
     ` : ''}
 
     <div class="grid mb-12 section-grid">
-      <div class="card"><div class="card-content">
-        <h4 class="card-title">Top Voted</h4>
-        <div>
-          ${topVoted.map((law, i) => `
+      <div class="card">
+        <div class="card-content">
+          <h4 class="card-title">Top Voted</h4>
+          <div>
+            ${topVoted.map((law, i) => `
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <div class="flex items-start gap-2">
                 <span class="rank">#${i + 1}</span>
@@ -75,29 +75,32 @@ function renderHome(el, isLoggedIn, laws = []) {
                 </div>
               </div>
             </div>
-          `).join('')}
+            `).join('')}
         </div>
-      </div></div>
+      </div>
 
-      <div class="card"><div class="card-content">
+      <div class="card">
+        <div class="card-content">
         <h4 class="card-title">Trending Now</h4>
         <div>
           ${trending.map((law) => `
-            <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
-              <p class="small">${law.text}</p>
-              <div class="small flex gap-2 mt-8">
-                <span>${formatScore(law.score)}</span>
-                ${firstAttributionLine(law) ? `<span>${firstAttributionLine(law)}</span>` : ''}
-              </div>
+          <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
+            <p class="small">${law.text}</p>
+            <div class="small flex gap-2 mt-8">
+              <span>${formatScore(law.score)}</span>
+              ${firstAttributionLine(law) ? `<span>${firstAttributionLine(law)}</span>` : ''}
             </div>
+          </div>
           `).join('')}
         </div>
-      </div></div>
+      </div>
+    </div>
 
-      <div class="card"><div class="card-content">
-        <h4 class="card-title">Recently Added</h4>
-        <div>
-          ${recent.map((law) => `
+      <div class="card">
+        <div class="card-content">
+          <h4 class="card-title">Recently Added</h4>
+          <div>
+            ${recent.map((law) => `
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
               <div class="small flex gap-2 items-center mt-8">
@@ -105,21 +108,15 @@ function renderHome(el, isLoggedIn, laws = []) {
                 ${law.publishDate ? `<span>${fmtDate(law.publishDate)}</span>` : ''}
               </div>
             </div>
-          `).join('')}
+            `).join('')}
+          </div>
         </div>
-      </div></div>
-    </div>
-
-    <div class="card">
-      <div class="card-content text-center">
-        <h3 class="mb-4">Join the Community</h3>
-        <p class="small">Contribute to the definitive collection of Murphy's Laws. Share your discoveries, vote on the best laws, and tell your stories of when things went wonderfully wrong.</p>
       </div>
     </div>
   `;
 }
 
-export function Home({ isLoggedIn, onNavigate, _onVote }) {
+export function Home({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page';
 
@@ -150,7 +147,7 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
           `;
           return;
         }
-        renderHome(el, isLoggedIn, json && Array.isArray(json.data) ? json.data : []);
+        renderHome(el, json && Array.isArray(json.data) ? json.data : []);
         renderPagination(el, { total, limit, page });
       })
       .catch(err => {
@@ -194,16 +191,62 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
 }
 
 function renderPagination(el, { total, limit, page }) {
-  const pages = Math.max(1, Math.ceil(total / limit));
-  if (pages <= 1) return;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  if (totalPages <= 1) return;
+
+  function pageHref(p) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(p));
+    params.set('limit', String(limit));
+    return `?${params.toString()}`;
+  }
+
+  function buildPageList(current, totalPgs) {
+    const set = new Set([1, totalPgs, current]);
+    if (current - 1 >= 1) set.add(current - 1);
+    if (current + 1 <= totalPgs) set.add(current + 1);
+    return Array.from(set).sort((a, b) => a - b);
+  }
+
+  const corePages = buildPageList(page, totalPages);
   const host = document.createElement('div');
   host.className = 'container mt-8';
+  let parts = '';
+
+  // First / Prev
+  const prev = Math.max(1, page - 1);
+  const next = Math.min(totalPages, page + 1);
+  const firstDisabled = page === 1 ? 'disabled' : '';
+  const prevDisabled = page === 1 ? 'disabled' : '';
+  const nextDisabled = page === totalPages ? 'disabled' : '';
+  const lastDisabled = page === totalPages ? 'disabled' : '';
+
+  parts += `
+    <a class="btn outline ${firstDisabled}" href="${pageHref(1)}" data-page="1" aria-label="First page" ${page === 1 ? 'aria-disabled="true"' : ''}>First</a>
+    <a class="btn outline ${prevDisabled}" href="${pageHref(prev)}" data-page="${prev}" aria-label="Previous page" ${page === 1 ? 'aria-disabled="true"' : ''}>Prev</a>
+  `;
+
+  // Numbered pages with ellipses
+  let lastRendered = 0;
+  for (const p of corePages) {
+    if (p - lastRendered > 1) {
+      parts += `<span class="ellipsis" aria-hidden="true">…</span>`;
+    }
+    const isCurrent = p === page;
+    parts += `
+      <a class="btn ${isCurrent ? '' : 'outline'}" href="${pageHref(p)}" data-page="${p}" ${isCurrent ? 'aria-current="page"' : ''}>${p}</a>
+    `;
+    lastRendered = p;
+  }
+
+  // Next / Last
+  parts += `
+    <a class="btn outline ${nextDisabled}" href="${pageHref(next)}" data-page="${next}" aria-label="Next page" ${page === totalPages ? 'aria-disabled="true"' : ''}>Next</a>
+    <a class="btn outline ${lastDisabled}" href="${pageHref(totalPages)}" data-page="${totalPages}" aria-label="Last page" ${page === totalPages ? 'aria-disabled="true"' : ''}>Last</a>
+  `;
+
   host.innerHTML = `
-    <nav class="pagination">
-      ${Array.from({ length: pages }, (_, i) => i + 1).map(p => `
-        <button class="${p === page ? 'outline' : ''}" data-page="${p}">${p}</button>
-      `).join('')}
-    </nav>
+    <nav class="pagination" aria-label="Pagination">${parts}</nav>
   `;
   el.appendChild(host);
 }
