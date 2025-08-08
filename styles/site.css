@@ -129,6 +129,12 @@ header.sticky {
   align-items: center;
   gap: .5rem;
   cursor: pointer;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.brand:hover, .brand:focus-visible {
+  text-decoration: none;
 }
 
 .brand-badge {
@@ -143,7 +149,15 @@ header.sticky {
   font-weight: 700;
 }
 
-.brand-name { font-size: 1.125rem; }
+.brand-name {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.brand-name:hover {
+  text-decoration: underline;
+  text-underline-offset: .2rem;
+}
 
 .search-form {
   max-width: 28rem;

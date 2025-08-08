@@ -54,6 +54,16 @@ function layout(node) {
 
   const main = document.createElement('main');
   main.className = 'flex-1';
+  // Global site hero shown on all pages
+  const hero = document.createElement('section');
+  hero.className = 'container page';
+  hero.innerHTML = `
+    <div class="text-center mb-12">
+      <h1 class="gradient-title">Murphy's Law Archive</h1>
+      <h2 class="subhead mb-8">If it can go wrong, you'll find it here.</h2>
+    </div>
+  `;
+  main.appendChild(hero);
   main.appendChild(node);
 
   const footer = document.createElement('footer');
