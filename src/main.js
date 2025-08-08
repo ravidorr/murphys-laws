@@ -60,36 +60,13 @@ function layout(node) {
   footer.className = 'footer';
   footer.innerHTML = `
     <div class="container">
-      <div class="grid">
-        <div>
-          <h4>Murphy's Law Archive</h4>
-          <p class="small">The definitive, community-curated online repository of Murphy's Laws and their corollaries.</p>
-        </div>
-        <div>
-          <h4>Browse</h4>
-          <div class="small">
-            <button class="link" data-nav="browse">All Laws</button>
-            <br/>
-            <button class="link" data-nav="browse">Top Voted</button>
-            <br/>
-            <button class="link" data-nav="browse">Recently Added</button>
-          </div>
-        </div>
-        <div>
-          <h4>Contribute</h4>
-          <div>
-            <button class="link" data-nav="submit">Submit a Law</button>
-          </div>
-        </div>
-        <div>
-          <h4>Community</h4>
-          <p class="small">A platform for sharing the wisdom of things going wrong.</p>
-        </div>
+      <div class="mt-8 pt-8 text-center">
+        <p class="small">
+          <a href="https://murphys-laws.com">Murphy's Law Archive</a> by <a href="https://murphys-laws.com/about">Raanan Avidor</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+        </p>
       </div>
-      <div class="border-t mt-8 pt-8 text-center">
-        <p class="small">© 2024 Murphy's Law Archive.</p>
-      </div>
-    </div>`;
+    </div>
+  `;
 
   footer.addEventListener('click', (e) => {
     const t = e.target;
