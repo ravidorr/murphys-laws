@@ -12,4 +12,3 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   });
   return el;
 }
-

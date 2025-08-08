@@ -299,4 +299,3 @@ Just dropping a line, after reading your short debate with the one fellow on Mur
 
 man everyone is lookin way to much in to this whole thing. This is not the law as in something we have to follow, this is like the laws of gravity, it's a part of life we just put it in to a funny saying. great site man but ppl be gettin carried away\! o love, look into religon man we're not all as wacky as him, Missy  
 ---
-

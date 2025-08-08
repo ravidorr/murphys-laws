@@ -29,5 +29,8 @@
     "stylelint": "^16.23.1",
     "stylelint-config-standard": "^36.0.1",
     "vite": "^7.1.0"
+  },
+  "dependencies": {
+    "mathjax": "^3.2.2"
   }
 }

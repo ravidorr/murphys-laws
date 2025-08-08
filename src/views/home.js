@@ -125,4 +125,3 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
 
   return el;
 }
-

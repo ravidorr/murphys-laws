@@ -27,4 +27,3 @@ export function Auth({ type, onNavigate, onAuth }) {
   });
   return el;
 }
-

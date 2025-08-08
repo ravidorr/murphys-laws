@@ -20,6 +20,7 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
         <nav class="flex items-center gap-2">
           <button class="${currentPage === 'home' ? '' : 'outline'}" data-nav="home">Home</button>
           <button class="${currentPage === 'browse' ? '' : 'outline'}" data-nav="browse">Browse All Laws</button>
+          <button class="${currentPage === 'calculator' ? '' : 'outline'}" data-nav="calculator">Calculator</button>
           <button class="${currentPage === 'submit' ? '' : 'outline'}" data-nav="submit">Submit a Law</button>
           ${isLoggedIn ? `<button class="outline" data-nav="profile">${currentUser ?? 'Profile'}</button>` : `
             <button class="outline" data-nav="login">Log In</button>
@@ -51,4 +52,3 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
 
   return el;
 }
-
