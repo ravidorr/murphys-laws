@@ -216,6 +216,12 @@ input[type='text'] {
   background-clip: text;
 }
 
+.subhead {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
 .blockquote {
   font-size: 1.25rem;
   font-style: italic;

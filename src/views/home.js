@@ -33,8 +33,7 @@ function renderHome(el, isLoggedIn, laws = []) {
   el.innerHTML = `
     <div class="text-center mb-12">
       <h1 class="gradient-title">Murphy's Law Archive</h1>
-      <p class="small mb-8">If it can go wrong, you'll find it here.</p>
-      
+      <h2 class="subhead mb-8">If it can go wrong, you'll find it here.</h2>
     </div>
 
     ${lawOfTheDay ? `
