@@ -22,6 +22,11 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function formatScore(val) {
+  const n = Number.isFinite(val) ? val : 0;
+  return `${n > 0 ? '+' : ''}${n}`;
+}
+
 function renderHome(el, isLoggedIn, laws = []) {
   const data = Array.isArray(laws) ? laws : [];
   const sortedByScore = [...data].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
@@ -44,7 +49,7 @@ function renderHome(el, isLoggedIn, laws = []) {
             <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
             <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
             <div class="small law-meta">
-              <span>+${Number.isFinite(lawOfTheDay.score) ? lawOfTheDay.score : 0}</span>
+              <span>${formatScore(lawOfTheDay.score)}</span>
               ${lawOfTheDay.submittedBy ? `<span>Submitted by ${lawOfTheDay.submittedBy}</span>` : ''}
             </div>
             
@@ -64,7 +69,7 @@ function renderHome(el, isLoggedIn, laws = []) {
                 <div style="flex:1; min-width:0;">
                   <p class="small text-ellipsis">${law.text}</p>
                   <div class="small flex gap-2 mt-8">
-                    <span>+${Number.isFinite(law.score) ? law.score : 0}</span>
+                    <span>${formatScore(law.score)}</span>
                     ${firstAttributionLine(law) ? `<span>${firstAttributionLine(law)}</span>` : ''}
                   </div>
                 </div>
@@ -81,7 +86,7 @@ function renderHome(el, isLoggedIn, laws = []) {
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
               <div class="small flex gap-2 mt-8">
-                <span>+${Number.isFinite(law.score) ? law.score : 0}</span>
+                <span>${formatScore(law.score)}</span>
                 ${firstAttributionLine(law) ? `<span>${firstAttributionLine(law)}</span>` : ''}
               </div>
             </div>
@@ -96,7 +101,7 @@ function renderHome(el, isLoggedIn, laws = []) {
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
               <div class="small flex gap-2 items-center mt-8">
-                <span>+${Number.isFinite(law.score) ? law.score : 0}</span>
+                <span>${formatScore(law.score)}</span>
                 ${law.publishDate ? `<span>${fmtDate(law.publishDate)}</span>` : ''}
               </div>
             </div>

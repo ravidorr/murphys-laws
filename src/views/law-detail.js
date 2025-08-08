@@ -38,7 +38,7 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
         <blockquote class="blockquote">"${law.text}"</blockquote>
         ${attsHtml || (law.author ? `<p class="small mb-4">— ${law.author}</p>` : '')}
         <div class="small law-meta mb-4">
-          <span>Score: +${displayScore}</span>
+          <span>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
           ${law.submittedBy ? `<span>Submitted by ${law.submittedBy}</span>` : ''}
         </div>
         <div class="flex gap-2">
