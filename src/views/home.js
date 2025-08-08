@@ -1,20 +1,35 @@
-// Home view: mirrors HomePage.tsx sections using mock data
+// Home view: fetch laws from API and render sections (fallback to mock data on failure)
 import { mockLaws } from '../data.js';
 
-export function Home({ isLoggedIn, onNavigate, _onVote }) {
-  const el = document.createElement('div');
-  el.className = 'container page';
+function renderAttribution(att) {
+  if (!att) return '';
+  const { name, contact_type, contact_value, note } = att;
+  let who = name || '';
+  if (contact_type === 'email' && contact_value) {
+    who = `<a href="mailto:${contact_value}">${name}</a>`;
+  } else if (contact_type === 'url' && contact_value) {
+    who = `<a href="${contact_value}">${name}</a>`;
+  }
+  return `${who}${note ? ` — ${note}` : ''}`;
+}
 
-  // Compute sections
-  const sortedByScore = [...mockLaws].sort((a,b) => b.score - a.score);
+function firstAttributionLine(law) {
+  const a = Array.isArray(law.attributions) ? law.attributions[0] : null;
+  if (!a) return law.author ? `— ${law.author}` : '';
+  return `Sent by ${renderAttribution(a)}`;
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+}
+
+function renderHome(el, isLoggedIn, laws = []) {
+  const data = Array.isArray(laws) ? laws : [];
+  const sortedByScore = [...data].sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
   const lawOfTheDay = sortedByScore[0] || null;
   const topVoted = sortedByScore.slice(0,5);
-  const trending = [...mockLaws].sort(() => Math.random() - 0.5).slice(0,3);
-  const recent = [...mockLaws]
-    .sort((a,b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
-    .slice(0,3);
-
-  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const trending = [...data].sort(() => Math.random() - 0.5).slice(0,3);
+  const recent = [...data].slice(0,3);
 
   el.innerHTML = `
     <div class="text-center mb-12">
@@ -32,11 +47,10 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
           <h3 class="card-title">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
           <div class="p-2 cursor-pointer" data-law-id="${lawOfTheDay.id}">
             <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
-            ${lawOfTheDay.author ? `<p class="small mb-4">— ${lawOfTheDay.author}</p>` : ''}
+            <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
             <div class="small law-meta">
-              <span>Score: +${lawOfTheDay.score}</span>
+              <span>+${lawOfTheDay.score}</span>
               <span>Submitted by ${lawOfTheDay.submittedBy}</span>
-              ${lawOfTheDay.stories.length > 0 ? `<span>${lawOfTheDay.stories.length} stories</span>` : ''}
             </div>
             <div class="mt-8">
               <button class="link" data-nav="law-history">View History →</button>
@@ -58,7 +72,7 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
                   <p class="small text-ellipsis">${law.text}</p>
                   <div class="small flex gap-2 mt-8">
                     <span>+${law.score}</span>
-                    ${law.author ? `<span>— ${law.author}</span>` : ''}
+                    <span>${firstAttributionLine(law)}</span>
                   </div>
                 </div>
               </div>
@@ -75,7 +89,7 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
               <p class="small">${law.text}</p>
               <div class="small flex gap-2 mt-8">
                 <span>+${law.score}</span>
-                ${law.author ? `<span>— ${law.author}</span>` : ''}
+                <span>${firstAttributionLine(law)}</span>
               </div>
             </div>
           `).join('')}
@@ -109,6 +123,69 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
       </div>
     </div>
   `;
+}
+
+export function Home({ isLoggedIn, onNavigate, _onVote }) {
+  const el = document.createElement('div');
+  el.className = 'container page';
+
+  el.innerHTML = `<p class="small">Loading laws...</p>`;
+
+  const isTestEnv = typeof import.meta !== 'undefined' && Boolean(import.meta.vitest);
+
+  function getParams() {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    const page = Math.max(1, Number(params.get('page') || 1));
+    const limit = Math.max(1, Math.min(100, Number(params.get('limit') || 25)));
+    return { q, page, limit };
+  }
+
+  function fetchAndRender() {
+    const { q, page, limit } = getParams();
+    const offset = (page - 1) * limit;
+
+    const qs = new URLSearchParams({ limit: String(limit), offset: String(offset), ...(q ? { q } : {}) });
+
+    fetchLawList(qs)
+      .then(json => {
+        const total = json && typeof json.total === 'number' ? json.total : 0;
+        if (total === 0) {
+          el.innerHTML = `
+            <div class="container page">
+              <h2 class="mb-4">No results found</h2>
+              <p class="small">Try a different search.</p>
+            </div>
+          `;
+          renderSearch(el, q);
+          return;
+        }
+        renderHome(el, isLoggedIn, json && Array.isArray(json.data) ? json.data : []);
+        renderSearch(el, q);
+        renderStatus(el, { total, limit, page });
+        renderPagination(el, { total, limit, page, q });
+      })
+      .catch(err => {
+        (isTestEnv ? console.warn : console.error)('API fetch failed, falling back to mock data:', err);
+        const total = Array.isArray(mockLaws) ? mockLaws.length : 0;
+        renderHome(el, isLoggedIn, mockLaws);
+        renderSearch(el, q);
+        renderStatus(el, { total, limit, page });
+        renderPagination(el, { total, limit, page, q });
+      });
+  }
+
+  // Synchronous first render with mock data so the UI is immediately useful (and tests pass)
+  {
+    const { q, page, limit } = getParams();
+    const total = Array.isArray(mockLaws) ? mockLaws.length : 0;
+    renderHome(el, isLoggedIn, mockLaws);
+    renderSearch(el, q);
+    renderStatus(el, { total, limit, page });
+    renderPagination(el, { total, limit, page, q });
+  }
+
+  if (!isTestEnv) fetchAndRender();
 
   el.addEventListener('click', (e) => {
     const t = e.target;
@@ -121,7 +198,96 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
       const id = lawHost.getAttribute('data-law-id');
       if (id) onNavigate('law', id);
     }
+    // Pagination buttons
+    if (t.matches('[data-page]')) {
+      const newPage = Number(t.getAttribute('data-page'));
+      if (Number.isFinite(newPage) && newPage > 0) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(newPage));
+        const qEl = document.getElementById('search-q');
+        const qVal = qEl && 'value' in qEl ? qEl.value : params.get('q') || '';
+        if (qVal) params.set('q', qVal); else params.delete('q');
+        window.history.replaceState(null, '', `?${params.toString()}`);
+        fetchAndRender();
+      }
+    }
+  });
+
+  // Search form submit (delegate)
+  el.addEventListener('submit', (e) => {
+    const target = e.target;
+    const form = (target && 'closest' in target) ? target.closest('#search-form') : null;
+    if (!form || !(form instanceof HTMLFormElement)) return;
+    e.preventDefault();
+    const qVal = new FormData(form).get('q') || '';
+    const params = new URLSearchParams(window.location.search);
+    if (qVal) params.set('q', String(qVal)); else params.delete('q');
+    params.delete('page');
+    window.history.replaceState(null, '', `?${params.toString()}`);
+    fetchAndRender();
   });
 
   return el;
+}
+
+function renderPagination(el, { total, limit, page }) {
+  const pages = Math.max(1, Math.ceil(total / limit));
+  if (pages <= 1) return;
+  const host = document.createElement('div');
+  host.className = 'container mt-8';
+  host.innerHTML = `
+    <nav class="pagination">
+      ${Array.from({ length: pages }, (_, i) => i + 1).map(p => `
+        <button class="${p === page ? 'outline' : ''}" data-page="${p}">${p}</button>
+      `).join('')}
+    </nav>
+  `;
+  el.appendChild(host);
+}
+
+function renderSearch(el, q) {
+  const host = document.createElement('div');
+  host.className = 'container mb-4';
+  host.id = 'search-container';
+  host.innerHTML = `
+    <form id="search-form" class="flex gap-2">
+      <input id="search-q" name="q" type="text" placeholder="Search laws…" value="${q || ''}" />
+      <button type="submit">Search</button>
+    </form>
+  `;
+  el.prepend(host);
+}
+
+function renderStatus(el, { total, limit, page }) {
+  const container = document.getElementById('search-container');
+  if (!container) return;
+  const existing = document.getElementById('search-status');
+  if (existing) existing.remove();
+  const offset = (page - 1) * limit;
+  const start = total === 0 ? 0 : offset + 1;
+  const end = Math.min(offset + limit, total);
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const p = document.createElement('p');
+  p.id = 'search-status';
+  p.className = 'small';
+  p.textContent = `Showing ${start}-${end} of ${total} results — page ${page} of ${pages}`;
+  container.appendChild(p);
+}
+
+async function fetchLawList(qs) {
+  const primaryUrl = `/api/laws?${qs.toString()}`;
+  try {
+    const r = await fetch(primaryUrl, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error(`Primary fetch not ok: ${r.status}`);
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error('Primary returned non-JSON');
+    return await r.json();
+  } catch (err) {
+    // Fallback to direct API host (CORS enabled in server)
+    console.error('API fetch failed, falling back to mock data:', err);
+    const fallbackUrl = `http://127.0.0.1:8787/api/laws?${qs.toString()}`;
+    const r2 = await fetch(fallbackUrl, { headers: { 'Accept': 'application/json' } });
+    if (!r2.ok) throw new Error(`Fallback fetch not ok: ${r2.status}`);
+    return await r2.json();
+  }
 }

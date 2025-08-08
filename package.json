@@ -16,7 +16,12 @@
     "lint:css": "stylelint \"**/*.css\"",
     "lint:css:fix": "stylelint \"**/*.css\" --fix",
     "prepare": "husky",
-    "postprepare": "node scripts/sanitize-husky-hooks.mjs"
+    "postprepare": "node scripts/sanitize-husky-hooks.mjs",
+    "db:sql": "node scripts/build-sqlite.mjs > db/import.sql",
+    "db:init": "sqlite3 murphys.db < db/schema.sql",
+    "db:import": "node scripts/build-sqlite.mjs | sqlite3 murphys.db",
+    "db:rebuild": "sqlite3 murphys.db < db/schema.sql && node scripts/build-sqlite.mjs | sqlite3 murphys.db",
+    "api": "node scripts/api-server.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --fix",
@@ -38,6 +43,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "mathjax": "^3.2.2"
+    "mathjax": "^3.2.2",
+    "mathjax-full": "^3.2.2"
   }
 }
