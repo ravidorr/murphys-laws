@@ -18,7 +18,6 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
         </form>
 
         <nav class="flex items-center gap-2">
-          <button class="${currentPage === 'home' ? '' : 'outline'}" data-nav="home">Home</button>
           <button class="${currentPage === 'browse' ? '' : 'outline'}" data-nav="browse">Browse All Laws</button>
           <button class="${currentPage === 'calculator' ? '' : 'outline'}" data-nav="calculator">Calculator</button>
           <button class="${currentPage === 'submit' ? '' : 'outline'}" data-nav="submit">Submit a Law</button>
