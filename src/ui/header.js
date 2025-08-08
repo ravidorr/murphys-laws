@@ -13,9 +13,7 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
           <span class="font-semibold">Murphy's Law Archive</span>
         </div>
 
-        <form class="flex-1 search-form">
-          <input type="text" placeholder="Search laws..." aria-label="Search" />
-        </form>
+        
 
         <nav class="flex items-center gap-2">
           <button class="${currentPage === 'browse' ? '' : 'outline'}" data-nav="browse">Browse All Laws</button>
@@ -36,13 +34,7 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
     }
   });
 
-  // Search
-  const form = el.querySelector('form');
-  const input = el.querySelector('input[type="text"]');
-  form?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (input && input.value.trim()) onSearch(input.value.trim());
-  });
+  // Removed header search form for this milestone
 
   el.querySelector('.brand')?.addEventListener('click', () => onNavigate('home'));
 
