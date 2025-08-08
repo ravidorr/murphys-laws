@@ -36,11 +36,6 @@ function renderHome(el, laws = []) {
   const recent = [...data].slice(0, 3);
 
   el.innerHTML = `
-    <div class="text-center mb-12">
-      <h1 class="gradient-title">Murphy's Law Archive</h1>
-      <h2 class="subhead mb-8">If it can go wrong, you'll find it here.</h2>
-    </div>
-
     ${lawOfTheDay ? `
     <div class="card mb-12 thick-border">
       <div class="card-content">
