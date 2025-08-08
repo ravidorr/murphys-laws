@@ -34,9 +34,7 @@ function renderHome(el, isLoggedIn, laws = []) {
     <div class="text-center mb-12">
       <h1 class="gradient-title">Murphy's Law Archive</h1>
       <p class="small mb-8">If it can go wrong, you'll find it here.</p>
-      <div class="flex gap-4 justify-center">
-        <button class="outline" data-nav="browse">Browse All Laws</button>
-      </div>
+      
     </div>
 
     ${lawOfTheDay ? `
