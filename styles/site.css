@@ -90,11 +90,21 @@ html, body {
 .pt-8 { padding-top: 2rem; }
 .h-16 { height: 4rem; }
 .cursor-pointer { cursor: pointer; }
-.text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.w-6 { width: 1.5rem; display: inline-block; }
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w-6 {
+  width: 1.5rem;
+  display: inline-block;
+}
 
 /* Common page wrappers */
 .page { padding: 2rem 1rem; }
+
 .section-grid {
   grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 2rem;
@@ -113,6 +123,7 @@ header.sticky {
   z-index: 50;
   border-bottom: 1px solid var(--border);
 }
+
 .brand {
   display: flex;
   align-items: center;
@@ -253,3 +264,121 @@ input[type='text'] {
   gap: 1rem;
 }
 
+/* ==========================
+   Sod's Law Calculator (scoped styles)
+   ========================== */
+.calc-container {
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+}
+
+.calc-input-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (width >= 600px) {
+  .calc-input-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.calc-slider-group { text-align: left; }
+
+.calc-slider-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: .5rem;
+}
+
+.calc-slider-group input[type='range'] {
+  width: 100%;
+  appearance: none;
+  appearance: none;
+  height: 8px;
+  background: #e4e6eb;
+  border-radius: 5px;
+  outline: none;
+  cursor: pointer;
+}
+
+.calc-slider-group input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+.calc-slider-group input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.calc-slider-value {
+  font-weight: 700;
+  color: var(--primary);
+  margin-left: .5rem;
+}
+
+.calc-result-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: .5rem;
+  background: color-mix(in oklab, var(--bg) 96%, white 4%);
+  border: 1px solid var(--border);
+}
+
+.calc-result-display {
+  padding: 1rem;
+  border-radius: .5rem;
+  transition: background-color .3s ease, color .3s ease;
+}
+
+.calc-score {
+  font-size: 3rem;
+  font-weight: 800;
+  display: block;
+}
+
+.calc-info {
+  font-size: .9rem;
+  color: var(--muted-fg);
+  margin-top: 1rem;
+}
+
+/* Bigger typeset for MathJax formula on calculator page */
+.formula { margin: .5rem 0 1rem; }
+
+.formula mjx-container {
+  font-size: 240% !important;
+  line-height: 2.4;
+}
+
+/* Semantic result states */
+.calc-ok {
+  background: #e7f5ee;
+  color: #0b3d22;
+}
+
+.calc-warn {
+  background: #fff8e1;
+  color: #5a4300;
+}
+
+.calc-orange {
+  background: #ffe9d6;
+  color: #6a2e00;
+}
+
+.calc-danger {
+  background: #ffe3e6;
+  color: #5e0010;
+}
+
+.calc-dark {
+  background: #f0d6d6;
+  color: #2b0000;
+}

@@ -27,4 +27,3 @@ export function startRouter(rootEl) {
   window.addEventListener('hashchange', render);
   render();
 }
-

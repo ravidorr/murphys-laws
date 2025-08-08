@@ -1,10 +1,11 @@
 import { defineRoute, navigate, startRouter } from './router.js';
-import { Header } from './ui/Header.js';
-import { Home } from './views/Home.js';
-import { Browse } from './views/Browse.js';
-import { LawDetail } from './views/LawDetail.js';
-import { SubmitLaw } from './views/SubmitLaw.js';
-import { Auth } from './views/Auth.js';
+import { Header } from './ui/header.js';
+import { Home } from './views/home.js';
+import { Browse } from './views/browse.js';
+import { LawDetail } from './views/law-detail.js';
+import { SubmitLaw } from './views/submit-law.js';
+import { Auth } from './views/auth.js';
+import { Calculator } from './views/calculator.js';
 
 // App state (no framework)
 const state = {
@@ -101,6 +102,24 @@ function layout(node) {
   wrap.appendChild(header);
   wrap.appendChild(main);
   wrap.appendChild(footer);
+  
+  // Ask MathJax (if present) to typeset this freshly rendered view.
+  // We wait until MathJax is loaded and the node is attached to the DOM.
+  const typesetWhenReady = (element) => {
+    const attempt = () => {
+      const mj = window.MathJax;
+      if (mj && typeof mj.typesetPromise === 'function') {
+        mj.typesetPromise([element]).catch((err) => console.error('MathJax typeset error:', err));
+        return;
+      }
+      // Try again shortly in case MathJax script (loaded async) isn't ready yet
+      setTimeout(attempt, 50);
+    };
+    // Defer so the router can attach the element to the DOM first
+    setTimeout(attempt, 0);
+  };
+
+  typesetWhenReady(wrap);
   return wrap;
 }
 
@@ -117,8 +136,32 @@ defineRoute('login', () => layout(Auth({ type: 'login', onNavigate, onAuth })));
 
 defineRoute('signup', () => layout(Auth({ type: 'signup', onNavigate, onAuth })));
 
+defineRoute('calculator', () => layout(Calculator()));
+
 // Fallback
 defineRoute('law-history', () => layout(document.createTextNode('Law of the Day History (coming soon)')));
 
 startRouter(app);
 
+// Load and configure MathJax v3 locally (bundled via Vite)
+// We set window.MathJax before loading the component to ensure correct config
+// Then dynamically import the tex-mml-chtml component and attach a ready hook
+// so our existing typesetWhenReady logic works across route changes.
+(async () => {
+  // If MathJax already present (HMR/fast refresh), skip
+  if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    return;
+  }
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']]
+    }
+  };
+  try {
+    // Use SVG output to avoid webfont requests that can break under bundlers
+    await import('mathjax/es5/tex-svg.js');
+  } catch (err) {
+    console.error('Failed to load MathJax locally:', err);
+  }
+})();

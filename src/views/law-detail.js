@@ -39,4 +39,3 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
 
   return el;
 }
-

@@ -26,4 +26,3 @@ export function SubmitLaw({ isLoggedIn, _currentUser, onNavigate }) {
   });
   return el;
 }
-
