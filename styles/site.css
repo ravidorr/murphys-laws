@@ -236,6 +236,11 @@ input[type='text'] {
   border-top: 1px solid var(--border);
 }
 
+/* Ensure footer links are visible in dark mode and have good contrast */
+.footer button.link {
+  color: var(--fg);
+}
+
 .footer .grid {
   grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 2rem;
@@ -292,7 +297,6 @@ input[type='text'] {
 
 .calc-slider-group input[type='range'] {
   width: 100%;
-  appearance: none;
   appearance: none;
   height: 8px;
   background: #e4e6eb;
