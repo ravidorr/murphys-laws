@@ -29,5 +29,3 @@ test('home law click → law detail and back via button', async ({ page }) => {
   await page.getByRole('button', { name: 'Browse All Laws' }).click();
   await expect(page).toHaveURL(/#\/browse/);
 });
-
-
