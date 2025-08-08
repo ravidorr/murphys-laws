@@ -35,7 +35,6 @@ function renderHome(el, isLoggedIn, laws = []) {
       <h1 class="gradient-title">Murphy's Law Archive</h1>
       <p class="small mb-8">If it can go wrong, you'll find it here.</p>
       <div class="flex gap-4 justify-center">
-        <button data-nav="submit">Submit a Law</button>
         <button class="outline" data-nav="browse">Browse All Laws</button>
       </div>
     </div>
@@ -114,10 +113,7 @@ function renderHome(el, isLoggedIn, laws = []) {
     <div class="card">
       <div class="card-content text-center">
         <h3 class="mb-4">Join the Community</h3>
-        <p class="small mb-8">Contribute to the definitive collection of Murphy's Laws. Share your discoveries, vote on the best laws, and tell your stories of when things went wonderfully wrong.</p>
-        <div class="flex gap-4 justify-center">
-          <button class="outline" data-nav="submit">Submit a New Law</button>
-        </div>
+        <p class="small">Contribute to the definitive collection of Murphy's Laws. Share your discoveries, vote on the best laws, and tell your stories of when things went wonderfully wrong.</p>
       </div>
     </div>
   `;
