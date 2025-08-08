@@ -22,9 +22,7 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
           <button class="${currentPage === 'browse' ? '' : 'outline'}" data-nav="browse">Browse All Laws</button>
           <button class="${currentPage === 'calculator' ? '' : 'outline'}" data-nav="calculator">Calculator</button>
           <button class="${currentPage === 'submit' ? '' : 'outline'}" data-nav="submit">Submit a Law</button>
-          ${isLoggedIn ? `<button class="outline" data-nav="profile">${currentUser ?? 'Profile'}</button>` : `
-            <button data-nav="signup">Sign Up</button>
-          `}
+          ${isLoggedIn ? `<button class="outline" data-nav="profile">${currentUser ?? 'Profile'}</button>` : ''}
         </nav>
       </div>
     </div>
