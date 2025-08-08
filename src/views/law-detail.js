@@ -30,6 +30,7 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
   }
 
   function renderLaw(law) {
+    const displayScore = Number.isFinite(law.score) ? law.score : 0;
     const attsHtml = renderAttributionsList(law.attributions);
     el.innerHTML = `
       <div class="card"><div class="card-content">
@@ -37,7 +38,7 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
         <blockquote class="blockquote">"${law.text}"</blockquote>
         ${attsHtml || (law.author ? `<p class="small mb-4">— ${law.author}</p>` : '')}
         <div class="small law-meta mb-4">
-          ${law.score !== null ? `<span>Score: +${law.score}</span>` : ''}
+          <span>Score: +${displayScore}</span>
           ${law.submittedBy ? `<span>Submitted by ${law.submittedBy}</span>` : ''}
         </div>
         <div class="flex gap-2">
