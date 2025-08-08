@@ -116,7 +116,6 @@ function renderHome(el, isLoggedIn, laws = []) {
         <h3 class="mb-4">Join the Community</h3>
         <p class="small mb-8">Contribute to the definitive collection of Murphy's Laws. Share your discoveries, vote on the best laws, and tell your stories of when things went wonderfully wrong.</p>
         <div class="flex gap-4 justify-center">
-          ${!isLoggedIn ? '<button data-nav="signup">Sign Up to Contribute</button>' : ''}
           <button class="outline" data-nav="submit">Submit a New Law</button>
         </div>
       </div>

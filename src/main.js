@@ -79,7 +79,6 @@ function layout(node) {
           <h4>Contribute</h4>
           <div>
             <button class="link" data-nav="submit">Submit a Law</button>
-            ${!state.isLoggedIn ? '<br/><button class="link" data-nav="signup">Join Community</button>' : ''}
           </div>
         </div>
         <div>
