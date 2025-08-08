@@ -1,5 +1,3 @@
-import { mockLaws } from '../data.js';
-
 function renderAttribution(att) {
   if (!att) return '';
   const { name, contact_type, contact_value, note } = att;
@@ -56,19 +54,15 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
   const numericId = Number(lawId);
   const fetchUrl = Number.isFinite(numericId) ? `/api/laws/${numericId}` : null;
 
-  const tryMock = () => {
-    const law = (Array.isArray(mockLaws) ? mockLaws : []).find(l => String(l.id) === String(lawId));
-    if (law) renderLaw(law); else renderNotFound();
-  };
-
-  // Render synchronously from mock first for instant UX and test stability
-  tryMock();
-  // Then hydrate from API if available
-  if (fetchUrl) {
+  if (!fetchUrl) {
+    renderNotFound();
+  } else {
     fetch(fetchUrl)
       .then(r => r.ok ? r.json() : Promise.reject(new Error('not ok')))
       .then(data => renderLaw(data))
-      .catch(() => {});
+      .catch(() => {
+        renderNotFound();
+      });
   }
 
   el.addEventListener('click', (e) => {

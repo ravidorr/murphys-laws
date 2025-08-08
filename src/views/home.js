@@ -1,5 +1,4 @@
-// Home view: fetch laws from API and render sections (fallback to mock data on failure)
-import { mockLaws } from '../data.js';
+// Home view: fetch laws from API and render sections (no local mock data)
 
 function renderAttribution(att) {
   if (!att) return '';
@@ -20,16 +19,16 @@ function firstAttributionLine(law) {
 }
 
 function fmtDate(d) {
-  return new Date(d).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function renderHome(el, isLoggedIn, laws = []) {
   const data = Array.isArray(laws) ? laws : [];
-  const sortedByScore = [...data].sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
+  const sortedByScore = [...data].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const lawOfTheDay = sortedByScore[0] || null;
-  const topVoted = sortedByScore.slice(0,5);
-  const trending = [...data].sort(() => Math.random() - 0.5).slice(0,3);
-  const recent = [...data].slice(0,3);
+  const topVoted = sortedByScore.slice(0, 5);
+  const trending = [...data].sort(() => Math.random() - 0.5).slice(0, 3);
+  const recent = [...data].slice(0, 3);
 
   el.innerHTML = `
     <div class="text-center mb-12">
@@ -64,10 +63,10 @@ function renderHome(el, isLoggedIn, laws = []) {
       <div class="card"><div class="card-content">
         <h4 class="card-title">Top Voted</h4>
         <div>
-          ${topVoted.map((law,i) => `
+          ${topVoted.map((law, i) => `
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <div class="flex items-start gap-2">
-                <span class="rank">#${i+1}</span>
+                <span class="rank">#${i + 1}</span>
                 <div style="flex:1; min-width:0;">
                   <p class="small text-ellipsis">${law.text}</p>
                   <div class="small flex gap-2 mt-8">
@@ -131,21 +130,18 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
 
   el.innerHTML = `<p class="small">Loading laws...</p>`;
 
-  const isTestEnv = typeof import.meta !== 'undefined' && Boolean(import.meta.vitest);
-
   function getParams() {
     const params = new URLSearchParams(window.location.search);
-    const q = params.get('q') || '';
     const page = Math.max(1, Number(params.get('page') || 1));
     const limit = Math.max(1, Math.min(100, Number(params.get('limit') || 25)));
-    return { q, page, limit };
+    return { page, limit };
   }
 
   function fetchAndRender() {
-    const { q, page, limit } = getParams();
+    const { page, limit } = getParams();
     const offset = (page - 1) * limit;
 
-    const qs = new URLSearchParams({ limit: String(limit), offset: String(offset), ...(q ? { q } : {}) });
+    const qs = new URLSearchParams({ limit: String(limit), offset: String(offset) });
 
     fetchLawList(qs)
       .then(json => {
@@ -154,38 +150,27 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
           el.innerHTML = `
             <div class="container page">
               <h2 class="mb-4">No results found</h2>
-              <p class="small">Try a different search.</p>
+              <p class="small">There are no laws to show.</p>
             </div>
           `;
-          renderSearch(el, q);
           return;
         }
         renderHome(el, isLoggedIn, json && Array.isArray(json.data) ? json.data : []);
-        renderSearch(el, q);
-        renderStatus(el, { total, limit, page });
-        renderPagination(el, { total, limit, page, q });
+        renderPagination(el, { total, limit, page });
       })
       .catch(err => {
-        (isTestEnv ? console.warn : console.error)('API fetch failed, falling back to mock data:', err);
-        const total = Array.isArray(mockLaws) ? mockLaws.length : 0;
-        renderHome(el, isLoggedIn, mockLaws);
-        renderSearch(el, q);
-        renderStatus(el, { total, limit, page });
-        renderPagination(el, { total, limit, page, q });
+        console.error('API fetch failed:', err);
+        el.innerHTML = `
+          <div class="container page">
+            <h2 class="mb-4">Failed to load laws</h2>
+            <p class="small">Please try again later.</p>
+          </div>
+        `;
       });
   }
 
-  // Synchronous first render with mock data so the UI is immediately useful (and tests pass)
-  {
-    const { q, page, limit } = getParams();
-    const total = Array.isArray(mockLaws) ? mockLaws.length : 0;
-    renderHome(el, isLoggedIn, mockLaws);
-    renderSearch(el, q);
-    renderStatus(el, { total, limit, page });
-    renderPagination(el, { total, limit, page, q });
-  }
-
-  if (!isTestEnv) fetchAndRender();
+  // Initial render: loading, then fetch
+  fetchAndRender();
 
   el.addEventListener('click', (e) => {
     const t = e.target;
@@ -204,27 +189,10 @@ export function Home({ isLoggedIn, onNavigate, _onVote }) {
       if (Number.isFinite(newPage) && newPage > 0) {
         const params = new URLSearchParams(window.location.search);
         params.set('page', String(newPage));
-        const qEl = document.getElementById('search-q');
-        const qVal = qEl && 'value' in qEl ? qEl.value : params.get('q') || '';
-        if (qVal) params.set('q', qVal); else params.delete('q');
         window.history.replaceState(null, '', `?${params.toString()}`);
         fetchAndRender();
       }
     }
-  });
-
-  // Search form submit (delegate)
-  el.addEventListener('submit', (e) => {
-    const target = e.target;
-    const form = (target && 'closest' in target) ? target.closest('#search-form') : null;
-    if (!form || !(form instanceof HTMLFormElement)) return;
-    e.preventDefault();
-    const qVal = new FormData(form).get('q') || '';
-    const params = new URLSearchParams(window.location.search);
-    if (qVal) params.set('q', String(qVal)); else params.delete('q');
-    params.delete('page');
-    window.history.replaceState(null, '', `?${params.toString()}`);
-    fetchAndRender();
   });
 
   return el;
@@ -243,35 +211,6 @@ function renderPagination(el, { total, limit, page }) {
     </nav>
   `;
   el.appendChild(host);
-}
-
-function renderSearch(el, q) {
-  const host = document.createElement('div');
-  host.className = 'container mb-4';
-  host.id = 'search-container';
-  host.innerHTML = `
-    <form id="search-form" class="flex gap-2">
-      <input id="search-q" name="q" type="text" placeholder="Search laws…" value="${q || ''}" />
-      <button type="submit">Search</button>
-    </form>
-  `;
-  el.prepend(host);
-}
-
-function renderStatus(el, { total, limit, page }) {
-  const container = document.getElementById('search-container');
-  if (!container) return;
-  const existing = document.getElementById('search-status');
-  if (existing) existing.remove();
-  const offset = (page - 1) * limit;
-  const start = total === 0 ? 0 : offset + 1;
-  const end = Math.min(offset + limit, total);
-  const pages = Math.max(1, Math.ceil(total / limit));
-  const p = document.createElement('p');
-  p.id = 'search-status';
-  p.className = 'small';
-  p.textContent = `Showing ${start}-${end} of ${total} results — page ${page} of ${pages}`;
-  container.appendChild(p);
 }
 
 async function fetchLawList(qs) {
