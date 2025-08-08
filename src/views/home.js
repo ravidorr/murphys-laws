@@ -44,12 +44,10 @@ function renderHome(el, isLoggedIn, laws = []) {
             <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
             <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
             <div class="small law-meta">
-              <span>+${lawOfTheDay.score}</span>
-              <span>Submitted by ${lawOfTheDay.submittedBy}</span>
+              <span>+${Number.isFinite(lawOfTheDay.score) ? lawOfTheDay.score : 0}</span>
+              ${lawOfTheDay.submittedBy ? `<span>Submitted by ${lawOfTheDay.submittedBy}</span>` : ''}
             </div>
-            <div class="mt-8">
-              <button class="link" data-nav="law-history">View History →</button>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -66,8 +64,8 @@ function renderHome(el, isLoggedIn, laws = []) {
                 <div style="flex:1; min-width:0;">
                   <p class="small text-ellipsis">${law.text}</p>
                   <div class="small flex gap-2 mt-8">
-                    <span>+${law.score}</span>
-                    <span>${firstAttributionLine(law)}</span>
+                    <span>+${Number.isFinite(law.score) ? law.score : 0}</span>
+                    ${firstAttributionLine(law) ? `<span>${firstAttributionLine(law)}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -83,8 +81,8 @@ function renderHome(el, isLoggedIn, laws = []) {
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
               <div class="small flex gap-2 mt-8">
-                <span>+${law.score}</span>
-                <span>${firstAttributionLine(law)}</span>
+                <span>+${Number.isFinite(law.score) ? law.score : 0}</span>
+                ${firstAttributionLine(law) ? `<span>${firstAttributionLine(law)}</span>` : ''}
               </div>
             </div>
           `).join('')}
@@ -98,8 +96,8 @@ function renderHome(el, isLoggedIn, laws = []) {
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <p class="small">${law.text}</p>
               <div class="small flex gap-2 items-center mt-8">
-                <span>+${law.score}</span>
-                <span>${fmtDate(law.publishDate)}</span>
+                <span>+${Number.isFinite(law.score) ? law.score : 0}</span>
+                ${law.publishDate ? `<span>${fmtDate(law.publishDate)}</span>` : ''}
               </div>
             </div>
           `).join('')}
