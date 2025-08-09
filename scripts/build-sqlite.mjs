@@ -235,8 +235,8 @@ async function buildSQL() {
       // Insert parent law
       const lawSlug = null; // we can generate later based on text if needed
       statements.push(
-        `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, language, first_seen_file_path, first_seen_line_number)\n` +
-        `VALUES (${q(lawSlug)}, ${q(maybeTitle)}, ${q(parentText)}, ${q(parentRaw)}, NULL, 'en', ${q(rel)}, ${position})\n` +
+        `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
+        `VALUES (${q(lawSlug)}, ${q(maybeTitle)}, ${q(parentText)}, ${q(parentRaw)}, NULL, ${q(rel)}, ${position})\n` +
         `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
       );
 
@@ -261,8 +261,8 @@ async function buildSQL() {
         const corText = normalizeText(cor.replace(/^[-–—\s]*/, ''));
         if (!corText) continue;
         statements.push(
-          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, language, first_seen_file_path, first_seen_line_number)\n` +
-          `VALUES (NULL, NULL, ${q(corText)}, ${q('Corollary: ' + cor)}, NULL, 'en', ${q(rel)}, ${position} /* inline corollary */)\n` +
+          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
+          `VALUES (NULL, NULL, ${q(corText)}, ${q('Corollary: ' + cor)}, NULL, ${q(rel)}, ${position} /* inline corollary */)\n` +
           `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
         );
         // relation (from corollary to parent)
@@ -303,8 +303,8 @@ async function buildSQL() {
 
         // Insert sub-law
         statements.push(
-          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, language, first_seen_file_path, first_seen_line_number)\n` +
-          `VALUES (NULL, ${q(subTitle)}, ${q(subText)}, ${q(subRaw)}, NULL, 'en', ${q(rel)}, ${subPos})\n` +
+          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
+          `VALUES (NULL, ${q(subTitle)}, ${q(subText)}, ${q(subRaw)}, NULL, ${q(rel)}, ${subPos})\n` +
           `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
         );
 
