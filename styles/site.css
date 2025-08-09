@@ -416,6 +416,24 @@ input[type='text'] {
   line-height: 2.4;
 }
 
+/* Tooltip for formula legend */
+.has-legend[data-legend] { position: relative; }
+
+.has-legend[data-legend]:hover::after, .has-legend[data-legend]:focus-within::after {
+  content: attr(data-legend);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  white-space: pre-wrap;
+  background: #111;
+  color: #fff;
+  padding: .5rem .75rem;
+  border-radius: .375rem;
+  z-index: 10;
+  margin-top: .25rem;
+  max-width: 32rem;
+}
+
 /* Semantic result states */
 .calc-ok {
   background: #e7f5ee;
