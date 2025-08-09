@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS laws (
   text TEXT NOT NULL,          -- main content (plain text)
   raw_markdown TEXT,           -- optional, original fragment
   origin_note TEXT,            -- e.g., "Buddha's version", "Larry Niven's summary"
-  language TEXT DEFAULT 'en',
   first_seen_file_path TEXT,   -- provenance
   first_seen_line_number INTEGER,
   canonical INTEGER DEFAULT 1, -- for future de-dup workflows
