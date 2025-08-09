@@ -139,14 +139,50 @@ startRouter(app);
     return;
   }
   window.MathJax = {
+    loader: { load: ['[tex]/html'] },
     tex: {
       inlineMath: [['\\(', '\\)']],
-      displayMath: [['\\[', '\\]']]
+      displayMath: [['\\[', '\\]']],
+      packages: { '[+]': ['html'] }
+    },
+    options: {
+      renderActions: {
+        // Custom action to add titles to math variables after rendering
+        addMathTitles: [
+          200,  // Priority: higher runs later
+          (doc) => {
+            for (const node of doc.math) {
+              const element = node.typesetRoot;
+              if (element) {
+                element.querySelectorAll('mjx-mi').forEach((mi) => {
+                  const text = mi.textContent.trim();
+                  const titles = {
+                    'U': 'Urgency (1-9)',
+                    'C': 'Complexity (1-9)',
+                    'I': 'Importance (1-9)',
+                    'S': 'Skill (1-9)',
+                    'F': 'Frequency (1-9)',
+                    'A': 'Activity constant (0.7)'
+                  };
+                  if (titles[text]) {
+                    mi.setAttribute('title', titles[text]);
+                  }
+                });
+              }
+            }
+          }
+        ]
+      }
     }
   };
   try {
-    // Use SVG output to avoid webfont requests that can break under bundlers
-    await import('mathjax/es5/tex-svg.js');
+    // Use CHTML output to enable easier DOM annotations of math tokens
+    await import('mathjax/es5/tex-chtml-full.js');
+    const mj = window.MathJax;
+    const root = document.getElementById('app');
+    if (mj && typeof mj.typesetPromise === 'function' && root) {
+      mj.typesetPromise([root]).catch((err) => console.error('MathJax initial typeset error:', err));
+    }
   } catch (err) {
     console.error('Failed to load MathJax locally:', err);
   }

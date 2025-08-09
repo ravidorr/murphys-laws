@@ -1,7 +1,9 @@
+ 
 // Sod's Law Calculator view integrated with site styles (no inline CSS in HTML)
 // Reuses the original formula and interaction, scoped under .calc- classes
 
 export function Calculator() {
+  // Formula is rendered by MathJax; per-symbol annotations are added via renderActions in main.js
   const formula = String.raw`\(\frac{\frac{((U+C+I)(10-S))}{20}\cdot A\cdot 1}{(1-\sin \left(\frac{F}{10}\right))}\)`;
 
   const el = document.createElement('div');
@@ -14,7 +16,7 @@ export function Calculator() {
           <h1>Sod's Law Calculator</h1>
           <h2>Quantifying the likelihood of things going wrong.</h2>
           <p class="formula">${formula}</p>
-          <p>U = Urgency (1-9) | C = Complexity (1-9) | I = Importance (1-9) | S = Skill (1-9) | F = Frequency (1-9) | A = Activity constant (0.7)</p> 
+          <p>U = Urgency (1-9) | C = Complexity (1-9) | I = Importance (1-9) | S = Skill (1-9) | F = Frequency (1-9) | A = Activity constant (0.7)</p>
         </header>
 
         <div class="calc-container">
@@ -68,6 +70,12 @@ export function Calculator() {
       </div>
     </div>
   `;
+
+  // Normalize accidental double-escaped backslashes so MathJax sees \( ... \) as \( ... \)
+  const formulaEl = el.querySelector('.formula');
+  if (formulaEl && formulaEl.textContent && formulaEl.textContent.includes('\\\\')) {
+    formulaEl.textContent = formulaEl.textContent.replace(/\\\\/g, '\\');
+  }
 
   // Wire up interactions
   const sliders = {
