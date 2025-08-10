@@ -41,7 +41,7 @@ function renderHome(el, laws = []) {
       <div class="card-content">
         <h3 class="card-title">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
         <div class="p-2 cursor-pointer" data-law-id="${lawOfTheDay.id}">
-          <blockquote class="blockquote">"${lawOfTheDay.text}"</blockquote>
+          <blockquote class="blockquote">${lawOfTheDay.text}</blockquote>
           <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
           <div class="small law-meta">
             <span>${formatScore(lawOfTheDay.score)}</span>

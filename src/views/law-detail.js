@@ -35,7 +35,7 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
     el.innerHTML = `
       <div class="card"><div class="card-content">
         <h2 class="mb-4">${law.title ?? 'Law'}</h2>
-        <blockquote class="blockquote">"${law.text}"</blockquote>
+        <blockquote class="blockquote">${law.text}</blockquote>
         ${attsHtml || (law.author ? `<p class="small mb-4">— ${law.author}</p>` : '')}
         <div class="small law-meta mb-4">
           <span>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
