@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:clean": "rm -rf node_modules/.vite && npm run dev",
     "build": "vite build",
     "preview": "vite preview --port 5173",
     "e2e": "playwright test",
