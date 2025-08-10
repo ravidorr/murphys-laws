@@ -33,6 +33,9 @@
     --fg: #e9eaee;           /* slightly softer than pure white */
     --muted-fg: #b3b7c4;     /* brighter muted text for readability */
     --border: rgb(255 255 255 / 18%); /* more visible borders */
+
+    /* A brighter brand/accent for dark mode so filled buttons and badges stand out */
+    --primary: #4f46e5;      /* indigo-600 */
   }
 
   /* Global link color for contrast on dark */
@@ -45,6 +48,13 @@
   header.sticky {
     background: color-mix(in oklab, var(--bg) 86%, transparent);
     border-bottom-color: var(--border);
+  }
+
+  /* Brand: ensure the badge is clearly visible against dark header */
+  .brand-badge {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px rgb(0 0 0 / 45%);
   }
 
   .card {
@@ -64,6 +74,7 @@
     background: var(--primary);
     color: #fff;
     border-color: var(--primary);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
   }
 
   .btn.outline, button.outline {
@@ -78,6 +89,20 @@
     border-color: rgb(255 255 255 / 32%);
   }
 
+  /* Stronger focus ring for accessibility in dark mode */
+  .btn:focus-visible, button:focus-visible,
+  a.btn:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--primary) 75%, white 25%);
+    outline-offset: 2px;
+  }
+
+  /* Universal hover for filled buttons (dark mode) */
+  .btn:hover,
+  button:hover {
+    background: color-mix(in oklab, var(--primary) 88%, white 12%);
+    border-color: color-mix(in oklab, var(--primary) 88%, white 12%);
+  }
+
   input[type='text'] {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     color: var(--fg);
@@ -90,6 +115,12 @@
     background: #0f1115;
     color: #e9eaee;
     border: 1px solid var(--border);
+  }
+
+  /* Blockquote: clearer accent and subtle surface */
+  .blockquote {
+    border-left-color: color-mix(in oklab, var(--primary) 85%, white 15%);
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
   }
 
   /* Calculator semantic states tuned for dark mode */
@@ -116,6 +147,41 @@
   .calc-dark {
     background: #2a1b1b;
     color: #f0d6d6;
+  }
+
+  /* Top Voted rank: make the number pop on dark */
+  .rank {
+    color: color-mix(in oklab, var(--primary) 85%, white 15%);
+    text-shadow: 0 1px 0 rgb(0 0 0 / 40%);
+  }
+
+  /* Voting buttons in dark mode */
+  button[data-vote='up'] {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  button[data-vote='up']:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    filter: saturate(2) brightness(2);
+  }
+
+  button[data-vote='down']:hover {
+    filter: saturate(1.2) brightness(1.2);
+  }
+
+  /* Pagination: make current page distinct and outlines visible */
+  .pagination .btn[aria-current='page'] {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(79 70 229 / 35%);
+  }
+
+  .pagination .btn:hover {
+    filter: brightness(1.08);
   }
 }
 
@@ -256,12 +322,59 @@ header.sticky {
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  transition: background-color .15s ease, border-color .15s ease, filter .15s ease, box-shadow .15s ease;
 }
 
 .btn.outline, button.outline {
   background: transparent;
   color: var(--fg);
   border-color: var(--border);
+}
+
+/* Voting buttons: make upvote hover clearly distinct */
+button[data-vote='up'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+button[data-vote='up']:hover {
+  background: var(--primary); /* keep brand color */
+  border-color: var(--primary);
+  filter: saturate(1.25) brightness(1.08);
+}
+
+button[data-vote='up']:active {
+  filter: saturate(1.15) brightness(.96);
+}
+
+/* Universal hover/active for filled buttons (light mode) */
+.btn:hover,
+button:hover {
+  background: color-mix(in oklab, var(--primary) 92%, white 8%);
+  border-color: color-mix(in oklab, var(--primary) 92%, white 8%);
+}
+
+.btn:active,
+button:active {
+  filter: brightness(.95);
+}
+
+/* Outline hover for light mode */
+.btn.outline:hover,
+button.outline:hover,
+.btn.outline:focus-visible,
+button.outline:focus-visible {
+  background: color-mix(in oklab, var(--bg) 90%, black 10%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--primary) 30%);
+}
+
+/* Focus ring for accessibility (light mode) */
+.btn:focus-visible,
+button:focus-visible,
+a.btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--primary) 75%, black 25%);
+  outline-offset: 2px;
 }
 
 button.link {
