@@ -4,7 +4,8 @@
 
 export function Calculator() {
   // Formula is rendered by MathJax; per-symbol annotations are added via renderActions in main.js
-  const formula = String.raw`\(\frac{\frac{((U+C+I)(10-S))}{20}\cdot A\cdot 1}{(1-\sin \left(\frac{F}{10}\right))}\)`;
+  // Use a normal JS string so the DOM contains single backslashes (\\( ... \\)) that MathJax recognizes as \( ... \)
+  const formula = '\\(\\frac{\\frac{((U+C+I)(10-S))}{20}\\cdot A\\cdot 1}{(1-\\sin \\left(\\frac{F}{10}\\right))}\\)';
 
   const el = document.createElement('div');
   el.className = 'container page';
@@ -71,11 +72,6 @@ export function Calculator() {
     </div>
   `;
 
-  // Normalize accidental double-escaped backslashes so MathJax sees \( ... \) as \( ... \)
-  const formulaEl = el.querySelector('.formula');
-  if (formulaEl && formulaEl.textContent && formulaEl.textContent.includes('\\\\')) {
-    formulaEl.textContent = formulaEl.textContent.replace(/\\\\/g, '\\');
-  }
 
   // Wire up interactions
   const sliders = {

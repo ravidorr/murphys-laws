@@ -139,13 +139,20 @@ startRouter(app);
     return;
   }
   window.MathJax = {
-    loader: { load: ['[tex]/html'] },
+    // Don't ask MathJax to lazy-load extra components; Vite bundles the full CHTML build we import below.
+    loader: { load: [] },
     tex: {
       inlineMath: [['\\(', '\\)']],
       displayMath: [['\\[', '\\]']],
       packages: { '[+]': ['html'] }
     },
+    // Prevent auto-typesetting; we call typesetPromise ourselves after mount
+    startup: { typeset: false },
+    // Disable optional features that trigger extra network fetches under bundlers
     options: {
+      enableMenu: false,
+      enableAssistiveMml: false,
+      a11y: { speech: false },
       renderActions: {
         // Custom action to add titles to math variables after rendering
         addMathTitles: [
@@ -177,7 +184,9 @@ startRouter(app);
   };
   try {
     // Use CHTML output to enable easier DOM annotations of math tokens
-    await import('mathjax/es5/tex-chtml-full.js');
+    // Load the bundled CHTML build (no dynamic sub-loads expected)
+    // Use the slimmer TeX + CHTML bundle (no menu/a11y components)
+    await import('mathjax/es5/tex-chtml.js');
     const mj = window.MathJax;
     const root = document.getElementById('app');
     if (mj && typeof mj.typesetPromise === 'function' && root) {
@@ -186,4 +195,15 @@ startRouter(app);
   } catch (err) {
     console.error('Failed to load MathJax locally:', err);
   }
+// Ensure HMR picks up MathJax config changes: dispose the global instance on module replace
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    try {
+      // Remove global to force re-init with new config on next import
+      delete window.MathJax;
+      // Clean up any MathJax-injected stylesheets to avoid duplication
+      document.querySelectorAll('style[data-mathjax],link[data-mathjax]').forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+    } catch (_) {}
+  });
+}
 })();
