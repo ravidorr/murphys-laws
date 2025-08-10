@@ -3,8 +3,10 @@ import path from 'node:path';
 
 export default defineConfig({
   server: {
-    port: 5173,
-    open: 'index.html',
+    host: '127.0.0.1',
+    port: 5175,
+    strictPort: true,
+    open: '/',
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8787',
@@ -13,7 +15,7 @@ export default defineConfig({
       }
     }
   },
-  preview: { port: 5173 },
+  preview: { port: 5175, host: '127.0.0.1' },
   resolve: {
     alias: {
       '@src': path.resolve(__dirname, 'src'),
