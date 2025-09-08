@@ -4,7 +4,7 @@ test('home → browse via header', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.getByRole('banner').getByText("Murphy's Law Archive", { exact: true })).toBeVisible();
 
-  await page.getByRole('banner').getByRole('button', { name: 'Browse All Laws' }).click();
+  await page.getByRole('navigation').getByRole('button', { name: 'Browse All Laws' }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'Browse All Laws' })).toBeVisible();
   await expect(page).toHaveURL(/#\/browse/);
 });
@@ -26,6 +26,6 @@ test('home law click → law detail and back via button', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Upvote' })).toBeVisible();
 
   // Navigate to browse from law detail
-  await page.getByRole('button', { name: 'Browse All Laws' }).click();
+  await page.getByRole('main').getByRole('button', { name: 'Browse All Laws' }).click();
   await expect(page).toHaveURL(/#\/browse/);
 });
