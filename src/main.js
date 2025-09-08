@@ -195,15 +195,17 @@ startRouter(app);
   } catch (err) {
     console.error('Failed to load MathJax locally:', err);
   }
-// Ensure HMR picks up MathJax config changes: dispose the global instance on module replace
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    try {
+  // Ensure HMR picks up MathJax config changes: dispose the global instance on module replace
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
       // Remove global to force re-init with new config on next import
       delete window.MathJax;
       // Clean up any MathJax-injected stylesheets to avoid duplication
-      document.querySelectorAll('style[data-mathjax],link[data-mathjax]').forEach((el) => el.parentNode && el.parentNode.removeChild(el));
-    } catch (_) {}
-  });
-}
+      document
+        .querySelectorAll('style[data-mathjax],link[data-mathjax]')
+        .forEach((el) => {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        });
+    });
+  }
 })();

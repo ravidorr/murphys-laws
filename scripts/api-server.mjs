@@ -53,7 +53,7 @@ function sendJson(res, status, obj) {
 }
 
 function notFound(res) { sendJson(res, 404, { error: 'Not Found' }); }
-function badRequest(res, msg) { sendJson(res, 400, { error: msg || 'Bad Request' }); }
+// function badRequest(res, msg) { sendJson(res, 400, { error: msg || 'Bad Request' }); }
 
 const baseSelect = `
 SELECT
@@ -170,7 +170,6 @@ function safeParseJsonArray(s) {
 }
 
 server.listen(PORT, HOST, () => {
-  // eslint-disable-next-line no-console
   console.log(`API listening on http://${HOST}:${PORT}`);
 });
 
