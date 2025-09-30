@@ -12,12 +12,21 @@ export default defineConfig({
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  webServer: {
-    command: 'npm run preview',
-    url: 'http://localhost:5173',
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-  },
+  // Start both API (8787) and preview (5173) for E2E
+  webServer: [
+    {
+      command: 'npm run api',
+      url: 'http://127.0.0.1:8787/api/health',
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'npm run preview',
+      url: 'http://localhost:5173',
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
