@@ -40,9 +40,17 @@
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
   }
-.lod-score { color: #7ef29a; }
 
-  .lod-footer {
+  /* Law detail card to match LoD */
+  .law-detail .card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+  }
+
+  .lod-score { color: #7ef29a; }
+
+  .lod-footer,
+  .law-detail .law-meta {
     background: color-mix(in oklab, var(--bg) 86%, white 14%);
     border-top-color: var(--border);
   }
@@ -429,6 +437,50 @@ input[type='text'] {
 /* ==========================
    Components
    ========================== */
+
+/* Law detail (style to match LoD visually) */
+.law-detail .card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+}
+
+.law-detail h2 {
+  margin: 0 0 .5rem;
+  font-size: 1rem;
+  color: var(--muted-fg);
+}
+
+.law-detail .blockquote {
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
+  font-weight: 700;
+  font-style: normal;
+  border-left: none;
+  padding-left: 0;
+  text-align: center;
+  margin: .25rem 0 .5rem;
+}
+
+.law-detail .card .small {
+  text-align: center;
+}
+
+.law-detail .law-meta {
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+  border-top: 1px solid var(--border);
+}
+
+.law-detail .law-meta span:first-child {
+  font-weight: 700;
+}
+
+.law-detail .law-meta span:first-child .pos {
+  color: #16a34a;
+}
 
 /* Law of the Day widget (scoped) */
 .lod-card {

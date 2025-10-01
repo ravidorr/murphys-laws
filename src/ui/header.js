@@ -9,7 +9,7 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
       <div class="flex h-16 items-center justify-between gap-4">
         <a class="brand" href="#/home">
           <span class="brand-badge">M</span>
-          <span class="font-semibold brand-name"><span class="accent-text">Murphy's</span> Law of the Day</span>
+          <span class="font-semibold brand-name"><span class="accent-text">Murphy's</span> Law</span>
         </a>
 
         <form role="search" class="flex items-center gap-2" aria-label="Site Search">

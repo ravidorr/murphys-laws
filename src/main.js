@@ -59,7 +59,7 @@ function layout(node) {
   hero.className = 'container page hero-section';
   hero.innerHTML = `
     <div class="text-center mb-4">
-      <h1 class="hero-title"><span class="accent">Murphy's</span> Law of the Day</h1>
+      <h1 class="hero-title"><span class="accent">Murphy's</span> Law</h1>
       <p class="hero-subtitle mb-4">If something can go wrong, it will. And it will be featured here.</p>
     </div>
   `;
