@@ -18,7 +18,7 @@ function renderAttributionsList(atts = []) {
 
 export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote }) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page law-detail';
 
   function renderNotFound() {
     el.innerHTML = `
