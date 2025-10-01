@@ -56,11 +56,11 @@ function layout(node) {
   main.className = 'flex-1';
   // Global site hero shown on all pages
   const hero = document.createElement('section');
-  hero.className = 'container page';
+  hero.className = 'container page hero-section';
   hero.innerHTML = `
-    <div class="text-center mb-12">
-      <h1 class="gradient-title">Murphy's Law Archive</h1>
-      <h2 class="subhead mb-8">If it can go wrong, you'll find it here.</h2>
+    <div class="text-center mb-4">
+      <h1 class="hero-title"><span class="accent">Murphy's</span> Law of the Day</h1>
+      <p class="hero-subtitle mb-4">If something can go wrong, it will. And it will be featured here.</p>
     </div>
   `;
   main.appendChild(hero);

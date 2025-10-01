@@ -14,7 +14,13 @@
   Notes:
   - Keep generic utilities and shared components here.
   - If the stylesheet grows large, we can split by feature and import via Vite.
+
+  Fonts:
+  - Primary display: Work Sans (via Google Fonts), with robust fallbacks.
 */
+
+/* Import fonts first (must precede other rules) */
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800;900&display=swap');
 
 /* ==========================
    Variables
@@ -25,9 +31,31 @@
   --muted-fg: #6b7280;
   --primary: #030213;
   --border: rgb(0 0 0 / 10%);
+  --lod-primary: #1173d4;
 }
 
 @media (prefers-color-scheme: dark) {
+  /* Law of the Day widget overrides (dark) */
+  .lod-card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+  }
+.lod-score { color: #7ef29a; }
+
+  .lod-footer {
+    background: color-mix(in oklab, var(--bg) 86%, white 14%);
+    border-top-color: var(--border);
+  }
+
+  .lod .btn {
+    background: var(--lod-primary);
+    border-color: var(--lod-primary);
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(17 115 212 / 35%);
+  }
+  .lod .btn:hover { filter: saturate(1.1) brightness(1.08); }
+  .lod-skeleton { background: linear-gradient(90deg, #1a1a22 25%, #202028 37%, #1a1a22 63%); }
+
   :root {
     --bg: #0b0b11;           /* near-black page background */
     --fg: #e9eaee;           /* slightly softer than pure white */
@@ -193,12 +221,16 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
+  font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
 }
 
 /* ==========================
    Utilities
    ========================== */
+
+/* Utility additions */
+.min-w-0 { min-width: 0; }
+.pt-0 { padding-top: 0; }
 
 /* Utility classes needed by the app layout */
 .container {
@@ -253,6 +285,9 @@ html, body {
 
 /* Common page wrappers */
 .page { padding: 2rem 1rem; }
+
+/* Slightly tighter bottom padding for the hero section to reduce gap to first content */
+.hero-section { padding-bottom: .5rem; }
 
 .section-grid {
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -395,6 +430,154 @@ input[type='text'] {
    Components
    ========================== */
 
+/* Law of the Day widget (scoped) */
+.lod-card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+}
+
+.lod-body {
+  padding: 1.25rem;
+}
+
+.lod-header {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  justify-content: space-between;
+  margin-bottom: .25rem;
+}
+
+.lod-title {
+  font-size: 1.25rem;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.lod-date {
+  font-size: .875rem;
+  color: var(--muted-fg);
+}
+
+.lod-quote {
+  font-size: 1.25rem;
+  font-style: italic;
+  border-left: 4px solid var(--primary);
+  padding-left: 1rem;
+  margin: .5rem 0 1rem;
+}
+
+.lod-quote-large {
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
+  font-weight: 700;
+  font-style: normal;
+  border-left: none;
+  padding-left: 0;
+  text-align: center;
+  margin: .25rem 0 .5rem;
+}
+
+.lod-attrib {
+  font-size: 1rem;
+  color: var(--muted-fg);
+  margin: 0 0 .75rem;
+  text-align: center;
+}
+
+.lod-meta {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.lod-score {
+  font-weight: 800;
+  color: #16a34a;
+  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+/* Footer bar inspired by Stitch */
+.lod-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+  border-top: 1px solid var(--border);
+}
+
+.lod-footer .left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--muted-fg);
+}
+
+.lod-count {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.lod-count .lod-num {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.lod-up .lod-icon { color: #16a34a; }
+.lod-down .lod-icon { color: #ef4444; }
+
+.lod-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-block;
+}
+
+.lod-icon.ml { margin-left: .25rem; }
+
+/* Button override to Stitch blue for this widget only */
+.lod .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  background: var(--lod-primary);
+  border-color: var(--lod-primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgb(17 115 212 / 35%);
+}
+
+.lod .btn:hover { filter: brightness(1.05); }
+
+.lod .btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--lod-primary) 75%, white 25%);
+  outline-offset: 2px;
+}
+
+/* Skeleton while loading */
+.lod-skeleton {
+  height: 7.5rem;
+  border-radius: .75rem;
+  background: linear-gradient(90deg, #eee 25%, #f6f6f6 37%, #eee 63%);
+  background-size: 400% 100%;
+  animation: lod-pulse 1.2s ease infinite;
+  border: 1px solid var(--border);
+}
+
+@keyframes lod-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Cards */
 .card {
   border: 1px solid var(--border);
@@ -428,6 +611,33 @@ input[type='text'] {
   background: linear-gradient(90deg, var(--primary), #4b5563);
   color: transparent;
   background-clip: text;
+}
+
+/* Accent text utility (blue gradient) */
+.accent-text {
+  background: linear-gradient(90deg, #1173d4, #3b82f6);
+  color: transparent;
+  background-clip: text;
+}
+
+/* Hero heading matching Stitch style */
+.hero-title {
+  margin: 0 0 .75rem;
+  font-size: clamp(2.25rem, 3vw + 1.25rem, 3rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.hero-title .accent {
+  background: linear-gradient(90deg, #1173d4, #3b82f6);
+  color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: var(--muted-fg);
+  margin: 0;
 }
 
 .subhead {

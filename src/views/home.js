@@ -27,7 +27,9 @@ function formatScore(val) {
   return `${n > 0 ? '+' : ''}${n}`;
 }
 
-function renderHome(el, laws = []) {
+import { LawOfTheDay } from '@ui/law-of-day.js';
+
+function renderHome(el, laws = [], onNavigate) {
   const data = Array.isArray(laws) ? laws : [];
   const sortedByScore = [...data].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const lawOfTheDay = sortedByScore[0] || null;
@@ -35,23 +37,15 @@ function renderHome(el, laws = []) {
   const trending = [...data].sort(() => Math.random() - 0.5).slice(0, 3);
   const recent = [...data].slice(0, 3);
 
-  el.innerHTML = `
-    ${lawOfTheDay ? `
-    <div class="card mb-12 thick-border">
-      <div class="card-content">
-        <h3 class="card-title">⭐ Law of the Day <span class="small" style="margin-left:.5rem;">${fmtDate(new Date().toISOString())}</span></h3>
-        <div class="p-2 cursor-pointer" data-law-id="${lawOfTheDay.id}">
-          <blockquote class="blockquote">${lawOfTheDay.text}</blockquote>
-          <p class="small mb-4">${firstAttributionLine(lawOfTheDay)}</p>
-          <div class="small law-meta">
-            <span>${formatScore(lawOfTheDay.score)}</span>
-            ${lawOfTheDay.submittedBy ? `<span>Submitted by ${lawOfTheDay.submittedBy}</span>` : ''}
-          </div>
-        </div>
-      </div>
-    </div>
-    ` : ''}
+  // Clear and progressively render: component first, then other sections
+  el.innerHTML = '';
 
+  if (lawOfTheDay) {
+    const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
+    el.appendChild(widget);
+  }
+
+  const restHTML = `
     <div class="grid mb-12 section-grid">
       <div class="card">
         <div class="card-content">
@@ -61,7 +55,7 @@ function renderHome(el, laws = []) {
             <div class="p-2 rounded cursor-pointer" data-law-id="${law.id}">
               <div class="flex items-start gap-2">
                 <span class="rank">#${i + 1}</span>
-                <div style="flex:1; min-width:0;">
+                <div class="flex-1 min-w-0">
                   <p class="small text-ellipsis">${law.text}</p>
                   <div class="small flex gap-2 mt-8">
                     <span>${formatScore(law.score)}</span>
@@ -109,11 +103,15 @@ function renderHome(el, laws = []) {
       </div>
     </div>
   `;
+
+  const host = document.createElement('div');
+  host.innerHTML = restHTML;
+  el.appendChild(host);
 }
 
 export function Home({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page pt-0';
 
   el.innerHTML = `<p class="small">Loading laws...</p>`;
 
@@ -142,7 +140,7 @@ export function Home({ onNavigate }) {
           `;
           return;
         }
-        renderHome(el, json && Array.isArray(json.data) ? json.data : []);
+        renderHome(el, json && Array.isArray(json.data) ? json.data : [], onNavigate);
         renderPagination(el, { total, limit, page });
       })
       .catch(err => {
