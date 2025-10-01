@@ -42,8 +42,12 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
           ${law.submittedBy ? `<span>Submitted by ${law.submittedBy}</span>` : ''}
         </div>
         <div class="flex gap-2">
-          <button data-vote="up" data-id="${law.id}" aria-label="Upvote" title="Upvote">👍</button>
-          <button class="outline" data-vote="down" data-id="${law.id}" aria-label="Downvote" title="Downvote">👎</button>
+          <button data-vote="up" data-id="${law.id}" aria-label="Upvote" title="Upvote">
+            <span class="material-symbols-outlined">thumb_up</span>
+          </button>
+          <button class="outline" data-vote="down" data-id="${law.id}" aria-label="Downvote" title="Downvote">
+            <span class="material-symbols-outlined">thumb_down</span>
+          </button>
           <button class="btn outline" data-nav="browse">Browse All Laws</button>
         </div>
       </div></div>
