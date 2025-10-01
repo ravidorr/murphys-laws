@@ -33,17 +33,17 @@ export function LawOfTheDay({ law, onNavigate }) {
     <div class="lod-footer">
       <div class="left">
         <span class="lod-count lod-up" aria-label="upvotes">
-          <svg class="lod-icon" aria-hidden="true"><use href="/icons/sprite.svg#thumb-up-outline"></use></svg>
+          <span class="material-symbols-outlined lod-icon">thumb_up</span>
           <span class="lod-num">${up}</span>
         </span>
         <span class="lod-count lod-down" aria-label="downvotes">
-          <svg class="lod-icon" aria-hidden="true"><use href="/icons/sprite.svg#thumb-down-outline"></use></svg>
+          <span class="material-symbols-outlined lod-icon">thumb_down</span>
           <span class="lod-num">${down}</span>
         </span>
       </div>
       <button class="btn" type="button" data-nav="law-history" aria-label="View history of Law of the Day">
         View History
-        <svg class="lod-icon ml" aria-hidden="true"><use href="/icons/sprite.svg#arrow-right"></use></svg>
+        <span class="material-symbols-outlined lod-icon ml">arrow_forward</span>
       </button>
     </div>
   `;
