@@ -27,7 +27,9 @@ function formatScore(val) {
   return `${n > 0 ? '+' : ''}${n}`;
 }
 
-import { LawOfTheDay } from '@ui/law-of-day.js';
+import { LawOfTheDay } from '@components/law-of-day.js';
+import { SodCalculatorSimple } from '@components/sod-calculator.js';
+import { SubmitLawSection } from '@components/submit-law.js';
 
 function renderHome(el, laws = [], onNavigate) {
   const data = Array.isArray(laws) ? laws : [];
@@ -44,6 +46,14 @@ function renderHome(el, laws = [], onNavigate) {
     const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
     el.appendChild(widget);
   }
+
+  // Add Sod's Law Calculator widget
+  const calcWidget = SodCalculatorSimple({ onNavigate });
+  el.appendChild(calcWidget);
+
+  // Add Submit Law section
+  const submitWidget = SubmitLawSection({ onNavigate });
+  el.appendChild(submitWidget);
 
   const restHTML = `
     <div class="grid mb-12 section-grid">

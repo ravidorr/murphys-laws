@@ -1,0 +1,257 @@
+/*
+  sections.css
+  ------------------------------------------------------------------
+  Purpose: Section-based layouts including Law of the Day widget,
+           section cards, simplified Sod calculator, and submit form sections
+  Extracted from site.css lines 567-722, 724-821
+*/
+
+/* Law of the Day widget (scoped) */
+.section-card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+}
+
+.section-body {
+  padding: 1.25rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.section-header:not(:has(+ .section-subheader)) {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.25rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.section-date {
+  font-size: .875rem;
+  color: var(--muted-fg);
+}
+
+.section-subheader {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding: 0 1rem 1rem;
+}
+
+.section-subtitle {
+  font-size: .875rem;
+  color: var(--muted-fg);
+  margin: 0;
+}
+
+.lod-quote-large {
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
+  font-weight: 700;
+  font-style: normal;
+  border-left: none;
+  padding-left: 0;
+  margin: .25rem 0 .5rem;
+}
+
+.lod-attrib {
+  font-size: 1rem;
+  color: var(--muted-fg);
+  margin: 0 0 .75rem;
+  text-align: center;
+}
+
+/* Footer bar inspired by Stitch */
+.section-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+  border-top: 1px solid var(--border);
+}
+
+.section-footer .left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--muted-fg);
+}
+
+.count-up,
+.count-down {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.count-num {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.count-up .icon { color: #16a34a; }
+.count-down .icon { color: #ef4444; }
+
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-block;
+}
+
+/* Google Fonts Material Icons styling */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  font-size: 1.5rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.lod-icon.ml { margin-left: .25rem; }
+
+/* Button override to Stitch blue for this widget only */
+.section .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  background: var(--btn-primary);
+  border-color: var(--btn-primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgb(17 115 212 / 35%);
+}
+
+.section .btn:hover { filter: saturate(1.1) brightness(1.08); }
+
+.section .btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--btn-primary) 75%, white 25%);
+  outline-offset: 2px;
+}
+
+/* Skeleton while loading */
+.lod-skeleton {
+  height: 7.5rem;
+  border-radius: .75rem;
+  background: linear-gradient(90deg, #eee 25%, #f6f6f6 37%, #eee 63%);
+  background-size: 400% 100%;
+  animation: lod-pulse 1.2s ease infinite;
+  border: 1px solid var(--border);
+}
+
+@keyframes lod-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Simplified Sod's Law Calculator */
+
+.sod-simple-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sod-simple-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.sod-simple-slider-group label {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sod-simple-slider-group input[type="range"] {
+  width: 100%;
+}
+
+.sod-simple-value {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+}
+
+.sod-simple-score-label {
+  font-size: .875rem;
+  color: var(--muted-fg);
+  margin-bottom: .5rem;
+}
+
+.sod-simple-score {
+  border-radius: .5rem;
+  padding: 1rem;
+}
+
+.sod-simple-score-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: .5rem;
+}
+
+.sod-simple-interpretation {
+  font-size: 1rem;
+}
+
+/* Submit Law Section */
+.submit-input-group {
+  margin-bottom: 1rem;
+}
+
+.submit-input-group label {
+  display: block;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: .5rem;
+}
+
+.submit-input-group .input {
+  width: calc(100% - 2.5rem);
+}
+
+.submit-input-group textarea.input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.submit-checkbox-group {
+  margin-bottom: 1rem;
+}
+
+.submit-checkbox-group .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  font-size: .875rem;
+}
+
+.submit-checkbox-group input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}

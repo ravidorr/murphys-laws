@@ -1,0 +1,120 @@
+/* ==========================
+   Utility Classes
+   ========================== */
+
+.container {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.hidden { display: none; }
+.text-center { text-align: center; }
+
+.min-w-0 { min-width: 0; }
+.pt-0 { padding-top: 0; }
+.mt-16 { margin-top: 4rem; }
+.mt-8 { margin-top: 2rem; }
+.mb-12 { margin-bottom: 3rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.gap-2 { gap: .5rem; }
+.gap-4 { gap: 1rem; }
+.grid { display: grid; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1 1 auto; }
+.min-h-screen { min-height: 100vh; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.rounded { border-radius: .5rem; }
+.border { border: 1px solid var(--border); }
+.border-t { border-top: 1px solid var(--border); }
+.p-2 { padding: .5rem; }
+.p-4 { padding: 1rem; }
+.p-8 { padding: 2rem; }
+.pt-8 { padding-top: 2rem; }
+.h-16 { height: 4rem; }
+.cursor-pointer { cursor: pointer; }
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w-6 {
+  width: 1.5rem;
+  display: inline-block;
+}
+
+/* Page wrappers */
+.page { padding: 2rem 1rem; }
+.hero-section { padding-bottom: .5rem; }
+
+.section-grid {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+/* Typography helpers */
+.small {
+  font-size: .875rem;
+  color: var(--muted-fg);
+}
+
+.rank {
+  width: 1.5rem;
+  color: var(--primary);
+  font-weight: 700;
+  display: inline-block;
+}
+
+.gradient-title {
+  font-size: 2.5rem;
+  margin: 0 0 1rem;
+  background: linear-gradient(90deg, var(--primary), #4b5563);
+  color: transparent;
+  background-clip: text;
+}
+
+.accent-text {
+  background: linear-gradient(90deg, #1173d4, #3b82f6);
+  color: transparent;
+  background-clip: text;
+}
+
+.hero-title {
+  margin: 0 0 .75rem;
+  font-size: clamp(2.25rem, 3vw + 1.25rem, 3rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.hero-title .accent {
+  background: linear-gradient(90deg, #1173d4, #3b82f6);
+  color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: var(--muted-fg);
+  margin: 0;
+}
+
+.subhead {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.blockquote {
+  font-size: 1.25rem;
+  font-style: italic;
+  border-left: 4px solid var(--primary);
+  padding-left: 1rem;
+  margin: .5rem 0 1rem;
+}

@@ -1,5 +1,5 @@
 import { defineRoute, navigate, startRouter } from './router.js';
-import { Header } from './ui/header.js';
+import { Header } from './components/header.js';
 import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
@@ -54,16 +54,6 @@ function layout(node) {
 
   const main = document.createElement('main');
   main.className = 'flex-1';
-  // Global site hero shown on all pages
-  const hero = document.createElement('section');
-  hero.className = 'container page hero-section';
-  hero.innerHTML = `
-    <div class="text-center mb-4">
-      <h1 class="hero-title"><span class="accent">Murphy's</span> Law</h1>
-      <p class="hero-subtitle mb-4">If something can go wrong, it will. And it will be featured here.</p>
-    </div>
-  `;
-  main.appendChild(hero);
   main.appendChild(node);
 
   const footer = document.createElement('footer');
