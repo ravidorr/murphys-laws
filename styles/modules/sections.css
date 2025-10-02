@@ -73,7 +73,7 @@
   font-size: 1rem;
   color: var(--muted-fg);
   margin: 0 0 .75rem;
-  text-align: center;
+  text-align: left;
 }
 
 /* Footer bar inspired by Stitch */
@@ -255,3 +255,72 @@
   height: 1.25rem;
   cursor: pointer;
 }
+
+/* Mini Law Cards (for Top Voted, Trending, Recently Added) */
+.card .card-title {
+  padding: 0 1rem 0.75rem;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.card .card-text {
+  margin: 0;
+}
+
+.law-card-mini {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.law-card-mini:last-child {
+  border-bottom: none;
+}
+
+.law-card-mini:hover {
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+}
+
+.law-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.law-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fg);
+}
+
+.law-card-text {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+.law-card-attrib {
+  font-size: 0.75rem;
+  color: var(--muted-fg);
+  margin: 0 0 0.5rem;
+}
+
+.law-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.75rem;
+}
+
+.icon-sm {
+  width: 1rem;
+  height: 1rem;
+  font-size: 1rem;
+}
+
+.count-up .icon-sm { color: #16a34a; }
+.count-down .icon-sm { color: #ef4444; }

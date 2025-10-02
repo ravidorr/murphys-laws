@@ -15,6 +15,9 @@
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
   transition: background-color .15s ease, border-color .15s ease, filter .15s ease, box-shadow .15s ease;
 }
 
@@ -152,7 +155,7 @@ button:disabled {
 }
 
 .card .card-content {
-  padding: 1.25rem;
+  padding: 1.25rem 0;
 }
 
 .card-title {
