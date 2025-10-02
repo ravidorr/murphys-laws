@@ -20,7 +20,7 @@ export default defineConfig({
     alias: {
       '@src': path.resolve(__dirname, 'src'),
       '@views': path.resolve(__dirname, 'src/views'),
-      '@ui': path.resolve(__dirname, 'src/ui'),
+      '@components': path.resolve(__dirname, 'src/components'),
       '@data': path.resolve(__dirname, 'src'),
     }
   },

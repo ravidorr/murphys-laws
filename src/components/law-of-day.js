@@ -1,13 +1,13 @@
-// Law of the Day widget component (scaffold)
-// No inline CSS; scoped classes live in styles/site.css under .lod-*
+// Law of the Day widget component
 
 export function LawOfTheDay({ law, onNavigate }) {
   const el = document.createElement('section');
-  el.className = 'lod lod-card mb-12';
+  el.className = 'section section-card mb-12';
+  el.setAttribute('data-law-id', law?.id || '');
 
   if (!law) {
     el.innerHTML = `
-      <div class="lod-skeleton" role="status" aria-label="Loading Law of the Day"></div>
+      <div class="skeleton" role="status" aria-label="Loading Law of the Day"></div>
     `;
     return el;
   }
@@ -20,30 +20,28 @@ export function LawOfTheDay({ law, onNavigate }) {
   const down = Number.isFinite(law.down) ? law.down : Math.max(-score, 0);
 
   el.innerHTML = `
-    <div class="lod-body" data-law-id="${law.id}">
-      <div class="lod-header">
-        <h3 class="lod-title">⭐ Law of the Day</h3>
-        <time class="lod-date" datetime="${iso}">${dateText}</time>
+    <div class="section-header">
+      <h3 class="section-title"><span class="accent-text">Murphy's</span> Law of the Day</h3>
+      <time class="section-date" datetime="${iso}">${dateText}</time>
       </div>
-
+    <div class="section-body" data-law-id="${law.id}">
       <blockquote class="lod-quote-large">“${law.text}”</blockquote>
       <p class="lod-attrib">${law.author ? `— ${law.author}` : ''}</p>
     </div>
-
-    <div class="lod-footer">
+    <div class="section-footer">
       <div class="left">
-        <span class="lod-count lod-up" aria-label="upvotes">
-          <span class="material-symbols-outlined lod-icon">thumb_up</span>
-          <span class="lod-num">${up}</span>
+        <span class="count-up" aria-label="upvotes">
+          <span class="material-symbols-outlined icon">thumb_up</span>
+          <span class="count-num">${up}</span>
         </span>
-        <span class="lod-count lod-down" aria-label="downvotes">
-          <span class="material-symbols-outlined lod-icon">thumb_down</span>
-          <span class="lod-num">${down}</span>
+        <span class="count-down" aria-label="downvotes">
+          <span class="material-symbols-outlined icon">thumb_down</span>
+          <span class="count-num">${down}</span>
         </span>
       </div>
       <button class="btn" type="button" data-nav="law-history" aria-label="View history of Law of the Day">
         View History
-        <span class="material-symbols-outlined lod-icon ml">arrow_forward</span>
+        <span class="material-symbols-outlined icon ml">arrow_forward</span>
       </button>
     </div>
   `;
