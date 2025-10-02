@@ -1,6 +1,24 @@
 // Law of the Day widget component
 
-export function LawOfTheDay({ law, onNavigate }) {
+function renderAttribution(att) {
+  if (!att) return '';
+  const { name, contact_type, contact_value, note } = att;
+  let who = name || '';
+  if (contact_type === 'email' && contact_value) {
+    who = `<a href="mailto:${contact_value}">${name}</a>`;
+  } else if (contact_type === 'url' && contact_value) {
+    who = `<a href="${contact_value}">${name}</a>`;
+  }
+  return `${who}${note ? ` — ${note}` : ''}`;
+}
+
+function firstAttributionLine(law) {
+  const a = Array.isArray(law.attributions) ? law.attributions[0] : null;
+  if (!a) return law.author ? `— ${law.author}` : '';
+  return `Sent by ${renderAttribution(a)}`;
+}
+
+export function LawOfTheDay({ law, onNavigate, showButton = true }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
   el.setAttribute('data-law-id', law?.id || '');
@@ -18,6 +36,7 @@ export function LawOfTheDay({ law, onNavigate }) {
   const score = Number.isFinite(law.score) ? law.score : 0;
   const up = Number.isFinite(law.up) ? law.up : Math.max(score, 0);
   const down = Number.isFinite(law.down) ? law.down : Math.max(-score, 0);
+  const attribution = firstAttributionLine(law);
 
   el.innerHTML = `
     <div class="section-header">
@@ -25,8 +44,8 @@ export function LawOfTheDay({ law, onNavigate }) {
       <time class="section-date" datetime="${iso}">${dateText}</time>
       </div>
     <div class="section-body" data-law-id="${law.id}">
-      <blockquote class="lod-quote-large">“${law.text}”</blockquote>
-      <p class="lod-attrib">${law.author ? `— ${law.author}` : ''}</p>
+      <blockquote class="lod-quote-large">"${law.text}"</blockquote>
+      <p class="lod-attrib">${attribution}</p>
     </div>
     <div class="section-footer">
       <div class="left">
@@ -39,10 +58,12 @@ export function LawOfTheDay({ law, onNavigate }) {
           <span class="count-num">${down}</span>
         </span>
       </div>
-      <button class="btn" type="button" data-nav="law-history" aria-label="View history of Law of the Day">
-        View History
+      ${showButton ? `
+      <button class="btn" type="button" data-nav="browse" aria-label="View more laws">
+        View More Laws
         <span class="material-symbols-outlined icon ml">arrow_forward</span>
       </button>
+      ` : ''}
     </div>
   `;
 

@@ -16,6 +16,8 @@ export function currentRoute() {
   return m ? { name: m[1], param: m[2] || null } : { name: 'home', param: null };
 }
 
+let renderFn = null;
+
 export function startRouter(rootEl) {
   function render() {
     const { name, param } = currentRoute();
@@ -24,6 +26,14 @@ export function startRouter(rootEl) {
     rootEl.appendChild(fn({ param }));
     window.scrollTo(0, 0);
   }
+  renderFn = render;
   window.addEventListener('hashchange', render);
   render();
+}
+
+// Force a re-render of the current route
+export function forceRender() {
+  if (renderFn) {
+    renderFn();
+  }
 }

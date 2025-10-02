@@ -1,4 +1,4 @@
-import { defineRoute, navigate, startRouter } from './router.js';
+import { defineRoute, navigate, startRouter, forceRender } from './router.js';
 import { Header } from './components/header.js';
 import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
@@ -20,7 +20,13 @@ function onNavigate(page, lawId) {
 }
 function onSearch(q) {
   state.searchQuery = q;
-  navigate('browse');
+  const current = location.hash.replace('#/', '').split(':')[0] || 'home';
+  if (current === 'browse') {
+    // Already on browse, just force a re-render with new search query
+    forceRender();
+  } else {
+    navigate('browse');
+  }
 }
 function onAuth(username) {
   state.isLoggedIn = true;
