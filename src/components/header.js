@@ -45,20 +45,29 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
   const navDropdown = el.querySelector('#nav-dropdown');
 
   // Toggle dropdown
-  navToggle?.addEventListener('click', (e) => {
+  const handleToggleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     const isOpen = navDropdown?.classList.toggle('open');
     navToggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
+  };
+
+  navToggle?.addEventListener('click', handleToggleClick);
 
   // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
+  const handleDocumentClick = (e) => {
     if (!el.contains(e.target)) {
       navDropdown?.classList.remove('open');
       navToggle?.setAttribute('aria-expanded', 'false');
     }
-  });
+  };
+
+  document.addEventListener('click', handleDocumentClick);
+
+  // Store cleanup function on the element
+  el.cleanup = () => {
+    document.removeEventListener('click', handleDocumentClick);
+  };
 
   // Close dropdown when clicking a nav item
   navDropdown?.addEventListener('click', () => {

@@ -3,6 +3,9 @@
 import { LawOfTheDay } from '@components/law-of-day.js';
 import { SodCalculatorSimple } from '@components/sod-calculator.js';
 import { SubmitLawSection } from '@components/submit-law.js';
+import { fetchLaws } from '../utils/api.js';
+import { createErrorState } from '../utils/dom.js';
+import { LAWS_PER_PAGE } from '../utils/constants.js';
 
 function renderHome(el, laws = [], onNavigate) {
   const data = Array.isArray(laws) ? laws : [];
@@ -29,13 +32,13 @@ function renderHome(el, laws = [], onNavigate) {
 export function Home({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page pt-0';
+  el.setAttribute('role', 'main');
+  el.setAttribute('aria-live', 'polite');
 
   el.innerHTML = `<p class="small">Loading laws...</p>`;
 
   function fetchAndRender() {
-    const qs = new URLSearchParams({ limit: String(25), offset: String(0) });
-
-    fetchLawList(qs)
+    fetchLaws({ limit: LAWS_PER_PAGE, offset: 0 })
       .then(json => {
         const total = json && typeof json.total === 'number' ? json.total : 0;
         if (total === 0) {
@@ -51,12 +54,9 @@ export function Home({ onNavigate }) {
       })
       .catch(err => {
         console.error('API fetch failed:', err);
-        el.innerHTML = `
-          <div class="container page">
-            <h2 class="mb-4">Failed to load laws</h2>
-            <p class="small">Please try again later.</p>
-          </div>
-        `;
+        el.innerHTML = '';
+        const errorEl = createErrorState('Failed to load laws. Please try again later.');
+        el.appendChild(errorEl);
       });
   }
 
@@ -77,22 +77,4 @@ export function Home({ onNavigate }) {
   });
 
   return el;
-}
-
-async function fetchLawList(qs) {
-  const primaryUrl = `/api/laws?${qs.toString()}`;
-  try {
-    const r = await fetch(primaryUrl, { headers: { 'Accept': 'application/json' } });
-    if (!r.ok) throw new Error(`Primary fetch not ok: ${r.status}`);
-    const ct = r.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error('Primary returned non-JSON');
-    return await r.json();
-  } catch (err) {
-    // Fallback to direct API host (CORS enabled in server)
-    console.error('API fetch failed, falling back to mock data:', err);
-    const fallbackUrl = `http://127.0.0.1:8787/api/laws?${qs.toString()}`;
-    const r2 = await fetch(fallbackUrl, { headers: { 'Accept': 'application/json' } });
-    if (!r2.ok) throw new Error(`Fallback fetch not ok: ${r2.status}`);
-    return await r2.json();
-  }
 }

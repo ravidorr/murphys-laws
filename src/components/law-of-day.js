@@ -1,22 +1,7 @@
 // Law of the Day widget component
 
-function renderAttribution(att) {
-  if (!att) return '';
-  const { name, contact_type, contact_value, note } = att;
-  let who = name || '';
-  if (contact_type === 'email' && contact_value) {
-    who = `<a href="mailto:${contact_value}">${name}</a>`;
-  } else if (contact_type === 'url' && contact_value) {
-    who = `<a href="${contact_value}">${name}</a>`;
-  }
-  return `${who}${note ? ` — ${note}` : ''}`;
-}
-
-function firstAttributionLine(law) {
-  const a = Array.isArray(law.attributions) ? law.attributions[0] : null;
-  if (!a) return law.author ? `— ${law.author}` : '';
-  return `Sent by ${renderAttribution(a)}`;
-}
+import { firstAttributionLine } from '../utils/attribution.js';
+import { escapeHtml } from '../utils/sanitize.js';
 
 export function LawOfTheDay({ law, onNavigate, showButton = true }) {
   const el = document.createElement('section');
@@ -38,13 +23,16 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
   const down = Number.isFinite(law.down) ? law.down : Math.max(-score, 0);
   const attribution = firstAttributionLine(law);
 
+  // Safely escape the law text
+  const safeText = escapeHtml(law.text);
+
   el.innerHTML = `
     <div class="section-header">
       <h3 class="section-title"><span class="accent-text">Murphy's</span> Law of the Day</h3>
       <time class="section-date" datetime="${iso}">${dateText}</time>
       </div>
-    <div class="section-body" data-law-id="${law.id}">
-      <blockquote class="lod-quote-large">"${law.text}"</blockquote>
+    <div class="section-body" data-law-id="${escapeHtml(String(law.id))}">
+      <blockquote class="lod-quote-large">"${safeText}"</blockquote>
       <p class="lod-attrib">${attribution}</p>
     </div>
     <div class="section-footer">
