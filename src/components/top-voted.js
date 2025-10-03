@@ -11,7 +11,7 @@ export function TopVoted() {
 
   el.innerHTML = `
     <div class="card-content">
-      <h4 class="card-title">Top Voted</h4>
+      <h4 class="card-title"><span class="accent-text">Top</span> Voted</h4>
       <div class="loading-placeholder" role="status" aria-live="polite">
         <p class="small">Loading...</p>
       </div>
@@ -27,7 +27,7 @@ export function TopVoted() {
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `
-          <h4 class="card-title">Top Voted</h4>
+          <h4 class="card-title"><span class="accent-text">Top</span> Voted</h4>
           <div class="card-text">
             ${topVoted.map((law, i) => {
     const up = Number.isFinite(law.up) ? law.up : 0;
@@ -68,7 +68,7 @@ export function TopVoted() {
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `
-          <h4 class="card-title">Top Voted</h4>
+          <h4 class="card-title"><span class="accent-text">Top</span> Voted</h4>
         `;
         const errorEl = createErrorState('Failed to load top voted laws.');
         contentDiv.appendChild(errorEl);

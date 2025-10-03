@@ -11,7 +11,7 @@ export function Trending() {
 
   el.innerHTML = `
     <div class="card-content">
-      <h4 class="card-title">Trending Now</h4>
+      <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
       <div class="loading-placeholder" role="status" aria-live="polite">
         <p class="small">Loading...</p>
       </div>
@@ -26,7 +26,7 @@ export function Trending() {
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `
-          <h4 class="card-title">Trending Now</h4>
+          <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
           <div class="card-text">
             ${trending.map((law) => {
     const up = Number.isFinite(law.up) ? law.up : 0;
@@ -66,7 +66,7 @@ export function Trending() {
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `
-          <h4 class="card-title">Trending Now</h4>
+          <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
         `;
         const errorEl = createErrorState('Failed to load trending laws.');
         contentDiv.appendChild(errorEl);
