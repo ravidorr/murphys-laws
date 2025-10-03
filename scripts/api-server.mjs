@@ -46,7 +46,7 @@ function sendJson(res, status, obj) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   });
   res.end(body);
@@ -70,7 +70,9 @@ SELECT
       'contact_value', a.contact_value,
       'note', a.note
     )) FROM attributions a WHERE a.law_id = l.id
-  ), '[]') AS attributions
+  ), '[]') AS attributions,
+  COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes,
+  COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes
 FROM laws l
 WHERE l.status = 'published'`;
 
@@ -95,7 +97,9 @@ SELECT
       'contact_value', a.contact_value,
       'note', a.note
     )) FROM attributions a WHERE a.law_id = l.id
-  ), '[]') AS attributions
+  ), '[]') AS attributions,
+  COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes,
+  COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes
 FROM laws l
 WHERE l.id = ? AND l.status = 'published'
 LIMIT 1;
@@ -110,6 +114,21 @@ RETURNING id;
 const insertAttributionSql = `
 INSERT INTO attributions (law_id, name, contact_type, contact_value)
 VALUES (?, ?, ?, ?);
+`;
+
+const insertVoteSql = `
+INSERT INTO votes (law_id, vote_type, voter_identifier)
+VALUES (?, ?, ?)
+ON CONFLICT(law_id, voter_identifier)
+DO UPDATE SET vote_type = excluded.vote_type, created_at = CURRENT_TIMESTAMP;
+`;
+
+const deleteVoteSql = `
+DELETE FROM votes WHERE law_id = ? AND voter_identifier = ?;
+`;
+
+const getUserVoteSql = `
+SELECT vote_type FROM votes WHERE law_id = ? AND voter_identifier = ? LIMIT 1;
 `;
 
 // Helper to read POST body
@@ -129,11 +148,26 @@ function readBody(req) {
   });
 }
 
+// Helper to get voter identifier (IP address for now, can be extended with session/user ID)
+function getVoterIdentifier(req) {
+  // Try to get real IP from proxy headers first
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) {
+    return realIp;
+  }
+  // Fall back to socket address
+  return req.socket.remoteAddress || 'unknown';
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     });
     res.end();
@@ -216,6 +250,67 @@ const server = http.createServer(async (req, res) => {
         text,
         status: 'in_review',
         message: 'Law submitted successfully and is pending review'
+      });
+    }
+
+    // POST /api/laws/:id/vote - Vote on a law
+    const voteMatch = /^\/api\/laws\/(\d+)\/vote$/.exec(pathname);
+    if (req.method === 'POST' && voteMatch) {
+      const lawId = Number(voteMatch[1]);
+      const body = await readBody(req);
+      const voteType = body.vote_type;
+
+      // Validate vote_type
+      if (!voteType || !['up', 'down'].includes(voteType)) {
+        return badRequest(res, 'vote_type must be "up" or "down"');
+      }
+
+      // Check if law exists and is published
+      const lawRows = await runSqlJson(oneSql, [lawId]);
+      if (!lawRows || lawRows.length === 0) {
+        return notFound(res);
+      }
+
+      const voterIdentifier = getVoterIdentifier(req);
+
+      // Insert or update vote (ON CONFLICT will handle duplicate votes)
+      await runSqlJson(insertVoteSql, [lawId, voteType, voterIdentifier]);
+
+      // Get updated vote counts
+      const updatedLaw = await runSqlJson(oneSql, [lawId]);
+      const law = updatedLaw[0];
+
+      return sendJson(res, 200, {
+        law_id: lawId,
+        vote_type: voteType,
+        upvotes: law.upvotes,
+        downvotes: law.downvotes
+      });
+    }
+
+    // DELETE /api/laws/:id/vote - Remove vote on a law
+    if (req.method === 'DELETE' && voteMatch) {
+      const lawId = Number(voteMatch[1]);
+
+      // Check if law exists and is published
+      const lawRows = await runSqlJson(oneSql, [lawId]);
+      if (!lawRows || lawRows.length === 0) {
+        return notFound(res);
+      }
+
+      const voterIdentifier = getVoterIdentifier(req);
+
+      // Delete the vote
+      await runSqlJson(deleteVoteSql, [lawId, voterIdentifier]);
+
+      // Get updated vote counts
+      const updatedLaw = await runSqlJson(oneSql, [lawId]);
+      const law = updatedLaw[0];
+
+      return sendJson(res, 200, {
+        law_id: lawId,
+        upvotes: law.upvotes,
+        downvotes: law.downvotes
       });
     }
 

@@ -109,6 +109,42 @@
 .count-up .icon { color: #16a34a; }
 .count-down .icon { color: #ef4444; }
 
+/* Vote buttons */
+.vote-btn {
+  background: none;
+  border: none;
+  padding: .25rem .5rem;
+  cursor: pointer;
+  border-radius: .375rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.vote-btn:hover {
+  background: color-mix(in oklab, var(--bg) 90%, white 10%);
+}
+
+.vote-btn:active {
+  transform: scale(0.95);
+}
+
+.vote-btn:focus-visible {
+  outline: 2px solid var(--btn-primary);
+  outline-offset: 2px;
+}
+
+/* Voted state - filled icons */
+.vote-btn.voted .icon {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.vote-btn.voted.count-up {
+  background: color-mix(in oklab, #16a34a 15%, transparent 85%);
+}
+
+.vote-btn.voted.count-down {
+  background: color-mix(in oklab, #ef4444 15%, transparent 85%);
+}
+
 .icon {
   width: 1.5rem;
   height: 1.5rem;
