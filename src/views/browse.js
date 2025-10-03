@@ -112,7 +112,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     el.innerHTML = `
       <div class="card">
         <div class="card-content">
-          <h2 class="card-title">Browse All Laws</h2>
+          <h2 class="card-title"><span class="accent-text">Browse</span> All Laws</h2>
           ${searchInfo}
           <div class="card-text" role="region" aria-live="polite" aria-busy="true">
             <div style="padding: 1rem;">
