@@ -46,15 +46,16 @@ function sendJson(res, status, obj) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   });
   res.end(body);
 }
 
 function notFound(res) { sendJson(res, 404, { error: 'Not Found' }); }
-// function badRequest(res, msg) { sendJson(res, 400, { error: msg || 'Bad Request' }); }
+function badRequest(res, msg) { sendJson(res, 400, { error: msg || 'Bad Request' }); }
 
+// Only return published laws
 const baseSelect = `
 SELECT
   l.id,
@@ -70,14 +71,15 @@ SELECT
       'note', a.note
     )) FROM attributions a WHERE a.law_id = l.id
   ), '[]') AS attributions
-FROM laws l`;
+FROM laws l
+WHERE l.status = 'published'`;
 
 function buildListSql(hasQ) {
-  const where = hasQ ? "\nWHERE (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)" : '';
+  const where = hasQ ? " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)" : '';
   return `${baseSelect}${where}\nORDER BY l.id\nLIMIT ? OFFSET ?;`;
 }
 
-const countSql = (hasQ) => `SELECT COUNT(1) AS total FROM laws l${hasQ ? "\nWHERE (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)" : ''};`;
+const countSql = (hasQ) => `SELECT COUNT(1) AS total FROM laws l WHERE l.status = 'published'${hasQ ? " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)" : ''};`;
 
 const oneSql = `
 SELECT
@@ -95,15 +97,43 @@ SELECT
     )) FROM attributions a WHERE a.law_id = l.id
   ), '[]') AS attributions
 FROM laws l
-WHERE l.id = ?
+WHERE l.id = ? AND l.status = 'published'
 LIMIT 1;
 `;
+
+const insertLawSql = `
+INSERT INTO laws (title, text, status, first_seen_file_path)
+VALUES (?, ?, 'in_review', 'web-submission')
+RETURNING id;
+`;
+
+const insertAttributionSql = `
+INSERT INTO attributions (law_id, name, contact_type, contact_value)
+VALUES (?, ?, ?, ?);
+`;
+
+// Helper to read POST body
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => {
+      try {
+        const body = Buffer.concat(chunks).toString('utf8');
+        resolve(body ? JSON.parse(body) : {});
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     });
     res.end();
@@ -125,11 +155,11 @@ const server = http.createServer(async (req, res) => {
       const hasQ = q.length > 0;
       const like = `%${q}%`;
 
-      // total count
+      // total count (only published)
       const countParams = hasQ ? [like, like] : [];
       const [{ total } = { total: 0 }] = await runSqlJson(countSql(hasQ), countParams);
 
-      // page rows
+      // page rows (only published)
       const listParams = hasQ ? [like, like, limit, offset] : [limit, offset];
       const rows = await runSqlJson(buildListSql(hasQ), listParams);
 
@@ -138,6 +168,55 @@ const server = http.createServer(async (req, res) => {
         attributions: safeParseJsonArray(r.attributions),
       }));
       return sendJson(res, 200, { data, limit, offset, total, q });
+    }
+
+    // POST /api/laws - Submit a new law for review
+    if (req.method === 'POST' && pathname === '/api/laws') {
+      const body = await readBody(req);
+
+      // Validate required fields
+      if (!body.text || typeof body.text !== 'string' || !body.text.trim()) {
+        return badRequest(res, 'Law text is required');
+      }
+
+      const text = body.text.trim();
+      const title = body.title && typeof body.title === 'string' ? body.title.trim() : null;
+      const author = body.author && typeof body.author === 'string' ? body.author.trim() : null;
+      const email = body.email && typeof body.email === 'string' ? body.email.trim() : null;
+
+      // Validate text length
+      if (text.length < 10) {
+        return badRequest(res, 'Law text must be at least 10 characters');
+      }
+
+      if (text.length > 1000) {
+        return badRequest(res, 'Law text must be less than 1000 characters');
+      }
+
+      // Insert law with status 'in_review'
+      const lawResult = await runSqlJson(insertLawSql, [title, text]);
+
+      if (!lawResult || lawResult.length === 0) {
+        throw new Error('Failed to insert law');
+      }
+
+      const lawId = lawResult[0].id;
+
+      // Insert attribution if author or email provided
+      if (author || email) {
+        const contactType = email ? 'email' : 'text';
+        const contactValue = email || null;
+        const name = author || 'Anonymous';
+        await runSqlJson(insertAttributionSql, [lawId, name, contactType, contactValue]);
+      }
+
+      return sendJson(res, 201, {
+        id: lawId,
+        title,
+        text,
+        status: 'in_review',
+        message: 'Law submitted successfully and is pending review'
+      });
     }
 
     // Stories endpoints are postponed for a later milestone. Intentionally omitted.
@@ -156,6 +235,7 @@ const server = http.createServer(async (req, res) => {
 
     return notFound(res);
   } catch (err) {
+    console.error('API Error:', err);
     return sendJson(res, 500, { error: String(err && err.message || err) });
   }
 });
@@ -172,4 +252,3 @@ function safeParseJsonArray(s) {
 server.listen(PORT, HOST, () => {
   console.log(`API listening on http://${HOST}:${PORT}`);
 });
-

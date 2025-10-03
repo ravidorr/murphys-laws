@@ -4,7 +4,9 @@
       "Bash(npm run dev:*)",
       "Bash(npm run api:*)",
       "Bash(claude mcp add chrome-devtools:*)",
-      "Bash(claude mcp add:*)"
+      "Bash(claude mcp add:*)",
+      "Bash(chmod:*)",
+      "Bash(npm run review:*)"
     ],
     "deny": [],
     "ask": []
