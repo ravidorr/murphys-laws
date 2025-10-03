@@ -24,11 +24,15 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
             </a>
             <a href="#/browse" class="nav-dropdown-item" data-nav="browse">
               <span class="material-symbols-outlined icon">list</span>
-              Browse All Laws
+              All of Murphy's Laws
             </a>
             <a href="#/calculator" class="nav-dropdown-item" data-nav="calculator">
               <span class="material-symbols-outlined icon">calculate</span>
               Sod's Law Calculator
+            </a>
+            <a href="#/submit" class="nav-dropdown-item" data-nav="submit">
+              <span class="material-symbols-outlined icon">send</span>
+              Submit your Murphy's Law
             </a>
           </nav>
         </div>

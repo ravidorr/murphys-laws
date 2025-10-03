@@ -3,7 +3,7 @@ import { Header } from './components/header.js';
 import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
-import { SubmitLaw } from './views/submit-law.js';
+import { SubmitLawSection } from './components/submit-law.js';
 import { Auth } from './views/auth.js';
 import { Calculator } from './views/calculator.js';
 
@@ -115,7 +115,13 @@ defineRoute('browse', () => layout(Browse({ isLoggedIn: state.isLoggedIn, search
 
 defineRoute('law', ({ param }) => layout(LawDetail({ lawId: param, isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate, onVote })));
 
-defineRoute('submit', () => layout(SubmitLaw({ isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate })));
+defineRoute('submit', () => {
+  const container = document.createElement('div');
+  container.className = 'container page pt-0';
+  const submitSection = SubmitLawSection({ onNavigate });
+  container.appendChild(submitSection);
+  return layout(container);
+});
 
 defineRoute('login', () => layout(Auth({ type: 'login', onNavigate, onAuth })));
 

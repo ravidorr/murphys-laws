@@ -22,7 +22,8 @@
     "db:init": "sqlite3 murphys.db < db/schema.sql",
     "db:import": "node scripts/build-sqlite.mjs | sqlite3 murphys.db",
     "db:rebuild": "sqlite3 murphys.db < db/schema.sql && node scripts/build-sqlite.mjs | sqlite3 murphys.db",
-    "api": "node scripts/api-server.mjs"
+    "api": "node scripts/api-server.mjs",
+    "review": "node scripts/review-laws.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --fix",
