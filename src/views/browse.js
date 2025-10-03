@@ -1,71 +1,18 @@
 // Browse view - displays all laws with pagination and search
 
-function highlightSearchTerm(text, query) {
-  if (!query || !query.trim()) return text;
-
-  const regex = new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  return text.replace(regex, '<mark>$1</mark>');
-}
-
-function renderAttribution(att) {
-  if (!att) return '';
-  const { name, contact_type, contact_value, note } = att;
-  let who = name || '';
-  if (contact_type === 'email' && contact_value) {
-    who = `<a href="mailto:${contact_value}">${name}</a>`;
-  } else if (contact_type === 'url' && contact_value) {
-    who = `<a href="${contact_value}">${name}</a>`;
-  }
-  return `${who}${note ? ` — ${note}` : ''}`;
-}
-
-function firstAttributionLine(law) {
-  const a = Array.isArray(law.attributions) ? law.attributions[0] : null;
-  if (!a) return law.author ? `— ${law.author}` : '';
-  return `Sent by ${renderAttribution(a)}`;
-}
+import { fetchLaws } from '../utils/api.js';
+import { firstAttributionLine } from '../utils/attribution.js';
+import { highlightSearchTerm, escapeHtml } from '../utils/sanitize.js';
+import { LAWS_PER_PAGE } from '../utils/constants.js';
+import { createLoadingState, createErrorState } from '../utils/dom.js';
 
 export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   const el = document.createElement('div');
   el.className = 'container page';
 
-  const LAWS_PER_PAGE = 25;
   let currentPage = 1;
   let totalLaws = 0;
   let laws = [];
-
-  // Fetch laws with pagination and search
-  async function fetchLaws(page = 1) {
-    const offset = (page - 1) * LAWS_PER_PAGE;
-    const params = {
-      limit: String(LAWS_PER_PAGE),
-      offset: String(offset),
-      sort: 'score',
-      order: 'desc'
-    };
-
-    // Add search query if provided
-    if (searchQuery && searchQuery.trim()) {
-      params.q = searchQuery.trim();
-    }
-
-    const qs = new URLSearchParams(params);
-    const primaryUrl = `/api/laws?${qs.toString()}`;
-
-    try {
-      const r = await fetch(primaryUrl, { headers: { 'Accept': 'application/json' } });
-      if (!r.ok) throw new Error(`Primary fetch not ok: ${r.status}`);
-      const ct = r.headers.get('content-type') || '';
-      if (!ct.includes('application/json')) throw new Error('Primary returned non-JSON');
-      return await r.json();
-    } catch (err) {
-      console.error('API fetch failed, falling back to direct API:', err);
-      const fallbackUrl = `http://127.0.0.1:8787/api/laws?${qs.toString()}`;
-      const r2 = await fetch(fallbackUrl, { headers: { 'Accept': 'application/json' } });
-      if (!r2.ok) throw new Error(`Fallback fetch not ok: ${r2.status}`);
-      return await r2.json();
-    }
-  }
 
   // Render pagination controls
   function renderPagination(currentPage, totalLaws, perPage) {
@@ -130,13 +77,13 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
       const down = Number.isFinite(law.down) ? law.down : 0;
       const attribution = firstAttributionLine(law);
 
-      // Apply highlighting to title and text
+      // Apply highlighting and escaping to title and text
       const title = law.title ? highlightSearchTerm(law.title, query) : '';
       const text = highlightSearchTerm(law.text, query);
       const titleText = title ? `<strong>${title}:</strong> ${text}` : text;
 
       return `
-        <div class="law-card-mini" data-law-id="${law.id}">
+        <div class="law-card-mini" data-law-id="${escapeHtml(String(law.id))}">
           <p class="law-card-text">
             ${titleText}
           </p>
@@ -158,13 +105,17 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
 
   // Render the page
   function render() {
+    const searchInfo = searchQuery
+      ? `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${escapeHtml(searchQuery)}</strong></p>`
+      : '';
+
     el.innerHTML = `
       <div class="card">
         <div class="card-content">
           <h2 class="card-title">Browse All Laws</h2>
-          ${searchQuery ? `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${searchQuery}</strong></p>` : ''}
-          <div class="card-text">
-            <div class="loading-placeholder" style="padding: 1rem;">
+          ${searchInfo}
+          <div class="card-text" role="region" aria-live="polite" aria-busy="true">
+            <div style="padding: 1rem;">
               <p class="small">Loading...</p>
             </div>
           </div>
@@ -177,6 +128,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   function updateDisplay() {
     const cardText = el.querySelector('.card-text');
     if (cardText) {
+      cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         ${renderLaws(laws, searchQuery)}
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
@@ -191,18 +143,35 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     // Show loading state
     const cardText = el.querySelector('.card-text');
     if (cardText) {
+      cardText.setAttribute('aria-busy', 'true');
       cardText.innerHTML = '<div style="padding: 1rem;"><p class="small">Loading...</p></div>';
+
+      // Disable pagination buttons during load
+      el.querySelectorAll('.pagination button').forEach(btn => {
+        btn.setAttribute('disabled', 'true');
+      });
     }
 
     try {
-      const data = await fetchLaws(page);
+      const offset = (page - 1) * LAWS_PER_PAGE;
+      const data = await fetchLaws({
+        limit: LAWS_PER_PAGE,
+        offset,
+        sort: 'score',
+        order: 'desc',
+        q: searchQuery
+      });
+
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       updateDisplay();
     } catch (err) {
       console.error('Failed to fetch laws:', err);
       if (cardText) {
-        cardText.innerHTML = '<div style="padding: 1rem;"><p class="small">Failed to load laws.</p></div>';
+        cardText.setAttribute('aria-busy', 'false');
+        const errorEl = createErrorState('Failed to load laws. Please try again.');
+        cardText.innerHTML = '';
+        cardText.appendChild(errorEl);
       }
     }
   }
@@ -213,7 +182,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     if (!(t instanceof HTMLElement)) return;
 
     // Handle page navigation
-    if (t.dataset.page) {
+    if (t.dataset.page && !t.hasAttribute('disabled')) {
       const page = parseInt(t.dataset.page, 10);
       if (!isNaN(page) && page > 0) {
         loadPage(page);
@@ -224,7 +193,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     // Handle law card clicks
     const lawCard = t.closest('.law-card-mini');
     if (lawCard && lawCard.dataset.lawId) {
-      onNavigate('law', { lawId: lawCard.dataset.lawId });
+      onNavigate('law', lawCard.dataset.lawId);
       return;
     }
 

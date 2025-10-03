@@ -88,6 +88,9 @@ function layout(node) {
   // Ask MathJax (if present) to typeset this freshly rendered view.
   // We wait until MathJax is loaded and the node is attached to the DOM.
   const typesetWhenReady = (element) => {
+    const MATHJAX_POLL_INTERVAL = 50;
+    const MATHJAX_DEFER_TIMEOUT = 0;
+
     const attempt = () => {
       const mj = window.MathJax;
       if (mj && typeof mj.typesetPromise === 'function') {
@@ -95,10 +98,10 @@ function layout(node) {
         return;
       }
       // Try again shortly in case MathJax script (loaded async) isn't ready yet
-      setTimeout(attempt, 50);
+      setTimeout(attempt, MATHJAX_POLL_INTERVAL);
     };
     // Defer so the router can attach the element to the DOM first
-    setTimeout(attempt, 0);
+    setTimeout(attempt, MATHJAX_DEFER_TIMEOUT);
   };
 
   typesetWhenReady(wrap);
