@@ -61,17 +61,13 @@
     border-top-color: var(--border);
   }
 
-  /* Buttons */
+  /* Buttons - only dark mode specific overrides */
   .btn, button {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
     box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
   }
 
   .btn.outline, button.outline {
     background: color-mix(in oklab, var(--bg) 86%, white 14%);
-    color: var(--fg);
     border-color: rgb(255 255 255 / 22%);
   }
 
@@ -79,17 +75,6 @@
   .btn.outline:focus-visible, button.outline:focus-visible {
     background: color-mix(in oklab, var(--bg) 80%, white 20%);
     border-color: rgb(255 255 255 / 32%);
-  }
-
-  .btn:focus-visible, button:focus-visible,
-  a.btn:focus-visible {
-    outline: 2px solid color-mix(in oklab, var(--primary) 75%, white 25%);
-    outline-offset: 2px;
-  }
-
-  .btn:hover, button:hover {
-    background: color-mix(in oklab, var(--primary) 88%, white 12%);
-    border-color: color-mix(in oklab, var(--primary) 88%, white 12%);
   }
 
   /* Inputs */
@@ -101,18 +86,7 @@
     border-color: var(--border);
   }
 
-  /* Voting buttons */
-  button[data-vote='up'] {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
-  }
-
-  button[data-vote='up']:hover {
-    background: var(--primary);
-    border-color: var(--primary);
-    filter: saturate(2) brightness(2);
-  }
+  /* Voting buttons - no overrides needed, base styles work for dark mode */
 
   button[data-vote='down']:hover {
     filter: saturate(1.2) brightness(1.2);

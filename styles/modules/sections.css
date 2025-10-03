@@ -132,7 +132,7 @@
   outline-offset: 2px;
 }
 
-/* Voted state - filled icons */
+/* Voted state - filled icons with colored background */
 .vote-btn.voted .icon {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
