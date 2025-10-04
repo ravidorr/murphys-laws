@@ -27,24 +27,6 @@
   border-color: var(--border);
 }
 
-/* Voting buttons: make upvote hover clearly distinct */
-button[data-vote='up'] {
-  background: transparent;
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-button[data-vote='up']:hover {
-  background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-button[data-vote='up']:active {
-  background: color-mix(in oklab, var(--primary) 15%, transparent 85%);
-  transform: scale(0.98);
-}
-
 /* Universal hover/active for filled buttons (light mode) */
 .btn:hover,
 button:hover {

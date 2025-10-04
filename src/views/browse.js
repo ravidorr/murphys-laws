@@ -5,6 +5,7 @@ import { firstAttributionLine } from '../utils/attribution.js';
 import { highlightSearchTerm, escapeHtml } from '../utils/sanitize.js';
 import { LAWS_PER_PAGE } from '../utils/constants.js';
 import { createLoadingState, createErrorState } from '../utils/dom.js';
+import { getUserVote, toggleVote } from '../utils/voting.js';
 
 export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   const el = document.createElement('div');
@@ -73,14 +74,16 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     }
 
     return laws.map(law => {
-      const up = Number.isFinite(law.up) ? law.up : 0;
-      const down = Number.isFinite(law.down) ? law.down : 0;
+      const up = Number.isFinite(law.upvotes) ? law.upvotes : 0;
+      const down = Number.isFinite(law.downvotes) ? law.downvotes : 0;
       const attribution = firstAttributionLine(law);
 
       // Apply highlighting and escaping to title and text
       const title = law.title ? highlightSearchTerm(law.title, query) : '';
       const text = highlightSearchTerm(law.text, query);
       const titleText = title ? `<strong>${title}:</strong> ${text}` : text;
+
+      const userVote = getUserVote(law.id);
 
       return `
         <div class="law-card-mini" data-law-id="${escapeHtml(String(law.id))}">
@@ -89,14 +92,14 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
           </p>
           ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
           <div class="law-card-footer">
-            <span class="count-up" aria-label="upvotes">
-              <span class="material-symbols-outlined icon-sm">thumb_up</span>
-              <span class="count-num">${up}</span>
-            </span>
-            <span class="count-down" aria-label="downvotes">
-              <span class="material-symbols-outlined icon-sm">thumb_down</span>
-              <span class="count-num">${down}</span>
-            </span>
+        <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${escapeHtml(String(law.id))}" aria-label="Upvote this law">
+          <span class="material-symbols-outlined icon">thumb_up</span>
+          <span class="count-num">${up}</span>
+        </button>
+        <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${escapeHtml(String(law.id))}" aria-label="Downvote this law">
+          <span class="material-symbols-outlined icon">thumb_down</span>
+          <span class="count-num">${down}</span>
+        </button>
           </div>
         </div>
       `;
@@ -176,10 +179,45 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     }
   }
 
-  // Event delegation for navigation and pagination
-  el.addEventListener('click', (e) => {
+  // Event delegation for navigation, voting, and pagination
+  el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+
+    // Handle vote buttons
+    const voteBtn = t.closest('[data-vote]');
+    if (voteBtn) {
+      e.stopPropagation();
+      const voteType = voteBtn.getAttribute('data-vote');
+      const lawId = voteBtn.getAttribute('data-law-id');
+
+      if (!lawId) return;
+
+      try {
+        const result = await toggleVote(lawId, voteType);
+
+        // Update vote counts in UI
+        const lawCard = voteBtn.closest('.law-card-mini');
+        if (lawCard) {
+          const upBtn = lawCard.querySelector('[data-vote="up"]');
+          const downBtn = lawCard.querySelector('[data-vote="down"]');
+          const upCount = upBtn?.querySelector('.count-num');
+          const downCount = downBtn?.querySelector('.count-num');
+
+          if (upCount) upCount.textContent = result.upvotes;
+          if (downCount) downCount.textContent = result.downvotes;
+
+          // Update active state
+          const newUserVote = getUserVote(lawId);
+          upBtn?.classList.toggle('voted', newUserVote === 'up');
+          downBtn?.classList.toggle('voted', newUserVote === 'down');
+        }
+      } catch (error) {
+        console.error('Failed to vote:', error);
+        // Could add a notification here if needed
+      }
+      return;
+    }
 
     // Handle page navigation
     if (t.dataset.page && !t.hasAttribute('disabled')) {
