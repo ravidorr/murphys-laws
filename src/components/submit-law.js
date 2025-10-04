@@ -2,6 +2,7 @@
 
 import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 import { showSuccess, showError } from './notification.js';
+import { fetchAPI } from '../utils/api.js';
 
 export function SubmitLawSection() {
   const el = document.createElement('section');
@@ -25,6 +26,12 @@ export function SubmitLawSection() {
           <span class="submit-helper-message">Minimum 10 characters, maximum 1000</span>
           <span class="submit-char-counter" aria-live="polite">0 / 1000</span>
         </div>
+      </div>
+      <div class="submit-input-group">
+        <label for="submit-category">Category (optional)</label>
+        <select id="submit-category" class="input">
+          <option value="">Select a category...</option>
+        </select>
       </div>
       <div class="submit-input-group">
         <label for="submit-author">Name (optional)</label>
@@ -63,6 +70,29 @@ export function SubmitLawSection() {
   const termsCheckbox = el.querySelector('#submit-terms');
   const messageDiv = el.querySelector('.submit-message');
   const charCounter = el.querySelector('.submit-char-counter');
+  const categorySelect = el.querySelector('#submit-category');
+
+  // Load categories into dropdown
+  async function loadCategories() {
+    try {
+      const response = await fetchAPI('/api/categories');
+      if (response && response.data && Array.isArray(response.data)) {
+        const categories = response.data;
+        categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category.id;
+          option.textContent = category.title;
+          categorySelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      // Don't show error to user as category is optional
+    }
+  }
+
+  // Load categories when component is created
+  loadCategories();
 
   // Function to check if submit should be enabled
   function checkSubmitValidity() {
@@ -231,6 +261,7 @@ export function SubmitLawSection() {
       const author = el.querySelector('#submit-author')?.value.trim();
       const email = el.querySelector('#submit-email')?.value.trim();
       const anonymous = el.querySelector('#submit-anonymous')?.checked;
+      const categoryId = el.querySelector('#submit-category')?.value;
 
       if (!text) {
         showError('Please enter law text');
@@ -248,7 +279,8 @@ export function SubmitLawSection() {
         title: title || undefined,
         author: anonymous ? undefined : (author || undefined),
         email: anonymous ? undefined : (email || undefined),
-        anonymous
+        anonymous,
+        category_id: categoryId || undefined
       };
 
       // Submit to API
@@ -267,6 +299,7 @@ export function SubmitLawSection() {
           if (el.querySelector('#submit-text')) el.querySelector('#submit-text').value = '';
           if (el.querySelector('#submit-author')) el.querySelector('#submit-author').value = '';
           if (el.querySelector('#submit-email')) el.querySelector('#submit-email').value = '';
+          if (el.querySelector('#submit-category')) el.querySelector('#submit-category').value = '';
           if (el.querySelector('#submit-anonymous')) el.querySelector('#submit-anonymous').checked = false;
           if (el.querySelector('#submit-terms')) el.querySelector('#submit-terms').checked = false;
 

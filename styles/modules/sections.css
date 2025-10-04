@@ -267,6 +267,7 @@
 
 .submit-input-group .input {
   width: calc(100% - 2.5rem);
+  box-sizing: content-box;
 }
 
 .submit-input-group textarea.input {
@@ -313,6 +314,12 @@
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.submit-checkbox-group .checkbox-label span {
+  line-height: 1.4;
 }
 
 .submit-message {

@@ -271,6 +271,7 @@ const server = http.createServer(async (req, res) => {
       const title = body.title && typeof body.title === 'string' ? body.title.trim() : null;
       const author = body.author && typeof body.author === 'string' ? body.author.trim() : null;
       const email = body.email && typeof body.email === 'string' ? body.email.trim() : null;
+      const categoryId = body.category_id && typeof body.category_id === 'string' ? parseInt(body.category_id) : null;
 
       // Validate text length
       if (text.length < 10) {
@@ -279,6 +280,19 @@ const server = http.createServer(async (req, res) => {
 
       if (text.length > 1000) {
         return badRequest(res, 'Law text must be less than 1000 characters');
+      }
+
+      // Validate category_id if provided
+      if (categoryId && (!Number.isInteger(categoryId) || categoryId <= 0)) {
+        return badRequest(res, 'Invalid category ID');
+      }
+
+      // Check if category exists if categoryId is provided
+      if (categoryId) {
+        const categoryCheck = await runSqlJson('SELECT id FROM categories WHERE id = ?', [categoryId]);
+        if (!categoryCheck || categoryCheck.length === 0) {
+          return badRequest(res, 'Category not found');
+        }
       }
 
       // Insert law with status 'in_review'
@@ -296,6 +310,11 @@ const server = http.createServer(async (req, res) => {
         const contactValue = email || null;
         const name = author || 'Anonymous';
         await runSqlJson(insertAttributionSql, [lawId, name, contactType, contactValue]);
+      }
+
+      // Insert law_categories relationship if category provided
+      if (categoryId) {
+        await runSqlJson('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)', [lawId, categoryId]);
       }
 
       return sendJson(res, 201, {
