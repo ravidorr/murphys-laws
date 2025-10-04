@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run api:*)",
+      "Bash(claude mcp add chrome-devtools:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(chmod:*)",
+      "Bash(npm run review:*)",
+      "Bash(curl -s \"http://127.0.0.1:8787/api/laws?category_id=1&limit=5\")",
+      "Bash(curl -s \"http://127.0.0.1:8787/api/laws?attribution=Bob&limit=5\")",
+      "Bash(sqlite3:*)",
+      "Bash(pkill:*)",
+      "Bash(curl -s http://127.0.0.1:8787/api/categories)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

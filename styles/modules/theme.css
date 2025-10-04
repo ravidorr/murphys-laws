@@ -1,0 +1,160 @@
+/* ==========================
+   Dark Mode Theme
+   ========================== */
+
+@media (prefers-color-scheme: dark) {
+  /* Dark mode variables */
+  :root {
+    --bg: #0b0b11;           /* near-black page background */
+    --fg: #e9eaee;           /* slightly softer than pure white */
+    --muted-fg: #b3b7c4;     /* brighter muted text for readability */
+    --border: rgb(255 255 255 / 18%); /* more visible borders */
+    --primary: #4f46e5;      /* indigo-600 - brighter brand/accent for dark mode */
+  }
+
+  /* Links */
+  a { color: #9ecbff; }
+  a:visited { color: #b8a6ff; }
+  a:hover, a:focus-visible { color: #cfe5ff; }
+
+  /* Header */
+  header.sticky {
+    background: color-mix(in oklab, var(--bg) 86%, transparent);
+    border-bottom-color: var(--border);
+  }
+
+  /* Brand badge */
+  .brand-badge {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px rgb(0 0 0 / 45%);
+  }
+
+  /* Cards */
+  .card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    border-color: var(--border);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+  }
+
+  /* Section cards */
+  .section-card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+  }
+
+  /* Law detail card */
+  .law-detail .card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+  }
+
+  /* Footer */
+  .footer {
+    background: color-mix(in oklab, var(--bg) 90%, white 10%);
+    border-top-color: var(--border);
+  }
+
+  .section-footer,
+  .law-detail .law-meta {
+    background: color-mix(in oklab, var(--bg) 86%, white 14%);
+    border-top-color: var(--border);
+  }
+
+  /* Buttons - only dark mode specific overrides */
+  .btn, button {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
+  }
+
+  .btn.outline, button.outline {
+    background: color-mix(in oklab, var(--bg) 86%, white 14%);
+    border-color: rgb(255 255 255 / 22%);
+  }
+
+  .btn.outline:hover, button.outline:hover,
+  .btn.outline:focus-visible, button.outline:focus-visible {
+    background: color-mix(in oklab, var(--bg) 80%, white 20%);
+    border-color: rgb(255 255 255 / 32%);
+  }
+
+  /* Inputs */
+  input[type='text'],
+  input[type='email'],
+  textarea {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    color: var(--fg);
+    border-color: var(--border);
+  }
+
+  /* Voting buttons - no overrides needed, base styles work for dark mode */
+
+  button[data-vote='down']:hover {
+    filter: saturate(1.2) brightness(1.2);
+  }
+
+  /* Pagination */
+  .pagination .btn[aria-current='page'] {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(79 70 229 / 35%);
+  }
+
+  .pagination .btn:hover {
+    filter: brightness(1.08);
+  }
+
+  /* Tooltips */
+  .has-legend[data-legend]:hover::after,
+  .has-legend[data-legend]:focus-within::after {
+    background: #0f1115;
+    color: #e9eaee;
+    border: 1px solid var(--border);
+  }
+
+  /* Blockquote */
+  .blockquote {
+    border-left-color: color-mix(in oklab, var(--primary) 85%, white 15%);
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  }
+
+  /* Calculator semantic states (dark mode) */
+  .calc-ok {
+    background: #103424;   /* deep green */
+    color: #c9f1dd;
+  }
+
+  .calc-warn {
+    background: #3b2f07;   /* deep amber */
+    color: #ffe29a;
+  }
+
+  .calc-orange {
+    background: #402214;   /* deep orange */
+    color: #ffd9bf;
+  }
+
+  .calc-danger {
+    background: #3c151d;   /* deep red */
+    color: #ffc4cc;
+  }
+
+  .calc-dark {
+    background: #2a1b1b;
+    color: #f0d6d6;
+  }
+
+  /* Rank styling */
+  .rank {
+    color: color-mix(in oklab, var(--primary) 85%, white 15%);
+    text-shadow: 0 1px 0 rgb(0 0 0 / 40%);
+  }
+
+  /* Score color */
+  .lod-score { color: #7ef29a; }
+
+  /* Skeleton loading */
+  .skeleton {
+    background: linear-gradient(90deg, #1a1a22 25%, #202028 37%, #1a1a22 63%);
+  }
+}
