@@ -446,7 +446,7 @@
 /* Advanced Search */
 .advanced-search-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 2fr 1fr 1fr auto;
   gap: 1rem;
   align-items: end;
 }
@@ -466,6 +466,7 @@
 .search-field .input,
 .search-field select {
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* Enhanced dropdown/select styling */
