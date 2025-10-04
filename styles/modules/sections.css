@@ -336,6 +336,37 @@
   border: 1px solid #fca5a5;
 }
 
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: var(--muted-fg);
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0 0 0.5rem;
+}
+
+.empty-state-text {
+  font-size: 0.875rem;
+  color: var(--muted-fg);
+  margin: 0;
+  max-width: 400px;
+}
+
 /* Mini Law Cards (for Top Voted, Trending, Recently Added) */
 .card .card-title {
   padding: 0 1rem 0.75rem;
@@ -404,3 +435,89 @@
 
 .count-up .icon-sm { color: #16a34a; }
 .count-down .icon-sm { color: #ef4444; }
+
+/* Advanced Search */
+.advanced-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.search-field .input,
+.search-field select {
+  width: 100%;
+}
+
+/* Enhanced dropdown/select styling */
+.search-field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px;
+  padding-right: 2.75rem;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
+}
+
+.search-field select:hover {
+  background-color: color-mix(in oklab, var(--bg) 96%, white 4%);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+}
+
+.search-field select:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent 80%);
+}
+
+.search-field select option {
+  padding: 0.5rem;
+  background-color: var(--bg);
+  color: var(--fg);
+  border: none;
+}
+
+.search-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.search-actions .btn .icon {
+  font-size: 1.25rem;
+}
+
+@media (width <= 768px) {
+  .advanced-search-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

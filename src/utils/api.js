@@ -68,9 +68,11 @@ export async function fetchLaw(lawId) {
  * @param {string} options.sort - Sort field
  * @param {string} options.order - Sort order (asc/desc)
  * @param {string} options.q - Search query
+ * @param {number} options.category_id - Category ID to filter by
+ * @param {string} options.attribution - Attribution name to filter by
  * @returns {Promise<Object>} Response with data and total
  */
-export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order = 'desc', q = '' } = {}) {
+export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order = 'desc', q = '', category_id, attribution } = {}) {
   const params = {
     limit: String(limit),
     offset: String(offset),
@@ -80,6 +82,14 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
 
   if (q && q.trim()) {
     params.q = q.trim();
+  }
+
+  if (category_id) {
+    params.category_id = String(category_id);
+  }
+
+  if (attribution && attribution.trim()) {
+    params.attribution = attribution.trim();
   }
 
   return await fetchAPI('/api/laws', params);
