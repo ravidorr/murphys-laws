@@ -1,6 +1,6 @@
-# Murphy's Laws Collection
+# Murphy's Laws
 
-A comprehensive collection of Murphy's Laws, humorous observations about life's tendency for things to go wrong at the worst possible moment. This project preserves and organizes the wisdom of Murphy's Law and its many variations, submitted by people from around the world.
+A comprehensive collection of Murphy's Laws, humorous observations about life's tendency for things to go wrong at the worst possible moment. This project preserves and organizes the wisdom of Murphy's Laws and its many variations, submitted by people from around the world.
 
 ## About Murphy's Laws
 
@@ -30,7 +30,7 @@ Where:
 - **A** = Activity factor (constant: 0.7)
 
 ### Real-Life Stories
-A collection of user-submitted stories demonstrating Murphy's Law in action, including philosophical debates about the nature of these universal truths.
+A collection of user-submitted stories demonstrating Murphy's Laws in action, including philosophical debates about the nature of these universal truths.
 
 ## Origin Story
 

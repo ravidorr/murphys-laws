@@ -1,0 +1,138 @@
+/*
+  layout.css
+  ------------------------------------------------------------------
+  Purpose: Header, navigation dropdown, and search form layout styles
+  Extracted from site.css lines 304-434
+*/
+
+/* Header */
+header.sticky {
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(6px);
+  background: color-mix(in oklab, var(--bg) 92%, transparent);
+  z-index: 50;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.brand:hover, .brand:focus-visible {
+  text-decoration: none;
+}
+
+.brand-wrapper {
+  position: relative;
+}
+
+.brand-badge {
+  width: 3.2rem;
+  height: 3.2rem;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .375rem;
+  font-size: 2.4rem;
+  font-weight: 900;
+  margin-right: .5rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.brand-badge:hover {
+  transform: scale(1.05);
+  background: color-mix(in oklab, var(--primary) 90%, white 10%);
+}
+
+.brand-badge:active {
+  transform: scale(0.95);
+}
+
+.brand-content {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.brand-name {
+  font-size: 2rem;
+  line-height: 1;
+  margin: 0;
+}
+
+.brand-name:hover {
+  text-decoration: none;
+  text-underline-offset: .2rem;
+}
+
+.brand-subtitle {
+  font-size: 1rem;
+  letter-spacing: -.1rem;
+  color: var(--muted-fg);
+  margin: 0;
+}
+
+/* Navigation Dropdown */
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+  min-width: 250px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  z-index: 1000;
+}
+
+.nav-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  color: var(--fg);
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.nav-dropdown-item:first-child {
+  border-radius: .75rem .75rem 0 0;
+}
+
+.nav-dropdown-item:last-child {
+  border-radius: 0 0 .75rem .75rem;
+}
+
+.nav-dropdown-item:hover {
+  background: color-mix(in oklab, var(--bg) 90%, var(--primary) 10%);
+}
+
+.nav-dropdown-item .icon {
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+.search-form {
+  max-width: 28rem;
+  margin: 0 1rem;
+}

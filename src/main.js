@@ -1,9 +1,9 @@
-import { defineRoute, navigate, startRouter } from './router.js';
-import { Header } from './ui/header.js';
+import { defineRoute, navigate, startRouter, forceRender } from './router.js';
+import { Header } from './components/header.js';
 import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
-import { SubmitLaw } from './views/submit-law.js';
+import { SubmitLawSection } from './components/submit-law.js';
 import { Auth } from './views/auth.js';
 import { Calculator } from './views/calculator.js';
 
@@ -20,7 +20,13 @@ function onNavigate(page, lawId) {
 }
 function onSearch(q) {
   state.searchQuery = q;
-  navigate('browse');
+  const current = location.hash.replace('#/', '').split(':')[0] || 'home';
+  if (current === 'browse') {
+    // Already on browse, just force a re-render with new search query
+    forceRender();
+  } else {
+    navigate('browse');
+  }
 }
 function onAuth(username) {
   state.isLoggedIn = true;
@@ -54,16 +60,6 @@ function layout(node) {
 
   const main = document.createElement('main');
   main.className = 'flex-1';
-  // Global site hero shown on all pages
-  const hero = document.createElement('section');
-  hero.className = 'container page';
-  hero.innerHTML = `
-    <div class="text-center mb-12">
-      <h1 class="gradient-title">Murphy's Law Archive</h1>
-      <h2 class="subhead mb-8">If it can go wrong, you'll find it here.</h2>
-    </div>
-  `;
-  main.appendChild(hero);
   main.appendChild(node);
 
   const footer = document.createElement('footer');
@@ -92,6 +88,9 @@ function layout(node) {
   // Ask MathJax (if present) to typeset this freshly rendered view.
   // We wait until MathJax is loaded and the node is attached to the DOM.
   const typesetWhenReady = (element) => {
+    const MATHJAX_POLL_INTERVAL = 50;
+    const MATHJAX_DEFER_TIMEOUT = 0;
+
     const attempt = () => {
       const mj = window.MathJax;
       if (mj && typeof mj.typesetPromise === 'function') {
@@ -99,10 +98,10 @@ function layout(node) {
         return;
       }
       // Try again shortly in case MathJax script (loaded async) isn't ready yet
-      setTimeout(attempt, 50);
+      setTimeout(attempt, MATHJAX_POLL_INTERVAL);
     };
     // Defer so the router can attach the element to the DOM first
-    setTimeout(attempt, 0);
+    setTimeout(attempt, MATHJAX_DEFER_TIMEOUT);
   };
 
   typesetWhenReady(wrap);
@@ -116,7 +115,13 @@ defineRoute('browse', () => layout(Browse({ isLoggedIn: state.isLoggedIn, search
 
 defineRoute('law', ({ param }) => layout(LawDetail({ lawId: param, isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate, onVote })));
 
-defineRoute('submit', () => layout(SubmitLaw({ isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate })));
+defineRoute('submit', () => {
+  const container = document.createElement('div');
+  container.className = 'container page pt-0';
+  const submitSection = SubmitLawSection({ onNavigate });
+  container.appendChild(submitSection);
+  return layout(container);
+});
 
 defineRoute('login', () => layout(Auth({ type: 'login', onNavigate, onAuth })));
 

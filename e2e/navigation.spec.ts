@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('home → browse via header', async ({ page }) => {
   await page.goto('/index.html');
-  await expect(page.getByRole('banner').getByText("Murphy's Law Archive", { exact: true })).toBeVisible();
+  await expect(page.getByRole('banner').getByText("Murphy's Law of the Day", { exact: true })).toBeVisible();
 
   await page.getByRole('navigation').getByRole('button', { name: 'Browse All Laws' }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'Browse All Laws' })).toBeVisible();

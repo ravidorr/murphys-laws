@@ -1,0 +1,523 @@
+/*
+  sections.css
+  ------------------------------------------------------------------
+  Purpose: Section-based layouts including Law of the Day widget,
+           section cards, simplified Sod calculator, and submit form sections
+  Extracted from site.css lines 567-722, 724-821
+*/
+
+/* Law of the Day widget (scoped) */
+.section-card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+}
+
+.section-body {
+  padding: 1.25rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.section-header:not(:has(+ .section-subheader)) {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1.25rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.section-date {
+  font-size: .875rem;
+  color: var(--muted-fg);
+}
+
+.section-subheader {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding: 0 1rem 1rem;
+}
+
+.section-subtitle {
+  font-size: .875rem;
+  color: var(--muted-fg);
+  margin: 0;
+}
+
+.lod-quote-large {
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
+  font-weight: 700;
+  font-style: normal;
+  border-left: none;
+  padding-left: 0;
+  margin: .25rem 0 .5rem;
+}
+
+.lod-attrib {
+  font-size: 1rem;
+  color: var(--muted-fg);
+  margin: 0 0 .75rem;
+  text-align: left;
+}
+
+/* Footer bar inspired by Stitch */
+.section-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+  border-top: 1px solid var(--border);
+}
+
+.section-footer .left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--muted-fg);
+}
+
+.count-up,
+.count-down {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.count-num {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.count-up .icon { color: #16a34a; }
+.count-down .icon { color: #ef4444; }
+
+/* Vote buttons */
+.vote-btn {
+  background: none;
+  border: none;
+  padding: .25rem .5rem;
+  cursor: pointer;
+  border-radius: .375rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.vote-btn:hover {
+  background: color-mix(in oklab, var(--bg) 90%, white 10%);
+}
+
+.vote-btn:active {
+  transform: scale(0.95);
+}
+
+.vote-btn:focus-visible {
+  outline: 2px solid var(--btn-primary);
+  outline-offset: 2px;
+}
+
+/* Voted state - filled icons with colored background */
+.vote-btn.voted .icon {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.vote-btn.voted.count-up {
+  background: color-mix(in oklab, #16a34a 15%, transparent 85%);
+}
+
+.vote-btn.voted.count-down {
+  background: color-mix(in oklab, #ef4444 15%, transparent 85%);
+}
+
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-block;
+}
+
+/* Google Fonts Material Icons styling */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  font-size: 1.5rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.lod-icon.ml { margin-left: .25rem; }
+
+/* Button override to Stitch blue for this widget only */
+.section .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  background: var(--btn-primary);
+  border-color: var(--btn-primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgb(17 115 212 / 35%);
+}
+
+.section .btn:hover { filter: saturate(1.1) brightness(1.08); }
+
+.section .btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--btn-primary) 75%, white 25%);
+  outline-offset: 2px;
+}
+
+/* Skeleton while loading */
+.lod-skeleton {
+  height: 7.5rem;
+  border-radius: .75rem;
+  background: linear-gradient(90deg, #eee 25%, #f6f6f6 37%, #eee 63%);
+  background-size: 400% 100%;
+  animation: lod-pulse 1.2s ease infinite;
+  border: 1px solid var(--border);
+}
+
+@keyframes lod-pulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Simplified Sod's Law Calculator */
+
+.sod-simple-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sod-simple-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.sod-simple-slider-group label {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sod-simple-slider-group input[type="range"] {
+  width: 100%;
+}
+
+.sod-simple-value {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+}
+
+.sod-simple-score-label {
+  font-size: .875rem;
+  color: var(--muted-fg);
+  margin-bottom: .5rem;
+}
+
+.sod-simple-score {
+  border-radius: .5rem;
+  padding: 1rem;
+}
+
+.sod-simple-score-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: .5rem;
+}
+
+.sod-simple-interpretation {
+  font-size: 1rem;
+}
+
+/* Submit Law Section */
+.submit-input-group {
+  margin-bottom: 1rem;
+}
+
+.submit-input-group label {
+  display: block;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: .5rem;
+}
+
+.submit-input-group .input {
+  width: calc(100% - 2.5rem);
+}
+
+.submit-input-group textarea.input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.submit-helper-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--muted-fg);
+}
+
+.submit-helper-message {
+  flex: 1;
+}
+
+.submit-char-counter {
+  font-weight: 600;
+  color: var(--muted-fg);
+  transition: color 0.2s ease;
+}
+
+.submit-char-counter-error {
+  color: #dc2626;
+}
+
+.submit-checkbox-group {
+  margin-bottom: 1rem;
+}
+
+.submit-checkbox-group .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  font-size: .875rem;
+}
+
+.submit-checkbox-group input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+.submit-message {
+  display: none;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.submit-message.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.submit-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: var(--muted-fg);
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0 0 0.5rem;
+}
+
+.empty-state-text {
+  font-size: 0.875rem;
+  color: var(--muted-fg);
+  margin: 0;
+  max-width: 400px;
+}
+
+/* Mini Law Cards (for Top Voted, Trending, Recently Added) */
+.card .card-title {
+  padding: 0 1rem 0.75rem;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.card .card-text {
+  margin: 0;
+}
+
+.law-card-mini {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.law-card-mini:last-child {
+  border-bottom: none;
+}
+
+.law-card-mini:hover {
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+}
+
+.law-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.law-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fg);
+}
+
+.law-card-text {
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+.law-card-attrib {
+  font-size: 0.75rem;
+  color: var(--muted-fg);
+  margin: 0 0 0.5rem;
+}
+
+.law-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.75rem;
+}
+
+.icon-sm {
+  width: 1rem;
+  height: 1rem;
+  font-size: 1rem;
+}
+
+.count-up .icon-sm { color: #16a34a; }
+.count-down .icon-sm { color: #ef4444; }
+
+/* Advanced Search */
+.advanced-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.search-field .input,
+.search-field select {
+  width: 100%;
+}
+
+/* Enhanced dropdown/select styling */
+.search-field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px;
+  padding-right: 2.75rem;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
+}
+
+.search-field select:hover {
+  background-color: color-mix(in oklab, var(--bg) 96%, white 4%);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+}
+
+.search-field select:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent 80%);
+}
+
+.search-field select option {
+  padding: 0.5rem;
+  background-color: var(--bg);
+  color: var(--fg);
+  border: none;
+}
+
+.search-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.search-actions .btn .icon {
+  font-size: 1.25rem;
+}
+
+@media (width <= 768px) {
+  .advanced-search-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

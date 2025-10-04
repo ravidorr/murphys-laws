@@ -1,0 +1,133 @@
+/*
+  notification.css
+  ------------------------------------------------------------------
+  Purpose: Global notification/toast system for displaying success
+           and error messages from the backend
+*/
+
+.notification-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%), 0 2px 4px rgb(0 0 0 / 10%);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(calc(100% + 1rem));
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.notification-enter {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.notification-exit {
+  opacity: 0;
+  transform: translateX(calc(100% + 1rem));
+}
+
+.notification-success {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.notification-error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.notification-icon {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+}
+
+.notification-success .notification-icon {
+  color: #16a34a;
+}
+
+.notification-error .notification-icon {
+  color: #dc2626;
+}
+
+.notification-message {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  padding-top: 0.125rem;
+}
+
+.notification-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+}
+
+.notification-close:hover {
+  opacity: 1;
+  background: rgb(0 0 0 / 5%);
+}
+
+.notification-close:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+.notification-close .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+/* Mobile responsive */
+@media (width <= 640px) {
+  .notification-container {
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+
+  .notification {
+    transform: translateY(-100%);
+  }
+
+  .notification-enter {
+    transform: translateY(0);
+  }
+
+  .notification-exit {
+    transform: translateY(-100%);
+  }
+}

@@ -1,0 +1,204 @@
+/*
+  components.css
+  ------------------------------------------------------------------
+  Purpose: Reusable component styles including buttons, inputs, cards,
+           law detail card, pagination, and law-meta
+  Extracted from site.css lines 436-517, 523-565, 816-821, 823-843, 940-969
+*/
+
+.btn, button {
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary);
+  border-radius: .5rem;
+  padding: .5rem .875rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  transition: background-color .15s ease, border-color .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+.btn.outline, button.outline {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+/* Universal hover/active for filled buttons (light mode) */
+.btn:hover,
+button:hover {
+  background: color-mix(in oklab, var(--primary) 92%, white 8%);
+  border-color: color-mix(in oklab, var(--primary) 92%, white 8%);
+}
+
+.btn:active,
+button:active {
+  filter: brightness(.95);
+}
+
+/* Outline hover for light mode */
+.btn.outline:hover,
+button.outline:hover,
+.btn.outline:focus-visible,
+button.outline:focus-visible {
+  background: color-mix(in oklab, var(--bg) 90%, black 10%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--primary) 30%);
+}
+
+/* Focus ring for accessibility (light mode) */
+.btn:focus-visible,
+button:focus-visible,
+a.btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--primary) 75%, black 25%);
+  outline-offset: 2px;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  padding: 0;
+}
+
+input[type='text'],
+input[type='email'],
+textarea,
+select {
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  width: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  background-color: var(--bg);
+  color: var(--fg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 0;
+  border-color: var(--primary);
+}
+
+input[type='text']:hover,
+input[type='email']:hover,
+textarea:hover,
+select:hover {
+  border-color: color-mix(in oklab, var(--border) 70%, var(--primary) 30%);
+}
+
+/* ==========================
+   Components
+   ========================== */
+
+/* Law detail (style to match LoD visually) */
+.law-detail .card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+}
+
+.law-detail h2 {
+  margin: 0 0 .5rem;
+  font-size: 1rem;
+  color: var(--muted-fg);
+}
+
+.law-detail .blockquote {
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
+  font-weight: 700;
+  font-style: normal;
+  border-left: none;
+  padding-left: 0;
+  text-align: center;
+  margin: .25rem 0 .5rem;
+}
+
+.law-detail .card .small {
+  text-align: center;
+}
+
+.law-detail .law-meta {
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 1rem;
+  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+  border-top: 1px solid var(--border);
+}
+
+.law-detail .law-meta span:first-child {
+  font-weight: 700;
+}
+
+.law-detail .law-meta span:first-child .pos {
+  color: #16a34a;
+}
+
+.btn:disabled,
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Cards */
+.card {
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 96%, white 4%);
+}
+
+.card .card-content {
+  padding: 1.25rem 0;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1.25rem;
+}
+
+.thick-border {
+  border-width: 2px;
+}
+
+.law-meta {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.pagination .ellipsis {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 .5rem;
+  color: var(--muted-fg);
+}
+
+.pagination .btn[aria-current='page'] {
+  pointer-events: none;
+}
+
+.pagination .btn.disabled,
+.pagination .btn[aria-disabled='true'] {
+  opacity: .5;
+  pointer-events: none;
+}
