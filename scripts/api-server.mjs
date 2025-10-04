@@ -14,7 +14,7 @@ const PORT = Number(process.env.PORT || 8787);
 function runSqlJson(sql, params = []) {
   return new Promise((resolvePromise, reject) => {
     const finalSql = bindParams(sql, params);
-    const args = ['-json', DB_PATH, finalSql];
+    const args = ['-json', '-cmd', '.timeout 5000', DB_PATH, finalSql];
     execFile('sqlite3', args, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) return reject(new Error(stderr || err.message));
       try {
@@ -76,12 +76,41 @@ SELECT
 FROM laws l
 WHERE l.status = 'published'`;
 
-function buildListSql(hasQ) {
-  const where = hasQ ? " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)" : '';
+function buildListSql(hasQ, hasCategory, hasAttribution) {
+  let where = '';
+
+  if (hasQ) {
+    where += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";
+  }
+
+  if (hasCategory) {
+    where += " AND EXISTS (SELECT 1 FROM law_categories lc WHERE lc.law_id = l.id AND lc.category_id = ?)";
+  }
+
+  if (hasAttribution) {
+    where += " AND EXISTS (SELECT 1 FROM attributions a WHERE a.law_id = l.id AND a.name LIKE ?)";
+  }
+
   return `${baseSelect}${where}\nORDER BY l.id\nLIMIT ? OFFSET ?;`;
 }
 
-const countSql = (hasQ) => `SELECT COUNT(1) AS total FROM laws l WHERE l.status = 'published'${hasQ ? " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)" : ''};`;
+function countSql(hasQ, hasCategory, hasAttribution) {
+  let where = 'WHERE l.status = \'published\'';
+
+  if (hasQ) {
+    where += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";
+  }
+
+  if (hasCategory) {
+    where += " AND EXISTS (SELECT 1 FROM law_categories lc WHERE lc.law_id = l.id AND lc.category_id = ?)";
+  }
+
+  if (hasAttribution) {
+    where += " AND EXISTS (SELECT 1 FROM attributions a WHERE a.law_id = l.id AND a.name LIKE ?)";
+  }
+
+  return `SELECT COUNT(1) AS total FROM laws l ${where};`;
+}
 
 const oneSql = `
 SELECT
@@ -186,22 +215,47 @@ const server = http.createServer(async (req, res) => {
       const limit = Math.max(1, Math.min(200, Number(parsed.query.limit || 50)));
       const offset = Math.max(0, Number(parsed.query.offset || 0));
       const q = (parsed.query.q || '').toString().trim();
+      const categoryId = parsed.query.category_id ? Number(parsed.query.category_id) : null;
+      const attribution = (parsed.query.attribution || '').toString().trim();
+
       const hasQ = q.length > 0;
+      const hasCategory = categoryId !== null && !isNaN(categoryId);
+      const hasAttribution = attribution.length > 0;
+
       const like = `%${q}%`;
+      const attributionLike = `%${attribution}%`;
+
+      // Build parameter arrays
+      const countParams = [];
+      const listParams = [];
+
+      if (hasQ) {
+        countParams.push(like, like);
+        listParams.push(like, like);
+      }
+
+      if (hasCategory) {
+        countParams.push(categoryId);
+        listParams.push(categoryId);
+      }
+
+      if (hasAttribution) {
+        countParams.push(attributionLike);
+        listParams.push(attributionLike);
+      }
 
       // total count (only published)
-      const countParams = hasQ ? [like, like] : [];
-      const [{ total } = { total: 0 }] = await runSqlJson(countSql(hasQ), countParams);
+      const [{ total } = { total: 0 }] = await runSqlJson(countSql(hasQ, hasCategory, hasAttribution), countParams);
 
       // page rows (only published)
-      const listParams = hasQ ? [like, like, limit, offset] : [limit, offset];
-      const rows = await runSqlJson(buildListSql(hasQ), listParams);
+      listParams.push(limit, offset);
+      const rows = await runSqlJson(buildListSql(hasQ, hasCategory, hasAttribution), listParams);
 
       const data = rows.map(r => ({
         ...r,
         attributions: safeParseJsonArray(r.attributions),
       }));
-      return sendJson(res, 200, { data, limit, offset, total, q });
+      return sendJson(res, 200, { data, limit, offset, total, q, category_id: categoryId, attribution });
     }
 
     // POST /api/laws - Submit a new law for review
@@ -312,6 +366,27 @@ const server = http.createServer(async (req, res) => {
         upvotes: law.upvotes,
         downvotes: law.downvotes
       });
+    }
+
+    // GET /api/categories - Get all categories
+    if (req.method === 'GET' && pathname === '/api/categories') {
+      const categories = await runSqlJson(`
+        SELECT id, slug, title, description
+        FROM categories
+        ORDER BY title;
+      `);
+      return sendJson(res, 200, { data: categories });
+    }
+
+    // GET /api/attributions - Get unique attribution names
+    if (req.method === 'GET' && pathname === '/api/attributions') {
+      const attributions = await runSqlJson(`
+        SELECT DISTINCT name
+        FROM attributions
+        WHERE name IS NOT NULL AND name != ''
+        ORDER BY name;
+      `);
+      return sendJson(res, 200, { data: attributions });
     }
 
     // Stories endpoints are postponed for a later milestone. Intentionally omitted.

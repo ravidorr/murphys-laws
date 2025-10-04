@@ -4,8 +4,8 @@ import { fetchLaws } from '../utils/api.js';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { highlightSearchTerm, escapeHtml } from '../utils/sanitize.js';
 import { LAWS_PER_PAGE } from '../utils/constants.js';
-import { createLoadingState, createErrorState } from '../utils/dom.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
+import { AdvancedSearch } from '../components/advanced-search.js';
 
 export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   const el = document.createElement('div');
@@ -14,6 +14,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   let currentPage = 1;
   let totalLaws = 0;
   let laws = [];
+  let currentFilters = { q: searchQuery || '' };
 
   // Render pagination controls
   function renderPagination(currentPage, totalLaws, perPage) {
@@ -70,7 +71,13 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
   // Render law cards
   function renderLaws(laws, query) {
     if (!laws || laws.length === 0) {
-      return '<p class="small">No laws found.</p>';
+      return `
+        <div class="empty-state">
+          <span class="material-symbols-outlined empty-state-icon">search_off</span>
+          <p class="empty-state-title">No laws found</p>
+          <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
+        </div>
+      `;
     }
 
     return laws.map(law => {
@@ -108,11 +115,12 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
 
   // Render the page
   function render() {
-    const searchInfo = searchQuery
-      ? `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${escapeHtml(searchQuery)}</strong></p>`
+    const searchInfo = currentFilters.q
+      ? `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${escapeHtml(currentFilters.q)}</strong></p>`
       : '';
 
     el.innerHTML = `
+      <div id="advanced-search-container"></div>
       <div class="card">
         <div class="card-content">
           <h2 class="card-title"><span class="accent-text">Browse</span> All Laws</h2>
@@ -133,7 +141,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
     if (cardText) {
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
-        ${renderLaws(laws, searchQuery)}
+        ${renderLaws(laws, currentFilters.q)}
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
     }
@@ -162,7 +170,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
         offset,
         sort: 'score',
         order: 'desc',
-        q: searchQuery
+        ...currentFilters
       });
 
       laws = data && Array.isArray(data.data) ? data.data : [];
@@ -172,9 +180,13 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
       console.error('Failed to fetch laws:', err);
       if (cardText) {
         cardText.setAttribute('aria-busy', 'false');
-        const errorEl = createErrorState('Failed to load laws. Please try again.');
-        cardText.innerHTML = '';
-        cardText.appendChild(errorEl);
+        cardText.innerHTML = `
+          <div class="empty-state">
+            <span class="material-symbols-outlined empty-state-icon">error_outline</span>
+            <p class="empty-state-title">Failed to load laws</p>
+            <p class="empty-state-text">There was an error loading the laws. Please try again later.</p>
+          </div>
+        `;
       }
     }
   }
@@ -243,6 +255,21 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
 
   // Initial render and load
   render();
+
+  // Create and insert advanced search component
+  const searchComponent = AdvancedSearch({
+    initialFilters: currentFilters,
+    onSearch: (filters) => {
+      currentFilters = filters;
+      loadPage(1); // Reset to page 1 when filters change
+    }
+  });
+
+  const searchContainer = el.querySelector('#advanced-search-container');
+  if (searchContainer) {
+    searchContainer.appendChild(searchComponent);
+  }
+
   loadPage(1);
 
   return el;

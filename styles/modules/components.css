@@ -65,7 +65,8 @@ button.link {
 
 input[type='text'],
 input[type='email'],
-textarea {
+textarea,
+select {
   border: 1px solid var(--border);
   border-radius: .5rem;
   padding: .5rem .75rem;
@@ -73,6 +74,25 @@ textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+  background-color: var(--bg);
+  color: var(--fg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 0;
+  border-color: var(--primary);
+}
+
+input[type='text']:hover,
+input[type='email']:hover,
+textarea:hover,
+select:hover {
+  border-color: color-mix(in oklab, var(--border) 70%, var(--primary) 30%);
 }
 
 /* ==========================
