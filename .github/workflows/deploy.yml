@@ -22,6 +22,9 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 22
 
+            # Ensure sqlite3 is installed
+            command -v sqlite3 >/dev/null 2>&1 || sudo apt-get install -y sqlite3
+
             cd ~/murphys-laws
             # Backup production database before pulling
             cp murphys.db murphys.db.backup
