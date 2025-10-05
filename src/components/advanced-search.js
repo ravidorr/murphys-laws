@@ -47,12 +47,12 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
         <div class="search-actions">
           <button id="search-btn" class="btn" type="button">
+            <span class="btn-text">Search</span>
             <span class="material-symbols-outlined icon">search</span>
-            Search
           </button>
           <button id="clear-btn" class="btn outline" type="button">
+            <span class="btn-text">Clear</span>
             <span class="material-symbols-outlined icon">clear</span>
-            Clear
           </button>
         </div>
       </div>

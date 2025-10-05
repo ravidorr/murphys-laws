@@ -50,7 +50,7 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
       </div>
       ${showButton ? `
       <button class="btn" type="button" data-nav="browse" aria-label="View more laws">
-        View More Laws
+        <span class="btn-text">View More Laws</span>
         <span class="material-symbols-outlined icon ml">arrow_forward</span>
       </button>
       ` : ''}
