@@ -14,11 +14,18 @@
   padding: .5rem .875rem;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
   transition: background-color .15s ease, border-color .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+.btn .icon,
+button .icon {
+  font-size: 1.25rem;
 }
 
 .btn.outline, button.outline {
@@ -71,6 +78,7 @@ select {
   border-radius: .5rem;
   padding: .5rem .75rem;
   width: 100%;
+  box-sizing: border-box;
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -194,7 +202,11 @@ button:disabled {
 }
 
 .pagination .btn[aria-current='page'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
   pointer-events: none;
+  box-shadow: 0 2px 8px rgb(79 70 229 / 25%);
 }
 
 .pagination .btn.disabled,

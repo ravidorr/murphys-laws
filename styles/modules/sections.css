@@ -466,7 +466,6 @@
 .search-field .input,
 .search-field select {
   width: 100%;
-  box-sizing: border-box;
 }
 
 /* Enhanced dropdown/select styling */
