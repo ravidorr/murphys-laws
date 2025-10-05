@@ -122,7 +122,7 @@ To make database schema changes, use the migration system:
 
 ```bash
 # 1. Create a migration file
-cat > migrations/002_my_change.sql << 'EOF'
+cat > db/migrations/002_my_change.sql << 'EOF'
 ALTER TABLE laws ADD COLUMN my_column TEXT;
 EOF
 
@@ -130,7 +130,7 @@ EOF
 npm run migrate
 
 # 3. Commit and deploy
-git add migrations/002_my_change.sql
+git add db/migrations/002_my_change.sql
 git commit -m "feat: Add my_column to laws"
 git push
 ```

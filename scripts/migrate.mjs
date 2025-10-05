@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = resolve(__dirname, '..', 'murphys.db');
-const MIGRATIONS_DIR = resolve(__dirname, '..', 'migrations');
+const MIGRATIONS_DIR = resolve(__dirname, '..', 'db', 'migrations');
 
 function runSql(sql) {
   try {
