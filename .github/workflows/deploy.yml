@@ -18,7 +18,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/murphys-laws
+            # Backup production database before pulling
+            cp murphys.db murphys.db.backup
             git pull origin main
+            # Restore production database (prevent overwriting)
+            cp murphys.db.backup murphys.db
             npm install
             npm run build
             pm2 restart murphys-frontend
