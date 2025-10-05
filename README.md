@@ -44,6 +44,76 @@ The collection includes a fascinating philosophical debate between various reade
 
 ## Development
 
+### Prerequisites
+
+- Node.js 18+ and npm
+- sqlite3 CLI available on PATH
+
+### Getting Started
+
+```bash
+# Install dependencies
+npm ci
+
+# Start local API server (SQLite-backed, CORS enabled)
+npm run api
+# Serves on http://127.0.0.1:8787
+
+# Start frontend dev server (Vite, proxies /api → 127.0.0.1:8787)
+npm run dev
+# Dev server: http://127.0.0.1:5175
+```
+
+### Common Commands
+
+**Building**
+```bash
+npm run build                    # Build production assets
+npm run preview                  # Preview production build (port 5173)
+```
+
+**Testing**
+```bash
+npm test                         # Run unit tests (Vitest)
+npm run test:watch               # Watch mode
+npm run e2e                      # End-to-end tests (Playwright)
+```
+
+**Linting**
+```bash
+npm run lint                     # Lint JavaScript
+npm run lint:fix                 # Auto-fix JavaScript
+npm run lint:css                 # Lint CSS
+npm run lint:css:fix             # Auto-fix CSS
+```
+
+**Database Management**
+```bash
+npm run migrate                  # Run database migrations
+npm run db:init                  # Initialize schema
+npm run db:import                # Import data from markdown
+npm run db:rebuild               # Rebuild DB from scratch
+```
+
+### Architecture
+
+**Frontend** (`src/`)
+- Framework-free vanilla JavaScript with hash routing
+- Entry point: `src/main.js`
+- Views: `src/views/` (home, browse, law-detail, calculator, etc.)
+- Components: `src/ui/` (header, navigation)
+- Styling: `styles/site.css` (prefer classes over inline styles)
+
+**Backend**
+- API server: `scripts/api-server.mjs` (Node.js + SQLite)
+- Endpoints: `/api/health`, `/api/laws`, `/api/laws/:id`
+- Data pipeline: Markdown files → SQLite via `scripts/build-sqlite.mjs`
+
+**Dev Servers**
+- API: `127.0.0.1:8787` (npm run api)
+- Vite dev: `127.0.0.1:5175` with `/api` proxy
+- Preview: `localhost:5173` (for Playwright e2e)
+
 ### Database Changes
 
 ⚠️ **IMPORTANT**: Never commit `murphys.db` directly! This file contains production user data.
