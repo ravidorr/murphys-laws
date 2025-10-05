@@ -9,8 +9,8 @@ The production database contains user data (votes, submissions) that must never 
 ### Step 1: Create a Migration File
 
 ```bash
-# Create a new numbered migration in migrations/
-cat > migrations/002_add_my_feature.sql << 'EOF'
+# Create a new numbered migration in db/migrations/
+cat > db/migrations/002_add_my_feature.sql << 'EOF'
 -- Your SQL changes here
 ALTER TABLE laws ADD COLUMN my_column TEXT;
 EOF
@@ -29,7 +29,7 @@ sqlite3 murphys.db "SELECT * FROM laws LIMIT 1;"
 ### Step 3: Commit and Deploy
 
 ```bash
-git add migrations/002_add_my_feature.sql
+git add db/migrations/002_add_my_feature.sql
 git commit -m "feat: Add my_column to laws table"
 git push
 ```
