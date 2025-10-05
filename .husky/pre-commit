@@ -1,2 +1,14 @@
+# Check if database file is being committed
+if git diff --cached --name-only | grep -q "^murphys\.db$"; then
+  echo "❌ ERROR: You're trying to commit murphys.db!"
+  echo ""
+  echo "This will overwrite production data. Please use migrations instead."
+  echo ""
+  echo "📖 See DATABASE.md for how to make schema changes safely."
+  echo ""
+  echo "To unstage: git reset murphys.db"
+  exit 1
+fi
+
 node scripts/sanitize-husky-hooks.mjs
 npx lint-staged

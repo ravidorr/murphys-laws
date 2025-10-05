@@ -42,6 +42,33 @@ What started as a learning exercise in HTML became a comprehensive archive of li
 
 The collection includes a fascinating philosophical debate between various readers about whether Murphy's Laws conflict with religious beliefs. This discussion showcases different perspectives on fatalism, optimism, and the role of humor in coping with life's challenges.
 
+## Development
+
+### Database Changes
+
+⚠️ **IMPORTANT**: Never commit `murphys.db` directly! This file contains production user data.
+
+To make database schema changes, use the migration system:
+
+```bash
+# 1. Create a migration file
+cat > migrations/002_my_change.sql << 'EOF'
+ALTER TABLE laws ADD COLUMN my_column TEXT;
+EOF
+
+# 2. Test locally
+npm run migrate
+
+# 3. Commit and deploy
+git add migrations/002_my_change.sql
+git commit -m "feat: Add my_column to laws"
+git push
+```
+
+**See [DATABASE.md](./DATABASE.md) for complete documentation.**
+
+A git hook will prevent you from accidentally committing the database file.
+
 ## Contributing
 
 This is a living collection! This archive preserves the wisdom and humor for future generations. The laws demonstrate universal truths that transcend culture, profession, and time.
