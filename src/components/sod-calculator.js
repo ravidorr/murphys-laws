@@ -49,7 +49,7 @@ export function SodCalculatorSimple({ onNavigate }) {
       <div class="section-footer">
         <span/> </span>
         <button class="btn" type="button" data-nav="calculator" aria-label="View full Sod's Law Calculator">
-          View Full Calculator
+          <span class="btn-text">View Full Calculator</span>
           <span class="material-symbols-outlined icon ml">arrow_forward</span>
         </button>
       </div>
