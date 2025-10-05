@@ -14,7 +14,10 @@ export function Auth({ type, onNavigate, onAuth }) {
         <input id="password" type="password" placeholder="••••••••" />
       </div>
       <button type="submit">${title}</button>
-      <button type="button" class="outline" data-nav="home">Cancel</button>
+      <button type="button" class="outline" data-nav="home">
+        <span class="btn-text">Cancel</span>
+        <span class="material-symbols-outlined icon">close</span>
+      </button>
     </div></form>
   `;
   el.addEventListener('click', (e) => {

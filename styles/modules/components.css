@@ -26,6 +26,18 @@
 .btn .icon,
 button .icon {
   font-size: 1.25rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn .btn-text,
+button .btn-text {
+  line-height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn.outline, button.outline {
