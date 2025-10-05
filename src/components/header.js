@@ -39,7 +39,10 @@ export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentU
 
         <form role="search" class="flex items-center gap-2" aria-label="Site Search">
           <input type="text" aria-label="Search" placeholder="Search" class="input" />
-          <button type="submit" class="btn outline">Search</button>
+          <button type="submit" class="btn">
+            <span class="material-symbols-outlined icon">search</span>
+            Search
+          </button>
         </form>
       </div>
     </div>
