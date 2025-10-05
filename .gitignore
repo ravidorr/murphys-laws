@@ -9,4 +9,8 @@ dist/
 logs/
 *.log
 
+# Database (production data - don't commit)
+murphys.db
+murphys.db.backup
+
 .continue/
