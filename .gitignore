@@ -9,6 +9,9 @@ dist/
 logs/
 *.log
 
+# Test artifacts
+test-results/
+
 # Database (production data - don't commit)
 murphys.db
 murphys.db.backup
