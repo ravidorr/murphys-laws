@@ -83,9 +83,12 @@ function layout(node) {
     </div>
   `;
 
-  // Initialize AdSense ad
+  // Initialize AdSense ad (only if not already initialized)
   try {
-    (window.adsbygoogle = window.adsbygoogle || []).push({});
+    const adElement = footer.querySelector('.adsbygoogle');
+    if (adElement && !adElement.dataset.adsbygoogleStatus) {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    }
   } catch (e) {
     console.error('AdSense error:', e);
   }
@@ -162,6 +165,10 @@ startRouter(app);
   window.MathJax = {
     // Don't ask MathJax to lazy-load extra components; Vite bundles the full CHTML build we import below.
     loader: { load: [] },
+    chtml: {
+      // This is the setting that specifies the font location
+      fontURL: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2'
+    },
     tex: {
       inlineMath: [['\\(', '\\)']],
       displayMath: [['\\[', '\\]']],
