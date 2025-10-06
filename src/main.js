@@ -83,14 +83,16 @@ function layout(node) {
     </div>
   `;
 
-  // Initialize AdSense ad (only if not already initialized)
+  // Initialize AdSense ad
+  // Wrap in try-catch to silently handle "already initialized" errors
+  // This happens on route changes when ads are already loaded
   try {
-    const adElement = footer.querySelector('.adsbygoogle');
-    if (adElement && !adElement.dataset.adsbygoogleStatus) {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    }
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
   } catch (e) {
-    console.error('AdSense error:', e);
+    // Silently ignore "already have ads" errors - this is expected on route changes
+    if (!e.message?.includes('already have ads')) {
+      console.error('AdSense error:', e);
+    }
   }
 
   footer.addEventListener('click', (e) => {
