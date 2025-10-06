@@ -29,16 +29,33 @@ export default defineConfig({
       '@src': path.resolve(__dirname, 'src'),
       '@views': path.resolve(__dirname, 'src/views'),
       '@components': path.resolve(__dirname, 'src/components'),
-      '@data': path.resolve(__dirname, 'src'),
     }
   },
   test: {
     environment: 'jsdom',
     globals: true,
-    coverage: { provider: 'v8', reporter: ['text', 'html'] },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary', 'lcov'],
+      exclude: [
+        'e2e/**',
+        'node_modules/**',
+        'tests/**',
+        'scripts/**',
+        'dist/**',
+        '**/*.config.js',
+        '**/*.config.ts',
+      ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 70,
+        statements: 80
+      }
+    },
     exclude: [
       'e2e/**',
-      'node_modules/**' 
+      'node_modules/**'
     ]
   }
 });

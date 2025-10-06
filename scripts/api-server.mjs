@@ -229,9 +229,6 @@ const deleteVoteSql = `
 DELETE FROM votes WHERE law_id = ? AND voter_identifier = ?;
 `;
 
-const getUserVoteSql = `
-SELECT vote_type FROM votes WHERE law_id = ? AND voter_identifier = ? LIMIT 1;
-`;
 
 // Helper to read POST body
 function readBody(req) {
