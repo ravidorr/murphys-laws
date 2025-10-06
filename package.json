@@ -11,6 +11,8 @@
     "build": "vite build",
     "preview": "vite preview --port 5175",
     "preview:build": "vite build && vite preview --port 5173 > logs/preview.log 2>&1 & echo $! > logs/preview.pid",
+    "validate-ports": "node scripts/validate-ports.mjs",
+    "predeploy": "npm run validate-ports",
     "deploy": "node scripts/deploy.mjs",
     "e2e": "playwright test",
     "test": "vitest run",
