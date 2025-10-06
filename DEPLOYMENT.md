@@ -1,0 +1,202 @@
+# Deployment Guide
+
+## Overview
+
+This guide explains how to safely deploy Murphy's Laws to the production droplet without causing CPU/memory issues.
+
+## Problem We Fixed
+
+**Previous issue:** Running `npm run preview` on the droplet triggered `vite build` every time, causing:
+- Multiple concurrent builds (33+ restarts)
+- 100% CPU usage
+- Out of memory (OOM) on 1GB droplet
+- System crash/freeze
+
+**Solution:** Build locally, deploy only `dist/` folder, serve pre-built files.
+
+---
+
+## One-Time Setup (Already Done)
+
+These steps have been completed but are documented for reference:
+
+### On Droplet (45.55.124.212)
+
+1. **Add swap space** (critical for 1GB droplet):
+```bash
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+2. **Create PM2 ecosystem config** (`ecosystem.config.cjs`):
+```javascript
+module.exports = {
+  apps: [
+    {
+      name: 'murphys-api',
+      script: 'scripts/api-server.mjs',
+      // ... config ...
+    },
+    {
+      name: 'murphys-frontend',
+      script: 'npx',
+      args: 'vite preview --host 0.0.0.0 --port 5175',  // No build!
+      // ... config ...
+    }
+  ]
+};
+```
+
+3. **Enable PM2 auto-start**:
+```bash
+pm2 startup systemd
+# Run the command it outputs
+pm2 save
+```
+
+---
+
+## Deployment Workflow
+
+### Option 1: Automated Deployment (Recommended)
+
+From your local machine:
+
+```bash
+npm run deploy
+```
+
+This script:
+1. Builds project locally (`npm run build`)
+2. Syncs `dist/` to droplet via rsync
+3. Restarts PM2 services
+4. Shows service status
+
+### Option 2: Manual Deployment
+
+```bash
+# 1. Build locally
+npm run build
+
+# 2. Sync to droplet
+rsync -avz --delete dist/ root@45.55.124.212:/root/murphys-laws/dist/
+
+# 3. Restart services
+ssh root@45.55.124.212 "cd /root/murphys-laws && pm2 restart ecosystem.config.cjs"
+
+# 4. Check status
+ssh root@45.55.124.212 "pm2 list"
+```
+
+---
+
+## Monitoring
+
+### Check Service Status
+
+```bash
+ssh root@45.55.124.212 "pm2 list"
+```
+
+### View Logs
+
+```bash
+# PM2 logs
+ssh root@45.55.124.212 "pm2 logs"
+
+# API logs
+ssh root@45.55.124.212 "tail -f /root/murphys-laws/logs/api-out.log"
+
+# Frontend logs
+ssh root@45.55.124.212 "tail -f /root/murphys-laws/logs/frontend-out.log"
+```
+
+### Check System Resources
+
+```bash
+ssh root@45.55.124.212 "free -h && top -b -n 1 | head -15"
+```
+
+---
+
+## Troubleshooting
+
+### Services Won't Start
+
+```bash
+# Check PM2 logs
+ssh root@45.55.124.212 "pm2 logs --err --lines 50"
+
+# Check if ports are in use
+ssh root@45.55.124.212 "lsof -i :5175 && lsof -i :8787"
+
+# Restart services
+ssh root@45.55.124.212 "cd /root/murphys-laws && pm2 restart all"
+```
+
+### High CPU/Memory Usage
+
+```bash
+# Check what's running
+ssh root@45.55.124.212 "ps aux | grep -E 'node|vite|npm' | grep -v grep"
+
+# If you see 'vite build' processes, kill them:
+ssh root@45.55.124.212 "pkill -9 -f 'vite build'"
+
+# Restart PM2 properly
+ssh root@45.55.124.212 "pm2 restart ecosystem.config.cjs"
+```
+
+### Need to Rebuild Everything on Droplet
+
+```bash
+ssh root@45.55.124.212
+cd /root/murphys-laws
+
+# Stop services
+pm2 stop all
+
+# Build (only if necessary!)
+npm run build
+
+# Restart
+pm2 restart all
+```
+
+---
+
+## Important Notes
+
+- ✅ **DO** build locally and deploy `dist/`
+- ✅ **DO** use `npm run deploy` for deployments
+- ❌ **DON'T** run `npm run preview:build` on the droplet (it rebuilds)
+- ❌ **DON'T** run `vite build` on the droplet unless absolutely necessary
+- ❌ **DON'T** disable swap space
+
+---
+
+## Architecture
+
+```
+Local Dev Machine
+  └─> npm run build (builds dist/)
+  └─> npm run deploy
+      └─> rsync dist/ to droplet
+      └─> pm2 restart
+
+Droplet (45.55.124.212)
+  ├─> murphys-api (Node.js on :8787)
+  └─> murphys-frontend (vite preview on :5175, serves pre-built dist/)
+```
+
+---
+
+## Future Improvements
+
+- Set up GitHub Actions for automated deployments
+- Add health check endpoints
+- Implement zero-downtime deployments
+- Consider upgrading to 2GB droplet or using CDN for static assets
