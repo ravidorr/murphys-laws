@@ -8,7 +8,7 @@ export function Calculator() {
   const formula = '\\(P=\\frac{((U+C+I)\\times (10-S))}{20}\\times A\\times \\frac{1}{(1-\\sin (\\frac{F}{10}))}\\)';
 
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page calculator';
 
   el.innerHTML = `
     <div class="card">
