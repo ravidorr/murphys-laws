@@ -13,6 +13,11 @@
   background: color-mix(in oklab, var(--bg) 98%, white 2%);
 }
 
+/* Add horizontal padding to calculator card content to match other pages */
+.calculator .card .card-content {
+  padding: 1.25rem 1rem;
+}
+
 .calc-input-grid {
   display: grid;
   grid-template-columns: 1fr;
