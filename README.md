@@ -139,6 +139,33 @@ git push
 
 A git hook will prevent you from accidentally committing the database file.
 
+### Email Notifications
+
+The API server can send email notifications when new laws are submitted. To enable:
+
+1. **Create a `.env` file** (copy from `.env.example`):
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure SMTP settings** in `.env`:
+   ```bash
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   EMAIL_FROM=noreply@murphys-laws.com
+   ```
+
+3. **For Gmail**: Use an [App Password](https://support.google.com/accounts/answer/185833) instead of your regular password
+
+4. **Restart the API server**:
+   ```bash
+   npm run api
+   ```
+
+Emails will be sent to `ravidor@gmail.com` with subject "New Murphy Law Submitted!"
+
 ## Contributing
 
 This is a living collection! This archive preserves the wisdom and humor for future generations. The laws demonstrate universal truths that transcend culture, profession, and time.

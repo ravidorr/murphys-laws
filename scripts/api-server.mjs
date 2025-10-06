@@ -1,15 +1,88 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 import http from 'node:http';
 import url from 'node:url';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = resolve(__dirname, '..', 'murphys.db');
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 8787);
+
+// Email configuration
+const EMAIL_TO = 'ravidor@gmail.com';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@murphys-laws.com';
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+
+// Create email transporter if SMTP is configured
+let emailTransporter = null;
+if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+  emailTransporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  });
+  console.log('Email notifications enabled');
+} else {
+  console.log('Email notifications disabled (SMTP not configured)');
+}
+
+// Send email notification for new law submission
+async function sendNewLawEmail(lawData) {
+  if (!emailTransporter) {
+    console.log('Email not configured, skipping notification');
+    return;
+  }
+
+  try {
+    const { id, title, text, author, email } = lawData;
+
+    const mailOptions = {
+      from: EMAIL_FROM,
+      to: EMAIL_TO,
+      subject: 'New Murphy Law Submitted!',
+      text: `A new Murphy's Law has been submitted for review.
+
+Law ID: ${id}
+Title: ${title || '(no title)'}
+Text: ${text}
+Author: ${author || 'Anonymous'}
+Email: ${email || 'Not provided'}
+
+Review at: http://murphys-laws.com/admin (or use npm run review locally)
+`,
+      html: `
+        <h2>New Murphy's Law Submitted!</h2>
+        <p>A new law has been submitted for review.</p>
+        <table style="border-collapse: collapse; margin: 20px 0;">
+          <tr><td style="padding: 8px; font-weight: bold;">Law ID:</td><td style="padding: 8px;">${id}</td></tr>
+          <tr><td style="padding: 8px; font-weight: bold;">Title:</td><td style="padding: 8px;">${title || '<em>(no title)</em>'}</td></tr>
+          <tr><td style="padding: 8px; font-weight: bold;">Text:</td><td style="padding: 8px;">${text}</td></tr>
+          <tr><td style="padding: 8px; font-weight: bold;">Author:</td><td style="padding: 8px;">${author || 'Anonymous'}</td></tr>
+          <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${email || 'Not provided'}</td></tr>
+        </table>
+        <p><a href="http://murphys-laws.com/admin">Review submissions</a> (or use <code>npm run review</code> locally)</p>
+      `,
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+    console.log(`Email notification sent for law ID ${id}`);
+  } catch (error) {
+    console.error('Failed to send email notification:', error);
+    // Don't fail the submission if email fails
+  }
+}
 
 function runSqlJson(sql, params = []) {
   return new Promise((resolvePromise, reject) => {
@@ -316,6 +389,15 @@ const server = http.createServer(async (req, res) => {
       if (categoryId) {
         await runSqlJson('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)', [lawId, categoryId]);
       }
+
+      // Send email notification (async, don't wait for it)
+      sendNewLawEmail({
+        id: lawId,
+        title,
+        text,
+        author,
+        email
+      }).catch(err => console.error('Email notification failed:', err));
 
       return sendJson(res, 201, {
         id: lawId,
