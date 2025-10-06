@@ -69,8 +69,8 @@ jobs:
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
             EOF
 
-            # Only install dependencies if package.json changed
-            npm install --production
+            # Install all dependencies (including vite for preview server)
+            npm install
 
             # Run database migrations
             npm run migrate
