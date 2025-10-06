@@ -66,6 +66,15 @@ function layout(node) {
   footer.className = 'footer';
   footer.innerHTML = `
     <div class="container">
+      <div class="mt-8 text-center">
+        <!-- Google AdSense -->
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-3615614508734124"
+             data-ad-slot="4091490183"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
       <div class="mt-8 pt-8 text-center">
         <p class="small">
           <a href="https://murphys-laws.com">Murphy's Law Archive</a> by <a href="https://murphys-laws.com/about">Raanan Avidor</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
@@ -73,6 +82,13 @@ function layout(node) {
       </div>
     </div>
   `;
+
+  // Initialize AdSense ad
+  try {
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
+  } catch (e) {
+    console.error('AdSense error:', e);
+  }
 
   footer.addEventListener('click', (e) => {
     const t = e.target;
