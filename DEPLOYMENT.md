@@ -57,6 +57,67 @@ pm2 startup systemd
 pm2 save
 ```
 
+4. **Configure Nginx**:
+```bash
+# Copy nginx config from repo
+sudo cp /root/murphys-laws/nginx.conf /etc/nginx/sites-available/murphys-laws
+
+# Enable the site
+sudo ln -sf /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-enabled/
+
+# Test nginx config
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx
+```
+
+**IMPORTANT:** Ensure nginx ports match your vite.config.js:
+- Frontend proxy should point to port **5175** (not 5173)
+- API proxy should point to port **8787**
+
+---
+
+## Port Configuration
+
+All ports must be consistent across configuration files to avoid 502 errors.
+
+### Port Validation
+
+Before deploying, validate port consistency:
+
+```bash
+npm run validate-ports
+```
+
+This checks:
+- `vite.config.js` (preview port)
+- `ecosystem.config.cjs` (PM2 args)
+- `nginx.conf` (proxy_pass ports)
+- `scripts/api-server.mjs` (API default port)
+
+The validation runs automatically before `npm run deploy`.
+
+### Current Ports
+
+- **Frontend**: 5175
+- **API**: 8787
+
+### Fixing Port Mismatches
+
+If you get a 502 Bad Gateway error:
+
+```bash
+# On droplet - check which port Vite is using
+ssh root@45.55.124.212 "ss -tlnp | grep -E '5175|5173'"
+
+# Check nginx config
+ssh root@45.55.124.212 "grep proxy_pass /etc/nginx/sites-available/murphys-laws"
+
+# If mismatch, update nginx to use port 5175
+ssh root@45.55.124.212 "sed -i 's|proxy_pass http://127.0.0.1:5173;|proxy_pass http://127.0.0.1:5175;|' /etc/nginx/sites-available/murphys-laws && nginx -t && systemctl reload nginx"
+```
+
 ---
 
 ## Deployment Workflow
@@ -70,10 +131,11 @@ npm run deploy
 ```
 
 This script:
-1. Builds project locally (`npm run build`)
-2. Syncs `dist/` to droplet via rsync
-3. Restarts PM2 services
-4. Shows service status
+1. Validates port configuration (`npm run validate-ports`)
+2. Builds project locally (`npm run build`)
+3. Syncs `dist/` to droplet via rsync
+4. Restarts PM2 services
+5. Shows service status
 
 ### Option 2: Manual Deployment
 
