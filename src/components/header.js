@@ -1,5 +1,5 @@
 // Header component in plain JS
-export function Header({ onSearch, onNavigate, currentPage, isLoggedIn, currentUser }) {
+export function Header({ onSearch, onNavigate }) {
   const el = document.createElement('header');
   el.className = 'sticky';
   el.setAttribute('role', 'banner');
