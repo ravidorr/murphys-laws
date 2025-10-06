@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Deployment reminder
+echo ""
+echo "📦 Code pushed to GitHub!"
+echo ""
+echo "🚀 Remember to deploy to production:"
+echo "   npm run deploy"
+echo ""

@@ -139,6 +139,38 @@ git push
 
 A git hook will prevent you from accidentally committing the database file.
 
+## 🚀 Deployment
+
+**IMPORTANT**: Always deploy from your **local machine**, never build on the droplet!
+
+### Deploy to Production
+
+```bash
+npm run deploy
+```
+
+This command:
+1. ✅ Validates port configuration
+2. 🔨 Builds the project locally
+3. 📤 Syncs `dist/` folder to droplet
+4. 🔄 Restarts services
+5. ✅ Shows deployment status
+
+### Deployment Rules
+
+- ✅ **DO**: Run `npm run deploy` from your local machine
+- ✅ **DO**: Let the script validate ports automatically
+- ❌ **DON'T**: Run `npm run build` or `vite build` on the droplet (causes OOM crashes)
+- ❌ **DON'T**: SSH into droplet to deploy manually
+
+### Troubleshooting Deployments
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for:
+- Complete deployment guide
+- Port configuration validation
+- Troubleshooting 502 errors
+- Monitoring and logs
+
 ### Email Notifications
 
 The API server can send email notifications when new laws are submitted. To enable:
