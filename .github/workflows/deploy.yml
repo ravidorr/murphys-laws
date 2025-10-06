@@ -10,7 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
       - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/,scripts/,ecosystem.config.cjs,nginx.conf"
+          target: "/root/murphys-laws/"
+          overwrite: true
+
+      - name: Update server and restart services
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -22,17 +47,16 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 22
 
-            # Ensure required system dependencies are installed
-            command -v sqlite3 >/dev/null 2>&1 || sudo apt-get install -y sqlite3
-            command -v git >/dev/null 2>&1 || sudo apt-get install -y git
-            command -v nginx >/dev/null 2>&1 || sudo apt-get install -y nginx
-
             cd ~/murphys-laws
+
             # Backup production database before pulling
-            cp murphys.db murphys.db.backup
+            cp murphys.db murphys.db.backup 2>/dev/null || true
+
+            # Pull latest code (for migrations, package.json, etc)
             git pull origin main
+
             # Restore production database (prevent overwriting)
-            cp murphys.db.backup murphys.db
+            cp murphys.db.backup murphys.db 2>/dev/null || true
 
             # Create .env file with secrets
             cat > .env << EOF
@@ -45,9 +69,12 @@ jobs:
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
             EOF
 
-            npm install
+            # Only install dependencies if package.json changed
+            npm install --production
+
             # Run database migrations
             npm run migrate
-            npm run build
-            pm2 restart murphys-frontend
-            pm2 restart murphys-api
+
+            # Restart services (they now serve pre-built dist/)
+            pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
+            pm2 save
