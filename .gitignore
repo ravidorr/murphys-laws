@@ -11,6 +11,7 @@ logs/
 
 # Test artifacts
 test-results/
+coverage/
 
 # Database (production data - don't commit)
 murphys.db
