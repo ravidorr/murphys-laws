@@ -45,6 +45,25 @@ header.sticky {
   border: none;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease;
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+
+  25% {
+    transform: scale(1.05);
+  }
+
+  50% {
+    transform: scale(1);
+  }
+
+  75% {
+    transform: scale(1.05);
+  }
 }
 
 .brand-badge:hover {
