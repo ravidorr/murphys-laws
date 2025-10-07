@@ -14,29 +14,24 @@ export function SodCalculatorSimple({ onNavigate }) {
       <div class="section-body">
         <div class="sod-simple-inputs">
           <div class="sod-simple-slider-group">
-            <label for="urgency">The task urgency</label>
+            <label for="urgency">The task urgency: <span class="sod-simple-value" id="urgency-value">5</span></label>
             <input type="range" id="urgency" min="1" max="9" value="5" />
-            <span class="sod-simple-value" id="urgency-value">5</span>
           </div>
           <div class="sod-simple-slider-group">
-            <label for="complexity">The task complexity</label>
+            <label for="complexity">The task complexity: <span class="sod-simple-value" id="complexity-value">5</span></label>
             <input type="range" id="complexity" min="1" max="9" value="5" />
-            <span class="sod-simple-value" id="complexity-value">5</span>
           </div>
           <div class="sod-simple-slider-group">
-            <label for="importance">The task importance</label>
+            <label for="importance">The task importance: <span class="sod-simple-value" id="importance-value">5</span></label>
             <input type="range" id="importance" min="1" max="9" value="5" />
-            <span class="sod-simple-value" id="importance-value">5</span>
           </div>
           <div class="sod-simple-slider-group">
-            <label for="skill">Your skills</label>
+            <label for="skill">Your skills: <span class="sod-simple-value" id="skill-value">5</span></label>
             <input type="range" id="skill" min="1" max="9" value="5" />
-            <span class="sod-simple-value" id="skill-value">5</span>
           </div>
           <div class="sod-simple-slider-group">
-            <label for="frequency">The task frequency</label>
+            <label for="frequency">The task frequency: <span class="sod-simple-value" id="frequency-value">5</span></label>
             <input type="range" id="frequency" min="1" max="9" value="5" />
-            <span class="sod-simple-value" id="frequency-value">5</span>
           </div>
         </div>
         <div class="sod-simple-score-label">The probability of things going wrong:</div>
