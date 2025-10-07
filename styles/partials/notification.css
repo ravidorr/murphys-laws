@@ -1,9 +1,7 @@
-/*
-  notification.css
-  ------------------------------------------------------------------
-  Purpose: Global notification/toast system for displaying success
-           and error messages from the backend
-*/
+/* ==========================
+  notification styles
+  Global notification/toast system for displaying success and error messages from the backend
+   ========================== */
 
 .notification-container {
   position: fixed;
@@ -23,7 +21,7 @@
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 15%), 0 2px 4px rgb(0 0 0 / 10%);
+  box-shadow: 0 4px 12px var(--shadow-medium), 0 2px 4px var(--shadow-light);
   pointer-events: auto;
   opacity: 0;
   transform: translateX(calc(100% + 1rem));
@@ -41,15 +39,15 @@
 }
 
 .notification-success {
-  background: #dcfce7;
-  border: 1px solid #86efac;
-  color: #166534;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
 }
 
 .notification-error {
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
 }
 
 .notification-content {
@@ -65,11 +63,11 @@
 }
 
 .notification-success .notification-icon {
-  color: #16a34a;
+  color: var(--success);
 }
 
 .notification-error .notification-icon {
-  color: #dc2626;
+  color: var(--error);
 }
 
 .notification-message {
@@ -98,7 +96,7 @@
 
 .notification-close:hover {
   opacity: 1;
-  background: rgb(0 0 0 / 5%);
+  background: var(--shadow-light);
 }
 
 .notification-close:focus-visible {
