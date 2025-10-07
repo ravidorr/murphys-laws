@@ -1,10 +1,7 @@
-/*
-  sections.css
-  ------------------------------------------------------------------
-  Purpose: Section-based layouts including Law of the Day widget,
-           section cards, simplified Sod calculator, and submit form sections
-  Extracted from site.css lines 567-722, 724-821
-*/
+/* ==========================
+  sections styles
+  Section-based layouts including Law of the Day widget, section cards, simplified Sod calculator, and submit form sections
+   ========================== */
 
 /* Law of the Day widget (scoped) */
 .section-card {
@@ -12,7 +9,7 @@
   border-radius: .75rem;
   background: color-mix(in oklab, var(--bg) 98%, white 2%);
   overflow: hidden;
-  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+  box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
 }
 
 .section-body {
@@ -106,8 +103,8 @@
   font-weight: 700;
 }
 
-.count-up .icon { color: #16a34a; }
-.count-down .icon { color: #ef4444; }
+.count-up .icon { color: var(--success); }
+.count-down .icon { color: var(--error); }
 
 /* Vote buttons */
 .vote-btn {
@@ -128,7 +125,7 @@
 }
 
 .vote-btn:focus-visible {
-  outline: 2px solid var(--btn-primary);
+  outline: 2px solid var(--btn-primary-bg);
   outline-offset: 2px;
 }
 
@@ -138,11 +135,11 @@
 }
 
 .vote-btn.voted.count-up {
-  background: color-mix(in oklab, #16a34a 15%, transparent 85%);
+  background: color-mix(in oklab, var(--success) 15%, transparent 85%);
 }
 
 .vote-btn.voted.count-down {
-  background: color-mix(in oklab, #ef4444 15%, transparent 85%);
+  background: color-mix(in oklab, var(--error) 15%, transparent 85%);
 }
 
 .icon {
@@ -163,41 +160,6 @@
   vertical-align: middle;
 }
 
-.lod-icon.ml { margin-left: .25rem; }
-
-/* Button override to Stitch blue for this widget only */
-.section .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .4rem;
-  background: var(--btn-primary);
-  border-color: var(--btn-primary);
-  color: #fff;
-  box-shadow: 0 4px 14px rgb(17 115 212 / 35%);
-}
-
-.section .btn:hover { filter: saturate(1.1) brightness(1.08); }
-
-.section .btn:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--btn-primary) 75%, white 25%);
-  outline-offset: 2px;
-}
-
-/* Skeleton while loading */
-.lod-skeleton {
-  height: 7.5rem;
-  border-radius: .75rem;
-  background: linear-gradient(90deg, #eee 25%, #f6f6f6 37%, #eee 63%);
-  background-size: 400% 100%;
-  animation: lod-pulse 1.2s ease infinite;
-  border: 1px solid var(--border);
-}
-
-@keyframes lod-pulse {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 
 /* Simplified Sod's Law Calculator */
 
@@ -222,12 +184,116 @@
 
 .sod-simple-slider-group input[type="range"] {
   width: 100%;
+  margin: 4px 0;
+  background-color: transparent;
+  appearance: none;
+  appearance: none;
+}
+
+.sod-simple-slider-group input[type="range"]:focus {
+  outline: none;
+}
+
+.sod-simple-slider-group input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 2px;
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+}
+
+.sod-simple-slider-group input[type="range"]::-webkit-slider-thumb {
+  margin-top: -6px;
+  width: 16px;
+  height: 16px;
+  background: var(--bg);
+  border: 4px solid var(--btn-primary-bg);
+  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+  appearance: none;
+}
+
+.sod-simple-slider-group input[type="range"]:focus::-webkit-slider-runnable-track {
+  background: var(--btn-primary-bg);
+}
+
+.sod-simple-slider-group input[type="range"]::-moz-range-track {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 2px;
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+}
+
+.sod-simple-slider-group input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--bg);
+  border: 4px solid var(--btn-primary-bg);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.sod-simple-slider-group input[type="range"]::-ms-track {
+  background: transparent;
+  border-color: transparent;
+  border-width: 5px 0;
+  color: transparent;
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+}
+
+.sod-simple-slider-group input[type="range"]::-ms-fill-lower {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 6px;
+}
+
+.sod-simple-slider-group input[type="range"]::-ms-fill-upper {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 6px;
+}
+
+.sod-simple-slider-group input[type="range"]::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--bg);
+  border: 4px solid var(--btn-primary-bg);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 0;
+
+  /* Needed to keep the Edge thumb centred */
+}
+
+.sod-simple-slider-group input[type="range"]:focus::-ms-fill-lower {
+  background: var(--btn-primary-bg);
+}
+
+.sod-simple-slider-group input[type="range"]:focus::-ms-fill-upper {
+  background: var(--btn-primary-bg);
+}
+
+/* TODO: Use one of the selectors from https://stackoverflow.com/a/20541859/7077589 and figure out
+how to remove the virtical space around the range input in IE */
+@supports (-ms-ime-align:auto) {
+  /* Pre-Chromium Edge only styles, selector taken from hhttps://stackoverflow.com/a/32202953/7077589 */
+  input[type="range"] {
+    margin: 0;
+
+    /* Edge starts the margin from the thumb, not the track as other browsers do */
+  }
 }
 
 .sod-simple-value {
   font-size: .875rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--btn-primary-bg);
   text-align: center;
 }
 
@@ -295,7 +361,7 @@
 }
 
 .submit-char-counter-error {
-  color: #dc2626;
+  color: var(--error);
 }
 
 .submit-checkbox-group {
@@ -332,15 +398,15 @@
 }
 
 .submit-message.success {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
 }
 
 .submit-message.error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
 }
 
 /* Empty State */
@@ -440,8 +506,8 @@
   font-size: 1rem;
 }
 
-.count-up .icon-sm { color: #16a34a; }
-.count-down .icon-sm { color: #ef4444; }
+.count-up .icon-sm { color: var(--success); }
+.count-down .icon-sm { color: var(--error); }
 
 /* Advanced Search */
 .advanced-search-grid {
@@ -477,16 +543,16 @@
   background-size: 16px;
   padding-right: 2.75rem;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
+  box-shadow: 0 1px 3px var(--shadow-light);
 }
 
 .search-field select:hover {
   background-color: color-mix(in oklab, var(--bg) 96%, white 4%);
-  box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+  box-shadow: 0 2px 6px var(--shadow-light);
 }
 
 .search-field select:focus {
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent 80%);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--btn-primary-bg) 20%, transparent 80%);
 }
 
 .search-field select option {
@@ -502,16 +568,6 @@
   align-items: center;
 }
 
-.search-actions .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-}
-
-.search-actions .btn .icon {
-  font-size: 1.25rem;
-}
 
 @media (width <= 768px) {
   .advanced-search-grid {

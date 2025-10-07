@@ -46,13 +46,13 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
         </div>
 
         <div class="search-actions">
-          <button id="search-btn" class="btn" type="button">
-            <span class="btn-text">Search</span>
-            <span class="material-symbols-outlined icon">search</span>
-          </button>
           <button id="clear-btn" class="btn outline" type="button">
             <span class="btn-text">Clear</span>
             <span class="material-symbols-outlined icon">clear</span>
+          </button>
+          <button id="search-btn" class="btn" type="button">
+            <span class="btn-text">Search</span>
+            <span class="material-symbols-outlined icon">search</span>
           </button>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
       // Update category dropdown
       categorySelect.innerHTML = '<option value="">All Categories</option>' +
-        categories.map(cat => `<option value="${cat.id}" ${cat.id === selectedCategory ? 'selected' : ''}>${cat.title}</option>`).join('');
+        categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${cat.title}</option>`).join('');
 
       // Fetch attributions
       const attData = await fetchAPI('/api/attributions');

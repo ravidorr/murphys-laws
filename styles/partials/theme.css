@@ -5,17 +5,17 @@
 @media (prefers-color-scheme: dark) {
   /* Dark mode variables */
   :root {
-    --bg: #0b0b11;           /* near-black page background */
-    --fg: #e9eaee;           /* slightly softer than pure white */
-    --muted-fg: #b3b7c4;     /* brighter muted text for readability */
-    --border: rgb(255 255 255 / 18%); /* more visible borders */
-    --primary: #4f46e5;      /* indigo-600 - brighter brand/accent for dark mode */
+    --bg: var(--dark-bg-primary);
+    --fg: var(--dark-fg-primary);
+    --muted-fg: var(--dark-muted-fg);
+    --border: var(--dark-border);
+    --primary: var(--dark-primary);
   }
 
   /* Links */
-  a { color: #9ecbff; }
-  a:visited { color: #b8a6ff; }
-  a:hover, a:focus-visible { color: #cfe5ff; }
+  a { color: var(--dark-link); }
+  a:visited { color: var(--dark-link-visited); }
+  a:hover, a:focus-visible { color: var(--dark-link-hover); }
 
   /* Header */
   header.sticky {
@@ -26,27 +26,27 @@
   /* Brand badge */
   .brand-badge {
     background: var(--primary);
-    color: #fff;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px rgb(0 0 0 / 45%);
+    color: var(--white);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px var(--shadow-dark);
   }
 
   /* Cards */
   .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     border-color: var(--border);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
 
   /* Section cards */
   .section-card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
 
   /* Law detail card */
   .law-detail .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px rgb(0 0 0 / 40%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
 
   /* Footer */
@@ -94,67 +94,57 @@
 
   /* Pagination */
   .pagination .btn[aria-current='page'] {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
-    box-shadow: 0 4px 14px rgb(79 70 229 / 35%);
+    background: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
+    box-shadow: 0 4px 14px var(--shadow-blue-dark);
   }
 
   .pagination .btn:hover {
     filter: brightness(1.08);
   }
 
-  /* Tooltips */
-  .has-legend[data-legend]:hover::after,
-  .has-legend[data-legend]:focus-within::after {
-    background: #0f1115;
-    color: #e9eaee;
-    border: 1px solid var(--border);
-  }
 
   /* Blockquote */
   .blockquote {
-    border-left-color: color-mix(in oklab, var(--primary) 85%, white 15%);
+    border-left-color: color-mix(in oklab, var(--btn-primary-bg) 85%, white 15%);
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
   }
 
   /* Calculator semantic states (dark mode) */
   .calc-ok {
-    background: #103424;   /* deep green */
-    color: #c9f1dd;
+    background: var(--dark-success-bg);
+    color: var(--dark-success-fg);
   }
 
   .calc-warn {
-    background: #3b2f07;   /* deep amber */
-    color: #ffe29a;
+    background: var(--dark-warning-bg);
+    color: var(--dark-warning-fg);
   }
 
   .calc-orange {
-    background: #402214;   /* deep orange */
-    color: #ffd9bf;
+    background: var(--dark-orange-bg);
+    color: var(--dark-orange-fg);
   }
 
   .calc-danger {
-    background: #3c151d;   /* deep red */
-    color: #ffc4cc;
+    background: var(--dark-error-bg);
+    color: var(--dark-error-fg);
   }
 
   .calc-dark {
-    background: #2a1b1b;
-    color: #f0d6d6;
+    background: var(--dark-dark-bg);
+    color: var(--dark-dark-fg);
   }
 
   /* Rank styling */
   .rank {
-    color: color-mix(in oklab, var(--primary) 85%, white 15%);
-    text-shadow: 0 1px 0 rgb(0 0 0 / 40%);
+    color: color-mix(in oklab, var(--btn-primary-bg) 85%, white 15%);
+    text-shadow: 0 1px 0 var(--shadow-light);
   }
-
-  /* Score color */
-  .lod-score { color: #7ef29a; }
 
   /* Skeleton loading */
   .skeleton {
-    background: linear-gradient(90deg, #1a1a22 25%, #202028 37%, #1a1a22 63%);
+    background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
   }
 }

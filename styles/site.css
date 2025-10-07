@@ -1,7 +1,7 @@
-/*
-  Murphy's Laws - Global Stylesheet (site.css)
-  ------------------------------------------------------------------
-  Purpose: Main entry point for all styles, organized into modular files.
+/* ==========================
+  Murphy's Laws - Global Stylesheet
+  ===========================
+  Main entry point for all styles, organized into CSS partials.
 
   Structure:
   - Variables (CSS custom properties)
@@ -15,15 +15,15 @@
 
   Fonts:
   - Primary display: Work Sans (via Google Fonts), with robust fallbacks.
-*/
+   ========================== */
 
-/* Import modular CSS files */
-@import url('./modules/variables.css');
-@import url('./modules/base.css');
-@import url('./modules/utilities.css');
-@import url('./modules/layout.css');
-@import url('./modules/components.css');
-@import url('./modules/sections.css');
-@import url('./modules/calculator.css');
-@import url('./modules/notification.css');
-@import url('./modules/theme.css');
+/* Import CSS partials */
+@import url('./partials/variables.css');
+@import url('./partials/base.css');
+@import url('./partials/utilities.css');
+@import url('./partials/layout.css');
+@import url('./partials/components.css');
+@import url('./partials/sections.css');
+@import url('./partials/calculator.css');
+@import url('./partials/notification.css');
+@import url('./partials/theme.css');

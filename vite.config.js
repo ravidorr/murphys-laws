@@ -45,11 +45,13 @@ export default defineConfig({
         'dist/**',
         '**/*.config.js',
         '**/*.config.ts',
+        '**/*.config.cjs',
+        'src/main.js',        // Entry point - integration tested via e2e
       ],
       thresholds: {
         lines: 80,
         functions: 80,
-        branches: 70,
+        branches: 80,
         statements: 80
       }
     },

@@ -1,9 +1,7 @@
-/*
-  layout.css
-  ------------------------------------------------------------------
-  Purpose: Header, navigation dropdown, and search form layout styles
-  Extracted from site.css lines 304-434
-*/
+/* ==========================
+  layout styles
+  Header, navigation dropdown, and search form layout styles
+   ========================== */
 
 /* Header */
 header.sticky {
@@ -36,7 +34,7 @@ header.sticky {
   width: 3.2rem;
   height: 3.2rem;
   background: var(--primary);
-  color: #fff;
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -90,7 +88,7 @@ header.sticky {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: .75rem;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+  box-shadow: 0 8px 24px var(--shadow-medium);
   min-width: 250px;
   opacity: 0;
   visibility: hidden;
