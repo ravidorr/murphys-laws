@@ -37,7 +37,7 @@
   margin-bottom: .5rem;
 }
 
-.calc-slider-group input[type='range'] {
+/* .calc-slider-group input[type='range'] {
   width: 100%;
   appearance: none;
   height: 8px;
@@ -61,6 +61,119 @@
   background: var(--primary);
   border-radius: 50%;
   cursor: pointer;
+} */
+
+.calc-slider-group input[type="range"] {
+  width: 100%;
+  margin: 11px 0;
+  background-color: transparent;
+  appearance: none;
+  appearance: none;
+}
+
+.calc-slider-group input[type="range"]:focus {
+  outline: none;
+}
+
+.calc-slider-group input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--btn-primary);
+  border: 0;
+  border-radius: 3px;
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  content: 'aaa';
+  margin-top: -11px;
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  border: 5px solid var(--btn-primary);
+  border-radius: 14px;
+  cursor: pointer;
+  appearance: none;
+  appearance: none;
+}
+
+input[type="range"]:focus::-webkit-slider-runnable-track {
+  background: var(--btn-primary);
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--btn-primary);
+  border: 0;
+  border-radius: 3px;
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  border: 5px solid var(--btn-primary);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+input[type="range"]::-ms-track {
+  background: transparent;
+  border-color: transparent;
+  border-width: 11px 0;
+  color: transparent;
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+}
+
+input[type="range"]::-ms-fill-lower {
+  background: var(--btn-primary);
+  border: 0;
+  border-radius: 6px;
+}
+
+input[type="range"]::-ms-fill-upper {
+  background: var(--btn-primary);
+  border: 0;
+  border-radius: 6px;
+}
+
+input[type="range"]::-ms-thumb {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  border: 5px solid var(--btn-primary);
+  border-radius: 14px;
+  cursor: pointer;
+  margin-top: 0;
+
+  /* Needed to keep the Edge thumb centred */
+}
+
+input[type="range"]:focus::-ms-fill-lower {
+  background: var(--btn-primary);
+}
+
+input[type="range"]:focus::-ms-fill-upper {
+  background: var(--btn-primary);
+}
+
+/* TODO: Use one of the selectors from https://stackoverflow.com/a/20541859/7077589 and figure out
+how to remove the virtical space around the range input in IE */
+@supports (-ms-ime-align:auto) {
+  /* Pre-Chromium Edge only styles, selector taken from hhttps://stackoverflow.com/a/32202953/7077589 */
+  input[type="range"] {
+    margin: 0;
+
+    /* Edge starts the margin from the thumb, not the track as other browsers do */
+  }
+}
+
+.label-without-input {
+  font-weight: 600;
 }
 
 .calc-slider-value {
@@ -101,6 +214,77 @@
 .formula mjx-container {
   font-size: 240% !important;
   line-height: 2.4;
+}
+
+/* Make formula variables with tooltips interactive */
+.formula mjx-mi[data-tooltip] {
+  cursor: help;
+  border-bottom: 2px dotted var(--primary);
+  padding-bottom: 2px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.formula mjx-mi[data-tooltip]:hover {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  border-bottom-style: solid;
+}
+
+/* Custom tooltip - professional and polished */
+.formula mjx-mi[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  display: block;
+  transform: translateX(-50%) translateY(-4px);
+  margin-bottom: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  color: #fff;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  white-space: nowrap;
+  border-radius: 8px;
+  box-shadow:
+    0 2px 8px rgb(0 0 0 / 15%),
+    0 8px 24px rgb(0 0 0 / 25%),
+    0 0 0 1px rgb(255 255 255 / 10%) inset;
+  z-index: 1000;
+  pointer-events: none;
+  animation: tooltip-fade-in 0.2s ease-out;
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+  }
+}
+
+/* Tooltip arrow - enhanced */
+.formula mjx-mi[data-tooltip]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(1px);
+  margin-bottom: 0;
+  border: 10px solid transparent;
+  border-top-color: #2d2d2d;
+  z-index: 1000;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 10%));
+  animation: tooltip-fade-in 0.2s ease-out;
 }
 
 /* Tooltip for formula legend */
