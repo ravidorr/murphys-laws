@@ -1,14 +1,7 @@
-/*
-  calculator.css
-  ------------------------------------------------------------------
-  Purpose: Sod's Law Calculator scoped styles including container,
-           input grid, result states, and formula tooltips
-  Extracted from site.css lines 971-1105
-*/
-
 /* ==========================
-   Sod's Law Calculator (scoped styles)
+  calculator styles
    ========================== */
+
 .calc-container {
   background: color-mix(in oklab, var(--bg) 98%, white 2%);
 }
@@ -37,37 +30,10 @@
   margin-bottom: .5rem;
 }
 
-/* .calc-slider-group input[type='range'] {
-  width: 100%;
-  appearance: none;
-  height: 8px;
-  background: #e4e6eb;
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-}
-
-.calc-slider-group input[type='range']::-webkit-slider-thumb {
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  background: var(--primary);
-  border-radius: 50%;
-}
-
-.calc-slider-group input[type='range']::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: var(--primary);
-  border-radius: 50%;
-  cursor: pointer;
-} */
-
 .calc-slider-group input[type="range"] {
   width: 100%;
   margin: 11px 0;
   background-color: transparent;
-  appearance: none;
   appearance: none;
 }
 
@@ -76,7 +42,7 @@
 }
 
 .calc-slider-group input[type="range"]::-webkit-slider-runnable-track {
-  background: var(--btn-primary);
+  background: var(--btn-primary-bg);
   border: 0;
   border-radius: 3px;
   width: 100%;
@@ -84,25 +50,24 @@
   cursor: pointer;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+.calc-slider-group input[type="range"]::-webkit-slider-thumb {
   content: 'aaa';
   margin-top: -11px;
   width: 28px;
   height: 28px;
   background: var(--bg);
-  border: 5px solid var(--btn-primary);
+  border: 5px solid var(--btn-primary-bg);
   border-radius: 14px;
   cursor: pointer;
   appearance: none;
-  appearance: none;
 }
 
-input[type="range"]:focus::-webkit-slider-runnable-track {
-  background: var(--btn-primary);
+.calc-slider-group input[type="range"]:focus::-webkit-slider-runnable-track {
+  background: var(--btn-primary-bg);
 }
 
-input[type="range"]::-moz-range-track {
-  background: var(--btn-primary);
+.calc-slider-group input[type="range"]::-moz-range-track {
+  background: var(--btn-primary-bg);
   border: 0;
   border-radius: 3px;
   width: 100%;
@@ -110,16 +75,16 @@ input[type="range"]::-moz-range-track {
   cursor: pointer;
 }
 
-input[type="range"]::-moz-range-thumb {
+.calc-slider-group input[type="range"]::-moz-range-thumb {
   width: 28px;
   height: 28px;
   background: var(--bg);
-  border: 5px solid var(--btn-primary);
+  border: 5px solid var(--btn-primary-bg);
   border-radius: 14px;
   cursor: pointer;
 }
 
-input[type="range"]::-ms-track {
+.calc-slider-group input[type="range"]::-ms-track {
   background: transparent;
   border-color: transparent;
   border-width: 11px 0;
@@ -129,36 +94,34 @@ input[type="range"]::-ms-track {
   cursor: pointer;
 }
 
-input[type="range"]::-ms-fill-lower {
-  background: var(--btn-primary);
+.calc-slider-group input[type="range"]::-ms-fill-lower {
+  background: var(--btn-primary-bg);
   border: 0;
   border-radius: 6px;
 }
 
-input[type="range"]::-ms-fill-upper {
-  background: var(--btn-primary);
+.calc-slider-group input[type="range"]::-ms-fill-upper {
+  background: var(--btn-primary-bg);
   border: 0;
   border-radius: 6px;
 }
 
-input[type="range"]::-ms-thumb {
+.calc-slider-group input[type="range"]::-ms-thumb {
   width: 28px;
   height: 28px;
   background: var(--bg);
-  border: 5px solid var(--btn-primary);
+  border: 5px solid var(--btn-primary-bg);
   border-radius: 14px;
   cursor: pointer;
   margin-top: 0;
-
-  /* Needed to keep the Edge thumb centred */
 }
 
-input[type="range"]:focus::-ms-fill-lower {
-  background: var(--btn-primary);
+.calc-slider-group input[type="range"]:focus::-ms-fill-lower {
+  background: var(--btn-primary-bg);
 }
 
-input[type="range"]:focus::-ms-fill-upper {
-  background: var(--btn-primary);
+.calc-slider-group input[type="range"]:focus::-ms-fill-upper {
+  background: var(--btn-primary-bg);
 }
 
 /* TODO: Use one of the selectors from https://stackoverflow.com/a/20541859/7077589 and figure out
@@ -241,8 +204,8 @@ how to remove the virtical space around the range input in IE */
   transform: translateX(-50%) translateY(-4px);
   margin-bottom: 12px;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--gradient-dark-1) 0%, var(--gradient-dark-2) 100%);
+  color: var(--white);
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-weight: 500;
@@ -251,9 +214,9 @@ how to remove the virtical space around the range input in IE */
   white-space: nowrap;
   border-radius: 8px;
   box-shadow:
-    0 2px 8px rgb(0 0 0 / 15%),
-    0 8px 24px rgb(0 0 0 / 25%),
-    0 0 0 1px rgb(255 255 255 / 10%) inset;
+    0 2px 8px var(--shadow-medium),
+    0 8px 24px var(--shadow-dark),
+    0 0 0 1px var(--shadow-white-inset) inset;
   z-index: 1000;
   pointer-events: none;
   animation: tooltip-fade-in 0.2s ease-out;
@@ -280,53 +243,36 @@ how to remove the virtical space around the range input in IE */
   transform: translateX(-50%) translateY(1px);
   margin-bottom: 0;
   border: 10px solid transparent;
-  border-top-color: #2d2d2d;
+  border-top-color: var(--gradient-dark-1);
   z-index: 1000;
   pointer-events: none;
-  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 10%));
+  filter: drop-shadow(0 2px 2px var(--shadow-light));
   animation: tooltip-fade-in 0.2s ease-out;
 }
 
-/* Tooltip for formula legend */
-.has-legend[data-legend] { position: relative; }
-
-.has-legend[data-legend]:hover::after, .has-legend[data-legend]:focus-within::after {
-  content: attr(data-legend);
-  position: absolute;
-  top: 100%;
-  left: 0;
-  white-space: pre-wrap;
-  background: #111;
-  color: #fff;
-  padding: .5rem .75rem;
-  border-radius: .375rem;
-  z-index: 10;
-  margin-top: .25rem;
-  max-width: 32rem;
-}
 
 /* Semantic result states */
 .calc-ok {
-  background: #e7f5ee;
-  color: #0b3d22;
+  background: var(--success-bg);
+  color: var(--success-dark);
 }
 
 .calc-warn {
-  background: #fff8e1;
-  color: #5a4300;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .calc-orange {
-  background: #ffe9d6;
-  color: #6a2e00;
+  background: var(--orange-bg);
+  color: var(--orange-text);
 }
 
 .calc-danger {
-  background: #ffe3e6;
-  color: #5e0010;
+  background: var(--error-bg);
+  color: var(--error-dark);
 }
 
 .calc-dark {
-  background: #f0d6d6;
-  color: #2b0000;
+  background: var(--dark-bg);
+  color: var(--dark-text);
 }

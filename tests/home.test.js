@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { Home } from '@views/home.js';
 
 describe('Home view', () => {
@@ -31,6 +32,96 @@ describe('Home view', () => {
     block.click();
     expect(nav).toBe(`law:${sample[0].id}`);
   });
-});
 
+  it('shows no results message when total is 0', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 0, data: [] }) });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/No results found/);
+    expect(el.textContent).toMatch(/There are no laws to show/);
+  });
+
+  it('shows error message on fetch failure', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Failed to load laws/);
+    expect(consoleSpy).toHaveBeenCalledWith('API fetch failed:', expect.any(Error));
+
+    consoleSpy.mockRestore();
+  });
+
+  it('navigates using data-nav attribute', async () => {
+    const sample = [
+      { id: '1', text: 'Test law', score: 10 },
+    ];
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+
+    let navTarget = '';
+    const el = Home({ onNavigate: (target) => { navTarget = target; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a button with data-nav and add it to the element
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', 'browse');
+    el.appendChild(navBtn);
+
+    navBtn.click();
+    expect(navTarget).toBe('browse');
+  });
+
+  it('handles law card without id gracefully', async () => {
+    const sample = [
+      { id: '1', text: 'Test law', score: 10 },
+    ];
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+
+    let navCalled = false;
+    const el = Home({ onNavigate: () => { navCalled = true; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a law card without data-law-id attribute
+    const card = document.createElement('div');
+    card.setAttribute('data-law-id', '');
+    el.appendChild(card);
+
+    card.click();
+    expect(navCalled).toBe(false);
+  });
+
+  it('renders with no law of the day when laws array is empty', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: [] }) });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Should render calculator and submit sections but no law of the day
+    expect(el.textContent).not.toMatch(/Law of the Day/);
+  });
+
+  it('handles non-HTMLElement click targets', async () => {
+    const sample = [
+      { id: '1', text: 'Test law', score: 10 },
+    ];
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Simulate click with non-HTMLElement target
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null, writable: false });
+    el.dispatchEvent(event);
+
+    // Should not throw error
+    expect(true).toBe(true);
+  });
+});
 

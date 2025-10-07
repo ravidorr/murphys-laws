@@ -1,15 +1,12 @@
-/*
-  components.css
-  ------------------------------------------------------------------
-  Purpose: Reusable component styles including buttons, inputs, cards,
-           law detail card, pagination, and law-meta
-  Extracted from site.css lines 436-517, 523-565, 816-821, 823-843, 940-969
-*/
+/* ==========================
+  components styles
+  Reusable component styles including buttons, inputs, cards, law detail card, pagination, and law-meta
+   ========================== */
 
 .btn, button {
-  background: var(--primary);
-  color: #fff;
-  border: 1px solid var(--primary);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: 1px solid var(--btn-primary-bg);
   border-radius: .5rem;
   padding: .5rem .875rem;
   cursor: pointer;
@@ -49,8 +46,8 @@ button .btn-text {
 /* Universal hover/active for filled buttons (light mode) */
 .btn:hover,
 button:hover {
-  background: color-mix(in oklab, var(--primary) 92%, white 8%);
-  border-color: color-mix(in oklab, var(--primary) 92%, white 8%);
+  background: color-mix(in oklab, var(--btn-primary-bg) 92%, white 8%);
+  border-color: color-mix(in oklab, var(--btn-primary-bg) 92%, white 8%);
 }
 
 .btn:active,
@@ -64,21 +61,21 @@ button.outline:hover,
 .btn.outline:focus-visible,
 button.outline:focus-visible {
   background: color-mix(in oklab, var(--bg) 90%, black 10%);
-  border-color: color-mix(in oklab, var(--border) 70%, var(--primary) 30%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
 }
 
 /* Focus ring for accessibility (light mode) */
 .btn:focus-visible,
 button:focus-visible,
 a.btn:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--primary) 75%, black 25%);
+  outline: 2px solid color-mix(in oklab, var(--btn-primary-bg) 75%, black 25%);
   outline-offset: 2px;
 }
 
 button.link {
   background: none;
   border: none;
-  color: var(--primary);
+  color: var(--btn-primary-bg);
   padding: 0;
 }
 
@@ -103,16 +100,16 @@ input[type='text']:focus,
 input[type='email']:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--btn-primary-bg);
   outline-offset: 0;
-  border-color: var(--primary);
+  border-color: var(--btn-primary-bg);
 }
 
 input[type='text']:hover,
 input[type='email']:hover,
 textarea:hover,
 select:hover {
-  border-color: color-mix(in oklab, var(--border) 70%, var(--primary) 30%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
 }
 
 /* ==========================
@@ -124,7 +121,7 @@ select:hover {
   border: 2px solid var(--border);
   border-radius: .75rem;
   background: color-mix(in oklab, var(--bg) 98%, white 2%);
-  box-shadow: 0 20px 40px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 5%);
+  box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
 }
 
 .law-detail h2 {
@@ -160,7 +157,7 @@ select:hover {
 }
 
 .law-detail .law-meta span:first-child .pos {
-  color: #16a34a;
+  color: var(--success);
 }
 
 .btn:disabled,
@@ -188,9 +185,6 @@ button:disabled {
   font-size: 1.25rem;
 }
 
-.thick-border {
-  border-width: 2px;
-}
 
 .law-meta {
   display: flex;
@@ -214,11 +208,11 @@ button:disabled {
 }
 
 .pagination .btn[aria-current='page'] {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   pointer-events: none;
-  box-shadow: 0 2px 8px rgb(79 70 229 / 25%);
+  box-shadow: 0 2px 8px var(--shadow-blue);
 }
 
 .pagination .btn.disabled,
