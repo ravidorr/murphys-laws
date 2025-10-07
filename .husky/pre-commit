@@ -10,5 +10,19 @@ if git diff --cached --name-only | grep -q "^murphys\.db$"; then
   exit 1
 fi
 
+# Run tests before allowing commit
+echo "🧪 Running tests..."
+npm test
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Tests failed! Commit blocked."
+  echo ""
+  echo "Please fix the failing tests before committing."
+  echo "Run 'npm test' to see detailed test results."
+  exit 1
+fi
+
+echo "✅ All tests passed!"
+
 node scripts/sanitize-husky-hooks.mjs
 npx lint-staged
