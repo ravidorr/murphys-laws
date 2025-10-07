@@ -187,7 +187,6 @@
   margin: 4px 0;
   background-color: transparent;
   appearance: none;
-  appearance: none;
 }
 
 .sod-simple-slider-group input[type="range"]:focus {
@@ -205,13 +204,12 @@
 
 .sod-simple-slider-group input[type="range"]::-webkit-slider-thumb {
   margin-top: -6px;
-  width: 16px;
+  width: 8px;
   height: 16px;
   background: var(--bg);
-  border: 4px solid var(--btn-primary-bg);
+  border: 4px solid var(--fg);
   border-radius: 8px;
   cursor: pointer;
-  appearance: none;
   appearance: none;
 }
 
@@ -229,10 +227,10 @@
 }
 
 .sod-simple-slider-group input[type="range"]::-moz-range-thumb {
-  width: 16px;
+  width: 8px;
   height: 16px;
   background: var(--bg);
-  border: 4px solid var(--btn-primary-bg);
+  border: 4px solid var(--fg);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -260,10 +258,10 @@
 }
 
 .sod-simple-slider-group input[type="range"]::-ms-thumb {
-  width: 16px;
+  width: 8px;
   height: 16px;
   background: var(--bg);
-  border: 4px solid var(--btn-primary-bg);
+  border: 4px solid var(--fg);
   border-radius: 8px;
   cursor: pointer;
   margin-top: 0;
@@ -463,7 +461,7 @@ how to remove the virtical space around the range input in IE */
 }
 
 .law-card-mini:hover {
-  background: color-mix(in oklab, var(--bg) 94%, white 6%);
+  background: color-mix(in oklab, var(--bg) 94%, var(--fg) 6%);
 }
 
 .law-card-header {
