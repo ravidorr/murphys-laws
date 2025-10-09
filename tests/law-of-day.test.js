@@ -188,6 +188,16 @@ describe('LawOfTheDay component', () => {
     expect(upvoteBtn.classList.contains('voted')).toBe(true);
   });
 
+  it('shows downvote state with voted class', () => {
+    getUserVoteSpy.mockReturnValue('down');
+
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const el = LawOfTheDay({ law, onNavigate: () => {} });
+
+    const downvoteBtn = el.querySelector('[data-vote="down"]');
+    expect(downvoteBtn.classList.contains('voted')).toBe(true);
+  });
+
   it('handles missing upvotes and downvotes gracefully', () => {
     const law = { id: '1', text: 'Test law' };
     const el = LawOfTheDay({ law, onNavigate: () => {} });
@@ -213,5 +223,22 @@ describe('LawOfTheDay component', () => {
 
     // Card click should not have fired due to stopPropagation
     expect(cardClicked).toBe(false);
+  });
+
+  it('handles vote error without message property', async () => {
+    toggleVoteSpy.mockRejectedValue({ code: 'NETWORK_ERROR' }); // Error without message
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const el = LawOfTheDay({ law, onNavigate: () => {} });
+
+    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    upvoteBtn.click();
+
+    await vi.waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to vote:', expect.any(Object));
+    });
+
+    consoleSpy.mockRestore();
   });
 });
