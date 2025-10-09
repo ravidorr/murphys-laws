@@ -287,5 +287,202 @@ describe('Browse view', () => {
       total: 50
     });
   });
+
+  it('handles clicking page number button', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
+      total: 100
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      const pagination = el.querySelector('.pagination');
+      expect(pagination).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Find and click page 2 button
+    const page2Btn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === '2');
+
+    if (page2Btn) {
+      fetchLawsSpy.mockClear();
+      page2Btn.click();
+
+      await vi.waitFor(() => {
+        expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 25 }));
+      }, { timeout: 1000 });
+    }
+  });
+
+  it('handles previous button click', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
+      total: 100
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+        .find(btn => btn.textContent === 'Next');
+      expect(nextBtn).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Click next to go to page 2
+    const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Next');
+    nextBtn.click();
+
+    await vi.waitFor(() => {
+      const prevBtn = Array.from(el.querySelectorAll('.pagination button'))
+        .find(btn => btn.textContent === 'Previous');
+      expect(prevBtn?.hasAttribute('disabled')).toBe(false);
+    }, { timeout: 1000 });
+
+    // Now click previous to go back to page 1
+    const prevBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Previous');
+
+    fetchLawsSpy.mockClear();
+    prevBtn.click();
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+    }, { timeout: 1000 });
+  });
+
+  it('disables previous button on first page', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
+      total: 100
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      const pagination = el.querySelector('.pagination');
+      expect(pagination).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const prevBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Previous');
+    expect(prevBtn?.disabled).toBe(true);
+  });
+
+  it('disables next button on last page', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(10).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
+      total: 30
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      const pagination = el.querySelector('.pagination');
+      expect(pagination).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Go to last page
+    const page2Btn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === '2');
+    if (page2Btn) {
+      page2Btn.click();
+
+      await vi.waitFor(() => {
+        const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+          .find(btn => btn.textContent === 'Next');
+        expect(nextBtn?.disabled).toBe(true);
+      }, { timeout: 1000 });
+    }
+  });
+
+  it('handles data-nav attribute clicks', async () => {
+    const onNavigate = vi.fn();
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Create a button with data-nav attribute and click it
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', 'home');
+    el.appendChild(navBtn);
+
+    navBtn.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('home');
+
+    el.removeChild(navBtn);
+  });
+
+  it('handles advanced search filter changes', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: [{ id: 1, title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 1 }],
+      total: 1
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      const searchContainer = el.querySelector('#advanced-search-container');
+      expect(searchContainer).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Find the advanced search component
+    const searchContainer = el.querySelector('#advanced-search-container');
+    const searchInput = searchContainer.querySelector('#search-keyword');
+    const searchBtn = searchContainer.querySelector('#search-btn');
+
+    fetchLawsSpy.mockClear();
+
+    // Trigger search with new filter
+    searchInput.value = 'murphy';
+    searchBtn.click();
+
+    // Should call loadPage(1) with new filters
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        offset: 0,
+        q: 'murphy'
+      }));
+    }, { timeout: 1000 });
+  });
+
+  it('shows ellipsis in pagination for many pages', async () => {
+    // Create 250 laws (10 pages with 25 per page)
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({
+        id: i + 1,
+        title: `Law ${i + 1}`,
+        text: `Text ${i + 1}`,
+        upvotes: 0,
+        downvotes: 0
+      })),
+      total: 250
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      const pagination = el.querySelector('.pagination');
+      expect(pagination).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Go to page 5 to trigger ellipsis on both sides
+    const page5Btn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === '5');
+
+    if (page5Btn) {
+      page5Btn.click();
+
+      await vi.waitFor(() => {
+        // Check for ellipsis
+        const ellipsis = el.querySelectorAll('.ellipsis');
+        expect(ellipsis.length).toBeGreaterThan(0);
+      }, { timeout: 1000 });
+    }
+  });
 });
 

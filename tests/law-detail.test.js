@@ -193,5 +193,164 @@ describe('LawDetail view', () => {
 
     expect(el.textContent).toMatch(/-5/);
   });
+
+  it('renders law when law of the day returns empty array', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('handles law with category information', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, category: 'Technology' };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('handles law of the day that returns non-ok response', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: false });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('renders with all law metadata present', async () => {
+    const law = {
+      id: '7',
+      title: 'Full Law',
+      text: 'Full law text',
+      score: 10,
+      author: 'Famous Author',
+      submittedBy: 'user123',
+      publishDate: '2024-01-01'
+    };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Full Law/);
+    expect(el.textContent).toMatch(/Famous Author/);
+  });
+
+  it('handles law of the day response with null data', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => null });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('handles law of the day response with data not being an array', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: 'not an array' }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('handles law with attributions array', async () => {
+    const law = {
+      id: '7',
+      title: 'Test Law',
+      text: 'Test text',
+      score: 3,
+      attributions: [{ name: 'Contributor Name' }]
+    };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('handles law with undefined score', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text' };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Test Law/);
+    expect(el.textContent).toMatch(/Score: 0/);
+  });
+
+  it('handles law of the day array with null/undefined first element', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [null] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Should render the main law without crashing
+    expect(el.textContent).toMatch(/Test Law/);
+  });
+
+  it('handles law of the day with law object that has no id', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+    const lotdWithoutId = { title: 'LOTD Without ID', text: 'LOTD text', score: 100 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotdWithoutId] }) })
+      .mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Test Law/);
+    }, { timeout: 500 });
+  });
 });
 
