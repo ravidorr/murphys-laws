@@ -286,4 +286,50 @@ describe('TopVoted component', () => {
     // toggleVote should not be called
     expect(toggleVoteSpy).not.toHaveBeenCalled();
   });
+
+  it('renders law with attribution', async () => {
+    const laws = [
+      { id: '1', text: 'LOTD', upvotes: 100, downvotes: 0 },
+      { id: '2', text: 'Test law', upvotes: 10, downvotes: 2, author: 'Test Author' }
+    ];
+    fetchTopVotedSpy.mockResolvedValue({ data: laws });
+
+    const el = TopVoted();
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Test Author/);
+    });
+  });
+
+  it('shows initial upvote state', async () => {
+    getUserVoteSpy.mockReturnValue('up');
+    const laws = [
+      { id: '1', text: 'LOTD', upvotes: 100, downvotes: 0 },
+      { id: '2', text: 'Test law', upvotes: 10, downvotes: 2 }
+    ];
+    fetchTopVotedSpy.mockResolvedValue({ data: laws });
+
+    const el = TopVoted();
+
+    await vi.waitFor(() => {
+      const upvoteBtn = el.querySelector('[data-vote="up"]');
+      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+    });
+  });
+
+  it('shows initial downvote state', async () => {
+    getUserVoteSpy.mockReturnValue('down');
+    const laws = [
+      { id: '1', text: 'LOTD', upvotes: 100, downvotes: 0 },
+      { id: '2', text: 'Test law', upvotes: 10, downvotes: 2 }
+    ];
+    fetchTopVotedSpy.mockResolvedValue({ data: laws });
+
+    const el = TopVoted();
+
+    await vi.waitFor(() => {
+      const downvoteBtn = el.querySelector('[data-vote="down"]');
+      expect(downvoteBtn.classList.contains('voted')).toBe(true);
+    });
+  });
 });

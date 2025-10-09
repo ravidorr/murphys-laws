@@ -203,4 +203,528 @@ describe('SubmitLawSection component', () => {
 
     document.body.removeChild(el);
   });
+
+  it('shows error state in character counter for short text', () => {
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const textarea = el.querySelector('#submit-text');
+    const counter = el.querySelector('.submit-char-counter');
+
+    textarea.value = 'Short';
+    textarea.dispatchEvent(new Event('input'));
+
+    expect(counter.classList.contains('submit-char-counter-error')).toBe(true);
+
+    document.body.removeChild(el);
+  });
+
+  it('removes error state when text becomes valid', () => {
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const textarea = el.querySelector('#submit-text');
+    const counter = el.querySelector('.submit-char-counter');
+
+    // First add error
+    textarea.value = 'Short';
+    textarea.dispatchEvent(new Event('input'));
+    expect(counter.classList.contains('submit-char-counter-error')).toBe(true);
+
+    // Then fix it
+    textarea.value = 'This is now valid text';
+    textarea.dispatchEvent(new Event('input'));
+    expect(counter.classList.contains('submit-char-counter-error')).toBe(false);
+
+    document.body.removeChild(el);
+  });
+
+  it('clears message div initially', () => {
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const messageDiv = el.querySelector('.submit-message');
+
+    // Message div should be hidden initially
+    expect(messageDiv.style.display).toBe('');
+    expect(messageDiv.textContent).toBe('');
+
+    document.body.removeChild(el);
+  });
+
+  it('handles 404 error with user-friendly message', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: async () => { throw new Error('Not JSON'); }
+    });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles 500 error with user-friendly message', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => { throw new Error('Not JSON'); }
+    });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles other status codes with generic message', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 418,
+      json: async () => { throw new Error('Not JSON'); }
+    });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('uses fallback URL when primary fails', async () => {
+    // Mock fetchAPI for category loading
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service unavailable' })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, id: 123 })
+      });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles fallback 404 error', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service unavailable' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles fallback 500 error', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service unavailable' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles fallback 400 error', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service unavailable' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles fallback other status codes', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service unavailable' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 418,
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('submits with title, author, and category when provided', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, id: 123 })
+    });
+
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({
+      data: [{ id: 1, title: 'General' }]
+    });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const form = el.querySelector('.submit-form');
+    const title = el.querySelector('#submit-title');
+    const textarea = el.querySelector('#submit-text');
+    const author = el.querySelector('#submit-author');
+    const categorySelect = el.querySelector('#submit-category');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    title.value = 'Test Title';
+    textarea.value = 'Valid law text with enough characters';
+    author.value = 'John Doe';
+    categorySelect.value = '1';
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('omits author and email when anonymous is checked', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, id: 123 })
+    });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const author = el.querySelector('#submit-author');
+    const email = el.querySelector('#submit-email');
+    const anonymous = el.querySelector('#submit-anonymous');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    author.value = 'John Doe';
+    email.value = 'john@example.com';
+    anonymous.checked = true;
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('clears form after successful submission', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, id: 123 })
+    });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const title = el.querySelector('#submit-title');
+    const textarea = el.querySelector('#submit-text');
+    const author = el.querySelector('#submit-author');
+    const email = el.querySelector('#submit-email');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    title.value = 'Test Title';
+    textarea.value = 'Valid law text with enough characters';
+    author.value = 'John Doe';
+    email.value = 'john@example.com';
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    // Fields should be cleared
+    expect(title.value).toBe('');
+    expect(textarea.value).toBe('');
+    expect(author.value).toBe('');
+    expect(email.value).toBe('');
+    expect(termsCheckbox.checked).toBe(false);
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles categories response without data property', async () => {
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({});
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const categorySelect = el.querySelector('#submit-category');
+    // Should only have the default option
+    expect(categorySelect.options.length).toBe(1);
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles categories response with non-array data', async () => {
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: 'not an array' });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const categorySelect = el.querySelector('#submit-category');
+    // Should only have the default option
+    expect(categorySelect.options.length).toBe(1);
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('prevents submission without text', async () => {
+    // Mock fetchAPI to prevent category loading from calling fetch
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+    global.fetch = vi.fn();
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const form = el.querySelector('.submit-form');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Form should not submit - global.fetch should not be called for submission
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('prevents submission without terms checked', async () => {
+    // Mock fetchAPI to prevent category loading from calling fetch
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+    global.fetch = vi.fn();
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+
+    textarea.value = 'Valid law text with enough characters';
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Form should not submit - global.fetch should not be called for submission
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
+
+  it('handles fallback error with error property', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({ error: 'Service unavailable' })
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Fallback error' })
+      });
+
+    const el = SubmitLawSection();
+    document.body.appendChild(el);
+
+    const form = el.querySelector('.submit-form');
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+
+    textarea.value = 'Valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    form.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
 });

@@ -56,8 +56,8 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
       return `<button class="btn outline" data-page="${p}" ${disabled}>${p}</button>`;
     }).join('');
 
-    const prevDisabled = currentPage === 1 ? 'aria-disabled="true"' : '';
-    const nextDisabled = currentPage === totalPages ? 'aria-disabled="true"' : '';
+    const prevDisabled = currentPage === 1 ? 'disabled aria-disabled="true"' : '';
+    const nextDisabled = currentPage === totalPages ? 'disabled aria-disabled="true"' : '';
 
     return `
       <div class="pagination">

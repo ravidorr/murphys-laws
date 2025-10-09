@@ -351,4 +351,36 @@ describe('AdvancedSearch component', () => {
       expect(attributionSelect.value).toBe('Bob');
     });
   });
+
+  it('handles missing data property in categories response', async () => {
+    // First fetch returns object without data property
+    fetchAPISpy
+      .mockResolvedValueOnce({}) // No data property
+      .mockResolvedValueOnce({ data: [] });
+
+    const el = AdvancedSearch({ onSearch: () => {} });
+
+    await vi.waitFor(() => {
+      const categorySelect = el.querySelector('#search-category');
+      // Should have fallback to empty array, showing only "All Categories"
+      expect(categorySelect.options.length).toBe(1);
+      expect(categorySelect.textContent).toMatch(/All Categories/);
+    });
+  });
+
+  it('handles missing data property in attributions response', async () => {
+    // Second fetch returns object without data property
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({}); // No data property
+
+    const el = AdvancedSearch({ onSearch: () => {} });
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      // Should have fallback to empty array, showing only "All Submitters"
+      expect(attributionSelect.options.length).toBe(1);
+      expect(attributionSelect.textContent).toMatch(/All Submitters/);
+    });
+  });
 });
