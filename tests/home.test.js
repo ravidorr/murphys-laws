@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Home } from '@views/home.js';
+import { Home, renderHome } from '@views/home.js';
 
 describe('Home view', () => {
   it('renders Law of the Day after fetching data', async () => {
@@ -122,6 +122,193 @@ describe('Home view', () => {
 
     // Should not throw error
     expect(true).toBe(true);
+  });
+
+  it('shows Law of the Day when first law exists', async () => {
+    const sample = [
+      { id: '1', text: 'Law of the Day text', author: 'Murphy', score: 100 },
+      { id: '2', text: 'Second law', score: 50 }
+    ];
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 2, data: sample }) });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/Law of the Day/);
+    expect(el.textContent).toMatch(/Law of the Day text/);
+  });
+
+  it('handles fetch that returns non-ok status', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Failed to load laws/);
+    expect(consoleSpy).toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
+
+  it('renders with calculator section', async () => {
+    const sample = [
+      { id: '1', text: 'Test law', score: 10 }
+    ];
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/Sod's Law Calculator|Calculator/i);
+  });
+
+  it('renders with submit section', async () => {
+    const sample = [
+      { id: '1', text: 'Test law', score: 10 }
+    ];
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/Submit/i);
+  });
+
+  it('handles response with non-numeric total', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ total: 'invalid', data: [] })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/No results found/);
+  });
+
+  it('handles response with missing total field', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [] })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/No results found/);
+  });
+
+  it('handles response with null json', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => null
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    expect(el.textContent).toMatch(/No results found/);
+  });
+
+  it('handles response where data is not an array', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ total: 5, data: 'not an array' })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Should render the widgets (calculator, submit) even with invalid data
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
+  });
+
+  it('handles response where data is missing', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ total: 5 })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Should render the widgets (calculator, submit) even with missing data
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
+  });
+
+  it('handles laws with missing score field', async () => {
+    const sample = [
+      { id: '1', text: 'Law without score' },
+      { id: '2', text: 'Another law', score: 50 }
+    ];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ total: 2, data: sample })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Should render without errors
+    expect(el.textContent).toMatch(/Law of the Day/);
+  });
+
+  it('handles all laws with missing scores (tests nullish coalescing)', async () => {
+    const sample = [
+      { id: '1', text: 'First law without score' },
+      { id: '2', text: 'Second law without score' }
+    ];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ total: 2, data: sample })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Should render without errors, both laws compared with score ?? 0
+    expect(el.textContent).toMatch(/Law of the Day/);
+  });
+
+  it('handles laws with null scores', async () => {
+    const sample = [
+      { id: '1', text: 'Law with null score', score: null },
+      { id: '2', text: 'Another law with null score', score: null }
+    ];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ total: 2, data: sample })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Should render without errors
+    expect(el.textContent).toMatch(/Law of the Day/);
+  });
+});
+
+describe('renderHome function', () => {
+  it('handles non-array laws parameter (defensive check)', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn();
+
+    // Pass a non-array to test the defensive Array.isArray check
+    renderHome(el, 'not an array', onNavigate);
+
+    // Should render calculator and submit sections without errors
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
+  });
+
+  it('handles null laws parameter', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn();
+
+    renderHome(el, null, onNavigate);
+
+    // Should render calculator and submit sections without errors
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 });
 
