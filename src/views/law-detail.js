@@ -6,8 +6,9 @@ import { fetchLaw, fetchLawOfTheDay } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { createErrorState } from '../utils/dom.js';
+import { toggleVote } from '../utils/voting.js';
 
-export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote }) {
+export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
   el.setAttribute('role', 'main');
@@ -151,11 +152,25 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate, onVote
       });
   }
 
-  el.addEventListener('click', (e) => {
+  el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     if (t.dataset.nav) onNavigate(t.dataset.nav);
-    if (t.dataset.vote && t.dataset.id) onVote(t.dataset.id, t.dataset.vote);
+
+    // Handle voting
+    if (t.dataset.vote && t.dataset.id) {
+      const lawId = t.dataset.id;
+      const voteType = t.dataset.vote;
+
+      try {
+        await toggleVote(lawId, voteType);
+        // Optionally refresh the page to show updated vote counts
+        // For now, just log success
+        console.log('Vote successful');
+      } catch (err) {
+        console.error('Failed to vote:', err);
+      }
+    }
   });
 
   return el;
