@@ -470,19 +470,44 @@ describe('Browse view', () => {
       expect(pagination).toBeTruthy();
     }, { timeout: 1000 });
 
-    // Go to page 5 to trigger ellipsis on both sides
-    const page5Btn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === '5');
+    // Navigate to page 2, then 3, then 4 to trigger ellipsis
+    // On page 1, we see: 1, 2, ..., 10
+    // On page 2, we see: 1, 2, 3, ..., 10
+    // On page 3, we see: 1, 2, 3, 4, ..., 10
+    // On page 4, we see: 1, ..., 3, 4, 5, ..., 10 (first ellipsis appears!)
 
-    if (page5Btn) {
-      page5Btn.click();
+    // Go to page 2
+    let nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Next');
+    nextBtn.click();
 
-      await vi.waitFor(() => {
-        // Check for ellipsis
-        const ellipsis = el.querySelectorAll('.ellipsis');
-        expect(ellipsis.length).toBeGreaterThan(0);
-      }, { timeout: 1000 });
-    }
+    await vi.waitFor(() => {
+      const page3Btn = Array.from(el.querySelectorAll('.pagination button'))
+        .find(btn => btn.textContent === '3');
+      expect(page3Btn).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Go to page 3
+    nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Next');
+    nextBtn.click();
+
+    await vi.waitFor(() => {
+      const page4Btn = Array.from(el.querySelectorAll('.pagination button'))
+        .find(btn => btn.textContent === '4');
+      expect(page4Btn).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Go to page 4 - this should trigger ellipsis when start > 2
+    nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Next');
+    nextBtn.click();
+
+    await vi.waitFor(() => {
+      // Check for ellipsis - should appear before the current page numbers
+      const ellipsis = el.querySelectorAll('.ellipsis');
+      expect(ellipsis.length).toBeGreaterThan(0);
+    }, { timeout: 1000 });
   });
 });
 
