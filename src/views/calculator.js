@@ -155,7 +155,6 @@ export function Calculator() {
 
                 if (letter && titles[letter]) {
                   mi.setAttribute('data-tooltip', titles[letter]);
-                  console.log('Added tooltip to', letter, 'from Unicode', unicodeHex);
                 }
               }
             }

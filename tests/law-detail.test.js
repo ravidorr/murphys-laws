@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LawDetail } from '@views/law-detail.js';
+import * as votingModule from '../src/utils/voting.js';
 
 describe('LawDetail view', () => {
   beforeEach(() => {
@@ -8,17 +9,17 @@ describe('LawDetail view', () => {
 
   it('renders not found for unknown id', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false });
-    const el = LawDetail({ lawId: 'nope', _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: 'nope', _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
     expect(el.textContent).toMatch(/Law Not Found/);
   });
 
   it('renders not found when lawId is null', async () => {
-    const el = LawDetail({ lawId: null, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: null, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
     expect(el.textContent).toMatch(/Law Not Found/);
   });
 
-  it('renders title for existing law and triggers onVote', async () => {
+  it('renders title for existing law and triggers vote', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, submittedBy: 'tester' };
     const lotd = { id: '1', title: 'LOTD', text: 'Law of the day text', score: 100 };
 
@@ -26,8 +27,8 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotd] }) });
 
-    let captured = '';
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: (id, type) => { captured = `${id}:${type}`; } });
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 1, downvotes: 0 });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -35,7 +36,8 @@ describe('LawDetail view', () => {
     const voteBtn = el.querySelector('[data-vote="up"]');
     if (voteBtn) {
       voteBtn.click();
-      expect(captured).toBe(`${law.id}:up`);
+      await new Promise(r => setTimeout(r, 0)); // Wait for async handler
+      expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'up');
     }
   });
 
@@ -48,7 +50,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotd] }) })
       .mockResolvedValue({ ok: true, json: async () => ({ data: [] }) }); // For top/trending/recent components
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     // Wait for the law to render
     await vi.waitFor(() => {
@@ -66,7 +68,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [law] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -83,7 +85,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockRejectedValueOnce(new Error('LOTD fetch failed'));
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -101,7 +103,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
     let navTarget = '';
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: (target) => { navTarget = target; }, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: (target) => { navTarget = target; } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -119,15 +121,16 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    let voteCapture = '';
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: (id, type) => { voteCapture = `${id}:${type}`; } });
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 0, downvotes: 1 });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
     const downvoteBtn = el.querySelector('[data-vote="down"]');
     if (downvoteBtn) {
       downvoteBtn.click();
-      expect(voteCapture).toBe(`${law.id}:down`);
+      await new Promise(r => setTimeout(r, 0)); // Wait for async handler
+      expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'down');
     }
   });
 
@@ -138,7 +141,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -158,7 +161,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -173,7 +176,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -187,7 +190,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -201,7 +204,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -215,7 +218,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -229,7 +232,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: false });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -251,7 +254,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -266,7 +269,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => null });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -280,7 +283,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: 'not an array' }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -300,7 +303,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -314,7 +317,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -329,7 +332,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [null] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -346,7 +349,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotdWithoutId] }) })
       .mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {}, onVote: () => {} });
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Test Law/);

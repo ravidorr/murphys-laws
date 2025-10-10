@@ -7,7 +7,7 @@ import { LAWS_PER_PAGE } from '../utils/constants.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { AdvancedSearch } from '../components/advanced-search.js';
 
-export function Browse({ _isLoggedIn, searchQuery, onNavigate, _onVote }) {
+export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page';
 

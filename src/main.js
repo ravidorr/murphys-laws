@@ -38,9 +38,6 @@ function _onLogout() {
   state.currentUser = null;
   navigate('home');
 }
-function onVote(contentId, voteType) {
-  console.log('Vote', voteType, 'on', contentId);
-}
 
 // Mount
 const app = document.getElementById('app');
@@ -130,11 +127,11 @@ function layout(node) {
 }
 
 // Define routes
-defineRoute('home', () => layout(Home({ isLoggedIn: state.isLoggedIn, onNavigate, onVote })));
+defineRoute('home', () => layout(Home({ isLoggedIn: state.isLoggedIn, onNavigate })));
 
-defineRoute('browse', () => layout(Browse({ isLoggedIn: state.isLoggedIn, searchQuery: state.searchQuery, onNavigate, onVote })));
+defineRoute('browse', () => layout(Browse({ isLoggedIn: state.isLoggedIn, searchQuery: state.searchQuery, onNavigate })));
 
-defineRoute('law', ({ param }) => layout(LawDetail({ lawId: param, isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate, onVote })));
+defineRoute('law', ({ param }) => layout(LawDetail({ lawId: param, isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate })));
 
 defineRoute('submit', () => {
   const container = document.createElement('div');
