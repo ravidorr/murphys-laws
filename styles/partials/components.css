@@ -72,13 +72,6 @@ a.btn:focus-visible {
   outline-offset: 2px;
 }
 
-button.link {
-  background: none;
-  border: none;
-  color: var(--btn-primary-bg);
-  padding: 0;
-}
-
 input[type='text'],
 input[type='email'],
 textarea,

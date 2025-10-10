@@ -7,6 +7,7 @@ import { fetchLaws } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
 import { LAWS_PER_PAGE } from '../utils/constants.js';
 
+// Exported for testing
 export function renderHome(el, laws = [], onNavigate) {
   const data = Array.isArray(laws) ? laws : [];
   const sortedByScore = [...data].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));

@@ -2,7 +2,7 @@
 import { escapeHtml, sanitizeUrl } from './sanitize.js';
 
 /**
- * Renders a single attribution object to HTML
+ * Renders a single attribution object to HTML - exported for testing
  * @param {Object} att - Attribution object
  * @returns {string} HTML string for attribution
  */
