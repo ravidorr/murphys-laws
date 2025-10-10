@@ -16,18 +16,33 @@ Over 40 specialized categories covering every aspect of life:
 - **Personal Life**: Love, family, toddlers, and daily activities
 - **Specialized Fields**: Medical, military, education, sports, and more
 
-### Sod's Law Calculator
+### Interactive Calculators
+
+#### Sod's Law Calculator
 An interactive web application that calculates the probability of things going wrong using the official British Gas formula:
 
 **Formula**: `((U+C+I) × (10-S))/20 × A × 1/(1-sin(F/10))`
 
 Where:
 - **U** = Urgency (1-9)
-- **C** = Complexity (1-9) 
+- **C** = Complexity (1-9)
 - **I** = Importance (1-9)
 - **S** = Skill level (1-9)
 - **F** = Frequency (1-9)
 - **A** = Activity factor (constant: 0.7)
+
+#### Buttered Toast Landing Calculator
+A physics-based calculator that estimates the probability of a buttered toast landing butter-side down when it falls off a surface:
+
+**Formula**: `P = (1 - |((30√(H/g) · O · B)/(T + F) mod 1) - 0.5| · 2) · 100%`
+
+Where:
+- **H** = Height of fall (cm)
+- **g** = Gravity (cm/s²)
+- **O** = Initial overhang/push (cm)
+- **B** = Butter factor (weight distribution)
+- **F** = Air friction/drag
+- **T** = Toast inertia (density and shape)
 
 ### Real-Life Stories
 A collection of user-submitted stories demonstrating Murphy's Laws in action, including philosophical debates about the nature of these universal truths.
@@ -76,8 +91,15 @@ npm run preview                  # Preview production build (port 5173)
 ```bash
 npm test                         # Run unit tests (Vitest)
 npm run test:watch               # Watch mode
+npm run test:coverage            # Run tests with coverage report
 npm run e2e                      # End-to-end tests (Playwright)
 ```
+
+**Test Coverage**
+- Views: Sod's Law Calculator, Buttered Toast Calculator, Home, Browse, Law Detail, Auth
+- Components: Simple calculator widgets, Header, Law cards, Submit form
+- Utilities: Voting system, API client, Sanitization, Attribution rendering
+- Current coverage: High coverage across critical paths
 
 **Linting**
 ```bash
@@ -100,9 +122,11 @@ npm run db:rebuild               # Rebuild DB from scratch
 **Frontend** (`src/`)
 - Framework-free vanilla JavaScript with hash routing
 - Entry point: `src/main.js`
-- Views: `src/views/` (home, browse, law-detail, calculator, etc.)
-- Components: `src/ui/` (header, navigation)
+- Views: `src/views/` (home, browse, law-detail, sods-calculator, buttered-toast-calculator, etc.)
+- Components: `src/components/` (header, navigation, calculator widgets)
+- Utilities: `src/utils/` (API, voting, sanitization, DOM helpers)
 - Styling: `styles/site.css` (prefer classes over inline styles)
+- MathJax integration for formula rendering with interactive tooltips
 
 **Backend**
 - API server: `scripts/api-server.mjs` (Node.js + SQLite)

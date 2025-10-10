@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { SodCalculatorSimple } from '@components/sod-calculator.js';
+import { describe, it, expect } from 'vitest';
+import { SodCalculatorSimple } from '@components/sod-calculator-simple.js';
 
 describe('SodCalculatorSimple component', () => {
   it('renders with initial values', () => {

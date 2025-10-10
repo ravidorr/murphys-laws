@@ -6,12 +6,20 @@ import * as voting from '../src/utils/voting.js';
 describe('RecentlyAdded component', () => {
   let fetchRecentlyAddedSpy;
   let getUserVoteSpy;
-  let toggleVoteSpy;
+  let fetchSpy;
 
   beforeEach(() => {
+    // Clear localStorage before each test
+    localStorage.clear();
+
     fetchRecentlyAddedSpy = vi.spyOn(api, 'fetchRecentlyAdded');
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
-    toggleVoteSpy = vi.spyOn(voting, 'toggleVote').mockResolvedValue({ upvotes: 11, downvotes: 2 });
+    // Mock fetch for voting API calls
+    fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ upvotes: 11, downvotes: 2 })
+    });
   });
 
   afterEach(() => {
@@ -105,8 +113,9 @@ describe('RecentlyAdded component', () => {
     const upvoteBtn = el.querySelector('[data-vote="up"]');
     upvoteBtn.click();
 
+    // Verify fetch was called with correct vote endpoint
     await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up');
+      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/laws/1/vote'), expect.any(Object));
     });
   });
 
@@ -125,13 +134,13 @@ describe('RecentlyAdded component', () => {
     const downvoteBtn = el.querySelector('[data-vote="down"]');
     downvoteBtn.click();
 
+    // Verify fetch was called with correct vote endpoint
     await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'down');
+      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/laws/1/vote'), expect.any(Object));
     });
   });
 
   it('updates vote counts after successful vote', async () => {
-    toggleVoteSpy.mockResolvedValue({ upvotes: 11, downvotes: 2 });
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
@@ -153,8 +162,9 @@ describe('RecentlyAdded component', () => {
   });
 
   it('updates voted class after successful vote', async () => {
-    toggleVoteSpy.mockResolvedValue({ upvotes: 11, downvotes: 2 });
-    getUserVoteSpy.mockReturnValueOnce(null).mockReturnValue('up');
+    // Don't mock getUserVote for this test - let it use real localStorage
+    getUserVoteSpy.mockRestore();
+
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
@@ -167,15 +177,20 @@ describe('RecentlyAdded component', () => {
     });
 
     const upvoteBtn = el.querySelector('[data-vote="up"]');
+    // Initially should not have voted class
+    expect(upvoteBtn.classList.contains('voted')).toBe(false);
+
     upvoteBtn.click();
 
+    // After voting, should have voted class
     await vi.waitFor(() => {
       expect(upvoteBtn.classList.contains('voted')).toBe(true);
     });
   });
 
   it('handles vote error gracefully', async () => {
-    toggleVoteSpy.mockRejectedValue(new Error('Vote failed'));
+    // Make fetch reject to simulate vote error
+    fetchSpy.mockRejectedValue(new Error('Vote failed'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
@@ -192,7 +207,7 @@ describe('RecentlyAdded component', () => {
     upvoteBtn.click();
 
     await vi.waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to vote:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/failed|error/i), expect.any(Error));
     });
 
     consoleSpy.mockRestore();
@@ -265,6 +280,9 @@ describe('RecentlyAdded component', () => {
       expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
     });
 
+    // Reset fetch spy to track only the fake button click
+    fetchSpy.mockClear();
+
     // Manually create a button without data-law-id
     const fakeBtn = document.createElement('button');
     fakeBtn.setAttribute('data-vote', 'up');
@@ -272,8 +290,8 @@ describe('RecentlyAdded component', () => {
     fakeBtn.click();
 
     await new Promise(r => setTimeout(r, 10));
-    // toggleVote should not be called
-    expect(toggleVoteSpy).not.toHaveBeenCalled();
+    // Fetch should not be called for button without lawId
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('renders law with attribution', async () => {

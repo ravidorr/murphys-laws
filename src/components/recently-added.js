@@ -4,8 +4,7 @@ import { fetchRecentlyAdded } from '../utils/api.js';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { createErrorState } from '../utils/dom.js';
-import { getUserVote } from '../utils/voting.js';
-import { addVotingListeners } from '../utils/voting-ui.js';
+import { getUserVote, addVotingListeners } from '../utils/voting.js';
 
 export function RecentlyAdded() {
   const el = document.createElement('div');

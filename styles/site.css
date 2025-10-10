@@ -24,6 +24,7 @@
 @import url('./partials/layout.css');
 @import url('./partials/components.css');
 @import url('./partials/sections.css');
-@import url('./partials/calculator.css');
+@import url('./partials/sods-calculator.css');
+@import url('./partials/toast-calculator.css');
 @import url('./partials/notification.css');
 @import url('./partials/theme.css');

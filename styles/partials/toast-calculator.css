@@ -1,0 +1,215 @@
+/* ==========================
+  Buttered Toast Calculator styles
+   ========================== */
+
+.calc-description {
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.calc-container {
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+}
+
+.toast-formula {
+  background-color: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+@media (width >= 768px) {
+  .toast-formula {
+    font-size: 1rem;
+  }
+}
+
+.toast-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.toast-slider-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.toast-slider-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.toast-label {
+  flex: 1;
+}
+
+.toast-value {
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: 1rem;
+}
+
+.toast-slider-group input[type="range"] {
+  width: 100%;
+  margin: 11px 0;
+  background-color: transparent;
+  appearance: none;
+}
+
+.toast-slider-group input[type="range"]:focus {
+  outline: none;
+}
+
+.toast-slider-group input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 3px;
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+}
+
+.toast-slider-group input[type="range"]::-webkit-slider-thumb {
+  margin-top: -11px;
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  border: 5px solid var(--btn-primary-bg);
+  border-radius: 14px;
+  cursor: pointer;
+  appearance: none;
+}
+
+.toast-slider-group input[type="range"]:focus::-webkit-slider-runnable-track {
+  background: var(--btn-primary-bg);
+}
+
+.toast-slider-group input[type="range"]::-moz-range-track {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 3px;
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+}
+
+.toast-slider-group input[type="range"]::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  border: 5px solid var(--btn-primary-bg);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.toast-slider-group input[type="range"]::-ms-track {
+  background: transparent;
+  border-color: transparent;
+  border-width: 11px 0;
+  color: transparent;
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+}
+
+.toast-slider-group input[type="range"]::-ms-fill-lower {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 6px;
+}
+
+.toast-slider-group input[type="range"]::-ms-fill-upper {
+  background: var(--btn-primary-bg);
+  border: 0;
+  border-radius: 6px;
+}
+
+.toast-slider-group input[type="range"]::-ms-thumb {
+  width: 28px;
+  height: 28px;
+  background: var(--bg);
+  border: 5px solid var(--btn-primary-bg);
+  border-radius: 14px;
+  cursor: pointer;
+  margin-top: 0;
+}
+
+.toast-slider-group input[type="range"]:focus::-ms-fill-lower {
+  background: var(--btn-primary-bg);
+}
+
+.toast-slider-group input[type="range"]:focus::-ms-fill-upper {
+  background: var(--btn-primary-bg);
+}
+
+.toast-help {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.toast-score-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+}
+
+.toast-score {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  transition: background-color 0.3s;
+}
+
+.toast-score-value {
+  font-size: 3.75rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.toast-interpretation {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* Color classes for different probability levels */
+.toast-score.calc-ok {
+  background-color: var(--success);
+  color: var(--bg-primary);
+}
+
+.toast-score.calc-warn {
+  background-color: var(--warning-bg);
+  color: var(--text-primary);
+}
+
+.toast-score.calc-orange {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+.toast-score.calc-danger {
+  background-color: var(--error);
+  color: var(--text-primary);
+}
+
+.toast-score.calc-dark {
+  background-color: var(--error);
+  color: var(--text-primary);
+}
