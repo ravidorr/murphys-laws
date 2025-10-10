@@ -1,4 +1,4 @@
-import { Calculator } from '@views/calculator.js';
+import { Calculator } from '@views/sods-calculator.js';
 
 describe("Calculator view", () => {
 

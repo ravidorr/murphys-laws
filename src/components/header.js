@@ -30,6 +30,10 @@ export function Header({ onSearch, onNavigate }) {
               <span class="material-symbols-outlined icon">calculate</span>
               Sod's Law Calculator
             </a>
+            <a href="#/toastcalculator" class="nav-dropdown-item" data-nav="toastcalculator">
+              <span class="material-symbols-outlined icon">calculate</span>
+              Buttered Toast Landing Calculator
+            </a>
             <a href="#/submit" class="nav-dropdown-item" data-nav="submit">
               <span class="material-symbols-outlined icon">send</span>
               Submit your Murphy's Law

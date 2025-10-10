@@ -11,7 +11,7 @@ export function Calculator() {
       <div class="card-content">
         <header>
           <h1><span class="accent-text">Sod's</span> Law Calculator</h1>
-          <p>The (P)robability of a task going wrong by weighing it's combined (U)rgency, (C)omplexity, and (I)mportance, against the performer's (S)kill level,  multiplied by the (A)ctivity constant, a "reality check" for the entire equation, amplifyed by the (F)requency of doing the task.</p>
+          <p class="calc-description">The (P)robability of a task going wrong by weighing it's combined (U)rgency, (C)omplexity, and (I)mportance, against the performer's (S)kill level,  multiplied by the (A)ctivity constant, amplifyed by the (F)requency of doing the task.</p>
           <p class="formula" id="formula-display"></p>
         </header>
         <div class="calc-container">

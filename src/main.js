@@ -5,7 +5,8 @@ import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
 import { SubmitLawSection } from './components/submit-law.js';
 import { Auth } from './views/auth.js';
-import { Calculator } from './views/calculator.js';
+import { Calculator } from './views/sods-calculator.js';
+import { ButteredToastCalculator } from './views/buttered-toast-calculator.js';
 
 // App state (no framework)
 const state = {
@@ -141,6 +142,8 @@ defineRoute('login', () => layout(Auth({ type: 'login', onNavigate, onAuth })));
 defineRoute('signup', () => layout(Auth({ type: 'signup', onNavigate, onAuth })));
 
 defineRoute('calculator', () => layout(Calculator()));
+
+defineRoute('toastcalculator', () => layout(ButteredToastCalculator()));
 
 // Fallback
 defineRoute('law-history', () => layout(document.createTextNode('Law of the Day History (coming soon)')));

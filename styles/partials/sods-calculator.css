@@ -1,6 +1,11 @@
 /* ==========================
-  calculator styles
+  Sod's Law Calculator styles
    ========================== */
+
+.calc-description {
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
 
 .calc-container {
   background: color-mix(in oklab, var(--bg) 98%, white 2%);
@@ -160,7 +165,7 @@
 }
 
 /* Bigger typeset for MathJax formula on calculator page */
-.formula { margin: .5rem 0 1rem; }
+.formula { margin: 0 0 1.5rem; }
 
 .formula mjx-container {
   font-size: 240% !important;

@@ -1,7 +1,8 @@
 // Home view: fetch laws from API and render sections (no local mock data)
 
 import { LawOfTheDay } from '@components/law-of-day.js';
-import { SodCalculatorSimple } from '@components/sod-calculator.js';
+import { SodCalculatorSimple } from '@components/sod-calculator-simple.js';
+import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calculator-simple.js';
 import { SubmitLawSection } from '@components/submit-law.js';
 import { fetchLaws } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
@@ -24,6 +25,10 @@ export function renderHome(el, laws = [], onNavigate) {
   // Add Sod's Law Calculator widget
   const calcWidget = SodCalculatorSimple({ onNavigate });
   el.appendChild(calcWidget);
+
+  // Add Buttered Toast Calculator widget
+  const toastWidget = ButteredToastCalculatorSimple({ onNavigate });
+  el.appendChild(toastWidget);
 
   // Add Submit Law section
   const submitWidget = SubmitLawSection({ onNavigate });
