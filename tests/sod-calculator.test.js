@@ -138,6 +138,32 @@ describe('SodCalculatorSimple component', () => {
     expect(navigated).toBe('calculator');
   });
 
+  it('navigates when clicking button text (child element)', () => {
+    let navigated = '';
+    const onNavigate = (target) => { navigated = target; };
+
+    const el = SodCalculatorSimple({ onNavigate });
+
+    // Click on the text span inside the button (simulates real user behavior)
+    const btnText = el.querySelector('.btn-text');
+    btnText.click();
+
+    expect(navigated).toBe('calculator');
+  });
+
+  it('navigates when clicking button icon (child element)', () => {
+    let navigated = '';
+    const onNavigate = (target) => { navigated = target; };
+
+    const el = SodCalculatorSimple({ onNavigate });
+
+    // Click on the icon span inside the button
+    const icon = el.querySelector('[data-nav="calculator"] .material-symbols-outlined');
+    icon.click();
+
+    expect(navigated).toBe('calculator');
+  });
+
   it('updates all slider values independently', () => {
     const el = SodCalculatorSimple({ onNavigate: () => {} });
 
