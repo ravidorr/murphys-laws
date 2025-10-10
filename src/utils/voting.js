@@ -29,7 +29,7 @@ export function getUserVote(lawId) {
   return votes[lawId] || null; // Returns 'up', 'down', or null
 }
 
-// Vote on a law (up or down)
+// Vote on a law (up or down) - exported for testing
 export async function voteLaw(lawId, voteType) {
   if (!['up', 'down'].includes(voteType)) {
     throw new Error('voteType must be "up" or "down"');
@@ -109,7 +109,7 @@ export async function voteLaw(lawId, voteType) {
   }
 }
 
-// Remove vote from a law
+// Remove vote from a law - exported for testing
 export async function unvoteLaw(lawId) {
   const apiUrl = API_BASE_URL || '';
   const fallbackUrl = API_FALLBACK_URL || 'http://127.0.0.1:8787';

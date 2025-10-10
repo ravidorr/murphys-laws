@@ -1,5 +1,5 @@
 // Simple hash-based router
-// Routes map hash -> render function
+// Routes map hash -> render function - exported for testing
 export const routes = {};
 
 export function defineRoute(name, renderFn) {
@@ -11,6 +11,7 @@ export function navigate(name, param) {
   location.hash = `#/${name}${suffix}`;
 }
 
+// Exported for testing
 export function currentRoute() {
   const m = location.hash.match(/^#\/(\w+)(?::(.+))?$/);
   return m ? { name: m[1], param: m[2] || null } : { name: 'home', param: null };

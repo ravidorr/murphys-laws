@@ -33,11 +33,6 @@ function onAuth(username) {
   state.currentUser = username;
   navigate('home');
 }
-function _onLogout() {
-  state.isLoggedIn = false;
-  state.currentUser = null;
-  navigate('home');
-}
 
 // Mount
 const app = document.getElementById('app');

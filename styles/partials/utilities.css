@@ -11,9 +11,7 @@
 .hidden { display: none; }
 .text-center { text-align: center; }
 
-.min-w-0 { min-width: 0; }
 .pt-0 { padding-top: 0; }
-.mt-16 { margin-top: 4rem; }
 .mt-8 { margin-top: 2rem; }
 .mb-12 { margin-bottom: 3rem; }
 .mb-8 { margin-bottom: 2rem; }
@@ -29,25 +27,13 @@
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
-.rounded { border-radius: .5rem; }
-.border { border: 1px solid var(--border); }
-.border-t { border-top: 1px solid var(--border); }
-.p-2 { padding: .5rem; }
-.p-4 { padding: 1rem; }
-.p-8 { padding: 2rem; }
 .pt-8 { padding-top: 2rem; }
 .h-16 { height: 4rem; }
-.cursor-pointer { cursor: pointer; }
 
 .text-ellipsis {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.w-6 {
-  width: 1.5rem;
-  display: inline-block;
 }
 
 /* Page wrappers */

@@ -20,47 +20,35 @@
   --success-bg: #dcfce7;
   --success-border: #86efac;
   --success-text: #166534;
-  --success-light: #c9f1dd;
   --success-dark: #0b3d22;
-  
+
   /* Semantic colors - Error */
   --error: #dc2626;
   --error-bg: #fee2e2;
   --error-border: #fca5a5;
   --error-text: #991b1b;
-  --error-light: #ffc4cc;
   --error-dark: #5e0010;
-  
+
   /* Semantic colors - Warning */
-  --warning: #5a4300;
   --warning-bg: #fff8e1;
   --warning-text: #5a4300;
-  --warning-light: #ffe29a;
-  
+
   /* Semantic colors - Orange */
-  --orange: #6a2e00;
   --orange-bg: #ffe9d6;
   --orange-text: #6a2e00;
-  --orange-light: #ffd9bf;
-  
+
   /* Semantic colors - Dark */
-  --dark: #2b0000;
   --dark-bg: #f0d6d6;
   --dark-text: #2b0000;
-  --dark-light: #f0d6d6;
-  
+
   /* UI colors */
   --white: #fff;
   --highlight: #fef08a;
-  --skeleton-bg: #eee;
-  --skeleton-shimmer: #f6f6f6;
-  
+
   /* Gradient colors */
-  --gradient-gray: #4b5563;
   --gradient-blue: #3b82f6;
   --gradient-dark-1: #2d2d2d;
   --gradient-dark-2: #1a1a1a;
-  --gradient-dark-3: #111;
   
   /* Shadow colors */
   --shadow-light: rgb(0 0 0 / 10%);
@@ -79,8 +67,6 @@
   --dark-link: #9ecbff;
   --dark-link-visited: #b8a6ff;
   --dark-link-hover: #cfe5ff;
-  --dark-tooltip-bg: #0f1115;
-  --dark-tooltip-fg: #e9eaee;
   --dark-skeleton-bg: #1a1a22;
   --dark-skeleton-shimmer: #202028;
   

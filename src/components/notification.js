@@ -15,7 +15,7 @@ function ensureContainer() {
 }
 
 /**
- * Show a notification message
+ * Show a notification message - exported for testing
  * @param {string} message - The message to display
  * @param {string} type - 'success' or 'error'
  * @param {number} duration - Duration in ms (0 = no auto-dismiss)
@@ -86,7 +86,7 @@ export function showError(message, duration = 7000) {
 }
 
 /**
- * Clear all notifications
+ * Clear all notifications - exported for testing
  */
 export function clearAllNotifications() {
   if (notificationContainer) {
