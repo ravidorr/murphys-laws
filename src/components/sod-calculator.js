@@ -127,8 +127,12 @@ export function SodCalculatorSimple({ onNavigate }) {
   // Navigation
   el.addEventListener('click', (e) => {
     const t = e.target;
-    if (t instanceof HTMLElement && t.dataset.nav) {
-      onNavigate(t.dataset.nav);
+    if (!(t instanceof HTMLElement)) return;
+
+    // Check if clicked element or any parent has data-nav
+    const navElement = t.closest('[data-nav]');
+    if (navElement) {
+      onNavigate(navElement.dataset.nav);
     }
   });
 
