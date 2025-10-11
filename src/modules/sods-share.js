@@ -1,3 +1,7 @@
+import {
+  createSodsEmailPreviewHtml,
+  createSodsEmailSubject
+} from '@modules/sods-email-template.js';
 import { API_SHARE_CALCULATION_ENDPOINT } from '../utils/constants.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,65 +85,23 @@ export function initShareCalculation({ root, getCalculationState }) {
       interpretation
     } = state;
 
+    const bodyHtml = createSodsEmailPreviewHtml({
+      taskDescription,
+      urgency,
+      complexity,
+      importance,
+      skill,
+      frequency,
+      probability,
+      interpretation
+    });
+    const subject = createSodsEmailSubject(probability);
+
     return `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; font-size: 24px;">Sod's Law Calculator Result</h1>
-        </div>
-        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px;">
-          <div style="background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0; border-radius: 4px;">
-            <h2 style="margin-top: 0; color: #667eea; font-size: 18px;">Your Task</h2>
-            <p>${taskDescription}</p>
-          </div>
-
-          <h3 style="color: #667eea; margin-top: 30px;">Input Values</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
-            <div style="background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <strong style="display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Urgency (U)</strong>
-              <span style="font-size: 24px; color: #333; font-weight: bold;">${urgency}</span>
-            </div>
-            <div style="background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <strong style="display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Complexity (C)</strong>
-              <span style="font-size: 24px; color: #333; font-weight: bold;">${complexity}</span>
-            </div>
-            <div style="background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <strong style="display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Importance (I)</strong>
-              <span style="font-size: 24px; color: #333; font-weight: bold;">${importance}</span>
-            </div>
-            <div style="background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <strong style="display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Skill (S)</strong>
-              <span style="font-size: 24px; color: #333; font-weight: bold;">${skill}</span>
-            </div>
-            <div style="background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <strong style="display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Frequency (F)</strong>
-              <span style="font-size: 24px; color: #333; font-weight: bold;">${frequency}</span>
-            </div>
-            <div style="background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <strong style="display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Aggravation (A)</strong>
-              <span style="font-size: 24px; color: #333; font-weight: bold;">0.7</span>
-            </div>
-          </div>
-
-          <div style="background: white; padding: 25px; margin: 20px 0; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; color: #667eea;">Probability of Things Going Wrong</h3>
-            <div style="font-size: 48px; font-weight: bold; color: #667eea; margin: 10px 0;">${probability}</div>
-            <div style="font-size: 18px; color: #555; margin: 15px 0; padding: 15px; background: #f0f0f0; border-radius: 4px;">${interpretation}</div>
-            <p style="color: #666; font-size: 14px; margin-top: 20px;">The higher the probability (P), the greater the chance that Sod's law will strike.</p>
-          </div>
-
-          <div style="text-align: center;">
-            <a href="https://murphys-laws.com/sods-calculator" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; font-weight: bold;">Try Another Calculation</a>
-          </div>
-
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; font-size: 14px;">
-            <p>Powered by Murphy's Laws - Where everything that can go wrong, will go wrong.</p>
-            <p><a href="https://murphys-laws.com" style="color: #667eea; text-decoration: none;">Visit murphys-laws.com</a></p>
-          </div>
-        </div>
-      </div>
+      ${bodyHtml}
       <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 4px;">
         <p style="margin: 0;"><strong>To:</strong> ${recipientEmail}</p>
-        <p style="margin: 5px 0 0 0;"><strong>Subject:</strong> Your Sod's Law Calculation Result - ${probability}</p>
+        <p style="margin: 5px 0 0 0;"><strong>Subject:</strong> ${subject}</p>
       </div>
     `;
   }
