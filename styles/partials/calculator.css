@@ -284,46 +284,6 @@
   display: none;
 }
 
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.form-group label .required {
-  color: var(--important);
-}
-
-.form-group textarea,
-.form-group input[type="email"] {
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-family: inherit;
-  border: 2px solid var(--border-color);
-  border-radius: 0.375rem;
-  background: var(--bg);
-  color: var(--text-color);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-group textarea:focus,
-.form-group input[type="email"]:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
 .form-actions {
   display: flex;
   gap: 0.75rem;
@@ -345,20 +305,20 @@
 
 .share-status.success {
   background: var(--success-bg);
-  color: var(--success-dark);
-  border-left: 4px solid var(--success-dark);
+  color: var(--success);
+  border-left: 4px solid var(--success);
 }
 
 .share-status.error {
   background: var(--error-bg);
-  color: var(--error-dark);
-  border-left: 4px solid var(--error-dark);
+  color: var(--error);
+  border-left: 4px solid var(--error);
 }
 
 .share-status.info {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-  border-left: 4px solid var(--primary);
+  background: color-mix(in oklab, var(--btn-primary-bg) 12%, transparent 88%);
+  color: var(--btn-primary-bg);
+  border-left: 4px solid var(--btn-primary-bg);
 }
 
 @keyframes slide-in {
@@ -461,8 +421,13 @@
 }
 
 .close-button:hover {
-  background: var(--bg-light);
-  color: var(--text-color);
+  background: color-mix(in oklab, var(--bg) 90%, var(--btn-primary-bg) 10%);
+  color: var(--btn-primary-bg);
+}
+
+.close-button:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--btn-primary-bg) 70%, transparent 30%);
+  outline-offset: 2px;
 }
 
 .modal-body {

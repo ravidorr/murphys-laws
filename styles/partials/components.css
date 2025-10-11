@@ -213,3 +213,130 @@ button:disabled {
   opacity: .5;
   pointer-events: none;
 }
+
+/* Shared form layout */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.section-body.form {
+  width: calc( 100% - 2.5rem );
+}
+
+.form-group,
+.submit-checkbox-group,
+.share-form-container .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  width: 100%;
+}
+
+.form-group + .form-group {
+  margin-top: 0.5rem;
+}
+
+.form-label,
+.form-group label,
+.share-form-container .form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.form-label .required,
+.form-group label .required,
+.share-form-container .form-group label .required {
+  color: var(--error);
+  font-weight: inherit;
+}
+
+.form-control,
+.share-form-container .form-group textarea,
+.share-form-container .form-group input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  line-height: 1.4;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus,
+.share-form-container .form-group textarea:focus,
+.share-form-container .form-group input:focus {
+  border-color: var(--btn-primary-bg);
+  outline: 2px solid color-mix(in oklab, var(--btn-primary-bg) 60%, transparent 40%);
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--btn-primary-bg) 12%, transparent 88%);
+}
+
+.form-control:hover,
+.share-form-container .form-group textarea:hover,
+.share-form-container .form-group input:hover {
+  border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
+}
+
+textarea.form-control,
+.share-form-container .form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-helper,
+.submit-helper-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--muted-fg);
+  gap: 0.5rem;
+}
+
+.form-helper .submit-helper-message,
+.submit-helper-text .submit-helper-message {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-helper span,
+.submit-helper-text span,
+.submit-char-counter {
+  line-height: 1.4;
+}
+
+.custom-tooltip {
+  position: relative; /* Required for positioning the tooltip */
+  cursor: help; /* Changes cursor to indicate interactivity */
+}
+
+.custom-tooltip::after {
+  content: attr(data-title); /* Displays the content of data-title */
+  position: absolute;
+  bottom: 100%; /* Positions the tooltip above the element */
+  left: 50%;
+  transform: translateX(-50%); /* Centers the tooltip horizontally */
+  background-color: var(--bg);
+  color: var(--fg);
+  padding: 5px 10px;
+  border-radius: 4px;
+  white-space: nowrap; /* Prevents text from wrapping */
+  opacity: 0; /* Initially hidden */
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s; /* Smooth transition */
+  z-index: 10; /* Ensures tooltip appears above other content */
+}
+
+.custom-tooltip:hover::after {
+  opacity: 1; /* Shows the tooltip on hover */
+  visibility: visible;
+}

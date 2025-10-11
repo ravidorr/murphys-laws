@@ -4,32 +4,32 @@
 <div class="section-subheader">
   <p class="section-subtitle">Share your own Murphy's Law discovery</p>
 </div>
-<form class="section-body submit-form">
-  <div class="submit-input-group">
-    <label for="submit-title">Law Title (optional)</label>
-    <input id="submit-title" type="text" placeholder="Enter law title" class="input" />
+<form class="section-body submit-form form">
+  <div class="form-group">
+    <label for="submit-title" class="form-label">Law Title</label>
+    <input id="submit-title" type="text" placeholder="Enter law title" class="form-control" />
   </div>
-  <div class="submit-input-group">
-    <label for="submit-text">Law Text</label>
-    <textarea id="submit-text" placeholder="Enter the law text" class="input" rows="3" maxlength="1000"></textarea>
-    <div class="submit-helper-text">
+  <div class="form-group">
+    <label for="submit-text" class="form-label">Law Text <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
+    <textarea id="submit-text" placeholder="Enter the law text" class="form-control" rows="3" maxlength="1000"></textarea>
+    <div class="form-helper">
       <span class="submit-helper-message">Minimum 10 characters, maximum 1000</span>
       <span class="submit-char-counter" aria-live="polite">0 / 1000</span>
     </div>
   </div>
-  <div class="submit-input-group">
-    <label for="submit-category">Category (optional)</label>
-    <select id="submit-category" class="input">
+  <div class="form-group">
+    <label for="submit-category" class="form-label">Category</label>
+    <select id="submit-category" class="form-control">
       <option value="">Select a category...</option>
     </select>
   </div>
-  <div class="submit-input-group">
-    <label for="submit-author">Name (optional)</label>
-    <input id="submit-author" type="text" placeholder="Name" class="input" />
+  <div class="form-group">
+    <label for="submit-author" class="form-label">Name</label>
+    <input id="submit-author" type="text" placeholder="Name" class="form-control" />
   </div>
-  <div class="submit-input-group">
-    <label for="submit-email">Email address (optional)</label>
-    <input id="submit-email" type="email" placeholder="your@email.com" class="input" />
+  <div class="form-group">
+    <label for="submit-email" class="form-label">Email address</label>
+    <input id="submit-email" type="email" placeholder="your@email.com" class="form-control" />
   </div>
   <div class="submit-checkbox-group">
     <label class="checkbox-label">
