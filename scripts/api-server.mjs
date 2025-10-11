@@ -84,6 +84,128 @@ Review at: http://murphys-laws.com/admin (or use npm run review locally)
   }
 }
 
+// Send Sod's Law calculation result email
+async function sendCalculationEmail(calculationData) {
+  if (!emailTransporter) {
+    throw new Error('Email service not configured');
+  }
+
+  try {
+    const { to, taskDescription, urgency, complexity, importance, skill, frequency, probability, interpretation } = calculationData;
+
+    const mailOptions = {
+      from: EMAIL_FROM,
+      to: to,
+      subject: `Your Sod's Law Calculation Result - ${probability}`,
+      text: `Sod's Law Calculator Result
+
+Task Description: ${taskDescription}
+
+Input Values:
+- Urgency (U): ${urgency}
+- Complexity (C): ${complexity}
+- Importance (I): ${importance}
+- Skill (S): ${skill}
+- Frequency (F): ${frequency}
+- Aggravation Factor (A): 0.7
+
+Probability of things going wrong (P): ${probability}
+
+Interpretation: ${interpretation}
+
+The higher the probability (P), the greater the chance that Sod's law will strike.
+
+Calculate your own at: https://murphys-laws.com/sods-calculator
+`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
+            .task-box { background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0; border-radius: 4px; }
+            .task-box h2 { margin-top: 0; color: #667eea; font-size: 18px; }
+            .values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+            .value-item { background: white; padding: 15px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .value-item strong { display: block; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+            .value-item span { font-size: 24px; color: #333; font-weight: bold; }
+            .result-box { background: white; padding: 25px; margin: 20px 0; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            .probability { font-size: 48px; font-weight: bold; color: #667eea; margin: 10px 0; }
+            .interpretation { font-size: 18px; color: #555; margin: 15px 0; padding: 15px; background: #f0f0f0; border-radius: 4px; }
+            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; font-size: 14px; }
+            .cta-button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; font-weight: bold; }
+            .cta-button:hover { background: #5568d3; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>🎲 Sod's Law Calculator Result</h1>
+          </div>
+          <div class="content">
+            <div class="task-box">
+              <h2>Your Task</h2>
+              <p>${taskDescription}</p>
+            </div>
+
+            <h3 style="color: #667eea; margin-top: 30px;">Input Values</h3>
+            <div class="values-grid">
+              <div class="value-item">
+                <strong>Urgency (U)</strong>
+                <span>${urgency}</span>
+              </div>
+              <div class="value-item">
+                <strong>Complexity (C)</strong>
+                <span>${complexity}</span>
+              </div>
+              <div class="value-item">
+                <strong>Importance (I)</strong>
+                <span>${importance}</span>
+              </div>
+              <div class="value-item">
+                <strong>Skill (S)</strong>
+                <span>${skill}</span>
+              </div>
+              <div class="value-item">
+                <strong>Frequency (F)</strong>
+                <span>${frequency}</span>
+              </div>
+              <div class="value-item">
+                <strong>Aggravation (A)</strong>
+                <span>0.7</span>
+              </div>
+            </div>
+
+            <div class="result-box">
+              <h3 style="margin-top: 0; color: #667eea;">Probability of Things Going Wrong</h3>
+              <div class="probability">${probability}</div>
+              <div class="interpretation">${interpretation}</div>
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">The higher the probability (P), the greater the chance that Sod's law will strike.</p>
+            </div>
+
+            <div style="text-align: center;">
+              <a href="https://murphys-laws.com/sods-calculator" class="cta-button">Try Another Calculation</a>
+            </div>
+
+            <div class="footer">
+              <p>Powered by Murphy's Laws - Where everything that can go wrong, will go wrong.</p>
+              <p><a href="https://murphys-laws.com" style="color: #667eea; text-decoration: none;">Visit murphys-laws.com</a></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    await emailTransporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    throw new Error(`Failed to send calculation email: ${error.message}`);
+  }
+}
+
 function runSqlJson(sql, params = []) {
   return new Promise((resolvePromise, reject) => {
     const finalSql = bindParams(sql, params);
@@ -485,6 +607,60 @@ const server = http.createServer(async (req, res) => {
         ORDER BY name;
       `);
       return sendJson(res, 200, { data: attributions });
+    }
+
+    // POST /api/share-calculation - Share calculation result via email
+    if (req.method === 'POST' && pathname === '/api/share-calculation') {
+      const body = await readBody(req);
+
+      // Validate required fields
+      if (!body.email || typeof body.email !== 'string' || !body.email.trim()) {
+        return badRequest(res, 'Email address is required');
+      }
+
+      if (!body.taskDescription || typeof body.taskDescription !== 'string' || !body.taskDescription.trim()) {
+        return badRequest(res, 'Task description is required');
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(body.email.trim())) {
+        return badRequest(res, 'Invalid email address');
+      }
+
+      // Validate numeric inputs
+      const requiredNumbers = ['urgency', 'complexity', 'importance', 'skill', 'frequency'];
+      for (const field of requiredNumbers) {
+        if (typeof body[field] !== 'number' || body[field] < 1 || body[field] > 9) {
+          return badRequest(res, `${field} must be a number between 1 and 9`);
+        }
+      }
+
+      if (!body.probability || typeof body.probability !== 'string') {
+        return badRequest(res, 'Probability is required');
+      }
+
+      if (!body.interpretation || typeof body.interpretation !== 'string') {
+        return badRequest(res, 'Interpretation is required');
+      }
+
+      try {
+        await sendCalculationEmail({
+          to: body.email.trim(),
+          taskDescription: body.taskDescription.trim(),
+          urgency: body.urgency,
+          complexity: body.complexity,
+          importance: body.importance,
+          skill: body.skill,
+          frequency: body.frequency,
+          probability: body.probability,
+          interpretation: body.interpretation
+        });
+
+        return sendJson(res, 200, { success: true, message: 'Calculation sent successfully' });
+      } catch (error) {
+        return sendJson(res, 500, { error: error.message });
+      }
     }
 
     // Stories endpoints are postponed for a later milestone. Intentionally omitted.

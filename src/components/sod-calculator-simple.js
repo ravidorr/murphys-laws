@@ -1,54 +1,11 @@
 // Simple Sod's Law Calculator component
+import templateHtml from '@components/templates/sod-calculator-simple.html?raw';
 
 export function SodCalculatorSimple({ onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
-  el.innerHTML = `
-      <div class="section-header">
-        <h3 class="section-title"><span class="accent-text">Sod's</span> Law Calculator</h3>
-      </div>
-      <div class="section-subheader">
-        <p class="section-subtitle">Calculate the probability of things going wrong</p>
-      </div>
-      <div class="section-body">
-        <div class="sod-simple-inputs">
-          <div class="sod-simple-slider-group">
-            <label for="urgency">The task urgency: <span class="sod-simple-value" id="urgency-value">5</span></label>
-            <input type="range" id="urgency" min="1" max="9" value="5" />
-          </div>
-          <div class="sod-simple-slider-group">
-            <label for="complexity">The task complexity: <span class="sod-simple-value" id="complexity-value">5</span></label>
-            <input type="range" id="complexity" min="1" max="9" value="5" />
-          </div>
-          <div class="sod-simple-slider-group">
-            <label for="importance">The task importance: <span class="sod-simple-value" id="importance-value">5</span></label>
-            <input type="range" id="importance" min="1" max="9" value="5" />
-          </div>
-          <div class="sod-simple-slider-group">
-            <label for="skill">Your skills: <span class="sod-simple-value" id="skill-value">5</span></label>
-            <input type="range" id="skill" min="1" max="9" value="5" />
-          </div>
-          <div class="sod-simple-slider-group">
-            <label for="frequency">The task frequency: <span class="sod-simple-value" id="frequency-value">5</span></label>
-            <input type="range" id="frequency" min="1" max="9" value="5" />
-          </div>
-        </div>
-        <div class="sod-simple-score-label">The probability of things going wrong:</div>
-        <div class="sod-simple-score">
-          <div id="score-display" class="sod-simple-score-value">5.25</div>
-          <div id="interpretation" class="sod-simple-interpretation">Definitely worrying. Proceed with caution.</div>
-        </div>
-      </div>
-
-      <div class="section-footer">
-        <span/> </span>
-        <button class="btn" type="button" data-nav="calculator" aria-label="View full Sod's Law Calculator">
-          <span class="btn-text">View Full Calculator</span>
-          <span class="material-symbols-outlined icon ml">arrow_forward</span>
-        </button>
-      </div>
-  `;
+  el.innerHTML = templateHtml;
 
   // Wire up interactions
   const sliders = {

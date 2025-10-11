@@ -1,5 +1,6 @@
 // Submit a Law section component
 
+import templateHtml from '@views/templates/submit-law-section.html?raw';
 import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 import { showSuccess, showError } from './notification.js';
 import { fetchAPI } from '../utils/api.js';
@@ -7,62 +8,7 @@ import { fetchAPI } from '../utils/api.js';
 export function SubmitLawSection() {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
-  el.innerHTML = `
-    <div class="section-header">
-      <h3 class="section-title"><span class="accent-text">Submit</span> a Law</h3>
-    </div>
-    <div class="section-subheader">
-      <p class="section-subtitle">Share your own Murphy's Law discovery</p>
-    </div>
-    <form class="section-body submit-form">
-      <div class="submit-input-group">
-        <label for="submit-title">Law Title (optional)</label>
-        <input id="submit-title" type="text" placeholder="Enter law title" class="input" />
-      </div>
-      <div class="submit-input-group">
-        <label for="submit-text">Law Text</label>
-        <textarea id="submit-text" placeholder="Enter the law text" class="input" rows="3" maxlength="1000"></textarea>
-        <div class="submit-helper-text">
-          <span class="submit-helper-message">Minimum 10 characters, maximum 1000</span>
-          <span class="submit-char-counter" aria-live="polite">0 / 1000</span>
-        </div>
-      </div>
-      <div class="submit-input-group">
-        <label for="submit-category">Category (optional)</label>
-        <select id="submit-category" class="input">
-          <option value="">Select a category...</option>
-        </select>
-      </div>
-      <div class="submit-input-group">
-        <label for="submit-author">Name (optional)</label>
-        <input id="submit-author" type="text" placeholder="Name" class="input" />
-      </div>
-      <div class="submit-input-group">
-        <label for="submit-email">Email address (optional)</label>
-        <input id="submit-email" type="email" placeholder="your@email.com" class="input" />
-      </div>
-      <div class="submit-checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="submit-anonymous" />
-          <span>Stay Anonymous</span>
-        </label>
-      </div>
-      <div class="submit-checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="submit-terms" />
-          <span>I release this law into the public domain (<a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>) and understand it may be freely used, modified, and shared by anyone.</span>
-        </label>
-      </div>
-      <div class="submit-message" role="alert" aria-live="polite"></div>
-      <div class="section-footer">
-        <span></span>
-        <button id="submit-btn" class="btn" type="submit" disabled aria-label="Submit your law">
-          <span class="btn-text">Submit Law</span>
-          <span class="material-symbols-outlined icon ml">send</span>
-        </button>
-      </div>
-    </form>
-  `;
+  el.innerHTML = templateHtml;
 
   const form = el.querySelector('.submit-form');
   const submitBtn = el.querySelector('#submit-btn');

@@ -1,6 +1,4 @@
 import { showNotification, showSuccess, showError, clearAllNotifications } from '../src/components/notification.js';
-import { afterEach } from 'vitest';
-
 describe('Notification system', () => {
   afterEach(() => {
     // Only clear notifications, don't remove the container

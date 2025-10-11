@@ -1,5 +1,6 @@
 // Law of the Day widget component
 
+import templateHtml from '@components/templates/law-of-day.html?raw';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
@@ -28,34 +29,51 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
   // Safely escape the law text
   const safeText = escapeHtml(law.text);
 
-  el.innerHTML = `
-    <div class="section-header">
-      <h3 class="section-title"><span class="accent-text">Murphy's</span> Law of the Day</h3>
-      <time class="section-date" datetime="${iso}">${dateText}</time>
-      </div>
-    <div class="section-body" data-law-id="${escapeHtml(String(law.id))}">
+  el.innerHTML = templateHtml;
+
+  const dateEl = el.querySelector('#lod-date');
+  if (dateEl) {
+    dateEl.setAttribute('datetime', iso);
+    dateEl.textContent = dateText;
+  }
+
+  const bodyEl = el.querySelector('#lod-body');
+  if (bodyEl) {
+    bodyEl.setAttribute('data-law-id', escapeHtml(String(law.id)));
+    bodyEl.innerHTML = `
       <blockquote class="lod-quote-large">"${safeText}"</blockquote>
       <p class="lod-attrib">${attribution}</p>
-    </div>
-    <div class="section-footer">
-      <div class="left">
-        <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" aria-label="Upvote this law">
-          <span class="material-symbols-outlined icon">thumb_up</span>
-          <span class="count-num">${upvotes}</span>
+    `;
+  }
+
+  const upBtn = el.querySelector('[data-vote="up"]');
+  const downBtn = el.querySelector('[data-vote="down"]');
+
+  if (upBtn) {
+    upBtn.classList.toggle('voted', userVote === 'up');
+    const upCount = upBtn.querySelector('.count-num');
+    if (upCount) upCount.textContent = String(upvotes);
+  }
+
+  if (downBtn) {
+    downBtn.classList.toggle('voted', userVote === 'down');
+    const downCount = downBtn.querySelector('.count-num');
+    if (downCount) downCount.textContent = String(downvotes);
+  }
+
+  const viewMoreContainer = el.querySelector('#lod-view-more');
+  if (viewMoreContainer) {
+    if (showButton) {
+      viewMoreContainer.innerHTML = `
+        <button class="btn" type="button" data-nav="browse" aria-label="View more laws">
+          <span class="btn-text">View More Laws</span>
+          <span class="material-symbols-outlined icon ml">arrow_forward</span>
         </button>
-        <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" aria-label="Downvote this law">
-          <span class="material-symbols-outlined icon">thumb_down</span>
-          <span class="count-num">${downvotes}</span>
-        </button>
-      </div>
-      ${showButton ? `
-      <button class="btn" type="button" data-nav="browse" aria-label="View more laws">
-        <span class="btn-text">View More Laws</span>
-        <span class="material-symbols-outlined icon ml">arrow_forward</span>
-      </button>
-      ` : ''}
-    </div>
-  `;
+      `;
+    } else {
+      viewMoreContainer.remove();
+    }
+  }
 
   // Handle voting and navigation
   el.addEventListener('click', async (e) => {

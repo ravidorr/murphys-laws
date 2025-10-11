@@ -10,24 +10,26 @@
 
 .hidden { display: none; }
 .text-center { text-align: center; }
-
-.pt-0 { padding-top: 0; }
-.mt-8 { margin-top: 2rem; }
-.mb-12 { margin-bottom: 3rem; }
-.mb-8 { margin-bottom: 2rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.gap-2 { gap: .5rem; }
-.gap-4 { gap: 1rem; }
-.grid { display: grid; }
 .flex { display: flex; }
+.grid { display: grid; }
 .flex-col { flex-direction: column; }
 .flex-1 { flex: 1 1 auto; }
-.min-h-screen { min-height: 100vh; }
+.gap-2 { gap: .5rem; }
+.gap-4 { gap: 1rem; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
+
+.m-0 { margin: 0; }
+.mt-8 { margin-top: 2rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mb-12 { margin-bottom: 3rem; }
+.pt-0 { padding-top: 0; }
 .pt-8 { padding-top: 2rem; }
+
+.min-h-screen { min-height: 100vh; }
 .h-16 { height: 4rem; }
 
 .text-ellipsis {

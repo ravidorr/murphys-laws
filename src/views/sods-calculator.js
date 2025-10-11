@@ -2,64 +2,14 @@
 // Sod's Law Calculator view integrated with site styles (no inline CSS in HTML)
 // Reuses the original formula and interaction, scoped under .calc- classes
 
+import templateHtml from '@views/templates/sods-calculator.html?raw';
+import { initShareCalculation } from '@modules/sods-share.js';
+
 export function Calculator() {
   const el = document.createElement('div');
   el.className = 'container page calculator';
 
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-content">
-        <header>
-          <h1><span class="accent-text">Sod's</span> Law Calculator</h1>
-          <p class="calc-description">The (P)robability of a task going wrong by weighing it's combined (U)rgency, (C)omplexity, and (I)mportance, against the performer's (S)kill level,  multiplied by the (A)ctivity constant, amplifyed by the (F)requency of doing the task.</p>
-          <p class="formula" id="formula-display"></p>
-        </header>
-        <div class="calc-input-grid">
-          <div class="calc-slider-group">
-            <label for="urgency">U (Urgency of the task): <span class="calc-slider-value" id="urgency-value">5</span></label>
-            <input type="range" id="urgency" min="1" max="9" value="5" />
-          </div>
-          <div class="calc-slider-group">
-            <label for="complexity">C (Complexity of the task): <span class="calc-slider-value" id="complexity-value">5</span></label>
-            <input type="range" id="complexity" min="1" max="9" value="5" />
-          </div>
-          <div class="calc-slider-group">
-            <label for="importance">I (Importance of the task): <span class="calc-slider-value" id="importance-value">5</span></label>
-            <input type="range" id="importance" min="1" max="9" value="5" />
-          </div>
-          <div class="calc-slider-group">
-            <label for="skill">S (Your skill in performing the task): <span class="calc-slider-value" id="skill-value">5</span></label>
-            <input type="range" id="skill" min="1" max="9" value="5" />
-          </div>
-          <div class="calc-slider-group">
-            <label for="frequency">F (Frequency of the task): <span class="calc-slider-value" id="frequency-value">5</span></label>
-            <input type="range" id="frequency" min="1" max="9" value="5" />
-          </div>
-        </div>
-        <p class="label-without-input">A (Aggravation factor, a constant set by researchers): <span class="calc-slider-value" id="a-value">0.7</span></p>
-        <h2>P (Probability of things going wrong):</h2>
-        <div id="result-display" class="calc-result-display calc-ok">
-          <span id="score-value" class="calc-score">0.00</span>
-          <p id="score-interpretation" class="calc-interpretation">Enter your values and see your fate.</p>
-        </div>
-        <div class="calc-info">
-          <p>probabilities are on a scale of 0.12 to 8.6.</p>
-          <p>The higher the probability (P), the greater the chance that Sod's law will strike.</p>
-          <p>How the formula explains Sod's Law?</p>
-          <p>The components of the equation reflect the intuitive reasoning behind Sod's law:</p>
-          <p>The probability (P) of a mishap increases with the urgency (U), complexity (C), and importance (I) of the task.</p>
-          <p>The likelihood of a mishap decreases with your skill level (S).</p>
-          <p>An aggravating circumstance is a constant, negative influence (A).</p>
-          <p>The equation has a frequency term (1/(1-sin (F/10))) that implies that repeated actions (F) could lead to a sudden, unexpected failure.</p>
-          <p>How to reduce the probability (P) of things going wrong:</p>
-          <p>Improve your skill (S).</p>
-          <p> Reduce the urgency (U), complexity (C) and/or importance (I).</p>
-          <p>Lower the frequency (F) of the task.</p>
-        </div>
-      </div>
-    </div>
-  `;
-
+  el.innerHTML = templateHtml;
 
   // Wire up interactions
   const sliders = {
@@ -249,6 +199,36 @@ export function Calculator() {
       resultDisplay.classList.add(cls);
     }
   }
+
+  const state = {
+    urgency: parseFloat(sliders.urgency.value),
+    complexity: parseFloat(sliders.complexity.value),
+    importance: parseFloat(sliders.importance.value),
+    skill: parseFloat(sliders.skill.value),
+    frequency: parseFloat(sliders.frequency.value),
+    probability: scoreValueDisplay?.textContent || '0.00',
+    interpretation: scoreInterpretationDisplay?.textContent || ''
+  };
+
+  function updateState() {
+    state.urgency = parseFloat(sliders.urgency.value);
+    state.complexity = parseFloat(sliders.complexity.value);
+    state.importance = parseFloat(sliders.importance.value);
+    state.skill = parseFloat(sliders.skill.value);
+    state.frequency = parseFloat(sliders.frequency.value);
+    state.probability = scoreValueDisplay?.textContent || '0.00';
+    state.interpretation = scoreInterpretationDisplay?.textContent || '';
+  }
+
+  const teardownShare = initShareCalculation({
+    root: el,
+    getCalculationState() {
+      updateState();
+      return { ...state };
+    }
+  });
+
+  el._teardownShare = teardownShare;
 
   return el;
 }

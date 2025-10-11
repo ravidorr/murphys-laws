@@ -20,14 +20,14 @@ export function currentRoute() {
 let renderFn = null;
 let currentCleanup = [];
 
-export function startRouter(rootEl) {
+export function startRouter(rootEl, notFoundRender = null) {
   function render() {
     // Call cleanup functions from previous render
     currentCleanup.forEach(fn => {
       if (typeof fn === 'function') {
         try {
           fn();
-        } catch (err) {
+        } catch {
           // Silently handle cleanup errors
         }
       }
@@ -35,7 +35,7 @@ export function startRouter(rootEl) {
     currentCleanup = [];
 
     const { name, param } = currentRoute();
-    const fn = routes[name] || routes['home'];
+    const fn = routes[name] || notFoundRender || routes['home'];
     rootEl.innerHTML = '';
     const newContent = fn({ param });
     rootEl.appendChild(newContent);

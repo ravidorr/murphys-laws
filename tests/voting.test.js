@@ -1,5 +1,4 @@
 import { getUserVote, voteLaw, unvoteLaw, toggleVote } from '../src/utils/voting.js';
-import { beforeEach, afterEach, vi } from 'vitest';
 
 // Mock constants to test fallback URL branches
 vi.mock('../src/utils/constants.js', async (importOriginal) => {
