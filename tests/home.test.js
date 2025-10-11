@@ -45,15 +45,12 @@ describe('Home view', () => {
 
   it('shows error message on fetch failure', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
     expect(el.textContent).toMatch(/Failed to load laws/);
-    expect(consoleSpy).toHaveBeenCalledWith('API fetch failed:', expect.any(Error));
 
-    consoleSpy.mockRestore();
   });
 
   it('navigates using data-nav attribute', async () => {
@@ -140,15 +137,12 @@ describe('Home view', () => {
 
   it('handles fetch that returns non-ok status', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
     expect(el.textContent).toMatch(/Failed to load laws/);
-    expect(consoleSpy).toHaveBeenCalled();
 
-    consoleSpy.mockRestore();
   });
 
   it('renders with calculator section', async () => {

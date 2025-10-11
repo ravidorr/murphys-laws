@@ -66,8 +66,7 @@ export function Trending() {
         addVotingListeners(el);
       }
     })
-    .catch(err => {
-      console.error('Failed to fetch trending laws:', err);
+    .catch(() => {
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `

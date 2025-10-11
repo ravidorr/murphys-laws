@@ -10,7 +10,8 @@
   - Layout (header, navigation, footer)
   - Components (buttons, cards, inputs, pagination)
   - Sections (Law of Day, Calculator, Submit sections)
-  - Calculator (Sod's Law Calculator specific styles)
+  - Calculator (calculator styles)
+  - Notification (notification styles)
   - Theme (dark mode overrides)
 
   Fonts:
@@ -24,7 +25,6 @@
 @import url('./partials/layout.css');
 @import url('./partials/components.css');
 @import url('./partials/sections.css');
-@import url('./partials/sods-calculator.css');
-@import url('./partials/toast-calculator.css');
+@import url('./partials/calculator.css');
 @import url('./partials/notification.css');
 @import url('./partials/theme.css');

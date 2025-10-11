@@ -82,10 +82,7 @@ function layout(node) {
   try {
     (window.adsbygoogle = window.adsbygoogle || []).push({});
   } catch (e) {
-    // Silently ignore "already have ads" errors - this is expected on route changes
-    if (!e.message?.includes('already have ads')) {
-      console.error('AdSense error:', e);
-    }
+    // Silently ignore AdSense errors
   }
 
   footer.addEventListener('click', (e) => {
@@ -108,7 +105,9 @@ function layout(node) {
     const attempt = () => {
       const mj = window.MathJax;
       if (mj && typeof mj.typesetPromise === 'function') {
-        mj.typesetPromise([element]).catch((err) => console.error('MathJax typeset error:', err));
+        mj.typesetPromise([element]).catch(() => {
+          // Silently handle MathJax errors
+        });
         return;
       }
       // Try again shortly in case MathJax script (loaded async) isn't ready yet
@@ -215,10 +214,12 @@ startRouter(app);
     const mj = window.MathJax;
     const root = document.getElementById('app');
     if (mj && typeof mj.typesetPromise === 'function' && root) {
-      mj.typesetPromise([root]).catch((err) => console.error('MathJax initial typeset error:', err));
+      mj.typesetPromise([root]).catch(() => {
+        // Silently handle MathJax errors
+      });
     }
   } catch (err) {
-    console.error('Failed to load MathJax locally:', err);
+    // Silently handle MathJax loading errors
   }
   // Ensure HMR picks up MathJax config changes: dispose the global instance on module replace
   if (import.meta.hot) {

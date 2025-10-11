@@ -75,7 +75,6 @@ describe('Voting utilities', () => {
         json: async () => ({ upvotes: 11, downvotes: 2 })
       });
 
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('Storage quota exceeded');
       });
@@ -83,10 +82,8 @@ describe('Voting utilities', () => {
       // Should not throw even if localStorage fails
       const result = await voteLaw(123, 'up');
       expect(result).toEqual({ upvotes: 11, downvotes: 2 });
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save votes to localStorage:', expect.any(Error));
 
       setItemSpy.mockRestore();
-      consoleErrorSpy.mockRestore();
       fetchSpy.mockRestore();
     });
   });
@@ -159,7 +156,6 @@ describe('Voting utilities', () => {
     });
 
     it('uses fallback URL on primary failure', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
@@ -178,11 +174,9 @@ describe('Voting utilities', () => {
       expect(result).toEqual({ upvotes: 11, downvotes: 2 });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-      consoleErrorSpy.mockRestore();
     });
 
     it('handles fallback error with error property', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
@@ -200,11 +194,9 @@ describe('Voting utilities', () => {
 
       await expect(voteLaw(123, 'up')).rejects.toThrow('Fallback error');
 
-      consoleErrorSpy.mockRestore();
     });
 
     it('handles fallback error with invalid JSON', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
@@ -222,7 +214,6 @@ describe('Voting utilities', () => {
 
       await expect(voteLaw(123, 'up')).rejects.toThrow();
 
-      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -271,7 +262,6 @@ describe('Voting utilities', () => {
     });
 
     it('uses fallback URL on primary failure', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
@@ -290,11 +280,9 @@ describe('Voting utilities', () => {
       expect(result).toEqual({ upvotes: 10, downvotes: 2 });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-      consoleErrorSpy.mockRestore();
     });
 
     it('handles fallback error with error property', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
@@ -312,11 +300,9 @@ describe('Voting utilities', () => {
 
       await expect(unvoteLaw(123)).rejects.toThrow('Fallback error');
 
-      consoleErrorSpy.mockRestore();
     });
 
     it('handles fallback error with invalid JSON', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
@@ -334,7 +320,6 @@ describe('Voting utilities', () => {
 
       await expect(unvoteLaw(123)).rejects.toThrow();
 
-      consoleErrorSpy.mockRestore();
     });
   });
 

@@ -226,7 +226,6 @@ describe('API utilities', () => {
 
   describe('fetchAPI', () => {
     it('uses fallback URL when primary fetch fails', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // First call fails
       fetchSpy.mockResolvedValueOnce({
@@ -244,16 +243,9 @@ describe('API utilities', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: [] });
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'API fetch failed, falling back to direct API:',
-        expect.any(Error)
-      );
-
-      consoleErrorSpy.mockRestore();
     });
 
     it('uses fallback URL when primary returns non-JSON', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // First call returns HTML
       fetchSpy.mockResolvedValueOnce({
@@ -272,11 +264,9 @@ describe('API utilities', () => {
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: [] });
 
-      consoleErrorSpy.mockRestore();
     });
 
     it('throws error when fallback also fails', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Both calls fail
       fetchSpy.mockResolvedValue({
@@ -287,7 +277,6 @@ describe('API utilities', () => {
       await expect(fetchAPI('/api/laws')).rejects.toThrow('Fallback fetch not ok: 503');
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-      consoleErrorSpy.mockRestore();
     });
 
     it('accepts URLSearchParams as params', async () => {
@@ -311,7 +300,6 @@ describe('API utilities', () => {
     });
 
     it('handles missing content-type header', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // First call has no content-type header
       fetchSpy.mockResolvedValueOnce({
@@ -331,7 +319,6 @@ describe('API utilities', () => {
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: [] });
 
-      consoleErrorSpy.mockRestore();
     });
   });
 

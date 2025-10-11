@@ -209,7 +209,6 @@ describe('Browse view', () => {
 
   it('handles voting errors gracefully', async () => {
     toggleVoteSpy.mockRejectedValue(new Error('Vote failed'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
@@ -221,10 +220,8 @@ describe('Browse view', () => {
     upvoteBtn.click();
 
     await vi.waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to vote:', expect.any(Error));
     }, { timeout: 1000 });
 
-    consoleSpy.mockRestore();
   });
 
   it('renders laws without titles correctly', async () => {

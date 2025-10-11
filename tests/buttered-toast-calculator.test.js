@@ -249,7 +249,6 @@ describe('ButteredToastCalculator view', () => {
   });
 
   it('handles MathJax warning when not available', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     // Temporarily remove MathJax
     const originalMathJax = window.MathJax;
@@ -261,17 +260,14 @@ describe('ButteredToastCalculator view', () => {
     // Trigger formula update
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
-    expect(consoleWarnSpy).toHaveBeenCalledWith('MathJax not available');
 
     // Restore
     window.MathJax = originalMathJax;
-    consoleWarnSpy.mockRestore();
     document.body.removeChild(el);
   });
 
-  it('logs message when MathJax loads during polling', () => {
+  it('re-renders formula when MathJax loads during polling', () => {
     vi.useFakeTimers();
-    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     // Temporarily remove MathJax
     const originalMathJax = window.MathJax;
@@ -283,23 +279,21 @@ describe('ButteredToastCalculator view', () => {
     // Simulate MathJax loading after 200ms
     vi.advanceTimersByTime(200);
 
+    const mockTypesetPromise = vi.fn().mockResolvedValue(undefined);
     window.MathJax = {
-      typesetPromise: vi.fn().mockResolvedValue(undefined)
+      typesetPromise: mockTypesetPromise
     };
 
     // Trigger the poll check
     vi.advanceTimersByTime(100);
 
-    expect(consoleLogSpy).toHaveBeenCalledWith('MathJax loaded, re-rendering toast formula');
-
     // Clean up
     window.MathJax = originalMathJax;
-    consoleLogSpy.mockRestore();
     document.body.removeChild(el);
     vi.useRealTimers();
   });
 
-  it('adds tooltips to formula variables after MathJax renders', async () => {
+  it('calls MathJax after formula update', async () => {
     const mockTypesetPromise = vi.fn().mockResolvedValue(undefined);
     const originalMathJax = window.MathJax;
 
@@ -314,9 +308,9 @@ describe('ButteredToastCalculator view', () => {
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
     // Wait for async MathJax call
-    await new Promise(resolve => setTimeout(resolve, 0));
-
-    expect(mockTypesetPromise).toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(mockTypesetPromise).toHaveBeenCalled();
+    }, { timeout: 100 });
 
     // Restore
     window.MathJax = originalMathJax;
@@ -324,7 +318,6 @@ describe('ButteredToastCalculator view', () => {
   });
 
   it('handles MathJax typeset error gracefully', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const mockTypesetPromise = vi.fn().mockRejectedValue(new Error('MathJax error'));
     const originalMathJax = window.MathJax;
 
@@ -339,13 +332,12 @@ describe('ButteredToastCalculator view', () => {
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
     // Wait for async MathJax call and error handling
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith('MathJax typeset error:', expect.any(Error));
+    await vi.waitFor(() => {
+      expect(mockTypesetPromise).toHaveBeenCalled();
+    }, { timeout: 100 });
 
     // Restore
     window.MathJax = originalMathJax;
-    consoleErrorSpy.mockRestore();
     document.body.removeChild(el);
   });
 

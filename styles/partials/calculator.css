@@ -1,14 +1,14 @@
 /* ==========================
-  Sod's Law Calculator styles
+  Common Calculator Styles
+  ==========================
+  Shared styles for all calculator components
+  (Sod's Law Calculator, Buttered Toast Calculator, etc.)
    ========================== */
 
+/* Description text at the top of calculators */
 .calc-description {
   line-height: 1.5;
   margin-bottom: 1.5rem;
-}
-
-.calc-container {
-  background: color-mix(in oklab, var(--bg) 98%, white 2%);
 }
 
 /* Add horizontal padding to calculator card content to match other pages */
@@ -16,6 +16,7 @@
   padding: 1.25rem 1rem;
 }
 
+/* Input grid layout (responsive) */
 .calc-input-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -27,6 +28,7 @@
   .calc-input-grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* Slider group container */
 .calc-slider-group { text-align: left; }
 
 .calc-slider-group label {
@@ -35,6 +37,7 @@
   margin-bottom: .5rem;
 }
 
+/* Range slider base styles */
 .calc-slider-group input[type="range"] {
   width: 100%;
   margin: 11px 0;
@@ -46,6 +49,7 @@
   outline: none;
 }
 
+/* Webkit (Chrome, Safari) slider styles */
 .calc-slider-group input[type="range"]::-webkit-slider-runnable-track {
   background: var(--btn-primary-bg);
   border: 0;
@@ -70,6 +74,7 @@
   background: var(--btn-primary-bg);
 }
 
+/* Firefox slider styles */
 .calc-slider-group input[type="range"]::-moz-range-track {
   background: var(--btn-primary-bg);
   border: 0;
@@ -88,6 +93,7 @@
   cursor: pointer;
 }
 
+/* IE/Edge slider styles */
 .calc-slider-group input[type="range"]::-ms-track {
   background: transparent;
   border-color: transparent;
@@ -128,36 +134,33 @@
   background: var(--btn-primary-bg);
 }
 
+/* Label without input (for constants) */
 .label-without-input {
   font-weight: 600;
 }
 
+/* Slider value display */
 .calc-slider-value {
   font-weight: 700;
   color: var(--primary);
   margin-left: .5rem;
 }
 
-.calc-result-section {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: .5rem;
-  background: color-mix(in oklab, var(--bg) 96%, white 4%);
-  border: 1px solid var(--border);
-}
-
+/* Result display container */
 .calc-result-display {
   padding: 1rem;
   border-radius: .5rem;
   transition: background-color .3s ease, color .3s ease;
 }
 
+/* Score display */
 .calc-score {
   font-size: 3rem;
   font-weight: 800;
   display: block;
 }
 
+/* Info section at bottom of calculator */
 .calc-info {
   font-size: .9rem;
   color: var(--muted-fg);

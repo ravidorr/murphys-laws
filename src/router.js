@@ -28,7 +28,7 @@ export function startRouter(rootEl) {
         try {
           fn();
         } catch (err) {
-          console.error('Cleanup error:', err);
+          // Silently handle cleanup errors
         }
       }
     });

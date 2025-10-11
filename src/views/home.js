@@ -58,8 +58,7 @@ export function Home({ onNavigate }) {
         }
         renderHome(el, json && Array.isArray(json.data) ? json.data : [], onNavigate);
       })
-      .catch(err => {
-        console.error('API fetch failed:', err);
+      .catch(() => {
         el.innerHTML = '';
         const errorEl = createErrorState('Failed to load laws. Please try again later.');
         el.appendChild(errorEl);

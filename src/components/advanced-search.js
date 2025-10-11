@@ -85,7 +85,6 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
         attributions.map(att => `<option value="${att.name}" ${att.name === selectedAttribution ? 'selected' : ''}>${att.name}</option>`).join('');
 
     } catch (error) {
-      console.error('Failed to load filters:', error);
       categorySelect.innerHTML = '<option value="">Error loading categories</option>';
       attributionSelect.innerHTML = '<option value="">Error loading attributions</option>';
     }

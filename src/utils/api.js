@@ -27,9 +27,7 @@ export async function fetchAPI(endpoint, params = {}) {
     }
 
     return await r.json();
-  } catch (err) {
-    console.error('API fetch failed, falling back to direct API:', err);
-
+  } catch {
     const fallbackUrl = `${API_FALLBACK_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
     const r2 = await fetch(fallbackUrl, { headers: DEFAULT_FETCH_HEADERS });
 

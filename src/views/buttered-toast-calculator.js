@@ -12,69 +12,64 @@ export function ButteredToastCalculator() {
           <p class="calc-description">The (P)robability of a buttered toast landing butter-side down by weighing it's combined (H)eight, (g)ravity, (O)verhang push, (B)utter Factor, (F)riction, and (T)oast Inertia.</p>
           <p class="formula" id="toast-formula-display"></p>
         </header>
-        <div class="calc-container">
-          <div class="calc-input-grid">
-            <div class="calc-slider-group">
-              <label for="toast-height">H (Height of Fall): <span class="calc-slider-value" id="toast-height-value">75 cm</span></label>
-              <input type="range" id="toast-height" min="30" max="200" value="75" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="toast-gravity">g (Gravity): <span class="calc-slider-value" id="toast-gravity-value">980 cm/s²</span></label>
-              <input type="range" id="toast-gravity" min="162" max="2479" value="980" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="toast-overhang">O (Initial Overhang / Push): <span class="calc-slider-value" id="toast-overhang-value">5 cm</span></label>
-              <input type="range" id="toast-overhang" min="1" max="20" value="5" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="toast-butter">B (Butter Factor): <span class="calc-slider-value" id="toast-butter-value">1.20</span></label>
-              <input type="range" id="toast-butter" min="1.0" max="2.0" value="1.2" step="0.05" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="toast-friction">F (Air Friction / Drag): <span class="calc-slider-value" id="toast-friction-value">20</span></label>
-              <input type="range" id="toast-friction" min="0" max="100" value="20" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="toast-inertia">T (Toast Inertia): <span class="calc-slider-value" id="toast-inertia-value">350</span></label>
-              <input type="range" id="toast-inertia" min="250" max="500" value="350" />
-            </div>
+        <div class="calc-input-grid">
+          <div class="calc-slider-group">
+            <label for="toast-height">H (Height of Fall): <span class="calc-slider-value" id="toast-height-value">75 cm</span></label>
+            <input type="range" id="toast-height" min="30" max="200" value="75" />
           </div>
-
-          <section class="calc-result-section">
-            <h2>P (Probability of Butter-Side Down Landing):</h2>
-            <div id="toast-result-display" class="calc-result-display calc-ok">
-              <span id="toast-probability-value" class="calc-score">0%</span>
-              <p id="toast-interpretation" class="calc-interpretation">Adjust the parameters to see the probability.</p>
-            </div>
-            <div class="calc-info">
-              <p>The probability is on a scale of 0% to 100%.</p>
-              <p>The higher the probability (P), the greater the chance the toast will land butter-side down.</p>
-              <p>How the formula explains the phenomenon?</p>
-              <p>The components of the equation reflect the physical forces and properties governing a falling, rotating object:</p>
-              <p>The probability of a butter-down landing is determined not by any single factor, but by how all factors combine to affect the toast's final rotational position when it hits the floor.</p>
-              <p>The likelihood of rotation is increased by a greater Fall Height (H), a stronger Initial Push (O), and a more significant Butter Factor (B).</p>
-              <p>The likelihood of rotation is decreased by the toast's "laziness" to spin, or Toast Inertia (T), as well as by Air Friction (F) and stronger Gravity (g), which reduces the total fall time.</p>
-              <p>The Half-Rotation Principle:</p>
-              <p>The core of the equation "(... mod 1) - 0.5" reveals the secret: the absolute speed of rotation doesn't matter as much as the toast's orientation at the end of the fall.</p>
-              <p>The formula calculates the total number of rotations and then looks at the fractional remainder ("mod 1"). A remainder of 0.5 represents a perfect half-turn, guaranteeing a butter-side down landing and yielding the highest probability (100%).</p>
-              <p>The further the final orientation is from a perfect half-turn, the lower the probability.</p>
-              <p>How to increase your chances of a butter-up landing:</p>
-              <p>Change the Fall Height (H): Drastically increase or decrease it. A fall from a coffee table or a high counter is less likely to result in a perfect half-rotation than a fall from a standard dining table.</p>
-              <p>Minimize the Initial Push (O): Let the toast slide off as slowly as possible to reduce its initial tumble.</p>
-              <p>Use a Different Bread (T): A very light, airy piece of toast (low inertia) or a very dense, heavy one (high inertia) will rotate at a different rate.</p>
-              <p>Don't butter it! (B): An unbuttered slice is perfectly balanced, making its rotation less predictable.</p>
-              <p>How it works:</p>
-              <p>This calculator uses a simplified physics model to estimate the probability of a buttered toast landing butter-side down when it falls off a surface.</p>
-              <p>The variables:</p>
-              <p>H (Height): The height from which the toast falls. Typical table height is ~75cm.</p>
-              <p>g (Gravity): The gravitational acceleration. Earth is ~980 cm/s², the Moon is 162 cm/s².</p>
-              <p>O (Overhang/Push): How much the toast extends over the edge or the force of the initial push. A larger overhang imparts more initial angular velocity.</p>
-              <p>B (Butter Factor): Accounts for how butter weight alters the center of mass, affecting rotation.</p>
-              <p>F (Air Friction): Resistance from the air slowing the toast's rotation during the fall.</p>
-              <p>T (Toast Inertia): A factor for toast density and shape. Denser or thicker toast rotates slower.</p>
-              <p>Why butter-side down? The formula calculates total rotation based on fall time, initial rotation, and resistances. When the rotation lands close to a half-turn (180°), the butter side is more likely to face down!</p>
-            </div>
-          </section>
+          <div class="calc-slider-group">
+            <label for="toast-gravity">g (Gravity): <span class="calc-slider-value" id="toast-gravity-value">980 cm/s²</span></label>
+            <input type="range" id="toast-gravity" min="162" max="2479" value="980" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="toast-overhang">O (Initial Overhang / Push): <span class="calc-slider-value" id="toast-overhang-value">5 cm</span></label>
+            <input type="range" id="toast-overhang" min="1" max="20" value="5" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="toast-butter">B (Butter Factor): <span class="calc-slider-value" id="toast-butter-value">1.20</span></label>
+            <input type="range" id="toast-butter" min="1.0" max="2.0" value="1.2" step="0.05" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="toast-friction">F (Air Friction / Drag): <span class="calc-slider-value" id="toast-friction-value">20</span></label>
+            <input type="range" id="toast-friction" min="0" max="100" value="20" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="toast-inertia">T (Toast Inertia): <span class="calc-slider-value" id="toast-inertia-value">350</span></label>
+            <input type="range" id="toast-inertia" min="250" max="500" value="350" />
+          </div>
+        </div>
+        <h2>P (Probability of Butter-Side Down Landing):</h2>
+        <div id="toast-result-display" class="calc-result-display calc-ok">
+          <span id="toast-probability-value" class="calc-score">0%</span>
+          <p id="toast-interpretation" class="calc-interpretation">Adjust the parameters to see the probability.</p>
+        </div>
+        <div class="calc-info">
+          <p>The probability is on a scale of 0% to 100%.</p>
+          <p>The higher the probability (P), the greater the chance the toast will land butter-side down.</p>
+          <p>How the formula explains the phenomenon?</p>
+          <p>The components of the equation reflect the physical forces and properties governing a falling, rotating object:</p>
+          <p>The probability of a butter-down landing is determined not by any single factor, but by how all factors combine to affect the toast's final rotational position when it hits the floor.</p>
+          <p>The likelihood of rotation is increased by a greater Fall Height (H), a stronger Initial Push (O), and a more significant Butter Factor (B).</p>
+          <p>The likelihood of rotation is decreased by the toast's "laziness" to spin, or Toast Inertia (T), as well as by Air Friction (F) and stronger Gravity (g), which reduces the total fall time.</p>
+          <p>The Half-Rotation Principle:</p>
+          <p>The core of the equation "(... mod 1) - 0.5" reveals the secret: the absolute speed of rotation doesn't matter as much as the toast's orientation at the end of the fall.</p>
+          <p>The formula calculates the total number of rotations and then looks at the fractional remainder ("mod 1"). A remainder of 0.5 represents a perfect half-turn, guaranteeing a butter-side down landing and yielding the highest probability (100%).</p>
+          <p>The further the final orientation is from a perfect half-turn, the lower the probability.</p>
+          <p>How to increase your chances of a butter-up landing:</p>
+          <p>Change the Fall Height (H): Drastically increase or decrease it. A fall from a coffee table or a high counter is less likely to result in a perfect half-rotation than a fall from a standard dining table.</p>
+          <p>Minimize the Initial Push (O): Let the toast slide off as slowly as possible to reduce its initial tumble.</p>
+          <p>Use a Different Bread (T): A very light, airy piece of toast (low inertia) or a very dense, heavy one (high inertia) will rotate at a different rate.</p>
+          <p>Don't butter it! (B): An unbuttered slice is perfectly balanced, making its rotation less predictable.</p>
+          <p>How it works:</p>
+          <p>This calculator uses a simplified physics model to estimate the probability of a buttered toast landing butter-side down when it falls off a surface.</p>
+          <p>The variables:</p>
+          <p>H (Height): The height from which the toast falls. Typical table height is ~75cm.</p>
+          <p>g (Gravity): The gravitational acceleration. Earth is ~980 cm/s², the Moon is 162 cm/s².</p>
+          <p>O (Overhang/Push): How much the toast extends over the edge or the force of the initial push. A larger overhang imparts more initial angular velocity.</p>
+          <p>B (Butter Factor): Accounts for how butter weight alters the center of mass, affecting rotation.</p>
+          <p>F (Air Friction): Resistance from the air slowing the toast's rotation during the fall.</p>
+          <p>T (Toast Inertia): A factor for toast density and shape. Denser or thicker toast rotates slower.</p>
+          <p>Why butter-side down? The formula calculates total rotation based on fall time, initial rotation, and resistances. When the rotation lands close to a half-turn (180°), the butter side is more likely to face down!</p>
         </div>
       </div>
     </div>
@@ -172,9 +167,9 @@ export function ButteredToastCalculator() {
               }
             }
           });
-        }).catch((err) => console.error('MathJax typeset error:', err));
-      } else {
-        console.warn('MathJax not available');
+        }).catch(() => {
+          // Silently handle MathJax errors
+        });
       }
     }
   }
@@ -266,7 +261,6 @@ export function ButteredToastCalculator() {
     const pollMathJax = setInterval(() => {
       if (typeof window !== 'undefined' && window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         clearInterval(pollMathJax);
-        console.log('MathJax loaded, re-rendering toast formula');
         updateFormula();
       }
     }, 100);
