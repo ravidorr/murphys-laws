@@ -41,6 +41,9 @@
   --dark-bg: #f0d6d6;
   --dark-text: #2b0000;
 
+  /* Semantic colors - Important */
+  --important: #dc2626;
+
   /* UI colors */
   --white: #fff;
   --highlight: #fef08a;
