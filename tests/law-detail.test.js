@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LawDetail } from '@views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
 

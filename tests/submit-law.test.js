@@ -1,14 +1,54 @@
-import { SubmitLawSection } from '../src/components/submit-law.js';
-import { vi } from 'vitest';
-import * as api from '../src/utils/api.js';
+import { SubmitLawSection } from '@components/submit-law.js';
+import * as api from '@utils/api.js';
 
-describe('SubmitLawSection component', () => {
+function createLocalThis() {
+  const context = {};
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    Object.keys(context).forEach((key) => {
+      delete context[key];
+    });
   });
 
-  it('renders form with all fields', () => {
+  return () => context;
+}
+
+describe('SubmitLawSection component', () => {
+  const local = createLocalThis();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const self = local();
+    self.el = null;
+    self.appended = false;
+  });
+
+  afterEach(() => {
+    const self = local();
+    if (self.appended && self.el?.parentNode) {
+      self.el.parentNode.removeChild(self.el);
+    }
+    self.el = null;
+    self.appended = false;
+    vi.restoreAllMocks();
+  });
+
+  function mountSection({ append = false } = {}) {
+    const self = local();
+    if (self.appended && self.el?.parentNode) {
+      self.el.parentNode.removeChild(self.el);
+    }
     const el = SubmitLawSection();
+    self.el = el;
+    self.appended = append;
+    if (append) {
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  it('renders form with all fields', () => {
+    const el = mountSection();
 
     expect(el.querySelector('#submit-title')).toBeTruthy();
     expect(el.querySelector('#submit-text')).toBeTruthy();
@@ -21,15 +61,14 @@ describe('SubmitLawSection component', () => {
   });
 
   it('submit button is disabled initially', () => {
-    const el = SubmitLawSection();
+    const el = mountSection();
     const submitBtn = el.querySelector('#submit-btn');
 
     expect(submitBtn.disabled).toBe(true);
   });
 
   it('updates character counter on text input', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const textarea = el.querySelector('#submit-text');
     const counter = el.querySelector('.submit-char-counter');
@@ -39,12 +78,10 @@ describe('SubmitLawSection component', () => {
 
     expect(counter.textContent).toContain('9');
 
-    document.body.removeChild(el);
   });
 
   it('enables submit button when text and terms are filled', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const textarea = el.querySelector('#submit-text');
     const termsCheckbox = el.querySelector('#submit-terms');
@@ -58,12 +95,10 @@ describe('SubmitLawSection component', () => {
 
     expect(submitBtn.disabled).toBe(false);
 
-    document.body.removeChild(el);
   });
 
   it('disables submit button if text is too short', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const textarea = el.querySelector('#submit-text');
     const termsCheckbox = el.querySelector('#submit-terms');
@@ -77,7 +112,6 @@ describe('SubmitLawSection component', () => {
 
     expect(submitBtn.disabled).toBe(true);
 
-    document.body.removeChild(el);
   });
 
   it('loads categories on mount', async () => {
@@ -88,8 +122,7 @@ describe('SubmitLawSection component', () => {
       ]
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -98,26 +131,22 @@ describe('SubmitLawSection component', () => {
 
     expect(options.length).toBeGreaterThan(1);
 
-    document.body.removeChild(el);
-    vi.restoreAllMocks();
   });
 
   it('handles category loading error gracefully', async () => {
     vi.spyOn(api, 'fetchAPI').mockRejectedValue(new Error('API failed'));
 
-    const el = SubmitLawSection();
+    const el = mountSection();
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const categorySelect = el.querySelector('#submit-category');
     expect(categorySelect).toBeTruthy();
 
-    vi.restoreAllMocks();
   });
 
   it('anonymous checkbox exists and works', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const anonymousCheckbox = el.querySelector('#submit-anonymous');
 
@@ -127,7 +156,6 @@ describe('SubmitLawSection component', () => {
     anonymousCheckbox.checked = true;
     expect(anonymousCheckbox.checked).toBe(true);
 
-    document.body.removeChild(el);
   });
 
   it('submits form with valid data', async () => {
@@ -136,8 +164,7 @@ describe('SubmitLawSection component', () => {
       json: async () => ({ success: true, id: 123 })
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -155,8 +182,6 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    document.body.removeChild(el);
-    vi.restoreAllMocks();
   });
 
   it('shows error message on submit failure', async () => {
@@ -166,8 +191,7 @@ describe('SubmitLawSection component', () => {
       json: async () => ({ error: 'Invalid data' })
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -185,13 +209,10 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    document.body.removeChild(el);
-    vi.restoreAllMocks();
   });
 
   it('validates email format', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const emailInput = el.querySelector('#submit-email');
 
@@ -201,12 +222,10 @@ describe('SubmitLawSection component', () => {
     // HTML5 validation should apply
     expect(emailInput.type).toBe('email');
 
-    document.body.removeChild(el);
   });
 
   it('shows error state in character counter for short text', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const textarea = el.querySelector('#submit-text');
     const counter = el.querySelector('.submit-char-counter');
@@ -216,12 +235,10 @@ describe('SubmitLawSection component', () => {
 
     expect(counter.classList.contains('submit-char-counter-error')).toBe(true);
 
-    document.body.removeChild(el);
   });
 
   it('removes error state when text becomes valid', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const textarea = el.querySelector('#submit-text');
     const counter = el.querySelector('.submit-char-counter');
@@ -236,12 +253,10 @@ describe('SubmitLawSection component', () => {
     textarea.dispatchEvent(new Event('input'));
     expect(counter.classList.contains('submit-char-counter-error')).toBe(false);
 
-    document.body.removeChild(el);
   });
 
   it('clears message div initially', () => {
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const messageDiv = el.querySelector('.submit-message');
 
@@ -249,7 +264,6 @@ describe('SubmitLawSection component', () => {
     expect(messageDiv.style.display).toBe('');
     expect(messageDiv.textContent).toBe('');
 
-    document.body.removeChild(el);
   });
 
   it('handles 404 error with user-friendly message', async () => {
@@ -259,8 +273,7 @@ describe('SubmitLawSection component', () => {
       json: async () => { throw new Error('Not JSON'); }
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -275,8 +288,6 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    document.body.removeChild(el);
-    vi.restoreAllMocks();
   });
 
   it('handles 500 error with user-friendly message', async () => {
@@ -286,8 +297,7 @@ describe('SubmitLawSection component', () => {
       json: async () => { throw new Error('Not JSON'); }
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -302,8 +312,6 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    document.body.removeChild(el);
-    vi.restoreAllMocks();
   });
 
   it('handles other status codes with generic message', async () => {
@@ -313,8 +321,7 @@ describe('SubmitLawSection component', () => {
       json: async () => { throw new Error('Not JSON'); }
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -329,8 +336,6 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    document.body.removeChild(el);
-    vi.restoreAllMocks();
   });
 
   it('uses fallback URL when primary fails', async () => {
@@ -348,7 +353,7 @@ describe('SubmitLawSection component', () => {
         json: async () => ({ success: true, id: 123 })
       });
 
-    const el = SubmitLawSection();
+    const el = mountSection();
     document.body.appendChild(el);
 
     await new Promise(resolve => setTimeout(resolve, 20));
@@ -385,7 +390,7 @@ describe('SubmitLawSection component', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-    const el = SubmitLawSection();
+    const el = mountSection();
     document.body.appendChild(el);
 
     const form = el.querySelector('.submit-form');
@@ -418,7 +423,7 @@ describe('SubmitLawSection component', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-    const el = SubmitLawSection();
+    const el = mountSection();
     document.body.appendChild(el);
 
     const form = el.querySelector('.submit-form');
@@ -451,7 +456,7 @@ describe('SubmitLawSection component', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-    const el = SubmitLawSection();
+    const el = mountSection();
     document.body.appendChild(el);
 
     const form = el.querySelector('.submit-form');
@@ -484,7 +489,7 @@ describe('SubmitLawSection component', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-    const el = SubmitLawSection();
+    const el = mountSection();
     document.body.appendChild(el);
 
     const form = el.querySelector('.submit-form');
@@ -514,8 +519,7 @@ describe('SubmitLawSection component', () => {
       data: [{ id: 1, title: 'General' }]
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     await new Promise(resolve => setTimeout(resolve, 20));
 
@@ -547,8 +551,7 @@ describe('SubmitLawSection component', () => {
       json: async () => ({ success: true, id: 123 })
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -578,8 +581,7 @@ describe('SubmitLawSection component', () => {
       json: async () => ({ success: true, id: 123 })
     });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const title = el.querySelector('#submit-title');
@@ -613,8 +615,7 @@ describe('SubmitLawSection component', () => {
   it('handles categories response without data property', async () => {
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({});
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     await new Promise(resolve => setTimeout(resolve, 20));
 
@@ -629,8 +630,7 @@ describe('SubmitLawSection component', () => {
   it('handles categories response with non-array data', async () => {
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: 'not an array' });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     await new Promise(resolve => setTimeout(resolve, 20));
 
@@ -647,8 +647,7 @@ describe('SubmitLawSection component', () => {
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
     global.fetch = vi.fn();
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     await new Promise(resolve => setTimeout(resolve, 20));
 
@@ -674,8 +673,7 @@ describe('SubmitLawSection component', () => {
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
     global.fetch = vi.fn();
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     await new Promise(resolve => setTimeout(resolve, 20));
 
@@ -708,8 +706,7 @@ describe('SubmitLawSection component', () => {
         json: async () => ({ error: 'Fallback error' })
       });
 
-    const el = SubmitLawSection();
-    document.body.appendChild(el);
+    const el = mountSection({ append: true });
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');

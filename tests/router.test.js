@@ -247,7 +247,7 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
-  it('falls back to home route when route is not defined', () => {
+  it('renders notFound when route is not defined', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);
 
@@ -257,13 +257,19 @@ describe('Router', () => {
       return el;
     });
 
+    const notFound = () => {
+      const el = document.createElement('div');
+      el.textContent = '404';
+      return el;
+    };
+
     // Navigate to a valid route name that doesn't exist in routes
     // Use a route name that matches the \w+ pattern but isn't defined
     location.hash = '#/undefinedroute';
-    startRouter(rootEl);
+    startRouter(rootEl, notFound);
 
-    // Should fallback to home route
-    expect(rootEl.textContent).toBe('Home Page');
+    // Should render notFound route
+    expect(rootEl.textContent).toBe('404');
     document.body.removeChild(rootEl);
   });
 });

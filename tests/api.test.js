@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchAPI, fetchLaw, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded } from '../src/utils/api.js';
 
 describe('API utilities', () => {
@@ -340,6 +339,7 @@ describe('API utilities', () => {
         expect.stringContaining('sort=score'),
         expect.any(Object)
       );
+      expect(result).toEqual({ data: [{ id: 1, title: 'Top Law' }], total: 1 });
     });
   });
 

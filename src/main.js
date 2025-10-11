@@ -4,14 +4,12 @@ import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
 import { SubmitLawSection } from './components/submit-law.js';
-import { Auth } from './views/auth.js';
 import { Calculator } from './views/sods-calculator.js';
 import { ButteredToastCalculator } from './views/buttered-toast-calculator.js';
+import { NotFound } from './views/not-found.js';
 
 // App state (no framework)
 const state = {
-  isLoggedIn: false,
-  currentUser: null,
   searchQuery: '',
 };
 
@@ -29,11 +27,6 @@ function onSearch(q) {
     navigate('browse');
   }
 }
-function onAuth(username) {
-  state.isLoggedIn = true;
-  state.currentUser = username;
-  navigate('home');
-}
 
 // Mount
 const app = document.getElementById('app');
@@ -47,8 +40,6 @@ function layout(node) {
     onSearch,
     onNavigate,
     currentPage: location.hash.replace('#/','') || 'home',
-    isLoggedIn: state.isLoggedIn,
-    currentUser: state.currentUser,
   });
 
   const main = document.createElement('main');
@@ -81,7 +72,7 @@ function layout(node) {
   // This happens on route changes when ads are already loaded
   try {
     (window.adsbygoogle = window.adsbygoogle || []).push({});
-  } catch (e) {
+  } catch {
     // Silently ignore AdSense errors
   }
 
@@ -122,32 +113,28 @@ function layout(node) {
 }
 
 // Define routes
-defineRoute('home', () => layout(Home({ isLoggedIn: state.isLoggedIn, onNavigate })));
+const routesMap = {
+  home: () => layout(Home({ onNavigate })),
+  browse: () => layout(Browse({ searchQuery: state.searchQuery, onNavigate })),
+  law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate })),
+  submit: () => {
+    const container = document.createElement('div');
+    container.className = 'container page pt-0';
+    const submitSection = SubmitLawSection({ onNavigate });
+    container.appendChild(submitSection);
+    return layout(container);
+  },
+  calculator: () => layout(Calculator()),
+  toastcalculator: () => layout(ButteredToastCalculator()),
+};
 
-defineRoute('browse', () => layout(Browse({ isLoggedIn: state.isLoggedIn, searchQuery: state.searchQuery, onNavigate })));
-
-defineRoute('law', ({ param }) => layout(LawDetail({ lawId: param, isLoggedIn: state.isLoggedIn, currentUser: state.currentUser, onNavigate })));
-
-defineRoute('submit', () => {
-  const container = document.createElement('div');
-  container.className = 'container page pt-0';
-  const submitSection = SubmitLawSection({ onNavigate });
-  container.appendChild(submitSection);
-  return layout(container);
+Object.entries(routesMap).forEach(([name, render]) => {
+  defineRoute(name, render);
 });
 
-defineRoute('login', () => layout(Auth({ type: 'login', onNavigate, onAuth })));
+const notFoundRoute = () => layout(NotFound({ onNavigate }));
 
-defineRoute('signup', () => layout(Auth({ type: 'signup', onNavigate, onAuth })));
-
-defineRoute('calculator', () => layout(Calculator()));
-
-defineRoute('toastcalculator', () => layout(ButteredToastCalculator()));
-
-// Fallback
-defineRoute('law-history', () => layout(document.createTextNode('Law of the Day History (coming soon)')));
-
-startRouter(app);
+startRouter(app, notFoundRoute);
 
 // Load and configure MathJax v3 locally (bundled via Vite)
 // We set window.MathJax before loading the component to ensure correct config
@@ -218,7 +205,7 @@ startRouter(app);
         // Silently handle MathJax errors
       });
     }
-  } catch (err) {
+  } catch {
     // Silently handle MathJax loading errors
   }
   // Ensure HMR picks up MathJax config changes: dispose the global instance on module replace

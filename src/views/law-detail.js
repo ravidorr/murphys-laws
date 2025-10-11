@@ -7,7 +7,7 @@ import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote } from '../utils/voting.js';
 
-export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate }) {
+export function LawDetail({ lawId, onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
   el.setAttribute('role', 'main');

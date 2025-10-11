@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from 'vitest';
 import { ButteredToastCalculator } from '@views/buttered-toast-calculator.js';
 
 describe('ButteredToastCalculator view', () => {

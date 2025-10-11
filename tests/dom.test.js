@@ -1,6 +1,4 @@
-import {
-  createErrorState
-} from '../src/utils/dom.js';
+import { createErrorState } from '../src/utils/dom.js';
 
 describe('DOM utilities', () => {
   describe('createErrorState', () => {

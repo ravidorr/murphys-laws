@@ -29,6 +29,8 @@ export default defineConfig({
       '@src': path.resolve(__dirname, 'src'),
       '@views': path.resolve(__dirname, 'src/views'),
       '@components': path.resolve(__dirname, 'src/components'),
+      '@modules': path.resolve(__dirname, 'src/modules'),
+      '@utils': path.resolve(__dirname, 'src/utils'),
     }
   },
   test: {

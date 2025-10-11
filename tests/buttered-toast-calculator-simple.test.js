@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calculator-simple.js';
 
 describe('ButteredToastCalculatorSimple component', () => {

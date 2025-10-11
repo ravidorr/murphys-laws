@@ -1,5 +1,4 @@
 import { voteLaw, unvoteLaw, toggleVote, getUserVote } from '../src/utils/voting.js';
-import { beforeEach, afterEach, vi } from 'vitest';
 
 describe('Voting API integration', () => {
   let originalFetch;

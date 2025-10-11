@@ -1,5 +1,6 @@
 // Advanced search component for filtering laws
 
+import templateHtml from '@components/templates/advanced-search.html?raw';
 import { fetchAPI } from '../utils/api.js';
 
 export function AdvancedSearch({ onSearch, initialFilters = {} }) {
@@ -14,56 +15,15 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
   let searchQuery = initialFilters.q || '';
 
   // Initial HTML (with loading placeholders)
-  el.innerHTML = `
-    <div class="section-header">
-      <h3 class="section-title"><span class="accent-text">Advanced</span> Search</h3>
-    </div>
-    <div class="section-body">
-      <div class="advanced-search-grid">
-        <div class="search-field">
-          <label for="search-keyword">Keyword</label>
-          <input
-            type="text"
-            id="search-keyword"
-            class="input"
-            placeholder="Search law text or title..."
-            value="${searchQuery}"
-          />
-        </div>
-
-        <div class="search-field">
-          <label for="search-category">Category</label>
-          <select id="search-category" class="input">
-            <option value="">Loading categories...</option>
-          </select>
-        </div>
-
-        <div class="search-field">
-          <label for="search-attribution">Submitted By</label>
-          <select id="search-attribution" class="input">
-            <option value="">Loading attributions...</option>
-          </select>
-        </div>
-
-        <div class="search-actions">
-          <button id="clear-btn" class="btn outline" type="button">
-            <span class="btn-text">Clear</span>
-            <span class="material-symbols-outlined icon">clear</span>
-          </button>
-          <button id="search-btn" class="btn" type="button">
-            <span class="btn-text">Search</span>
-            <span class="material-symbols-outlined icon">search</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
+  el.innerHTML = templateHtml;
 
   const categorySelect = el.querySelector('#search-category');
   const attributionSelect = el.querySelector('#search-attribution');
   const keywordInput = el.querySelector('#search-keyword');
   const searchBtn = el.querySelector('#search-btn');
   const clearBtn = el.querySelector('#clear-btn');
+
+  if (keywordInput) keywordInput.value = searchQuery;
 
   // Load categories and attributions
   async function loadFilters() {
@@ -84,7 +44,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
       attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
         attributions.map(att => `<option value="${att.name}" ${att.name === selectedAttribution ? 'selected' : ''}>${att.name}</option>`).join('');
 
-    } catch (error) {
+    } catch {
       categorySelect.innerHTML = '<option value="">Error loading categories</option>';
       attributionSelect.innerHTML = '<option value="">Error loading attributions</option>';
     }

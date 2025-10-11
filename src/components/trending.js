@@ -3,7 +3,7 @@
 import { fetchTrending } from '../utils/api.js';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
-import { createErrorState } from '../utils/dom.js';
+import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
 import { getUserVote, addVotingListeners } from '../utils/voting.js';
 
 export function Trending() {
@@ -13,11 +13,14 @@ export function Trending() {
   el.innerHTML = `
     <div class="card-content">
       <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
-      <div class="loading-placeholder" role="status" aria-live="polite">
-        <p class="small">Loading...</p>
-      </div>
     </div>
   `;
+
+  const contentDiv = el.querySelector('.card-content');
+  if (contentDiv) {
+    const loading = createLoadingPlaceholder();
+    contentDiv.appendChild(loading);
+  }
 
   fetchTrending()
     .then(data => {

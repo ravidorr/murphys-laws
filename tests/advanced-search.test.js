@@ -1,8 +1,20 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AdvancedSearch } from '@components/advanced-search.js';
 import * as api from '../src/utils/api.js';
 
+function createLocalThis() {
+  const context = {};
+
+  beforeEach(() => {
+    Object.keys(context).forEach((key) => {
+      delete context[key];
+    });
+  });
+
+  return () => context;
+}
+
 describe('AdvancedSearch component', () => {
+  const local = createLocalThis();
   let fetchAPISpy;
 
   beforeEach(() => {
@@ -10,13 +22,34 @@ describe('AdvancedSearch component', () => {
   });
 
   afterEach(() => {
+    const self = local();
+    if (self.appended && self.el?.parentNode) {
+      self.el.parentNode.removeChild(self.el);
+    }
+    if (self.appendedClones) {
+      self.appendedClones.forEach((node) => {
+        if (node.parentNode) node.parentNode.removeChild(node);
+      });
+    }
     vi.restoreAllMocks();
   });
+
+  function mountSearch({ append = false, ...props } = {}) {
+    const el = AdvancedSearch({ onSearch: () => {}, ...props });
+    const self = local();
+    self.el = el;
+    self.appended = append;
+    self.appendedClones = [];
+    if (append) {
+      document.body.appendChild(el);
+    }
+    return el;
+  }
 
   it('renders with initial empty filters', () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
 
-    const el = AdvancedSearch({ onSearch: () => {} });
+    const el = mountSearch();
 
     expect(el.textContent).toMatch(/Advanced Search/);
     expect(el.querySelector('#search-keyword')).toBeTruthy();
@@ -33,7 +66,7 @@ describe('AdvancedSearch component', () => {
       attribution: 'John'
     };
 
-    const el = AdvancedSearch({ onSearch: () => {}, initialFilters });
+    const el = mountSearch({ initialFilters });
 
     const keywordInput = el.querySelector('#search-keyword');
     expect(keywordInput.value).toBe('murphy');
@@ -49,7 +82,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: categories })
       .mockResolvedValueOnce({ data: [] });
 
-    const el = AdvancedSearch({ onSearch: () => {} });
+    const el = mountSearch();
 
     await vi.waitFor(() => {
       const categorySelect = el.querySelector('#search-category');
@@ -68,7 +101,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: [] })
       .mockResolvedValueOnce({ data: attributions });
 
-    const el = AdvancedSearch({ onSearch: () => {} });
+    const el = mountSearch();
 
     await vi.waitFor(() => {
       const attributionSelect = el.querySelector('#search-attribution');
@@ -80,7 +113,7 @@ describe('AdvancedSearch component', () => {
   it('handles filter loading errors gracefully', async () => {
     fetchAPISpy.mockRejectedValue(new Error('Network error'));
 
-    const el = AdvancedSearch({ onSearch: () => {} });
+    const el = mountSearch();
 
     await vi.waitFor(() => {
       const categorySelect = el.querySelector('#search-category');
@@ -95,7 +128,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await new Promise(r => setTimeout(r, 10));
 
@@ -117,7 +150,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
       const categorySelect = el.querySelector('#search-category');
@@ -142,7 +175,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
       const attributionSelect = el.querySelector('#search-attribution');
@@ -169,7 +202,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
       const categorySelect = el.querySelector('#search-category');
@@ -200,7 +233,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await new Promise(r => setTimeout(r, 10));
 
@@ -219,7 +252,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await new Promise(r => setTimeout(r, 10));
 
@@ -243,7 +276,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
       const categorySelect = el.querySelector('#search-category');
@@ -275,7 +308,7 @@ describe('AdvancedSearch component', () => {
     let searchFilters = null;
     const onSearch = (filters) => { searchFilters = filters; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await new Promise(r => setTimeout(r, 10));
 
@@ -294,7 +327,7 @@ describe('AdvancedSearch component', () => {
     let searchCalled = false;
     const onSearch = () => { searchCalled = true; };
 
-    const el = AdvancedSearch({ onSearch });
+    const el = mountSearch({ onSearch });
 
     await new Promise(r => setTimeout(r, 10));
 
@@ -317,7 +350,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: categories })
       .mockResolvedValueOnce({ data: [] });
 
-    const el = AdvancedSearch({
+    const el = mountSearch({
       onSearch: () => {},
       initialFilters: { category_id: '2' }
     });
@@ -338,7 +371,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: [] })
       .mockResolvedValueOnce({ data: attributions });
 
-    const el = AdvancedSearch({
+    const el = mountSearch({
       onSearch: () => {},
       initialFilters: { attribution: 'Bob' }
     });
@@ -355,7 +388,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({}) // No data property
       .mockResolvedValueOnce({ data: [] });
 
-    const el = AdvancedSearch({ onSearch: () => {} });
+    const el = mountSearch();
 
     await vi.waitFor(() => {
       const categorySelect = el.querySelector('#search-category');
@@ -371,7 +404,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: [] })
       .mockResolvedValueOnce({}); // No data property
 
-    const el = AdvancedSearch({ onSearch: () => {} });
+    const el = mountSearch();
 
     await vi.waitFor(() => {
       const attributionSelect = el.querySelector('#search-attribution');

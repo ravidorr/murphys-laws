@@ -12,10 +12,6 @@
   box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
 }
 
-.section-body {
-  padding: 1.25rem;
-}
-
 .section-header {
   display: flex;
   align-items: baseline;
@@ -55,6 +51,10 @@
   font-size: .875rem;
   color: var(--muted-fg);
   margin: 0;
+}
+
+.section-body {
+  padding: 1.25rem;
 }
 
 .lod-quote-large {

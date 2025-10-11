@@ -1,4 +1,3 @@
-import { describe, it, expect, vi } from 'vitest';
 import { Home, renderHome } from '@views/home.js';
 
 describe('Home view', () => {

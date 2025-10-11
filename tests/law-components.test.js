@@ -1,7 +1,6 @@
 import { TopVoted } from '../src/components/top-voted.js';
 import { Trending } from '../src/components/trending.js';
 import { RecentlyAdded } from '../src/components/recently-added.js';
-import { vi } from 'vitest';
 import * as api from '../src/utils/api.js';
 
 describe('Law components', () => {

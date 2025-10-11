@@ -1,13 +1,15 @@
 // Browse view - displays all laws with pagination and search
 
+import templateHtml from '@views/templates/browse.html?raw';
 import { fetchLaws } from '../utils/api.js';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { highlightSearchTerm, escapeHtml } from '../utils/sanitize.js';
+import { wrapLoadingMarkup } from '../utils/dom.js';
 import { LAWS_PER_PAGE } from '../utils/constants.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { AdvancedSearch } from '../components/advanced-search.js';
 
-export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
+export function Browse({ searchQuery, onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page';
 
@@ -114,25 +116,19 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
   }
 
   // Render the page
-  function render() {
-    const searchInfo = currentFilters.q
-      ? `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${escapeHtml(currentFilters.q)}</strong></p>`
-      : '';
+  function updateSearchInfo() {
+    const infoEl = el.querySelector('#browse-search-info');
+    if (!infoEl) return;
+    if (currentFilters.q) {
+      infoEl.innerHTML = `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${escapeHtml(currentFilters.q)}</strong></p>`;
+    } else {
+      infoEl.innerHTML = '';
+    }
+  }
 
-    el.innerHTML = `
-      <div id="advanced-search-container"></div>
-      <div class="card">
-        <div class="card-content">
-          <h2 class="card-title"><span class="accent-text">Browse</span> All Laws</h2>
-          ${searchInfo}
-          <div class="card-text" role="region" aria-live="polite" aria-busy="true">
-            <div style="padding: 1rem;">
-              <p class="small">Loading...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+  function render() {
+    el.innerHTML = templateHtml;
+    updateSearchInfo();
   }
 
   // Update the display with fetched laws
@@ -145,6 +141,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
     }
+    updateSearchInfo();
   }
 
   // Load laws for current page
@@ -155,7 +152,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
     const cardText = el.querySelector('.card-text');
     if (cardText) {
       cardText.setAttribute('aria-busy', 'true');
-      cardText.innerHTML = '<div style="padding: 1rem;"><p class="small">Loading...</p></div>';
+      cardText.innerHTML = wrapLoadingMarkup();
 
       // Disable pagination buttons during load
       el.querySelectorAll('.pagination button').forEach(btn => {

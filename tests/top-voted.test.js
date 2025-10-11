@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TopVoted } from '@components/top-voted.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
