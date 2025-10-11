@@ -69,7 +69,6 @@ export function TopVoted() {
       }
     })
     .catch(err => {
-      console.error('Failed to fetch top voted laws:', err);
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `

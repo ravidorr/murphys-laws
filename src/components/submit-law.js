@@ -85,8 +85,7 @@ export function SubmitLawSection() {
           categorySelect.appendChild(option);
         });
       }
-    } catch (error) {
-      console.error('Failed to load categories:', error);
+    } catch {
       // Don't show error to user as category is optional
     }
   }
@@ -201,9 +200,8 @@ export function SubmitLawSection() {
       }
 
       return await response.json();
-    } catch (err) {
+    } catch {
       // Try fallback URL
-      console.error('Primary API failed, trying fallback:', err);
 
       const fallbackFullUrl = `${fallbackUrl}${endpoint}`;
       const fallbackResponse = await fetch(fallbackFullUrl, {
@@ -288,8 +286,7 @@ export function SubmitLawSection() {
       clearMessage();
 
       try {
-        const result = await submitLaw(lawData);
-        console.log('Law submitted successfully:', result);
+        await submitLaw(lawData);
 
         showSuccess('Thank you! Your law has been submitted successfully and is pending review.');
 
@@ -308,7 +305,6 @@ export function SubmitLawSection() {
         }, 300);
 
       } catch (error) {
-        console.error('Failed to submit law:', error);
         showError(error.message || 'Failed to submit law. Please try again.');
       } finally {
         setLoading(false);

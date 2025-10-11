@@ -79,7 +79,6 @@ describe('LawDetail view', () => {
 
   it('renders law when law of the day fetch fails', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
@@ -90,9 +89,7 @@ describe('LawDetail view', () => {
     await new Promise(r => setTimeout(r, 50));
 
     expect(el.textContent).toMatch(/Test Law/);
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch Law of the Day:', expect.any(Error));
 
-    consoleSpy.mockRestore();
   });
 
   it('handles navigation button clicks', async () => {

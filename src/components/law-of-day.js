@@ -85,7 +85,6 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
         upBtn?.classList.toggle('voted', newUserVote === 'up');
         downBtn?.classList.toggle('voted', newUserVote === 'down');
       } catch (error) {
-        console.error('Failed to vote:', error);
         showError(error.message || 'Failed to vote. Please try again.');
       }
       return;

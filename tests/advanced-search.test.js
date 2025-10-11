@@ -78,7 +78,6 @@ describe('AdvancedSearch component', () => {
   });
 
   it('handles filter loading errors gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     fetchAPISpy.mockRejectedValue(new Error('Network error'));
 
     const el = AdvancedSearch({ onSearch: () => {} });
@@ -88,8 +87,6 @@ describe('AdvancedSearch component', () => {
       expect(categorySelect.textContent).toMatch(/Error loading categories/);
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to load filters:', expect.any(Error));
-    consoleSpy.mockRestore();
   });
 
   it('calls onSearch with filters when search button is clicked', async () => {

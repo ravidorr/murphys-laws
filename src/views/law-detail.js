@@ -5,7 +5,6 @@ import { RecentlyAdded } from '@components/recently-added.js';
 import { fetchLaw, fetchLawOfTheDay } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
-import { createErrorState } from '../utils/dom.js';
 import { toggleVote } from '../utils/voting.js';
 
 export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate }) {
@@ -91,8 +90,7 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate }) {
 
         el.appendChild(gridWrapper);
       })
-      .catch(err => {
-        console.error('Failed to fetch Law of the Day:', err);
+      .catch(() => {
         // Fallback: render law without Law of the Day component
         const lawCard = document.createElement('div');
         lawCard.innerHTML = `
@@ -145,8 +143,7 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate }) {
         el.setAttribute('aria-busy', 'false');
         renderLaw(data);
       })
-      .catch((err) => {
-        console.error('Failed to fetch law:', err);
+      .catch(() => {
         el.setAttribute('aria-busy', 'false');
         renderNotFound();
       });
@@ -165,10 +162,8 @@ export function LawDetail({ lawId, _isLoggedIn, _currentUser, onNavigate }) {
       try {
         await toggleVote(lawId, voteType);
         // Optionally refresh the page to show updated vote counts
-        // For now, just log success
-        console.log('Vote successful');
-      } catch (err) {
-        console.error('Failed to vote:', err);
+      } catch {
+        // Silently handle errors
       }
     }
   });

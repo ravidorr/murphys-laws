@@ -176,8 +176,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       updateDisplay();
-    } catch (err) {
-      console.error('Failed to fetch laws:', err);
+    } catch {
       if (cardText) {
         cardText.setAttribute('aria-busy', 'false');
         cardText.innerHTML = `
@@ -224,8 +223,7 @@ export function Browse({ _isLoggedIn, searchQuery, onNavigate }) {
           upBtn?.classList.toggle('voted', newUserVote === 'up');
           downBtn?.classList.toggle('voted', newUserVote === 'down');
         }
-      } catch (error) {
-        console.error('Failed to vote:', error);
+      } catch {
         // Could add a notification here if needed
       }
       return;

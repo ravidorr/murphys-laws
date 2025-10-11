@@ -191,7 +191,6 @@ describe('RecentlyAdded component', () => {
   it('handles vote error gracefully', async () => {
     // Make fetch reject to simulate vote error
     fetchSpy.mockRejectedValue(new Error('Vote failed'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
@@ -207,14 +206,11 @@ describe('RecentlyAdded component', () => {
     upvoteBtn.click();
 
     await vi.waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/failed|error/i), expect.any(Error));
     });
 
-    consoleSpy.mockRestore();
   });
 
   it('handles fetch error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     fetchRecentlyAddedSpy.mockRejectedValue(new Error('Fetch failed'));
 
     const el = RecentlyAdded();
@@ -223,8 +219,6 @@ describe('RecentlyAdded component', () => {
       expect(el.textContent).toMatch(/Failed to load recently added laws/);
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch recently added laws:', expect.any(Error));
-    consoleSpy.mockRestore();
   });
 
   it('handles non-array data gracefully', async () => {

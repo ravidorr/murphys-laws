@@ -199,7 +199,6 @@ describe('TopVoted component', () => {
   it('handles vote error gracefully', async () => {
     // Make fetch reject to simulate vote error
     fetchSpy.mockRejectedValue(new Error('Vote failed'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const laws = [
       { id: '1', text: 'LOTD', upvotes: 100, downvotes: 0 },
       { id: '2', text: 'Test law', upvotes: 10, downvotes: 2 }
@@ -216,14 +215,11 @@ describe('TopVoted component', () => {
     upvoteBtn.click();
 
     await vi.waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/failed|error/i), expect.any(Error));
     });
 
-    consoleSpy.mockRestore();
   });
 
   it('handles fetch error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     fetchTopVotedSpy.mockRejectedValue(new Error('Fetch failed'));
 
     const el = TopVoted();
@@ -232,8 +228,6 @@ describe('TopVoted component', () => {
       expect(el.textContent).toMatch(/Failed to load top voted laws/);
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch top voted laws:', expect.any(Error));
-    consoleSpy.mockRestore();
   });
 
   it('handles non-array data gracefully', async () => {

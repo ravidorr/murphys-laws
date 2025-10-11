@@ -18,8 +18,8 @@ function getVotesFromStorage() {
 function saveVotesToStorage(votes) {
   try {
     localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
-  } catch (err) {
-    console.error('Failed to save votes to localStorage:', err);
+  } catch {
+    // Silently handle localStorage errors
   }
 }
 
@@ -71,9 +71,8 @@ export async function voteLaw(lawId, voteType) {
     saveVotesToStorage(votes);
 
     return result;
-  } catch (err) {
+  } catch {
     // Try fallback URL
-    console.error('Primary API failed, trying fallback:', err);
 
     const fallbackFullUrl = `${fallbackUrl}${endpoint}`;
     const fallbackResponse = await fetch(fallbackFullUrl, {
@@ -145,9 +144,8 @@ export async function unvoteLaw(lawId) {
     saveVotesToStorage(votes);
 
     return result;
-  } catch (err) {
+  } catch {
     // Try fallback URL
-    console.error('Primary API failed, trying fallback:', err);
 
     const fallbackFullUrl = `${fallbackUrl}${endpoint}`;
     const fallbackResponse = await fetch(fallbackFullUrl, {
@@ -232,9 +230,8 @@ export function addVotingListeners(el) {
           upBtn?.classList.toggle('voted', newUserVote === 'up');
           downBtn?.classList.toggle('voted', newUserVote === 'down');
         }
-      } catch (error) {
-        console.error('Failed to vote:', error);
-        // Could add a notification here if needed
+      } catch {
+        // Silently handle voting errors
       }
       return;
     }

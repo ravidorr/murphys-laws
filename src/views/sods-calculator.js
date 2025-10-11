@@ -14,52 +14,47 @@ export function Calculator() {
           <p class="calc-description">The (P)robability of a task going wrong by weighing it's combined (U)rgency, (C)omplexity, and (I)mportance, against the performer's (S)kill level,  multiplied by the (A)ctivity constant, amplifyed by the (F)requency of doing the task.</p>
           <p class="formula" id="formula-display"></p>
         </header>
-        <div class="calc-container">
-          <div class="calc-input-grid">
-            <div class="calc-slider-group">
-              <label for="urgency">U (Urgency of the task): <span class="calc-slider-value" id="urgency-value">5</span></label>
-              <input type="range" id="urgency" min="1" max="9" value="5" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="complexity">C (Complexity of the task): <span class="calc-slider-value" id="complexity-value">5</span></label>
-              <input type="range" id="complexity" min="1" max="9" value="5" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="importance">I (Importance of the task): <span class="calc-slider-value" id="importance-value">5</span></label>
-              <input type="range" id="importance" min="1" max="9" value="5" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="skill">S (Your skill in performing the task): <span class="calc-slider-value" id="skill-value">5</span></label>
-              <input type="range" id="skill" min="1" max="9" value="5" />
-            </div>
-            <div class="calc-slider-group">
-              <label for="frequency">F (Frequency of the task): <span class="calc-slider-value" id="frequency-value">5</span></label>
-              <input type="range" id="frequency" min="1" max="9" value="5" />
-            </div>
+        <div class="calc-input-grid">
+          <div class="calc-slider-group">
+            <label for="urgency">U (Urgency of the task): <span class="calc-slider-value" id="urgency-value">5</span></label>
+            <input type="range" id="urgency" min="1" max="9" value="5" />
           </div>
-          <p class="label-without-input">A (Aggravation factor, a constant set by researchers): <span class="calc-slider-value" id="a-value">0.7</span></p>
-
-          <section class="calc-result-section">
-            <h2>P (Probability of things going wrong):</h2>
-            <div id="result-display" class="calc-result-display calc-ok">
-              <span id="score-value" class="calc-score">0.00</span>
-              <p id="score-interpretation" class="calc-interpretation">Enter your values and see your fate.</p>
-            </div>
-            <div class="calc-info">
-              <p>probabilities are on a scale of 0.12 to 8.6.</p>
-              <p>The higher the probability (P), the greater the chance that Sod's law will strike.</p>
-              <p>How the formula explains Sod's Law?</p>
-              <p>The components of the equation reflect the intuitive reasoning behind Sod's law:</p>
-              <p>The probability (P) of a mishap increases with the urgency (U), complexity (C), and importance (I) of the task.</p>
-              <p>The likelihood of a mishap decreases with your skill level (S).</p>
-              <p>An aggravating circumstance is a constant, negative influence (A).</p>
-              <p>The equation has a frequency term (1/(1-sin (F/10))) that implies that repeated actions (F) could lead to a sudden, unexpected failure.</p>
-              <p>How to reduce the probability (P) of things going wrong:</p>
-              <p>Improve your skill (S).</p>
-              <p> Reduce the urgency (U), complexity (C) and/or importance (I).</p>
-              <p>Lower the frequency (F) of the task.</p>
-            </div>
-          </section>
+          <div class="calc-slider-group">
+            <label for="complexity">C (Complexity of the task): <span class="calc-slider-value" id="complexity-value">5</span></label>
+            <input type="range" id="complexity" min="1" max="9" value="5" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="importance">I (Importance of the task): <span class="calc-slider-value" id="importance-value">5</span></label>
+            <input type="range" id="importance" min="1" max="9" value="5" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="skill">S (Your skill in performing the task): <span class="calc-slider-value" id="skill-value">5</span></label>
+            <input type="range" id="skill" min="1" max="9" value="5" />
+          </div>
+          <div class="calc-slider-group">
+            <label for="frequency">F (Frequency of the task): <span class="calc-slider-value" id="frequency-value">5</span></label>
+            <input type="range" id="frequency" min="1" max="9" value="5" />
+          </div>
+        </div>
+        <p class="label-without-input">A (Aggravation factor, a constant set by researchers): <span class="calc-slider-value" id="a-value">0.7</span></p>
+        <h2>P (Probability of things going wrong):</h2>
+        <div id="result-display" class="calc-result-display calc-ok">
+          <span id="score-value" class="calc-score">0.00</span>
+          <p id="score-interpretation" class="calc-interpretation">Enter your values and see your fate.</p>
+        </div>
+        <div class="calc-info">
+          <p>probabilities are on a scale of 0.12 to 8.6.</p>
+          <p>The higher the probability (P), the greater the chance that Sod's law will strike.</p>
+          <p>How the formula explains Sod's Law?</p>
+          <p>The components of the equation reflect the intuitive reasoning behind Sod's law:</p>
+          <p>The probability (P) of a mishap increases with the urgency (U), complexity (C), and importance (I) of the task.</p>
+          <p>The likelihood of a mishap decreases with your skill level (S).</p>
+          <p>An aggravating circumstance is a constant, negative influence (A).</p>
+          <p>The equation has a frequency term (1/(1-sin (F/10))) that implies that repeated actions (F) could lead to a sudden, unexpected failure.</p>
+          <p>How to reduce the probability (P) of things going wrong:</p>
+          <p>Improve your skill (S).</p>
+          <p> Reduce the urgency (U), complexity (C) and/or importance (I).</p>
+          <p>Lower the frequency (F) of the task.</p>
         </div>
       </div>
     </div>
@@ -159,9 +154,9 @@ export function Calculator() {
               }
             }
           });
-        }).catch((err) => console.error('MathJax typeset error:', err));
-      } else {
-        console.warn('MathJax not available');
+        }).catch(() => {
+          // Silently handle MathJax errors
+        });
       }
     }
   }
@@ -219,7 +214,6 @@ export function Calculator() {
     const pollMathJax = setInterval(() => {
       if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         clearInterval(pollMathJax);
-        console.log('MathJax loaded, re-rendering formula with tooltips');
         updateFormula();
       }
     }, 100); // Check every 100ms

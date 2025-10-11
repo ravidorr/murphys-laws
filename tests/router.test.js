@@ -162,7 +162,6 @@ describe('Router', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     defineRoute('home', () => {
       const el = document.createElement('div');
@@ -185,9 +184,7 @@ describe('Router', () => {
 
     // Should still navigate despite cleanup error
     expect(rootEl.textContent).toBe('Browse');
-    expect(consoleSpy).toHaveBeenCalledWith('Cleanup error:', expect.any(Error));
 
-    consoleSpy.mockRestore();
     document.body.removeChild(rootEl);
   });
 

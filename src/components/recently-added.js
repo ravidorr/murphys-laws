@@ -67,7 +67,6 @@ export function RecentlyAdded() {
       }
     })
     .catch(err => {
-      console.error('Failed to fetch recently added laws:', err);
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
         contentDiv.innerHTML = `
