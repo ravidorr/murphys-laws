@@ -334,9 +334,29 @@ textarea.form-control,
   visibility: hidden;
   transition: opacity 0.3s, visibility 0.3s; /* Smooth transition */
   z-index: 10; /* Ensures tooltip appears above other content */
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px var(--shadow-light);
 }
 
-.custom-tooltip:hover::after {
-  opacity: 1; /* Shows the tooltip on hover */
+.custom-tooltip::before {
+  content: ""; /* Creates the caret */
+  position: absolute;
+  top: 100%; /* Positions the caret below the tooltip */
+  left: 50%;
+  transform: translateX(-50%); /* Centers the caret horizontally */
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--bg); /* Creates downward-pointing triangle */
+  opacity: 0; /* Initially hidden */
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s; /* Smooth transition */
+  z-index: 11; /* Ensures caret appears above tooltip */
+}
+
+.custom-tooltip:hover::after,
+.custom-tooltip:hover::before {
+  opacity: 1; /* Shows the tooltip and caret on hover */
   visibility: visible;
 }
