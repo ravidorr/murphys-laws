@@ -291,6 +291,47 @@
   margin-top: 1.5rem;
 }
 
+/* Button styles for share form - create visual hierarchy */
+.form-actions .btn {
+  /* Secondary button style - lighter appearance */
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.form-actions .btn:hover {
+  background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
+}
+
+.form-actions .btn:active {
+  filter: brightness(0.95);
+}
+
+/* Primary button for sending email - bold appearance */
+.form-actions #send-email {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: 1px solid var(--btn-primary-bg);
+  font-weight: 600;
+}
+
+.form-actions #send-email:hover {
+  background: color-mix(in oklab, var(--btn-primary-bg) 92%, white 8%);
+  border-color: color-mix(in oklab, var(--btn-primary-bg) 92%, white 8%);
+}
+
+.form-actions #send-email:active {
+  filter: brightness(0.95);
+}
+
+.form-actions #send-email:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .share-status {
   margin-top: 1rem;
   padding: 0.75rem 1rem;

@@ -96,14 +96,31 @@ async function sendCalculationEmail(calculationData) {
   }
 
   try {
-    const { to, taskDescription, urgency, complexity, importance, skill, frequency, probability, interpretation } = calculationData;
+    const {
+      to,
+      taskDescription,
+      senderName,
+      senderEmail,
+      recipientName,
+      urgency,
+      complexity,
+      importance,
+      skill,
+      frequency,
+      probability,
+      interpretation
+    } = calculationData;
 
     const mailOptions = {
       from: EMAIL_FROM,
       to,
-      subject: createSodsEmailSubject(probability),
+      bcc: 'ravidor@gmail.com',
+      subject: createSodsEmailSubject(probability, senderName),
       text: createSodsEmailText({
         taskDescription,
+        senderName,
+        senderEmail,
+        recipientName,
         urgency,
         complexity,
         importance,
@@ -114,6 +131,9 @@ async function sendCalculationEmail(calculationData) {
       }),
       html: createSodsEmailHtml({
         taskDescription,
+        senderName,
+        senderEmail,
+        recipientName,
         urgency,
         complexity,
         importance,
@@ -539,18 +559,34 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
 
       // Validate required fields
-      if (!body.email || typeof body.email !== 'string' || !body.email.trim()) {
-        return badRequest(res, 'Email address is required');
-      }
-
       if (!body.taskDescription || typeof body.taskDescription !== 'string' || !body.taskDescription.trim()) {
         return badRequest(res, 'Task description is required');
       }
 
+      if (!body.senderName || typeof body.senderName !== 'string' || !body.senderName.trim()) {
+        return badRequest(res, 'Sender name is required');
+      }
+
+      if (!body.senderEmail || typeof body.senderEmail !== 'string' || !body.senderEmail.trim()) {
+        return badRequest(res, 'Sender email is required');
+      }
+
+      if (!body.recipientName || typeof body.recipientName !== 'string' || !body.recipientName.trim()) {
+        return badRequest(res, 'Recipient name is required');
+      }
+
+      if (!body.email || typeof body.email !== 'string' || !body.email.trim()) {
+        return badRequest(res, 'Recipient email address is required');
+      }
+
       // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(body.senderEmail.trim())) {
+        return badRequest(res, 'Invalid sender email address');
+      }
+
       if (!emailRegex.test(body.email.trim())) {
-        return badRequest(res, 'Invalid email address');
+        return badRequest(res, 'Invalid recipient email address');
       }
 
       // Validate numeric inputs
@@ -573,6 +609,9 @@ const server = http.createServer(async (req, res) => {
         await sendCalculationEmail({
           to: body.email.trim(),
           taskDescription: body.taskDescription.trim(),
+          senderName: body.senderName.trim(),
+          senderEmail: body.senderEmail.trim(),
+          recipientName: body.recipientName.trim(),
           urgency: body.urgency,
           complexity: body.complexity,
           importance: body.importance,

@@ -45,16 +45,32 @@
       </div>
       <div class="section-body">
         <div id="share-form-container" class="share-form-container hidden">
-          <h2 class="mt-0">Share Your Calculation</h2>
+          <h2 class="mt-0"><span class="accent-text">Share</span> Your Calculation</h2>
           <div class="form-group">
             <label for="task-description" class="form-label">Task Description <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
             <textarea id="task-description" rows="3" class="form-control" placeholder="Describe the task you calculated..." required></textarea>
           </div>
           <div class="form-group">
-            <label for="recipient-email" class="form-label">Send to Email <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
-            <input type="email" id="recipient-email" class="form-control" placeholder="your.email@example.com" required />
+            <label for="sender-name" class="form-label">Your Name <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
+            <input type="text" id="sender-name" class="form-control" placeholder="John Doe" required />
+          </div>
+          <div class="form-group">
+            <label for="sender-email" class="form-label">Your Email <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
+            <input type="email" id="sender-email" class="form-control" placeholder="your.email@example.com" required />
+          </div>
+          <div class="form-group">
+            <label for="recipient-name" class="form-label">Recipient Name <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
+            <input type="text" id="recipient-name" class="form-control" placeholder="Jane Smith" required />
+          </div>
+          <div class="form-group">
+            <label for="recipient-email" class="form-label">Recipient Email <span class="required custom-tooltip" data-title="required" aria-label="required">*</span></label>
+            <input type="email" id="recipient-email" class="form-control" placeholder="recipient.email@example.com" required />
           </div>
           <div class="form-actions">
+            <button id="cancel-share" class="btn">
+              <span class="btn-text">Cancel</span>
+              <span class="material-symbols-outlined icon">close</span>
+            </button>
             <button id="preview-email" class="btn">
               <span class="btn-text">Preview Email</span>
               <span class="material-symbols-outlined icon">preview</span>
@@ -62,10 +78,6 @@
             <button id="send-email" class="btn">
               <span class="btn-text">Send Email</span>
               <span class="material-symbols-outlined icon">email</span>
-            </button>
-            <button id="cancel-share" class="btn">
-              <span class="btn-text">Cancel</span>
-              <span class="material-symbols-outlined icon">close</span>
             </button>
           </div>
           <div id="share-status" class="share-status hidden"></div>

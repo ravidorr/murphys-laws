@@ -206,6 +206,9 @@ describe("Calculator view", () => {
     expect(shareStatus.textContent).toMatch(/task description/i);
 
     el.querySelector('#task-description').value = 'Deploy app';
+    el.querySelector('#sender-name').value = 'John Doe';
+    el.querySelector('#sender-email').value = 'john@example.com';
+    el.querySelector('#recipient-name').value = 'Jane Smith';
     el.querySelector('#recipient-email').value = 'user@example.com';
     previewBtn.dispatchEvent(new Event('click'));
 
@@ -217,6 +220,9 @@ describe("Calculator view", () => {
     vi.useFakeTimers();
     el.querySelector('#share-cta').dispatchEvent(new Event('click'));
     el.querySelector('#task-description').value = 'Deploy app';
+    el.querySelector('#sender-name').value = 'John Doe';
+    el.querySelector('#sender-email').value = 'john@example.com';
+    el.querySelector('#recipient-name').value = 'Jane Smith';
     el.querySelector('#recipient-email').value = 'user@example.com';
 
     const sendBtn = el.querySelector('#send-email');
@@ -237,5 +243,73 @@ describe("Calculator view", () => {
     await Promise.resolve();
     vi.useRealTimers();
     expect(el.querySelector('#share-form-container').classList.contains('hidden')).toBe(true);
+  });
+
+  it('validates sender name is required', () => {
+    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+    const sendBtn = el.querySelector('#send-email');
+    const shareStatus = el.querySelector('#share-status');
+
+    el.querySelector('#task-description').value = 'Deploy app';
+    // sender-name is empty
+    el.querySelector('#sender-email').value = 'john@example.com';
+    el.querySelector('#recipient-name').value = 'Jane Smith';
+    el.querySelector('#recipient-email').value = 'user@example.com';
+
+    sendBtn.dispatchEvent(new Event('click'));
+
+    expect(shareStatus.textContent).toMatch(/your name/i);
+    expect(shareStatus.classList.contains('error')).toBe(true);
+  });
+
+  it('validates sender email is required and properly formatted', () => {
+    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+    const sendBtn = el.querySelector('#send-email');
+    const shareStatus = el.querySelector('#share-status');
+
+    el.querySelector('#task-description').value = 'Deploy app';
+    el.querySelector('#sender-name').value = 'John Doe';
+    el.querySelector('#sender-email').value = 'invalid-email';
+    el.querySelector('#recipient-name').value = 'Jane Smith';
+    el.querySelector('#recipient-email').value = 'user@example.com';
+
+    sendBtn.dispatchEvent(new Event('click'));
+
+    expect(shareStatus.textContent).toMatch(/valid email address for sender/i);
+    expect(shareStatus.classList.contains('error')).toBe(true);
+  });
+
+  it('validates recipient name is required', () => {
+    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+    const sendBtn = el.querySelector('#send-email');
+    const shareStatus = el.querySelector('#share-status');
+
+    el.querySelector('#task-description').value = 'Deploy app';
+    el.querySelector('#sender-name').value = 'John Doe';
+    el.querySelector('#sender-email').value = 'john@example.com';
+    // recipient-name is empty
+    el.querySelector('#recipient-email').value = 'user@example.com';
+
+    sendBtn.dispatchEvent(new Event('click'));
+
+    expect(shareStatus.textContent).toMatch(/recipient name/i);
+    expect(shareStatus.classList.contains('error')).toBe(true);
+  });
+
+  it('validates recipient email is properly formatted', () => {
+    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+    const sendBtn = el.querySelector('#send-email');
+    const shareStatus = el.querySelector('#share-status');
+
+    el.querySelector('#task-description').value = 'Deploy app';
+    el.querySelector('#sender-name').value = 'John Doe';
+    el.querySelector('#sender-email').value = 'john@example.com';
+    el.querySelector('#recipient-name').value = 'Jane Smith';
+    el.querySelector('#recipient-email').value = 'not-an-email';
+
+    sendBtn.dispatchEvent(new Event('click'));
+
+    expect(shareStatus.textContent).toMatch(/valid recipient email/i);
+    expect(shareStatus.classList.contains('error')).toBe(true);
   });
 });
