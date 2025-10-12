@@ -2,7 +2,7 @@ import {
   createSodsEmailPreviewHtml,
   createSodsEmailSubject
 } from '@modules/sods-email-template.js';
-import { API_SHARE_CALCULATION_ENDPOINT } from '../utils/constants.js';
+import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SENDING_BUTTON_TEXT = 'Sending...';
@@ -16,6 +16,9 @@ export function initShareCalculation({ root, getCalculationState }) {
   const shareCta = root.querySelector('#share-cta');
   const shareFormContainer = root.querySelector('#share-form-container');
   const taskDescriptionInput = root.querySelector('#task-description');
+  const senderNameInput = root.querySelector('#sender-name');
+  const senderEmailInput = root.querySelector('#sender-email');
+  const recipientNameInput = root.querySelector('#recipient-name');
   const recipientEmailInput = root.querySelector('#recipient-email');
   const previewButton = root.querySelector('#preview-email');
   const sendButton = root.querySelector('#send-email');
@@ -73,7 +76,7 @@ export function initShareCalculation({ root, getCalculationState }) {
     };
   }
 
-  function generateEmailPreview(taskDescription, recipientEmail) {
+  function generateEmailPreview(taskDescription, senderName, senderEmail, recipientName, recipientEmail) {
     const state = getState();
     const {
       urgency,
@@ -87,6 +90,9 @@ export function initShareCalculation({ root, getCalculationState }) {
 
     const bodyHtml = createSodsEmailPreviewHtml({
       taskDescription,
+      senderName,
+      senderEmail,
+      recipientName,
       urgency,
       complexity,
       importance,
@@ -95,12 +101,13 @@ export function initShareCalculation({ root, getCalculationState }) {
       probability,
       interpretation
     });
-    const subject = createSodsEmailSubject(probability);
+    const subject = createSodsEmailSubject(probability, senderName);
 
     return `
       ${bodyHtml}
       <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 4px;">
-        <p style="margin: 0;"><strong>To:</strong> ${recipientEmail}</p>
+        <p style="margin: 0;"><strong>From:</strong> ${senderName} &lt;${senderEmail}&gt;</p>
+        <p style="margin: 5px 0 0 0;"><strong>To:</strong> ${recipientName} &lt;${recipientEmail}&gt;</p>
         <p style="margin: 5px 0 0 0;"><strong>Subject:</strong> ${subject}</p>
       </div>
     `;
@@ -116,6 +123,9 @@ export function initShareCalculation({ root, getCalculationState }) {
   function cancelShare() {
     shareFormContainer?.classList.add('hidden');
     if (taskDescriptionInput) taskDescriptionInput.value = '';
+    if (senderNameInput) senderNameInput.value = '';
+    if (senderEmailInput) senderEmailInput.value = '';
+    if (recipientNameInput) recipientNameInput.value = '';
     if (recipientEmailInput) recipientEmailInput.value = '';
     hideShareStatus();
     resetSuccessTimeout();
@@ -127,16 +137,33 @@ export function initShareCalculation({ root, getCalculationState }) {
 
     const errors = [];
     const taskDescription = taskDescriptionInput?.value.trim();
-    const emailValue = recipientEmailInput?.value.trim();
+    const senderName = senderNameInput?.value.trim();
+    const senderEmail = senderEmailInput?.value.trim();
+    const recipientName = recipientNameInput?.value.trim();
+    const recipientEmail = recipientEmailInput?.value.trim();
 
     if (!taskDescription) {
-      errors.push('Please enter a task description');
+      errors.push('Please enter a task description.');
     }
 
-    if (!emailValue) {
-      errors.push('Please enter an email address');
-    } else if (!EMAIL_REGEX.test(emailValue)) {
-      errors.push('Please enter a valid email address');
+    if (!senderName) {
+      errors.push('Please enter your name.');
+    }
+
+    if (!senderEmail) {
+      errors.push('Please enter your email address.');
+    } else if (!EMAIL_REGEX.test(senderEmail)) {
+      errors.push('Please enter a valid email address for sender.');
+    }
+
+    if (!recipientName) {
+      errors.push('Please enter recipient name.');
+    }
+
+    if (!recipientEmail) {
+      errors.push('Please enter recipient email address.');
+    } else if (!EMAIL_REGEX.test(recipientEmail)) {
+      errors.push('Please enter a valid recipient email address.');
     }
 
     if (errors.length) {
@@ -144,7 +171,7 @@ export function initShareCalculation({ root, getCalculationState }) {
       return;
     }
 
-    const preview = generateEmailPreview(taskDescription, emailValue);
+    const preview = generateEmailPreview(taskDescription, senderName, senderEmail, recipientName, recipientEmail);
     if (previewContent) previewContent.innerHTML = preview;
     emailPreviewModal?.classList.remove('hidden');
   }
@@ -159,16 +186,33 @@ export function initShareCalculation({ root, getCalculationState }) {
 
     const errors = [];
     const taskDescription = taskDescriptionInput?.value.trim();
+    const senderName = senderNameInput?.value.trim();
+    const senderEmail = senderEmailInput?.value.trim();
+    const recipientName = recipientNameInput?.value.trim();
     const recipientEmail = recipientEmailInput?.value.trim();
 
     if (!taskDescription) {
-      errors.push('Please enter a task description');
+      errors.push('Please enter a task description.');
+    }
+
+    if (!senderName) {
+      errors.push('Please enter your name.');
+    }
+
+    if (!senderEmail) {
+      errors.push('Please enter your email address.');
+    } else if (!EMAIL_REGEX.test(senderEmail)) {
+      errors.push('Please enter a valid email address for sender.');
+    }
+
+    if (!recipientName) {
+      errors.push('Please enter recipient name.');
     }
 
     if (!recipientEmail) {
-      errors.push('Please enter an email address');
+      errors.push('Please enter recipient email address.');
     } else if (!EMAIL_REGEX.test(recipientEmail)) {
-      errors.push('Please enter a valid email address');
+      errors.push('Please enter a valid recipient email address.');
     }
 
     if (errors.length) {
@@ -184,25 +228,54 @@ export function initShareCalculation({ root, getCalculationState }) {
 
     try {
       const state = getState();
-      const response = await fetch(API_SHARE_CALCULATION_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: recipientEmail,
-          taskDescription,
-          urgency: state.urgency,
-          complexity: state.complexity,
-          importance: state.importance,
-          skill: state.skill,
-          frequency: state.frequency,
-          probability: state.probability,
-          interpretation: state.interpretation
-        })
+      const endpoint = '/api/share-calculation';
+      const primaryUrl = `${API_BASE_URL}${endpoint}`;
+      const fallbackUrl = `${API_FALLBACK_URL}${endpoint}`;
+
+      const requestBody = JSON.stringify({
+        email: recipientEmail,
+        taskDescription,
+        senderName,
+        senderEmail,
+        recipientName,
+        urgency: state.urgency,
+        complexity: state.complexity,
+        importance: state.importance,
+        skill: state.skill,
+        frequency: state.frequency,
+        probability: state.probability,
+        interpretation: state.interpretation
       });
 
-      const result = await response.json();
+      let response;
+      let result;
+
+      try {
+        response = await fetch(primaryUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: requestBody
+        });
+
+        if (!response.ok) {
+          throw new Error(`Primary API failed: ${response.status}`);
+        }
+
+        result = await response.json();
+      } catch {
+        // Try fallback URL
+        response = await fetch(fallbackUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: requestBody
+        });
+
+        result = await response.json();
+      }
 
       if (response.ok) {
         showShareStatus('✅ Email sent successfully!', 'success');

@@ -27,6 +27,24 @@ function createState(overrides = {}) {
   };
 }
 
+function fillAllRequiredFields(root, overrides = {}) {
+  const defaults = {
+    taskDescription: 'Test task',
+    senderName: 'John Doe',
+    senderEmail: 'john@example.com',
+    recipientName: 'Jane Smith',
+    recipientEmail: 'user@example.com'
+  };
+
+  const values = { ...defaults, ...overrides };
+
+  root.querySelector('#task-description').value = values.taskDescription;
+  root.querySelector('#sender-name').value = values.senderName;
+  root.querySelector('#sender-email').value = values.senderEmail;
+  root.querySelector('#recipient-name').value = values.recipientName;
+  root.querySelector('#recipient-email').value = values.recipientEmail;
+}
+
 describe('Sod\'s share module', () => {
   const local = createLocalThis();
 
@@ -74,17 +92,17 @@ describe('Sod\'s share module', () => {
     const shareCta = root.querySelector('#share-cta');
     const cancelBtn = root.querySelector('#cancel-share');
     const shareForm = root.querySelector('#share-form-container');
-    const taskInput = root.querySelector('#task-description');
-    const emailInput = root.querySelector('#recipient-email');
 
     shareCta.click();
-    taskInput.value = 'Test task';
-    emailInput.value = 'user@example.com';
+    fillAllRequiredFields(root);
 
     cancelBtn.click();
     expect(shareForm.classList.contains('hidden')).toBe(true);
-    expect(taskInput.value).toBe('');
-    expect(emailInput.value).toBe('');
+    expect(root.querySelector('#task-description').value).toBe('');
+    expect(root.querySelector('#sender-name').value).toBe('');
+    expect(root.querySelector('#sender-email').value).toBe('');
+    expect(root.querySelector('#recipient-name').value).toBe('');
+    expect(root.querySelector('#recipient-email').value).toBe('');
   });
 
   it('shows errors when preview is attempted without required fields', () => {
@@ -106,19 +124,16 @@ describe('Sod\'s share module', () => {
     const { root } = local();
     const shareCta = root.querySelector('#share-cta');
     const previewBtn = root.querySelector('#preview-email');
-    const taskInput = root.querySelector('#task-description');
-    const emailInput = root.querySelector('#recipient-email');
     const shareStatus = root.querySelector('#share-status');
 
     shareCta.click();
-    taskInput.value = 'Test task';
-    emailInput.value = 'invalid-email';
+    fillAllRequiredFields(root, { recipientEmail: 'invalid-email' });
 
     previewBtn.click();
 
     expect(shareStatus.classList.contains('hidden')).toBe(false);
     expect(shareStatus.classList.contains('error')).toBe(true);
-    expect(shareStatus.textContent).toMatch(/valid email/i);
+    expect(shareStatus.textContent).toMatch(/valid.*recipient.*email/i);
   });
 
   it('opens preview modal when inputs are valid', () => {
@@ -126,14 +141,11 @@ describe('Sod\'s share module', () => {
     const { root } = self;
     const shareCta = root.querySelector('#share-cta');
     const previewBtn = root.querySelector('#preview-email');
-    const taskInput = root.querySelector('#task-description');
-    const emailInput = root.querySelector('#recipient-email');
     const modal = root.querySelector('#email-preview-modal');
     const shareStatus = root.querySelector('#share-status');
 
     shareCta.click();
-    taskInput.value = 'Deploy app';
-    emailInput.value = 'user@example.com';
+    fillAllRequiredFields(root, { taskDescription: 'Deploy app' });
 
     self.state = createState({ probability: '4.20' });
 
@@ -148,15 +160,12 @@ describe('Sod\'s share module', () => {
     const { root } = local();
     const shareCta = root.querySelector('#share-cta');
     const previewBtn = root.querySelector('#preview-email');
-    const taskInput = root.querySelector('#task-description');
-    const emailInput = root.querySelector('#recipient-email');
     const modal = root.querySelector('#email-preview-modal');
     const closeBtn = root.querySelector('#close-preview');
     const closeFooter = root.querySelector('#close-preview-footer');
 
     shareCta.click();
-    taskInput.value = 'Deploy app';
-    emailInput.value = 'user@example.com';
+    fillAllRequiredFields(root, { taskDescription: 'Deploy app' });
     previewBtn.click();
 
     closeBtn.click();
@@ -187,19 +196,16 @@ describe('Sod\'s share module', () => {
       const { root, fetchSpy } = local();
       const shareCta = root.querySelector('#share-cta');
       const sendBtn = root.querySelector('#send-email');
-      const taskInput = root.querySelector('#task-description');
-      const emailInput = root.querySelector('#recipient-email');
       const shareStatus = root.querySelector('#share-status');
 
       shareCta.click();
-      taskInput.value = 'Test task';
-      emailInput.value = 'invalid-email';
+      fillAllRequiredFields(root, { recipientEmail: 'invalid-email' });
 
       sendBtn.click();
 
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(shareStatus.classList.contains('error')).toBe(true);
-      expect(shareStatus.textContent).toMatch(/valid email/i);
+      expect(shareStatus.textContent).toMatch(/valid.*recipient.*email/i);
     });
 
     it('sends calculation email with current state', async () => {
@@ -207,12 +213,9 @@ describe('Sod\'s share module', () => {
       const { root, fetchSpy } = self;
       const shareCta = root.querySelector('#share-cta');
       const sendBtn = root.querySelector('#send-email');
-      const taskInput = root.querySelector('#task-description');
-      const emailInput = root.querySelector('#recipient-email');
 
       shareCta.click();
-      taskInput.value = 'Deploy production server';
-      emailInput.value = 'user@example.com';
+      fillAllRequiredFields(root, { taskDescription: 'Deploy production server' });
 
       self.state = createState({
         urgency: 7,
@@ -243,6 +246,9 @@ describe('Sod\'s share module', () => {
       expect(body).toMatchObject({
         email: 'user@example.com',
         taskDescription: 'Deploy production server',
+        senderName: 'John Doe',
+        senderEmail: 'john@example.com',
+        recipientName: 'Jane Smith',
         urgency: 7,
         complexity: 6,
         importance: 8,
@@ -259,14 +265,11 @@ describe('Sod\'s share module', () => {
       const { root, fetchSpy } = local();
       const shareCta = root.querySelector('#share-cta');
       const sendBtn = root.querySelector('#send-email');
-      const taskInput = root.querySelector('#task-description');
-      const emailInput = root.querySelector('#recipient-email');
       const shareStatus = root.querySelector('#share-status');
       const shareForm = root.querySelector('#share-form-container');
 
       shareCta.click();
-      taskInput.value = 'Test task';
-      emailInput.value = 'user@example.com';
+      fillAllRequiredFields(root);
 
       fetchSpy.mockResolvedValue({
         ok: true,
@@ -283,21 +286,21 @@ describe('Sod\'s share module', () => {
       vi.advanceTimersByTime(2100);
 
       expect(shareForm.classList.contains('hidden')).toBe(true);
-      expect(taskInput.value).toBe('');
-      expect(emailInput.value).toBe('');
+      expect(root.querySelector('#task-description').value).toBe('');
+      expect(root.querySelector('#sender-name').value).toBe('');
+      expect(root.querySelector('#sender-email').value).toBe('');
+      expect(root.querySelector('#recipient-name').value).toBe('');
+      expect(root.querySelector('#recipient-email').value).toBe('');
     });
 
     it('shows error when API responds with failure', async () => {
       const { root, fetchSpy } = local();
       const shareCta = root.querySelector('#share-cta');
       const sendBtn = root.querySelector('#send-email');
-      const taskInput = root.querySelector('#task-description');
-      const emailInput = root.querySelector('#recipient-email');
       const shareStatus = root.querySelector('#share-status');
 
       shareCta.click();
-      taskInput.value = 'Test task';
-      emailInput.value = 'user@example.com';
+      fillAllRequiredFields(root);
 
       fetchSpy.mockResolvedValue({
         ok: false,
@@ -316,13 +319,10 @@ describe('Sod\'s share module', () => {
       const { root, fetchSpy } = local();
       const shareCta = root.querySelector('#share-cta');
       const sendBtn = root.querySelector('#send-email');
-      const taskInput = root.querySelector('#task-description');
-      const emailInput = root.querySelector('#recipient-email');
       const shareStatus = root.querySelector('#share-status');
 
       shareCta.click();
-      taskInput.value = 'Test task';
-      emailInput.value = 'user@example.com';
+      fillAllRequiredFields(root);
 
       fetchSpy.mockRejectedValue(new Error('Network down'));
 
@@ -338,12 +338,9 @@ describe('Sod\'s share module', () => {
       const { root, fetchSpy } = local();
       const shareCta = root.querySelector('#share-cta');
       const sendBtn = root.querySelector('#send-email');
-      const taskInput = root.querySelector('#task-description');
-      const emailInput = root.querySelector('#recipient-email');
 
       shareCta.click();
-      taskInput.value = 'Test task';
-      emailInput.value = 'user@example.com';
+      fillAllRequiredFields(root);
 
       fetchSpy.mockImplementation(() => new Promise((resolve) => {
         setTimeout(() => resolve({
