@@ -76,14 +76,16 @@ function layout(node) {
              data-full-width-responsive="true"></ins>
       </div>
       <div class="mt-8 pt-8 text-center">
-        <p class="small mb-3">
-          <a href="#" data-nav="about">About</a> •
-          <a href="#" data-nav="privacy">Privacy Policy</a> •
-          <a href="#" data-nav="terms">Terms of Service</a> •
-          <a href="#" data-nav="contact">Contact</a>
-        </p>
+        <nav aria-label="Utility">
+          <ul class="footer-nav">
+            <li><a href="#" data-nav="about">About</a></li>
+            <li><a href="#" data-nav="privacy">Privacy Policy</a></li>
+            <li><a href="#" data-nav="terms">Terms of Service</a></li>
+            <li><a href="#" data-nav="contact">Contact</a></li>
+          </ul>
+        </nav>
         <p class="small">
-          <a href="#" data-nav="home">Murphy's Law Archive</a> by <a href="#" data-nav="about">Raanan Avidor</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+          <a href="#" data-nav="home">Murphy's Law Archive</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
         </p>
       </div>
     </div>
