@@ -1,87 +1,69 @@
 export function Contact({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
   el.innerHTML = `
-    <div class="card">
+    <article class="card content-card">
       <div class="card-content">
-        <h1 class="mb-4">Contact Us</h1>
+        <header class="content-header">
+          <h1>Contact Murphy's Law Archive</h1>
+          <p class="lead">
+            We love meeting fellow observers of life's inevitable mishaps. Whether you're sharing a new
+            law, reporting an issue, or just saying hello, here's how to reach us.
+          </p>
+        </header>
 
-        <section class="mb-6">
-          <p class="mb-4">
-            We'd love to hear from you! Whether you have questions, suggestions, feedback,
-            or just want to share your thoughts about Murphy's Law, feel free to reach out.
+        <section class="content-section">
+          <h2>Send a Message</h2>
+          <div class="content-grid">
+            <div>
+              <h3>Share a Law</h3>
+              <p>
+                The archive grows through community stories. Submit your latest Murphy moment via the
+                <a href="#" data-nav="submit">Submit a Law</a> form and we'll feature it with proper credit.
+              </p>
+            </div>
+            <div>
+              <h3>Email</h3>
+              <p>
+                For questions, collaborations, or feedback, drop us a note at
+                <a href="mailto:contact@murphys-laws.com">contact@murphys-laws.com</a>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <h2>Need Support?</h2>
+          <p>
+            Spot a glitch or unusual behavior? Send us the page URL, what you were doing, your browser
+            and device, plus any error messages. The more detail, the faster we can recreate and fix it.
+          </p>
+          <p>
+            Concerned about content? Let us know which law or story needs attention and why. We review
+            every report and respond with next steps.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Get in Touch</h2>
-
-          <div class="mb-4">
-            <h3 class="mb-2">Submit a Law</h3>
-            <p class="mb-3">
-              Have a Murphy's Law observation to share? Visit our
-              <a href="#" data-nav="submit">Submit a Law</a> page to contribute to our collection.
-            </p>
-          </div>
-
-          <div class="mb-4">
-            <h3 class="mb-2">Email</h3>
-            <p class="mb-3">
-              For general inquiries, feedback, or questions, you can reach us at:
-            </p>
-            <p class="mb-3">
-              <a href="mailto:contact@murphys-laws.com">contact@murphys-laws.com</a>
-            </p>
-          </div>
-
-          <div class="mb-4">
-            <h3 class="mb-2">Website Issues</h3>
-            <p class="mb-3">
-              If you encounter any technical issues or bugs on the site, please let us know.
-              Include details such as:
-            </p>
-            <ul class="mb-3">
-              <li>The page where you encountered the issue</li>
-              <li>What you were trying to do</li>
-              <li>Your browser and device type</li>
-              <li>Any error messages you received</li>
-            </ul>
-          </div>
-
-          <div class="mb-4">
-            <h3 class="mb-2">Content Concerns</h3>
-            <p class="mb-3">
-              If you have concerns about any content on our site, including copyright issues
-              or inappropriate submissions, please contact us with specific details.
-            </p>
-          </div>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Response Time</h2>
-          <p class="mb-4">
-            We typically respond to inquiries within 2-3 business days. Please note that
-            during periods of high volume, response times may be longer.
+        <section class="content-section">
+          <h2>When You'll Hear Back</h2>
+          <p>
+            We usually reply within two business days. During major launches or when Murphy strikes in
+            bulk, it might take a little longer—but we read every message.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Other Resources</h2>
-          <ul class="mb-4">
-            <li><a href="#" data-nav="about">About Us</a> - Learn more about Murphy's Law Archive</li>
-            <li><a href="#" data-nav="privacy">Privacy Policy</a> - How we handle your data</li>
-            <li><a href="#" data-nav="terms">Terms of Service</a> - Our terms and conditions</li>
+        <section class="content-section">
+          <h2>Quick Links</h2>
+          <ul>
+            <li><a href="#" data-nav="about">About</a> — learn our origin story and mission.</li>
+            <li><a href="#" data-nav="privacy">Privacy Policy</a> — see how we treat your data.</li>
+            <li><a href="#" data-nav="terms">Terms of Service</a> — understand the rules of the road.</li>
           </ul>
         </section>
-
-        <div class="flex gap-2 mt-6">
-          <button data-nav="home">Back to Home</button>
-          <button class="outline" data-nav="submit">Submit a Law</button>
-        </div>
       </div>
-    </div>
+    </article>
   `;
 
   el.addEventListener('click', (e) => {
