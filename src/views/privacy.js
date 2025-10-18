@@ -1,180 +1,129 @@
 export function Privacy({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
   const lastUpdated = '2025-10-18';
 
   el.innerHTML = `
-    <div class="card">
+    <article class="card content-card">
       <div class="card-content">
-        <h1 class="mb-4">Privacy Policy</h1>
-        <p class="small mb-6">Last updated: ${lastUpdated}</p>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Introduction</h2>
-          <p class="mb-4">
-            Welcome to Murphy's Law Archive ("we," "our," or "us"). We respect your privacy and are
-            committed to protecting your personal data. This privacy policy explains how we collect,
-            use, and protect information when you visit our website murphys-laws.com (the "Site").
+        <header class="content-header">
+          <p class="small">Last updated: ${lastUpdated}</p>
+          <h1>Privacy Policy</h1>
+          <p class="lead">
+            Murphy's Law Archive is built for curious, privacy-conscious readers. This policy explains
+            what information we collect, why we collect it, and how we protect your trust while you
+            browse, submit laws, and share your stories.
           </p>
+        </header>
+
+        <section class="content-section">
+          <h2>What We Collect</h2>
+          <div class="content-grid">
+            <div>
+              <h3>Information You Share</h3>
+              <p>
+                When you submit a law, send feedback, or subscribe to updates, you may share your name,
+                email address, and the content you contribute. Sharing is optional—the archive welcomes
+                anonymous submissions.
+              </p>
+            </div>
+            <div>
+              <h3>Activity Signals</h3>
+              <p>
+                Our servers automatically receive technical basics like IP address, device and browser
+                details, pages visited, and time on page. These signals help us keep the site reliable
+                and understand what content resonates.
+              </p>
+            </div>
+          </div>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Information We Collect</h2>
-          <h3 class="mb-2">Information You Provide</h3>
-          <p class="mb-4">
-            When you submit a law or use our contact form, you may provide:
-          </p>
-          <ul class="mb-4">
-            <li>Your name (optional)</li>
-            <li>Email address (optional)</li>
-            <li>The content you submit</li>
-          </ul>
-
-          <h3 class="mb-2">Automatically Collected Information</h3>
-          <p class="mb-4">
-            When you visit our Site, we may automatically collect:
-          </p>
-          <ul class="mb-4">
-            <li>IP address</li>
-            <li>Browser type and version</li>
-            <li>Device information</li>
-            <li>Pages visited and time spent on pages</li>
-            <li>Referring website</li>
-          </ul>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Cookies and Tracking Technologies</h2>
-          <p class="mb-4">
-            We use cookies and similar tracking technologies to improve your experience on our Site.
-            Cookies are small text files stored on your device that help us understand how you use our Site.
-          </p>
-          <h3 class="mb-2">Types of Cookies We Use:</h3>
-          <ul class="mb-4">
-            <li><strong>Essential Cookies:</strong> Required for the Site to function properly</li>
-            <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our Site</li>
-            <li><strong>Advertising Cookies:</strong> Used to deliver relevant advertisements (see Google AdSense section below)</li>
-          </ul>
-          <p class="mb-4">
-            You can control cookies through your browser settings. However, disabling cookies may affect
-            your experience on our Site.
-          </p>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Google AdSense and Advertising</h2>
-          <p class="mb-4">
-            We use Google AdSense to display advertisements on our Site. Google AdSense uses cookies and
-            other tracking technologies to show ads based on your visits to this Site and other websites
-            across the Internet.
-          </p>
-          <p class="mb-4">
-            Google uses cookies to serve ads based on your previous visits to our Site and other sites.
-            You can opt out of personalized advertising by visiting
-            <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google's Ads Settings</a>.
-            Alternatively, you can opt out of third-party vendors' use of cookies by visiting
-            <a href="http://www.aboutads.info/choices/" target="_blank" rel="noopener">www.aboutads.info</a>.
-          </p>
-          <p class="mb-4">
-            For more information about how Google uses data when you use our Site, please visit
-            <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">
-              Google's Privacy Policy
-            </a>.
-          </p>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">How We Use Your Information</h2>
-          <p class="mb-4">We use the information we collect to:</p>
-          <ul class="mb-4">
-            <li>Provide, operate, and maintain our Site</li>
-            <li>Process and display user-submitted content</li>
-            <li>Improve and personalize your experience</li>
-            <li>Understand how visitors use our Site</li>
-            <li>Detect and prevent fraud or abuse</li>
-            <li>Display relevant advertisements</li>
-            <li>Communicate with you (if you've provided contact information)</li>
+        <section class="content-section">
+          <h2>How We Use Data</h2>
+          <ul>
+            <li><strong>Operate the archive:</strong> Render pages, route navigation, and surface the laws you love.</li>
+            <li><strong>Celebrate community contributions:</strong> Display submitted laws and stories with proper attribution.</li>
+            <li><strong>Improve the experience:</strong> Analyze patterns to refine navigation, search, and performance.</li>
+            <li><strong>Keep things safe:</strong> Detect misuse, abuse, or unauthorized access.</li>
+            <li><strong>Stay in touch:</strong> Respond when you reach out or request updates.</li>
           </ul>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Data Sharing and Disclosure</h2>
-          <p class="mb-4">
-            We do not sell your personal information. We may share your information with:
+        <section class="content-section">
+          <h2>Cookies & Analytics</h2>
+          <p>
+            We use lightweight first-party cookies and privacy-focused analytics to understand traffic
+            trends. They remember preferences like dark mode and help us learn which calculators or laws
+            people return to most. You can clear or block cookies through your browser without breaking
+            the site.
           </p>
-          <ul class="mb-4">
-            <li><strong>Service Providers:</strong> Third-party services that help us operate our Site (e.g., Google AdSense)</li>
-            <li><strong>Legal Requirements:</strong> If required by law or to protect our rights</li>
-            <li><strong>Public Display:</strong> Content you submit may be displayed publicly on our Site</li>
+        </section>
+
+        <section class="content-section">
+          <h2>Third-Party Services</h2>
+          <p>
+            When enabled, services such as email delivery providers or advertising networks may process
+            limited information to send notifications or measure reach. We require these partners to honor
+            strong privacy safeguards and only share the minimum necessary data.
+          </p>
+        </section>
+
+        <section class="content-section">
+          <h2>Data Retention</h2>
+          <p>
+            Submission content remains visible so the archive reflects collective wisdom. Supporting
+            metadata is retained only as long as we have a reason—typically to provide the feature you
+            requested or to comply with legal obligations. When data is no longer needed, we delete or
+            anonymize it.
+          </p>
+        </section>
+
+        <section class="content-section">
+          <h2>Your Choices</h2>
+          <ul>
+            <li><strong>Control submissions:</strong> Request edits or removal of content you provided.</li>
+            <li><strong>Access information:</strong> Ask what data we have collected about you.</li>
+            <li><strong>Opt out:</strong> Disable cookies, unsubscribe from updates, or decline analytics participation.</li>
+            <li><strong>Reach out:</strong> Contact us for clarification before sharing personal details.</li>
           </ul>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Data Security</h2>
-          <p class="mb-4">
-            We implement reasonable security measures to protect your information. However, no method of
-            transmission over the Internet or electronic storage is 100% secure. We cannot guarantee
-            absolute security of your data.
+        <section class="content-section">
+          <h2>Security Practices</h2>
+          <p>
+            We apply encryption in transit, strict access controls, and regular reviews of our systems.
+            While no website can promise absolute security, we respond quickly to issues and keep backups
+            isolated from public infrastructure.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Your Rights</h2>
-          <p class="mb-4">Depending on your location, you may have the right to:</p>
-          <ul class="mb-4">
-            <li>Access the personal information we hold about you</li>
-            <li>Request correction of inaccurate data</li>
-            <li>Request deletion of your data</li>
-            <li>Object to or restrict certain processing of your data</li>
-            <li>Opt out of marketing communications</li>
-          </ul>
-          <p class="mb-4">
-            To exercise these rights, please <a href="#" data-nav="contact">contact us</a>.
+        <section class="content-section">
+          <h2>Global Visitors</h2>
+          <p>
+            Murphy's Law is universal, and so are our visitors. Data may be processed in the United States
+            and other regions where our providers operate. Using the site means you consent to that
+            transfer, and we rely on standard contractual safeguards when required.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">Children's Privacy</h2>
-          <p class="mb-4">
-            Our Site is not intended for children under 13 years of age. We do not knowingly collect
-            personal information from children under 13. If you are a parent or guardian and believe
-            your child has provided us with personal information, please contact us.
+        <section class="content-section">
+          <h2>Updates</h2>
+          <p>
+            We review this policy whenever new features launch or regulations change. When updates happen,
+            we adjust the date at the top and summarize material changes so you can stay informed.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">International Data Transfers</h2>
-          <p class="mb-4">
-            Your information may be transferred to and processed in countries other than your own.
-            These countries may have different data protection laws. By using our Site, you consent
-            to such transfers.
+        <section class="content-section">
+          <h2>Contact</h2>
+          <p>
+            Questions or requests? <a href="#" data-nav="contact">Send us a note</a> and we'll respond promptly.
           </p>
         </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Changes to This Privacy Policy</h2>
-          <p class="mb-4">
-            We may update this Privacy Policy from time to time. We will notify you of any changes by
-            posting the new Privacy Policy on this page and updating the "Last updated" date at the top.
-          </p>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Contact Us</h2>
-          <p class="mb-4">
-            If you have any questions about this Privacy Policy, please
-            <a href="#" data-nav="contact">contact us</a>.
-          </p>
-        </section>
-
-        <div class="flex gap-2 mt-6">
-          <button data-nav="home">Back to Home</button>
-          <button class="outline" data-nav="terms">Terms of Service</button>
-        </div>
       </div>
-    </div>
+    </article>
   `;
 
   el.addEventListener('click', (e) => {
