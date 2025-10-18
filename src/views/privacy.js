@@ -25,7 +25,7 @@ export function Privacy({ onNavigate }) {
               <h3>Information You Share</h3>
               <p>
                 When you submit a law, send feedback, or subscribe to updates, you may share your name,
-                email address, and the content you contribute. Sharing is optional—the archive welcomes
+                email address, and the content you contribute. Sharing is optional — the archive welcomes
                 anonymous submissions.
               </p>
             </div>
@@ -74,7 +74,7 @@ export function Privacy({ onNavigate }) {
           <h2>Data Retention</h2>
           <p>
             Submission content remains visible so the archive reflects collective wisdom. Supporting
-            metadata is retained only as long as we have a reason—typically to provide the feature you
+            metadata is retained only as long as we have a reason — typically to provide the feature you
             requested or to comply with legal obligations. When data is no longer needed, we delete or
             anonymize it.
           </p>

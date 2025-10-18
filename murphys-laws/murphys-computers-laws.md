@@ -69,8 +69,8 @@
 * In a transistor circuit protected by a fuse, the transistor will always blow to protect the fuse. Sent by [Neal Buddenberg](mailto:nealbudd@earthlink.net)  
 * The best way to see your boss is to access the internet. No matter how hard you work, the boss will only appear when you access the internet.  
 * The hard drive on your computer will only crash when it contains vital information that has not been backed up. Sent by [Charles L. Mays](mailto:Charles.Mays@viasystems.com).  
-* Computers don't make errors—What they do, they do on purpose. Sent by [Terry Jaster](mailto:trjaster@worldnet.att.net).  
-* If Murphy's laws are true, how can I log onto this site and submit? \[connection reset—error message 928\]. Sent by [Paul Breen](mailto:paulbreen@hotmail.com).  
+* Computers don't make errors — What they do, they do on purpose. Sent by [Terry Jaster](mailto:trjaster@worldnet.att.net).  
+* If Murphy's laws are true, how can I log onto this site and submit? \[connection reset — error message 928\]. Sent by [Paul Breen](mailto:paulbreen@hotmail.com).  
 * Gumption's Law: Any problem, no matter how complex, can be found by simple inspection.  
   * Corollary: A nagging intruder with unsought advice will spot it immediately.  
   * Sent by [Ray Geist](mailto:RGeist@nationalsteel.com), who found it handy when debugging computer code.  
