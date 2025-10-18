@@ -1,82 +1,103 @@
-import { escapeHtml } from '../utils/sanitize.js';
-
 export function About({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page about-page';
   el.setAttribute('role', 'main');
 
   el.innerHTML = `
-    <div class="card">
+    <article class="card about-card">
       <div class="card-content">
-        <h1 class="mb-4">About Murphy's Law Archive</h1>
+        <header class="about-header">
+          <h1>About Murphy's Law Archive</h1>
+          <p class="lead">
+            Murphy's Law Archive preserves and celebrates the world's favorite truism about
+            inevitable mishaps. What started as a personal collection has become a living
+            repository for witty observations, cautionary tales, and the humor we need when
+            plans go sideways.
+          </p>
+        </header>
 
-        <section class="mb-6">
-          <h2 class="mb-3">What is Murphy's Law?</h2>
-          <blockquote class="blockquote mb-4">
-            "Anything that can go wrong will go wrong."
+        <section class="about-section">
+          <h2>What is Murphy's Law?</h2>
+          <blockquote class="blockquote">
+            "Anything that can go wrong, will." — Capt. Edward A. Murphy Jr.
           </blockquote>
-          <p class="mb-4">
-            Murphy's Law is a popular adage that states: "Anything that can go wrong will go wrong."
-            This seemingly simple observation has spawned countless variations, corollaries, and
-            related laws that capture the humorous yet often accurate nature of life's mishaps.
+          <p>
+            Born out of an Air Force experiment in 1949, Murphy's Law captured a universal truth:
+            when the stakes are high and complexity reigns, something eventually slips. Over the
+            decades, this simple idea has multiplied into corollaries, variations, and stories from
+            every corner of life, each reminding us to prepare, adapt, and laugh.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">About This Site</h2>
-          <p class="mb-4">
-            Welcome to Murphy's Law Archive, a comprehensive collection of Murphy's Law and its many
-            variations. This site serves as a repository for witty observations about life, technology,
-            work, and everything in between.
+        <section class="about-section">
+          <h2>What You'll Find</h2>
+          <div class="about-grid">
+            <div>
+              <h3>Curated Laws</h3>
+              <p>
+                Browse more than forty categories covering technology, transportation, the workplace,
+                family life, and specialized fields—from classrooms to cockpits.
+              </p>
+            </div>
+            <div>
+              <h3>Community Wisdom</h3>
+              <p>
+                Vote on classics, submit your own observations, and explore real stories submitted by
+                readers who have lived through Murphy-grade chaos.
+              </p>
+            </div>
+            <div>
+              <h3>Interactive Tools</h3>
+              <p>
+                Put the legends to the test with calculators like our Sod's Law probability model and
+                buttered toast landing simulator—both grounded in documented formulas.
+              </p>
+            </div>
+            <div>
+              <h3>Deep Dives</h3>
+              <p>
+                Explore essays and debates about fate versus preparation, optimism versus realism, and
+                why humor is our best survival tool when things go sideways.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="about-section">
+          <h2>How It Happened</h2>
+          <p>
+            Founder <strong>Raanan Avidor</strong> launched the archive in the late 1990s after a single
+            Murphy moment on a Geocities page sparked an avalanche of emails. That snowball grew into a
+            structured archive, a modern web app, and a shared space for everyone who appreciates the
+            instructional power of things going wrong.
           </p>
-          <p class="mb-4">
-            Our collection includes classic Murphy's Laws, domain-specific variations (like technology
-            laws, office laws, and more), and user-submitted observations. You can:
-          </p>
-          <ul class="mb-4">
-            <li>Browse our extensive archive of laws</li>
-            <li>Vote on your favorite (or least favorite) laws</li>
-            <li>Submit your own observations</li>
-            <li>Use our calculators to apply Murphy's Law mathematically</li>
+        </section>
+
+        <section class="about-section">
+          <h2>Why It Matters</h2>
+          <ul>
+            <li><strong>Stress relief:</strong> Humor diffuses the tension when the worst happens.</li>
+            <li><strong>Preparedness:</strong> Knowing the patterns helps us plan for the unexpected.</li>
+            <li><strong>Shared experience:</strong> Murphy's Laws resonate across cultures, professions, and generations.</li>
+            <li><strong>Perspective:</strong> Laughing at the chaos keeps us resilient.</li>
           </ul>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">The Creator</h2>
-          <p class="mb-4">
-            This archive is maintained by <strong>Raanan Avidor</strong>, a software developer with
-            a passion for collecting and cataloging life's inevitable ironies. The project started
-            as a personal collection and has grown into a comprehensive archive for anyone who
-            appreciates the humor in Murphy's Law.
+        <section class="about-section">
+          <h2>Stay in Touch</h2>
+          <p>
+            Have a story or a new twist on Murphy's Law? <a href="#" data-nav="contact">Reach out</a> or head back to the
+            <a href="#" data-nav="browse">archive</a> to keep exploring.
           </p>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Licensing</h2>
-          <p class="mb-4">
-            The content on this site is marked with
+          <p class="small">
+            All content is shared under the
             <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">
-              CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
-            </a>.
-            This means you can copy, modify, distribute, and perform the work, even for commercial
-            purposes, all without asking permission.
+              CC0 1.0 Universal Public Domain Dedication
+            </a>—use, remix, and share freely.
           </p>
         </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">Contact</h2>
-          <p class="mb-4">
-            Have questions, suggestions, or want to submit a law? Visit our
-            <a href="#" data-nav="contact">Contact page</a> to get in touch.
-          </p>
-        </section>
-
-        <div class="flex gap-2 mt-6">
-          <button data-nav="home">Back to Home</button>
-          <button class="outline" data-nav="browse">Browse Laws</button>
-        </div>
       </div>
-    </div>
+    </article>
   `;
 
   el.addEventListener('click', (e) => {
