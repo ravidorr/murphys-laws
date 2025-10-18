@@ -50,7 +50,7 @@ export function Contact({ onNavigate }) {
           <h2>When You'll Hear Back</h2>
           <p>
             We usually reply within two business days. During major launches or when Murphy strikes in
-            bulk, it might take a little longer—but we read every message.
+            bulk, it might take a little longer — but we read every message.
           </p>
         </section>
 
