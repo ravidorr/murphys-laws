@@ -2,14 +2,14 @@
 import templateHtml from '@components/templates/header.html?raw';
 
 export function Header({ onSearch, onNavigate }) {
-  const el = document.createElement('header');
-  el.className = 'sticky';
-  el.setAttribute('role', 'banner');
+  const header = document.createElement('header');
+  header.className = 'sticky';
+  header.setAttribute('role', 'banner');
 
-  el.innerHTML = templateHtml;
+  header.innerHTML = templateHtml;
 
-  const navToggle = el.querySelector('#nav-menu-toggle');
-  const navDropdown = el.querySelector('#nav-dropdown');
+  const navToggle = header.querySelector('#nav-menu-toggle');
+  const navDropdown = header.querySelector('#nav-dropdown');
 
   // Toggle dropdown
   const handleToggleClick = (e) => {
@@ -23,7 +23,7 @@ export function Header({ onSearch, onNavigate }) {
 
   // Close dropdown when clicking outside
   const handleDocumentClick = (e) => {
-    if (!el.contains(e.target)) {
+    if (!header.contains(e.target)) {
       navDropdown?.classList.remove('open');
       navToggle?.setAttribute('aria-expanded', 'false');
     }
@@ -32,7 +32,7 @@ export function Header({ onSearch, onNavigate }) {
   document.addEventListener('click', handleDocumentClick);
 
   // Store cleanup function on the element
-  el.cleanup = () => {
+  header.cleanup = () => {
     document.removeEventListener('click', handleDocumentClick);
   };
 
@@ -42,14 +42,14 @@ export function Header({ onSearch, onNavigate }) {
     navToggle?.setAttribute('aria-expanded', 'false');
   });
 
-  el.addEventListener('click', (e) => {
+  header.addEventListener('click', (e) => {
     const t = e.target;
     if (t instanceof HTMLElement && t.dataset.nav) {
       onNavigate(t.dataset.nav);
     }
   });
 
-  const form = el.querySelector('form[role="search"]');
+  const form = header.querySelector('form[role="search"]');
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -59,5 +59,5 @@ export function Header({ onSearch, onNavigate }) {
     });
   }
 
-  return el;
+  return header;
 }

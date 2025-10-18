@@ -1,5 +1,6 @@
 import { defineRoute, navigate, startRouter, forceRender } from './router.js';
 import { Header } from './components/header.js';
+import { Footer } from './components/footer.js';
 import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
@@ -62,51 +63,7 @@ function layout(node) {
   main.className = 'flex-1';
   main.appendChild(node);
 
-  const footer = document.createElement('footer');
-  footer.className = 'footer';
-  footer.innerHTML = `
-    <div class="container">
-      <div class="mt-8 text-center">
-        <!-- Google AdSense -->
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-3615614508734124"
-             data-ad-slot="4091490183"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-      </div>
-      <div class="mt-8 pt-8 text-center">
-        <nav aria-label="Utility">
-          <ul class="footer-nav">
-            <li><a href="#" data-nav="about">About</a></li>
-            <li><a href="#" data-nav="privacy">Privacy Policy</a></li>
-            <li><a href="#" data-nav="terms">Terms of Service</a></li>
-            <li><a href="#" data-nav="contact">Contact</a></li>
-          </ul>
-        </nav>
-        <p class="small">
-          <a href="#" data-nav="home">Murphy's Law Archive</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
-        </p>
-      </div>
-    </div>
-  `;
-
-  // Initialize AdSense ad
-  // Wrap in try-catch to silently handle "already initialized" errors
-  // This happens on route changes when ads are already loaded
-  try {
-    (window.adsbygoogle = window.adsbygoogle || []).push({});
-  } catch {
-    // Silently ignore AdSense errors
-  }
-
-  footer.addEventListener('click', (e) => {
-    const t = e.target;
-    if (t instanceof HTMLElement && t.dataset.nav) {
-      e.preventDefault();
-      onNavigate(t.dataset.nav);
-    }
-  });
+  const footer = Footer({ onNavigate });
 
   wrap.appendChild(header);
   wrap.appendChild(main);
