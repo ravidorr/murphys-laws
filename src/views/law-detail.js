@@ -7,13 +7,65 @@ import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote } from '../utils/voting.js';
 
-export function LawDetail({ lawId, onNavigate }) {
+export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
   el.setAttribute('role', 'main');
 
+  // Store current law for updates
+  let currentLaw = null;
+
+  // Helper to render breadcrumb navigation
+  function renderBreadcrumb(lawTitle) {
+    return `
+      <nav class="breadcrumb mb-4" aria-label="Breadcrumb">
+        <a href="#" data-nav="home" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="#" data-nav="browse" class="breadcrumb-link">Browse</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">${lawTitle}</span>
+      </nav>
+    `;
+  }
+
+  // Helper to render law card HTML
+  function createLawCardHTML(law) {
+    const displayScore = Number.isFinite(law.score) ? law.score : 0;
+    const attsHtml = renderAttributionsList(law.attributions);
+    const safeTitle = law.title ? escapeHtml(law.title) : 'Law';
+    const safeText = escapeHtml(law.text);
+    const safeAuthor = law.author ? escapeHtml(law.author) : '';
+    const safeSubmittedBy = law.submittedBy ? escapeHtml(law.submittedBy) : '';
+
+    return `
+      <div class="card">
+        <div class="card-content">
+          <h2 class="mb-4">${safeTitle}</h2>
+          <blockquote class="blockquote">${safeText}</blockquote>
+          ${attsHtml || (safeAuthor ? `<p class="small mb-4">— ${safeAuthor}</p>` : '')}
+          <div class="small law-meta mb-4" data-law-meta>
+            <span data-score>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
+            ${safeSubmittedBy ? `<span>Submitted by ${safeSubmittedBy}</span>` : ''}
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <div class="flex gap-2">
+              <button data-vote="up" data-id="${escapeHtml(String(law.id))}" aria-label="Upvote" title="Upvote">
+                <span class="material-symbols-outlined">thumb_up</span>
+              </button>
+              <button class="outline" data-vote="down" data-id="${escapeHtml(String(law.id))}" aria-label="Downvote" title="Downvote">
+                <span class="material-symbols-outlined">thumb_down</span>
+              </button>
+            </div>
+            <button class="btn outline" data-nav="browse">Browse All Laws</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderNotFound() {
     el.innerHTML = `
+      ${renderBreadcrumb('Not Found')}
       <div class="card"><div class="card-content text-center">
         <h2 class="mb-4">Law Not Found</h2>
         <button data-nav="browse">Browse All Laws</button>
@@ -22,15 +74,20 @@ export function LawDetail({ lawId, onNavigate }) {
   }
 
   function renderLaw(law) {
-    const displayScore = Number.isFinite(law.score) ? law.score : 0;
-    const attsHtml = renderAttributionsList(law.attributions);
+    currentLaw = law;
     const safeTitle = law.title ? escapeHtml(law.title) : 'Law';
-    const safeText = escapeHtml(law.text);
-    const safeAuthor = law.author ? escapeHtml(law.author) : '';
-    const safeSubmittedBy = law.submittedBy ? escapeHtml(law.submittedBy) : '';
 
     // Clear and start fresh
     el.innerHTML = '';
+
+    if (typeof onStructuredData === 'function') {
+      onStructuredData(law);
+    }
+
+    // Add breadcrumb navigation
+    const breadcrumbDiv = document.createElement('div');
+    breadcrumbDiv.innerHTML = renderBreadcrumb(safeTitle);
+    el.appendChild(breadcrumbDiv);
 
     // Fetch Law of the Day
     fetchLawOfTheDay()
@@ -53,26 +110,7 @@ export function LawDetail({ lawId, onNavigate }) {
         // Only add current law details card if it's NOT the Law of the Day
         if (!isCurrentLawOfTheDay) {
           const lawCard = document.createElement('div');
-          lawCard.innerHTML = `
-            <div class="card"><div class="card-content">
-              <h2 class="mb-4">${safeTitle}</h2>
-              <blockquote class="blockquote">${safeText}</blockquote>
-              ${attsHtml || (safeAuthor ? `<p class="small mb-4">— ${safeAuthor}</p>` : '')}
-              <div class="small law-meta mb-4">
-                <span>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
-                ${safeSubmittedBy ? `<span>Submitted by ${safeSubmittedBy}</span>` : ''}
-              </div>
-              <div class="flex gap-2">
-                <button data-vote="up" data-id="${escapeHtml(String(law.id))}" aria-label="Upvote" title="Upvote">
-                  <span class="material-symbols-outlined">thumb_up</span>
-                </button>
-                <button class="outline" data-vote="down" data-id="${escapeHtml(String(law.id))}" aria-label="Downvote" title="Downvote">
-                  <span class="material-symbols-outlined">thumb_down</span>
-                </button>
-                <button class="btn outline" data-nav="browse">Browse All Laws</button>
-              </div>
-            </div></div>
-          `;
+          lawCard.innerHTML = createLawCardHTML(law);
           el.appendChild(lawCard);
         }
 
@@ -93,26 +131,7 @@ export function LawDetail({ lawId, onNavigate }) {
       .catch(() => {
         // Fallback: render law without Law of the Day component
         const lawCard = document.createElement('div');
-        lawCard.innerHTML = `
-          <div class="card"><div class="card-content">
-            <h2 class="mb-4">${safeTitle}</h2>
-            <blockquote class="blockquote">${safeText}</blockquote>
-            ${attsHtml || (safeAuthor ? `<p class="small mb-4">— ${safeAuthor}</p>` : '')}
-            <div class="small law-meta mb-4">
-              <span>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
-              ${safeSubmittedBy ? `<span>Submitted by ${safeSubmittedBy}</span>` : ''}
-            </div>
-            <div class="flex gap-2">
-              <button data-vote="up" data-id="${escapeHtml(String(law.id))}" aria-label="Upvote" title="Upvote">
-                <span class="material-symbols-outlined">thumb_up</span>
-              </button>
-              <button class="outline" data-vote="down" data-id="${escapeHtml(String(law.id))}" aria-label="Downvote" title="Downvote">
-                <span class="material-symbols-outlined">thumb_down</span>
-              </button>
-              <button class="btn outline" data-nav="browse">Browse All Laws</button>
-            </div>
-          </div></div>
-        `;
+        lawCard.innerHTML = createLawCardHTML(law);
         el.appendChild(lawCard);
 
         // Still add the other components

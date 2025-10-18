@@ -6,7 +6,20 @@ import { LawDetail } from './views/law-detail.js';
 import { SubmitLawSection } from './components/submit-law.js';
 import { Calculator } from './views/sods-calculator.js';
 import { ButteredToastCalculator } from './views/buttered-toast-calculator.js';
+import { About } from './views/about.js';
+import { Privacy } from './views/privacy.js';
+import { Terms } from './views/terms.js';
+import { Contact } from './views/contact.js';
 import { NotFound } from './views/not-found.js';
+import {
+  setSiteStructuredData,
+  setHomeStructuredData,
+  setBrowseStructuredData,
+  setLawStructuredData,
+  setSodCalculatorStructuredData,
+  setToastCalculatorStructuredData,
+  clearPageStructuredData
+} from '@modules/structured-data.js';
 
 // App state (no framework)
 const state = {
@@ -30,6 +43,9 @@ function onSearch(q) {
 
 // Mount
 const app = document.getElementById('app');
+
+// Set evergreen structured data once
+setSiteStructuredData();
 
 // Layout wrapper: header + page + footer
 function layout(node) {
@@ -60,8 +76,14 @@ function layout(node) {
              data-full-width-responsive="true"></ins>
       </div>
       <div class="mt-8 pt-8 text-center">
+        <p class="small mb-3">
+          <a href="#" data-nav="about">About</a> •
+          <a href="#" data-nav="privacy">Privacy Policy</a> •
+          <a href="#" data-nav="terms">Terms of Service</a> •
+          <a href="#" data-nav="contact">Contact</a>
+        </p>
         <p class="small">
-          <a href="https://murphys-laws.com">Murphy's Law Archive</a> by <a href="https://murphys-laws.com/about">Raanan Avidor</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+          <a href="#" data-nav="home">Murphy's Law Archive</a> by <a href="#" data-nav="about">Raanan Avidor</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0 Universal</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
         </p>
       </div>
     </div>
@@ -79,6 +101,7 @@ function layout(node) {
   footer.addEventListener('click', (e) => {
     const t = e.target;
     if (t instanceof HTMLElement && t.dataset.nav) {
+      e.preventDefault();
       onNavigate(t.dataset.nav);
     }
   });
@@ -114,25 +137,57 @@ function layout(node) {
 
 // Define routes
 const routesMap = {
-  home: () => layout(Home({ onNavigate })),
-  browse: () => layout(Browse({ searchQuery: state.searchQuery, onNavigate })),
-  law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate })),
+  home: () => {
+    setHomeStructuredData();
+    return layout(Home({ onNavigate }));
+  },
+  browse: () => {
+    setBrowseStructuredData();
+    return layout(Browse({ searchQuery: state.searchQuery, onNavigate }));
+  },
+  law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData })),
   submit: () => {
     const container = document.createElement('div');
     container.className = 'container page pt-0';
     const submitSection = SubmitLawSection({ onNavigate });
     container.appendChild(submitSection);
+    clearPageStructuredData();
     return layout(container);
   },
-  calculator: () => layout(Calculator()),
-  toastcalculator: () => layout(ButteredToastCalculator()),
+  calculator: () => {
+    setSodCalculatorStructuredData();
+    return layout(Calculator());
+  },
+  toastcalculator: () => {
+    setToastCalculatorStructuredData();
+    return layout(ButteredToastCalculator());
+  },
+  about: () => {
+    clearPageStructuredData();
+    return layout(About({ onNavigate }));
+  },
+  privacy: () => {
+    clearPageStructuredData();
+    return layout(Privacy({ onNavigate }));
+  },
+  terms: () => {
+    clearPageStructuredData();
+    return layout(Terms({ onNavigate }));
+  },
+  contact: () => {
+    clearPageStructuredData();
+    return layout(Contact({ onNavigate }));
+  },
 };
 
 Object.entries(routesMap).forEach(([name, render]) => {
   defineRoute(name, render);
 });
 
-const notFoundRoute = () => layout(NotFound({ onNavigate }));
+const notFoundRoute = () => {
+  clearPageStructuredData();
+  return layout(NotFound({ onNavigate }));
+};
 
 startRouter(app, notFoundRoute);
 

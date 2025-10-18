@@ -2,7 +2,7 @@
   <div class="card-content">
     <header>
       <h1 class="m-0"><span class="accent-text">Sod's</span> Law Calculator</h1>
-      <p class="calc-description">The (P)robability of a task going wrong by weighing it's combined (U)rgency, (C)omplexity, and (I)mportance, against the performer's (S)kill level,  multiplied by the (A)ctivity constant, amplifyed by the (F)requency of doing the task.</p>
+      <p class="calc-description">Estimate the (P)robability of a task going wrong by balancing (U)rgency, (C)omplexity, and (I)mportance against your (S)kill and the (F)requency of the work, multiplied by the Murphy-approved (A)ctivity constant.</p>
       <p class="formula" id="formula-display"></p>
     </header>
     <div class="calc-input-grid">
@@ -33,7 +33,7 @@
     <h2>P (Probability of things going wrong):</h2>
     <div id="result-display" class="calc-result-display calc-ok">
       <span id="score-value" class="calc-score">0.00</span>
-      <p id="score-interpretation" class="calc-interpretation">Enter your values and see your fate.</p>
+      <p id="score-interpretation" class="calc-interpretation">Slide the controls to reveal the likelihood of chaos.</p>
     </div>
 
     <section class="section section-card mt-8 mb-8">
@@ -102,19 +102,22 @@
       </div>
     </section>
 
-    <div class="calc-info">
-      <p>probabilities are on a scale of 0.12 to 8.6.</p>
-      <p>The higher the probability (P), the greater the chance that Sod's law will strike.</p>
-      <p>How the formula explains Sod's Law?</p>
-      <p>The components of the equation reflect the intuitive reasoning behind Sod's law:</p>
-      <p>The probability (P) of a mishap increases with the urgency (U), complexity (C), and importance (I) of the task.</p>
-      <p>The likelihood of a mishap decreases with your skill level (S).</p>
-      <p>An aggravating circumstance is a constant, negative influence (A).</p>
-      <p>The equation has a frequency term (1/(1-sin (F/10))) that implies that repeated actions (F) could lead to a sudden, unexpected failure.</p>
-      <p>How to reduce the probability (P) of things going wrong:</p>
-      <p>Improve your skill (S).</p>
-      <p> Reduce the urgency (U), complexity (C) and/or importance (I).</p>
-      <p>Lower the frequency (F) of the task.</p>
-    </div>
+    <section class="calc-info calc-faq">
+      <h2 class="calc-info-title">Murphy's Playbook</h2>
+      <ul class="calc-info-list">
+        <li><strong>Scale:</strong> Probabilities range from 0.12 (barely cursed) to 8.6 (catastrophic).</li>
+        <li><strong>Pressure builds:</strong> Higher <abbr title="Urgency">U</abbr>, <abbr title="Complexity">C</abbr>, and <abbr title="Importance">I</abbr> push the score skyward.</li>
+        <li><strong>Skill saves:</strong> Invest in <abbr title="Skill">S</abbr> to tame the chaos.</li>
+        <li><strong>Beware repetition:</strong> Frequent tasks (<abbr title="Frequency">F</abbr>) tempt fate thanks to the sinuous 1/(1 - sin(F/10)) term.</li>
+      </ul>
+      <h3 class="calc-info-subtitle">How to cheat Murphy</h3>
+      <ul class="calc-info-list">
+        <li>Sharpen your <abbr title="Skill">S</abbr> so mistakes bounce off.</li>
+        <li>Break huge projects into bite-size work to cut <abbr title="Urgency">U</abbr> and <abbr title="Complexity">C</abbr>.</li>
+        <li>Batch low-stakes tasks to shrink <abbr title="Frequency">F</abbr>.</li>
+        <li>Question the urgency—does everything really need to ship today?</li>
+      </ul>
+      <p class="calc-info-summary">Use the calculator to model best- and worst-case scenarios before reality makes the decision for you.</p>
+    </section>
   </div>
 </div>

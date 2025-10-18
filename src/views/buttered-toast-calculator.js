@@ -1,12 +1,21 @@
 // Buttered Toast Landing Calculator view - full version with formula display
 
 import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
+import { SOCIAL_IMAGE_TOAST } from '@utils/constants.js';
 
 export function ButteredToastCalculator() {
   const el = document.createElement('div');
   el.className = 'container page calculator';
 
   el.innerHTML = templateHtml;
+
+  if (typeof document !== 'undefined') {
+    const head = document.head;
+    const ogImage = head.querySelector('meta[property="og:image"]');
+    const twitterImage = head.querySelector('meta[property="twitter:image"]');
+    if (ogImage) ogImage.setAttribute('content', SOCIAL_IMAGE_TOAST);
+    if (twitterImage) twitterImage.setAttribute('content', SOCIAL_IMAGE_TOAST);
+  }
 
   // Wire up interactions
   const sliders = {
