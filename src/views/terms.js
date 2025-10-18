@@ -55,7 +55,7 @@ export function Terms({ onNavigate }) {
             <li>Share content that is respectful, relevant, and original.</li>
             <li>Avoid spam, advertising, or anything that infringes on others’ rights.</li>
             <li>Do not misuse automated tools or attempt to disrupt our infrastructure.</li>
-            <li>Respect privacy — no harvesting or misusing personal information.</li>
+            <li>Respect privacy - no harvesting or misusing personal information.</li>
             <li>Be yourself; impersonation undermines trust and violates these terms.</li>
           </ul>
         </section>
@@ -63,7 +63,7 @@ export function Terms({ onNavigate }) {
         <section class="content-section">
           <h2>4. Content You Submit</h2>
           <p>
-            Anything you contribute — laws, stories, comments—remains yours, but you grant us a worldwide,
+            Anything you contribute - laws, stories, comments - remains yours, but you grant us a worldwide,
             royalty-free license to display, adapt, and promote it within the archive. Please submit only
             content you're comfortable sharing publicly and that you have rights to distribute.
           </p>
@@ -80,7 +80,7 @@ export function Terms({ onNavigate }) {
             <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">
               CC0 1.0 Universal Public Domain Dedication
             </a>.
-            Feel free to reuse and remix — just remember to credit the storytellers when you can.
+            Feel free to reuse and remix - just remember to credit the storytellers when you can.
           </p>
           <p>
             Third-party or user-submitted materials may carry different licenses. When in doubt, ask the
@@ -100,7 +100,7 @@ export function Terms({ onNavigate }) {
           <h2>7. Warranty Disclaimer</h2>
           <p>
             The archive is offered as-is. We strive for accurate laws, functioning calculators, and swift
-            navigation, but we can't promise perfection — or immunity from Murphy's Law.
+            navigation, but we can't promise perfection - or immunity from Murphy's Law.
           </p>
         </section>
 
@@ -163,7 +163,7 @@ export function Terms({ onNavigate }) {
         <section class="content-section">
           <h2>15. Contact Us</h2>
           <p>
-            Have questions about these terms? <a href="#" data-nav="contact">Reach out</a> — we read every message and
+            Have questions about these terms? <a href="#" data-nav="contact">Reach out</a> - we read every message and
             respond as quickly as Murphy allows.
           </p>
         </section>

@@ -19,7 +19,7 @@ export function About({ onNavigate }) {
         <section class="content-section">
           <h2>What is Murphy's Law?</h2>
           <blockquote class="blockquote">
-            "Anything that can go wrong, will." — Capt. Edward A. Murphy Jr.
+            "Anything that can go wrong, will." - Capt. Edward A. Murphy Jr.
           </blockquote>
           <p>
             Born out of an Air Force experiment in 1949, Murphy's Law captured a universal truth:
@@ -36,7 +36,7 @@ export function About({ onNavigate }) {
               <h3>Curated Laws</h3>
               <p>
                 Browse more than forty categories covering technology, transportation, the workplace,
-                family life, and specialized fields — from classrooms to cockpits.
+                family life, and specialized fields - from classrooms to cockpits.
               </p>
             </div>
             <div>
@@ -50,7 +50,7 @@ export function About({ onNavigate }) {
               <h3>Interactive Tools</h3>
               <p>
                 Put the legends to the test with calculators like our Sod's Law probability model and
-                buttered toast landing simulator — both grounded in documented formulas.
+                buttered toast landing simulator - both grounded in documented formulas.
               </p>
             </div>
             <div>
@@ -93,7 +93,7 @@ export function About({ onNavigate }) {
             All content is shared under the
             <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">
               CC0 1.0 Universal Public Domain Dedication
-            </a> —use, remix, and share freely.
+            </a> - use, remix, and share freely.
           </p>
         </section>
       </div>

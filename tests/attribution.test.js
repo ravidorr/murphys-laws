@@ -33,7 +33,7 @@ describe('Attribution utilities', () => {
 
     it('includes note when provided', () => {
       const att = { name: 'John', note: 'Great person' };
-      expect(renderAttribution(att)).toBe('John — Great person');
+      expect(renderAttribution(att)).toBe('John - Great person');
     });
 
     it('handles attribution without note', () => {
@@ -43,7 +43,7 @@ describe('Attribution utilities', () => {
 
     it('handles attribution without name', () => {
       const att = { note: 'Anonymous contribution' };
-      expect(renderAttribution(att)).toBe(' — Anonymous contribution');
+      expect(renderAttribution(att)).toBe(' - Anonymous contribution');
     });
   });
 
@@ -132,12 +132,12 @@ describe('Attribution utilities', () => {
 
     it('falls back to author when no attributions', () => {
       const law = { attributions: [], author: 'Murphy' };
-      expect(firstAttributionLine(law)).toBe('— Murphy');
+      expect(firstAttributionLine(law)).toBe('- Murphy');
     });
 
     it('falls back to author when attributions is missing', () => {
       const law = { author: 'Murphy' };
-      expect(firstAttributionLine(law)).toBe('— Murphy');
+      expect(firstAttributionLine(law)).toBe('- Murphy');
     });
   });
 });

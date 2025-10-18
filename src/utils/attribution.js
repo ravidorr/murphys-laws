@@ -23,7 +23,7 @@ export function renderAttribution(att) {
   }
 
   const safeNote = note ? escapeHtml(note) : '';
-  return `${who}${safeNote ? ` — ${safeNote}` : ''}`;
+  return `${who}${safeNote ? ` - ${safeNote}` : ''}`;
 }
 
 /**
@@ -34,7 +34,7 @@ export function renderAttribution(att) {
 export function firstAttributionLine(law) {
   const a = Array.isArray(law.attributions) ? law.attributions[0] : null;
   if (!a) {
-    return law.author ? `— ${escapeHtml(law.author)}` : '';
+    return law.author ? `- ${escapeHtml(law.author)}` : '';
   }
   return `Sent by ${renderAttribution(a)}`;
 }
