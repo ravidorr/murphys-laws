@@ -1,12 +1,12 @@
 export function About({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page about-page';
+  el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
   el.innerHTML = `
-    <article class="card about-card">
+    <article class="card content-card">
       <div class="card-content">
-        <header class="about-header">
+        <header class="content-header">
           <h1>About Murphy's Law Archive</h1>
           <p class="lead">
             Murphy's Law Archive preserves and celebrates the world's favorite truism about
@@ -16,7 +16,7 @@ export function About({ onNavigate }) {
           </p>
         </header>
 
-        <section class="about-section">
+        <section class="content-section">
           <h2>What is Murphy's Law?</h2>
           <blockquote class="blockquote">
             "Anything that can go wrong, will." — Capt. Edward A. Murphy Jr.
@@ -29,9 +29,9 @@ export function About({ onNavigate }) {
           </p>
         </section>
 
-        <section class="about-section">
+        <section class="content-section">
           <h2>What You'll Find</h2>
-          <div class="about-grid">
+          <div class="content-grid">
             <div>
               <h3>Curated Laws</h3>
               <p>
@@ -63,7 +63,7 @@ export function About({ onNavigate }) {
           </div>
         </section>
 
-        <section class="about-section">
+        <section class="content-section">
           <h2>How It Happened</h2>
           <p>
             Founder <strong>Raanan Avidor</strong> launched the archive in the late 1990s after a single
@@ -73,7 +73,7 @@ export function About({ onNavigate }) {
           </p>
         </section>
 
-        <section class="about-section">
+        <section class="content-section">
           <h2>Why It Matters</h2>
           <ul>
             <li><strong>Stress relief:</strong> Humor diffuses the tension when the worst happens.</li>
@@ -83,7 +83,7 @@ export function About({ onNavigate }) {
           </ul>
         </section>
 
-        <section class="about-section">
+        <section class="content-section">
           <h2>Stay in Touch</h2>
           <p>
             Have a story or a new twist on Murphy's Law? <a href="#" data-nav="contact">Reach out</a> or head back to the
