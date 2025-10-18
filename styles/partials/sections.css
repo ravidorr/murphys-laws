@@ -57,6 +57,116 @@
   padding: 1.25rem;
 }
 
+/* About page */
+.about-page {
+  padding-top: 3rem;
+  padding-bottom: 4rem;
+}
+
+.about-card {
+  border: 1px solid color-mix(in oklab, var(--border) 80%, white 20%);
+  box-shadow: 0 18px 50px color-mix(in oklab, var(--shadow-light) 80%, transparent 20%),
+    0 6px 20px color-mix(in oklab, var(--shadow-light) 60%, transparent 40%);
+  background: color-mix(in oklab, var(--bg) 97%, white 3%);
+}
+
+.about-card .card-content {
+  padding: 2.5rem clamp(1.5rem, 4vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.about-header {
+  max-width: 60ch;
+}
+
+.about-header h1 {
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  margin: 0 0 1rem;
+}
+
+.about-header .lead {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: color-mix(in oklab, var(--fg) 85%, var(--muted-fg) 15%);
+}
+
+.about-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.about-section > h2 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  margin: 0;
+}
+
+.about-section > h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.about-section p,
+.about-section ul {
+  margin: 0;
+  color: color-mix(in oklab, var(--fg) 90%, var(--muted-fg) 10%);
+  line-height: 1.7;
+}
+
+.about-section ul {
+  display: grid;
+  gap: .75rem;
+  padding-left: 1.2rem;
+}
+
+.about-section li strong {
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.about-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.about-grid h3 {
+  font-size: 1.2rem;
+  margin: 0 0 .5rem;
+}
+
+.about-grid p {
+  margin: 0;
+}
+
+@media (width <= 960px) {
+  .about-card .card-content {
+    padding: 2rem clamp(1.25rem, 4vw, 3rem);
+    gap: 2.5rem;
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 600px) {
+  .about-page {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+  }
+
+  .about-card .card-content {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .about-header .lead {
+    font-size: 1.05rem;
+  }
+}
+
 .lod-quote-large {
   font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
   font-weight: 700;
