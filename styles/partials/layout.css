@@ -153,3 +153,36 @@ header.sticky {
   max-width: 28rem;
   margin: 0 1rem;
 }
+
+footer .footer-nav {
+  display: inline-flex;
+  gap: 1rem;
+  padding: 0;
+  margin: 0 0 1rem;
+  list-style: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+footer .footer-nav li::after {
+  content: '\2022';
+  margin: 0 .5rem;
+  color: var(--muted-fg);
+}
+
+footer .footer-nav li:last-child::after {
+  content: '';
+  margin: 0;
+}
+
+footer .footer-nav a {
+  font-size: .875rem;
+  color: var(--muted-fg);
+}
+
+footer .footer-nav a:hover,
+footer .footer-nav a:focus-visible {
+  color: var(--fg);
+  text-decoration: underline;
+}
