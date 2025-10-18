@@ -42,7 +42,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         <div class="card-content">
           <h2 class="mb-4">${safeTitle}</h2>
           <blockquote class="blockquote">${safeText}</blockquote>
-          ${attsHtml || (safeAuthor ? `<p class="small mb-4"> — ${safeAuthor}</p>` : '')}
+          ${attsHtml || (safeAuthor ? `<p class="small mb-4"> - ${safeAuthor}</p>` : '')}
           <div class="small law-meta mb-4" data-law-meta>
             <span data-score>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
             ${safeSubmittedBy ? `<span>Submitted by ${safeSubmittedBy}</span>` : ''}

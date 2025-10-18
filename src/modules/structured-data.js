@@ -101,7 +101,7 @@ export function setHomeStructuredData() {
   setJsonLd('home-page', {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    'name': `${SITE_NAME} — Murphy's Laws, Corollaries & Calculators`,
+    'name': `${SITE_NAME} - Murphy's Laws, Corollaries & Calculators`,
     'url': SITE_URL,
     'description': SITE_DEFAULT_DESCRIPTION,
     'image': SITE_DEFAULT_SOCIAL_IMAGE,
