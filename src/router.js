@@ -7,6 +7,11 @@ export function defineRoute(name, renderFn) {
 }
 
 export function navigate(name, param) {
+  // Navigate to root for home page
+  if (name === 'home') {
+    location.hash = '';
+    return;
+  }
   const suffix = param ? `:${param}` : '';
   location.hash = `#/${name}${suffix}`;
 }

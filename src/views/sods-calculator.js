@@ -3,6 +3,7 @@
 // Reuses the original formula and interaction, scoped under .calc- classes
 
 import templateHtml from '@views/templates/sods-calculator.html?raw';
+import { SOCIAL_IMAGE_SOD } from '@utils/constants.js';
 import { initShareCalculation } from '@modules/sods-share.js';
 
 export function Calculator() {
@@ -10,6 +11,14 @@ export function Calculator() {
   el.className = 'container page calculator';
 
   el.innerHTML = templateHtml;
+
+  if (typeof document !== 'undefined') {
+    const head = document.head;
+    const ogImage = head.querySelector('meta[property="og:image"]');
+    const twitterImage = head.querySelector('meta[property="twitter:image"]');
+    if (ogImage) ogImage.setAttribute('content', SOCIAL_IMAGE_SOD);
+    if (twitterImage) twitterImage.setAttribute('content', SOCIAL_IMAGE_SOD);
+  }
 
   // Wire up interactions
   const sliders = {
