@@ -1,202 +1,174 @@
 export function Terms({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
   const lastUpdated = '2025-10-18';
 
   el.innerHTML = `
-    <div class="card">
+    <article class="card content-card">
       <div class="card-content">
-        <h1 class="mb-4">Terms of Service</h1>
-        <p class="small mb-6">Last updated: ${lastUpdated}</p>
+        <header class="content-header">
+          <p class="small">Last updated: ${lastUpdated}</p>
+          <h1>Terms of Service</h1>
+          <p class="lead">
+            These terms describe how Murphy's Law Archive operates, what you can expect from the
+            platform, and the responsibilities that come with contributing to a community built on
+            curiosity, humor, and respect.
+          </p>
+        </header>
 
-        <section class="mb-6">
-          <h2 class="mb-3">1. Acceptance of Terms</h2>
-          <p class="mb-4">
-            By accessing and using murphys-laws.com (the "Site"), you accept and agree to be bound by
-            these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use
-            the Site.
+        <section class="content-section">
+          <h2>1. Acceptance of Terms</h2>
+          <p>
+            By visiting murphys-laws.com you agree to these Terms of Service. If you ever disagree with
+            them, the safest option is to stop using the site before Murphy's Law decides otherwise.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">2. Description of Service</h2>
-          <p class="mb-4">
-            Murphy's Law Archive provides a platform for users to:
+        <section class="content-section">
+          <h2>2. What the Archive Provides</h2>
+          <div class="content-grid">
+            <div>
+              <h3>Discover & Learn</h3>
+              <p>
+                Browse thousands of classic, modern, and community-submitted Murphy's Laws organized by
+                topic, from technology glitches to kitchen catastrophes.
+              </p>
+            </div>
+            <div>
+              <h3>Participate</h3>
+              <p>
+                Vote on your favorites, share your own observations, and explore calculators that bring
+                Murphy's mischief to life through math and physics.
+              </p>
+            </div>
+          </div>
+          <p>
+            We aim for high availability, but reserve the right to adjust or pause services if needed.
           </p>
-          <ul class="mb-4">
-            <li>Browse and read a collection of Murphy's Laws and related observations</li>
-            <li>Vote on laws</li>
-            <li>Submit their own laws for publication</li>
-            <li>Use calculators based on Murphy's Law</li>
+        </section>
+
+        <section class="content-section">
+          <h2>3. Guidelines for Community Conduct</h2>
+          <ul>
+            <li>Share content that is respectful, relevant, and original.</li>
+            <li>Avoid spam, advertising, or anything that infringes on others’ rights.</li>
+            <li>Do not misuse automated tools or attempt to disrupt our infrastructure.</li>
+            <li>Respect privacy—no harvesting or misusing personal information.</li>
+            <li>Be yourself; impersonation undermines trust and violates these terms.</li>
           </ul>
-          <p class="mb-4">
-            We reserve the right to modify, suspend, or discontinue the Service at any time without notice.
+        </section>
+
+        <section class="content-section">
+          <h2>4. Content You Submit</h2>
+          <p>
+            Anything you contribute—laws, stories, comments—remains yours, but you grant us a worldwide,
+            royalty-free license to display, adapt, and promote it within the archive. Please submit only
+            content you're comfortable sharing publicly and that you have rights to distribute.
+          </p>
+          <p>
+            We moderate for clarity, safety, and community tone. We may edit or remove submissions that
+            violate these terms or clash with community expectations.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">3. User Conduct</h2>
-          <p class="mb-4">You agree not to:</p>
-          <ul class="mb-4">
-            <li>Submit content that is offensive, abusive, defamatory, or otherwise objectionable</li>
-            <li>Submit content that infringes on intellectual property rights</li>
-            <li>Submit spam, advertising, or promotional content</li>
-            <li>Attempt to interfere with or disrupt the Site or servers</li>
-            <li>Use automated systems (bots, scrapers) without permission</li>
-            <li>Impersonate any person or entity</li>
-            <li>Collect or harvest personal information from other users</li>
-          </ul>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">4. User-Generated Content</h2>
-          <h3 class="mb-2">Content Submission</h3>
-          <p class="mb-4">
-            When you submit content to the Site (including laws, comments, or other materials), you:
-          </p>
-          <ul class="mb-4">
-            <li>Grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, modify, and display your content</li>
-            <li>Represent that you own or have the necessary rights to the content</li>
-            <li>Understand that your submission may be publicly displayed on the Site</li>
-            <li>Agree that we may edit or remove your content at our discretion</li>
-          </ul>
-
-          <h3 class="mb-2">Content Moderation</h3>
-          <p class="mb-4">
-            We reserve the right to review, edit, or remove any user-submitted content that violates
-            these Terms or is otherwise inappropriate. However, we are not obligated to monitor all content.
-          </p>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">5. Intellectual Property</h2>
-          <h3 class="mb-2">Site Content</h3>
-          <p class="mb-4">
-            The content on this Site, including laws, design, graphics, and code, is marked with
+        <section class="content-section">
+          <h2>5. Intellectual Property</h2>
+          <p>
+            The Murphy's Law Archive, including design, code, and original content, is released under the
             <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">
-              CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+              CC0 1.0 Universal Public Domain Dedication
             </a>.
-            This means the content is in the public domain and can be freely used, modified, and
-            distributed.
+            Feel free to reuse and remix—just remember to credit the storytellers when you can.
           </p>
-
-          <h3 class="mb-2">Third-Party Content</h3>
-          <p class="mb-4">
-            Some content may be sourced from third parties or user submissions. Such content may be
-            subject to different licenses or copyrights.
+          <p>
+            Third-party or user-submitted materials may carry different licenses. When in doubt, ask the
+            contributor or contact us for clarification.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">6. Advertising</h2>
-          <p class="mb-4">
-            The Site displays advertisements through Google AdSense and other advertising partners.
-            We are not responsible for the content of advertisements or the actions of advertisers.
+        <section class="content-section">
+          <h2>6. Advertising & External Links</h2>
+          <p>
+            We occasionally display ads or link to partner content. These external experiences have their
+            own policies and quirks, so interacting with them is at your discretion.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">7. Disclaimer of Warranties</h2>
-          <p class="mb-4">
-            THE SITE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER
-            EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
-            FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
-          </p>
-          <p class="mb-4">
-            We do not warrant that:
-          </p>
-          <ul class="mb-4">
-            <li>The Site will be uninterrupted or error-free</li>
-            <li>Defects will be corrected</li>
-            <li>The Site is free of viruses or other harmful components</li>
-            <li>The content is accurate, complete, or current</li>
-          </ul>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">8. Limitation of Liability</h2>
-          <p class="mb-4">
-            TO THE FULLEST EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR ANY INDIRECT,
-            INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR
-            REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL,
-            OR OTHER INTANGIBLE LOSSES.
+        <section class="content-section">
+          <h2>7. Warranty Disclaimer</h2>
+          <p>
+            The archive is offered as-is. We strive for accurate laws, functioning calculators, and swift
+            navigation, but we can't promise perfection—or immunity from Murphy's Law.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">9. Indemnification</h2>
-          <p class="mb-4">
-            You agree to indemnify and hold harmless Murphy's Law Archive, its operators, and
-            affiliates from any claims, damages, losses, liabilities, and expenses (including
-            legal fees) arising from:
-          </p>
-          <ul class="mb-4">
-            <li>Your use of the Site</li>
-            <li>Your violation of these Terms</li>
-            <li>Your violation of any rights of another party</li>
-            <li>Content you submit to the Site</li>
-          </ul>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="mb-3">10. External Links</h2>
-          <p class="mb-4">
-            The Site may contain links to third-party websites. We are not responsible for the
-            content, accuracy, or practices of external sites. Your use of third-party websites
-            is at your own risk.
+        <section class="content-section">
+          <h2>8. Limitation of Liability</h2>
+          <p>
+            We are not liable for indirect, incidental, or consequential damages arising from site usage,
+            including lost data, missed opportunities, or general irony.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">11. Privacy</h2>
-          <p class="mb-4">
-            Your use of the Site is also governed by our
-            <a href="#" data-nav="privacy">Privacy Policy</a>. Please review it to understand
-            our practices.
+        <section class="content-section">
+          <h2>9. Indemnity</h2>
+          <p>
+            If your use of the site causes claims against Murphy's Law Archive, you agree to step in and
+            help resolve them, including covering reasonable legal costs.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">12. Changes to Terms</h2>
-          <p class="mb-4">
-            We reserve the right to modify these Terms at any time. Changes will be effective
-            immediately upon posting to the Site. Your continued use of the Site after changes
-            constitutes acceptance of the modified Terms.
+        <section class="content-section">
+          <h2>10. Third-Party Links</h2>
+          <p>
+            Some stories lead to other sites. We don't control external content, so review their policies
+            before engaging.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">13. Governing Law</h2>
-          <p class="mb-4">
-            These Terms shall be governed by and construed in accordance with the laws of your
-            jurisdiction, without regard to conflict of law provisions.
+        <section class="content-section">
+          <h2>11. Privacy</h2>
+          <p>
+            Using the archive also means agreeing to our
+            <a href="#" data-nav="privacy">Privacy Policy</a>, which explains how we collect and protect data.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">14. Termination</h2>
-          <p class="mb-4">
-            We reserve the right to terminate or suspend your access to the Site at any time,
-            for any reason, without notice.
+        <section class="content-section">
+          <h2>12. Changes to These Terms</h2>
+          <p>
+            Terms evolve as the archive grows. We'll update this page and refresh the effective date when
+            substantive changes occur. Continued use after updates counts as acceptance.
           </p>
         </section>
 
-        <section class="mb-6">
-          <h2 class="mb-3">15. Contact</h2>
-          <p class="mb-4">
-            If you have any questions about these Terms, please
-            <a href="#" data-nav="contact">contact us</a>.
+        <section class="content-section">
+          <h2>13. Governing Law</h2>
+          <p>
+            These terms follow the laws of the jurisdiction where we operate, without regard to conflicts
+            of law. If a clause becomes invalid, the rest of the document remains enforceable.
           </p>
         </section>
 
-        <div class="flex gap-2 mt-6">
-          <button data-nav="home">Back to Home</button>
-          <button class="outline" data-nav="privacy">Privacy Policy</button>
-        </div>
+        <section class="content-section">
+          <h2>14. Ending Access</h2>
+          <p>
+            We may suspend or terminate accounts that violate these terms, threaten the community, or put
+            our infrastructure at risk. We aim to be fair and transparent, but reserve discretion.
+          </p>
+        </section>
+
+        <section class="content-section">
+          <h2>15. Contact Us</h2>
+          <p>
+            Have questions about these terms? <a href="#" data-nav="contact">Reach out</a>—we read every message and
+            respond as quickly as Murphy allows.
+          </p>
+        </section>
       </div>
-    </div>
+    </article>
   `;
 
   el.addEventListener('click', (e) => {
