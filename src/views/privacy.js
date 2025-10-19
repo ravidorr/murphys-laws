@@ -11,9 +11,15 @@ export function Privacy({ onNavigate }) {
 
   el.addEventListener('click', (e) => {
     const target = e.target;
-    if (target instanceof HTMLElement && target.dataset.nav) {
+    if (!(target instanceof HTMLElement)) return;
+
+    const navBtn = target.closest('[data-nav]');
+    if (navBtn) {
       e.preventDefault();
-      onNavigate(target.dataset.nav);
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+      }
     }
   });
 

@@ -63,6 +63,50 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
   });
 
+  it('shows submit button in empty state and navigates when clicked', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+    const onNavigate = vi.fn();
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/No laws found/);
+    }, { timeout: 1000 });
+
+    // Check that submit button exists
+    const submitBtn = el.querySelector('[data-nav="submit"]');
+    expect(submitBtn).toBeTruthy();
+    expect(submitBtn.textContent).toMatch(/Submit a Murphy's Law/);
+
+    // Click the submit button
+    submitBtn.click();
+
+    // Verify navigation was called
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
+  it('handles clicking on submit button icon or text in empty state', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+    const onNavigate = vi.fn();
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/No laws found/);
+    }, { timeout: 1000 });
+
+    // Find the icon inside the submit button
+    const submitBtn = el.querySelector('[data-nav="submit"]');
+    const icon = submitBtn.querySelector('.icon');
+    expect(icon).toBeTruthy();
+
+    // Click on the icon (not the button itself)
+    icon.click();
+
+    // Should still navigate because we use closest('[data-nav]')
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
   it('displays error state on fetch failure', async () => {
     fetchLawsSpy.mockRejectedValue(new Error('Network error'));
 

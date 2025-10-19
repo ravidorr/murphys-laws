@@ -17,9 +17,15 @@ export function Footer({ onNavigate }) {
 
   footer.addEventListener('click', (e) => {
     const t = e.target;
-    if (t instanceof HTMLElement && t.dataset.nav) {
+    if (!(t instanceof HTMLElement)) return;
+
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn) {
       e.preventDefault();
-      onNavigate(t.dataset.nav);
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+      }
     }
   });
 

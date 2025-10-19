@@ -44,8 +44,14 @@ export function Header({ onSearch, onNavigate }) {
 
   header.addEventListener('click', (e) => {
     const t = e.target;
-    if (t instanceof HTMLElement && t.dataset.nav) {
-      onNavigate(t.dataset.nav);
+    if (!(t instanceof HTMLElement)) return;
+
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn) {
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+      }
     }
   });
 
