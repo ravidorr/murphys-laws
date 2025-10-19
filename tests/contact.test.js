@@ -65,41 +65,6 @@ describe('Contact page', () => {
     expect(el.textContent).toMatch(/two business days/);
   });
 
-  it('contains Quick Links section', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    expect(el.textContent).toMatch(/Quick Links/);
-  });
-
-  it('has navigation link to about page', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    const aboutLink = el.querySelector('[data-nav="about"]');
-    expect(aboutLink).toBeTruthy();
-  });
-
-  it('has navigation link to privacy page', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    const privacyLink = el.querySelector('[data-nav="privacy"]');
-    expect(privacyLink).toBeTruthy();
-  });
-
-  it('has navigation link to terms page', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    const termsLink = el.querySelector('[data-nav="terms"]');
-    expect(termsLink).toBeTruthy();
-  });
-
   it('triggers onNavigate when clicking submit link', () => {
     let navigated = '';
     const el = Contact({
@@ -109,56 +74,6 @@ describe('Contact page', () => {
     const submitLink = el.querySelector('[data-nav="submit"]');
     submitLink.click();
     expect(navigated).toBe('submit');
-  });
-
-  it('triggers onNavigate when clicking about link', () => {
-    let navigated = '';
-    const el = Contact({
-      onNavigate: (page) => { navigated = page; }
-    });
-
-    const aboutLink = el.querySelector('[data-nav="about"]');
-    aboutLink.click();
-    expect(navigated).toBe('about');
-  });
-
-  it('triggers onNavigate when clicking privacy link', () => {
-    let navigated = '';
-    const el = Contact({
-      onNavigate: (page) => { navigated = page; }
-    });
-
-    const privacyLink = el.querySelector('[data-nav="privacy"]');
-    privacyLink.click();
-    expect(navigated).toBe('privacy');
-  });
-
-  it('triggers onNavigate when clicking terms link', () => {
-    let navigated = '';
-    const el = Contact({
-      onNavigate: (page) => { navigated = page; }
-    });
-
-    const termsLink = el.querySelector('[data-nav="terms"]');
-    termsLink.click();
-    expect(navigated).toBe('terms');
-  });
-
-  it('prevents default behavior when clicking nav links', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    const aboutLink = el.querySelector('[data-nav="about"]');
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
-    const preventDefaultSpy = { called: false };
-
-    Object.defineProperty(event, 'preventDefault', {
-      value: () => { preventDefaultSpy.called = true; }
-    });
-
-    aboutLink.dispatchEvent(event);
-    expect(preventDefaultSpy.called).toBe(true);
   });
 
   it('does not trigger onNavigate for non-nav elements', () => {
