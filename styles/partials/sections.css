@@ -77,10 +77,6 @@
   gap: 3rem;
 }
 
-.content-header {
-  max-width: 60ch;
-}
-
 .content-header h1 {
   font-size: clamp(2.25rem, 4vw, 3rem);
   margin: 0 0 1rem;
