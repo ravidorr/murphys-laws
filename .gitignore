@@ -4,7 +4,7 @@ dist/
 .vite/
 # Env files
 .env
-.env.*
+!.env.example
 # Logs
 logs/
 *.log
