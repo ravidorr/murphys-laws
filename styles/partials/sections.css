@@ -440,6 +440,9 @@
   cursor: pointer;
   flex-shrink: 0;
   margin: 0;
+  border: 1.5px solid rgb(0 0 0 / 18%);
+  border-radius: 0.25rem;
+  background-color: rgb(0 0 0 / 2.5%);
 }
 
 .submit-checkbox-group .checkbox-label span {

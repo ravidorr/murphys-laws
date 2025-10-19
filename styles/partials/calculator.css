@@ -167,11 +167,39 @@
 }
 
 /* Bigger typeset for MathJax formula on calculator page */
-.formula { margin: 0 0 1.5rem; }
+.formula {
+  margin: 0 0 2rem;
+  padding: 1.5rem 1rem;
+  overflow: auto hidden;
+}
 
 .formula mjx-container {
   font-size: 240% !important;
   line-height: 2.4;
+  min-width: min-content;
+}
+
+/* Responsive formula sizing */
+@media (width <= 768px) {
+  .formula {
+    padding: 1rem 0.5rem;
+  }
+
+  .formula mjx-container {
+    font-size: 180% !important;
+    line-height: 2.2;
+  }
+}
+
+@media (width <= 480px) {
+  .formula {
+    padding: 0.75rem 0.25rem;
+  }
+
+  .formula mjx-container {
+    font-size: 140% !important;
+    line-height: 2;
+  }
 }
 
 /* Make formula variables with tooltips interactive */
