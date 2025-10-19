@@ -2,6 +2,7 @@ import { LawOfTheDay } from '@components/law-of-day.js';
 import { TopVoted } from '@components/top-voted.js';
 import { Trending } from '@components/trending.js';
 import { RecentlyAdded } from '@components/recently-added.js';
+import templateHtml from '@views/templates/law-detail.html?raw';
 import { fetchLaw, fetchLawOfTheDay } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
@@ -15,81 +16,124 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   // Store current law for updates
   let currentLaw = null;
 
-  // Helper to render breadcrumb navigation
-  function renderBreadcrumb(lawTitle) {
-    return `
-      <nav class="breadcrumb mb-4" aria-label="Breadcrumb">
-        <a href="#" data-nav="home" class="breadcrumb-link">Home</a>
-        <span class="breadcrumb-separator">/</span>
-        <a href="#" data-nav="browse" class="breadcrumb-link">Browse</a>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">${lawTitle}</span>
-      </nav>
-    `;
+  el.innerHTML = templateHtml;
+
+  const breadcrumbCurrent = el.querySelector('[data-breadcrumb-current]');
+  const loadingState = el.querySelector('[data-loading]');
+  const lawContent = el.querySelector('[data-law-content]');
+  const lawOfDayContainer = el.querySelector('[data-law-of-day]');
+  const lawCardContainer = el.querySelector('[data-law-card-container]');
+  const widgetsContainer = el.querySelector('[data-widgets]');
+  const notFoundState = el.querySelector('[data-not-found]');
+  const notFoundTemplate = el.querySelector('[data-not-found-template]');
+  const lawCardTemplate = el.querySelector('[data-law-card-template]');
+
+  function setBreadcrumb(title) {
+    if (breadcrumbCurrent) {
+      breadcrumbCurrent.textContent = title;
+    }
   }
 
-  // Helper to render law card HTML
-  function createLawCardHTML(law) {
-    const displayScore = Number.isFinite(law.score) ? law.score : 0;
+  function showLoading() {
+    loadingState?.removeAttribute('hidden');
+    lawContent?.setAttribute('hidden', '');
+    notFoundState?.setAttribute('hidden', '');
+    setBreadcrumb('Loading…');
+  }
+
+  function showNotFound() {
+    loadingState?.setAttribute('hidden', '');
+    lawContent?.setAttribute('hidden', '');
+    if (notFoundState) {
+      notFoundState.removeAttribute('hidden');
+      if (notFoundTemplate instanceof HTMLTemplateElement) {
+        notFoundState.replaceChildren(notFoundTemplate.content.cloneNode(true));
+      }
+    }
+    setBreadcrumb('Not Found');
+  }
+
+  function showLaw() {
+    loadingState?.setAttribute('hidden', '');
+    notFoundState?.setAttribute('hidden', '');
+    lawContent?.removeAttribute('hidden');
+  }
+
+  function renderLawCard(law) {
+    if (!lawCardTemplate || !(lawCardTemplate instanceof HTMLTemplateElement)) {
+      return null;
+    }
+
+    const clone = lawCardTemplate.content.cloneNode(true);
+    const root = clone.querySelector('[data-law-card-root]');
+    const titleEl = clone.querySelector('[data-law-title]');
+    const textEl = clone.querySelector('[data-law-text]');
+    const attributionEl = clone.querySelector('[data-law-attribution]');
+    const metaScore = clone.querySelector('[data-law-score]');
+    const submittedEl = clone.querySelector('[data-law-submitted]');
+    const upVoteBtn = clone.querySelector('[data-vote="up"]');
+    const downVoteBtn = clone.querySelector('[data-vote="down"]');
+
+    if (titleEl) titleEl.textContent = law.title ? String(law.title) : 'Law';
+    if (textEl) textEl.textContent = law.text ? String(law.text) : '';
+
     const attsHtml = renderAttributionsList(law.attributions);
-    const safeTitle = law.title ? escapeHtml(law.title) : 'Law';
-    const safeText = escapeHtml(law.text);
-    const safeAuthor = law.author ? escapeHtml(law.author) : '';
-    const safeSubmittedBy = law.submittedBy ? escapeHtml(law.submittedBy) : '';
+    const author = law.author ? String(law.author) : '';
+    if (attsHtml) {
+      if (attributionEl) {
+        attributionEl.innerHTML = attsHtml;
+        attributionEl.removeAttribute('hidden');
+      }
+    } else if (author) {
+      if (attributionEl) {
+        attributionEl.innerHTML = '';
+        const authorEl = document.createElement('p');
+        authorEl.className = 'small mb-4';
+        authorEl.textContent = ` - ${author}`;
+        attributionEl.appendChild(authorEl);
+        attributionEl.removeAttribute('hidden');
+      }
+    }
 
-    return `
-      <div class="card">
-        <div class="card-content">
-          <h2 class="mb-4">${safeTitle}</h2>
-          <blockquote class="blockquote">${safeText}</blockquote>
-          ${attsHtml || (safeAuthor ? `<p class="small mb-4"> - ${safeAuthor}</p>` : '')}
-          <div class="small law-meta mb-4" data-law-meta>
-            <span data-score>Score: ${displayScore > 0 ? '+' : ''}${displayScore}</span>
-            ${safeSubmittedBy ? `<span>Submitted by ${safeSubmittedBy}</span>` : ''}
-          </div>
-          <div class="flex gap-2 flex-wrap">
-            <div class="flex gap-2">
-              <button data-vote="up" data-id="${escapeHtml(String(law.id))}" aria-label="Upvote" title="Upvote">
-                <span class="material-symbols-outlined">thumb_up</span>
-              </button>
-              <button class="outline" data-vote="down" data-id="${escapeHtml(String(law.id))}" aria-label="Downvote" title="Downvote">
-                <span class="material-symbols-outlined">thumb_down</span>
-              </button>
-            </div>
-            <button class="btn outline" data-nav="browse">Browse All Laws</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+    const displayScore = Number.isFinite(law.score) ? law.score : 0;
+    if (metaScore) metaScore.textContent = `${displayScore > 0 ? '+' : ''}${displayScore}`;
 
-  function renderNotFound() {
-    el.innerHTML = `
-      ${renderBreadcrumb('Not Found')}
-      <div class="card"><div class="card-content text-center">
-        <h2 class="mb-4">Law Not Found</h2>
-        <button data-nav="browse">Browse All Laws</button>
-      </div></div>
-    `;
+    const submittedBy = law.submittedBy ? String(law.submittedBy) : '';
+    if (submittedEl) {
+      if (submittedBy) {
+        submittedEl.textContent = `Submitted by ${submittedBy}`;
+        submittedEl.removeAttribute('hidden');
+      } else {
+        submittedEl.setAttribute('hidden', '');
+      }
+    }
+
+    const safeId = escapeHtml(String(law.id ?? ''));
+    if (upVoteBtn instanceof HTMLElement) {
+      upVoteBtn.setAttribute('data-id', safeId);
+    }
+    if (downVoteBtn instanceof HTMLElement) {
+      downVoteBtn.setAttribute('data-id', safeId);
+    }
+
+    return root;
   }
 
   function renderLaw(law) {
     currentLaw = law;
     const safeTitle = law.title ? escapeHtml(law.title) : 'Law';
 
-    // Clear and start fresh
-    el.innerHTML = '';
-
     if (typeof onStructuredData === 'function') {
       onStructuredData(law);
     }
 
-    // Add breadcrumb navigation
-    const breadcrumbDiv = document.createElement('div');
-    breadcrumbDiv.innerHTML = renderBreadcrumb(safeTitle);
-    el.appendChild(breadcrumbDiv);
+    setBreadcrumb(safeTitle);
+    showLaw();
 
-    // Fetch Law of the Day
+    lawOfDayContainer?.replaceChildren();
+    lawCardContainer?.replaceChildren();
+    widgetsContainer?.replaceChildren();
+
     fetchLawOfTheDay()
       .then(data => {
         const laws = data && Array.isArray(data.data) ? data.data : [];
@@ -97,65 +141,59 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         let isCurrentLawOfTheDay = false;
 
         if (laws.length > 0) {
-          lawOfTheDay = laws[0]; // First result is the top-voted law
+          lawOfTheDay = laws[0];
           isCurrentLawOfTheDay = lawOfTheDay && lawOfTheDay.id === law.id;
         }
 
-        // Add Law of the Day component first (without button on detail page)
-        if (lawOfTheDay) {
+        if (lawOfTheDay && lawOfDayContainer) {
           const lodWidget = LawOfTheDay({ law: lawOfTheDay, onNavigate, showButton: false });
-          el.appendChild(lodWidget);
+          lawOfDayContainer.appendChild(lodWidget);
         }
 
-        // Only add current law details card if it's NOT the Law of the Day
-        if (!isCurrentLawOfTheDay) {
-          const lawCard = document.createElement('div');
-          lawCard.innerHTML = createLawCardHTML(law);
-          el.appendChild(lawCard);
+        if (!isCurrentLawOfTheDay && lawCardContainer) {
+          const lawCard = renderLawCard(law);
+          if (lawCard) {
+            lawCardContainer.appendChild(lawCard);
+          }
         }
 
-        // Add Top Voted, Trending, Recently Added components (they fetch their own data)
-        const gridWrapper = document.createElement('div');
-        gridWrapper.className = 'grid mb-12 section-grid';
+        if (widgetsContainer) {
+          const topVotedWidget = TopVoted();
+          const trendingWidget = Trending();
+          const recentlyAddedWidget = RecentlyAdded();
 
-        const topVotedWidget = TopVoted();
-        const trendingWidget = Trending();
-        const recentlyAddedWidget = RecentlyAdded();
-
-        gridWrapper.appendChild(topVotedWidget);
-        gridWrapper.appendChild(trendingWidget);
-        gridWrapper.appendChild(recentlyAddedWidget);
-
-        el.appendChild(gridWrapper);
+          widgetsContainer.appendChild(topVotedWidget);
+          widgetsContainer.appendChild(trendingWidget);
+          widgetsContainer.appendChild(recentlyAddedWidget);
+        }
       })
       .catch(() => {
-        // Fallback: render law without Law of the Day component
-        const lawCard = document.createElement('div');
-        lawCard.innerHTML = createLawCardHTML(law);
-        el.appendChild(lawCard);
+        lawOfDayContainer?.replaceChildren();
 
-        // Still add the other components
-        const gridWrapper = document.createElement('div');
-        gridWrapper.className = 'grid mb-12 section-grid';
+        if (lawCardContainer) {
+          const lawCard = renderLawCard(law);
+          if (lawCard) {
+            lawCardContainer.appendChild(lawCard);
+          }
+        }
 
-        const topVotedWidget = TopVoted();
-        const trendingWidget = Trending();
-        const recentlyAddedWidget = RecentlyAdded();
+        if (widgetsContainer) {
+          const topVotedWidget = TopVoted();
+          const trendingWidget = Trending();
+          const recentlyAddedWidget = RecentlyAdded();
 
-        gridWrapper.appendChild(topVotedWidget);
-        gridWrapper.appendChild(trendingWidget);
-        gridWrapper.appendChild(recentlyAddedWidget);
-
-        el.appendChild(gridWrapper);
+          widgetsContainer.appendChild(topVotedWidget);
+          widgetsContainer.appendChild(trendingWidget);
+          widgetsContainer.appendChild(recentlyAddedWidget);
+        }
       });
   }
 
-  // Initial loading
-  el.innerHTML = `<p class="small">Loading law...</p>`;
+  showLoading();
   el.setAttribute('aria-busy', 'true');
 
   if (!lawId) {
-    renderNotFound();
+    showNotFound();
   } else {
     fetchLaw(lawId)
       .then(data => {
@@ -164,7 +202,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       })
       .catch(() => {
         el.setAttribute('aria-busy', 'false');
-        renderNotFound();
+        showNotFound();
       });
   }
 
