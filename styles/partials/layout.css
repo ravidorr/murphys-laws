@@ -44,8 +44,9 @@ header.sticky {
   margin-right: .5rem;
   border: none;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-  animation: heartbeat 2s ease-in-out infinite;
+  position: relative;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.3s ease;
+  animation: heartbeat 2s ease-in-out infinite, pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes heartbeat {
@@ -66,9 +67,66 @@ header.sticky {
   }
 }
 
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(17 115 212 / 40%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgb(17 115 212 / 0%);
+  }
+}
+
+/* Menu indicator - chevron down */
+.brand-badge::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-bottom: 2px solid currentcolor;
+  border-right: 2px solid currentcolor;
+  transform: rotate(45deg);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+/* Hover tooltip */
+.brand-badge::before {
+  content: 'Menu';
+  position: absolute;
+  bottom: -2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.6rem;
+  background: var(--fg);
+  color: var(--bg);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
 .brand-badge:hover {
-  transform: scale(1.05);
-  background: color-mix(in oklab, var(--primary) 90%, white 10%);
+  transform: scale(1.1);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--btn-primary-bg) 100%);
+  box-shadow: 0 4px 12px var(--shadow-blue), 0 0 0 0 rgb(17 115 212 / 0%);
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+.brand-badge:hover::after {
+  opacity: 1;
+}
+
+.brand-badge:hover::before {
+  opacity: 1;
+  visibility: visible;
 }
 
 .brand-badge:active {
@@ -156,7 +214,6 @@ header.sticky {
 
 footer .footer-nav {
   display: inline-flex;
-  gap: 1rem;
   padding: 0;
   margin: 0 0 1rem;
   list-style: none;

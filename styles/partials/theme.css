@@ -30,6 +30,16 @@
     box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px var(--shadow-dark);
   }
 
+  .brand-badge::before {
+    background: var(--white);
+    color: var(--primary);
+    box-shadow: 0 2px 8px var(--shadow-dark);
+  }
+
+  .brand-badge:hover {
+    box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px rgb(255 255 255 / 14%);
+  }
+
   /* Cards */
   .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
@@ -80,10 +90,63 @@
   /* Inputs */
   input[type='text'],
   input[type='email'],
-  textarea {
-    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  textarea,
+  select,
+  .form-control,
+  .share-form-container .form-group textarea,
+  .share-form-container .form-group input {
+    background: color-mix(in oklab, var(--bg) 92%, white 8%);
     color: var(--fg);
+    border: 1.5px solid rgb(255 255 255 / 25%);
+  }
+
+  input[type='text']:hover,
+  input[type='email']:hover,
+  textarea:hover,
+  select:hover,
+  .form-control:hover,
+  .share-form-container .form-group textarea:hover,
+  .share-form-container .form-group input:hover {
+    border-color: rgb(255 255 255 / 35%);
+  }
+
+  .submit-checkbox-group input[type="checkbox"] {
+    background: color-mix(in oklab, var(--bg) 92%, white 8%);
+    border: 1.5px solid rgb(255 255 255 / 25%);
+  }
+
+  /* Content cards */
+  .content-card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
     border-color: var(--border);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  }
+
+  /* Navigation dropdown */
+  .nav-dropdown {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  }
+
+  /* Search field select dropdowns */
+  .search-field select {
+    background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
+    box-shadow: 0 1px 3px var(--shadow-dark);
+  }
+
+  .search-field select:hover {
+    background-color: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 2px 6px var(--shadow-dark);
+  }
+
+  .search-field select:focus {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--btn-primary-bg) 30%, transparent 70%);
+  }
+
+  /* Modal */
+  .modal-content {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 20px 60px rgb(0 0 0 / 50%);
   }
 
   /* Voting buttons - no overrides needed, base styles work for dark mode */
