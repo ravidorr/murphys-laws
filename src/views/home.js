@@ -71,9 +71,16 @@ export function Home({ onNavigate }) {
   el.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    if (t.dataset.nav) {
-      onNavigate(t.dataset.nav);
+
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn) {
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+        return;
+      }
     }
+
     const lawHost = t.closest('[data-law-id]');
     if (lawHost) {
       const id = lawHost.getAttribute('data-law-id');

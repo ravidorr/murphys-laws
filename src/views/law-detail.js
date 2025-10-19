@@ -209,7 +209,15 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    if (t.dataset.nav) onNavigate(t.dataset.nav);
+
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn) {
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+        return;
+      }
+    }
 
     // Handle voting
     if (t.dataset.vote && t.dataset.id) {

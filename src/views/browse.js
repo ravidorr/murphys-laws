@@ -78,6 +78,10 @@ export function Browse({ searchQuery, onNavigate }) {
           <span class="material-symbols-outlined empty-state-icon">search_off</span>
           <p class="empty-state-title">No laws found</p>
           <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
+          <button class="btn" data-nav="submit" style="margin-top: 1rem;">
+            <span class="btn-text">Submit a Murphy's Law</span>
+            <span class="material-symbols-outlined icon">send</span>
+          </button>
         </div>
       `;
     }
@@ -226,6 +230,16 @@ export function Browse({ searchQuery, onNavigate }) {
       return;
     }
 
+    // Handle navigation buttons (data-nav)
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn) {
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+        return;
+      }
+    }
+
     // Handle page navigation
     if (t.dataset.page && !t.hasAttribute('disabled')) {
       const page = parseInt(t.dataset.page, 10);
@@ -240,11 +254,6 @@ export function Browse({ searchQuery, onNavigate }) {
     if (lawCard && lawCard.dataset.lawId) {
       onNavigate('law', lawCard.dataset.lawId);
       return;
-    }
-
-    // Handle data-nav attributes
-    if (t.dataset.nav) {
-      onNavigate(t.dataset.nav);
     }
   });
 
