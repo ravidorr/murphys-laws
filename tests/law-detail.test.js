@@ -73,7 +73,7 @@ describe('LawDetail view', () => {
 
     // Should only show law once (as law of the day, not duplicated as separate card)
     const cards = el.querySelectorAll('.card');
-    expect(cards.length).toBeLessThanOrEqual(4); // 1 LOTD + 3 for sections (top/trending/recent)
+    expect(cards.length).toBeLessThanOrEqual(5); // 1 LOTD + up to 4 widgets
   });
 
   it('renders law when law of the day fetch fails', async () => {

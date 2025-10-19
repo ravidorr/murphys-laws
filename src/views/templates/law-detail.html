@@ -1,0 +1,53 @@
+<nav class="breadcrumb mb-4" aria-label="Breadcrumb" data-breadcrumb>
+  <a href="#" data-nav="home" class="breadcrumb-link">Home</a>
+  <span class="breadcrumb-separator">/</span>
+  <a href="#" data-nav="browse" class="breadcrumb-link">Browse</a>
+  <span class="breadcrumb-separator">/</span>
+  <span class="breadcrumb-current" data-breadcrumb-current>Loading…</span>
+</nav>
+
+<div data-loading>
+  <p class="small">Loading law...</p>
+</div>
+
+<div data-law-content hidden>
+  <div data-law-of-day></div>
+  <div data-law-card-container></div>
+  <div class="grid mb-12 section-grid" data-widgets></div>
+</div>
+
+<div data-not-found hidden></div>
+
+<template data-not-found-template>
+  <div class="card">
+    <div class="card-content text-center">
+      <h2 class="mb-4">Law Not Found</h2>
+      <button data-nav="browse">Browse All Laws</button>
+    </div>
+  </div>
+</template>
+
+<template data-law-card-template>
+  <div class="card" data-law-card-root>
+    <div class="card-content">
+      <h2 class="mb-4" data-law-title></h2>
+      <blockquote class="blockquote" data-law-text></blockquote>
+      <div class="mb-4" data-law-attribution hidden></div>
+      <div class="small law-meta mb-4" data-law-meta>
+        <span>Score: <span data-law-score></span></span>
+        <span data-law-submitted hidden></span>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <div class="flex gap-2">
+          <button data-vote="up" aria-label="Upvote" title="Upvote">
+            <span class="material-symbols-outlined">thumb_up</span>
+          </button>
+          <button class="outline" data-vote="down" aria-label="Downvote" title="Downvote">
+            <span class="material-symbols-outlined">thumb_down</span>
+          </button>
+        </div>
+        <button class="btn outline" data-nav="browse">Browse All Laws</button>
+      </div>
+    </div>
+  </div>
+</template>
