@@ -10,8 +10,13 @@
 }
 
 /* Add horizontal padding to calculator card content to match other pages */
+.calculator .card {
+  overflow: visible;
+}
+
 .calculator .card .card-content {
   padding: 1.25rem 1rem;
+  overflow: visible;
 }
 
 /* Input grid layout (responsive) */
@@ -169,36 +174,40 @@
 /* Bigger typeset for MathJax formula on calculator page */
 .formula {
   margin: 0 0 2rem;
-  padding: 1.5rem 1rem;
-  overflow: auto hidden;
+  padding: 4rem 1rem 1.5rem;
+  overflow: visible;
 }
 
 .formula mjx-container {
   font-size: 240% !important;
   line-height: 2.4;
   min-width: min-content;
+  overflow: auto visible;
+  padding: 0 1rem;
 }
 
 /* Responsive formula sizing */
 @media (width <= 768px) {
   .formula {
-    padding: 1rem 0.5rem;
+    padding: 3.5rem 0.5rem 1rem;
   }
 
   .formula mjx-container {
     font-size: 180% !important;
     line-height: 2.2;
+    padding: 0 0.5rem;
   }
 }
 
 @media (width <= 480px) {
   .formula {
-    padding: 0.75rem 0.25rem;
+    padding: 3rem 0.25rem 0.75rem;
   }
 
   .formula mjx-container {
     font-size: 140% !important;
     line-height: 2;
+    padding: 0 0.25rem;
   }
 }
 
