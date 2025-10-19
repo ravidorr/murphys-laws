@@ -108,6 +108,18 @@ const routesMap = {
   submit: () => {
     const container = document.createElement('div');
     container.className = 'container page pt-0';
+
+    // Add breadcrumbs
+    const breadcrumb = document.createElement('nav');
+    breadcrumb.className = 'breadcrumb mb-4';
+    breadcrumb.setAttribute('aria-label', 'Breadcrumb');
+    breadcrumb.innerHTML = `
+      <a href="#" data-nav="home" class="breadcrumb-link">Home</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current">Submit a Law</span>
+    `;
+    container.appendChild(breadcrumb);
+
     const submitSection = SubmitLawSection({ onNavigate });
     container.appendChild(submitSection);
     clearPageStructuredData();
