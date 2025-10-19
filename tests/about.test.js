@@ -158,4 +158,44 @@ describe('About page', () => {
     expect(blockquote).toBeTruthy();
     expect(blockquote.textContent).toMatch(/Anything that can go wrong/);
   });
+
+  it('displays breadcrumb navigation', () => {
+    const el = About({
+      onNavigate: () => {}
+    });
+
+    const breadcrumb = el.querySelector('.breadcrumb');
+    expect(breadcrumb).toBeTruthy();
+    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
+  });
+
+  it('breadcrumb has home link', () => {
+    const el = About({
+      onNavigate: () => {}
+    });
+
+    const homeLink = el.querySelector('.breadcrumb [data-nav="home"]');
+    expect(homeLink).toBeTruthy();
+    expect(homeLink.textContent).toBe('Home');
+  });
+
+  it('breadcrumb shows current page', () => {
+    const el = About({
+      onNavigate: () => {}
+    });
+
+    const current = el.querySelector('.breadcrumb-current');
+    expect(current).toBeTruthy();
+    expect(current.textContent).toBe('About');
+  });
+
+  it('breadcrumb home link navigates correctly', () => {
+    const onNavigate = vi.fn();
+    const el = About({ onNavigate });
+
+    const homeLink = el.querySelector('.breadcrumb [data-nav="home"]');
+    homeLink.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('home');
+  });
 });

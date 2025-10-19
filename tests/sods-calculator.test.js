@@ -312,4 +312,12 @@ describe("Calculator view", () => {
     expect(shareStatus.textContent).toMatch(/valid recipient email/i);
     expect(shareStatus.classList.contains('error')).toBe(true);
   });
+
+  it('displays breadcrumb navigation', () => {
+    const breadcrumb = el.querySelector('.breadcrumb');
+    expect(breadcrumb).toBeTruthy();
+    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
+    expect(breadcrumb.textContent).toContain('Home');
+    expect(breadcrumb.textContent).toContain("Sod's Law Calculator");
+  });
 });

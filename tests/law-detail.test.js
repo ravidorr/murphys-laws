@@ -180,7 +180,7 @@ describe('LawDetail view', () => {
   });
 
   it('handles negative score display', async () => {
-    const law = { id: '7', title: 'Unpopular Law', text: 'Test text', score: -5 };
+    const law = { id: '7', title: 'Unpopular Law', text: 'Test text', score: -5, upvotes: 2, downvotes: 7 };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
@@ -190,7 +190,11 @@ describe('LawDetail view', () => {
 
     await new Promise(r => setTimeout(r, 50));
 
-    expect(el.textContent).toMatch(/-5/);
+    // Check for upvote and downvote counts
+    const upvoteCount = el.querySelector('[data-upvote-count]');
+    const downvoteCount = el.querySelector('[data-downvote-count]');
+    expect(upvoteCount?.textContent).toBe('2');
+    expect(downvoteCount?.textContent).toBe('7');
   });
 
   it('renders law when law of the day returns empty array', async () => {
@@ -318,7 +322,11 @@ describe('LawDetail view', () => {
     await new Promise(r => setTimeout(r, 50));
 
     expect(el.textContent).toMatch(/Test Law/);
-    expect(el.textContent).toMatch(/Score: 0/);
+    // Check for upvote and downvote counts (should default to 0)
+    const upvoteCount = el.querySelector('[data-upvote-count]');
+    const downvoteCount = el.querySelector('[data-downvote-count]');
+    expect(upvoteCount?.textContent).toBe('0');
+    expect(downvoteCount?.textContent).toBe('0');
   });
 
   it('handles law of the day array with null/undefined first element', async () => {
@@ -350,6 +358,153 @@ describe('LawDetail view', () => {
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Test Law/);
     }, { timeout: 500 });
+  });
+
+  it('updates vote counts in UI after voting', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
+    const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Initial counts
+    let upvoteCount = el.querySelector('[data-upvote-count]');
+    let downvoteCount = el.querySelector('[data-downvote-count]');
+    expect(upvoteCount?.textContent).toBe('5');
+    expect(downvoteCount?.textContent).toBe('2');
+
+    // Click upvote
+    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    upvoteBtn?.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // Counts should update
+    upvoteCount = el.querySelector('[data-upvote-count]');
+    downvoteCount = el.querySelector('[data-downvote-count]');
+    expect(upvoteCount?.textContent).toBe('6');
+    expect(downvoteCount?.textContent).toBe('2');
+  });
+
+  it('displays voted state when user has already voted', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const downvoteBtn = el.querySelector('[data-vote="down"]');
+
+    expect(upvoteBtn?.classList.contains('voted')).toBe(true);
+    expect(downvoteBtn?.classList.contains('voted')).toBe(false);
+  });
+
+  it('handles clicking on icon inside vote button', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Click on the icon inside the button (not the button itself)
+    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const icon = upvoteBtn?.querySelector('.icon');
+
+    if (icon) {
+      icon.click();
+      await new Promise(r => setTimeout(r, 10));
+      expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up');
+    }
+  });
+
+  it('handles share button click with navigator.share available', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text for sharing', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    // Mock navigator.share
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', {
+      value: shareMock,
+      writable: true,
+      configurable: true
+    });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const shareBtn = el.querySelector('[data-action="share"]');
+    if (shareBtn) {
+      shareBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(shareMock).toHaveBeenCalledWith({
+        title: 'Test Law',
+        text: 'Test text for sharing',
+        url: window.location.href
+      });
+    }
+
+    // Cleanup
+    delete navigator.share;
+  });
+
+  it('handles share button click with clipboard fallback', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    // Mock clipboard API
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true
+    });
+
+    // Mock alert
+    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const shareBtn = el.querySelector('[data-action="share"]');
+    if (shareBtn) {
+      shareBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith(window.location.href);
+      expect(alertMock).toHaveBeenCalledWith('Link copied to clipboard!');
+    }
+
+    // Cleanup
+    alertMock.mockRestore();
+    delete navigator.clipboard;
   });
 });
 

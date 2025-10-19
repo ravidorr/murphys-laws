@@ -28,26 +28,36 @@
 </template>
 
 <template data-law-card-template>
-  <div class="card" data-law-card-root>
-    <div class="card-content">
-      <h2 class="mb-4" data-law-title></h2>
-      <blockquote class="blockquote" data-law-text></blockquote>
-      <div class="mb-4" data-law-attribution hidden></div>
-      <div class="small law-meta mb-4" data-law-meta>
-        <span>Score: <span data-law-score></span></span>
-        <span data-law-submitted hidden></span>
+  <div class="law-detail">
+    <div class="card" data-law-card-root>
+      <div class="card-content p-8">
+        <h2 class="text-center mb-2" data-law-title></h2>
+        <blockquote class="blockquote" data-law-text></blockquote>
+        <div class="text-center mb-4" data-law-attribution hidden></div>
       </div>
-      <div class="flex gap-2 flex-wrap">
-        <div class="flex gap-2">
-          <button data-vote="up" aria-label="Upvote" title="Upvote">
-            <span class="material-symbols-outlined">thumb_up</span>
+      <div class="law-meta" data-law-footer>
+        <div class="left">
+          <button class="vote-btn count-up" data-vote="up" data-id="" aria-label="Upvote this law">
+            <span class="material-symbols-outlined icon">thumb_up</span>
+            <span class="count-num" data-upvote-count>0</span>
           </button>
-          <button class="outline" data-vote="down" aria-label="Downvote" title="Downvote">
-            <span class="material-symbols-outlined">thumb_down</span>
+          <button class="vote-btn count-down" data-vote="down" data-id="" aria-label="Downvote this law">
+            <span class="material-symbols-outlined icon">thumb_down</span>
+            <span class="count-num" data-downvote-count>0</span>
           </button>
         </div>
-        <button class="btn outline" data-nav="browse">Browse All Laws</button>
+        <div class="small" data-law-submitted hidden></div>
       </div>
+    </div>
+    <div class="flex gap-2 flex-wrap justify-center mt-4">
+      <button class="btn outline" data-nav="browse">
+        <span class="btn-text">Browse All Laws</span>
+        <span class="material-symbols-outlined icon">list</span>
+      </button>
+      <button class="btn outline" data-action="share">
+        <span class="btn-text">Share</span>
+        <span class="material-symbols-outlined icon">share</span>
+      </button>
     </div>
   </div>
 </template>
