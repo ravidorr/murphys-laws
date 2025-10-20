@@ -1,4 +1,4 @@
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   slug TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
@@ -7,8 +7,8 @@ CREATE TABLE categories (
   created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
-CREATE TABLE sqlite_sequence(name,seq);
-CREATE TABLE laws (
+-- CREATE TABLE sqlite_sequence(name,seq); -- Auto-created by SQLite
+CREATE TABLE IF NOT EXISTS laws (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   slug TEXT UNIQUE,
   title TEXT,                  -- e.g., "Peter Principle", "Cole's Law"
@@ -22,7 +22,7 @@ CREATE TABLE laws (
   updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')), status TEXT DEFAULT 'published' CHECK(status IN ('published', 'in_review', 'rejected')), admin_notes TEXT,
   UNIQUE(first_seen_file_path, first_seen_line_number)
 );
-CREATE TABLE law_categories (
+CREATE TABLE IF NOT EXISTS law_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   law_id INTEGER NOT NULL,
   category_id INTEGER NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE law_categories (
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
   UNIQUE(law_id, category_id)
 );
-CREATE TABLE attributions (
+CREATE TABLE IF NOT EXISTS attributions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   law_id INTEGER NOT NULL,
   name TEXT,
@@ -42,7 +42,7 @@ CREATE TABLE attributions (
   created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   FOREIGN KEY (law_id) REFERENCES laws(id) ON DELETE CASCADE
 );
-CREATE TABLE law_relations (
+CREATE TABLE IF NOT EXISTS law_relations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   from_law_id INTEGER NOT NULL,
   to_law_id INTEGER NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE law_relations (
   FOREIGN KEY (from_law_id) REFERENCES laws(id) ON DELETE CASCADE,
   FOREIGN KEY (to_law_id) REFERENCES laws(id) ON DELETE CASCADE
 );
-CREATE TABLE votes (
+CREATE TABLE IF NOT EXISTS votes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   law_id INTEGER NOT NULL,
   vote_type TEXT NOT NULL CHECK(vote_type IN ('up', 'down')),
@@ -60,6 +60,6 @@ CREATE TABLE votes (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(law_id) REFERENCES laws(id) ON DELETE CASCADE
 );
-CREATE INDEX idx_votes_law_id ON votes(law_id);
-CREATE INDEX idx_votes_voter_identifier ON votes(voter_identifier);
-CREATE UNIQUE INDEX idx_votes_unique_voter_law ON votes(law_id, voter_identifier);
+CREATE INDEX IF NOT EXISTS idx_votes_law_id ON votes(law_id);
+CREATE INDEX IF NOT EXISTS idx_votes_voter_identifier ON votes(voter_identifier);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_unique_voter_law ON votes(law_id, voter_identifier);
