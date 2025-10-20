@@ -144,30 +144,98 @@ npm run db:rebuild
 4. **Use descriptive migration names** - helps team understand what changed
 5. **Keep migrations small** - easier to review and rollback if needed
 
-## Example: Complete Workflow
+## Automated Deployment with GitHub Actions
+
+**Good news:** Migrations run automatically when you push to `main`! 🎉
+
+The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
+1. ✅ Runs pre-migration safety checks
+2. ✅ Backs up the production database
+3. ✅ Applies pending migrations
+4. ✅ Restores backup if migration fails
+5. ✅ Shows migration results in GitHub Actions logs
+
+### Automated Workflow:
 
 ```bash
-# 1. Edit some laws
+# 1. Edit laws locally
 npm run review
-# (Edit law #42 and law #123)
 
-# 2. Check what changed
+# 2. See what changed
 npm run db:show-updates
 
 # 3. Generate migration
 npm run db:export-updates 42 123
 
-# 4. Test locally
-npm run migrate  # Should show "already applied" or apply the new one
-
-# 5. Commit and deploy
-git add db/migrations/002_update_law_content_20251020.sql
+# 4. Commit and push
+git add db/migrations/002_update_law_content_*.sql
 git commit -m "data: update Murphy's Law and Cole's Law"
-git push
+git push  # ← Migrations run automatically!
+```
 
-# 6. On production server
-git pull
-npm run migrate
+### What Happens Automatically:
+
+```
+git push origin main
+    ↓
+[GitHub Actions]
+    1. Checkout code & install dependencies
+    2. Build project
+    3. Deploy to server
+    4. SSH into production server:
+       → Backup database (murphys.db.backup)
+       → Pull latest code (including migration files)
+       → Restore production database
+       → Run safety checks (table structure, data counts)
+       → Create pre-migration backup
+       → Run migrations (npm run migrate:safe)
+       → Verify success or rollback
+       → Show applied migrations in logs
+       → Restart PM2 services
+```
+
+### Viewing Migration Results:
+
+After pushing, go to:
+- GitHub → Actions tab → Click your deployment run
+- Look for "Update server and restart services" step
+- You'll see output like:
+
+```
+🔍 Running pre-migration safety checks...
+✓ Database file exists
+✓ Table 'laws' exists
+✓ Table 'votes' exists
+📊 Database has 2379 laws and 15420 votes
+💾 Pre-migration backup created: 8.45 MB
+
+Running database migrations...
+Applied migrations: 1
+Total migration files: 2
+
+Applying migration: 002_update_law_content_20251020.sql
+✓ Applied: 002_update_law_content_20251020.sql
+
+✅ Migrations completed successfully
+
+📋 Applied migrations:
+002_update_law_content_20251020.sql|2025-10-20 15:30:45
+001_initial_schema.sql|2025-10-05 14:08:58
+```
+
+## Manual Deployment (Optional)
+
+If you need to run migrations manually on production:
+
+```bash
+# SSH into server
+ssh root@your-server.com
+
+# Go to project directory
+cd ~/murphys-laws
+
+# Run migrations with safety checks
+npm run migrate:safe
 ```
 
 ## Troubleshooting
