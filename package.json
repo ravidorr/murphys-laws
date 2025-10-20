@@ -36,7 +36,9 @@
     "logs:read": "node scripts/log-manager.mjs read",
     "logs:clear": "node scripts/log-manager.mjs clear",
     "review": "node scripts/review-laws.mjs",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "db:show-updates": "node scripts/show-recent-updates.mjs",
+    "db:export-updates": "node scripts/export-law-updates.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --fix",
