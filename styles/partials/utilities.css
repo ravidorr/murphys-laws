@@ -9,6 +9,7 @@
 }
 
 .hidden { display: none; }
+[hidden] { display: none !important; }
 .text-center { text-align: center; }
 .flex { display: flex; }
 .grid { display: grid; }
