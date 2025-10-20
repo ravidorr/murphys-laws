@@ -16,6 +16,7 @@ coverage/
 # Database (production data - don't commit)
 murphys.db
 murphys.db.backup
+murphys.db.pre-migrate-backup
 
 .continue/
 .claude/
