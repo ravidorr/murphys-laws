@@ -263,11 +263,29 @@ export function Browse({ searchQuery, onNavigate }) {
   // Initial render and load
   render();
 
+  // Function to check if any search filters are active
+  function hasActiveFilters() {
+    return !!(currentFilters.q || currentFilters.category_id || currentFilters.attribution);
+  }
+
+  // Function to update widgets visibility based on search state
+  function updateWidgetsVisibility() {
+    const widgetsContainer = el.querySelector('[data-widgets]');
+    if (widgetsContainer) {
+      if (hasActiveFilters()) {
+        widgetsContainer.setAttribute('hidden', '');
+      } else {
+        widgetsContainer.removeAttribute('hidden');
+      }
+    }
+  }
+
   // Create and insert advanced search component
   const searchComponent = AdvancedSearch({
     initialFilters: currentFilters,
     onSearch: (filters) => {
       currentFilters = filters;
+      updateWidgetsVisibility(); // Update widget visibility when search changes
       loadPage(1); // Reset to page 1 when filters change
     }
   });
@@ -288,6 +306,9 @@ export function Browse({ searchQuery, onNavigate }) {
     widgetsContainer.appendChild(trendingWidget);
     widgetsContainer.appendChild(recentlyAddedWidget);
   }
+
+  // Set initial widget visibility
+  updateWidgetsVisibility();
 
   loadPage(1);
 
