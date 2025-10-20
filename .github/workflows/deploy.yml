@@ -56,6 +56,9 @@ jobs:
             # Backup production database before pulling
             cp murphys.db murphys.db.backup 2>/dev/null || true
 
+            # Stash any local changes (like modified scripts)
+            git stash --include-untracked || true
+
             # Pull latest code (for migrations, package.json, etc)
             git pull origin main
 
