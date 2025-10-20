@@ -9,7 +9,7 @@ describe('Home view', () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: sample.length, data: sample }) });
 
     const el = Home({ isLoggedIn: false, onNavigate: () => {}, _onVote: () => {} });
-    expect(el.textContent).toMatch(/Loading laws/);
+    expect(el.textContent).toMatch(/Loading/);
 
     await new Promise(r => setTimeout(r, 0));
 
@@ -48,7 +48,7 @@ describe('Home view', () => {
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
-    expect(el.textContent).toMatch(/Failed to load laws/);
+    expect(el.textContent).toMatch(/Ironically, something went wrong/);
 
   });
 
@@ -140,7 +140,7 @@ describe('Home view', () => {
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
-    expect(el.textContent).toMatch(/Failed to load laws/);
+    expect(el.textContent).toMatch(/Ironically, something went wrong/);
 
   });
 

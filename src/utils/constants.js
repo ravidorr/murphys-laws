@@ -20,3 +20,36 @@ export const API_SHARE_CALCULATION_ENDPOINT = '/api/share-calculation';
 export const DEFAULT_FETCH_HEADERS = {
   'Accept': 'application/json'
 };
+
+// Loading messages - randomly selected for variety
+export const LOADING_MESSAGES = [
+  // Playfully pessimistic
+  'Loading... (what could go wrong?)',
+  'Loading... (fingers crossed)',
+  'Loading... (hopefully)',
+
+  // Self-aware irony
+  'Loading... (Murphy says this will take longer than expected)',
+  'Loading... (of course this is the slow part)',
+  'Loading... (ironically, this is taking a while)',
+
+  // Short & witty
+  'Loading... probably',
+  'Almost there... maybe',
+  'Loading... predictably slow',
+
+  // Murphy-themed
+  'Loading... (what could possibly delay this?)',
+  'Loading... (Murphy is watching)',
+  'Loading... (this better work)',
+  'Fetching data... (nothing ever goes smoothly)',
+  'Loading... (naturally, this takes forever)'
+];
+
+/**
+ * Get a random loading message
+ * @returns {string} A random loading message
+ */
+export function getRandomLoadingMessage() {
+  return LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
+}

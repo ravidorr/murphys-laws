@@ -543,6 +543,23 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { data: categories });
     }
 
+    // GET /api/categories/:id - Get a single category by ID
+    const categoryIdMatch = pathname.match(/^\/api\/categories\/(\d+)$/);
+    if (req.method === 'GET' && categoryIdMatch) {
+      const categoryId = parseInt(categoryIdMatch[1], 10);
+      const category = await runSqlJson(`
+        SELECT id, slug, title, description
+        FROM categories
+        WHERE id = ?;
+      `, [categoryId]);
+
+      if (!category || category.length === 0) {
+        return sendJson(res, 404, { error: 'Category not found' });
+      }
+
+      return sendJson(res, 200, category[0]);
+    }
+
     // GET /api/attributions - Get unique attribution names
     if (req.method === 'GET' && pathname === '/api/attributions') {
       const attributions = await runSqlJson(`

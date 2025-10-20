@@ -5,7 +5,7 @@ import { fetchLaws } from '../utils/api.js';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { highlightSearchTerm, escapeHtml } from '../utils/sanitize.js';
 import { wrapLoadingMarkup } from '../utils/dom.js';
-import { LAWS_PER_PAGE } from '../utils/constants.js';
+import { LAWS_PER_PAGE, getRandomLoadingMessage } from '../utils/constants.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { AdvancedSearch } from '../components/advanced-search.js';
 import { TopVoted } from '../components/top-voted.js';
@@ -123,19 +123,52 @@ export function Browse({ searchQuery, onNavigate }) {
   }
 
   // Render the page
-  function updateSearchInfo() {
+  async function updateSearchInfo() {
     const infoEl = el.querySelector('#browse-search-info');
     if (!infoEl) return;
-    if (currentFilters.q) {
-      infoEl.innerHTML = `<p class="small" style="padding: 0 1rem;">Search results for: <strong>${escapeHtml(currentFilters.q)}</strong></p>`;
-    } else {
+
+    const hasFilters = currentFilters.q || currentFilters.category_id || currentFilters.attribution;
+
+    if (!hasFilters) {
       infoEl.innerHTML = '';
+      return;
     }
+
+    const filterParts = [];
+
+    if (currentFilters.q) {
+      filterParts.push(`<strong>${escapeHtml(currentFilters.q)}</strong>`);
+    }
+
+    if (currentFilters.category_id) {
+      // Fetch category name
+      try {
+        const response = await fetch(`/api/categories/${currentFilters.category_id}`);
+        if (response.ok) {
+          const category = await response.json();
+          filterParts.push(`in category <strong>${escapeHtml(category.title)}</strong>`);
+        }
+      } catch {
+        filterParts.push(`in category <strong>#${currentFilters.category_id}</strong>`);
+      }
+    }
+
+    if (currentFilters.attribution) {
+      filterParts.push(`by <strong>${escapeHtml(currentFilters.attribution)}</strong>`);
+    }
+
+    infoEl.innerHTML = `<p class="search-info">Search results for: ${filterParts.join(' ')}</p>`;
   }
 
   function render() {
     el.innerHTML = templateHtml;
     updateSearchInfo();
+
+    // Replace static loading message with random one
+    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
+    if (loadingPlaceholder) {
+      loadingPlaceholder.textContent = getRandomLoadingMessage();
+    }
   }
 
   // Update the display with fetched laws
@@ -186,8 +219,8 @@ export function Browse({ searchQuery, onNavigate }) {
         cardText.innerHTML = `
           <div class="empty-state">
             <span class="material-symbols-outlined empty-state-icon">error_outline</span>
-            <p class="empty-state-title">Failed to load laws</p>
-            <p class="empty-state-text">There was an error loading the laws. Please try again later.</p>
+            <p class="empty-state-title">Of course something went wrong</p>
+            <p class="empty-state-text">Ironically, Murphy's Laws couldn't be loaded right now. Please try again.</p>
           </div>
         `;
       }

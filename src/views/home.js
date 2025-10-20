@@ -6,7 +6,7 @@ import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calcul
 import { SubmitLawSection } from '@components/submit-law.js';
 import { fetchLaws } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
-import { LAWS_PER_PAGE } from '../utils/constants.js';
+import { LAWS_PER_PAGE, getRandomLoadingMessage } from '../utils/constants.js';
 
 // Exported for testing
 export function renderHome(el, laws = [], onNavigate) {
@@ -41,7 +41,7 @@ export function Home({ onNavigate }) {
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = `<p class="small">Loading laws...</p>`;
+  el.innerHTML = `<p class="small">${getRandomLoadingMessage()}</p>`;
 
   function fetchAndRender() {
     fetchLaws({ limit: LAWS_PER_PAGE, offset: 0 })
@@ -60,7 +60,7 @@ export function Home({ onNavigate }) {
       })
       .catch(() => {
         el.innerHTML = '';
-        const errorEl = createErrorState('Failed to load laws. Please try again later.');
+        const errorEl = createErrorState('Ironically, something went wrong while loading Murphy\'s Laws. Please try again.');
         el.appendChild(errorEl);
       });
   }
