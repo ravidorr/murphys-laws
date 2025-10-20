@@ -564,4 +564,76 @@ describe('Browse view', () => {
       expect(ellipsis.length).toBeGreaterThan(0);
     }, { timeout: 1000 });
   });
+
+  it('hides widgets when search query is active', async () => {
+    const el = Browse({ searchQuery: 'test', onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      const widgetsContainer = el.querySelector('[data-widgets]');
+      expect(widgetsContainer).toBeTruthy();
+      // Widgets should be hidden when there's a search query
+      expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+    }, { timeout: 1000 });
+  });
+
+  it('shows widgets when no search filters are active', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      const widgetsContainer = el.querySelector('[data-widgets]');
+      expect(widgetsContainer).toBeTruthy();
+      // Widgets should be visible when there's no search
+      expect(widgetsContainer.hasAttribute('hidden')).toBe(false);
+    }, { timeout: 1000 });
+  });
+
+  it('hides widgets after performing a search', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+
+    // Wait for initial render - widgets should be visible
+    await vi.waitFor(() => {
+      const widgetsContainer = el.querySelector('[data-widgets]');
+      expect(widgetsContainer).toBeTruthy();
+      expect(widgetsContainer.hasAttribute('hidden')).toBe(false);
+    }, { timeout: 1000 });
+
+    // Perform a search
+    const searchInput = el.querySelector('#search-keyword');
+    const searchBtn = el.querySelector('#search-btn');
+
+    if (searchInput && searchBtn) {
+      searchInput.value = 'murphy';
+      searchBtn.click();
+
+      // Widgets should now be hidden
+      await vi.waitFor(() => {
+        const widgetsContainer = el.querySelector('[data-widgets]');
+        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+      }, { timeout: 1000 });
+    }
+  });
+
+  it('shows widgets again after clearing search', async () => {
+    const el = Browse({ searchQuery: 'test', onNavigate: () => {} });
+
+    // Wait for initial render - widgets should be hidden due to search
+    await vi.waitFor(() => {
+      const widgetsContainer = el.querySelector('[data-widgets]');
+      expect(widgetsContainer).toBeTruthy();
+      expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+    }, { timeout: 1000 });
+
+    // Clear the search
+    const clearBtn = el.querySelector('#clear-btn');
+
+    if (clearBtn) {
+      clearBtn.click();
+
+      // Widgets should now be visible again
+      await vi.waitFor(() => {
+        const widgetsContainer = el.querySelector('[data-widgets]');
+        expect(widgetsContainer.hasAttribute('hidden')).toBe(false);
+      }, { timeout: 1000 });
+    }
+  });
 });
