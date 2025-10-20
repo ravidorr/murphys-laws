@@ -636,4 +636,122 @@ describe('Browse view', () => {
       }, { timeout: 1000 });
     }
   });
+
+  it('hides widgets when filtering by category only', async () => {
+    // Mock API to return different data for categories and attributions
+    const fetchAPISpy = vi.spyOn(api, 'fetchAPI');
+    fetchAPISpy.mockImplementation((url) => {
+      if (url.includes('categories')) {
+        return Promise.resolve({ data: [{ id: 1, title: 'Technology' }] });
+      }
+      if (url.includes('attributions')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+
+    // Wait for categories dropdown to be populated
+    await vi.waitFor(() => {
+      const categorySelect = el.querySelector('#search-category');
+      const options = categorySelect?.querySelectorAll('option');
+      // Should have at least 2 options: "All Categories" + "Technology"
+      expect(options?.length).toBeGreaterThan(1);
+    }, { timeout: 1000 });
+
+    // Select a category
+    const categorySelect = el.querySelector('#search-category');
+    const searchBtn = el.querySelector('#search-btn');
+
+    if (categorySelect && searchBtn) {
+      categorySelect.value = '1';
+      searchBtn.click();
+
+      // Widgets should now be hidden
+      await vi.waitFor(() => {
+        const widgetsContainer = el.querySelector('[data-widgets]');
+        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+      }, { timeout: 1000 });
+    }
+  });
+
+  it('hides widgets when filtering by attribution only', async () => {
+    // Mock API to return different data for categories and attributions
+    const fetchAPISpy = vi.spyOn(api, 'fetchAPI');
+    fetchAPISpy.mockImplementation((url) => {
+      if (url.includes('categories')) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.includes('attributions')) {
+        return Promise.resolve({ data: [{ name: 'Edward Murphy' }] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+
+    // Wait for attributions dropdown to be populated
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      const options = attributionSelect?.querySelectorAll('option');
+      // Should have at least 2 options: "All Submitters" + "Edward Murphy"
+      expect(options?.length).toBeGreaterThan(1);
+    }, { timeout: 1000 });
+
+    // Select an attribution
+    const attributionSelect = el.querySelector('#search-attribution');
+    const searchBtn = el.querySelector('#search-btn');
+
+    if (attributionSelect && searchBtn) {
+      attributionSelect.value = 'Edward Murphy';
+      searchBtn.click();
+
+      // Widgets should now be hidden
+      await vi.waitFor(() => {
+        const widgetsContainer = el.querySelector('[data-widgets]');
+        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+      }, { timeout: 1000 });
+    }
+  });
+
+  it('hides widgets when multiple filters are active', async () => {
+    // Mock API to return different data for categories and attributions
+    const fetchAPISpy = vi.spyOn(api, 'fetchAPI');
+    fetchAPISpy.mockImplementation((url) => {
+      if (url.includes('categories')) {
+        return Promise.resolve({ data: [{ id: 1, title: 'Technology' }] });
+      }
+      if (url.includes('attributions')) {
+        return Promise.resolve({ data: [{ name: 'Edward Murphy' }] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+
+    // Wait for dropdowns to be populated
+    await vi.waitFor(() => {
+      const categorySelect = el.querySelector('#search-category');
+      const categoryOptions = categorySelect?.querySelectorAll('option');
+      expect(categoryOptions?.length).toBeGreaterThan(1);
+    }, { timeout: 1000 });
+
+    // Set multiple filters
+    const searchInput = el.querySelector('#search-keyword');
+    const categorySelect = el.querySelector('#search-category');
+    const searchBtn = el.querySelector('#search-btn');
+
+    if (searchInput && categorySelect && searchBtn) {
+      searchInput.value = 'murphy';
+      categorySelect.value = '1';
+      searchBtn.click();
+
+      // Widgets should be hidden when multiple filters are active
+      await vi.waitFor(() => {
+        const widgetsContainer = el.querySelector('[data-widgets]');
+        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+      }, { timeout: 1000 });
+    }
+  });
 });
