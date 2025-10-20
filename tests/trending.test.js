@@ -29,7 +29,8 @@ describe('Trending component', () => {
     fetchTrendingSpy.mockReturnValue(new Promise(() => {})); // Never resolves
     const el = Trending();
 
-    expect(el.textContent).toMatch(/Loading/);
+    // Check for any of the possible loading messages (they're random)
+    expect(el.textContent).toMatch(/Loading|Fetching|Almost there/);
   });
 
   it('renders trending laws successfully', async () => {

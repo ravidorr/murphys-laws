@@ -99,7 +99,8 @@ describe('Law components', () => {
 
       const el = Trending();
 
-      expect(el.textContent).toContain('Loading');
+      // Check for any of the possible loading messages (they're random)
+      expect(el.textContent).toMatch(/Loading|Fetching|Almost there/);
       vi.restoreAllMocks();
     });
 

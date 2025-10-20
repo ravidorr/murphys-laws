@@ -360,3 +360,10 @@ textarea.form-control,
   opacity: 1; /* Shows the tooltip and caret on hover */
   visibility: visible;
 }
+
+/* Search info text */
+.search-info {
+  font-size: .875rem;
+  color: var(--muted-fg);
+  margin: 1rem;
+}

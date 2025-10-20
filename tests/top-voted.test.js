@@ -29,7 +29,8 @@ describe('TopVoted component', () => {
     fetchTopVotedSpy.mockReturnValue(new Promise(() => {})); // Never resolves
     const el = TopVoted();
 
-    expect(el.textContent).toMatch(/Loading/);
+    // Check for any of the possible loading messages (they're random)
+    expect(el.textContent).toMatch(/Loading|Fetching|Almost there/);
   });
 
   it('renders top 3 voted laws', async () => {

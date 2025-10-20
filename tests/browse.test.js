@@ -121,7 +121,7 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
     await vi.waitFor(() => {
-      expect(el.textContent).toMatch(/Failed to load laws/);
+      expect(el.textContent).toMatch(/Of course something went wrong/);
     }, { timeout: 1000 });
   });
 

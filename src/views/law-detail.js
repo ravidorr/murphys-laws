@@ -4,6 +4,7 @@ import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
 import { showSuccess, showError as showErrorNotification } from '../components/notification.js';
+import { getRandomLoadingMessage } from '../utils/constants.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -22,6 +23,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const notFoundState = el.querySelector('[data-not-found]');
   const notFoundTemplate = el.querySelector('[data-not-found-template]');
   const lawCardTemplate = el.querySelector('[data-law-card-template]');
+
+  // Replace static loading message with random one
+  if (loadingState) {
+    const loadingText = loadingState.querySelector('p');
+    if (loadingText) {
+      loadingText.textContent = getRandomLoadingMessage();
+    }
+  }
 
   function setBreadcrumb(title) {
     if (breadcrumbCurrent) {

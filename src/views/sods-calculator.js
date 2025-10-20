@@ -45,7 +45,7 @@ export function Calculator() {
   const showValues = { U: false, C: false, I: false, S: false, F: false };
   let resetTimeouts = { U: null, C: null, I: null, S: null, F: null };
 
-  function updateFormula() {
+  function updateCalculation() {
     const U = parseFloat(sliders.urgency.value);
     const C = parseFloat(sliders.complexity.value);
     const I = parseFloat(sliders.importance.value);
@@ -53,12 +53,17 @@ export function Calculator() {
     const F = parseFloat(sliders.frequency.value);
     const A = 0.7;
 
-    // Calculate P value
-    const P = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
-    const PDisplay = Math.min(P, 8.6).toFixed(2);
+    // Calculate score
+    const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
+    const displayScore = Math.min(score, 8.6);
+    const scoreText = displayScore.toFixed(2);
+
+    // Update score display
+    if (scoreValueDisplay) scoreValueDisplay.textContent = scoreText;
+    updateResultInterpretation(displayScore);
 
     // Generate LaTeX formula - show variable name or value based on showValues
-    const pFormula = showValues.U ? PDisplay : 'P';
+    const pFormula = showValues.U ? scoreText : 'P';
     const uDisplay = showValues.U ? U : 'U';
     const cDisplay = showValues.C ? C : 'C';
     const iDisplay = showValues.I ? I : 'I';
@@ -123,7 +128,7 @@ export function Calculator() {
   function flashAllVariables() {
     // Show all values temporarily
     Object.keys(showValues).forEach(v => showValues[v] = true);
-    updateFormula();
+    updateCalculation();
 
     // Clear existing timeouts
     Object.values(resetTimeouts).forEach(timeout => {
@@ -133,47 +138,29 @@ export function Calculator() {
     // Reset all back to variable names after 2 seconds
     const timeout = setTimeout(() => {
       Object.keys(showValues).forEach(v => showValues[v] = false);
-      updateFormula();
+      updateCalculation();
     }, 2000);
 
     // Store timeout for all variables
     Object.keys(resetTimeouts).forEach(v => resetTimeouts[v] = timeout);
   }
 
-  function calculateScore() {
-    const U = parseFloat(sliders.urgency.value);
-    const C = parseFloat(sliders.complexity.value);
-    const I = parseFloat(sliders.importance.value);
-    const S = parseFloat(sliders.skill.value);
-    const F = parseFloat(sliders.frequency.value);
-    const A = 0.7;
-
-    const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
-    const displayScore = Math.min(score, 8.6);
-
-    if (scoreValueDisplay) scoreValueDisplay.textContent = displayScore.toFixed(2);
-    
-    updateResultInterpretation(displayScore);
-  }
-
   Object.keys(sliders).forEach((k) => {
     sliders[k]?.addEventListener('input', () => {
       if (sliderValues[k]) sliderValues[k].textContent = sliders[k].value;
       flashAllVariables();
-      calculateScore();
     });
   });
 
   // Initialize formula and score on load
-  updateFormula();
-  calculateScore();
+  updateCalculation();
 
   // If MathJax isn't loaded yet, poll for it and re-render when ready
   if (!window.MathJax || typeof window.MathJax.typesetPromise !== 'function') {
     const pollMathJax = setInterval(() => {
       if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         clearInterval(pollMathJax);
-        updateFormula();
+        updateCalculation();
       }
     }, 100); // Check every 100ms
 
