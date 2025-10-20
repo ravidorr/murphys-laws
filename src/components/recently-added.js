@@ -9,10 +9,11 @@ export function RecentlyAdded() {
     remainderText: ' Added',
   });
 
-  fetchRecentlyAdded()
+  fetchRecentlyAdded(3)
     .then(data => {
       const laws = data && Array.isArray(data.data) ? data.data : [];
-      renderLaws(laws, { limit: 3 });
+      // Ensure we only show exactly 3 laws
+      renderLaws(laws.slice(0, 3), { limit: 3 });
     })
     .catch(() => {
       renderError('Failed to load recently added laws.');

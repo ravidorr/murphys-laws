@@ -61,7 +61,11 @@ export function createLawListSection({ accentText, remainderText }) {
     const content = el.querySelector('.card-content');
     if (!content) return;
 
-    const sliced = laws.slice(skip, skip + limit);
+    // Ensure we have a valid array and apply skip/limit
+    const validLaws = Array.isArray(laws) ? laws : [];
+    const startIndex = Math.max(0, skip);
+    const endIndex = startIndex + (Number.isFinite(limit) && limit > 0 ? limit : validLaws.length);
+    const sliced = validLaws.slice(startIndex, endIndex);
 
     content.innerHTML = `
       <h4 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h4>
@@ -70,7 +74,10 @@ export function createLawListSection({ accentText, remainderText }) {
       </div>
     `;
 
-    addVotingListeners(el);
+    // Only add voting listeners if there are actually laws to vote on
+    if (sliced.length > 0) {
+      addVotingListeners(el);
+    }
   }
 
   function renderError(message) {

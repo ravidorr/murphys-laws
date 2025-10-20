@@ -8,6 +8,9 @@ import { wrapLoadingMarkup } from '../utils/dom.js';
 import { LAWS_PER_PAGE } from '../utils/constants.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { AdvancedSearch } from '../components/advanced-search.js';
+import { TopVoted } from '../components/top-voted.js';
+import { Trending } from '../components/trending.js';
+import { RecentlyAdded } from '../components/recently-added.js';
 
 export function Browse({ searchQuery, onNavigate }) {
   const el = document.createElement('div');
@@ -137,7 +140,7 @@ export function Browse({ searchQuery, onNavigate }) {
 
   // Update the display with fetched laws
   function updateDisplay() {
-    const cardText = el.querySelector('.card-text');
+    const cardText = el.querySelector('#browse-laws-list');
     if (cardText) {
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
@@ -153,7 +156,7 @@ export function Browse({ searchQuery, onNavigate }) {
     currentPage = page;
 
     // Show loading state
-    const cardText = el.querySelector('.card-text');
+    const cardText = el.querySelector('#browse-laws-list');
     if (cardText) {
       cardText.setAttribute('aria-busy', 'true');
       cardText.innerHTML = wrapLoadingMarkup();
@@ -272,6 +275,18 @@ export function Browse({ searchQuery, onNavigate }) {
   const searchContainer = el.querySelector('#advanced-search-container');
   if (searchContainer) {
     searchContainer.appendChild(searchComponent);
+  }
+
+  // Add widgets after search
+  const widgetsContainer = el.querySelector('[data-widgets]');
+  if (widgetsContainer) {
+    const topVotedWidget = TopVoted();
+    const trendingWidget = Trending();
+    const recentlyAddedWidget = RecentlyAdded();
+
+    widgetsContainer.appendChild(topVotedWidget);
+    widgetsContainer.appendChild(trendingWidget);
+    widgetsContainer.appendChild(recentlyAddedWidget);
   }
 
   loadPage(1);

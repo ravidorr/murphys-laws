@@ -4,9 +4,9 @@ import templateHtml from '@components/templates/law-of-day.html?raw';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
-import { showError } from './notification.js';
+import { showError, showSuccess } from './notification.js';
 
-export function LawOfTheDay({ law, onNavigate, showButton = true }) {
+export function LawOfTheDay({ law, onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
   el.setAttribute('data-law-id', law?.id || '');
@@ -61,21 +61,7 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
     if (downCount) downCount.textContent = String(downvotes);
   }
 
-  const viewMoreContainer = el.querySelector('#lod-view-more');
-  if (viewMoreContainer) {
-    if (showButton) {
-      viewMoreContainer.innerHTML = `
-        <button class="btn" type="button" data-nav="browse" aria-label="View more laws">
-          <span class="btn-text">View More Laws</span>
-          <span class="material-symbols-outlined icon ml">arrow_forward</span>
-        </button>
-      `;
-    } else {
-      viewMoreContainer.remove();
-    }
-  }
-
-  // Handle voting and navigation
+  // Handle voting, navigation, and sharing
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
@@ -108,6 +94,31 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
       return;
     }
 
+    // Handle share button
+    const shareBtn = t.closest('[data-action="share"]');
+    if (shareBtn) {
+      e.stopPropagation();
+      const url = `${window.location.origin}${window.location.pathname}#/law/${law.id}`;
+      const title = law.title || 'Murphy\'s Law of the Day';
+      const text = law.text || '';
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text, url });
+        } catch (err) {
+          // User cancelled or error occurred
+          if (err.name !== 'AbortError') {
+            // Fallback to clipboard
+            fallbackShare(url);
+          }
+        }
+      } else {
+        // Fallback to clipboard
+        fallbackShare(url);
+      }
+      return;
+    }
+
     // Preserve click-to-detail navigation on the main body
     const host = t.closest('[data-law-id]');
     if (host) {
@@ -115,6 +126,38 @@ export function LawOfTheDay({ law, onNavigate, showButton = true }) {
       if (id) onNavigate('law', id);
     }
   });
+
+  function fallbackShare(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        showSuccess('Link copied to clipboard!');
+      }).catch(() => {
+        promptCopy(url);
+      });
+    } else {
+      promptCopy(url);
+    }
+  }
+
+  function promptCopy(url) {
+    const textArea = document.createElement('textarea');
+    textArea.value = url;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        showSuccess('Link copied to clipboard!');
+      } else {
+        showError('Failed to copy link. Please copy manually: ' + url);
+      }
+    } catch {
+      showError('Failed to copy link. Please copy manually: ' + url);
+    }
+    document.body.removeChild(textArea);
+  }
 
   return el;
 }
