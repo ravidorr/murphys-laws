@@ -1,12 +1,9 @@
-import { LawOfTheDay } from '@components/law-of-day.js';
-import { TopVoted } from '@components/top-voted.js';
-import { Trending } from '@components/trending.js';
-import { RecentlyAdded } from '@components/recently-added.js';
 import templateHtml from '@views/templates/law-detail.html?raw';
-import { fetchLaw, fetchLawOfTheDay } from '../utils/api.js';
+import { fetchLaw } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
+import { showSuccess, showError as showErrorNotification } from '../components/notification.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -21,9 +18,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const breadcrumbCurrent = el.querySelector('[data-breadcrumb-current]');
   const loadingState = el.querySelector('[data-loading]');
   const lawContent = el.querySelector('[data-law-content]');
-  const lawOfDayContainer = el.querySelector('[data-law-of-day]');
   const lawCardContainer = el.querySelector('[data-law-card-container]');
-  const widgetsContainer = el.querySelector('[data-widgets]');
   const notFoundState = el.querySelector('[data-not-found]');
   const notFoundTemplate = el.querySelector('[data-not-found-template]');
   const lawCardTemplate = el.querySelector('[data-law-card-template]');
@@ -75,8 +70,21 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     const upVoteCount = clone.querySelector('[data-upvote-count]');
     const downVoteCount = clone.querySelector('[data-downvote-count]');
 
-    if (titleEl) titleEl.textContent = law.title ? String(law.title) : 'Law';
-    if (textEl) textEl.textContent = law.text ? String(law.text) : '';
+    if (titleEl) {
+      const title = law.title ? String(law.title) : 'Law';
+      // Split title to accent the first word
+      const words = title.split(' ');
+      if (words.length > 1) {
+        const firstWord = escapeHtml(words[0]);
+        const restOfTitle = escapeHtml(words.slice(1).join(' '));
+        titleEl.innerHTML = `<span class="accent-text">${firstWord}</span> ${restOfTitle}`;
+      } else {
+        titleEl.textContent = title;
+      }
+    }
+
+    const safeText = escapeHtml(law.text || '');
+    if (textEl) textEl.textContent = `"${safeText}"`;
 
     const attsHtml = renderAttributionsList(law.attributions);
     const author = law.author ? String(law.author) : '';
@@ -87,11 +95,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       }
     } else if (author) {
       if (attributionEl) {
-        attributionEl.innerHTML = '';
-        const authorEl = document.createElement('p');
-        authorEl.className = 'small';
-        authorEl.textContent = `- ${author}`;
-        attributionEl.appendChild(authorEl);
+        attributionEl.textContent = `- ${author}`;
         attributionEl.removeAttribute('hidden');
       }
     }
@@ -142,63 +146,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     setBreadcrumb(safeTitle);
     showLaw();
 
-    lawOfDayContainer?.replaceChildren();
     lawCardContainer?.replaceChildren();
-    widgetsContainer?.replaceChildren();
 
-    fetchLawOfTheDay()
-      .then(data => {
-        const laws = data && Array.isArray(data.data) ? data.data : [];
-        let lawOfTheDay = null;
-        let isCurrentLawOfTheDay = false;
-
-        if (laws.length > 0) {
-          lawOfTheDay = laws[0];
-          isCurrentLawOfTheDay = lawOfTheDay && lawOfTheDay.id === law.id;
-        }
-
-        if (lawOfTheDay && lawOfDayContainer) {
-          const lodWidget = LawOfTheDay({ law: lawOfTheDay, onNavigate, showButton: false });
-          lawOfDayContainer.appendChild(lodWidget);
-        }
-
-        if (!isCurrentLawOfTheDay && lawCardContainer) {
-          const lawCard = renderLawCard(law);
-          if (lawCard) {
-            lawCardContainer.appendChild(lawCard);
-          }
-        }
-
-        if (widgetsContainer) {
-          const topVotedWidget = TopVoted();
-          const trendingWidget = Trending();
-          const recentlyAddedWidget = RecentlyAdded();
-
-          widgetsContainer.appendChild(topVotedWidget);
-          widgetsContainer.appendChild(trendingWidget);
-          widgetsContainer.appendChild(recentlyAddedWidget);
-        }
-      })
-      .catch(() => {
-        lawOfDayContainer?.replaceChildren();
-
-        if (lawCardContainer) {
-          const lawCard = renderLawCard(law);
-          if (lawCard) {
-            lawCardContainer.appendChild(lawCard);
-          }
-        }
-
-        if (widgetsContainer) {
-          const topVotedWidget = TopVoted();
-          const trendingWidget = Trending();
-          const recentlyAddedWidget = RecentlyAdded();
-
-          widgetsContainer.appendChild(topVotedWidget);
-          widgetsContainer.appendChild(trendingWidget);
-          widgetsContainer.appendChild(recentlyAddedWidget);
-        }
-      });
+    if (lawCardContainer) {
+      const lawCard = renderLawCard(law);
+      if (lawCard) {
+        lawCardContainer.appendChild(lawCard);
+      }
+    }
   }
 
   showLoading();
@@ -290,7 +245,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   function fallbackShare(url) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard!');
+        showSuccess('Link copied to clipboard!');
       }).catch(() => {
         promptCopy(url);
       });
@@ -307,10 +262,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     document.body.appendChild(textArea);
     textArea.select();
     try {
-      document.execCommand('copy');
-      alert('Link copied to clipboard!');
+      const successful = document.execCommand('copy');
+      if (successful) {
+        showSuccess('Link copied to clipboard!');
+      } else {
+        showErrorNotification('Failed to copy link. Please copy manually: ' + url);
+      }
     } catch {
-      alert('Could not copy link. Please copy manually: ' + url);
+      showErrorNotification('Failed to copy link. Please copy manually: ' + url);
     }
     document.body.removeChild(textArea);
   }

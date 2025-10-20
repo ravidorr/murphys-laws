@@ -4,6 +4,9 @@ import * as voting from '../src/utils/voting.js';
 
 describe('Browse view', () => {
   let fetchLawsSpy;
+  let fetchTopVotedSpy;
+  let fetchTrendingSpy;
+  let fetchRecentlyAddedSpy;
   let getUserVoteSpy;
   let toggleVoteSpy;
 
@@ -16,6 +19,11 @@ describe('Browse view', () => {
       ],
       total: 2
     });
+
+    // Mock widget API calls
+    fetchTopVotedSpy = vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: [] });
+    fetchTrendingSpy = vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
+    fetchRecentlyAddedSpy = vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
 
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
     toggleVoteSpy = vi.spyOn(voting, 'toggleVote').mockResolvedValue({ upvotes: 11, downvotes: 2 });
@@ -176,10 +184,12 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
     await vi.waitFor(() => {
-      expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
+      const card = el.querySelector('#browse-laws-list');
+      expect(card?.querySelector('.law-card-mini [data-vote="up"]')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const cardText = el.querySelector('#browse-laws-list');
+    const upvoteBtn = cardText.querySelector('.law-card-mini [data-vote="up"]');
     upvoteBtn.click();
 
     await vi.waitFor(() => {
@@ -194,10 +204,12 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
     await vi.waitFor(() => {
-      expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
+      const card = el.querySelector('#browse-laws-list');
+      expect(card?.querySelector('.law-card-mini [data-vote="up"]')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const cardText = el.querySelector('#browse-laws-list');
+    const upvoteBtn = cardText.querySelector('.law-card-mini [data-vote="up"]');
     upvoteBtn.click();
 
     await vi.waitFor(() => {
@@ -245,8 +257,9 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
     await vi.waitFor(() => {
-      const upvoteBtn = el.querySelector('[data-vote="up"]');
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      const cardText = el.querySelector('#browse-laws-list');
+      const upvoteBtn = cardText?.querySelector('.law-card-mini [data-vote="up"]');
+      expect(upvoteBtn?.classList.contains('voted')).toBe(true);
     }, { timeout: 1000 });
   });
 
@@ -256,10 +269,12 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
     await vi.waitFor(() => {
-      expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
+      const cardText = el.querySelector('#browse-laws-list');
+      expect(cardText?.querySelector('.law-card-mini [data-vote="up"]')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const cardText = el.querySelector('#browse-laws-list');
+    const upvoteBtn = cardText.querySelector('.law-card-mini [data-vote="up"]');
     upvoteBtn.click();
 
     await vi.waitFor(() => {

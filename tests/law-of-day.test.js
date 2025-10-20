@@ -33,8 +33,8 @@ describe('LawOfTheDay component', () => {
   });
 
   function mountLaw(law, options = {}) {
-    const { showButton = true, append = false, onNavigate = () => {} } = options;
-    const el = LawOfTheDay({ law, onNavigate, showButton });
+    const { append = false, onNavigate = () => {} } = options;
+    const el = LawOfTheDay({ law, onNavigate });
     const self = local();
     self.el = el;
     self.appended = append;
@@ -75,20 +75,14 @@ describe('LawOfTheDay component', () => {
     expect(el.querySelector('[data-vote="down"]')).toBeTruthy();
   });
 
-  it('shows "View More Laws" button by default', () => {
+  it('shows "Browse All Laws" and "Share" buttons', () => {
     const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
     const el = mountLaw(law);
 
-    expect(el.textContent).toMatch(/View More Laws/);
+    expect(el.textContent).toMatch(/Browse All Laws/);
+    expect(el.textContent).toMatch(/Share/);
     expect(el.querySelector('[data-nav="browse"]')).toBeTruthy();
-  });
-
-  it('hides "View More Laws" button when showButton is false', () => {
-    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
-    const el = mountLaw(law, { showButton: false });
-
-    expect(el.textContent).not.toMatch(/View More Laws/);
-    expect(el.querySelector('[data-nav="browse"]')).toBeFalsy();
+    expect(el.querySelector('[data-action="share"]')).toBeTruthy();
   });
 
   it('handles upvote button click', async () => {

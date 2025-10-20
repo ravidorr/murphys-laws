@@ -1,5 +1,6 @@
 import { LawDetail } from '@views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
+import * as notification from '../src/components/notification.js';
 
 describe('LawDetail view', () => {
   beforeEach(() => {
@@ -20,11 +21,9 @@ describe('LawDetail view', () => {
 
   it('renders title for existing law and triggers vote', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, submittedBy: 'tester' };
-    const lotd = { id: '1', title: 'LOTD', text: 'Law of the day text', score: 100 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotd] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 1, downvotes: 0 });
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
@@ -40,14 +39,11 @@ describe('LawDetail view', () => {
     }
   });
 
-  it('renders law when law of the day fetch succeeds', async () => {
+  it('renders law successfully', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-    const lotd = { id: '1', title: 'LOTD Title', text: 'Law of the day', score: 100 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotd] }) })
-      .mockResolvedValue({ ok: true, json: async () => ({ data: [] }) }); // For top/trending/recent components
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -56,47 +52,14 @@ describe('LawDetail view', () => {
       expect(el.textContent).toMatch(/Test Law/);
     }, { timeout: 500 });
 
-    // Both laws should be present (LOTD and the fetched law)
     expect(el.textContent).toMatch(/Test Law/);
-  });
-
-  it('does not duplicate law card when current law is law of the day', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 100 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [law] }) });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    // Should only show law once (as law of the day, not duplicated as separate card)
-    const cards = el.querySelectorAll('.card');
-    expect(cards.length).toBeLessThanOrEqual(5); // 1 LOTD + up to 4 widgets
-  });
-
-  it('renders law when law of the day fetch fails', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockRejectedValueOnce(new Error('LOTD fetch failed'));
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    expect(el.textContent).toMatch(/Test Law/);
-
   });
 
   it('handles navigation button clicks', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     let navTarget = '';
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: (target) => { navTarget = target; } });
@@ -114,8 +77,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 0, downvotes: 1 });
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
@@ -134,8 +96,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -154,8 +115,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', text: 'Test text without title', score: 3 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -169,8 +129,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', text: 'Anonymous law', score: 3 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -183,8 +142,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Unpopular Law', text: 'Test text', score: -5, upvotes: 2, downvotes: 7 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -197,26 +155,12 @@ describe('LawDetail view', () => {
     expect(downvoteCount?.textContent).toBe('7');
   });
 
-  it('renders law when law of the day returns empty array', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    expect(el.textContent).toMatch(/Test Law/);
-  });
 
   it('handles law with category information', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, category: 'Technology' };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -225,19 +169,6 @@ describe('LawDetail view', () => {
     expect(el.textContent).toMatch(/Test Law/);
   });
 
-  it('handles law of the day that returns non-ok response', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: false });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    expect(el.textContent).toMatch(/Test Law/);
-  });
 
   it('renders with all law metadata present', async () => {
     const law = {
@@ -251,8 +182,7 @@ describe('LawDetail view', () => {
     };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -262,33 +192,6 @@ describe('LawDetail view', () => {
     expect(el.textContent).toMatch(/Famous Author/);
   });
 
-  it('handles law of the day response with null data', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => null });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    expect(el.textContent).toMatch(/Test Law/);
-  });
-
-  it('handles law of the day response with data not being an array', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: 'not an array' }) });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    expect(el.textContent).toMatch(/Test Law/);
-  });
 
   it('handles law with attributions array', async () => {
     const law = {
@@ -300,8 +203,7 @@ describe('LawDetail view', () => {
     };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -314,8 +216,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text' };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -329,43 +230,12 @@ describe('LawDetail view', () => {
     expect(downvoteCount?.textContent).toBe('0');
   });
 
-  it('handles law of the day array with null/undefined first element', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [null] }) });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await new Promise(r => setTimeout(r, 50));
-
-    // Should render the main law without crashing
-    expect(el.textContent).toMatch(/Test Law/);
-  });
-
-  it('handles law of the day with law object that has no id', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
-    const lotdWithoutId = { title: 'LOTD Without ID', text: 'LOTD text', score: 100 };
-
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [lotdWithoutId] }) })
-      .mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
-
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
-
-    await vi.waitFor(() => {
-      expect(el.textContent).toMatch(/Test Law/);
-    }, { timeout: 500 });
-  });
 
   it('updates vote counts in UI after voting', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
@@ -396,8 +266,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
 
@@ -416,8 +285,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
 
@@ -440,8 +308,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text for sharing', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     // Mock navigator.share
     const shareMock = vi.fn().mockResolvedValue(undefined);
@@ -475,8 +342,7 @@ describe('LawDetail view', () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     // Mock clipboard API
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -486,8 +352,8 @@ describe('LawDetail view', () => {
       configurable: true
     });
 
-    // Mock alert
-    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    // Mock showSuccess notification
+    const showSuccessMock = vi.spyOn(notification, 'showSuccess').mockImplementation(() => {});
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
@@ -499,11 +365,11 @@ describe('LawDetail view', () => {
       await new Promise(r => setTimeout(r, 10));
 
       expect(writeTextMock).toHaveBeenCalledWith(window.location.href);
-      expect(alertMock).toHaveBeenCalledWith('Link copied to clipboard!');
+      expect(showSuccessMock).toHaveBeenCalledWith('Link copied to clipboard!');
     }
 
     // Cleanup
-    alertMock.mockRestore();
+    showSuccessMock.mockRestore();
     delete navigator.clipboard;
   });
 });

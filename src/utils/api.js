@@ -106,8 +106,8 @@ export async function fetchLawOfTheDay() {
  * @param {number} limit - Number of laws to fetch
  * @returns {Promise<Object>} Response with law data
  */
-export async function fetchTopVoted(limit = 4) {
-  return await fetchLaws({ limit, offset: 0, sort: 'score', order: 'desc' });
+export async function fetchTopVoted(limit = 3) {
+  return await fetchLaws({ limit, offset: 0, sort: 'upvotes', order: 'desc' });
 }
 
 /**

@@ -22,9 +22,10 @@ export function Trending() {
     contentDiv.appendChild(loading);
   }
 
-  fetchTrending()
+  fetchTrending(3)
     .then(data => {
       const laws = data && Array.isArray(data.data) ? data.data : [];
+      // Ensure we only show exactly 3 laws
       const trending = laws.slice(0, 3);
 
       const contentDiv = el.querySelector('.card-content');
@@ -64,9 +65,11 @@ export function Trending() {
   }).join('')}
           </div>
         `;
-        
-        // Add voting event listeners
-        addVotingListeners(el);
+
+        // Add voting event listeners only if there are laws
+        if (trending.length > 0) {
+          addVotingListeners(el);
+        }
       }
     })
     .catch(() => {
