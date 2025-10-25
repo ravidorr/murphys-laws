@@ -39,7 +39,8 @@
     "migrate": "node scripts/migrate.mjs",
     "migrate:safe": "node scripts/migration-safety-check.mjs && node scripts/migrate.mjs",
     "db:show-updates": "node scripts/show-recent-updates.mjs",
-    "db:export-updates": "node scripts/export-law-updates.mjs"
+    "db:export-updates": "node scripts/export-law-updates.mjs",
+    "health-check": "node scripts/health-check.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --fix",
