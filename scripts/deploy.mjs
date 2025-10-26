@@ -12,8 +12,9 @@
 
 import { execSync } from 'node:child_process';
 
-const DROPLET_HOST = 'root@45.55.124.212';
+const DROPLET_HOST = 'ravidor@167.99.53.90';
 const DROPLET_PATH = '/root/murphys-laws';
+const SSH_KEY = '-i ~/.ssh/id_ed25519_digitalocean';
 
 // Colors for output
 const colors = {
@@ -48,25 +49,25 @@ async function deploy() {
   // Step 2: Sync dist/ folder to droplet
   log('\n→ Syncing dist/ folder to droplet...', 'blue');
   exec(
-    `rsync -avz --delete dist/ ${DROPLET_HOST}:${DROPLET_PATH}/dist/`,
+    `rsync -avz --delete -e "ssh ${SSH_KEY}" dist/ ${DROPLET_HOST}:${DROPLET_PATH}/dist/`,
     'Syncing dist folder'
   );
 
   // Step 3: Sync scripts/ and ecosystem config (in case they changed)
   log('\n→ Syncing scripts and config...', 'blue');
   exec(
-    `rsync -avz scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/scripts/`,
+    `rsync -avz -e "ssh ${SSH_KEY}" scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/scripts/`,
     'Syncing scripts'
   );
   exec(
-    `rsync -avz ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/`,
+    `rsync -avz -e "ssh ${SSH_KEY}" ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/`,
     'Syncing PM2 config'
   );
 
   // Step 4: Restart PM2 services
   log('\n→ Restarting services on droplet...', 'blue');
   exec(
-    `ssh ${DROPLET_HOST} "cd ${DROPLET_PATH} && pm2 restart ecosystem.config.cjs"`,
+    `ssh ${SSH_KEY} ${DROPLET_HOST} "cd ${DROPLET_PATH} && pm2 restart ecosystem.config.cjs"`,
     'Restarting PM2 services'
   );
 
