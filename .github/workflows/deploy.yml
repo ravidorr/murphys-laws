@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "dist/,scripts/,ecosystem.config.cjs,nginx.conf"
-          target: "/root/murphys-laws/"
+          target: "~/murphys-laws/"
           overwrite: true
 
       - name: Update server and restart services
