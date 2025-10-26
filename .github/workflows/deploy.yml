@@ -25,6 +25,16 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Upload build artifacts
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/,scripts/,db/,package*.json,ecosystem.config.cjs,nginx.conf,vite.config.js"
+          target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
+          overwrite: true
+
       - name: Deploy and restart services
         uses: appleboy/ssh-action@v1.0.0
         env:
@@ -42,10 +52,6 @@ jobs:
             sudo install -d -m 755 "$STAGING_DIR"
             sudo install -d -m 755 "$TARGET_DIR"
 
-            # Ensure node modules are built before syncing
-            cd "$STAGING_DIR"
-            npm install
-
             sudo install -d -m 755 "$TARGET_DIR/dist"
             sudo install -d -m 755 "$TARGET_DIR/scripts"
             sudo install -d -m 755 "$TARGET_DIR/db"
@@ -58,6 +64,7 @@ jobs:
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
             sudo install -m 644 "$STAGING_DIR/package.json" "$TARGET_DIR/package.json"
             sudo install -m 644 "$STAGING_DIR/package-lock.json" "$TARGET_DIR/package-lock.json"
+            sudo install -m 644 "$STAGING_DIR/vite.config.js" "$TARGET_DIR/vite.config.js"
 
             sudo chown -R root:root "$TARGET_DIR"
 
