@@ -148,7 +148,8 @@ describe('Law components', () => {
 
       const el = RecentlyAdded();
 
-      expect(el.textContent).toContain('Loading');
+      // Check for loading placeholder instead of specific text (now shows random messages)
+      expect(el.querySelector('.loading-placeholder')).toBeTruthy();
       vi.restoreAllMocks();
     });
 
