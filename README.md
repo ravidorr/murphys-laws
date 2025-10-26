@@ -163,6 +163,181 @@ git push
 
 A git hook will prevent you from accidentally committing the database file.
 
+## 🏗️ Infrastructure & Security
+
+### Server Architecture
+
+The application runs on two DigitalOcean droplets:
+
+**Main Application Droplet** (murphys-laws.com - 167.99.53.90)
+- Frontend (Vite preview) on localhost:5175
+- API server on localhost:8787
+- Nginx reverse proxy (ports 80/443)
+- PM2 process manager (murphys-api, murphys-frontend)
+
+**n8n Automation Droplet** (n8n.murphys-laws.com - 45.55.74.28)
+- n8n workflow automation (Docker)
+- Automated health monitoring
+- Email alerting system
+
+### Security Hardening
+
+Both droplets are fully hardened with:
+
+**SSH Security**
+- Root login disabled
+- Password authentication disabled
+- Key-only authentication (ravidor user)
+- Fail2ban protecting against brute force attacks
+
+**Firewall (UFW)**
+- Only SSH (22), HTTP (80), HTTPS (443) open
+- All other ports blocked by default
+- Frontend and API bound to localhost only
+
+**Fail2ban**
+- Active monitoring and IP banning
+- 3 max retries in 10 minutes
+- 1-hour ban duration
+
+**SSL/TLS**
+- Let's Encrypt certificates
+- Auto-renewal configured
+- HSTS headers enabled
+
+### Automated Monitoring & Alerting
+
+**Daily Status Reports** (8:00 AM UTC)
+- System status (uptime, disk, memory, load)
+- Service health (nginx, fail2ban, ssh, postfix)
+- PM2/n8n process status
+- Security summary (failed logins, bans)
+- SSL certificate expiration
+- Backup status
+- Pending system updates
+
+**Critical Alerts** (Immediate Email)
+- Unauthorized root logins
+- Disk usage > 90%
+- Critical services down
+- SSL certificate expiring < 7 days
+- Application processes stopped
+
+**Security Monitoring** (Every 6 hours)
+- Fail2ban activity
+- SSH authentication failures
+- Service health checks
+- Disk space monitoring
+
+**Email Delivery**: via smtp2go.com to ravidor@gmail.com
+- Main droplet: alerts@murphys-laws.com
+- n8n droplet: n8n-alerts@murphys-laws.com
+
+### Automated Backups
+
+**Main Application** (Daily 2:00 AM UTC)
+- Database (murphys.db)
+- Environment configuration (.env)
+- Full application code (excluding node_modules, logs, .git)
+- Retention: 30 days
+- Location: `/root/backups/`
+- Log: `/var/log/backup-murphys.log`
+
+**n8n Workflows** (Daily 2:00 AM UTC)
+- Database backup (SQLite)
+- Configuration backup
+- **GitHub backup**: https://github.com/ravidorr/n8n-workflows (private)
+- Individual JSON files per workflow
+- Version controlled with automatic commits
+- Retention: 30 days local, unlimited on GitHub
+
+### Automatic Security Updates
+
+- Unattended-upgrades enabled on both droplets
+- Security patches applied automatically
+- Kernel updates with reboot notifications
+- Package updates tracked and reported
+
+### Log Management
+
+**Log Rotation** (via logrotate)
+- Nginx logs: 14 days
+- Application logs: 30 days
+- Security monitor logs: 30 days
+- Backup logs: 12 weeks
+- PM2 logs: Managed by pm2-logrotate module
+
+**PM2 Log Rotation**
+- Max log size: 10MB
+- Retention: 30 rotations
+- Compression: Enabled
+- Daily rotation at midnight
+
+### Service Monitoring Scripts
+
+**Enhanced Security Monitor**
+- `/usr/local/bin/enhanced-security-monitor.sh`
+- Runs every 6 hours via cron
+- Checks: fail2ban, SSH, services, disk, SSL, PM2/n8n
+
+**Daily Status Report**
+- `/usr/local/bin/daily-status-report.sh`
+- Runs daily at 8 AM UTC
+- Comprehensive system health report
+
+**Workflow Backup to GitHub**
+- `/usr/local/bin/backup-workflows-to-github.sh`
+- Exports workflows from n8n database
+- Commits and pushes to GitHub
+- Runs daily at 2 AM UTC
+
+### Network Security
+
+**Port Configuration**
+- SSH: 22 (restricted)
+- HTTP: 80 (nginx)
+- HTTPS: 443 (nginx)
+- Frontend: 5175 (localhost only)
+- API: 8787 (localhost only)
+- n8n: 5678 (localhost only, Docker)
+- Postfix: 25 (localhost only)
+
+**Postfix Email Relay**
+- Configured for localhost only
+- SMTP relay via smtp2go.com
+- TLS encryption enabled
+- Sender rewriting to verified domains
+
+### Disabled Unnecessary Services
+
+To reduce attack surface:
+- ModemManager
+- multipathd
+- udisks2
+- fwupd
+- packagekit
+
+### Third-Party Services
+
+The application integrates with the following external services:
+
+**Email Services**
+- **ImprovMX** (https://improvmx.com/) - Email forwarding for @murphys-laws.com domain
+- **smtp2go** (https://app.smtp2go.com/) - SMTP relay for outbound emails (alerts, notifications)
+  - Sender addresses: `alerts@murphys-laws.com`, `n8n-alerts@murphys-laws.com`
+  - Free tier: 1,000 emails/month
+
+**Analytics & Monetization**
+- **Google Analytics** (https://analytics.google.com/) - Website traffic and user behavior analytics
+- **Google AdSense** (https://adsense.google.com/) - Advertisement monetization
+- **Google Tag Manager** (https://tagmanager.google.com/) - Tag and analytics management
+  - Container ID: GTM-KD4H36BH
+
+**Automation**
+- **n8n** (https://n8n.io/) - Self-hosted workflow automation
+  - Hosted on dedicated droplet: n8n.murphys-laws.com
+  - Workflows backed up to GitHub: https://github.com/ravidorr/n8n-workflows
+
 ## 🚀 Deployment
 
 **IMPORTANT**: Always deploy from your **local machine**, never build on the droplet!
