@@ -17,7 +17,7 @@ export default defineConfig({
   },
   preview: {
     port: 5175,
-    host: '127.0.0.1',
+    host: '0.0.0.0',
     allowedHosts: [
       'murphys-laws.com',
       'www.murphys-laws.com',
