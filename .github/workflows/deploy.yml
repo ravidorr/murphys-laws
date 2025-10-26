@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,scripts/,db/,package*.json,ecosystem.config.cjs,nginx.conf"
+          source: "dist/,scripts/,db/,murphys.db,package*.json,ecosystem.config.cjs,nginx.conf"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -78,6 +78,11 @@ jobs:
             nvm use 22
 
             cd "$TARGET_DIR"
+
+            if [ ! -f murphys.db ]; then
+              echo "⚠️  murphys.db missing; bootstrapping empty schema"
+              sqlite3 murphys.db < db/schema.sql
+            fi
 
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
