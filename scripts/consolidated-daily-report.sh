@@ -8,6 +8,7 @@
 # - SSL monitoring
 # - Vulnerability scan (Sundays only)
 # - Cost optimization (1st of month only)
+# - Backup test reminder (1st of month only)
 #############################################################################
 
 ALERT_EMAIL="ravidor@gmail.com"
@@ -406,6 +407,31 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
 fi
 
 #############################################################################
+# PART 12: MONTHLY BACKUP TEST REMINDER (1st of Month Only)
+#############################################################################
+
+if [ "$DAY_OF_MONTH" = "01" ]; then
+    REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    REPORT+="12. MONTHLY BACKUP TEST REMINDER\n"
+    REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    REPORT+="⚠️  Monthly Action Required: Test Backup Restore Process\n\n"
+    REPORT+="It's time to run the monthly non-disruptive backup tests on both droplets.\n"
+    REPORT+="This ensures your backups are valid and can be restored in case of disaster.\n\n"
+    REPORT+="MAIN DROPLET (167.99.53.90):\n"
+    REPORT+="  ssh ravidor@167.99.53.90\n"
+    REPORT+="  sudo /usr/local/bin/test-backup-restore.sh\n\n"
+    REPORT+="N8N DROPLET (45.55.74.28):\n"
+    REPORT+="  ssh ravidor@45.55.74.28\n"
+    REPORT+="  # Follow the manual testing procedures in TEST-BACKUP-RESTORE.md\n\n"
+    REPORT+="Expected Results:\n"
+    REPORT+="  ✅ All tests should pass (26/26 for main droplet)\n"
+    REPORT+="  ✅ Backup age < 30 hours\n"
+    REPORT+="  ✅ Database integrity checks pass\n"
+    REPORT+="  ✅ You'll receive a separate email with detailed test results\n\n"
+    REPORT+="Documentation: See TEST-BACKUP-RESTORE.md for full testing guide\n\n"
+fi
+
+#############################################################################
 # FOOTER
 #############################################################################
 
@@ -432,7 +458,7 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
     SUBJECT="$SUBJECT (+ Vulnerability Scan)"
 fi
 if [ "$DAY_OF_MONTH" = "01" ]; then
-    SUBJECT="$SUBJECT (+ Cost Report)"
+    SUBJECT="$SUBJECT (+ Cost Report + Backup Test Reminder)"
 fi
 
 cat "$REPORT_FILE" | mail -s "$SUBJECT" -r "$FROM_EMAIL" "$ALERT_EMAIL"
