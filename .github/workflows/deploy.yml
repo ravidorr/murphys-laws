@@ -55,10 +55,12 @@ jobs:
             sudo install -d -m 755 "$TARGET_DIR/dist"
             sudo install -d -m 755 "$TARGET_DIR/scripts"
             sudo install -d -m 755 "$TARGET_DIR/db"
+            sudo install -d -m 755 "$TARGET_DIR/logs"
 
             sudo rsync -a --delete "$STAGING_DIR/dist/" "$TARGET_DIR/dist/"
             sudo rsync -a --delete "$STAGING_DIR/scripts/" "$TARGET_DIR/scripts/"
             sudo rsync -a --delete "$STAGING_DIR/db/" "$TARGET_DIR/db/"
+            sudo rsync -a --delete "$STAGING_DIR/logs/" "$TARGET_DIR/logs/"
 
             sudo install -m 644 "$STAGING_DIR/ecosystem.config.cjs" "$TARGET_DIR/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
