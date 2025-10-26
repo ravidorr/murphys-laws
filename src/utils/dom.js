@@ -11,7 +11,32 @@ export function createErrorState(message = 'An error occurred.') {
   el.className = 'error-state';
   el.setAttribute('role', 'alert');
   el.setAttribute('aria-live', 'assertive');
-  el.innerHTML = `<p class="small error">${message}</p>`;
+  el.innerHTML = `
+    <section class="section section-card">
+      <div class="section-header">
+        <h3 class="section-title">
+          <span class="material-symbols-outlined icon">error</span>
+          <span class="accent-text">Connection</span> Error
+        </h3>
+      </div>
+      <div class="section-body text-center">
+        <p class="small mb-4">${message}</p>
+      </div>
+      <div class="section-footer">
+        <div class="left"></div>
+        <div class="right">
+          <button class="btn outline" onclick="window.location.reload()">
+            <span class="btn-text">Retry</span>
+            <span class="material-symbols-outlined icon">refresh</span>
+          </button>
+          <a href="/" class="btn">
+            <span class="btn-text">Go Home</span>
+            <span class="material-symbols-outlined icon">home</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  `;
   return el;
 }
 

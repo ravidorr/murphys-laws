@@ -367,3 +367,8 @@ textarea.form-control,
   color: var(--muted-fg);
   margin: 1rem;
 }
+
+/* Error State */
+.error-state {
+  padding: 2rem 0;
+}
