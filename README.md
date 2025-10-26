@@ -207,31 +207,76 @@ Both droplets are fully hardened with:
 
 ### Automated Monitoring & Alerting
 
-**Daily Status Reports** (8:00 AM UTC)
-- System status (uptime, disk, memory, load)
-- Service health (nginx, fail2ban, ssh, postfix)
-- PM2/n8n process status
+**Enhanced Daily Status Reports** (8:00 AM UTC)
+- System status (uptime, disk, memory, CPU load)
+- Service health (nginx, fail2ban, SSH, postfix)
+- PM2 process status and restart counts
+- Database metrics (size, growth, query performance)
+- Performance metrics (response times, memory trends)
+- Bandwidth usage and top requested URLs
 - Security summary (failed logins, bans)
-- SSL certificate expiration
-- Backup status
+- SSL certificate expiration (30/14/7 day warnings)
+- Backup status and age verification
+- Resource utilization analysis
 - Pending system updates
 
-**Critical Alerts** (Immediate Email)
-- Unauthorized root logins
-- Disk usage > 90%
-- Critical services down
-- SSL certificate expiring < 7 days
-- Application processes stopped
+**Application Health Monitoring** (Every 5 Minutes)
+- HTTP endpoint response time tracking
+- API health checks with database performance
+- Frontend/API availability monitoring
+- Automatic service restart on failures (after 3 consecutive failures)
+- Performance degradation alerts (>5s response time)
 
-**Security Monitoring** (Every 6 hours)
-- Fail2ban activity
-- SSH authentication failures
-- Service health checks
-- Disk space monitoring
+**Performance Tracking** (Hourly)
+- Frontend/API response time metrics
+- Database query performance
+- Memory usage trends
+- CPU load patterns
+- Disk space growth
+- PM2 process restart tracking
+- Metrics stored as CSV for trend analysis
+
+**SSL Certificate Monitoring** (Daily at 9:00 AM UTC)
+- Certificate expiration tracking (30/14/7 day alerts)
+- Certificate chain validation
+- Auto-renewal verification
+- Domain validation in SANs
+- Certificate permissions check
+
+**Security & Vulnerability Scanning** (Weekly, Sunday 3:00 AM UTC)
+- System package vulnerabilities
+- npm/Node.js dependency scanning
+- SSL/TLS configuration audit
+- SSH configuration review
+- Firewall status verification
+- fail2ban effectiveness
+- Open ports audit
+- Recently modified system files
+- Docker security (if applicable)
+
+**Log Analysis & Attack Detection** (Daily at 11:00 PM UTC)
+- SQL injection attempt detection
+- XSS attack pattern recognition
+- Path traversal attempts
+- Command injection detection
+- Brute force attack monitoring
+- Rate limiting effectiveness
+- 4xx/5xx error analysis
+- Suspicious user agent detection
+- Top attacking IPs identification
+
+**Cost Optimization Reports** (Monthly, 1st at 10:00 AM UTC)
+- Resource utilization analysis
+- Droplet sizing recommendations
+- Bandwidth usage tracking
+- Service cost breakdown
+- Potential savings identification
+- Long-term cost projections
 
 **Email Delivery**: via smtp2go.com to ravidor@gmail.com
 - Main droplet: alerts@murphys-laws.com
 - n8n droplet: n8n-alerts@murphys-laws.com
+- Alert cooldown: 1 hour per issue type (prevents spam)
 
 ### Automated Backups
 
@@ -275,21 +320,24 @@ Both droplets are fully hardened with:
 
 ### Service Monitoring Scripts
 
-**Enhanced Security Monitor**
-- `/usr/local/bin/enhanced-security-monitor.sh`
-- Runs every 6 hours via cron
-- Checks: fail2ban, SSH, services, disk, SSL, PM2/n8n
+**Health Check & Monitoring**
+- `/root/murphys-laws/scripts/health-check.mjs` - Node.js health checker with response time tracking
+- `/usr/local/bin/health-monitor.sh` - Automated service restart on failures (every 5 min)
+- `/usr/local/bin/performance-tracker.sh` - Performance metrics collection (hourly)
 
-**Daily Status Report**
-- `/usr/local/bin/daily-status-report.sh`
-- Runs daily at 8 AM UTC
-- Comprehensive system health report
+**Security & Analysis**
+- `/usr/local/bin/enhanced-security-monitor.sh` - Security monitoring (every 6 hours)
+- `/usr/local/bin/ssl-monitor.sh` - SSL certificate monitoring with chain validation (daily)
+- `/usr/local/bin/vulnerability-scanner.sh` - Weekly vulnerability scans (Sunday 3 AM)
+- `/usr/local/bin/log-analyzer.sh` - Attack detection and log analysis (daily 11 PM)
 
-**Workflow Backup to GitHub**
-- `/usr/local/bin/backup-workflows-to-github.sh`
-- Exports workflows from n8n database
-- Commits and pushes to GitHub
-- Runs daily at 2 AM UTC
+**Reporting & Status**
+- `/usr/local/bin/daily-status-report.sh` - Enhanced daily health report (8 AM UTC)
+- `/usr/local/bin/cost-optimization-report.sh` - Monthly cost analysis (1st, 10 AM)
+
+**Backup Operations**
+- `/usr/local/bin/backup-murphys.sh` - Application and database backup (daily 2 AM)
+- `/usr/local/bin/backup-workflows-to-github.sh` - n8n workflow GitHub sync (daily 2 AM)
 
 ### Network Security
 
@@ -301,6 +349,31 @@ Both droplets are fully hardened with:
 - API: 8787 (localhost only)
 - n8n: 5678 (localhost only, Docker)
 - Postfix: 25 (localhost only)
+
+**Nginx Rate Limiting**
+- General app: 10 requests/second per IP (burst: 20)
+- API endpoints: 5 requests/second per IP (burst: 10)
+- Calculators: 10 requests/minute per IP (burst: 5)
+- Connection limit: 10 concurrent connections per IP
+- Rate-limited requests return 429 status
+- Logging enabled for rate limit triggers
+
+**Security Headers**
+- X-Frame-Options: SAMEORIGIN (clickjacking protection)
+- X-Content-Type-Options: nosniff
+- X-XSS-Protection: enabled with blocking mode
+- Referrer-Policy: strict-origin-when-cross-origin
+- Permissions-Policy: geolocation, microphone, camera disabled
+- HSTS: max-age 31536000 with includeSubDomains and preload
+- Content-Security-Policy: Configured for Google Analytics, GTM, and app requirements
+- Server tokens hidden (nginx version not disclosed)
+
+**PM2 Auto-Recovery**
+- Memory limit: 500MB per process (auto-restart on exceed)
+- Exponential backoff for restart delays
+- Maximum 10 restarts with 10s minimum uptime
+- Listen/kill timeouts configured
+- Automatic restart on crashes
 
 **Postfix Email Relay**
 - Configured for localhost only
@@ -396,6 +469,42 @@ The API server can send email notifications when new laws are submitted. To enab
    ```
 
 Emails will be sent to `ravidor@gmail.com` with subject "New Murphy Law Submitted!"
+
+## 📚 Operational Documentation
+
+Comprehensive guides for infrastructure management:
+
+**[DEPLOY-MONITORING.md](./DEPLOY-MONITORING.md)** - Enhanced Monitoring Deployment
+- Step-by-step deployment of all monitoring enhancements
+- Cron job configuration
+- Nginx rate limiting and security headers setup
+- Testing and verification procedures
+- Rollback instructions
+
+**[DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md)** - Disaster Recovery Runbook
+- Complete server rebuild procedures
+- Database recovery steps
+- SSL certificate recovery
+- Service restoration checklist
+- Recovery time estimates for various scenarios
+
+**[BACKUP-RESTORE.md](./BACKUP-RESTORE.md)** - Backup & Restore Procedures
+- Manual backup procedures
+- Database restore workflows
+- Application restore steps
+- n8n workflow recovery
+- Backup testing and verification
+- Off-site backup strategies
+
+**[DATABASE.md](./DATABASE.md)** - Database Management
+- Schema migration system
+- Safe update procedures
+- Data integrity guidelines
+
+**[DEPLOYMENT.md](./DEPLOYMENT.md)** - Application Deployment
+- Standard deployment procedures
+- Port validation
+- Troubleshooting guides
 
 ## Contributing
 

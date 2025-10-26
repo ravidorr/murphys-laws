@@ -80,17 +80,20 @@ async function checkFrontend() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+    const startTime = Date.now();
     const response = await fetch(FRONTEND_URL, {
       signal: controller.signal,
       headers: { 'User-Agent': 'MurphysLaws-HealthCheck/1.0' }
     });
+    const responseTime = Date.now() - startTime;
     clearTimeout(timeoutId);
 
     if (response.status !== 200) {
       return {
         success: false,
         error: `Frontend returned status ${response.status}`,
-        url: FRONTEND_URL
+        url: FRONTEND_URL,
+        responseTime
       };
     }
 
@@ -99,16 +102,18 @@ async function checkFrontend() {
       return {
         success: false,
         error: `Frontend returned unexpected content-type: ${contentType}`,
-        url: FRONTEND_URL
+        url: FRONTEND_URL,
+        responseTime
       };
     }
 
-    return { success: true, url: FRONTEND_URL };
+    return { success: true, url: FRONTEND_URL, responseTime };
   } catch (error) {
     return {
       success: false,
       error: error.name === 'AbortError' ? 'Request timeout (10s)' : error.message,
-      url: FRONTEND_URL
+      url: FRONTEND_URL,
+      responseTime: error.name === 'AbortError' ? 10000 : null
     };
   }
 }
@@ -119,17 +124,20 @@ async function checkAPI() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+    const startTime = Date.now();
     const response = await fetch(API_URL, {
       signal: controller.signal,
       headers: { 'User-Agent': 'MurphysLaws-HealthCheck/1.0' }
     });
+    const responseTime = Date.now() - startTime;
     clearTimeout(timeoutId);
 
     if (response.status !== 200) {
       return {
         success: false,
         error: `API returned status ${response.status}`,
-        url: API_URL
+        url: API_URL,
+        responseTime
       };
     }
 
@@ -138,16 +146,18 @@ async function checkAPI() {
       return {
         success: false,
         error: 'API health check returned ok: false',
-        url: API_URL
+        url: API_URL,
+        responseTime
       };
     }
 
-    return { success: true, url: API_URL };
+    return { success: true, url: API_URL, responseTime, dbQueryTime: data.dbQueryTime };
   } catch (error) {
     return {
       success: false,
       error: error.name === 'AbortError' ? 'Request timeout (10s)' : error.message,
-      url: API_URL
+      url: API_URL,
+      responseTime: error.name === 'AbortError' ? 10000 : null
     };
   }
 }
@@ -165,19 +175,49 @@ async function runHealthCheck() {
   ]);
 
   const failures = [];
+  const warnings = [];
+  const SLOW_THRESHOLD_MS = 5000; // 5 seconds
 
+  // Check frontend results
   if (!frontendResult.success) {
     console.error(`❌ Frontend check failed: ${frontendResult.error}`);
-    failures.push(`Frontend (${frontendResult.url}): ${frontendResult.error}`);
+    if (frontendResult.responseTime) {
+      console.error(`   Response time: ${frontendResult.responseTime}ms`);
+    }
+    failures.push(`Frontend (${frontendResult.url}): ${frontendResult.error}${frontendResult.responseTime ? ` (${frontendResult.responseTime}ms)` : ''}`);
   } else {
     console.log(`✅ Frontend is healthy: ${frontendResult.url}`);
+    console.log(`   Response time: ${frontendResult.responseTime}ms`);
+
+    if (frontendResult.responseTime > SLOW_THRESHOLD_MS) {
+      console.warn(`⚠️  Frontend response time is slow (${frontendResult.responseTime}ms > ${SLOW_THRESHOLD_MS}ms)`);
+      warnings.push(`Frontend is responding slowly: ${frontendResult.responseTime}ms`);
+    }
   }
 
+  // Check API results
   if (!apiResult.success) {
     console.error(`❌ API check failed: ${apiResult.error}`);
-    failures.push(`API (${apiResult.url}): ${apiResult.error}`);
+    if (apiResult.responseTime) {
+      console.error(`   Response time: ${apiResult.responseTime}ms`);
+    }
+    failures.push(`API (${apiResult.url}): ${apiResult.error}${apiResult.responseTime ? ` (${apiResult.responseTime}ms)` : ''}`);
   } else {
     console.log(`✅ API is healthy: ${apiResult.url}`);
+    console.log(`   Response time: ${apiResult.responseTime}ms`);
+    if (apiResult.dbQueryTime) {
+      console.log(`   Database query time: ${apiResult.dbQueryTime}ms`);
+
+      if (apiResult.dbQueryTime > 1000) {
+        console.warn(`⚠️  Database query time is slow (${apiResult.dbQueryTime}ms > 1000ms)`);
+        warnings.push(`Database queries are slow: ${apiResult.dbQueryTime}ms`);
+      }
+    }
+
+    if (apiResult.responseTime > SLOW_THRESHOLD_MS) {
+      console.warn(`⚠️  API response time is slow (${apiResult.responseTime}ms > ${SLOW_THRESHOLD_MS}ms)`);
+      warnings.push(`API is responding slowly: ${apiResult.responseTime}ms`);
+    }
   }
 
   // Send alert if any checks failed
@@ -188,11 +228,21 @@ async function runHealthCheck() {
     console.log('---');
     console.error('Health check FAILED. Alert email sent.');
     process.exit(1);
-  } else {
+  }
+
+  // Send warning if performance is degraded
+  if (warnings.length > 0) {
+    const subject = 'Health Check Warning - Performance Degraded';
+    const message = `The health checks passed but performance issues were detected:\n\n${warnings.map(w => `• ${w}`).join('\n')}\n\nConsider investigating to prevent future issues.`;
+    await sendAlert(subject, message);
     console.log('---');
-    console.log('All health checks passed ✓');
+    console.warn('Health check passed with WARNINGS. Alert email sent.');
     process.exit(0);
   }
+
+  console.log('---');
+  console.log('All health checks passed ✓');
+  process.exit(0);
 }
 
 // Run the health check
