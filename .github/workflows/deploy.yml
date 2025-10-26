@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "dist/,scripts/,ecosystem.config.cjs,nginx.conf"
-          target: "/root/murphys-laws/"
+          target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
       - name: Update server and restart services
@@ -46,12 +46,25 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GITHUB_SHA,GITHUB_ACTOR
           script: |
+            STAGING_DIR="$HOME/deploy/murphys-laws"
+            TARGET_DIR="/root/murphys-laws"
+
+            mkdir -p "$STAGING_DIR"
+            sudo install -d -m 755 "$TARGET_DIR"
+            sudo rsync -a --delete "$STAGING_DIR/" "$TARGET_DIR/"
+            sudo chown -R root:root "$TARGET_DIR"
+
+            sudo --preserve-env=GITHUB_SHA,GITHUB_ACTOR bash <<'EOF'
+            set -e
+
+            TARGET_DIR="/root/murphys-laws"
+
             # Load nvm and use Node v22
-            export NVM_DIR="$HOME/.nvm"
+            export NVM_DIR="/root/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 22
 
-            cd ~/murphys-laws
+            cd "$TARGET_DIR"
 
             # Backup production database before pulling
             cp murphys.db murphys.db.backup 2>/dev/null || true
