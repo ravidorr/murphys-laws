@@ -49,7 +49,9 @@ describe('Law components', () => {
 
       const el = TopVoted();
 
-      expect(el.textContent).toContain('Loading');
+      // Check for loading placeholder (uses random messages, not "Loading")
+      expect(el.querySelector('.loading-placeholder')).toBeTruthy();
+      expect(el.textContent).toContain('Top Voted');
     });
 
     it('renders top voted laws after fetch', async () => {

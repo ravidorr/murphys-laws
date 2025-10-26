@@ -10,7 +10,14 @@ module.exports = {
       min_uptime: '10s',
       restart_delay: 5000,
       error_file: 'logs/api-error.log',
-      out_file: 'logs/api-out.log'
+      out_file: 'logs/api-out.log',
+      // Memory and resource limits
+      max_memory_restart: '500M',
+      // Exponential backoff for restarts
+      exp_backoff_restart_delay: 100,
+      // Monitoring
+      listen_timeout: 10000,
+      kill_timeout: 5000
     },
     {
       name: 'murphys-frontend',
@@ -23,7 +30,14 @@ module.exports = {
       min_uptime: '10s',
       restart_delay: 5000,
       error_file: 'logs/frontend-error.log',
-      out_file: 'logs/frontend-out.log'
+      out_file: 'logs/frontend-out.log',
+      // Memory and resource limits
+      max_memory_restart: '500M',
+      // Exponential backoff for restarts
+      exp_backoff_restart_delay: 100,
+      // Monitoring
+      listen_timeout: 10000,
+      kill_timeout: 5000
     }
   ]
 };

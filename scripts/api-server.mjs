@@ -345,7 +345,16 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (req.method === 'GET' && pathname === '/api/health') {
-      return sendJson(res, 200, { ok: true });
+      // Test database query and measure performance
+      const dbStartTime = Date.now();
+      try {
+        await runSql('SELECT COUNT(*) as count FROM laws LIMIT 1');
+        const dbQueryTime = Date.now() - dbStartTime;
+        return sendJson(res, 200, { ok: true, dbQueryTime });
+      } catch (dbError) {
+        console.error('Health check database error:', dbError);
+        return sendJson(res, 503, { ok: false, error: 'Database unavailable', dbError: dbError.message });
+      }
     }
 
     if (req.method === 'GET' && pathname === '/api/laws') {
