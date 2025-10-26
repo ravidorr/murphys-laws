@@ -12,7 +12,7 @@
 
 import { execSync } from 'node:child_process';
 
-const DROPLET_HOST = 'root@45.55.124.212';
+const DROPLET_HOST = 'ravidor@167.99.53.90';
 const DROPLET_PATH = '/root/murphys-laws';
 
 // Colors for output

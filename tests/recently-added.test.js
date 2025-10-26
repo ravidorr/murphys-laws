@@ -29,7 +29,9 @@ describe('RecentlyAdded component', () => {
     fetchRecentlyAddedSpy.mockReturnValue(new Promise(() => {})); // Never resolves
     const el = RecentlyAdded();
 
-    expect(el.textContent).toMatch(/Loading/);
+    // Check for loading placeholder (uses random messages, not "Loading")
+    expect(el.querySelector('.loading-placeholder')).toBeTruthy();
+    expect(el.textContent).toContain('Recently Added');
   });
 
   it('renders recently added laws successfully', async () => {
