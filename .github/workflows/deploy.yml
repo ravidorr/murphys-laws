@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,scripts/,db/,package.json,package-lock.json,ecosystem.config.cjs,nginx.conf"
+          source: "dist/,scripts/,db/,package*.json,ecosystem.config.cjs,nginx.conf"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -67,7 +67,7 @@ jobs:
 
             sudo chown -R root:root "$TARGET_DIR"
 
-            sudo --preserve-env=GITHUB_SHA,GITHUB_ACTOR bash <<'EOF'
+            sudo --preserve-env=GITHUB_SHA,GITHUB_ACTOR bash <<'INNER'
             set -e
 
             TARGET_DIR="/root/murphys-laws"
@@ -93,6 +93,14 @@ jobs:
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
             EOF
 
+            echo "📄 Contents of $TARGET_DIR:" 
+            ls -la
+
+            if [ ! -f package.json ]; then
+              echo "❌ package.json missing in $TARGET_DIR" >&2
+              exit 1
+            fi
+
             # Install all dependencies (including vite for preview server)
             npm install
 
@@ -115,3 +123,4 @@ jobs:
             # Restart services (they now serve pre-built dist/)
             pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
             pm2 save
+            INNER
