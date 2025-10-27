@@ -225,8 +225,8 @@ EOF
    cat > .env << 'EOF'
 SMTP_HOST=mail.smtp2go.com
 SMTP_PORT=2525
-SMTP_USER=murphys-laws.com
-SMTP_PASS=***REMOVED***
+SMTP_USER=your-smtp-username
+SMTP_PASS=your-smtp-password
 EMAIL_FROM=alerts@murphys-laws.com
 EOF
    ```
