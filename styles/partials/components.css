@@ -372,3 +372,45 @@ textarea.form-control,
 .error-state {
   padding: 2rem 0;
 }
+
+/* ==========================
+  Social Share Buttons
+   ========================== */
+
+.share-buttons {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-left: 12px;
+  margin-top: 8px;
+}
+
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.share-button:hover {
+  transform: scale(1.1);
+  opacity: 0.9;
+}
+
+/* Specific colors for each network */
+.share-twitter { background-color: #1DA1F2; }
+.share-facebook { background-color: #1877F2; }
+.share-linkedin { background-color: #0A66C2; }
+.share-reddit { background-color: #FF4500; }
+.share-email { background-color: #777; }
+
+/* Icon size */
+.share-button i {
+  font-size: 18px;
+}

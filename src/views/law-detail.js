@@ -5,6 +5,7 @@ import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
 import { showSuccess, showError as showErrorNotification } from '../components/notification.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
+import { SocialShare } from '../components/social-share.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -161,6 +162,22 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       const lawCard = renderLawCard(law);
       if (lawCard) {
         lawCardContainer.appendChild(lawCard);
+
+        // Add social share buttons to the footer
+        const footer = lawCard.querySelector('.section-footer .right');
+        if (footer) {
+          const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
+          const lawTitle = law.title || 'Murphy\'s Law';
+          const lawDescription = law.text || '';
+
+          const socialShare = SocialShare({
+            url: lawUrl,
+            title: `${lawTitle} - Murphy's Laws`,
+            description: lawDescription
+          });
+
+          footer.appendChild(socialShare);
+        }
       }
     }
   }
@@ -195,31 +212,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       }
     }
 
-    // Handle share action
-    const shareBtn = t.closest('[data-action="share"]');
-    if (shareBtn && currentLaw) {
-      e.stopPropagation();
-      const url = window.location.href;
-      const title = currentLaw.title || 'Murphy\'s Law';
-      const text = currentLaw.text || '';
-
-      if (navigator.share) {
-        try {
-          await navigator.share({ title, text, url });
-        } catch (err) {
-          // User cancelled or error occurred
-          if (err.name !== 'AbortError') {
-            // Fallback to clipboard
-            fallbackShare(url);
-          }
-        }
-      } else {
-        // Fallback to clipboard
-        fallbackShare(url);
-      }
-      return;
-    }
-
     // Handle voting
     const voteBtn = t.closest('[data-vote]');
     if (voteBtn && voteBtn.dataset.id) {
@@ -250,38 +242,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       }
     }
   });
-
-  function fallbackShare(url) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        showSuccess('Link copied to clipboard!');
-      }).catch(() => {
-        promptCopy(url);
-      });
-    } else {
-      promptCopy(url);
-    }
-  }
-
-  function promptCopy(url) {
-    const textArea = document.createElement('textarea');
-    textArea.value = url;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      const successful = document.execCommand('copy');
-      if (successful) {
-        showSuccess('Link copied to clipboard!');
-      } else {
-        showErrorNotification('Failed to copy link. Please copy manually: ' + url);
-      }
-    } catch {
-      showErrorNotification('Failed to copy link. Please copy manually: ' + url);
-    }
-    document.body.removeChild(textArea);
-  }
 
   return el;
 }
