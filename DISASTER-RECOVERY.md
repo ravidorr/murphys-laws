@@ -284,26 +284,29 @@ EOF
 
     Add these lines:
     ```cron
+    # Law of the Day selection (daily at midnight UTC)
+    0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
+
+    # Backup (daily at 2 AM)
+    0 2 * * * /usr/local/bin/backup-murphys.sh
+
     # Daily status report (8 AM UTC)
     0 8 * * * /usr/local/bin/daily-status-report.sh
+
+    # SSL monitoring (daily at 9 AM)
+    0 9 * * * /usr/local/bin/ssl-monitor.sh
+
+    # Log analysis (daily at 11 PM)
+    0 23 * * * /usr/local/bin/log-analyzer.sh
+
+    # Vulnerability scanning (weekly, Sunday at 3 AM)
+    0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh
 
     # Health monitoring (every 5 minutes)
     */5 * * * * /usr/local/bin/health-monitor.sh
 
     # Performance tracking (hourly)
     0 * * * * /usr/local/bin/performance-tracker.sh
-
-    # SSL monitoring (daily at 9 AM)
-    0 9 * * * /usr/local/bin/ssl-monitor.sh
-
-    # Vulnerability scanning (weekly, Sunday at 3 AM)
-    0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh
-
-    # Log analysis (daily at 11 PM)
-    0 23 * * * /usr/local/bin/log-analyzer.sh
-
-    # Backup (daily at 2 AM)
-    0 2 * * * /usr/local/bin/backup-murphys.sh
     ```
 
 13. **Update DNS**:
