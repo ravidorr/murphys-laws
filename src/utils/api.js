@@ -94,11 +94,17 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
 }
 
 /**
- * Fetches the Law of the Day (top-voted law)
+ * Fetches the Law of the Day
+ * Returns the daily rotating law selected by the algorithm:
+ * - Highest upvotes
+ * - Not featured in last 365 days
+ * - If tie, sorted alphabetically by text
  * @returns {Promise<Object>} Response with law data
  */
 export async function fetchLawOfTheDay() {
-  return await fetchLaws({ limit: 1, offset: 0, sort: 'score', order: 'desc' });
+  const response = await fetchAPI('/api/law-of-day');
+  // Return in same format as fetchLaws for compatibility
+  return { data: [response.law], total: 1, limit: 1, offset: 0 };
 }
 
 /**
