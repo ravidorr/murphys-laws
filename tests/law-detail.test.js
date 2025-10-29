@@ -304,73 +304,43 @@ describe('LawDetail view', () => {
     }
   });
 
-  it('handles share button click with navigator.share available', async () => {
+  it('renders social share buttons in footer', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text for sharing', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    // Mock navigator.share
-    const shareMock = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'share', {
-      value: shareMock,
-      writable: true,
-      configurable: true
-    });
-
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
-    const shareBtn = el.querySelector('[data-action="share"]');
-    if (shareBtn) {
-      shareBtn.click();
-      await new Promise(r => setTimeout(r, 10));
-
-      expect(shareMock).toHaveBeenCalledWith({
-        title: 'Test Law',
-        text: 'Test text for sharing',
-        url: window.location.href
-      });
-    }
-
-    // Cleanup
-    delete navigator.share;
+    // Check that social share buttons exist in the footer
+    const shareButtons = el.querySelector('.section-footer .share-buttons');
+    expect(shareButtons).toBeTruthy();
   });
 
-  it('handles share button click with clipboard fallback', async () => {
+  it('renders all social share buttons', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    // Mock clipboard API
-    const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: writeTextMock },
-      writable: true,
-      configurable: true
-    });
-
-    // Mock showSuccess notification
-    const showSuccessMock = vi.spyOn(notification, 'showSuccess').mockImplementation(() => {});
-
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 50));
 
-    const shareBtn = el.querySelector('[data-action="share"]');
-    if (shareBtn) {
-      shareBtn.click();
-      await new Promise(r => setTimeout(r, 10));
+    // Check that all 5 social buttons exist
+    const twitterBtn = el.querySelector('.share-twitter');
+    const facebookBtn = el.querySelector('.share-facebook');
+    const linkedinBtn = el.querySelector('.share-linkedin');
+    const redditBtn = el.querySelector('.share-reddit');
+    const emailBtn = el.querySelector('.share-email');
 
-      expect(writeTextMock).toHaveBeenCalledWith(window.location.href);
-      expect(showSuccessMock).toHaveBeenCalledWith('Link copied to clipboard!');
-    }
-
-    // Cleanup
-    showSuccessMock.mockRestore();
-    delete navigator.clipboard;
+    expect(twitterBtn).toBeTruthy();
+    expect(facebookBtn).toBeTruthy();
+    expect(linkedinBtn).toBeTruthy();
+    expect(redditBtn).toBeTruthy();
+    expect(emailBtn).toBeTruthy();
   });
 });
 
