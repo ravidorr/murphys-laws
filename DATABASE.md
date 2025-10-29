@@ -41,7 +41,8 @@ GitHub Actions will automatically run the migration on production when you merge
 - `001_initial_schema.sql` - Initial database setup
 - `002_add_featured_column.sql` - Add a new column
 - `003_create_comments_table.sql` - Create a new table
-- `004_add_index_on_votes.sql` - Add database index
+- `004_law_of_the_day_history.sql` - Law of the Day tracking table
+- `005_add_index_on_votes.sql` - Add database index
 
 Always use sequential numbers (001, 002, 003...).
 
