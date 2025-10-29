@@ -6,6 +6,7 @@ import { toggleVote, getUserVote } from '../utils/voting.js';
 import { showSuccess, showError as showErrorNotification } from '../components/notification.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { SocialShare } from '../components/social-share.js';
+import { updateSocialMetaTags } from '../utils/dom.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -143,6 +144,17 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       onStructuredData(law);
     }
 
+    // Update meta tags for social sharing
+    const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
+    const lawTitle = law.title || 'Murphy\'s Law';
+    const lawText = law.text || '';
+
+    updateSocialMetaTags({
+      title: `${lawTitle} - Murphy's Laws`,
+      description: lawText,
+      url: lawUrl
+    });
+
     showLaw();
 
     lawCardContainer?.replaceChildren();
@@ -157,12 +169,15 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         if (footer) {
           const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
           const lawTitle = law.title || 'Murphy\'s Law';
-          const lawDescription = law.text || '';
+          const lawText = law.text || '';
+
+          // Create engaging Twitter text with the actual law
+          const twitterText = `I'm on Murphy's Law Site and I've seen this law: "${lawText}". See it for yourself:`;
 
           const socialShare = SocialShare({
             url: lawUrl,
-            title: `${lawTitle} - Murphy's Laws`,
-            description: lawDescription
+            title: twitterText,
+            description: lawText
           });
 
           footer.appendChild(socialShare);
