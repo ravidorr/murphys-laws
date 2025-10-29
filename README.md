@@ -8,6 +8,13 @@ Murphy's Law states: **"If anything can go wrong, it will."** This fundamental l
 
 ## Features
 
+### Law of the Day
+A daily rotating "Law of the Day" feature that showcases the most popular Murphy's Laws on a rotating schedule:
+- **Smart Selection**: Automatically selects the highest-voted law each day
+- **Fair Rotation**: Laws are excluded from selection for 365 days after being featured
+- **Alphabetical Tiebreaker**: When multiple laws have the same votes, they're sorted alphabetically
+- **Pre-calculated**: New law selected at midnight UTC for instant loading
+
 ### Categorized Laws Collection
 Over 40 specialized categories covering every aspect of life:
 - **Technology**: Computers, phones, printers, and digital devices
@@ -130,8 +137,9 @@ npm run db:rebuild               # Rebuild DB from scratch
 
 **Backend**
 - API server: `scripts/api-server.mjs` (Node.js + SQLite)
-- Endpoints: `/api/health`, `/api/laws`, `/api/laws/:id`
+- Endpoints: `/api/health`, `/api/laws`, `/api/laws/:id`, `/api/law-of-day`
 - Data pipeline: Markdown files → SQLite via `scripts/build-sqlite.mjs`
+- Cron job: `scripts/select-law-of-day.mjs` (daily at midnight UTC)
 
 **Dev Servers**
 - API: `127.0.0.1:8787` (npm run api)

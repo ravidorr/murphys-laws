@@ -240,6 +240,37 @@ pm2 restart all
 
 ---
 
+## Scheduled Jobs (Cron)
+
+### Law of the Day Selection
+
+The Law of the Day feature requires a daily cron job to pre-select tomorrow's law at midnight UTC:
+
+```cron
+0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
+```
+
+**What it does:**
+- Runs daily at 00:00 UTC
+- Selects highest-voted law not featured in last 365 days
+- Alphabetical tiebreaker if multiple laws have same votes
+- Stores selection in `law_of_the_day_history` table
+- Logs output to `logs/law-of-day.log`
+
+**Verification:**
+```bash
+# Check if cron job exists
+ssh root@45.55.124.212 "crontab -l | grep select-law-of-day"
+
+# Check recent selections
+ssh root@45.55.124.212 "tail -20 /root/murphys-laws/logs/law-of-day.log"
+
+# Manually trigger selection (for testing)
+ssh root@45.55.124.212 "cd /root/murphys-laws && node scripts/select-law-of-day.mjs"
+```
+
+---
+
 ## Architecture
 
 ```
