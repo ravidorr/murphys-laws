@@ -404,6 +404,84 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { data, limit, offset, total, q, category_id: categoryId, attribution });
     }
 
+    // GET /api/law-of-day - Get the Law of the Day
+    if (req.method === 'GET' && pathname === '/api/law-of-day') {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      // Check if we already have a law of the day for today
+      const existingLaw = await runSqlJson(`
+        SELECT law_id
+        FROM law_of_the_day_history
+        WHERE featured_date = ?
+        LIMIT 1
+      `, [today]);
+
+      let lawId;
+
+      if (existingLaw.length > 0) {
+        // Use the already selected law for today
+        lawId = existingLaw[0].law_id;
+      } else {
+        // Select a new law of the day
+        // 1. Get laws not featured in last 365 days
+        // 2. Order by upvotes DESC, then text ASC (alphabetically)
+        // 3. Take the first one
+        const candidates = await runSqlJson(`
+          SELECT l.id,
+                 COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes
+          FROM laws l
+          WHERE l.status = 'published'
+            AND l.id NOT IN (
+              SELECT law_id
+              FROM law_of_the_day_history
+              WHERE featured_date > date('now', '-365 days')
+            )
+          ORDER BY upvotes DESC, l.text ASC
+          LIMIT 1
+        `);
+
+        if (candidates.length === 0) {
+          // Fallback: if all laws have been featured in last 365 days, reset and pick any
+          const fallbackCandidates = await runSqlJson(`
+            SELECT l.id,
+                   COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes
+            FROM laws l
+            WHERE l.status = 'published'
+            ORDER BY upvotes DESC, l.text ASC
+            LIMIT 1
+          `);
+
+          if (fallbackCandidates.length === 0) {
+            return sendJson(res, 404, { error: 'No published laws available' });
+          }
+
+          lawId = fallbackCandidates[0].id;
+        } else {
+          lawId = candidates[0].id;
+        }
+
+        // Store this as today's law of the day
+        await runSqlJson(`
+          INSERT INTO law_of_the_day_history (law_id, featured_date)
+          VALUES (?, ?)
+        `, [lawId, today]);
+      }
+
+      // Fetch the full law details
+      const laws = await runSqlJson(baseSelect + ' AND l.id = ?', [lawId]);
+
+      if (laws.length === 0) {
+        return sendJson(res, 404, { error: 'Law not found' });
+      }
+
+      const law = {
+        ...laws[0],
+        attributions: safeParseJsonArray(laws[0].attributions),
+      };
+
+      return sendJson(res, 200, { law, featured_date: today });
+    }
+
     // POST /api/laws - Submit a new law for review
     if (req.method === 'POST' && pathname === '/api/laws') {
       const body = await readBody(req);

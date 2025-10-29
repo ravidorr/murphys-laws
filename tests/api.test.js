@@ -322,24 +322,25 @@ describe('API utilities', () => {
   });
 
   describe('fetchLawOfTheDay', () => {
-    it('fetches single law sorted by score', async () => {
+    it('fetches from law-of-day endpoint', async () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => ({ data: [{ id: 1, title: 'Top Law' }], total: 1 })
+        json: async () => ({ law: { id: 1, title: 'Top Law' }, featured_date: '2025-10-29' })
       });
 
       const result = await fetchLawOfTheDay();
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('limit=1'),
+        expect.stringContaining('/api/law-of-day'),
         expect.any(Object)
       );
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('sort=score'),
-        expect.any(Object)
-      );
-      expect(result).toEqual({ data: [{ id: 1, title: 'Top Law' }], total: 1 });
+      expect(result).toEqual({
+        data: [{ id: 1, title: 'Top Law' }],
+        total: 1,
+        limit: 1,
+        offset: 0
+      });
     });
   });
 

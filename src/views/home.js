@@ -4,16 +4,12 @@ import { LawOfTheDay } from '@components/law-of-day.js';
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.js';
 import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calculator-simple.js';
 import { SubmitLawSection } from '@components/submit-law.js';
-import { fetchLaws } from '../utils/api.js';
+import { fetchLawOfTheDay } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
-import { LAWS_PER_PAGE, getRandomLoadingMessage } from '../utils/constants.js';
+import { getRandomLoadingMessage } from '../utils/constants.js';
 
 // Exported for testing
-export function renderHome(el, laws = [], onNavigate) {
-  const data = Array.isArray(laws) ? laws : [];
-  const sortedByScore = [...data].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  const lawOfTheDay = sortedByScore[0] || null;
-
+export function renderHome(el, lawOfTheDay, onNavigate) {
   // Clear and progressively render: component first, then other sections
   el.innerHTML = '';
 
@@ -44,19 +40,10 @@ export function Home({ onNavigate }) {
   el.innerHTML = `<p class="small">${getRandomLoadingMessage()}</p>`;
 
   function fetchAndRender() {
-    fetchLaws({ limit: LAWS_PER_PAGE, offset: 0 })
+    fetchLawOfTheDay()
       .then(json => {
-        const total = json && typeof json.total === 'number' ? json.total : 0;
-        if (total === 0) {
-          el.innerHTML = `
-            <div class="container page">
-              <h2 class="mb-4">No results found</h2>
-              <p class="small">There are no laws to show.</p>
-            </div>
-          `;
-          return;
-        }
-        renderHome(el, json && Array.isArray(json.data) ? json.data : [], onNavigate);
+        const lawOfTheDay = json && json.data && json.data[0] ? json.data[0] : null;
+        renderHome(el, lawOfTheDay, onNavigate);
       })
       .catch(() => {
         el.innerHTML = '';

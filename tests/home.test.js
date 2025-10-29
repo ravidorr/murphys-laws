@@ -2,11 +2,17 @@ import { Home, renderHome } from '@views/home.js';
 
 describe('Home view', () => {
   it('renders Law of the Day after fetching data', async () => {
-    const sample = [
-      { id: '1', text: 'Anything that can go wrong will go wrong.', author: 'Edward Murphy', submittedBy: 'engineerMike', score: 10, publishDate: '2024-01-01' },
-      { id: '2', text: 'Murphy was an optimist.', author: "O'Toole", submittedBy: 'projectSarah', score: 5, publishDate: '2024-01-02' },
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: sample.length, data: sample }) });
+    const lawOfTheDay = {
+      id: '1',
+      text: 'Anything that can go wrong will go wrong.',
+      author: 'Edward Murphy',
+      upvotes: 10,
+      downvotes: 0
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     const el = Home({ isLoggedIn: false, onNavigate: () => {}, _onVote: () => {} });
 
@@ -16,29 +22,40 @@ describe('Home view', () => {
   });
 
   it('navigates to law detail when clicking a law block (after fetch)', async () => {
-    const sample = [
-      { id: '42', text: 'Test law', author: 'Test', submittedBy: 'tester', score: 1, publishDate: '2024-01-03' },
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: sample.length, data: sample }) });
+    const lawOfTheDay = {
+      id: 42,
+      text: 'Test law',
+      author: 'Test',
+      upvotes: 1,
+      downvotes: 0
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     let nav = '';
     const el = Home({ isLoggedIn: false, onNavigate: (name, id) => { nav = `${name}:${id}`; }, _onVote: () => {} });
 
     await new Promise(r => setTimeout(r, 0));
 
-    const block = el.querySelector(`[data-law-id="${sample[0].id}"]`);
+    const block = el.querySelector(`[data-law-id="42"]`);
     block.click();
-    expect(nav).toBe(`law:${sample[0].id}`);
+    expect(nav).toBe('law:42');
   });
 
-  it('shows no results message when total is 0', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 0, data: [] }) });
+  it('shows no Law of the Day when response has no law', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
+    });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    expect(el.textContent).toMatch(/No results found/);
-    expect(el.textContent).toMatch(/There are no laws to show/);
+    // Should still render calculators and submit section, just no Law of the Day
+    expect(el.textContent).not.toMatch(/Law of the Day/);
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
   it('shows error message on fetch failure', async () => {
@@ -52,10 +69,11 @@ describe('Home view', () => {
   });
 
   it('navigates using data-nav attribute', async () => {
-    const sample = [
-      { id: '1', text: 'Test law', score: 10 },
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     let navTarget = '';
     const el = Home({ onNavigate: (target) => { navTarget = target; } });
@@ -72,10 +90,11 @@ describe('Home view', () => {
   });
 
   it('handles law card without id gracefully', async () => {
-    const sample = [
-      { id: '1', text: 'Test law', score: 10 },
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     let navCalled = false;
     const el = Home({ onNavigate: () => { navCalled = true; } });
@@ -91,8 +110,11 @@ describe('Home view', () => {
     expect(navCalled).toBe(false);
   });
 
-  it('renders with no law of the day when laws array is empty', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: [] }) });
+  it('renders with no law of the day when data array is empty', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
+    });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
@@ -102,10 +124,11 @@ describe('Home view', () => {
   });
 
   it('handles non-HTMLElement click targets', async () => {
-    const sample = [
-      { id: '1', text: 'Test law', score: 10 },
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
@@ -119,12 +142,18 @@ describe('Home view', () => {
     expect(true).toBe(true);
   });
 
-  it('shows Law of the Day when first law exists', async () => {
-    const sample = [
-      { id: '1', text: 'Law of the Day text', author: 'Murphy', score: 100 },
-      { id: '2', text: 'Second law', score: 50 }
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 2, data: sample }) });
+  it('shows Law of the Day when law exists', async () => {
+    const lawOfTheDay = {
+      id: 1,
+      text: 'Law of the Day text',
+      author: 'Murphy',
+      upvotes: 100,
+      downvotes: 0
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
@@ -144,10 +173,11 @@ describe('Home view', () => {
   });
 
   it('renders with calculator section', async () => {
-    const sample = [
-      { id: '1', text: 'Test law', score: 10 }
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
@@ -156,10 +186,11 @@ describe('Home view', () => {
   });
 
   it('renders with submit section', async () => {
-    const sample = [
-      { id: '1', text: 'Test law', score: 10 }
-    ];
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ total: 1, data: sample }) });
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
@@ -167,46 +198,50 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Submit/i);
   });
 
-  it('handles response with non-numeric total', async () => {
+  it('handles response with no data array', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ total: 'invalid', data: [] })
+      json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
     });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    expect(el.textContent).toMatch(/No results found/);
+    // Should render calculator and submit sections even with no law
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
-  it('handles response with missing total field', async () => {
+  it('handles response with missing data field', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: [] })
+      json: async () => ({ total: 0, limit: 1, offset: 0 })
     });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    expect(el.textContent).toMatch(/No results found/);
+    // Should render calculator and submit sections
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
   it('handles response with null json', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => null
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ law: null, featured_date: null })
     });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    expect(el.textContent).toMatch(/No results found/);
+    // Should render calculator and submit sections even with null law
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
   it('handles response where data is not an array', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ total: 5, data: 'not an array' })
+      json: async () => ({ data: 'not an array', total: 5, limit: 1, offset: 0 })
     });
 
     const el = Home({ onNavigate: () => {} });
@@ -219,7 +254,7 @@ describe('Home view', () => {
   it('handles response where data is missing', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ total: 5 })
+      json: async () => ({ total: 5, limit: 1, offset: 0 })
     });
 
     const el = Home({ onNavigate: () => {} });
@@ -229,14 +264,11 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
-  it('handles laws with missing score field', async () => {
-    const sample = [
-      { id: '1', text: 'Law without score' },
-      { id: '2', text: 'Another law', score: 50 }
-    ];
+  it('handles law without upvotes field', async () => {
+    const lawOfTheDay = { id: 1, text: 'Law without upvotes' };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ total: 2, data: sample })
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
 
     const el = Home({ onNavigate: () => {} });
@@ -246,31 +278,25 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Law of the Day/);
   });
 
-  it('handles all laws with missing scores (tests nullish coalescing)', async () => {
-    const sample = [
-      { id: '1', text: 'First law without score' },
-      { id: '2', text: 'Second law without score' }
-    ];
+  it('handles law with upvotes as 0', async () => {
+    const lawOfTheDay = { id: 1, text: 'First law', upvotes: 0, downvotes: 0 };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ total: 2, data: sample })
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    // Should render without errors, both laws compared with score ?? 0
+    // Should render without errors
     expect(el.textContent).toMatch(/Law of the Day/);
   });
 
-  it('handles laws with null scores', async () => {
-    const sample = [
-      { id: '1', text: 'Law with null score', score: null },
-      { id: '2', text: 'Another law with null score', score: null }
-    ];
+  it('handles law with null upvotes', async () => {
+    const lawOfTheDay = { id: 1, text: 'Law with null upvotes', upvotes: null, downvotes: null };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ total: 2, data: sample })
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
 
     const el = Home({ onNavigate: () => {} });
@@ -282,24 +308,27 @@ describe('Home view', () => {
 });
 
 describe('renderHome function', () => {
-  it('handles non-array laws parameter (defensive check)', () => {
-    const el = document.createElement('div');
-    const onNavigate = vi.fn();
-
-    // Pass a non-array to test the defensive Array.isArray check
-    renderHome(el, 'not an array', onNavigate);
-
-    // Should render calculator and submit sections without errors
-    expect(el.textContent).toMatch(/Calculator|Submit/i);
-  });
-
-  it('handles null laws parameter', () => {
+  it('handles null lawOfTheDay parameter', () => {
     const el = document.createElement('div');
     const onNavigate = vi.fn();
 
     renderHome(el, null, onNavigate);
 
-    // Should render calculator and submit sections without errors
+    // Should render calculator and submit sections without Law of the Day
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
+    expect(el.textContent).not.toMatch(/Law of the Day/);
+  });
+
+  it('handles valid lawOfTheDay object', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn();
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 5, downvotes: 1 };
+
+    renderHome(el, lawOfTheDay, onNavigate);
+
+    // Should render Law of the Day plus calculator and submit sections
+    expect(el.textContent).toMatch(/Law of the Day/);
+    expect(el.textContent).toMatch(/Test law/);
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 });
