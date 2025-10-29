@@ -75,14 +75,21 @@ describe('LawOfTheDay component', () => {
     expect(el.querySelector('[data-vote="down"]')).toBeTruthy();
   });
 
-  it('shows "Browse All Laws" and "Share" buttons', () => {
+  it('shows "Browse All Laws" button and social share buttons', () => {
     const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
     const el = mountLaw(law);
 
     expect(el.textContent).toMatch(/Browse All Laws/);
-    expect(el.textContent).toMatch(/Share/);
     expect(el.querySelector('[data-nav="browse"]')).toBeTruthy();
-    expect(el.querySelector('[data-action="share"]')).toBeTruthy();
+
+    // Check for social share buttons
+    const shareButtons = el.querySelector('.share-buttons');
+    expect(shareButtons).toBeTruthy();
+    expect(shareButtons.querySelector('.share-twitter')).toBeTruthy();
+    expect(shareButtons.querySelector('.share-facebook')).toBeTruthy();
+    expect(shareButtons.querySelector('.share-linkedin')).toBeTruthy();
+    expect(shareButtons.querySelector('.share-reddit')).toBeTruthy();
+    expect(shareButtons.querySelector('.share-email')).toBeTruthy();
   });
 
   it('handles upvote button click', async () => {

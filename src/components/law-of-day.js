@@ -5,6 +5,7 @@ import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { showError, showSuccess } from './notification.js';
+import { SocialShare } from './social-share.js';
 
 export function LawOfTheDay({ law, onNavigate }) {
   const el = document.createElement('section');
@@ -61,6 +62,30 @@ export function LawOfTheDay({ law, onNavigate }) {
     if (downCount) downCount.textContent = String(downvotes);
   }
 
+  // Add social share buttons to the footer
+  const footer = el.querySelector('.section-footer .right');
+  if (footer) {
+    // Remove the old share button
+    const oldShareBtn = footer.querySelector('[data-action="share"]');
+    if (oldShareBtn) {
+      oldShareBtn.remove();
+    }
+
+    const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
+    const lawText = law.text || '';
+
+    // Create engaging Twitter text with the actual law
+    const twitterText = `I'm on Murphy's Law Site and I've seen this law: "${lawText}". See it for yourself:`;
+
+    const socialShare = SocialShare({
+      url: lawUrl,
+      title: twitterText,
+      description: lawText
+    });
+
+    footer.appendChild(socialShare);
+  }
+
   // Handle voting, navigation, and sharing
   el.addEventListener('click', async (e) => {
     const t = e.target;
@@ -94,31 +119,6 @@ export function LawOfTheDay({ law, onNavigate }) {
       return;
     }
 
-    // Handle share button
-    const shareBtn = t.closest('[data-action="share"]');
-    if (shareBtn) {
-      e.stopPropagation();
-      const url = `${window.location.origin}${window.location.pathname}#/law/${law.id}`;
-      const title = law.title || 'Murphy\'s Law of the Day';
-      const text = law.text || '';
-
-      if (navigator.share) {
-        try {
-          await navigator.share({ title, text, url });
-        } catch (err) {
-          // User cancelled or error occurred
-          if (err.name !== 'AbortError') {
-            // Fallback to clipboard
-            fallbackShare(url);
-          }
-        }
-      } else {
-        // Fallback to clipboard
-        fallbackShare(url);
-      }
-      return;
-    }
-
     // Preserve click-to-detail navigation on the main body
     const host = t.closest('[data-law-id]');
     if (host) {
@@ -126,38 +126,6 @@ export function LawOfTheDay({ law, onNavigate }) {
       if (id) onNavigate('law', id);
     }
   });
-
-  function fallbackShare(url) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        showSuccess('Link copied to clipboard!');
-      }).catch(() => {
-        promptCopy(url);
-      });
-    } else {
-      promptCopy(url);
-    }
-  }
-
-  function promptCopy(url) {
-    const textArea = document.createElement('textarea');
-    textArea.value = url;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      const successful = document.execCommand('copy');
-      if (successful) {
-        showSuccess('Link copied to clipboard!');
-      } else {
-        showError('Failed to copy link. Please copy manually: ' + url);
-      }
-    } catch {
-      showError('Failed to copy link. Please copy manually: ' + url);
-    }
-    document.body.removeChild(textArea);
-  }
 
   return el;
 }
