@@ -17,7 +17,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
 
   el.innerHTML = templateHtml;
 
-  const breadcrumbCurrent = el.querySelector('[data-breadcrumb-current]');
   const loadingState = el.querySelector('[data-loading]');
   const lawContent = el.querySelector('[data-law-content]');
   const lawCardContainer = el.querySelector('[data-law-card-container]');
@@ -33,17 +32,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     }
   }
 
-  function setBreadcrumb(title) {
-    if (breadcrumbCurrent) {
-      breadcrumbCurrent.textContent = title;
-    }
-  }
-
   function showLoading() {
     loadingState?.removeAttribute('hidden');
     lawContent?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
-    setBreadcrumb('Loading…');
   }
 
   function showNotFound() {
@@ -55,7 +47,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         notFoundState.replaceChildren(notFoundTemplate.content.cloneNode(true));
       }
     }
-    setBreadcrumb('Not Found');
   }
 
   function showLaw() {
@@ -147,13 +138,11 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
 
   function renderLaw(law) {
     currentLaw = law;
-    const safeTitle = law.title ? escapeHtml(law.title) : 'Law';
 
     if (typeof onStructuredData === 'function') {
       onStructuredData(law);
     }
 
-    setBreadcrumb(safeTitle);
     showLaw();
 
     lawCardContainer?.replaceChildren();
