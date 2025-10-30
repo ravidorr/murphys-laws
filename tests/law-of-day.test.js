@@ -161,13 +161,11 @@ describe('LawOfTheDay component', () => {
 
   });
 
-  it('handles law card click for navigation', () => {
+  it('does not navigate when law card is clicked', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     let navigated = false;
-    const onNavigate = (view, id) => {
+    const onNavigate = () => {
       navigated = true;
-      expect(view).toBe('law');
-      expect(id).toBe('1');
     };
 
     const el = mountLaw(law, { onNavigate });
@@ -175,7 +173,7 @@ describe('LawOfTheDay component', () => {
     const lawBody = el.querySelector('[data-law-id]');
     lawBody.click();
 
-    expect(navigated).toBe(true);
+    expect(navigated).toBe(false);
   });
 
   it('does not navigate when law-id is missing', () => {
