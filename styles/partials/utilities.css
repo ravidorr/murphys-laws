@@ -60,9 +60,15 @@
 
 .rank {
   width: 1.5rem;
-  color: var(--primary);
+  color: #000;
   font-weight: 700;
   display: inline-block;
+}
+
+@media (prefers-color-scheme: dark) {
+  .rank {
+    color: #fff;
+  }
 }
 
 .accent-text {
