@@ -285,6 +285,13 @@ footer .footer-nav {
   display: none;
 }
 
+.footer-ad,
+.adsbygoogle {
+  width: 100%;
+  min-height: 90px;
+  display: block !important;
+}
+
 footer .footer-nav li::after {
   content: '\2022';
   margin: 0 .5rem;
