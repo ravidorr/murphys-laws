@@ -10,8 +10,6 @@ export function Footer({ onNavigate }) {
   const adHost = footer.querySelector('[data-ad-slot]');
 
   if (adHost) {
-    // Reserve space to prevent layout shift - typical ad heights are 90-250px
-    adHost.style.minHeight = '250px';
     let observer;
 
     const loadAd = () => {
@@ -33,7 +31,6 @@ export function Footer({ onNavigate }) {
       const ad = document.createElement('ins');
       ad.className = 'adsbygoogle footer-ad';
       ad.style.display = 'block';
-      ad.style.minHeight = '250px'; // Reserve space to prevent layout shift
       ad.setAttribute('data-ad-client', 'ca-pub-3615614508734124');
       ad.setAttribute('data-ad-slot', '4091490183');
       ad.setAttribute('data-ad-format', 'auto');
