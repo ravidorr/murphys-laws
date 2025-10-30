@@ -78,6 +78,17 @@
         text-decoration: none;
       }
 
+      /* Ensure links are distinguishable for accessibility */
+      p a, .small a {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+      }
+
+      p a:hover, .small a:hover {
+        text-decoration-thickness: 2px;
+      }
+
       button,
       input,
       select,
