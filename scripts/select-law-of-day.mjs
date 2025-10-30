@@ -18,8 +18,8 @@ function runSqlJson(sql, params = []) {
   let completeSql = sql;
   params.forEach((param) => {
     const value = typeof param === 'number' ? String(param) :
-                  param === null ? 'NULL' :
-                  `'${String(param).replace(/'/g, "''")}'`;
+      param === null ? 'NULL' :
+        `'${String(param).replace(/'/g, "''")}'`;
     completeSql = completeSql.replace('?', value);
   });
 
@@ -39,8 +39,8 @@ function runSql(sql, params = []) {
   let completeSql = sql;
   params.forEach((param) => {
     const value = typeof param === 'number' ? String(param) :
-                  param === null ? 'NULL' :
-                  `'${String(param).replace(/'/g, "''")}'`;
+      param === null ? 'NULL' :
+        `'${String(param).replace(/'/g, "''")}'`;
     completeSql = completeSql.replace('?', value);
   });
 

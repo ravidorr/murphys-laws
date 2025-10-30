@@ -4,9 +4,6 @@ import * as voting from '../src/utils/voting.js';
 
 describe('Browse view', () => {
   let fetchLawsSpy;
-  let fetchTopVotedSpy;
-  let fetchTrendingSpy;
-  let fetchRecentlyAddedSpy;
   let getUserVoteSpy;
   let toggleVoteSpy;
 
@@ -21,9 +18,9 @@ describe('Browse view', () => {
     });
 
     // Mock widget API calls
-    fetchTopVotedSpy = vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: [] });
-    fetchTrendingSpy = vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
-    fetchRecentlyAddedSpy = vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
+    vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: [] });
+    vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
+    vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
 
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
     toggleVoteSpy = vi.spyOn(voting, 'toggleVote').mockResolvedValue({ upvotes: 11, downvotes: 2 });

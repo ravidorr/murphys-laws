@@ -16,11 +16,14 @@ describe('Sod\'s email template helpers', () => {
   const local = createLocalThis();
 
   it('creates a subject with the probability', () => {
+    const self = local();
     const subject = sodsEmailTemplate.createSodsEmailSubject('42.00%', 'Alice');
-    expect(subject).toBe("Alice shared a Sod's Law calculation with you (P=42.00%)");
+    self.subject = subject;
+    expect(self.subject).toBe("Alice shared a Sod's Law calculation with you (P=42.00%)");
   });
 
   it('builds the plain text email content', () => {
+    const self = local();
     const text = sodsEmailTemplate.createSodsEmailText({
       taskDescription: 'Ship release',
       senderName: 'Bob',
@@ -35,14 +38,17 @@ describe('Sod\'s email template helpers', () => {
       interpretation: 'Brace for impact.'
     });
 
-    expect(text).toContain('Hi Alice');
-    expect(text).toContain('Bob has shared with you a calculation for this task: "Ship release"');
-    expect(text).toContain('- Skill (1-9): 5');
-    expect(text).toContain('Probability (P): 73.21%');
-    expect(text).toContain('Brace for impact.');
+    self.text = text;
+
+    expect(self.text).toContain('Hi Alice');
+    expect(self.text).toContain('Bob (bob@example.com) has shared with you a calculation for this task: "Ship release"');
+    expect(self.text).toContain('- Skill (1-9): 5');
+    expect(self.text).toContain('Probability (P): 73.21%');
+    expect(self.text).toContain('Brace for impact.');
   });
 
   it('escapes HTML entities in the HTML email', () => {
+    const self = local();
     const html = sodsEmailTemplate.createSodsEmailHtml({
       taskDescription: '<deploy> & "test"',
       senderName: 'Bob',
@@ -57,17 +63,20 @@ describe('Sod\'s email template helpers', () => {
       interpretation: 'Close <call> & stay "calm"'
     });
 
-    expect(html).toContain('&lt;deploy&gt; &amp; &quot;test&quot;');
-    expect(html).toContain('&lt;1&gt;');
-    expect(html).toContain('&amp;2&amp;');
-    expect(html).toContain('&quot;3&quot;');
-    expect(html).toContain('&#39;4&#39;');
-    expect(html).toContain('&lt;5&gt;');
-    expect(html).toContain('50% &amp; rising');
-    expect(html).toContain('Close &lt;call&gt; &amp; stay &quot;calm&quot;');
+    self.html = html;
+
+    expect(self.html).toContain('&lt;deploy&gt; &amp; &quot;test&quot;');
+    expect(self.html).toContain('&lt;1&gt;');
+    expect(self.html).toContain('&amp;2&amp;');
+    expect(self.html).toContain('&quot;3&quot;');
+    expect(self.html).toContain('&#39;4&#39;');
+    expect(self.html).toContain('&lt;5&gt;');
+    expect(self.html).toContain('50% &amp; rising');
+    expect(self.html).toContain('Close &lt;call&gt; &amp; stay &quot;calm&quot;');
   });
 
   it('strips the outer shell when building preview HTML', () => {
+    const self = local();
     const preview = sodsEmailTemplate.createSodsEmailPreviewHtml({
       taskDescription: 'Preview task',
       senderName: 'Bob',
@@ -82,13 +91,16 @@ describe('Sod\'s email template helpers', () => {
       interpretation: 'Looks manageable.'
     });
 
-    expect(preview).not.toMatch(/<!DOCTYPE html>/i);
-    expect(preview).not.toMatch(/<html>/i);
-    expect(preview).toContain('Preview task');
-    expect(preview.trim().startsWith('<table')).toBe(true);
+    self.preview = preview;
+
+    expect(self.preview).not.toMatch(/<!DOCTYPE html>/i);
+    expect(self.preview).not.toMatch(/<html>/i);
+    expect(self.preview).toContain('Preview task');
+    expect(self.preview.trim().startsWith('<table')).toBe(true);
   });
 
   it('returns the full HTML when the body wrapper is missing', () => {
+    const self = local();
     const preview = sodsEmailTemplate.createSodsEmailPreviewHtml({
       taskDescription: 'Fallback task',
       senderName: 'Bob',
@@ -105,10 +117,13 @@ describe('Sod\'s email template helpers', () => {
       renderHtml: () => '<div>No wrapper</div>'
     });
 
-    expect(preview).toBe('<div>No wrapper</div>');
+    self.preview = preview;
+
+    expect(self.preview).toBe('<div>No wrapper</div>');
   });
 
   it('treats nullish values as empty strings when escaping', () => {
+    const self = local();
     const html = sodsEmailTemplate.createSodsEmailHtml({
       taskDescription: null,
       senderName: undefined,
@@ -123,7 +138,9 @@ describe('Sod\'s email template helpers', () => {
       interpretation: undefined
     });
 
-    expect(html).not.toContain('null');
-    expect(html).not.toContain('undefined');
+    self.html = html;
+
+    expect(self.html).not.toContain('null');
+    expect(self.html).not.toContain('undefined');
   });
 });

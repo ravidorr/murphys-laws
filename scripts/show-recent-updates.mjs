@@ -48,7 +48,7 @@ if (laws.length === 0) {
   process.exit(0);
 }
 
-laws.forEach((law, index) => {
+laws.forEach((law) => {
   const wasEdited = law.updated_at > law.created_at;
   const marker = wasEdited ? '✏️  EDITED' : '   new';
 

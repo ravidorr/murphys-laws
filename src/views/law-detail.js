@@ -3,7 +3,6 @@ import { fetchLaw } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
-import { showSuccess, showError as showErrorNotification } from '../components/notification.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { SocialShare } from '../components/social-share.js';
 import { updateSocialMetaTags } from '../utils/dom.js';
@@ -12,9 +11,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
   el.setAttribute('role', 'main');
-
-  // Store current law for updates
-  let currentLaw = null;
 
   el.innerHTML = templateHtml;
 
@@ -138,7 +134,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   }
 
   function renderLaw(law) {
-    currentLaw = law;
 
     if (typeof onStructuredData === 'function') {
       onStructuredData(law);
@@ -168,7 +163,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         const footer = lawCard.querySelector('.section-footer .right');
         if (footer) {
           const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
-          const lawTitle = law.title || 'Murphy\'s Law';
           const lawText = law.text || '';
 
           // Create engaging Twitter text with the actual law

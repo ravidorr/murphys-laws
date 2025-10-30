@@ -81,7 +81,7 @@ describe('Footer component', () => {
   });
 
   it('initializes AdSense', () => {
-    const el = Footer({
+    Footer({
       onNavigate: () => {}
     });
 

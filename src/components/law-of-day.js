@@ -4,10 +4,10 @@ import templateHtml from '@components/templates/law-of-day.html?raw';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
-import { showError, showSuccess } from './notification.js';
+import { showError } from './notification.js';
 import { SocialShare } from './social-share.js';
 
-export function LawOfTheDay({ law, onNavigate }) {
+export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
   el.setAttribute('data-law-id', law?.id || '');

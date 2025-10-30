@@ -42,7 +42,7 @@ export function createSodsEmailText({
 }) {
   return `Hi ${recipientName},
 
-${senderName} has shared with you a calculation for this task: "${taskDescription}"
+${senderName} (${senderEmail}) has shared with you a calculation for this task: "${taskDescription}"
 
 Using Sod's Law, here's the probability that things will go wrong:
 
@@ -127,7 +127,7 @@ export function createSodsEmailHtml({
               <tr>
                 <td style="padding:24px 24px 8px; font-family:${FONT_STACK}; color:#333333;">
                   <p style="margin:0; font-size:16px; line-height:1.5;">Hi <strong>${safeRecipientName}</strong>,</p>
-                  <p style="margin:12px 0 0; font-size:15px; line-height:1.5; color:#66717f;"><strong>${safeSenderName}</strong> has shared with you a calculation for this task:</p>
+                  <p style="margin:12px 0 0; font-size:15px; line-height:1.5; color:#66717f;"><strong>${safeSenderName}</strong> <a href="mailto:${safeSenderEmail}" style="color:#4b56a3; text-decoration:none; font-weight:500;">${safeSenderEmail}</a> has shared with you a calculation for this task:</p>
                 </td>
               </tr>
               <tr>
