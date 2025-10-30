@@ -162,13 +162,54 @@ else
 fi
 
 #############################################################################
-# PART 4: TRAFFIC & BANDWIDTH
+# PART 4: WEBSITE ACTIVITY
+#############################################################################
+
+log "Collecting website activity..."
+
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+REPORT+="4. WEBSITE ACTIVITY (Last 24h)\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+if [ -f "$DB_PATH" ]; then
+    LAWS_SUBMITTED=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM laws WHERE datetime(created_at) >= datetime('now', '-1 day')" 2>/dev/null || echo "N/A")
+    UPVOTES=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM votes WHERE datetime(created_at) >= datetime('now', '-1 day') AND vote_type='up'" 2>/dev/null || echo "N/A")
+    DOWNVOTES=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM votes WHERE datetime(created_at) >= datetime('now', '-1 day') AND vote_type='down'" 2>/dev/null || echo "N/A")
+    TOTAL_PUBLISHED=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM laws WHERE status='published'" 2>/dev/null || echo "N/A")
+
+    REPORT+="Laws Submitted: $LAWS_SUBMITTED\n"
+    REPORT+="Upvotes: $UPVOTES\n"
+    REPORT+="Downvotes: $DOWNVOTES\n"
+    REPORT+="Total Published Laws: $TOTAL_PUBLISHED\n\n"
+else
+    REPORT+="Database not available\n\n"
+fi
+
+#############################################################################
+# PART 5: MURPHY'S LAW OF THE DAY
+#############################################################################
+
+log "Selecting Murphy's Law of the Day..."
+
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+REPORT+="5. Murphy's Law of the Day\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+if [ -f "$DB_PATH" ]; then
+    LAW_OF_DAY=$(sqlite3 "$DB_PATH" "SELECT COALESCE(title || ': ', '') || text FROM laws WHERE status='published' ORDER BY RANDOM() LIMIT 1" 2>/dev/null || echo "Unable to fetch law of the day")
+    REPORT+="$LAW_OF_DAY\n\n"
+else
+    REPORT+="Database not available\n\n"
+fi
+
+#############################################################################
+# PART 6: TRAFFIC & BANDWIDTH
 #############################################################################
 
 log "Analyzing traffic and bandwidth..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="4. TRAFFIC & BANDWIDTH (Last 24h)\n"
+REPORT+="6. TRAFFIC & BANDWIDTH (Last 24h)\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f /var/log/nginx/access.log ]; then
@@ -200,13 +241,13 @@ else
 fi
 
 #############################################################################
-# PART 5: SECURITY SUMMARY
+# PART 7: SECURITY SUMMARY
 #############################################################################
 
 log "Collecting security information..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="5. SECURITY SUMMARY\n"
+REPORT+="7. SECURITY SUMMARY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Failed SSH attempts
@@ -223,13 +264,13 @@ fi
 REPORT+="\n"
 
 #############################################################################
-# PART 6: SSL CERTIFICATE STATUS
+# PART 8: SSL CERTIFICATE STATUS
 #############################################################################
 
 log "Checking SSL certificate..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="6. SSL CERTIFICATE STATUS\n"
+REPORT+="8. SSL CERTIFICATE STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 CERT_PATH="/etc/letsencrypt/live/murphys-laws.com/cert.pem"
@@ -266,13 +307,13 @@ else
 fi
 
 #############################################################################
-# PART 7: LOG ANALYSIS & ATTACK DETECTION
+# PART 9: LOG ANALYSIS & ATTACK DETECTION
 #############################################################################
 
 log "Running log analysis..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="7. LOG ANALYSIS & ATTACK DETECTION\n"
+REPORT+="9. LOG ANALYSIS & ATTACK DETECTION\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Run log analyzer and capture output
@@ -288,13 +329,13 @@ else
 fi
 
 #############################################################################
-# PART 8: BACKUP STATUS
+# PART 10: BACKUP STATUS
 #############################################################################
 
 log "Checking backup status..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="8. BACKUP STATUS\n"
+REPORT+="10. BACKUP STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -d /root/backups ]; then
@@ -326,13 +367,13 @@ else
 fi
 
 #############################################################################
-# PART 9: SYSTEM UPDATES
+# PART 11: SYSTEM UPDATES
 #############################################################################
 
 log "Checking for system updates..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="9. SYSTEM UPDATES\n"
+REPORT+="11. SYSTEM UPDATES\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 REPORT+="Kernel: $(uname -r)\n"
@@ -346,14 +387,14 @@ if [ "$PENDING_UPDATES" -gt 10 ]; then
 fi
 
 #############################################################################
-# PART 10: VULNERABILITY SCAN (Sundays Only)
+# PART 12: VULNERABILITY SCAN (Sundays Only)
 #############################################################################
 
 if [ "$DAY_OF_WEEK" -eq 7 ]; then
     log "Running weekly vulnerability scan (Sunday)..."
 
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="10. WEEKLY VULNERABILITY SCAN\n"
+    REPORT+="12. WEEKLY VULNERABILITY SCAN\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run vulnerability scanner
@@ -376,14 +417,14 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 fi
 
 #############################################################################
-# PART 11: COST OPTIMIZATION (1st of Month Only)
+# PART 13: COST OPTIMIZATION (1st of Month Only)
 #############################################################################
 
 if [ "$DAY_OF_MONTH" = "01" ]; then
     log "Running monthly cost optimization report..."
 
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="11. MONTHLY COST OPTIMIZATION REPORT\n"
+    REPORT+="13. MONTHLY COST OPTIMIZATION REPORT\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run cost optimization report
@@ -407,12 +448,12 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
 fi
 
 #############################################################################
-# PART 12: MONTHLY BACKUP TEST REMINDER (1st of Month Only)
+# PART 14: MONTHLY BACKUP TEST REMINDER (1st of Month Only)
 #############################################################################
 
 if [ "$DAY_OF_MONTH" = "01" ]; then
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="12. MONTHLY BACKUP TEST REMINDER\n"
+    REPORT+="14. MONTHLY BACKUP TEST REMINDER\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     REPORT+="⚠️  Monthly Action Required: Test Backup Restore Process\n\n"
     REPORT+="It's time to run the monthly non-disruptive backup tests on both droplets.\n"

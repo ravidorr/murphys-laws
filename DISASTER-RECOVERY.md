@@ -268,7 +268,7 @@ EOF
 12. **Install monitoring scripts**:
     ```bash
     # Copy scripts
-    cp scripts/enhanced-daily-status-report.sh /usr/local/bin/daily-status-report.sh
+    cp scripts/daily-report.sh /usr/local/bin/daily-report.sh
     cp scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
     cp scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh
     cp scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh
@@ -291,7 +291,7 @@ EOF
     0 2 * * * /usr/local/bin/backup-murphys.sh
 
     # Daily status report (8 AM UTC)
-    0 8 * * * /usr/local/bin/daily-status-report.sh
+    0 5 * * * /usr/local/bin/daily-report.sh
 
     # SSL monitoring (daily at 9 AM)
     0 9 * * * /usr/local/bin/ssl-monitor.sh

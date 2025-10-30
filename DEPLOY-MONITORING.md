@@ -44,7 +44,7 @@ scp scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
 scp scripts/ssl-monitor.sh ravidor@167.99.53.90:/tmp/
 scp scripts/vulnerability-scanner.sh ravidor@167.99.53.90:/tmp/
 scp scripts/log-analyzer.sh ravidor@167.99.53.90:/tmp/
-scp scripts/enhanced-daily-status-report.sh ravidor@167.99.53.90:/tmp/
+scp scripts/daily-report.sh ravidor@167.99.53.90:/tmp/
 scp scripts/cost-optimization-report.sh ravidor@167.99.53.90:/tmp/
 ```
 
@@ -75,8 +75,8 @@ sudo chmod +x /usr/local/bin/log-analyzer.sh
 sudo chmod +x /usr/local/bin/cost-optimization-report.sh
 
 # Replace the daily status report
-sudo cp /tmp/enhanced-daily-status-report.sh /usr/local/bin/daily-status-report.sh
-sudo chmod +x /usr/local/bin/daily-status-report.sh
+sudo cp /tmp/daily-report.sh /usr/local/bin/daily-report.sh
+sudo chmod +x /usr/local/bin/daily-report.sh
 ```
 
 #### 3. Update API Server (for DB Performance Tracking)
@@ -120,7 +120,7 @@ sudo crontab -e
 
 ```cron
 # Daily status report (8 AM UTC)
-0 8 * * * /usr/local/bin/daily-status-report.sh
+0 5 * * * /usr/local/bin/daily-report.sh
 
 # Health monitoring (every 5 minutes)
 */5 * * * * /usr/local/bin/health-monitor.sh
@@ -242,14 +242,14 @@ The n8n droplet uses similar monitoring but doesn't need all the application-spe
 
 ```bash
 # From local machine
-scp scripts/enhanced-daily-status-report.sh ravidor@45.55.74.28:/tmp/
+scp scripts/daily-report.sh ravidor@45.55.74.28:/tmp/
 
 # SSH into n8n server
 ssh ravidor@45.55.74.28
 
 # Install script
-sudo cp /tmp/enhanced-daily-status-report.sh /usr/local/bin/daily-status-report.sh
-sudo chmod +x /usr/local/bin/daily-status-report.sh
+sudo cp /tmp/daily-report.sh /usr/local/bin/daily-report.sh
+sudo chmod +x /usr/local/bin/daily-report.sh
 
 # The daily report should already be in cron from previous setup
 # Verify:
