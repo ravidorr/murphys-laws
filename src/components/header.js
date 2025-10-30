@@ -1,5 +1,6 @@
 // Header component in plain JS
 import templateHtml from '@components/templates/header.html?raw';
+import { hydrateIcons } from '../utils/icons.js';
 
 export function Header({ onSearch, onNavigate }) {
   const header = document.createElement('header');
@@ -7,6 +8,9 @@ export function Header({ onSearch, onNavigate }) {
   header.setAttribute('role', 'banner');
 
   header.innerHTML = templateHtml;
+  
+  // Hydrate icons
+  hydrateIcons(header);
 
   const navToggle = header.querySelector('#nav-menu-toggle');
   const navDropdown = header.querySelector('#nav-dropdown');

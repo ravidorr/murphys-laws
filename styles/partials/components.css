@@ -35,18 +35,6 @@ button .icon svg {
   fill: currentcolor;
 }
 
-.material-symbols-outlined.icon {
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 24;
-  font-size: 1.25rem;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .btn .btn-text,
 button .btn-text {
@@ -430,15 +418,8 @@ textarea.form-control,
 
 /* Icon size */
 .share-button .share-icon {
-  font-size: 18px;
-  line-height: 1;
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  font-style: normal;
-  font-variant: normal;
-  text-rendering: auto;
-  -webkit-font-smoothing: antialiased;
+  width: 32px;
+  height: 32px;
 }
 
 /* Ensure Font Awesome fonts are used */

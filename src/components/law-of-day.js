@@ -6,6 +6,7 @@ import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { showError } from './notification.js';
 import { SocialShare } from './social-share.js';
+import { hydrateIcons } from '../utils/icons.js';
 
 export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const el = document.createElement('section');
@@ -30,6 +31,9 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const safeText = escapeHtml(law.text);
 
   el.innerHTML = templateHtml;
+  
+  // Hydrate icons
+  hydrateIcons(el);
 
   const dateEl = el.querySelector('#lod-date');
   if (dateEl) {

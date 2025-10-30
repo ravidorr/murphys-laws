@@ -34,8 +34,8 @@ describe('Home view', () => {
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
 
-    let nav = '';
-    const el = Home({ isLoggedIn: false, onNavigate: (name, id) => { nav = `${name}:${id}`; }, _onVote: () => {} });
+    let _nav = '';
+    const el = Home({ isLoggedIn: false, onNavigate: (name, id) => { _nav = `${name}:${id}`; }, _onVote: () => {} });
 
     await new Promise(r => setTimeout(r, 0));
 

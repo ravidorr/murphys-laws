@@ -1,11 +1,15 @@
 // Simple Sod's Law Calculator component
 import templateHtml from '@components/templates/sod-calculator-simple.html?raw';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function SodCalculatorSimple({ onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
   el.innerHTML = templateHtml;
+
+  // Hydrate icons
+  hydrateIcons(el);
 
   // Wire up interactions
   const sliders = {

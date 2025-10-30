@@ -2,6 +2,7 @@
 
 import templateHtml from '@components/templates/advanced-search.html?raw';
 import { fetchAPI } from '../utils/api.js';
+import { hydrateIcons } from '../utils/icons.js';
 
 export function AdvancedSearch({ onSearch, initialFilters = {} }) {
   const el = document.createElement('section');
@@ -16,6 +17,9 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
   // Initial HTML (with loading placeholders)
   el.innerHTML = templateHtml;
+  
+  // Hydrate icons
+  hydrateIcons(el);
 
   const categorySelect = el.querySelector('#search-category');
   const attributionSelect = el.querySelector('#search-attribution');

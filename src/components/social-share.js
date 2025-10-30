@@ -93,7 +93,7 @@ export function SocialShare({ url, title, description } = {}) {
       const targetAttr = target ? ` target="${target}"` : '';
       return `
         <a class="${className}" href="${href}" aria-label="${label}" title="${label}"${targetAttr}${relAttr}>
-          <img src="${iconPath}" class="share-icon" alt="" aria-hidden="true" />
+          <img src="${iconPath}" class="share-icon" alt="${label}" aria-hidden="true" />
         </a>
       `;
     })
