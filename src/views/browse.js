@@ -79,12 +79,12 @@ export function Browse({ searchQuery, onNavigate }) {
     if (!laws || laws.length === 0) {
       return `
         <div class="empty-state">
-          <span class="material-symbols-outlined icon empty-state-icon" aria-hidden="true">search_off</span>
+          <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">No laws found</p>
           <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
           <button class="btn" data-nav="submit" style="margin-top: 1rem;">
             <span class="btn-text">Submit a Murphy's Law</span>
-            <span class="material-symbols-outlined icon" aria-hidden="true">send</span>
+            <span class="icon" data-icon="send" aria-hidden="true"></span>
           </button>
         </div>
       `;
@@ -110,11 +110,11 @@ export function Browse({ searchQuery, onNavigate }) {
           ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
           <div class="law-card-footer">
         <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${escapeHtml(String(law.id))}" aria-label="Upvote this law">
-          <span class="material-symbols-outlined icon" aria-hidden="true">thumb_up</span>
+          <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
           <span class="count-num">${up}</span>
         </button>
         <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${escapeHtml(String(law.id))}" aria-label="Downvote this law">
-          <span class="material-symbols-outlined icon" aria-hidden="true">thumb_down</span>
+          <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
           <span class="count-num">${down}</span>
         </button>
           </div>
@@ -220,7 +220,7 @@ export function Browse({ searchQuery, onNavigate }) {
         cardText.setAttribute('aria-busy', 'false');
         cardText.innerHTML = `
           <div class="empty-state">
-            <span class="material-symbols-outlined icon empty-state-icon" aria-hidden="true">error</span>
+            <span class="icon empty-state-icon" data-icon="error" aria-hidden="true"></span>
             <p class="empty-state-title">Of course something went wrong</p>
             <p class="empty-state-text">Ironically, Murphy's Laws couldn't be loaded right now. Please try again.</p>
           </div>

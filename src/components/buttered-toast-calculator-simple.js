@@ -1,11 +1,15 @@
 // Simple Buttered Toast Landing Calculator component for home page
 import templateHtml from '@components/templates/buttered-toast-calculator-simple.html?raw';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function ButteredToastCalculatorSimple({ onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
   el.innerHTML = templateHtml;
+
+  // Hydrate icons
+  hydrateIcons(el);
 
   // Wire up interactions
   const sliders = {

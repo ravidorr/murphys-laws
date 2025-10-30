@@ -35,7 +35,7 @@ export function showNotification(message, type = 'info', duration = 5000) {
   const content = document.createElement('div');
   content.className = 'notification-content';
 
-  const iconName = type === 'error' ? 'error' : 'check_circle';
+  const iconName = type === 'error' ? 'error' : 'checkCircle';
   const iconEl = createIcon(iconName, { classNames: ['notification-icon'] });
   if (iconEl) {
     content.appendChild(iconEl);

@@ -6,12 +6,16 @@ import templateHtml from '@views/templates/sods-calculator.html?raw';
 import { SOCIAL_IMAGE_SOD } from '@utils/constants.js';
 import { initShareCalculation } from '@modules/sods-share.js';
 import { ensureMathJax } from '@utils/mathjax.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function Calculator() {
   const el = document.createElement('div');
   el.className = 'container page calculator';
 
   el.innerHTML = templateHtml;
+  
+  // Hydrate icons
+  hydrateIcons(el);
 
   if (typeof document !== 'undefined') {
     const head = document.head;

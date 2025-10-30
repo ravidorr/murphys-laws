@@ -4,11 +4,15 @@ import templateHtml from '@views/templates/submit-law-section.html?raw';
 import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 import { showSuccess, showError } from './notification.js';
 import { fetchAPI } from '../utils/api.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function SubmitLawSection() {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
   el.innerHTML = templateHtml;
+
+  // Hydrate icons
+  hydrateIcons(el);
 
   const form = el.querySelector('.submit-form');
   const submitBtn = el.querySelector('#submit-btn');

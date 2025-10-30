@@ -53,11 +53,11 @@ export function Trending() {
                 ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
                 <div class="law-card-footer">
                   <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${escapeHtml(String(law.id))}" aria-label="Upvote this law">
-                    <span class="material-symbols-outlined icon" aria-hidden="true">thumb_up</span>
+                    <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
                     <span class="count-num">${up}</span>
                   </button>
                   <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${escapeHtml(String(law.id))}" aria-label="Downvote this law">
-                    <span class="material-symbols-outlined icon" aria-hidden="true">thumb_down</span>
+                    <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
                     <span class="count-num">${down}</span>
                   </button>
                 </div>
