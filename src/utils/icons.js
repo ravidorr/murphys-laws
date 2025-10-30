@@ -65,7 +65,9 @@ export function hydrateIcons(root) {
 
   placeholders.forEach((placeholder) => {
     const name = placeholder.getAttribute('data-icon');
-    if (!name || !ICON_MARKUP[name]) {
+    // Normalize aliases before checking ICON_MARKUP
+    const normalizedName = name === 'clear' ? 'close' : name;
+    if (!name || !ICON_MARKUP[normalizedName]) {
       return;
     }
 
