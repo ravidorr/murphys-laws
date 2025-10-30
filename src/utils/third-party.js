@@ -1,0 +1,164 @@
+const GTM_SRC = 'https://www.googletagmanager.com/gtm.js?id=GTM-KD4H36BH';
+const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E';
+const ADSENSE_SRC = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3615614508734124';
+
+let analyticsBootstrapStarted = false;
+let thirdPartyTriggered = false;
+let gtmPromise;
+let gtagPromise;
+let adsensePromise;
+
+function toAbsoluteUrl(src) {
+  if (typeof document === 'undefined') {
+    return src;
+  }
+  try {
+    return new URL(src, document.baseURI).href;
+  } catch {
+    return src;
+  }
+}
+
+function loadScript(src, props = {}) {
+  if (typeof document === 'undefined') {
+    return Promise.resolve();
+  }
+
+  const absoluteSrc = toAbsoluteUrl(src);
+
+  const existing = Array.from(document.querySelectorAll('script[data-managed-src]')).find(
+    (node) => node.dataset.managedSrc === absoluteSrc,
+  ) || Array.from(document.scripts).find((node) => node.src === absoluteSrc);
+
+  if (existing) {
+    if (existing.dataset && existing.dataset.loaded === 'true') {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.dataset.managedSrc = absoluteSrc;
+    script.async = true;
+
+    Object.entries(props).forEach(([key, value]) => {
+      if (value === undefined || value === null) {
+        return;
+      }
+      if (key in script) {
+        script[key] = value;
+      } else {
+        script.setAttribute(key, value);
+      }
+    });
+
+    script.addEventListener('load', () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    }, { once: true });
+
+    script.addEventListener('error', () => {
+      reject(new Error(`Failed to load script: ${src}`));
+    }, { once: true });
+
+    document.head.appendChild(script);
+  });
+}
+
+function triggerThirdPartyLoads() {
+  if (thirdPartyTriggered || typeof window === 'undefined') {
+    return;
+  }
+
+  thirdPartyTriggered = true;
+
+  window.dataLayer = window.dataLayer || [];
+
+  if (!window.gtag) {
+    window.gtag = function gtag() {
+      window.dataLayer.push(arguments);
+    };
+  }
+
+  window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+
+  if (!gtmPromise) {
+    gtmPromise = loadScript(GTM_SRC);
+  }
+
+  if (!gtagPromise) {
+    gtagPromise = loadScript(GTAG_SRC).then(() => {
+      if (window.gtag) {
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
+      }
+    });
+  }
+}
+
+function cleanupInteractionListeners(listener) {
+  window.removeEventListener('pointerdown', listener);
+  window.removeEventListener('keydown', listener);
+  window.removeEventListener('scroll', listener);
+}
+
+export function initAnalyticsBootstrap() {
+  if (analyticsBootstrapStarted || typeof window === 'undefined') {
+    return;
+  }
+
+  analyticsBootstrapStarted = true;
+
+  const interactionListener = () => {
+    cleanupInteractionListeners(interactionListener);
+    triggerThirdPartyLoads();
+  };
+
+  window.addEventListener('pointerdown', interactionListener, { once: true });
+  window.addEventListener('keydown', interactionListener, { once: true });
+  window.addEventListener('scroll', interactionListener, { once: true, passive: true });
+
+  const idleFallback = () => {
+    cleanupInteractionListeners(interactionListener);
+    triggerThirdPartyLoads();
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(idleFallback, { timeout: 5000 });
+  } else {
+    window.setTimeout(idleFallback, 5000);
+  }
+}
+
+export function ensureAdsense() {
+  if (typeof window === 'undefined') {
+    return Promise.resolve();
+  }
+
+  if (window.adsbygoogle && window.adsbygoogle.loaded) {
+    return Promise.resolve();
+  }
+
+  if (!adsensePromise) {
+    adsensePromise = loadScript(ADSENSE_SRC, {
+      async: true,
+      crossOrigin: 'anonymous',
+    }).catch((error) => {
+      adsensePromise = undefined;
+      throw error;
+    });
+  }
+
+  return adsensePromise;
+}
+
+export function whenAnalyticsReady() {
+  return Promise.all([gtmPromise, gtagPromise]);
+}
+

@@ -70,21 +70,28 @@ describe('Footer component', () => {
     expect(navigated).toBe('contact');
   });
 
-  it('contains AdSense ad element', () => {
+  it('contains ad slot placeholder', () => {
     const el = Footer({
       onNavigate: () => {}
     });
 
-    const adsenseEl = el.querySelector('.adsbygoogle');
-    expect(adsenseEl).toBeTruthy();
-    expect(adsenseEl.getAttribute('data-ad-client')).toBe('ca-pub-3615614508734124');
+    const adSlot = el.querySelector('[data-ad-slot]');
+    expect(adSlot).toBeTruthy();
+    expect(adSlot.dataset.loaded).not.toBe('true');
   });
 
-  it('initializes AdSense', () => {
-    Footer({
+  it('loads AdSense ad when triggered', () => {
+    window.adsbygoogle = [];
+
+    const el = Footer({
       onNavigate: () => {}
     });
 
+    el.dispatchEvent(new Event('adslot:init'));
+
+    const adsenseEl = el.querySelector('.adsbygoogle');
+    expect(adsenseEl).toBeTruthy();
+    expect(adsenseEl.getAttribute('data-ad-client')).toBe('ca-pub-3615614508734124');
     expect(window.adsbygoogle.length).toBe(1);
   });
 
@@ -95,8 +102,10 @@ describe('Footer component', () => {
       }
     };
 
+    const el = Footer({ onNavigate: () => {} });
+
     expect(() => {
-      Footer({ onNavigate: () => {} });
+      el.dispatchEvent(new Event('adslot:init'));
     }).not.toThrow();
   });
 

@@ -15,7 +15,7 @@ export function createErrorState(message = 'An error occurred.') {
     <section class="section section-card">
       <div class="section-header">
         <h3 class="section-title">
-          <span class="material-symbols-outlined icon">error</span>
+          <span class="material-symbols-outlined icon" aria-hidden="true">warning</span>
           <span class="accent-text">Connection</span> Error
         </h3>
       </div>
@@ -27,11 +27,11 @@ export function createErrorState(message = 'An error occurred.') {
         <div class="right">
           <button class="btn outline" onclick="window.location.reload()">
             <span class="btn-text">Retry</span>
-            <span class="material-symbols-outlined icon">refresh</span>
+            <span class="material-symbols-outlined icon" aria-hidden="true">refresh</span>
           </button>
           <a href="/" class="btn">
             <span class="btn-text">Go Home</span>
-            <span class="material-symbols-outlined icon">home</span>
+            <span class="material-symbols-outlined icon" aria-hidden="true">home</span>
           </a>
         </div>
       </div>

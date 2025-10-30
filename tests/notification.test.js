@@ -148,13 +148,13 @@ describe('Notification system', () => {
     it('sets different icon for error type', () => {
       showNotification('Error', 'error', 0);
       const icon = document.querySelector('.notification-error .notification-icon');
-      expect(icon.textContent).toBe('error');
+      expect(icon?.dataset.iconName).toBe('error');
     });
 
     it('sets check_circle icon for non-error type', () => {
       showNotification('Info', 'info', 0);
       const icon = document.querySelector('.notification-info .notification-icon');
-      expect(icon.textContent).toBe('check_circle');
+      expect(icon?.dataset.iconName).toBe('check_circle');
     });
 
     it('does not auto-dismiss when duration is 0', () => {

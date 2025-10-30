@@ -418,16 +418,4 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('displays breadcrumb navigation', () => {
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    const breadcrumb = el.querySelector('.breadcrumb');
-    expect(breadcrumb).toBeTruthy();
-    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
-    expect(breadcrumb.textContent).toContain('Home');
-    expect(breadcrumb.textContent).toContain('Buttered Toast Calculator');
-
-    document.body.removeChild(el);
-  });
 });

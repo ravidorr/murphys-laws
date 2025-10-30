@@ -6,6 +6,7 @@ import { toggleVote, getUserVote } from '../utils/voting.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { SocialShare } from '../components/social-share.js';
 import { updateSocialMetaTags } from '../utils/dom.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -42,6 +43,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       notFoundState.removeAttribute('hidden');
       if (notFoundTemplate instanceof HTMLTemplateElement) {
         notFoundState.replaceChildren(notFoundTemplate.content.cloneNode(true));
+        hydrateIcons(notFoundState);
       }
     }
   }
@@ -158,6 +160,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       const lawCard = renderLawCard(law);
       if (lawCard) {
         lawCardContainer.appendChild(lawCard);
+        hydrateIcons(lawCardContainer);
 
         // Add social share buttons to the footer
         const footer = lawCard.querySelector('.section-footer .right');
@@ -199,7 +202,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
 
   el.addEventListener('click', async (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
+    if (!(t instanceof Element)) return;
 
     const navBtn = t.closest('[data-nav]');
     if (navBtn) {

@@ -1,3 +1,5 @@
+import { createIcon } from '@utils/icons.js';
+
 // Global notification/toast system
 
 let notificationContainer = null;
@@ -30,15 +32,31 @@ export function showNotification(message, type = 'info', duration = 5000) {
   notification.id = id;
   notification.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
-  notification.innerHTML = `
-    <div class="notification-content">
-      <span class="notification-icon material-symbols-outlined">${type === 'error' ? 'error' : 'check_circle'}</span>
-      <span class="notification-message">${escapeHtml(message)}</span>
-    </div>
-    <button class="notification-close" aria-label="Dismiss notification">
-      <span class="material-symbols-outlined">close</span>
-    </button>
-  `;
+  const content = document.createElement('div');
+  content.className = 'notification-content';
+
+  const iconName = type === 'error' ? 'error' : 'check_circle';
+  const iconEl = createIcon(iconName, { classNames: ['notification-icon'] });
+  if (iconEl) {
+    content.appendChild(iconEl);
+  }
+
+  const messageSpan = document.createElement('span');
+  messageSpan.className = 'notification-message';
+  messageSpan.textContent = message;
+  content.appendChild(messageSpan);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'notification-close';
+  closeBtn.setAttribute('aria-label', 'Dismiss notification');
+
+  const closeIcon = createIcon('close');
+  if (closeIcon) {
+    closeBtn.appendChild(closeIcon);
+  }
+
+  notification.appendChild(content);
+  notification.appendChild(closeBtn);
 
   const dismiss = () => {
     notification.classList.add('notification-exit');
@@ -49,7 +67,6 @@ export function showNotification(message, type = 'info', duration = 5000) {
     }, 300); // Match CSS animation duration
   };
 
-  const closeBtn = notification.querySelector('.notification-close');
   closeBtn.addEventListener('click', dismiss);
 
   container.appendChild(notification);
@@ -92,12 +109,4 @@ export function clearAllNotifications() {
   if (notificationContainer) {
     notificationContainer.innerHTML = '';
   }
-}
-
-// HTML escape helper
-function escapeHtml(str) {
-  if (typeof str !== 'string') return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }

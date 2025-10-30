@@ -2,11 +2,12 @@
 
 import templateHtml from '@views/templates/browse.html?raw';
 import { fetchLaws } from '../utils/api.js';
-import { firstAttributionLine } from '../utils/attribution.js';
-import { highlightSearchTerm, escapeHtml } from '../utils/sanitize.js';
 import { wrapLoadingMarkup } from '../utils/dom.js';
-import { LAWS_PER_PAGE, getRandomLoadingMessage } from '../utils/constants.js';
+import { firstAttributionLine } from '../utils/attribution.js';
+import { escapeHtml, highlightSearchTerm } from '../utils/sanitize.js';
+import { getRandomLoadingMessage, LAWS_PER_PAGE } from '../utils/constants.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
+import { hydrateIcons } from '@utils/icons.js';
 import { AdvancedSearch } from '../components/advanced-search.js';
 import { TopVoted } from '../components/top-voted.js';
 import { Trending } from '../components/trending.js';
@@ -78,12 +79,12 @@ export function Browse({ searchQuery, onNavigate }) {
     if (!laws || laws.length === 0) {
       return `
         <div class="empty-state">
-          <span class="material-symbols-outlined empty-state-icon">search_off</span>
+          <span class="material-symbols-outlined icon empty-state-icon" aria-hidden="true">search_off</span>
           <p class="empty-state-title">No laws found</p>
           <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
           <button class="btn" data-nav="submit" style="margin-top: 1rem;">
             <span class="btn-text">Submit a Murphy's Law</span>
-            <span class="material-symbols-outlined icon">send</span>
+            <span class="material-symbols-outlined icon" aria-hidden="true">send</span>
           </button>
         </div>
       `;
@@ -109,11 +110,11 @@ export function Browse({ searchQuery, onNavigate }) {
           ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
           <div class="law-card-footer">
         <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${escapeHtml(String(law.id))}" aria-label="Upvote this law">
-          <span class="material-symbols-outlined icon">thumb_up</span>
+          <span class="material-symbols-outlined icon" aria-hidden="true">thumb_up</span>
           <span class="count-num">${up}</span>
         </button>
         <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${escapeHtml(String(law.id))}" aria-label="Downvote this law">
-          <span class="material-symbols-outlined icon">thumb_down</span>
+          <span class="material-symbols-outlined icon" aria-hidden="true">thumb_down</span>
           <span class="count-num">${down}</span>
         </button>
           </div>
@@ -180,6 +181,7 @@ export function Browse({ searchQuery, onNavigate }) {
         ${renderLaws(laws, currentFilters.q)}
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
+      hydrateIcons(cardText);
     }
     updateSearchInfo();
   }
@@ -218,11 +220,12 @@ export function Browse({ searchQuery, onNavigate }) {
         cardText.setAttribute('aria-busy', 'false');
         cardText.innerHTML = `
           <div class="empty-state">
-            <span class="material-symbols-outlined empty-state-icon">error_outline</span>
+            <span class="material-symbols-outlined icon empty-state-icon" aria-hidden="true">error</span>
             <p class="empty-state-title">Of course something went wrong</p>
             <p class="empty-state-text">Ironically, Murphy's Laws couldn't be loaded right now. Please try again.</p>
           </div>
         `;
+        hydrateIcons(cardText);
       }
     }
   }
@@ -230,7 +233,7 @@ export function Browse({ searchQuery, onNavigate }) {
   // Event delegation for navigation, voting, and pagination
   el.addEventListener('click', async (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
+    if (!(t instanceof Element)) return;
 
     // Handle vote buttons
     const voteBtn = t.closest('[data-vote]');

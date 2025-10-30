@@ -91,7 +91,7 @@ export function ButteredToastCalculatorSimple({ onNavigate }) {
   // Navigation
   el.addEventListener('click', (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
+    if (!(t instanceof Element)) return;
 
     const navElement = t.closest('[data-nav]');
     if (navElement) {

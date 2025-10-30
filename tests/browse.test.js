@@ -106,10 +106,11 @@ describe('Browse view', () => {
     expect(icon).toBeTruthy();
 
     // Click on the icon (not the button itself)
-    icon.click();
+    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    // Should still navigate because we use closest('[data-nav]')
-    expect(onNavigate).toHaveBeenCalledWith('submit');
+    await vi.waitFor(() => {
+      expect(onNavigate).toHaveBeenCalledWith('submit');
+    });
   });
 
   it('displays error state on fetch failure', async () => {

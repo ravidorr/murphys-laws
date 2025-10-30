@@ -21,6 +21,8 @@ import {
   setToastCalculatorStructuredData,
   clearPageStructuredData
 } from '@modules/structured-data.js';
+import { hydrateIcons } from '@utils/icons.js';
+import { initAnalyticsBootstrap } from '@utils/third-party.js';
 
 // App state (no framework)
 const state = {
@@ -74,8 +76,15 @@ function layout(node) {
   const typesetWhenReady = (element) => {
     const MATHJAX_POLL_INTERVAL = 50;
     const MATHJAX_DEFER_TIMEOUT = 0;
+    const MAX_ATTEMPTS = 200;
+
+    let attempts = 0;
 
     const attempt = () => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
       const mj = window.MathJax;
       if (mj && typeof mj.typesetPromise === 'function') {
         mj.typesetPromise([element]).catch(() => {
@@ -83,14 +92,19 @@ function layout(node) {
         });
         return;
       }
-      // Try again shortly in case MathJax script (loaded async) isn't ready yet
-      setTimeout(attempt, MATHJAX_POLL_INTERVAL);
+
+      attempts += 1;
+      if (attempts < MAX_ATTEMPTS) {
+        // Try again shortly in case MathJax script (loaded async) isn't ready yet
+        setTimeout(attempt, MATHJAX_POLL_INTERVAL);
+      }
     };
     // Defer so the router can attach the element to the DOM first
     setTimeout(attempt, MATHJAX_DEFER_TIMEOUT);
   };
 
   typesetWhenReady(wrap);
+  hydrateIcons(wrap);
   return wrap;
 }
 
@@ -108,17 +122,6 @@ const routesMap = {
   submit: () => {
     const container = document.createElement('div');
     container.className = 'container page pt-0';
-
-    // Add breadcrumbs
-    const breadcrumb = document.createElement('nav');
-    breadcrumb.className = 'breadcrumb mb-4';
-    breadcrumb.setAttribute('aria-label', 'Breadcrumb');
-    breadcrumb.innerHTML = `
-      <a href="#" data-nav="home" class="breadcrumb-link">Home</a>
-      <span class="breadcrumb-separator">/</span>
-      <span class="breadcrumb-current">Submit a Law</span>
-    `;
-    container.appendChild(breadcrumb);
 
     const submitSection = SubmitLawSection({ onNavigate });
     container.appendChild(submitSection);
@@ -161,90 +164,4 @@ const notFoundRoute = () => {
 };
 
 startRouter(app, notFoundRoute);
-
-// Load and configure MathJax v3 locally (bundled via Vite)
-// We set window.MathJax before loading the component to ensure correct config
-// Then dynamically import the tex-mml-chtml component and attach a ready hook
-// so our existing typesetWhenReady logic works across route changes.
-(async () => {
-  // If MathJax already present (HMR/fast refresh), skip
-  if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-    return;
-  }
-  window.MathJax = {
-    // Don't ask MathJax to lazy-load extra components; Vite bundles the full CHTML build we import below.
-    loader: { load: [] },
-    chtml: {
-      // This is the setting that specifies the font location
-      fontURL: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2'
-    },
-    tex: {
-      inlineMath: [['\\(', '\\)']],
-      displayMath: [['\\[', '\\]']],
-      packages: { '[+]': ['html'] }
-    },
-    // Prevent auto-typesetting; we call typesetPromise ourselves after mount
-    startup: { typeset: false },
-    // Disable optional features that trigger extra network fetches under bundlers
-    options: {
-      enableMenu: false,
-      enableAssistiveMml: false,
-      a11y: { speech: false },
-      renderActions: {
-        // Custom action to add titles to math variables after rendering
-        addMathTitles: [
-          200,  // Priority: higher runs later
-          (doc) => {
-            for (const node of doc.math) {
-              const element = node.typesetRoot;
-              if (element) {
-                element.querySelectorAll('mjx-mi').forEach((mi) => {
-                  const text = mi.textContent.trim();
-                  const titles = {
-                    'U': 'Urgency (1-9)',
-                    'C': 'Complexity (1-9)',
-                    'I': 'Importance (1-9)',
-                    'S': 'Skill (1-9)',
-                    'F': 'Frequency (1-9)',
-                    'A': 'Activity constant (0.7)'
-                  };
-                  if (titles[text]) {
-                    mi.setAttribute('title', titles[text]);
-                  }
-                });
-              }
-            }
-          }
-        ]
-      }
-    }
-  };
-  try {
-    // Use CHTML output to enable easier DOM annotations of math tokens
-    // Load the bundled CHTML build (no dynamic sub-loads expected)
-    // Use the slimmer TeX + CHTML bundle (no menu/a11y components)
-    await import('mathjax/es5/tex-chtml.js');
-    const mj = window.MathJax;
-    const root = document.getElementById('app');
-    if (mj && typeof mj.typesetPromise === 'function' && root) {
-      mj.typesetPromise([root]).catch(() => {
-        // Silently handle MathJax errors
-      });
-    }
-  } catch {
-    // Silently handle MathJax loading errors
-  }
-  // Ensure HMR picks up MathJax config changes: dispose the global instance on module replace
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => {
-      // Remove global to force re-init with new config on next import
-      delete window.MathJax;
-      // Clean up any MathJax-injected stylesheets to avoid duplication
-      document
-        .querySelectorAll('style[data-mathjax],link[data-mathjax]')
-        .forEach((el) => {
-          if (el.parentNode) el.parentNode.removeChild(el);
-        });
-    });
-  }
-})();
+initAnalyticsBootstrap();

@@ -167,7 +167,7 @@ describe('ButteredToastCalculatorSimple component', () => {
 
     // Click on the icon span inside the button
     const icon = el.querySelector('[data-nav="toastcalculator"] .material-symbols-outlined');
-    icon.click();
+    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(navigated).toBe('toastcalculator');
   });

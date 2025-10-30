@@ -22,12 +22,30 @@
 
 .btn .icon,
 button .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn .icon svg,
+button .icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentcolor;
+}
+
+.material-symbols-outlined.icon {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
   font-size: 1.25rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .btn .btn-text,
@@ -411,6 +429,26 @@ textarea.form-control,
 .share-email { background-color: #777; }
 
 /* Icon size */
-.share-button i {
+.share-button .share-icon {
   font-size: 18px;
+  line-height: 1;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ensure Font Awesome fonts are used */
+.share-button .fa-brands {
+  font-family: "Font Awesome 6 Brands";
+  font-weight: 400;
+  text-align: center;
+}
+
+.share-button .fa-solid {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
 }
