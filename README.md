@@ -167,7 +167,7 @@ git commit -m "feat: Add my_column to laws"
 git push
 ```
 
-**See [DATABASE.md](./DATABASE.md) for complete documentation.**
+**See [DATABASE.md](./docs/DATABASE.md) for complete documentation.**
 
 A git hook will prevent you from accidentally committing the database file.
 
@@ -445,7 +445,7 @@ This command:
 
 ### Troubleshooting Deployments
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for:
+See **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** for:
 - Complete deployment guide
 - Port configuration validation
 - Troubleshooting 502 errors
@@ -482,21 +482,21 @@ Emails will be sent to `ravidor@gmail.com` with subject "New Murphy Law Submitte
 
 Comprehensive guides for infrastructure management:
 
-**[DEPLOY-MONITORING.md](./DEPLOY-MONITORING.md)** - Enhanced Monitoring Deployment
+**[DEPLOY-MONITORING.md](./docs/DEPLOY-MONITORING.md)** - Enhanced Monitoring Deployment
 - Step-by-step deployment of all monitoring enhancements
 - Cron job configuration
 - Nginx rate limiting and security headers setup
 - Testing and verification procedures
 - Rollback instructions
 
-**[DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md)** - Disaster Recovery Runbook
+**[DISASTER-RECOVERY.md](./docs/DISASTER-RECOVERY.md)** - Disaster Recovery Runbook
 - Complete server rebuild procedures
 - Database recovery steps
 - SSL certificate recovery
 - Service restoration checklist
 - Recovery time estimates for various scenarios
 
-**[BACKUP-RESTORE.md](./BACKUP-RESTORE.md)** - Backup & Restore Procedures
+**[BACKUP-RESTORE.md](./docs/BACKUP-RESTORE.md)** - Backup & Restore Procedures
 - Manual backup procedures
 - Database restore workflows
 - Application restore steps
@@ -504,12 +504,12 @@ Comprehensive guides for infrastructure management:
 - Backup testing and verification
 - Off-site backup strategies
 
-**[DATABASE.md](./DATABASE.md)** - Database Management
+**[DATABASE.md](./docs/DATABASE.md)** - Database Management
 - Schema migration system
 - Safe update procedures
 - Data integrity guidelines
 
-**[DEPLOYMENT.md](./DEPLOYMENT.md)** - Application Deployment
+**[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Application Deployment
 - Standard deployment procedures
 - Port validation
 - Troubleshooting guides

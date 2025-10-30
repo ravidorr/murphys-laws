@@ -216,7 +216,7 @@ sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*), MAX(created_at) FROM law
 3. **Schedule monthly tests** - Add reminder for monthly testing
 4. **Consider quarterly full drill** - Schedule a complete disaster recovery simulation
 
-For full disaster recovery drill procedures, see `TEST-BACKUP-RESTORE.md`.
+For full disaster recovery drill procedures, see [`TEST-BACKUP-RESTORE.md`](./TEST-BACKUP-RESTORE.md).
 
 ---
 

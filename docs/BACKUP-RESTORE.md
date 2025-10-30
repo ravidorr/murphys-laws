@@ -220,7 +220,7 @@ curl https://murphys-laws.com/api/health
 **Use Case**: Server completely lost, restoring to new server
 
 ```bash
-# 1. Set up new server (see DISASTER-RECOVERY.md for full setup)
+# 1. Set up new server (see [DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md) for full setup)
 
 # 2. From your local machine, upload backups
 scp ~/local-backups/murphys-2025-01-26-020000.db \
@@ -236,7 +236,7 @@ ssh ravidor@<NEW_SERVER_IP>
 sudo cp /tmp/murphys-2025-01-26-020000.db /root/murphys-laws/murphys.db
 sudo cp /tmp/.env-2025-01-26-020000 /root/murphys-laws/.env
 
-# 5. Continue with application setup (see DISASTER-RECOVERY.md)
+# 5. Continue with application setup (see [DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md))
 ```
 
 ---

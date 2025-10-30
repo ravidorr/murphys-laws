@@ -453,7 +453,7 @@ tail -100 /root/murphys-laws/logs/api-error.log
 1. **Monitor email alerts** for the first week
 2. **Review performance metrics** after 7 days
 3. **Check cost optimization report** after 30 days
-4. **Test backup restore** procedure (see BACKUP-RESTORE.md)
+4. **Test backup restore** procedure (see [BACKUP-RESTORE.md](./BACKUP-RESTORE.md))
 5. **Update disaster recovery documentation** with any changes
 6. **Schedule quarterly review** of monitoring effectiveness
 
@@ -464,8 +464,8 @@ tail -100 /root/murphys-laws/logs/api-error.log
 After successful deployment, update:
 
 - [ ] README.md with new monitoring features
-- [ ] DISASTER-RECOVERY.md if procedures changed
-- [ ] BACKUP-RESTORE.md if backup procedures changed
+- [ ] [DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md) if procedures changed
+- [ ] [BACKUP-RESTORE.md](./BACKUP-RESTORE.md) if backup procedures changed
 - [ ] Document any customizations or issues encountered
 
 ---
@@ -487,4 +487,4 @@ If you encounter issues:
 4. Verify cron jobs are scheduled
 5. Check email configuration
 
-For major issues, refer to DISASTER-RECOVERY.md for rollback procedures.
+For major issues, refer to [DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md) for rollback procedures.
