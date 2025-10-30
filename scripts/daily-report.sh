@@ -463,13 +463,13 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
     REPORT+="  sudo /usr/local/bin/test-backup-restore.sh\n\n"
     REPORT+="N8N DROPLET (45.55.74.28):\n"
     REPORT+="  ssh ravidor@45.55.74.28\n"
-    REPORT+="  # Follow the manual testing procedures in TEST-BACKUP-RESTORE.md\n\n"
+    REPORT+="  # Follow the manual testing procedures in docs/TEST-BACKUP-RESTORE.md\n\n"
     REPORT+="Expected Results:\n"
     REPORT+="  ✅ All tests should pass (26/26 for main droplet)\n"
     REPORT+="  ✅ Backup age < 30 hours\n"
     REPORT+="  ✅ Database integrity checks pass\n"
     REPORT+="  ✅ You'll receive a separate email with detailed test results\n\n"
-    REPORT+="Documentation: See TEST-BACKUP-RESTORE.md for full testing guide\n\n"
+    REPORT+="Documentation: See docs/TEST-BACKUP-RESTORE.md for full testing guide\n\n"
 fi
 
 #############################################################################

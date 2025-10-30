@@ -221,7 +221,7 @@ sudo mv /root/murphys-laws/murphys.db /root/murphys-laws/murphys.db.FAILED
 
 #### Phase 2: Execute Recovery
 
-Follow **DISASTER-RECOVERY.md** - Scenario 1: Database Corruption
+Follow **[DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md)** - Scenario 1: Database Corruption
 
 ```bash
 # 1. Find latest backup
