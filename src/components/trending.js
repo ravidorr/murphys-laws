@@ -10,6 +10,9 @@ import { hydrateIcons } from '@utils/icons.js';
 export function Trending() {
   const el = document.createElement('div');
   el.className = 'card';
+  // Reserve space for 3 law cards to prevent layout shift (0.253 CLS)
+  // Each mini card is ~120px, plus title (~40px) = ~400px total
+  el.style.minHeight = '400px';
 
   el.innerHTML = `
     <div class="card-content">

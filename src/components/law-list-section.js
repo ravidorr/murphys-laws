@@ -43,6 +43,9 @@ function renderLawCard(law, index, rankOffset) {
 export function createLawListSection({ accentText, remainderText }) {
   const el = document.createElement('div');
   el.className = 'card';
+  // Reserve space for 3 law cards to prevent layout shift
+  // Each mini card is ~120px, plus title (~40px) = ~400px total
+  el.style.minHeight = '400px';
 
   el.innerHTML = `
     <div class="card-content">
