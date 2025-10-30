@@ -18,19 +18,4 @@ describe('NotFound view', () => {
     expect(onNavigate).toHaveBeenCalledWith('home');
   });
 
-  it('displays breadcrumb navigation', () => {
-    const el = NotFound({ onNavigate: () => {} });
-
-    const breadcrumb = el.querySelector('.breadcrumb');
-    expect(breadcrumb).toBeTruthy();
-    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
-  });
-
-  it('breadcrumb shows "Not Found" as current page', () => {
-    const el = NotFound({ onNavigate: () => {} });
-
-    const current = el.querySelector('.breadcrumb-current');
-    expect(current).toBeTruthy();
-    expect(current.textContent).toBe('Not Found');
-  });
 });

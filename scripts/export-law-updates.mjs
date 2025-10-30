@@ -98,7 +98,7 @@ function getNextMigrationNumber() {
       const num = parseInt(match[1], 10) + 1;
       return String(num).padStart(3, '0');
     }
-  } catch (err) {
+  } catch {
     // Directory doesn't exist or error reading
   }
   return '002'; // Default if we can't determine

@@ -3,6 +3,14 @@
  * Renders social sharing buttons for Twitter, Facebook, LinkedIn, Reddit, and Email
  */
 
+const ICON_CLASSES = {
+  twitter: 'fa-brands fa-x-twitter',
+  facebook: 'fa-brands fa-facebook-f',
+  linkedin: 'fa-brands fa-linkedin-in',
+  reddit: 'fa-brands fa-reddit-alien',
+  email: 'fa-solid fa-envelope'
+};
+
 /**
  * Create social share buttons
  * @param {Object} options - Configuration options
@@ -38,23 +46,58 @@ export function SocialShare({ url, title, description } = {}) {
   const redditUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
-  el.innerHTML = `
-    <a class="share-button share-twitter" href="${twitterUrl}" target="_blank" rel="noopener noreferrer" title="Share on Twitter">
-      <i class="fab fa-twitter"></i>
-    </a>
-    <a class="share-button share-facebook" href="${facebookUrl}" target="_blank" rel="noopener noreferrer" title="Share on Facebook">
-      <i class="fab fa-facebook-f"></i>
-    </a>
-    <a class="share-button share-linkedin" href="${linkedinUrl}" target="_blank" rel="noopener noreferrer" title="Share on LinkedIn">
-      <i class="fab fa-linkedin-in"></i>
-    </a>
-    <a class="share-button share-reddit" href="${redditUrl}" target="_blank" rel="noopener noreferrer" title="Share on Reddit">
-      <i class="fab fa-reddit-alien"></i>
-    </a>
-    <a class="share-button share-email" href="${emailUrl}" title="Share via Email">
-      <i class="fas fa-envelope"></i>
-    </a>
-  `;
+  const platforms = [
+    {
+      className: 'share-button share-twitter',
+      href: twitterUrl,
+      label: 'Share on Twitter',
+      iconClass: ICON_CLASSES.twitter,
+      rel: 'noopener noreferrer',
+      target: '_blank',
+    },
+    {
+      className: 'share-button share-facebook',
+      href: facebookUrl,
+      label: 'Share on Facebook',
+      iconClass: ICON_CLASSES.facebook,
+      rel: 'noopener noreferrer',
+      target: '_blank',
+    },
+    {
+      className: 'share-button share-linkedin',
+      href: linkedinUrl,
+      label: 'Share on LinkedIn',
+      iconClass: ICON_CLASSES.linkedin,
+      rel: 'noopener noreferrer',
+      target: '_blank',
+    },
+    {
+      className: 'share-button share-reddit',
+      href: redditUrl,
+      label: 'Share on Reddit',
+      iconClass: ICON_CLASSES.reddit,
+      rel: 'noopener noreferrer',
+      target: '_blank',
+    },
+    {
+      className: 'share-button share-email',
+      href: emailUrl,
+      label: 'Share via Email',
+      iconClass: ICON_CLASSES.email,
+    },
+  ];
+
+  el.innerHTML = platforms
+    .map(({ className, href, label, rel, target, iconClass }) => {
+      const relAttr = rel ? ` rel="${rel}"` : '';
+      const targetAttr = target ? ` target="${target}"` : '';
+      return `
+        <a class="${className}" href="${href}" aria-label="${label}" title="${label}"${targetAttr}${relAttr}>
+          <i class="${iconClass} share-icon" aria-hidden="true"></i>
+        </a>
+      `;
+    })
+    .join('');
 
   return el;
 }

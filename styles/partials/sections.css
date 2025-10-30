@@ -235,9 +235,13 @@
   outline-offset: 2px;
 }
 
-/* Voted state - filled icons with colored background */
+/* Voted state - emphasize icon */
+.vote-btn .icon {
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
 .vote-btn.voted .icon {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  transform: scale(1.05);
 }
 
 .vote-btn.voted.count-up {
@@ -252,18 +256,8 @@
   width: 1.5rem;
   height: 1.5rem;
   display: inline-block;
-}
-
-/* Google Fonts Material Icons styling */
-.material-symbols-outlined {
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 400,
-    'GRAD' 0,
-    'opsz' 24;
-  font-size: 1.5rem;
-  line-height: 1;
   vertical-align: middle;
+  fill: currentcolor;
 }
 
 

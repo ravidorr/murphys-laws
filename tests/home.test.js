@@ -21,7 +21,7 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Law of the Day/);
   });
 
-  it('navigates to law detail when clicking a law block (after fetch)', async () => {
+  it('Law of the Day is not clickable/navigable', async () => {
     const lawOfTheDay = {
       id: 42,
       text: 'Test law',
@@ -39,9 +39,9 @@ describe('Home view', () => {
 
     await new Promise(r => setTimeout(r, 0));
 
+    // Law of the Day should not have data-law-id attribute
     const block = el.querySelector(`[data-law-id="42"]`);
-    block.click();
-    expect(nav).toBe('law:42');
+    expect(block).toBeNull();
   });
 
   it('shows no Law of the Day when response has no law', async () => {

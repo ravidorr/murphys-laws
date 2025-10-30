@@ -2,6 +2,7 @@ import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
 import { getUserVote, addVotingListeners } from '../utils/voting.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 function renderLawCard(law, index, rankOffset) {
   const up = Number.isFinite(law.upvotes) ? law.upvotes : 0;
@@ -27,11 +28,11 @@ function renderLawCard(law, index, rankOffset) {
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       <div class="law-card-footer">
         <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${safeId}" aria-label="Upvote this law">
-          <span class="material-symbols-outlined icon">thumb_up</span>
+          <span class="material-symbols-outlined icon" aria-hidden="true">thumb_up</span>
           <span class="count-num">${up}</span>
         </button>
         <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${safeId}" aria-label="Downvote this law">
-          <span class="material-symbols-outlined icon">thumb_down</span>
+          <span class="material-symbols-outlined icon" aria-hidden="true">thumb_down</span>
           <span class="count-num">${down}</span>
         </button>
       </div>
@@ -73,6 +74,7 @@ export function createLawListSection({ accentText, remainderText }) {
         ${sliced.map((law, index) => renderLawCard(law, index, rankOffset)).join('')}
       </div>
     `;
+    hydrateIcons(content);
 
     // Only add voting listeners if there are actually laws to vote on
     if (sliced.length > 0) {

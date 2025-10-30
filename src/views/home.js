@@ -57,7 +57,7 @@ export function Home({ onNavigate }) {
 
   el.addEventListener('click', (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
+    if (!(t instanceof Element)) return;
 
     const navBtn = t.closest('[data-nav]');
     if (navBtn) {

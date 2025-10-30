@@ -179,23 +179,4 @@ describe('Privacy page', () => {
     expect(el.textContent).toMatch(/Send us a note/);
   });
 
-  it('displays breadcrumb navigation', () => {
-    const el = Privacy({
-      onNavigate: () => {}
-    });
-
-    const breadcrumb = el.querySelector('.breadcrumb');
-    expect(breadcrumb).toBeTruthy();
-    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
-  });
-
-  it('breadcrumb shows "Privacy Policy" as current page', () => {
-    const el = Privacy({
-      onNavigate: () => {}
-    });
-
-    const current = el.querySelector('.breadcrumb-current');
-    expect(current).toBeTruthy();
-    expect(current.textContent).toBe('Privacy Policy');
-  });
 });

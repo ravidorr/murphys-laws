@@ -5,6 +5,7 @@
 import templateHtml from '@views/templates/sods-calculator.html?raw';
 import { SOCIAL_IMAGE_SOD } from '@utils/constants.js';
 import { initShareCalculation } from '@modules/sods-share.js';
+import { ensureMathJax } from '@utils/mathjax.js';
 
 export function Calculator() {
   const el = document.createElement('div');
@@ -155,18 +156,13 @@ export function Calculator() {
   // Initialize formula and score on load
   updateCalculation();
 
-  // If MathJax isn't loaded yet, poll for it and re-render when ready
-  if (!window.MathJax || typeof window.MathJax.typesetPromise !== 'function') {
-    const pollMathJax = setInterval(() => {
-      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        clearInterval(pollMathJax);
-        updateCalculation();
-      }
-    }, 100); // Check every 100ms
-
-    // Stop polling after 10 seconds
-    setTimeout(() => clearInterval(pollMathJax), 10000);
-  }
+  ensureMathJax()
+    .then(() => {
+      updateCalculation();
+    })
+    .catch(() => {
+      // Silently ignore MathJax load failures
+    });
 
   function updateResultInterpretation(score) {
     let interpretation = '';

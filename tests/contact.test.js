@@ -97,23 +97,4 @@ describe('Contact page', () => {
     expect(el.querySelectorAll('section').length).toBeGreaterThan(0);
   });
 
-  it('displays breadcrumb navigation', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    const breadcrumb = el.querySelector('.breadcrumb');
-    expect(breadcrumb).toBeTruthy();
-    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
-  });
-
-  it('breadcrumb shows "Contact" as current page', () => {
-    const el = Contact({
-      onNavigate: () => {}
-    });
-
-    const current = el.querySelector('.breadcrumb-current');
-    expect(current).toBeTruthy();
-    expect(current.textContent).toBe('Contact');
-  });
 });

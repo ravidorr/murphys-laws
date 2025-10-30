@@ -9,13 +9,13 @@ export function Terms({ onNavigate }) {
 
   el.innerHTML = templateHtml.replace('{{lastUpdated}}', lastUpdated);
 
-  el.addEventListener('click', (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+  el.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
 
     const navBtn = target.closest('[data-nav]');
     if (navBtn) {
-      e.preventDefault();
+      event.preventDefault();
       const navTarget = navBtn.getAttribute('data-nav');
       if (navTarget) {
         onNavigate(navTarget);

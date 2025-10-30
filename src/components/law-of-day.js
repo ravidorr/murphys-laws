@@ -10,7 +10,6 @@ import { SocialShare } from './social-share.js';
 export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
-  el.setAttribute('data-law-id', law?.id || '');
 
   if (!law) {
     el.innerHTML = `
@@ -40,7 +39,6 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
 
   const bodyEl = el.querySelector('#lod-body');
   if (bodyEl) {
-    bodyEl.setAttribute('data-law-id', escapeHtml(String(law.id)));
     bodyEl.innerHTML = `
       <blockquote class="lod-quote-large">"${safeText}"</blockquote>
       <p class="lod-attrib">${attribution}</p>
@@ -89,7 +87,7 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   // Handle voting, navigation, and sharing
   el.addEventListener('click', async (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
+    if (!(t instanceof Element)) return;
 
     // Handle vote buttons
     const voteBtn = t.closest('[data-vote]');

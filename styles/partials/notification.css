@@ -59,7 +59,8 @@
 
 .notification-icon {
   flex-shrink: 0;
-  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .notification-success .notification-icon {
@@ -105,8 +106,9 @@
   opacity: 1;
 }
 
-.notification-close .material-symbols-outlined {
-  font-size: 1.25rem;
+.notification-close svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 /* Mobile responsive */

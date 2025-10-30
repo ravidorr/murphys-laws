@@ -2,9 +2,6 @@
    CSS Variables
    ========================== */
 
-/* Import fonts first (must precede other rules) */
-@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800;900&display=swap');
-
 :root {
   /* Core colors */
   --bg: #fff;

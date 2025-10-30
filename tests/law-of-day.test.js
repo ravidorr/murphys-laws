@@ -161,7 +161,7 @@ describe('LawOfTheDay component', () => {
 
   });
 
-  it('does not navigate when law card is clicked', () => {
+  it('does not have clickable law card (no data-law-id)', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     let navigated = false;
     const onNavigate = () => {
@@ -170,9 +170,9 @@ describe('LawOfTheDay component', () => {
 
     const el = mountLaw(law, { onNavigate });
 
+    // Law of the Day should not have data-law-id attribute, making it non-clickable
     const lawBody = el.querySelector('[data-law-id]');
-    lawBody.click();
-
+    expect(lawBody).toBeNull();
     expect(navigated).toBe(false);
   });
 

@@ -300,9 +300,11 @@ describe('LawDetail view', () => {
     const icon = upvoteBtn?.querySelector('.icon');
 
     if (icon) {
-      icon.click();
-      await new Promise(r => setTimeout(r, 10));
-      expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up');
+      const event = new MouseEvent('click', { bubbles: true });
+      icon.dispatchEvent(event);
+      await vi.waitFor(() => {
+        expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up');
+      });
     }
   });
 

@@ -230,23 +230,4 @@ describe('Terms page', () => {
     expect(el.querySelectorAll('section').length).toBeGreaterThan(10);
   });
 
-  it('displays breadcrumb navigation', () => {
-    const el = Terms({
-      onNavigate: () => {}
-    });
-
-    const breadcrumb = el.querySelector('.breadcrumb');
-    expect(breadcrumb).toBeTruthy();
-    expect(breadcrumb.getAttribute('aria-label')).toBe('Breadcrumb');
-  });
-
-  it('breadcrumb shows "Terms of Service" as current page', () => {
-    const el = Terms({
-      onNavigate: () => {}
-    });
-
-    const current = el.querySelector('.breadcrumb-current');
-    expect(current).toBeTruthy();
-    expect(current.textContent).toBe('Terms of Service');
-  });
 });

@@ -2,6 +2,7 @@
 
 import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
 import { SOCIAL_IMAGE_TOAST } from '@utils/constants.js';
+import { ensureMathJax } from '@utils/mathjax.js';
 
 export function ButteredToastCalculator() {
   const el = document.createElement('div');
@@ -198,18 +199,13 @@ export function ButteredToastCalculator() {
   updateFormula();
   calculateLanding();
 
-  // If MathJax isn't loaded yet, poll for it and re-render when ready
-  if (typeof window !== 'undefined' && (!window.MathJax || typeof window.MathJax.typesetPromise !== 'function')) {
-    const pollMathJax = setInterval(() => {
-      if (typeof window !== 'undefined' && window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        clearInterval(pollMathJax);
-        updateFormula();
-      }
-    }, 100);
-
-    // Stop polling after 10 seconds
-    setTimeout(() => clearInterval(pollMathJax), 10000);
-  }
+  ensureMathJax()
+    .then(() => {
+      updateFormula();
+    })
+    .catch(() => {
+      // Silently ignore MathJax load failures
+    });
 
   return el;
 }

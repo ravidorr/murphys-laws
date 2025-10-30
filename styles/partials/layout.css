@@ -222,6 +222,69 @@ footer .footer-nav {
   align-items: center;
 }
 
+.footer-ad-shell {
+  --footer-ad-min-height: 280px;
+
+  position: relative;
+  width: 100%;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: var(--footer-ad-min-height);
+  transition: min-height 0.4s ease;
+}
+
+@media (width <= 768px) {
+  .footer-ad-shell {
+    --footer-ad-min-height: 220px;
+
+    padding: 1rem;
+  }
+}
+
+.footer-ad-shell[data-loaded="true"] {
+  min-height: 0;
+  padding: 0;
+}
+
+.footer-ad-reserved {
+  width: 100%;
+  height: var(--footer-ad-min-height);
+  border-radius: 0.75rem;
+  border: 1px dashed color-mix(in srgb, var(--border) 70%, transparent 30%);
+  background: color-mix(in srgb, var(--bg) 85%, white 15%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-fg);
+  font-size: .75rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.footer-ad-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.footer-ad-label::before,
+.footer-ad-label::after {
+  content: '';
+  display: inline-block;
+  height: 1px;
+  width: 2.5rem;
+  background: currentcolor;
+  opacity: .35;
+}
+
+.footer-ad-shell[data-loaded="true"] .footer-ad-reserved {
+  display: none;
+}
+
 footer .footer-nav li::after {
   content: '\2022';
   margin: 0 .5rem;
