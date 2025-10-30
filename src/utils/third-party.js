@@ -8,6 +8,9 @@ let gtmPromise;
 let gtagPromise;
 let adsensePromise;
 
+// Track loaded scripts without polluting DOM attributes
+const loadedScripts = new Set();
+
 function toAbsoluteUrl(src) {
   if (typeof document === 'undefined') {
     return src;
@@ -26,17 +29,25 @@ function loadScript(src, props = {}) {
 
   const absoluteSrc = toAbsoluteUrl(src);
 
-  const existing = Array.from(document.querySelectorAll('script[data-managed-src]')).find(
-    (node) => node.dataset.managedSrc === absoluteSrc,
-  ) || Array.from(document.scripts).find((node) => node.src === absoluteSrc);
+  // Check if script is already loaded
+  if (loadedScripts.has(absoluteSrc)) {
+    return Promise.resolve();
+  }
+
+  // Check for existing script in DOM by src attribute
+  const existing = Array.from(document.scripts).find((node) => node.src === absoluteSrc);
 
   if (existing) {
-    if (existing.dataset && existing.dataset.loaded === 'true') {
+    // Script exists, check if it's loaded
+    if (loadedScripts.has(absoluteSrc)) {
       return Promise.resolve();
     }
 
     return new Promise((resolve, reject) => {
-      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('load', () => {
+        loadedScripts.add(absoluteSrc);
+        resolve();
+      }, { once: true });
       existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
     });
   }
@@ -44,7 +55,6 @@ function loadScript(src, props = {}) {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = src;
-    script.dataset.managedSrc = absoluteSrc;
     script.async = true;
 
     Object.entries(props).forEach(([key, value]) => {
@@ -59,7 +69,7 @@ function loadScript(src, props = {}) {
     });
 
     script.addEventListener('load', () => {
-      script.dataset.loaded = 'true';
+      loadedScripts.add(absoluteSrc);
       resolve();
     }, { once: true });
 
