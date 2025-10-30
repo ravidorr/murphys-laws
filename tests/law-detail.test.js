@@ -1,6 +1,5 @@
 import { LawDetail } from '@views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
-import * as notification from '../src/components/notification.js';
 
 describe('LawDetail view', () => {
   beforeEach(() => {
@@ -260,6 +259,8 @@ describe('LawDetail view', () => {
     downvoteCount = el.querySelector('[data-downvote-count]');
     expect(upvoteCount?.textContent).toBe('6');
     expect(downvoteCount?.textContent).toBe('2');
+    expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up');
+    expect(getUserVoteSpy).toHaveBeenCalledWith('7');
   });
 
   it('displays voted state when user has already voted', async () => {
@@ -279,6 +280,7 @@ describe('LawDetail view', () => {
 
     expect(upvoteBtn?.classList.contains('voted')).toBe(true);
     expect(downvoteBtn?.classList.contains('voted')).toBe(false);
+    expect(getUserVoteSpy).toHaveBeenCalledWith('7');
   });
 
   it('handles clicking on icon inside vote button', async () => {
