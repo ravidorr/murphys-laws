@@ -8,6 +8,7 @@
   --fg: #111827;
   --muted-fg: #6b7280;
   --primary: #030213;
+  --text-high-contrast: #000; /* For text requiring high contrast (WCAG AA) */
   --border: rgb(0 0 0 / 10%);
   --btn-primary-bg: #1173d4;
   --btn-primary-fg: #fff;
@@ -63,6 +64,7 @@
   --dark-fg-primary: #e9eaee;
   --dark-muted-fg: #b3b7c4;
   --dark-primary: #4f46e5;
+  --dark-text-high-contrast: #fff; /* For text requiring high contrast in dark mode */
   --dark-border: rgb(255 255 255 / 18%);
   --dark-link: #9ecbff;
   --dark-link-visited: #b8a6ff;

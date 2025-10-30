@@ -10,6 +10,7 @@
     --muted-fg: var(--dark-muted-fg);
     --border: var(--dark-border);
     --primary: var(--dark-primary);
+    --text-high-contrast: var(--dark-text-high-contrast);
   }
 
   /* Links */
@@ -198,12 +199,6 @@
   .calc-dark {
     background: var(--dark-dark-bg);
     color: var(--dark-dark-fg);
-  }
-
-  /* Rank styling */
-  .rank {
-    color: color-mix(in oklab, var(--btn-primary-bg) 85%, white 15%);
-    text-shadow: 0 1px 0 var(--shadow-light);
   }
 
   /* Skeleton loading */
