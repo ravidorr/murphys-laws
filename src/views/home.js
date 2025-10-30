@@ -36,6 +36,8 @@ export function Home({ onNavigate }) {
   el.className = 'container page pt-0';
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
+  // Reserve space to prevent layout shift (min-height matches typical Law of the Day card height)
+  el.style.minHeight = '400px';
 
   el.innerHTML = `<p class="small">${getRandomLoadingMessage()}</p>`;
 
