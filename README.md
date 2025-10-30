@@ -340,7 +340,7 @@ Both droplets are fully hardened with:
 - `/usr/local/bin/log-analyzer.sh` - Attack detection and log analysis (daily 11 PM)
 
 **Reporting & Status**
-- `/usr/local/bin/daily-status-report.sh` - Enhanced daily health report (8 AM UTC)
+- `/usr/local/bin/daily-report.sh` - Consolidated daily health report (5 AM UTC)
 - `/usr/local/bin/cost-optimization-report.sh` - Monthly cost analysis (1st, 10 AM)
 
 **Backup Operations**
