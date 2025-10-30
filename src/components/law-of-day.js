@@ -118,13 +118,6 @@ export function LawOfTheDay({ law, onNavigate }) {
       }
       return;
     }
-
-    // Preserve click-to-detail navigation on the main body
-    const host = t.closest('[data-law-id]');
-    if (host) {
-      const id = host.getAttribute('data-law-id');
-      if (id) onNavigate('law', id);
-    }
   });
 
   return el;
