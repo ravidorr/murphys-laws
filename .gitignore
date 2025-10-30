@@ -17,6 +17,8 @@ coverage/
 murphys.db
 murphys.db.backup
 murphys.db.pre-migrate-backup
+murphys.db-shm
+murphys.db-wal
 
 .continue/
 .claude/
