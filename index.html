@@ -9,6 +9,17 @@
     <meta name="author" content="Raanan Avidor" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://murphys-laws.com/" />
+
+    <!-- Preconnect to critical origins for faster resource loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://mirrors.creativecommons.org">
+
+    <!-- DNS prefetch for analytics and less critical origins -->
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://murphys-laws.com/" />
     <meta property="og:title" content="Murphy's Law - Archive of Laws, Corollaries & Calculators" />
@@ -103,8 +114,20 @@
         padding: 2rem 0;
       }
     </style>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Optimize font loading with font-display: swap for Font Awesome -->
+    <style>
+      @font-face {
+        font-family: 'Font Awesome 6 Free';
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Font Awesome 6 Brands';
+        font-display: swap;
+      }
+    </style>
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->

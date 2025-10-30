@@ -13,7 +13,7 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
 
   if (!law) {
     el.innerHTML = `
-      <div class="skeleton" role="status" aria-label="Loading Law of the Day"></div>
+      <div class="skeleton" role="status" aria-label="Loading Law of the Day" style="min-height: 300px;"></div>
     `;
     return el;
   }
