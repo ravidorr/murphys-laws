@@ -168,7 +168,3 @@ export function ensureAdsense() {
   return adsensePromise;
 }
 
-export function whenAnalyticsReady() {
-  return Promise.all([gtmPromise, gtagPromise]);
-}
-
