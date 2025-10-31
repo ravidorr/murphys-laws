@@ -419,6 +419,7 @@ textarea.form-control,
 .share-button .share-icon {
   width: 32px;
   height: 32px;
+  color: inherit; /* Ensure icons inherit the white color from .share-button */
 }
 
 /* Ensure Font Awesome fonts are used */
