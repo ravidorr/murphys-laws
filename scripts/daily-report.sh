@@ -12,7 +12,7 @@
 #############################################################################
 
 ALERT_EMAIL="ravidor@gmail.com"
-FROM_EMAIL="alerts@murphys-laws.com"
+FROM_EMAIL="Murphy's Laws Server <alerts@murphys-laws.com>"
 HOSTNAME=$(hostname)
 DATE=$(date '+%Y-%m-%d')
 DAY_OF_WEEK=$(date '+%u')  # 1=Monday, 7=Sunday
@@ -77,7 +77,15 @@ if command -v pm2 &> /dev/null; then
     REPORT+="PM2 Applications:\n"
     PM2_STATUS=$(/root/.nvm/versions/node/v22.20.0/bin/pm2 jlist 2>/dev/null)
     if [ $? -eq 0 ]; then
-        echo "$PM2_STATUS" | jq -r '.[] | select(.name | IN("murphys-api", "murphys-frontend")) | "  • \(.name): \(.pm2_env.status) (restarts: \(.pm2_env.restart_time))"' >> "$TEMP_DIR/pm2.txt"
+        # Create formatted table with headers
+        printf "  %-20s %-10s %-10s\n" "Name" "Status" "Restarts" > "$TEMP_DIR/pm2.txt"
+        printf "  %-20s %-10s %-10s\n" "--------------------" "----------" "----------" >> "$TEMP_DIR/pm2.txt"
+        echo "$PM2_STATUS" | jq -r '.[] | select(.name | IN("murphys-api", "murphys-frontend")) | "  \(.name | @text | .[0:20])    \(.pm2_env.status | @text | .[0:10])   \(.pm2_env.restart_time)"' | while IFS= read -r line; do
+            name=$(echo "$line" | awk '{print $2}')
+            status=$(echo "$line" | awk '{print $3}')
+            restarts=$(echo "$line" | awk '{print $4}')
+            printf "  %-20s %-10s %-10s\n" "$name" "$status" "$restarts" >> "$TEMP_DIR/pm2.txt"
+        done
         REPORT+="$(cat $TEMP_DIR/pm2.txt)\n"
     else
         REPORT+="  • Unable to retrieve PM2 status\n"
@@ -92,7 +100,7 @@ fi
 log "Collecting performance metrics..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="2. PERFORMANCE METRICS (Last 24h)\n"
+REPORT+="2. PERFORMANCE METRICS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
@@ -168,7 +176,7 @@ fi
 log "Collecting website activity..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="4. WEBSITE ACTIVITY (Last 24h)\n"
+REPORT+="4. WEBSITE ACTIVITY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
@@ -196,8 +204,21 @@ REPORT+="5. Murphy's Law of the Day\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
-    LAW_OF_DAY=$(sqlite3 "$DB_PATH" "SELECT COALESCE(title || ': ', '') || text FROM laws WHERE status='published' ORDER BY RANDOM() LIMIT 1" 2>/dev/null || echo "Unable to fetch law of the day")
-    REPORT+="$LAW_OF_DAY\n\n"
+    # Use the same logic as the website - query the law_of_day table for today's date
+    TODAY_DATE=$(date +%Y-%m-%d)
+    LAW_OF_DAY=$(sqlite3 "$DB_PATH" "
+        SELECT COALESCE(l.title || ': ', '') || l.text
+        FROM law_of_day lod
+        JOIN laws l ON lod.law_id = l.id
+        WHERE lod.date = '$TODAY_DATE'
+        LIMIT 1
+    " 2>/dev/null || echo "Unable to fetch law of the day")
+
+    if [ -z "$LAW_OF_DAY" ] || [ "$LAW_OF_DAY" = "" ]; then
+        REPORT+="No law of the day set for $TODAY_DATE\n\n"
+    else
+        REPORT+="$LAW_OF_DAY\n\n"
+    fi
 else
     REPORT+="Database not available\n\n"
 fi
@@ -209,7 +230,7 @@ fi
 log "Analyzing traffic and bandwidth..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="6. TRAFFIC & BANDWIDTH (Last 24h)\n"
+REPORT+="6. TRAFFIC & BANDWIDTH\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f /var/log/nginx/access.log ]; then
