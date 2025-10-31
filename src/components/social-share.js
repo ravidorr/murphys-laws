@@ -3,13 +3,7 @@
  * Renders social sharing buttons for Twitter, Facebook, LinkedIn, Reddit, and Email
  */
 
-const ICON_PATHS = {
-  twitter: '/social/x-twitter-brands-solid-full.svg',
-  facebook: '/social/facebook-f-brands-solid-full.svg',
-  linkedin: '/social/linkedin-in-brands-solid-full.svg',
-  reddit: '/social/reddit-alien-brands-solid-full.svg',
-  email: '/social/envelope-solid-full.svg'
-};
+import { createIcon } from '../utils/icons.js';
 
 /**
  * Create social share buttons
@@ -51,7 +45,7 @@ export function SocialShare({ url, title, description } = {}) {
       className: 'share-button share-twitter',
       href: twitterUrl,
       label: 'Share on Twitter',
-      iconPath: ICON_PATHS.twitter,
+      iconName: 'twitter',
       rel: 'noopener noreferrer',
       target: '_blank',
     },
@@ -59,7 +53,7 @@ export function SocialShare({ url, title, description } = {}) {
       className: 'share-button share-facebook',
       href: facebookUrl,
       label: 'Share on Facebook',
-      iconPath: ICON_PATHS.facebook,
+      iconName: 'facebook',
       rel: 'noopener noreferrer',
       target: '_blank',
     },
@@ -67,7 +61,7 @@ export function SocialShare({ url, title, description } = {}) {
       className: 'share-button share-linkedin',
       href: linkedinUrl,
       label: 'Share on LinkedIn',
-      iconPath: ICON_PATHS.linkedin,
+      iconName: 'linkedin',
       rel: 'noopener noreferrer',
       target: '_blank',
     },
@@ -75,7 +69,7 @@ export function SocialShare({ url, title, description } = {}) {
       className: 'share-button share-reddit',
       href: redditUrl,
       label: 'Share on Reddit',
-      iconPath: ICON_PATHS.reddit,
+      iconName: 'reddit',
       rel: 'noopener noreferrer',
       target: '_blank',
     },
@@ -83,21 +77,26 @@ export function SocialShare({ url, title, description } = {}) {
       className: 'share-button share-email',
       href: emailUrl,
       label: 'Share via Email',
-      iconPath: ICON_PATHS.email,
+      iconName: 'email',
     },
   ];
 
-  el.innerHTML = platforms
-    .map(({ className, href, label, rel, target, iconPath }) => {
-      const relAttr = rel ? ` rel="${rel}"` : '';
-      const targetAttr = target ? ` target="${target}"` : '';
-      return `
-        <a class="${className}" href="${href}" aria-label="${label}" title="${label}"${targetAttr}${relAttr}>
-          <img src="${iconPath}" class="share-icon" alt="${label}" aria-hidden="true" />
-        </a>
-      `;
-    })
-    .join('');
+  platforms.forEach(({ className, href, label, rel, target, iconName }) => {
+    const link = document.createElement('a');
+    link.className = className;
+    link.href = href;
+    link.setAttribute('aria-label', label);
+    link.setAttribute('title', label);
+    if (rel) link.setAttribute('rel', rel);
+    if (target) link.setAttribute('target', target);
+
+    const icon = createIcon(iconName, { classNames: ['share-icon'] });
+    if (icon) {
+      link.appendChild(icon);
+    }
+
+    el.appendChild(link);
+  });
 
   return el;
 }

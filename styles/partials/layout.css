@@ -180,6 +180,12 @@ header.sticky {
   transform: translateY(0);
 }
 
+.nav-dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .nav-dropdown-item {
   display: flex;
   align-items: center;
@@ -190,11 +196,11 @@ header.sticky {
   transition: background 0.2s ease;
 }
 
-.nav-dropdown-item:first-child {
+.nav-dropdown li:first-child .nav-dropdown-item {
   border-radius: .75rem .75rem 0 0;
 }
 
-.nav-dropdown-item:last-child {
+.nav-dropdown li:last-child .nav-dropdown-item {
   border-radius: 0 0 .75rem .75rem;
 }
 
