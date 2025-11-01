@@ -84,7 +84,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     }
 
     const safeText = escapeHtml(law.text || '');
-    if (textEl) textEl.textContent = `"${safeText}"`;
+    if (textEl) textEl.textContent = safeText;
 
     const attsHtml = renderAttributionsList(law.attributions);
     const author = law.author ? String(law.author) : '';
