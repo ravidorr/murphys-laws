@@ -63,6 +63,13 @@ async function deploy() {
     'Syncing PM2 config'
   );
 
+  // Step 3.5: Update server maintenance scripts in /root/scripts/
+  log('\n→ Updating server maintenance scripts...', 'blue');
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/scripts/daily-report.sh /root/scripts/daily-report.sh && sudo chmod +x /root/scripts/daily-report.sh"`,
+    'Updating daily report script'
+  );
+
   // Step 4: Restart PM2 services
   log('\n→ Restarting services on droplet...', 'blue');
   exec(
