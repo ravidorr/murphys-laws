@@ -44,7 +44,7 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const bodyEl = el.querySelector('#lod-body');
   if (bodyEl) {
     bodyEl.innerHTML = `
-      <blockquote class="lod-quote-large">"${safeText}"</blockquote>
+      <blockquote class="lod-quote-large">${safeText}</blockquote>
       <p class="lod-attrib">${attribution}</p>
     `;
   }
