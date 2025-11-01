@@ -63,10 +63,10 @@ async function deploy() {
     'Syncing PM2 config'
   );
 
-  // Step 3.5: Update server maintenance scripts in /root/scripts/
+  // Step 3.5: Update server maintenance scripts in /usr/local/bin/
   log('\n→ Updating server maintenance scripts...', 'blue');
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/scripts/daily-report.sh /root/scripts/daily-report.sh && sudo chmod +x /root/scripts/daily-report.sh"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/scripts/daily-report.sh /usr/local/bin/daily-report.sh && sudo chmod +x /usr/local/bin/daily-report.sh"`,
     'Updating daily report script'
   );
 
