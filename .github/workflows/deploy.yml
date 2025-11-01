@@ -109,6 +109,10 @@ jobs:
             npm install
             npm run migrate:safe
 
+            # Update server maintenance scripts
+            sudo cp "$TARGET_DIR/scripts/daily-report.sh" /usr/local/bin/daily-report.sh
+            sudo chmod +x /usr/local/bin/daily-report.sh
+
             # Restart services
             pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
             pm2 save
