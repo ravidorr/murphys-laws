@@ -222,7 +222,7 @@ else
 fi
 
 #############################################################################
-# PART 7: SECURITY SUMMARY
+# PART 6: SECURITY SUMMARY
 #############################################################################
 
 log "Collecting security information..."
@@ -245,7 +245,7 @@ fi
 REPORT+="\n"
 
 #############################################################################
-# PART 8: SSL CERTIFICATE STATUS
+# PART 7: SSL CERTIFICATE STATUS
 #############################################################################
 
 log "Checking SSL certificate..."
@@ -288,29 +288,7 @@ else
 fi
 
 #############################################################################
-# PART 9: LOG ANALYSIS & ATTACK DETECTION
-#############################################################################
-
-log "Running log analysis..."
-
-REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="LOG ANALYSIS & ATTACK DETECTION\n"
-REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-
-# Run log analyzer and capture output
-/usr/local/bin/log-analyzer.sh > "$TEMP_DIR/log-analysis.txt" 2>&1
-
-# Extract summary
-if [ -f "$TEMP_DIR/log-analysis.txt" ]; then
-    # Get just the summary section
-    sed -n '/^Log Analysis Summary/,/^=======/p' "$TEMP_DIR/log-analysis.txt" | head -20 > "$TEMP_DIR/log-summary.txt"
-    REPORT+="$(cat $TEMP_DIR/log-summary.txt)\n\n"
-else
-    REPORT+="Log analysis not available\n\n"
-fi
-
-#############################################################################
-# PART 10: BACKUP STATUS
+# PART 8: BACKUP STATUS
 #############################################################################
 
 log "Checking backup status..."
@@ -348,7 +326,7 @@ else
 fi
 
 #############################################################################
-# PART 11: SYSTEM UPDATES
+# PART 9: SYSTEM UPDATES
 #############################################################################
 
 log "Checking for system updates..."
@@ -368,7 +346,7 @@ if [ "$PENDING_UPDATES" -gt 10 ]; then
 fi
 
 #############################################################################
-# PART 12: VULNERABILITY SCAN (Sundays Only)
+# PART 10: VULNERABILITY SCAN (Sundays Only)
 #############################################################################
 
 if [ "$DAY_OF_WEEK" -eq 7 ]; then
@@ -398,7 +376,7 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 fi
 
 #############################################################################
-# PART 13: COST OPTIMIZATION (1st of Month Only)
+# PART 11: COST OPTIMIZATION (1st of Month Only)
 #############################################################################
 
 if [ "$DAY_OF_MONTH" = "01" ]; then
