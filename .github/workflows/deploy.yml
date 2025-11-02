@@ -111,7 +111,14 @@ jobs:
 
             # Update server maintenance scripts
             sudo cp "$TARGET_DIR/scripts/daily-report.sh" /usr/local/bin/daily-report.sh
-            sudo chmod +x /usr/local/bin/daily-report.sh
+            sudo cp "$TARGET_DIR/scripts/vulnerability-scanner.sh" /usr/local/bin/vulnerability-scanner.sh
+            sudo cp "$TARGET_DIR/scripts/cost-optimization-report.sh" /usr/local/bin/cost-optimization-report.sh
+            sudo cp "$TARGET_DIR/scripts/test-backup-restore.sh" /usr/local/bin/test-backup-restore.sh
+            sudo cp "$TARGET_DIR/scripts/health-monitor.sh" /usr/local/bin/health-monitor.sh
+            sudo cp "$TARGET_DIR/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh
+            sudo cp "$TARGET_DIR/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh
+            sudo cp "$TARGET_DIR/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh
+            sudo chmod +x /usr/local/bin/*.sh
 
             # Restart services
             pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
