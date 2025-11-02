@@ -40,8 +40,7 @@ REPORT=""
 
 REPORT+="Daily Status Report for Murphy's Laws\n"
 REPORT+="Server: $HOSTNAME\n"
-REPORT+="Date: $(date '+%Y-%m-%d %H:%M:%S %Z')\n"
-REPORT+="============================================\n\n"
+REPORT+="Date: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\n"
 
 #############################################################################
 # PART 1: SYSTEM STATUS
