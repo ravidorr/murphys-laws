@@ -49,7 +49,7 @@ REPORT+="Date: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\n"
 log "Collecting system status..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="1. SYSTEM STATUS\n"
+REPORT+="SYSTEM STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Uptime and load
@@ -99,7 +99,7 @@ fi
 log "Collecting database metrics..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="2. DATABASE METRICS\n"
+REPORT+="DATABASE METRICS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 DB_PATH="/root/murphys-laws/murphys.db"
@@ -136,7 +136,7 @@ fi
 log "Collecting website activity..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="3. WEBSITE ACTIVITY\n"
+REPORT+="WEBSITE ACTIVITY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
@@ -160,7 +160,7 @@ fi
 log "Selecting Murphy's Law of the Day..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="4. Murphy's Law of the Day\n"
+REPORT+="Murphy's Law of the Day\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
@@ -190,7 +190,7 @@ fi
 log "Analyzing traffic and bandwidth..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="5. TRAFFIC & BANDWIDTH\n"
+REPORT+="TRAFFIC & BANDWIDTH\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f /var/log/nginx/access.log ]; then
@@ -228,7 +228,7 @@ fi
 log "Collecting security information..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="6. SECURITY SUMMARY\n"
+REPORT+="SECURITY SUMMARY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Failed SSH attempts
@@ -251,7 +251,7 @@ REPORT+="\n"
 log "Checking SSL certificate..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="7. SSL CERTIFICATE STATUS\n"
+REPORT+="SSL CERTIFICATE STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 CERT_PATH="/etc/letsencrypt/live/murphys-laws.com/cert.pem"
@@ -294,7 +294,7 @@ fi
 log "Running log analysis..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="8. LOG ANALYSIS & ATTACK DETECTION\n"
+REPORT+="LOG ANALYSIS & ATTACK DETECTION\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Run log analyzer and capture output
@@ -316,11 +316,11 @@ fi
 log "Checking backup status..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="9. BACKUP STATUS\n"
+REPORT+="BACKUP STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -d /root/backups ]; then
-    LATEST_DB_BACKUP=$(ls -t /root/backups/murphys-*.db 2>/dev/null | head -1)
+    LATEST_DB_BACKUP=$(ls -t /root/backups/murphys_db_*.db 2>/dev/null | head -1)
     if [ -n "$LATEST_DB_BACKUP" ]; then
         BACKUP_AGE=$(stat -c %y "$LATEST_DB_BACKUP" 2>/dev/null | cut -d'.' -f1)
         BACKUP_SIZE=$(du -h "$LATEST_DB_BACKUP" | cut -f1)
@@ -354,7 +354,7 @@ fi
 log "Checking for system updates..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="10. SYSTEM UPDATES\n"
+REPORT+="SYSTEM UPDATES\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 REPORT+="Kernel: $(uname -r)\n"
@@ -375,7 +375,7 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
     log "Running weekly vulnerability scan (Sunday)..."
 
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="11. WEEKLY VULNERABILITY SCAN\n"
+    REPORT+="WEEKLY VULNERABILITY SCAN\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run vulnerability scanner
