@@ -154,6 +154,45 @@ else
 fi
 
 #############################################################################
+# PERFORMANCE METRICS
+#############################################################################
+
+log "Collecting performance metrics..."
+
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+REPORT+="PERFORMANCE METRICS\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
+if [ -f "$METRICS_FILE" ]; then
+    tail -24 "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
+
+    # Calculate averages
+    AVG_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {sum+=$2; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_API=$(awk -F',' 'NR>1 && $3 != "" {sum+=$3; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_DB=$(awk -F',' 'NR>1 && $4 != "" {sum+=$4; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_MEMORY=$(awk -F',' 'NR>1 && $7 != "" {sum+=$7; count++} END {if (count>0) printf "%.1f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+
+    # Get max values
+    MAX_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {if ($2>max) max=$2} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_API=$(awk -F',' 'NR>1 && $3 != "" {if ($3>max) max=$3} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_DB=$(awk -F',' 'NR>1 && $4 != "" {if ($4>max) max=$4} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+
+    REPORT+="Response Times:\n"
+    REPORT+="  • Frontend: avg ${AVG_FRONTEND}ms, max ${MAX_FRONTEND}ms\n"
+    REPORT+="  • API: avg ${AVG_API}ms, max ${MAX_API}ms\n"
+    REPORT+="  • Database: avg ${AVG_DB}ms, max ${MAX_DB}ms\n"
+    REPORT+="  • Avg Memory Usage: ${AVG_MEMORY}%\n\n"
+
+    # Performance warnings
+    if [ "$MAX_API" != "N/A" ] && [ "$MAX_API" -gt 5000 ]; then
+        REPORT+="⚠️  WARNING: Peak API response time exceeded 5 seconds\n\n"
+    fi
+else
+    REPORT+="Performance metrics not yet available.\n\n"
+fi
+
+#############################################################################
 # MURPHY'S LAW OF THE DAY
 #############################################################################
 
@@ -343,6 +382,28 @@ REPORT+="Pending Updates: $PENDING_UPDATES\n\n"
 
 if [ "$PENDING_UPDATES" -gt 10 ]; then
     REPORT+="⚠️  More than 10 updates pending\n\n"
+fi
+
+#############################################################################
+# LOG ANALYSIS & ATTACK DETECTION
+#############################################################################
+
+log "Running log analysis..."
+
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+REPORT+="LOG ANALYSIS & ATTACK DETECTION\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+# Run log analyzer and capture output
+/usr/local/bin/log-analyzer.sh > "$TEMP_DIR/log-analysis.txt" 2>&1
+
+# Extract summary
+if [ -f "$TEMP_DIR/log-analysis.txt" ]; then
+    # Get just the summary section
+    sed -n '/^Log Analysis Summary/,/^=======/p' "$TEMP_DIR/log-analysis.txt" | head -20 > "$TEMP_DIR/log-summary.txt"
+    REPORT+="$(cat $TEMP_DIR/log-summary.txt)\n\n"
+else
+    REPORT+="Log analysis not available\n\n"
 fi
 
 #############################################################################
