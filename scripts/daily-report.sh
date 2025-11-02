@@ -93,52 +93,13 @@ if command -v pm2 &> /dev/null; then
 fi
 
 #############################################################################
-# PART 2: PERFORMANCE METRICS
-#############################################################################
-
-log "Collecting performance metrics..."
-
-REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="2. PERFORMANCE METRICS\n"
-REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-
-METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
-if [ -f "$METRICS_FILE" ]; then
-    tail -24 "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
-
-    # Calculate averages
-    AVG_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {sum+=$2; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_API=$(awk -F',' 'NR>1 && $3 != "" {sum+=$3; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_DB=$(awk -F',' 'NR>1 && $4 != "" {sum+=$4; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_MEMORY=$(awk -F',' 'NR>1 && $7 != "" {sum+=$7; count++} END {if (count>0) printf "%.1f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-
-    # Get max values
-    MAX_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {if ($2>max) max=$2} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_API=$(awk -F',' 'NR>1 && $3 != "" {if ($3>max) max=$3} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_DB=$(awk -F',' 'NR>1 && $4 != "" {if ($4>max) max=$4} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-
-    REPORT+="Response Times:\n"
-    REPORT+="  • Frontend: avg ${AVG_FRONTEND}ms, max ${MAX_FRONTEND}ms\n"
-    REPORT+="  • API: avg ${AVG_API}ms, max ${MAX_API}ms\n"
-    REPORT+="  • Database: avg ${AVG_DB}ms, max ${MAX_DB}ms\n"
-    REPORT+="  • Avg Memory Usage: ${AVG_MEMORY}%\n\n"
-
-    # Performance warnings
-    if [ "$MAX_API" != "N/A" ] && [ "$MAX_API" -gt 5000 ]; then
-        REPORT+="⚠️  WARNING: Peak API response time exceeded 5 seconds\n\n"
-    fi
-else
-    REPORT+="Performance metrics not yet available.\n\n"
-fi
-
-#############################################################################
-# PART 3: DATABASE METRICS
+# PART 2: DATABASE METRICS
 #############################################################################
 
 log "Collecting database metrics..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="3. DATABASE METRICS\n"
+REPORT+="2. DATABASE METRICS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 DB_PATH="/root/murphys-laws/murphys.db"
@@ -169,13 +130,13 @@ else
 fi
 
 #############################################################################
-# PART 4: WEBSITE ACTIVITY
+# PART 3: WEBSITE ACTIVITY
 #############################################################################
 
 log "Collecting website activity..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="4. WEBSITE ACTIVITY\n"
+REPORT+="3. WEBSITE ACTIVITY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
@@ -193,13 +154,13 @@ else
 fi
 
 #############################################################################
-# PART 5: MURPHY'S LAW OF THE DAY
+# PART 4: MURPHY'S LAW OF THE DAY
 #############################################################################
 
 log "Selecting Murphy's Law of the Day..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="5. Murphy's Law of the Day\n"
+REPORT+="4. Murphy's Law of the Day\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
@@ -223,13 +184,13 @@ else
 fi
 
 #############################################################################
-# PART 6: TRAFFIC & BANDWIDTH
+# PART 5: TRAFFIC & BANDWIDTH
 #############################################################################
 
 log "Analyzing traffic and bandwidth..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="6. TRAFFIC & BANDWIDTH\n"
+REPORT+="5. TRAFFIC & BANDWIDTH\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f /var/log/nginx/access.log ]; then
@@ -267,7 +228,7 @@ fi
 log "Collecting security information..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="7. SECURITY SUMMARY\n"
+REPORT+="6. SECURITY SUMMARY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Failed SSH attempts
@@ -290,7 +251,7 @@ REPORT+="\n"
 log "Checking SSL certificate..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="8. SSL CERTIFICATE STATUS\n"
+REPORT+="7. SSL CERTIFICATE STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 CERT_PATH="/etc/letsencrypt/live/murphys-laws.com/cert.pem"
@@ -333,7 +294,7 @@ fi
 log "Running log analysis..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="9. LOG ANALYSIS & ATTACK DETECTION\n"
+REPORT+="8. LOG ANALYSIS & ATTACK DETECTION\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 # Run log analyzer and capture output
@@ -355,7 +316,7 @@ fi
 log "Checking backup status..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="10. BACKUP STATUS\n"
+REPORT+="9. BACKUP STATUS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -d /root/backups ]; then
@@ -393,7 +354,7 @@ fi
 log "Checking for system updates..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="11. SYSTEM UPDATES\n"
+REPORT+="10. SYSTEM UPDATES\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 REPORT+="Kernel: $(uname -r)\n"
@@ -414,7 +375,7 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
     log "Running weekly vulnerability scan (Sunday)..."
 
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="12. WEEKLY VULNERABILITY SCAN\n"
+    REPORT+="11. WEEKLY VULNERABILITY SCAN\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run vulnerability scanner
