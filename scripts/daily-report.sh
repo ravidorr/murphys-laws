@@ -43,7 +43,7 @@ REPORT+="Server: $HOSTNAME\n"
 REPORT+="Date: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\n"
 
 #############################################################################
-# PART 1: SYSTEM STATUS
+# SYSTEM STATUS
 #############################################################################
 
 log "Collecting system status..."
@@ -93,7 +93,7 @@ if command -v pm2 &> /dev/null; then
 fi
 
 #############################################################################
-# PART 2: DATABASE METRICS
+# DATABASE METRICS
 #############################################################################
 
 log "Collecting database metrics..."
@@ -130,7 +130,7 @@ else
 fi
 
 #############################################################################
-# PART 3: WEBSITE ACTIVITY
+# WEBSITE ACTIVITY
 #############################################################################
 
 log "Collecting website activity..."
@@ -154,13 +154,13 @@ else
 fi
 
 #############################################################################
-# PART 4: MURPHY'S LAW OF THE DAY
+# MURPHY'S LAW OF THE DAY
 #############################################################################
 
 log "Selecting Murphy's Law of the Day..."
 
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-REPORT+="Murphy's Law of the Day\n"
+REPORT+="MURPHY'S LAW OF THE DAY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
@@ -184,7 +184,7 @@ else
 fi
 
 #############################################################################
-# PART 5: TRAFFIC & BANDWIDTH
+# TRAFFIC & BANDWIDTH
 #############################################################################
 
 log "Analyzing traffic and bandwidth..."
@@ -222,7 +222,7 @@ else
 fi
 
 #############################################################################
-# PART 6: SECURITY SUMMARY
+# SECURITY SUMMARY
 #############################################################################
 
 log "Collecting security information..."
@@ -245,7 +245,7 @@ fi
 REPORT+="\n"
 
 #############################################################################
-# PART 7: SSL CERTIFICATE STATUS
+# SSL CERTIFICATE STATUS
 #############################################################################
 
 log "Checking SSL certificate..."
@@ -288,7 +288,7 @@ else
 fi
 
 #############################################################################
-# PART 8: BACKUP STATUS
+# BACKUP STATUS
 #############################################################################
 
 log "Checking backup status..."
@@ -326,7 +326,7 @@ else
 fi
 
 #############################################################################
-# PART 9: SYSTEM UPDATES
+# SYSTEM UPDATES
 #############################################################################
 
 log "Checking for system updates..."
@@ -346,7 +346,7 @@ if [ "$PENDING_UPDATES" -gt 10 ]; then
 fi
 
 #############################################################################
-# PART 10: VULNERABILITY SCAN (Sundays Only)
+# VULNERABILITY SCAN (Sundays Only)
 #############################################################################
 
 if [ "$DAY_OF_WEEK" -eq 7 ]; then
@@ -376,14 +376,14 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 fi
 
 #############################################################################
-# PART 11: COST OPTIMIZATION (1st of Month Only)
+# COST OPTIMIZATION (1st of Month Only)
 #############################################################################
 
 if [ "$DAY_OF_MONTH" = "01" ]; then
     log "Running monthly cost optimization report..."
 
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="13. MONTHLY COST OPTIMIZATION REPORT\n"
+    REPORT+="MONTHLY COST OPTIMIZATION REPORT\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run cost optimization report
@@ -407,7 +407,7 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
 fi
 
 #############################################################################
-# PART 14: MONTHLY BACKUP TEST REMINDER (1st of Month Only)
+# MONTHLY BACKUP TEST REMINDER (1st of Month Only)
 #############################################################################
 
 if [ "$DAY_OF_MONTH" = "01" ]; then
