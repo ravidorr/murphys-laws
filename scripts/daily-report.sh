@@ -511,7 +511,7 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
     SUBJECT="$SUBJECT (+ Cost Report + Backup Test Reminder)"
 fi
 
-cat "$REPORT_FILE" | mail -s "$SUBJECT" -r "$FROM_EMAIL" "$ALERT_EMAIL"
+cat "$REPORT_FILE" | mail -s "$SUBJECT" -a "From: $FROM_EMAIL" "$ALERT_EMAIL"
 
 log "Report sent to $ALERT_EMAIL"
 log "Report saved to $REPORT_FILE"
