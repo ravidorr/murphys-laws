@@ -27,11 +27,15 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const attribution = firstAttributionLine(law);
   const userVote = getUserVote(law.id);
 
-  // Safely escape the law text
+  // Safely escape the law text and title
   const safeText = escapeHtml(law.text);
+  const safeTitle = law.title ? escapeHtml(law.title) : '';
+
+  // Combine title and text if title exists
+  const lawDisplay = safeTitle ? `${safeTitle}: ${safeText}` : safeText;
 
   el.innerHTML = templateHtml;
-  
+
   // Hydrate icons
   hydrateIcons(el);
 
@@ -44,7 +48,7 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const bodyEl = el.querySelector('#lod-body');
   if (bodyEl) {
     bodyEl.innerHTML = `
-      <blockquote class="lod-quote-large">${safeText}</blockquote>
+      <blockquote class="lod-quote-large">${lawDisplay}</blockquote>
       <p class="lod-attrib">${attribution}</p>
     `;
   }
