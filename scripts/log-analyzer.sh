@@ -361,19 +361,12 @@ SUMMARY+="\n=======================================\n\n"
 # Add summary to beginning of report
 FULL_REPORT="$SUMMARY$REPORT"
 
-# Save report
+# Output report to stdout for inclusion in daily report
+echo -e "$FULL_REPORT"
+
+# Also save to file for standalone access if needed
 echo -e "$FULL_REPORT" > "$REPORT_FILE"
 log "Report saved to $REPORT_FILE"
-
-# Send email if issues found
-if [ "$TOTAL_ISSUES" -gt 0 ] || [ "$ERROR_5XX" -gt 10 ]; then
-    log "⚠️  Found security issues, sending alert email"
-    cat "$REPORT_FILE" | mail -s "[Murphy's Laws] Log Analysis - Security Issues Detected" "$ALERT_EMAIL"
-else
-    log "✅ No critical issues found"
-    # Send daily summary anyway (comment this out if you only want alerts)
-    cat "$REPORT_FILE" | mail -s "[Murphy's Laws] Daily Log Analysis" "$ALERT_EMAIL"
-fi
 
 log "=========================================="
 log "Log analysis completed"

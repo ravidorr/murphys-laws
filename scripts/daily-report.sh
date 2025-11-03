@@ -394,14 +394,12 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="LOG ANALYSIS & ATTACK DETECTION\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-# Run log analyzer and capture output
-/usr/local/bin/log-analyzer.sh > "$TEMP_DIR/log-analysis.txt" 2>&1
+# Run log analyzer and capture output (stdout only, stderr goes to log)
+/usr/local/bin/log-analyzer.sh 2>>/var/log/consolidated-daily-report.log > "$TEMP_DIR/log-analysis.txt"
 
-# Extract summary
-if [ -f "$TEMP_DIR/log-analysis.txt" ]; then
-    # Get just the summary section
-    sed -n '/^Log Analysis Summary/,/^=======/p' "$TEMP_DIR/log-analysis.txt" | head -20 > "$TEMP_DIR/log-summary.txt"
-    REPORT+="$(cat $TEMP_DIR/log-summary.txt)\n\n"
+# Include the report output
+if [ -f "$TEMP_DIR/log-analysis.txt" ] && [ -s "$TEMP_DIR/log-analysis.txt" ]; then
+    REPORT+="$(cat $TEMP_DIR/log-analysis.txt)\n\n"
 else
     REPORT+="Log analysis not available\n\n"
 fi
