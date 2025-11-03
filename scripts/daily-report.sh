@@ -195,11 +195,11 @@ REPORT+="MURPHY'S LAW OF THE DAY\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$DB_PATH" ]; then
-    # Use the same logic as the website - query the law_of_the_day_history table for today's date
-    # Only show the text, not the title (matching website display)
+    # Query the law_of_the_day_history table for today's date
+    # Show title and text (matching website display)
     TODAY_DATE=$(date +%Y-%m-%d)
     LAW_OF_DAY=$(sqlite3 "$DB_PATH" "
-        SELECT l.text
+        SELECT COALESCE(l.title || ': ', '') || l.text
         FROM law_of_the_day_history lod
         JOIN laws l ON lod.law_id = l.id
         WHERE lod.featured_date = '$TODAY_DATE'
