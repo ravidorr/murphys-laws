@@ -81,7 +81,7 @@ check_http_endpoint() {
     local time_ms=$(echo "$time_total * 1000" | bc | cut -d. -f1)
 
     if [ $curl_exit -ne 0 ]; then
-        log "❌ $name FAILED - curl error code: $curl_exit"
+        log "$name FAILED - curl error code: $curl_exit"
         send_alert \
             "[CRITICAL] $name Down" \
             "The $name endpoint is not responding.
@@ -99,7 +99,7 @@ This requires immediate attention." \
     http_code=$(echo "$response" | grep -o "^[0-9]\{3\}")
 
     if [ "$http_code" != "200" ]; then
-        log "❌ $name returned HTTP $http_code (expected 200)"
+        log "$name returned HTTP $http_code (expected 200)"
         send_alert \
             "[CRITICAL] $name Error - HTTP $http_code" \
             "The $name endpoint returned an error status.
@@ -116,7 +116,7 @@ This requires immediate attention." \
 
     # Check response time
     if [ "$time_ms" -gt "$ALERT_THRESHOLD_MS" ]; then
-        log "⚠️  $name SLOW - ${time_ms}ms (threshold: ${ALERT_THRESHOLD_MS}ms)"
+        log "$name SLOW - ${time_ms}ms (threshold: ${ALERT_THRESHOLD_MS}ms)"
         send_alert \
             "[WARNING] $name Slow Response" \
             "The $name endpoint is responding slowly.
@@ -130,7 +130,7 @@ Time: $(date)
 Consider investigating performance issues." \
             "${name}_slow"
     else
-        log "✅ $name OK - ${time_ms}ms (HTTP $http_code)"
+        log "$name OK - ${time_ms}ms (HTTP $http_code)"
     fi
 
     # Return response time for tracking
@@ -141,7 +141,7 @@ Consider investigating performance issues." \
 # Check database performance
 check_database_performance() {
     if [ ! -f "$DB_PATH" ]; then
-        log "⚠️  Database file not found: $DB_PATH"
+        log "Database file not found: $DB_PATH"
         return 1
     fi
 
@@ -153,7 +153,7 @@ check_database_performance() {
     local end=$(date +%s%N)
 
     if [ $? -ne 0 ]; then
-        log "❌ Database query failed: $count"
+        log "Database query failed: $count"
         send_alert \
             "[CRITICAL] Database Query Failed" \
             "Database query failed on the main application.
@@ -171,11 +171,11 @@ This requires immediate attention." \
     local duration_ns=$((end - start))
     local duration_ms=$((duration_ns / 1000000))
 
-    log "✅ Database OK - Query returned $count rows in ${duration_ms}ms"
+    log "Database OK - Query returned $count rows in ${duration_ms}ms"
 
     # Check if query is too slow
     if [ "$duration_ms" -gt 1000 ]; then
-        log "⚠️  Database query slow: ${duration_ms}ms"
+        log "Database query slow: ${duration_ms}ms"
         send_alert \
             "[WARNING] Database Performance Degraded" \
             "Database queries are taking longer than expected.
@@ -204,7 +204,7 @@ check_pm2_processes() {
     local pm2_status=$(pm2 jlist 2>&1)
 
     if [ $? -ne 0 ]; then
-        log "❌ PM2 not responding"
+        log "PM2 not responding"
         send_alert \
             "[CRITICAL] PM2 Not Responding" \
             "PM2 process manager is not responding.
@@ -221,7 +221,7 @@ This requires immediate attention." \
     local stopped_processes=$(echo "$pm2_status" | jq -r '.[] | select(.pm2_env.status != "online") | .name' 2>/dev/null)
 
     if [ -n "$stopped_processes" ]; then
-        log "❌ PM2 processes not online: $stopped_processes"
+        log "PM2 processes not online: $stopped_processes"
         send_alert \
             "[CRITICAL] PM2 Processes Stopped" \
             "One or more PM2 processes are not running.
@@ -241,7 +241,7 @@ Attempting automatic restart..." \
         # Verify restart
         local still_stopped=$(pm2 jlist | jq -r '.[] | select(.pm2_env.status != "online") | .name' 2>/dev/null)
         if [ -n "$still_stopped" ]; then
-            log "❌ Restart failed for: $still_stopped"
+            log "Restart failed for: $still_stopped"
             send_alert \
                 "[CRITICAL] PM2 Restart Failed" \
                 "Automatic restart failed for some processes.
@@ -254,12 +254,12 @@ Time: $(date)
 Manual intervention required." \
                 "pm2_restart_failed"
         else
-            log "✅ All processes restarted successfully"
+            log "All processes restarted successfully"
         fi
         return 1
     fi
 
-    log "✅ All PM2 processes online"
+    log "All PM2 processes online"
     return 0
 }
 
@@ -289,12 +289,12 @@ main() {
 
     if [ "$all_ok" = true ]; then
         log "=========================================="
-        log "✅ All Health Checks Passed"
+        log "All Health Checks Passed"
         log "=========================================="
         exit 0
     else
         log "=========================================="
-        log "❌ Some Health Checks Failed"
+        log "Some Health Checks Failed"
         log "=========================================="
         exit 1
     fi

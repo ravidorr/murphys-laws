@@ -81,7 +81,7 @@ npm ci
 npm run api
 # Serves on http://127.0.0.1:8787
 
-# Start frontend dev server (Vite, proxies /api → 127.0.0.1:8787)
+# Start frontend dev server (Vite, proxies /api -> 127.0.0.1:8787)
 npm run dev
 # Dev server: http://127.0.0.1:5175
 ```
@@ -131,14 +131,14 @@ npm run db:rebuild               # Rebuild DB from scratch
 - Entry point: `src/main.js`
 - Views: `src/views/` (home, browse, law-detail, sods-calculator, buttered-toast-calculator, etc.)
 - Components: `src/components/` (header, navigation, calculator widgets)
-- Utilities: `src/utils/` (API, voting, sanitization, DOM helpers)
+- Utilities: `src/utils/` (API request handler, voting, sanitization, law card rendering, pagination, search info, DOM helpers)
 - Styling: `styles/site.css` (prefer classes over inline styles)
 - MathJax integration for formula rendering with interactive tooltips
 
 **Backend**
 - API server: `scripts/api-server.mjs` (Node.js + SQLite)
 - Endpoints: `/api/health`, `/api/laws`, `/api/laws/:id`, `/api/law-of-day`
-- Data pipeline: Markdown files → SQLite via `scripts/build-sqlite.mjs`
+- Data pipeline: Markdown files -> SQLite via `scripts/build-sqlite.mjs`
 - Cron job: `scripts/select-law-of-day.mjs` (daily at midnight UTC)
 
 **Dev Servers**
@@ -148,7 +148,7 @@ npm run db:rebuild               # Rebuild DB from scratch
 
 ### Database Changes
 
-⚠️ **IMPORTANT**: Never commit `murphys.db` directly! This file contains production user data.
+**IMPORTANT**: Never commit `murphys.db` directly! This file contains production user data.
 
 To make database schema changes, use the migration system:
 
@@ -171,7 +171,7 @@ git push
 
 A git hook will prevent you from accidentally committing the database file.
 
-## 🏗️ Infrastructure & Security
+## Infrastructure & Security
 
 ### Server Architecture
 
@@ -419,7 +419,7 @@ The application integrates with the following external services:
   - Hosted on dedicated droplet: n8n.murphys-laws.com
   - Workflows backed up to GitHub: https://github.com/ravidorr/n8n-workflows
 
-## 🚀 Deployment
+## Deployment
 
 **IMPORTANT**: Always deploy from your **local machine**, never build on the droplet!
 
@@ -430,18 +430,18 @@ npm run deploy
 ```
 
 This command:
-1. ✅ Validates port configuration
-2. 🔨 Builds the project locally
-3. 📤 Syncs `dist/` folder to droplet
-4. 🔄 Restarts services
-5. ✅ Shows deployment status
+1. Validates port configuration
+2. Builds the project locally
+3. Syncs `dist/` folder to droplet
+4. Restarts services
+5. Shows deployment status
 
 ### Deployment Rules
 
-- ✅ **DO**: Run `npm run deploy` from your local machine
-- ✅ **DO**: Let the script validate ports automatically
-- ❌ **DON'T**: Run `npm run build` or `vite build` on the droplet (causes OOM crashes)
-- ❌ **DON'T**: SSH into droplet to deploy manually
+- **DO**: Run `npm run deploy` from your local machine
+- **DO**: Let the script validate ports automatically
+- **DON'T**: Run `npm run build` or `vite build` on the droplet (causes OOM crashes)
+- **DON'T**: SSH into droplet to deploy manually
 
 ### Troubleshooting Deployments
 
@@ -478,7 +478,7 @@ The API server can send email notifications when new laws are submitted. To enab
 
 Emails will be sent to `ravidor@gmail.com` with subject "New Murphy Law Submitted!"
 
-## 📚 Operational Documentation
+## Operational Documentation
 
 Comprehensive guides for infrastructure management:
 
@@ -544,4 +544,4 @@ Murphy's Laws serve as:
 
 ---
 
-*Remember: Murphy's Law isn't about pessimism, it's about finding humor in life's inevitable chaos and being prepared for the unexpected. After all, if you're reading this README, something probably just went wrong that brought you here!* 😄
+*Remember: Murphy's Law isn't about pessimism, it's about finding humor in life's inevitable chaos and being prepared for the unexpected. After all, if you're reading this README, something probably just went wrong that brought you here!*

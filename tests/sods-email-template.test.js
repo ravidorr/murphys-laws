@@ -15,11 +15,50 @@ function createLocalThis() {
 describe('Sod\'s email template helpers', () => {
   const local = createLocalThis();
 
+  describe('escapeHtml', () => {
+    it('escapes HTML special characters', () => {
+      expect(sodsEmailTemplate.escapeHtml('<script>alert("xss")</script>'))
+        .toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    });
+
+    it('escapes all special characters', () => {
+      expect(sodsEmailTemplate.escapeHtml('& < > " \'')).toBe('&amp; &lt; &gt; &quot; &#39;');
+    });
+
+    it('handles null and undefined', () => {
+      expect(sodsEmailTemplate.escapeHtml(null)).toBe('');
+      expect(sodsEmailTemplate.escapeHtml(undefined)).toBe('');
+    });
+
+    it('converts non-strings to strings', () => {
+      expect(sodsEmailTemplate.escapeHtml(123)).toBe('123');
+      expect(sodsEmailTemplate.escapeHtml(true)).toBe('true');
+    });
+
+    it('returns empty string unchanged', () => {
+      expect(sodsEmailTemplate.escapeHtml('')).toBe('');
+    });
+
+    it('handles mixed content', () => {
+      expect(sodsEmailTemplate.escapeHtml('Hello <b>World</b> & "Friends"'))
+        .toBe('Hello &lt;b&gt;World&lt;/b&gt; &amp; &quot;Friends&quot;');
+    });
+  });
+
   it('creates a subject with the probability', () => {
     const self = local();
     const subject = sodsEmailTemplate.createSodsEmailSubject('42.00%', 'Alice');
     self.subject = subject;
     expect(self.subject).toBe("Alice shared a Sod's Law calculation with you (P=42.00%)");
+  });
+
+  it('escapes HTML in subject line to prevent injection', () => {
+    const self = local();
+    const subject = sodsEmailTemplate.createSodsEmailSubject('<script>alert("xss")</script>', 'Evil<script>');
+    self.subject = subject;
+    expect(self.subject).toContain('Evil&lt;script&gt;');
+    expect(self.subject).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    expect(self.subject).not.toContain('<script>');
   });
 
   it('builds the plain text email content', () => {

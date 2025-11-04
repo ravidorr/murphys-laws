@@ -120,7 +120,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   switch (command) {
     case 'list': {
       const logs = await listLogs();
-      console.log('\n📋 Available Log Files:\n');
+      console.log('\nAvailable Log Files:\n');
       logs.forEach(log => {
         const sizeKB = (log.size / 1024).toFixed(1);
         const modified = log.modified.toLocaleString();
@@ -135,7 +135,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(1);
       }
       const content = await readLog(service);
-      console.log(`\n📄 ${service}.log (last 50 lines):\n`);
+      console.log(`\n${service}.log (last 50 lines):\n`);
       console.log(content);
       break;
     }
@@ -164,7 +164,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       
     default:
       console.log(`
-📝 Log Manager Utility
+Log Manager Utility
 
 Usage:
   node scripts/log-manager.mjs <command> [service]

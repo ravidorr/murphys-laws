@@ -56,14 +56,14 @@ cd "$PROJECT_DIR" || exit 1
 
 # Run the health check script
 if node scripts/health-check.mjs > /tmp/health-check-output.txt 2>&1; then
-    log "✅ Health check passed"
+    log "Health check passed"
     reset_failure_count
     exit 0
 else
     health_check_exit_code=$?
     health_check_output=$(cat /tmp/health-check-output.txt)
 
-    log "❌ Health check failed (exit code: $health_check_exit_code)"
+    log "Health check failed (exit code: $health_check_exit_code)"
     log "Output: $health_check_output"
 
     # Increment failure count
@@ -72,7 +72,7 @@ else
 
     # If failures exceed threshold, restart services
     if [ "$failure_count" -ge "$MAX_FAILURES" ]; then
-        log "⚠️  Failure threshold reached. Attempting to restart services..."
+        log "Failure threshold reached. Attempting to restart services..."
 
         # Get PM2 process status before restart
         pm2_status_before=$(pm2 jlist 2>&1 || echo "PM2 not available")
@@ -104,16 +104,16 @@ Time: $(date)
 
 Please investigate the root cause of the failures."
 
-        log "✅ Services restarted. Alert sent."
+        log "Services restarted. Alert sent."
 
         # Wait a bit and run health check again
         sleep 10
         if node scripts/health-check.mjs > /tmp/health-check-retest.txt 2>&1; then
-            log "✅ Health check passed after restart"
+            log "Health check passed after restart"
             exit 0
         else
             retest_output=$(cat /tmp/health-check-retest.txt)
-            log "❌ Health check still failing after restart"
+            log "Health check still failing after restart"
 
             send_alert "CRITICAL: Services Still Failing After Restart" \
 "Services were restarted but health checks are still failing.

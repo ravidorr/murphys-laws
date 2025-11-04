@@ -29,7 +29,7 @@ sudo /usr/local/bin/test-backup-restore.sh
 
 **Expected output:**
 ```
-✅ ALL TESTS PASSED - Backups are ready for disaster recovery
+ALL TESTS PASSED - Backups are ready for disaster recovery
 Total Tests: 20
 Passed: 20
 Failed: 0
@@ -80,7 +80,7 @@ ssh root@45.55.74.28
 LATEST_N8N_BACKUP=$(ls -t /root/backups/n8n-*.db 2>/dev/null | head -1)
 
 if [ -n "$LATEST_N8N_BACKUP" ]; then
-    echo "✅ n8n backup found: $(basename $LATEST_N8N_BACKUP)"
+    echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
 
     # Test integrity
     sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
@@ -94,7 +94,7 @@ if [ -n "$LATEST_N8N_BACKUP" ]; then
     echo "Workflows in production:"
     docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
 else
-    echo "❌ No n8n backup found"
+    echo "No n8n backup found"
 fi
 ```
 
@@ -109,14 +109,14 @@ git pull
 
 # Count workflow files
 WORKFLOW_COUNT=$(ls -1 workflows/*.json 2>/dev/null | wc -l)
-echo "✅ GitHub has $WORKFLOW_COUNT workflow files"
+echo "GitHub has $WORKFLOW_COUNT workflow files"
 
 # Verify files are valid JSON
 for file in workflows/*.json; do
     if jq empty "$file" 2>/dev/null; then
-        echo "✅ Valid JSON: $(basename $file)"
+        echo "Valid JSON: $(basename $file)"
     else
-        echo "❌ Invalid JSON: $(basename $file)"
+        echo "Invalid JSON: $(basename $file)"
     fi
 done
 
@@ -146,7 +146,7 @@ sqlite3 "$TEST_DIR/test-n8n.db" "SELECT id, name, active FROM workflow_entity;" 
 
 # Cleanup
 rm -rf "$TEST_DIR"
-echo "✅ Restore test completed"
+echo "Restore test completed"
 ```
 
 ---
@@ -154,20 +154,20 @@ echo "✅ Restore test completed"
 ## Success Criteria
 
 ### Main Droplet Success
-- ✅ All automated tests pass (20/20)
-- ✅ Database integrity check returns "ok"
-- ✅ Backup age < 30 hours
-- ✅ Data difference between backup and production < 10 rows
-- ✅ Application archive extracts successfully
-- ✅ Environment backup contains required keys
-- ✅ Cron job is configured
+- All automated tests pass (20/20)
+- Database integrity check returns "ok"
+- Backup age < 30 hours
+- Data difference between backup and production < 10 rows
+- Application archive extracts successfully
+- Environment backup contains required keys
+- Cron job is configured
 
 ### n8n Droplet Success
-- ✅ n8n database backup exists and is valid
-- ✅ GitHub has workflow JSON files
-- ✅ All JSON files are valid
-- ✅ Workflow count matches between backup and production
-- ✅ Can restore database to temp location
+- n8n database backup exists and is valid
+- GitHub has workflow JSON files
+- All JSON files are valid
+- Workflow count matches between backup and production
+- Can restore database to temp location
 
 ---
 

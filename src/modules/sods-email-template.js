@@ -1,6 +1,11 @@
 const FONT_STACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif";
 
-function escapeHtml(value) {
+/**
+ * Escapes HTML special characters to prevent XSS attacks in email templates
+ * @param {any} value - Value to escape
+ * @returns {string} Escaped string safe for HTML insertion
+ */
+export function escapeHtml(value) {
   if (value === null || value === undefined) {
     return '';
   }
@@ -24,7 +29,10 @@ function escapeHtml(value) {
 }
 
 export function createSodsEmailSubject(probability, senderName) {
-  return `${senderName} shared a Sod's Law calculation with you (P=${probability})`;
+  // Escape values for email subject (prevents header injection)
+  const safeSenderName = escapeHtml(senderName);
+  const safeProbability = escapeHtml(probability);
+  return `${safeSenderName} shared a Sod's Law calculation with you (P=${safeProbability})`;
 }
 
 export function createSodsEmailText({

@@ -1,6 +1,7 @@
 // Voting utility with localStorage tracking and API integration
+// Refactored to use generic API request helper (eliminates ~120 lines of duplicate code)
 
-import { API_BASE_URL, API_FALLBACK_URL } from './constants.js';
+import { apiPost, apiDelete } from './request.js';
 
 const VOTES_KEY = 'murphy_votes';
 
@@ -29,157 +30,58 @@ export function getUserVote(lawId) {
   return votes[lawId] || null; // Returns 'up', 'down', or null
 }
 
-// Vote on a law (up or down) - exported for testing
+/**
+ * Vote on a law (up or down)
+ * @param {number|string} lawId - Law ID
+ * @param {string} voteType - 'up' or 'down'
+ * @returns {Promise<Object>} Response with upvotes and downvotes
+ * @throws {Error} If vote fails
+ */
 export async function voteLaw(lawId, voteType) {
   if (!['up', 'down'].includes(voteType)) {
     throw new Error('voteType must be "up" or "down"');
   }
 
-  const apiUrl = API_BASE_URL || '';
-  const fallbackUrl = API_FALLBACK_URL || 'http://127.0.0.1:8787';
   const endpoint = `/api/laws/${lawId}/vote`;
-  const primaryUrl = `${apiUrl}${endpoint}`;
 
-  try {
-    const response = await fetch(primaryUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ vote_type: voteType })
-    });
+  // Use generic API request helper - eliminates duplicate fetch logic
+  const result = await apiPost(endpoint, { vote_type: voteType });
 
-    if (!response.ok) {
-      let errorMessage;
-      try {
-        const errorData = await response.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch {
-        errorMessage = `Failed to vote (error ${response.status})`;
-      }
-      throw new Error(errorMessage);
-    }
+  // Save to localStorage
+  const votes = getVotesFromStorage();
+  votes[lawId] = voteType;
+  saveVotesToStorage(votes);
 
-    const result = await response.json();
-
-    // Save to localStorage
-    const votes = getVotesFromStorage();
-    votes[lawId] = voteType;
-    saveVotesToStorage(votes);
-
-    return result;
-  } catch {
-    // Try fallback URL
-
-    const fallbackFullUrl = `${fallbackUrl}${endpoint}`;
-    const fallbackResponse = await fetch(fallbackFullUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ vote_type: voteType })
-    });
-
-    if (!fallbackResponse.ok) {
-      let errorMessage;
-      try {
-        const errorData = await fallbackResponse.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch {
-        errorMessage = `Failed to vote (error ${fallbackResponse.status})`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const result = await fallbackResponse.json();
-
-    // Save to localStorage
-    const votes = getVotesFromStorage();
-    votes[lawId] = voteType;
-    saveVotesToStorage(votes);
-
-    return result;
-  }
+  return result;
 }
 
-// Remove vote from a law - exported for testing
+/**
+ * Remove vote from a law
+ * @param {number|string} lawId - Law ID
+ * @returns {Promise<Object>} Response with upvotes and downvotes
+ * @throws {Error} If unvote fails
+ */
 export async function unvoteLaw(lawId) {
-  const apiUrl = API_BASE_URL || '';
-  const fallbackUrl = API_FALLBACK_URL || 'http://127.0.0.1:8787';
   const endpoint = `/api/laws/${lawId}/vote`;
-  const primaryUrl = `${apiUrl}${endpoint}`;
 
-  try {
-    const response = await fetch(primaryUrl, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+  // Use generic API request helper - eliminates duplicate fetch logic
+  const result = await apiDelete(endpoint);
 
-    if (!response.ok) {
-      let errorMessage;
-      try {
-        const errorData = await response.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch {
-        errorMessage = `Failed to remove vote (error ${response.status})`;
-      }
-      throw new Error(errorMessage);
-    }
+  // Remove from localStorage
+  const votes = getVotesFromStorage();
+  delete votes[lawId];
+  saveVotesToStorage(votes);
 
-    const result = await response.json();
-
-    // Remove from localStorage
-    const votes = getVotesFromStorage();
-    delete votes[lawId];
-    saveVotesToStorage(votes);
-
-    return result;
-  } catch {
-    // Try fallback URL
-
-    const fallbackFullUrl = `${fallbackUrl}${endpoint}`;
-    const fallbackResponse = await fetch(fallbackFullUrl, {
-      method: 'DELETE',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!fallbackResponse.ok) {
-      let errorMessage;
-      try {
-        const errorData = await fallbackResponse.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch {
-        errorMessage = `Failed to remove vote (error ${fallbackResponse.status})`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const result = await fallbackResponse.json();
-
-    // Remove from localStorage
-    const votes = getVotesFromStorage();
-    delete votes[lawId];
-    saveVotesToStorage(votes);
-
-    return result;
-  }
+  return result;
 }
 
-// Toggle vote (if same type clicked, remove; if different, change; if no vote, add)
+/**
+ * Toggle vote (if same type clicked, remove; if different, change; if no vote, add)
+ * @param {number|string} lawId - Law ID
+ * @param {string} voteType - 'up' or 'down'
+ * @returns {Promise<Object>} Response with upvotes and downvotes
+ * @throws {Error} If toggle fails
+ */
 export async function toggleVote(lawId, voteType) {
   const currentVote = getUserVote(lawId);
 

@@ -29,31 +29,31 @@ function log(msg, color = 'reset') {
 }
 
 function exec(cmd, description) {
-  log(`\n→ ${description}...`, 'blue');
+  log(`\n${description}...`, 'blue');
   try {
     execSync(cmd, { stdio: 'inherit' });
-    log(`✓ ${description} complete`, 'green');
+    log(`${description} complete`, 'green');
   } catch (error) {
-    log(`✗ ${description} failed`, 'red');
+    log(`${description} failed`, 'red');
     throw error;
   }
 }
 
 async function deploy() {
-  log('\n🚀 Starting deployment to production droplet\n', 'blue');
+  log('\nStarting deployment to production droplet\n', 'blue');
 
   // Step 1: Build locally
   exec('npm run build', 'Building project locally');
 
   // Step 2: Sync dist/ folder to droplet
-  log('\n→ Syncing dist/ folder to droplet...', 'blue');
+  log('\nSyncing dist/ folder to droplet...', 'blue');
   exec(
     `rsync -avz --delete dist/ ${DROPLET_HOST}:${DROPLET_PATH}/dist/`,
     'Syncing dist folder'
   );
 
   // Step 3: Sync scripts/ and ecosystem config (in case they changed)
-  log('\n→ Syncing scripts and config...', 'blue');
+  log('\n Syncing scripts and config...', 'blue');
   exec(
     `rsync -avz scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/scripts/`,
     'Syncing scripts'
@@ -64,33 +64,33 @@ async function deploy() {
   );
 
   // Step 3.5: Update server maintenance scripts in /usr/local/bin/
-  log('\n→ Updating server maintenance scripts...', 'blue');
+  log('\nUpdating server maintenance scripts...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/scripts/daily-report.sh /usr/local/bin/daily-report.sh && sudo chmod +x /usr/local/bin/daily-report.sh"`,
     'Updating daily report script'
   );
 
   // Step 4: Restart PM2 services
-  log('\n→ Restarting services on droplet...', 'blue');
+  log('\nRestarting services on droplet...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "cd ${DROPLET_PATH} && pm2 restart ecosystem.config.cjs"`,
     'Restarting PM2 services'
   );
 
   // Step 5: Check status
-  log('\n→ Checking service status...', 'blue');
+  log('\nChecking service status...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "pm2 list"`,
     'Service status check'
   );
 
-  log('\n✅ Deployment complete!\n', 'green');
+  log('\nDeployment complete!\n', 'green');
   log(`Visit: https://murphys-laws.com\n`, 'blue');
 }
 
 // Run deployment
 deploy().catch((error) => {
-  log('\n❌ Deployment failed!', 'red');
+  log('\nDeployment failed!', 'red');
   console.error(error);
   process.exit(1);
 });

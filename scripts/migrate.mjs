@@ -59,7 +59,7 @@ function applyMigration(filename) {
   // Record that this migration was applied
   runSql(`INSERT INTO schema_migrations (filename) VALUES ('${filename}');`);
 
-  console.log(`✓ Applied: ${filename}`);
+  console.log(`Applied: ${filename}`);
 }
 
 // Main migration runner

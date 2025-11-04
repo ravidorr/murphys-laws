@@ -95,13 +95,15 @@ jobs:
             SMTP_USER=${{ secrets.SMTP_USER }}
             SMTP_PASS=${{ secrets.SMTP_PASS }}
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+            EMAIL_TO=${{ secrets.EMAIL_TO }}
+            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             EOF
 
-            echo "📄 Contents of $TARGET_DIR:" 
+            echo "Contents of $TARGET_DIR:" 
             ls -la
 
             if [ ! -f package.json ]; then
-              echo "❌ package.json missing in $TARGET_DIR" >&2
+              echo "package.json missing in $TARGET_DIR" >&2
               exit 1
             fi
 

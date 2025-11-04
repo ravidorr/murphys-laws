@@ -6,7 +6,7 @@ import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SENDING_BUTTON_TEXT = 'Sending...';
-const DEFAULT_BUTTON_TEXT = '✉️ Send Email';
+const DEFAULT_BUTTON_TEXT = 'Send Email';
 
 export function initShareCalculation({ root, getCalculationState }) {
   if (!root) {
@@ -278,15 +278,15 @@ export function initShareCalculation({ root, getCalculationState }) {
       }
 
       if (response.ok) {
-        showShareStatus('✅ Email sent successfully!', 'success');
+        showShareStatus('Email sent successfully!', 'success');
         successHideTimeout = setTimeout(() => {
           cancelShare();
         }, 2000);
       } else {
-        showShareStatus(`❌ Failed to send email: ${result.error || 'Unknown error'}`, 'error');
+        showShareStatus(`Failed to send email: ${result.error || 'Unknown error'}`, 'error');
       }
     } catch (error) {
-      showShareStatus(`❌ Error: ${error.message}`, 'error');
+      showShareStatus(`Error: ${error.message}`, 'error');
     } finally {
       sendButton.disabled = false;
       sendButton.textContent = DEFAULT_BUTTON_TEXT;

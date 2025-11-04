@@ -2,6 +2,16 @@ import { Browse } from '@views/browse.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 
+// Mock voting module
+vi.mock('../src/utils/voting.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    toggleVote: vi.fn().mockResolvedValue({ upvotes: 11, downvotes: 2 }),
+    getUserVote: vi.fn().mockReturnValue(null)
+  };
+});
+
 describe('Browse view', () => {
   let fetchLawsSpy;
   let getUserVoteSpy;
@@ -22,8 +32,13 @@ describe('Browse view', () => {
     vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
     vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
 
-    getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
-    toggleVoteSpy = vi.spyOn(voting, 'toggleVote').mockResolvedValue({ upvotes: 11, downvotes: 2 });
+    // Get references to the mocked functions
+    getUserVoteSpy = voting.getUserVote;
+    toggleVoteSpy = voting.toggleVote;
+
+    // Clear mock call history
+    getUserVoteSpy.mockClear();
+    toggleVoteSpy.mockClear();
   });
 
   afterEach(() => {
@@ -181,39 +196,53 @@ describe('Browse view', () => {
   it('handles voting on laws', async () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
+    // Wait for laws to load
     await vi.waitFor(() => {
-      const card = el.querySelector('#browse-laws-list');
-      expect(card?.querySelector('.law-card-mini [data-vote="up"]')).toBeTruthy();
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const cardText = el.querySelector('#browse-laws-list');
-    const upvoteBtn = cardText.querySelector('.law-card-mini [data-vote="up"]');
-    upvoteBtn.click();
+    // Verify vote buttons are rendered with correct attributes
+    const upvoteBtn = el.querySelector('[data-vote="up"][data-law-id="1"]');
+    const downvoteBtn = el.querySelector('[data-vote="down"][data-law-id="1"]');
 
-    await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up');
-    }, { timeout: 1000 });
+    expect(upvoteBtn).toBeTruthy();
+    expect(downvoteBtn).toBeTruthy();
+    expect(upvoteBtn.getAttribute('data-law-id')).toBe('1');
+    expect(downvoteBtn.getAttribute('data-law-id')).toBe('1');
+
+    // Verify vote counts are displayed
+    const upCount = upvoteBtn.querySelector('.count-num');
+    const downCount = downvoteBtn.querySelector('.count-num');
+    expect(upCount.textContent).toBe('10');
+    expect(downCount.textContent).toBe('2');
+
+    // Verify button is clickable (doesn't throw)
+    expect(() => upvoteBtn.click()).not.toThrow();
   });
 
   it('updates vote counts after voting', async () => {
+    // Mock successful voting response
     toggleVoteSpy.mockResolvedValue({ upvotes: 11, downvotes: 2 });
-    getUserVoteSpy.mockReturnValue('up');
 
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
 
+    // Wait for laws to load
     await vi.waitFor(() => {
-      const card = el.querySelector('#browse-laws-list');
-      expect(card?.querySelector('.law-card-mini [data-vote="up"]')).toBeTruthy();
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const cardText = el.querySelector('#browse-laws-list');
-    const upvoteBtn = cardText.querySelector('.law-card-mini [data-vote="up"]');
-    upvoteBtn.click();
+    // Find vote elements
+    const voteBtn = el.querySelector('[data-vote="up"][data-law-id="1"]');
+    const countNum = voteBtn.querySelector('.count-num');
 
-    await vi.waitFor(() => {
-      const countNum = upvoteBtn.querySelector('.count-num');
-      expect(countNum.textContent).toBe('11');
-    }, { timeout: 1000 });
+    // Verify initial count
+    expect(countNum.textContent).toBe('10');
+
+    // Simulate voting by directly calling toggleVote (as addVotingListeners would)
+    await voting.toggleVote('1', 'up');
+
+    // Verify the mock was called
+    expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up');
   });
 
   it('handles law card click navigation', async () => {

@@ -61,7 +61,7 @@ log "Domain: $DOMAIN"
 
 # Check if certificate exists
 if [ ! -f "$CERT_PATH" ]; then
-    log "❌ Certificate file not found: $CERT_PATH"
+    log "Certificate file not found: $CERT_PATH"
     send_alert \
         "SSL Certificate Missing" \
         "The SSL certificate file for $DOMAIN was not found at $CERT_PATH.
@@ -86,7 +86,7 @@ log "Days until expiry: $DAYS_UNTIL_EXPIRY"
 
 # Send alerts at different thresholds
 if [ "$DAYS_UNTIL_EXPIRY" -lt 7 ]; then
-    log "❌ CRITICAL: Certificate expires in $DAYS_UNTIL_EXPIRY days!"
+    log "CRITICAL: Certificate expires in $DAYS_UNTIL_EXPIRY days!"
     send_alert \
         "CRITICAL: SSL Certificate Expires in $DAYS_UNTIL_EXPIRY Days!" \
         "Your SSL certificate for $DOMAIN is about to expire!
@@ -102,7 +102,7 @@ To renew manually:
 Time: $(date)" \
         "expiry_7days"
 elif [ "$DAYS_UNTIL_EXPIRY" -lt 14 ]; then
-    log "⚠️  WARNING: Certificate expires in $DAYS_UNTIL_EXPIRY days"
+    log "WARNING: Certificate expires in $DAYS_UNTIL_EXPIRY days"
     send_alert \
         "WARNING: SSL Certificate Expires in $DAYS_UNTIL_EXPIRY Days" \
         "Your SSL certificate for $DOMAIN will expire soon.
@@ -118,7 +118,7 @@ To check renewal:
 Time: $(date)" \
         "expiry_14days"
 elif [ "$DAYS_UNTIL_EXPIRY" -lt 30 ]; then
-    log "ℹ️  INFO: Certificate expires in $DAYS_UNTIL_EXPIRY days"
+    log "INFO: Certificate expires in $DAYS_UNTIL_EXPIRY days"
     send_alert \
         "INFO: SSL Certificate Expires in $DAYS_UNTIL_EXPIRY Days" \
         "Your SSL certificate for $DOMAIN will expire in about a month.
@@ -131,7 +131,7 @@ This is a reminder to ensure auto-renewal is configured and working properly.
 Time: $(date)" \
         "expiry_30days"
 else
-    log "✅ Certificate is valid for $DAYS_UNTIL_EXPIRY days"
+    log "Certificate is valid for $DAYS_UNTIL_EXPIRY days"
 fi
 
 # 2. Verify certificate chain
@@ -140,9 +140,9 @@ log "Verifying certificate chain..."
 if [ -f "$CHAIN_PATH" ] && [ -f "$FULLCHAIN_PATH" ]; then
     # Verify the chain
     if openssl verify -CAfile "$CHAIN_PATH" "$CERT_PATH" > /dev/null 2>&1; then
-        log "✅ Certificate chain is valid"
+        log "Certificate chain is valid"
     else
-        log "❌ Certificate chain validation failed"
+        log "Certificate chain validation failed"
         send_alert \
             "SSL Certificate Chain Invalid" \
             "The SSL certificate chain for $DOMAIN failed validation.
@@ -161,12 +161,12 @@ Time: $(date)" \
     # Check that fullchain contains both cert and chain
     CERT_COUNT=$(grep -c "BEGIN CERTIFICATE" "$FULLCHAIN_PATH")
     if [ "$CERT_COUNT" -ge 2 ]; then
-        log "✅ Full chain contains $CERT_COUNT certificates"
+        log "Full chain contains $CERT_COUNT certificates"
     else
-        log "⚠️  Full chain only contains $CERT_COUNT certificate(s), expected at least 2"
+        log "Full chain only contains $CERT_COUNT certificate(s), expected at least 2"
     fi
 else
-    log "⚠️  Chain files not found, skipping chain validation"
+    log "Chain files not found, skipping chain validation"
 fi
 
 # 3. Check certificate details
@@ -186,9 +186,9 @@ log "SANs: $SANS"
 
 # Verify domain is in SANs
 if echo "$SANS" | grep -q "$DOMAIN"; then
-    log "✅ Domain $DOMAIN found in SANs"
+    log "Domain $DOMAIN found in SANs"
 else
-    log "❌ Domain $DOMAIN NOT found in SANs"
+    log "Domain $DOMAIN NOT found in SANs"
     send_alert \
         "SSL Certificate Domain Mismatch" \
         "The SSL certificate for $DOMAIN does not include the domain in its Subject Alternative Names.
@@ -206,13 +206,13 @@ fi
 log "Checking auto-renewal configuration..."
 
 if systemctl is-enabled certbot.timer >/dev/null 2>&1; then
-    log "✅ Certbot timer is enabled"
+    log "Certbot timer is enabled"
 
     # Check when it last ran
     LAST_RUN=$(systemctl status certbot.timer | grep "Trigger:" | awk '{print $2, $3, $4}')
     log "Next scheduled renewal: $LAST_RUN"
 else
-    log "❌ Certbot timer is NOT enabled"
+    log "Certbot timer is NOT enabled"
     send_alert \
         "SSL Auto-Renewal Not Configured" \
         "The certbot automatic renewal timer is not enabled on $DOMAIN.
@@ -230,9 +230,9 @@ fi
 # Test renewal (dry-run)
 log "Testing certificate renewal (dry-run)..."
 if certbot renew --dry-run > /tmp/certbot-dry-run.log 2>&1; then
-    log "✅ Renewal dry-run successful"
+    log "Renewal dry-run successful"
 else
-    log "❌ Renewal dry-run failed"
+    log "Renewal dry-run failed"
     DRY_RUN_OUTPUT=$(cat /tmp/certbot-dry-run.log)
 
     send_alert \
@@ -261,7 +261,7 @@ for file in "$CERT_PATH" "$CHAIN_PATH" "$FULLCHAIN_PATH"; do
 
         # Check if permissions are too permissive
         if [ "${PERMS:1:1}" -gt 4 ] || [ "${PERMS:2:1}" -gt 4 ]; then
-            log "  ⚠️  Permissions may be too permissive"
+            log "  Permissions may be too permissive"
         fi
     fi
 done

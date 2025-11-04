@@ -46,7 +46,7 @@ FRONTEND_END=$(date +%s%N)
 FRONTEND_RESPONSE_MS=$(( (FRONTEND_END - FRONTEND_START) / 1000000 ))
 
 if [ "$FRONTEND_HTTP_CODE" != "200" ]; then
-    log "⚠️  Frontend returned HTTP $FRONTEND_HTTP_CODE"
+    log "Frontend returned HTTP $FRONTEND_HTTP_CODE"
     FRONTEND_RESPONSE_MS=""
 else
     log "Frontend: ${FRONTEND_RESPONSE_MS}ms"
@@ -62,7 +62,7 @@ API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
 DB_QUERY_MS=$(echo "$API_RESPONSE" | grep -o '"dbQueryTime":[0-9]*' | cut -d: -f2)
 
 if [ -z "$DB_QUERY_MS" ]; then
-    log "⚠️  Failed to get DB query time from API"
+    log "Failed to get DB query time from API"
     DB_QUERY_MS=""
 else
     log "API: ${API_RESPONSE_MS}ms (DB: ${DB_QUERY_MS}ms)"
@@ -105,7 +105,7 @@ if [ -f "$DB_PATH" ]; then
     log "Database: ${DB_SIZE_MB}MB"
 else
     DB_SIZE_MB=""
-    log "⚠️  Database file not found"
+    log "Database file not found"
 fi
 
 # 6. PM2 process metrics
@@ -131,14 +131,14 @@ if command -v pm2 &> /dev/null; then
         PM2_FRONTEND_RESTARTS=""
         PM2_API_UPTIME_HOURS=""
         PM2_FRONTEND_UPTIME_HOURS=""
-        log "⚠️  Failed to get PM2 status"
+        log "Failed to get PM2 status"
     fi
 else
     PM2_API_RESTARTS=""
     PM2_FRONTEND_RESTARTS=""
     PM2_API_UPTIME_HOURS=""
     PM2_FRONTEND_UPTIME_HOURS=""
-    log "⚠️  PM2 not available"
+    log "PM2 not available"
 fi
 
 # 7. Write metrics to CSV
@@ -188,7 +188,7 @@ fi
 
 # Send alert if issues detected
 if [ -n "$ALERTS" ]; then
-    log "⚠️  Performance issues detected, sending alert..."
+    log "Performance issues detected, sending alert..."
 
     echo -e "Performance issues detected during monitoring:$ALERTS\n\nMetrics:\n- Frontend Response: ${FRONTEND_RESPONSE_MS}ms\n- API Response: ${API_RESPONSE_MS}ms\n- DB Query: ${DB_QUERY_MS}ms\n- Memory: ${MEMORY_PERCENT}%\n- Disk: ${DISK_PERCENT}%\n- CPU Load: ${CPU_LOAD_1M}, ${CPU_LOAD_5M}, ${CPU_LOAD_15M}\n\nTime: $(date)" | \
         mail -s "[Murphy's Laws] Performance Issues Detected" "$ALERT_EMAIL"

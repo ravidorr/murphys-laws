@@ -178,7 +178,7 @@ if [ -f "$METRICS_FILE" ]; then
 
     # Performance warnings
     if [ "$MAX_API" != "N/A" ] && [ "$MAX_API" -gt 5000 ]; then
-        REPORT+="⚠️  WARNING: Peak API response time exceeded 5 seconds\n\n"
+        REPORT+="WARNING: Peak API response time exceeded 5 seconds\n\n"
     fi
 else
     REPORT+="Performance metrics not yet available.\n\n"
@@ -298,25 +298,25 @@ if [ -f "$CERT_PATH" ]; then
 
     if [ "$DAYS_UNTIL_EXPIRY" -lt 30 ]; then
         if [ "$DAYS_UNTIL_EXPIRY" -lt 7 ]; then
-            REPORT+="⚠️  CRITICAL: Certificate expires in $DAYS_UNTIL_EXPIRY days!\n"
+            REPORT+="CRITICAL: Certificate expires in $DAYS_UNTIL_EXPIRY days!\n"
         elif [ "$DAYS_UNTIL_EXPIRY" -lt 14 ]; then
-            REPORT+="⚠️  WARNING: Certificate expires in $DAYS_UNTIL_EXPIRY days\n"
+            REPORT+="WARNING: Certificate expires in $DAYS_UNTIL_EXPIRY days\n"
         else
-            REPORT+="ℹ️  NOTICE: Certificate expires in $DAYS_UNTIL_EXPIRY days\n"
+            REPORT+="NOTICE: Certificate expires in $DAYS_UNTIL_EXPIRY days\n"
         fi
     else
-        REPORT+="✅ Certificate valid for $DAYS_UNTIL_EXPIRY days\n"
+        REPORT+="Certificate valid for $DAYS_UNTIL_EXPIRY days\n"
     fi
 
     # Check auto-renewal
     if systemctl is-enabled certbot.timer >/dev/null 2>&1; then
         REPORT+="Auto-renewal: Enabled\n"
     else
-        REPORT+="⚠️  Auto-renewal: NOT ENABLED\n"
+        REPORT+="Auto-renewal: NOT ENABLED\n"
     fi
     REPORT+="\n"
 else
-    REPORT+="⚠️  Certificate file not found\n\n"
+    REPORT+="Certificate file not found\n\n"
 fi
 
 #############################################################################
@@ -344,10 +344,10 @@ if [ -d /root/backups ]; then
         NOW=$(date +%s)
         HOURS_OLD=$(( ($NOW - $BACKUP_TIME) / 3600 ))
         if [ "$HOURS_OLD" -gt 48 ]; then
-            REPORT+="  ⚠️  WARNING: Backup is $HOURS_OLD hours old\n"
+            REPORT+="  WARNING: Backup is $HOURS_OLD hours old\n"
         fi
     else
-        REPORT+="⚠️  No database backups found\n"
+        REPORT+="No database backups found\n"
     fi
 
     TOTAL_BACKUP_SIZE=$(du -sh /root/backups 2>/dev/null | cut -f1)
@@ -374,7 +374,7 @@ PENDING_UPDATES=$(apt list --upgradable 2>/dev/null | grep -c upgradable || echo
 REPORT+="Pending Updates: $PENDING_UPDATES\n\n"
 
 if [ "$PENDING_UPDATES" -gt 10 ]; then
-    REPORT+="⚠️  More than 10 updates pending\n\n"
+    REPORT+="More than 10 updates pending\n\n"
 fi
 
 #############################################################################
@@ -466,7 +466,7 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     REPORT+="14. MONTHLY BACKUP TEST REMINDER\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    REPORT+="⚠️  Monthly Action Required: Test Backup Restore Process\n\n"
+    REPORT+="Monthly Action Required: Test Backup Restore Process\n\n"
     REPORT+="It's time to run the monthly non-disruptive backup tests on both droplets.\n"
     REPORT+="This ensures your backups are valid and can be restored in case of disaster.\n\n"
     REPORT+="MAIN DROPLET (167.99.53.90):\n"
@@ -476,10 +476,10 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
     REPORT+="  ssh ravidor@45.55.74.28\n"
     REPORT+="  # Follow the manual testing procedures in docs/TEST-BACKUP-RESTORE.md\n\n"
     REPORT+="Expected Results:\n"
-    REPORT+="  ✅ All tests should pass (26/26 for main droplet)\n"
-    REPORT+="  ✅ Backup age < 30 hours\n"
-    REPORT+="  ✅ Database integrity checks pass\n"
-    REPORT+="  ✅ You'll receive a separate email with detailed test results\n\n"
+    REPORT+="  All tests should pass (26/26 for main droplet)\n"
+    REPORT+="  Backup age < 30 hours\n"
+    REPORT+="  Database integrity checks pass\n"
+    REPORT+="  You'll receive a separate email with detailed test results\n\n"
     REPORT+="Documentation: See docs/TEST-BACKUP-RESTORE.md for full testing guide\n\n"
 fi
 

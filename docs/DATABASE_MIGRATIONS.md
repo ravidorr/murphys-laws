@@ -14,10 +14,11 @@ This project has two types of database scripts:
 - Adding a new column: `ALTER TABLE laws ADD COLUMN category_id INTEGER`
 - Creating a table: `CREATE TABLE IF NOT EXISTS votes (...)`
 - Adding an index: `CREATE INDEX idx_votes_law_id ON votes(law_id)`
+- Performance optimization: `006_add_performance_indexes.sql` adds indexes on commonly queried columns (status, created_at, category filters)
 
 ### 2. **Seeding Scripts** (Initial Data)
 - **Purpose**: Populate database from source markdown files
-- **Location**: `murphys-laws/*.md` → `scripts/build-sqlite.mjs`
+- **Location**: `murphys-laws/*.md` -> `scripts/build-sqlite.mjs`
 - **Run with**: `npm run db:import` or `npm run db:rebuild`
 
 **This is for initial data population only**, not for updating production data.
@@ -112,9 +113,9 @@ The migration system will:
 |---------|-----------|---------|
 | **Purpose** | Schema changes & data updates | Initial data population |
 | **When to use** | Deploying structure or content changes | Fresh database setup |
-| **Production safe** | ✅ Yes - preserves existing data | ❌ No - can overwrite data |
-| **Versioned** | ✅ Yes - numbered files | ⚠️  Regenerated from markdown |
-| **Tracked** | ✅ Yes - in `schema_migrations` | ❌ No tracking |
+| **Production safe** | Yes - preserves existing data | No - can overwrite data |
+| **Versioned** |Yes - numbered files |  Regenerated from markdown |
+| **Tracked** |Yes - in `schema_migrations` | No tracking |
 | **Command** | `npm run migrate` | `npm run db:import` |
 
 ## Available Commands
@@ -146,14 +147,14 @@ npm run db:rebuild
 
 ## Automated Deployment with GitHub Actions
 
-**Good news:** Migrations run automatically when you push to `main`! 🎉
+**Good news:** Migrations run automatically when you push to `main`!
 
 The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
-1. ✅ Runs pre-migration safety checks
-2. ✅ Backs up the production database
-3. ✅ Applies pending migrations
-4. ✅ Restores backup if migration fails
-5. ✅ Shows migration results in GitHub Actions logs
+1.Runs pre-migration safety checks
+2.Backs up the production database
+3.Applies pending migrations
+4.Restores backup if migration fails
+5.Shows migration results in GitHub Actions logs
 
 ### Automated Workflow:
 
@@ -177,48 +178,47 @@ git push  # ← Migrations run automatically!
 
 ```
 git push origin main
-    ↓
 [GitHub Actions]
     1. Checkout code & install dependencies
     2. Build project
     3. Deploy to server
     4. SSH into production server:
-       → Backup database (murphys.db.backup)
-       → Pull latest code (including migration files)
-       → Restore production database
-       → Run safety checks (table structure, data counts)
-       → Create pre-migration backup
-       → Run migrations (npm run migrate:safe)
-       → Verify success or rollback
-       → Show applied migrations in logs
-       → Restart PM2 services
+       * Backup database (murphys.db.backup)
+       * Pull latest code (including migration files)
+       * Restore production database
+       * Run safety checks (table structure, data counts)
+       * Create pre-migration backup
+       * Run migrations (npm run migrate:safe)
+       * Verify success or rollback
+       * Show applied migrations in logs
+       * Restart PM2 services
 ```
 
 ### Viewing Migration Results:
 
 After pushing, go to:
-- GitHub → Actions tab → Click your deployment run
+- GitHub -> Actions tab -> Click your deployment run
 - Look for "Update server and restart services" step
 - You'll see output like:
 
 ```
-🔍 Running pre-migration safety checks...
-✓ Database file exists
-✓ Table 'laws' exists
-✓ Table 'votes' exists
-📊 Database has 2379 laws and 15420 votes
-💾 Pre-migration backup created: 8.45 MB
+Running pre-migration safety checks...
+* Database file exists
+* Table 'laws' exists
+* Table 'votes' exists
+Database has 2379 laws and 15420 votes
+Pre-migration backup created: 8.45 MB
 
 Running database migrations...
 Applied migrations: 1
 Total migration files: 2
 
 Applying migration: 002_update_law_content_20251020.sql
-✓ Applied: 002_update_law_content_20251020.sql
+* Applied: 002_update_law_content_20251020.sql
 
-✅ Migrations completed successfully
+Migrations completed successfully
 
-📋 Applied migrations:
+Applied migrations:
 002_update_law_content_20251020.sql|2025-10-20 15:30:45
 001_initial_schema.sql|2025-10-05 14:08:58
 ```

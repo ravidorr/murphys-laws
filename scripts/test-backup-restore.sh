@@ -16,12 +16,12 @@ log() {
 }
 
 test_pass() {
-    echo "✅ PASS: $1" | tee -a "$TEST_REPORT"
+    echo "PASS: $1" | tee -a "$TEST_REPORT"
     PASSED=$((PASSED + 1))
 }
 
 test_fail() {
-    echo "❌ FAIL: $1" | tee -a "$TEST_REPORT"
+    echo "FAIL: $1" | tee -a "$TEST_REPORT"
     FAILED=$((FAILED + 1))
 }
 
@@ -351,10 +351,10 @@ log "Failed: $FAILED"
 log ""
 
 if [ "$FAILED" -eq 0 ]; then
-    log "✅ ALL TESTS PASSED - Backups are ready for disaster recovery"
+    log "ALL TESTS PASSED - Backups are ready for disaster recovery"
     EXIT_CODE=0
 else
-    log "⚠️  SOME TESTS FAILED - Review issues above"
+    log "SOME TESTS FAILED - Review issues above"
     EXIT_CODE=1
 fi
 
