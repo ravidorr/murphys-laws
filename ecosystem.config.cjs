@@ -3,6 +3,7 @@ module.exports = {
     {
       name: 'murphys-api',
       script: 'scripts/api-server.mjs',
+      interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
       cwd: '/root/murphys-laws',
       instances: 1,
       autorestart: true,
@@ -22,6 +23,7 @@ module.exports = {
     {
       name: 'murphys-frontend',
       script: 'npx',
+      interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
       args: 'vite preview --host 0.0.0.0 --port 5175',
       cwd: '/root/murphys-laws',
       instances: 1,
