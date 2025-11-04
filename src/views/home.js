@@ -42,8 +42,25 @@ export function Home({ onNavigate }) {
   el.innerHTML = `<p class="small">${getRandomLoadingMessage()}</p>`;
 
   function fetchAndRender() {
+    // Check for inlined law-of-day data first (SSR optimization)
+    const inlinedDataEl = document.getElementById('law-of-day-data');
+    if (inlinedDataEl && inlinedDataEl.textContent.trim() && !inlinedDataEl.textContent.includes('LAW_OF_DAY_DATA')) {
+      try {
+        const json = JSON.parse(inlinedDataEl.textContent);
+        // Inline data format: {law: {...}, featured_date: "..."}
+        const lawOfTheDay = json && json.law ? json.law : null;
+        renderHome(el, lawOfTheDay, onNavigate);
+        return;
+      } catch (e) {
+        // Fall through to API fetch if parsing fails
+        console.warn('Failed to parse inlined law-of-day data:', e);
+      }
+    }
+
+    // Fallback to API fetch
     fetchLawOfTheDay()
       .then(json => {
+        // API wrapper transforms to: {data: [{...}], total: 1, limit: 1, offset: 0}
         const lawOfTheDay = json && json.data && json.data[0] ? json.data[0] : null;
         renderHome(el, lawOfTheDay, onNavigate);
       })
