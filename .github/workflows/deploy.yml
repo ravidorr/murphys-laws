@@ -145,7 +145,7 @@ jobs:
             pm2 save
 
             # Verify PM2 is using the correct Node interpreter
-            PM2_INTERPRETER=$(pm2 show murphys-api | grep 'interpreter ' | awk '{print $3}')
+            PM2_INTERPRETER=$(pm2 jlist | jq -r '.[] | select(.name=="murphys-api") | .pm2_env.exec_interpreter')
             EXPECTED_INTERPRETER="/root/.nvm/versions/node/v22.20.0/bin/node"
             if [[ "$PM2_INTERPRETER" != "$EXPECTED_INTERPRETER" ]]; then
               echo "ERROR: PM2 interpreter mismatch!"
