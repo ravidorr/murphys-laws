@@ -108,7 +108,13 @@ jobs:
             fi
 
             # Run migrations using staged migrations
-            npm install
+            # Use npm ci for clean install from lock file
+            npm ci
+
+            # Rebuild native modules for production Node version
+            # This ensures modules like better-sqlite3 work with the production Node version
+            npm rebuild better-sqlite3
+
             npm run migrate:safe
 
             # Update server maintenance scripts
@@ -125,4 +131,16 @@ jobs:
             # Restart services
             pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
             pm2 save
+
+            # Wait for services to start
+            sleep 5
+
+            # Health check - verify API is responding
+            if ! curl -f http://127.0.0.1:8787/api/law-of-day > /dev/null 2>&1; then
+              echo "ERROR: API health check failed after deployment!"
+              pm2 logs --lines 50
+              exit 1
+            fi
+
+            echo "✅ Deployment successful - API is healthy"
             INNER
