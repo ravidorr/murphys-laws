@@ -329,9 +329,9 @@ DIFF=$((PROD_COUNT - BACKUP_COUNT))
 echo "Difference: $DIFF"
 
 if [ $DIFF -lt 10 ]; then
-    echo "✅ Backup test PASSED - difference within acceptable range"
+    echo "Backup test PASSED - difference within acceptable range"
 else
-    echo "⚠️  Backup test WARNING - significant difference detected"
+    echo "Backup test WARNING - significant difference detected"
 fi
 
 # 9. Clean up
@@ -390,7 +390,7 @@ Before relying on a backup, verify:
 
 ### Current Limitations
 
-⚠️  **Current backups are only on the same server as the application.**
+**Current backups are only on the same server as the application.**
 
 If the entire droplet is lost, backups may be inaccessible.
 

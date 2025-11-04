@@ -21,7 +21,7 @@ function getSql(sql) {
   }
 }
 
-console.log(`\n📝 Recently Updated Laws (last ${limit}):\n`);
+console.log(`\nRecently Updated Laws (last ${limit}):\n`);
 
 const result = getSql(`
   SELECT
@@ -50,7 +50,7 @@ if (laws.length === 0) {
 
 laws.forEach((law) => {
   const wasEdited = law.updated_at > law.created_at;
-  const marker = wasEdited ? '✏️  EDITED' : '   new';
+  const marker = wasEdited ? 'EDITED' : '   new';
 
   console.log(`${marker} | ID: ${String(law.id).padStart(4, ' ')} | Updated: ${law.updated_at}`);
   console.log(`       | Title: ${law.title || '(no title)'}`);

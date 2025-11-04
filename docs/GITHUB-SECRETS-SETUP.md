@@ -4,7 +4,7 @@ The GitHub Actions deployment workflow requires the following secrets to be conf
 
 ## Required Secrets
 
-Navigate to: **GitHub Repository → Settings → Secrets and variables → Actions → Repository secrets**
+Navigate to: **GitHub Repository -> Settings -> Secrets and variables -> Actions -> Repository secrets**
 
 ### 1. SERVER_HOST
 - **Value**: `167.99.53.90`
@@ -22,7 +22,7 @@ Navigate to: **GitHub Repository → Settings → Secrets and variables → Acti
   cat ~/.ssh/id_ed25519_digitalocean
   ```
 - **Format**: Should start with `-----BEGIN OPENSSH PRIVATE KEY-----` and end with `-----END OPENSSH PRIVATE KEY-----`
-- **⚠️  Important**: Copy the entire key including the header and footer lines
+- **Important**: Copy the entire key including the header and footer lines
 
 ### 4. SMTP_HOST
 - **Value**: Your SMTP server hostname (e.g., `mail.smtp2go.com`)
@@ -48,7 +48,7 @@ Navigate to: **GitHub Repository → Settings → Secrets and variables → Acti
 
 1. Go to your GitHub repository
 2. Click **Settings** tab
-3. In the left sidebar, click **Secrets and variables** → **Actions**
+3. In the left sidebar, click **Secrets and variables** -> **Actions**
 4. Click **New repository secret** (or edit existing)
 5. Enter the **Name** (exactly as shown above, case-sensitive)
 6. Paste the **Value**
@@ -61,7 +61,7 @@ After updating the secrets:
 1. Make any small change and push to main branch
 2. Go to **Actions** tab in GitHub
 3. Watch the deployment workflow run
-4. Check for success ✅ or failure ❌
+4. Check for success or failure
 5. If it fails, click on the failed run to see detailed logs
 
 ## Current Status

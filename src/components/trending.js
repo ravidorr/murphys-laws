@@ -1,18 +1,22 @@
 // Trending component - fetches 3 most recently voted laws
+// Refactored to use shared law card renderer
 
 import { fetchTrending } from '../utils/api.js';
-import { firstAttributionLine } from '../utils/attribution.js';
-import { escapeHtml } from '../utils/sanitize.js';
 import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
-import { getUserVote, addVotingListeners } from '../utils/voting.js';
+import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { renderLawCards } from '../utils/law-card-renderer.js';
+import { LAW_CARD_MIN_HEIGHT, WIDGET_CARD_COUNT } from '../utils/constants.js';
 
+/**
+ * Creates a Trending component that displays the 3 most recently voted laws
+ * @returns {HTMLDivElement} Component element with trending laws
+ */
 export function Trending() {
   const el = document.createElement('div');
   el.className = 'card';
-  // Reserve space for 3 law cards to prevent layout shift (0.253 CLS)
-  // Each mini card is ~120px, plus title (~40px) = ~400px total
-  el.style.minHeight = '400px';
+  // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
+  el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
   el.innerHTML = `
     <div class="card-content">
@@ -26,47 +30,19 @@ export function Trending() {
     contentDiv.appendChild(loading);
   }
 
-  fetchTrending(3)
+  fetchTrending(WIDGET_CARD_COUNT)
     .then(data => {
       const laws = data && Array.isArray(data.data) ? data.data : [];
-      // Ensure we only show exactly 3 laws
-      const trending = laws.slice(0, 3);
+      // Ensure we only show exactly the configured number of laws
+      const trending = laws.slice(0, WIDGET_CARD_COUNT);
 
       const contentDiv = el.querySelector('.card-content');
       if (contentDiv) {
+        // Use shared law card renderer (eliminates ~30 lines of duplicate HTML generation)
         contentDiv.innerHTML = `
           <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
           <div class="card-text">
-            ${trending.map((law) => {
-    const up = Number.isFinite(law.upvotes) ? law.upvotes : 0;
-    const down = Number.isFinite(law.downvotes) ? law.downvotes : 0;
-    const attribution = firstAttributionLine(law);
-    const userVote = getUserVote(law.id);
-
-    // Safely escape title and text
-    const safeTitle = law.title ? escapeHtml(law.title) : '';
-    const safeText = escapeHtml(law.text);
-    const titleText = safeTitle ? `<strong>${safeTitle}:</strong> ${safeText}` : safeText;
-
-    return `
-              <div class="law-card-mini" data-law-id="${escapeHtml(String(law.id))}">
-                <p class="law-card-text">
-                  ${titleText}
-                </p>
-                ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
-                <div class="law-card-footer">
-                  <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${escapeHtml(String(law.id))}" aria-label="Upvote this law">
-                    <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
-                    <span class="count-num">${up}</span>
-                  </button>
-                  <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${escapeHtml(String(law.id))}" aria-label="Downvote this law">
-                    <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
-                    <span class="count-num">${down}</span>
-                  </button>
-                </div>
-              </div>
-            `;
-  }).join('')}
+            ${renderLawCards(trending)}
           </div>
         `;
         hydrateIcons(contentDiv);

@@ -59,11 +59,11 @@ REPORT+="  Total: ${MEMORY_TOTAL}MB\n"
 REPORT+="  Used: ${MEMORY_USED}MB (${MEMORY_PERCENT}%)\n"
 
 if [ "${MEMORY_PERCENT%.*}" -lt 60 ]; then
-    REPORT+="  Status: ✅ UNDER-UTILIZED - Consider downsizing\n"
+    REPORT+="  Status: UNDER-UTILIZED - Consider downsizing\n"
 elif [ "${MEMORY_PERCENT%.*}" -lt 80 ]; then
-    REPORT+="  Status: ✅ Well optimized\n"
+    REPORT+="  Status: Well optimized\n"
 else
-    REPORT+="  Status: ⚠️  HIGH - Consider upgrading\n"
+    REPORT+="  Status: HIGH - Consider upgrading\n"
 fi
 REPORT+="\n"
 
@@ -80,11 +80,11 @@ REPORT+="  Load: ${LOAD_1M} (1m), ${LOAD_5M} (5m), ${LOAD_15M} (15m)\n"
 REPORT+="  Utilization: ${CPU_PERCENT}%\n"
 
 if [ "${CPU_PERCENT}" -lt 30 ]; then
-    REPORT+="  Status: ✅ UNDER-UTILIZED\n"
+    REPORT+="  Status: UNDER-UTILIZED\n"
 elif [ "${CPU_PERCENT}" -lt 70 ]; then
-    REPORT+="  Status: ✅ Well optimized\n"
+    REPORT+="  Status: Well optimized\n"
 else
-    REPORT+="  Status: ⚠️  HIGH - Consider upgrading\n"
+    REPORT+="  Status: HIGH - Consider upgrading\n"
 fi
 REPORT+="\n"
 
@@ -99,11 +99,11 @@ REPORT+="  Total: ${DISK_TOTAL}GB\n"
 REPORT+="  Used: ${DISK_USED}GB (${DISK_PERCENT}%)\n"
 
 if [ "$DISK_PERCENT" -lt 50 ]; then
-    REPORT+="  Status: ✅ Plenty of space\n"
+    REPORT+="  Status: Plenty of space\n"
 elif [ "$DISK_PERCENT" -lt 80 ]; then
-    REPORT+="  Status: ✅ Adequate space\n"
+    REPORT+="  Status: Adequate space\n"
 else
-    REPORT+="  Status: ⚠️  Running low - Consider cleanup or upgrade\n"
+    REPORT+="  Status: Running low - Consider cleanup or upgrade\n"
 fi
 REPORT+="\n"
 
@@ -135,9 +135,9 @@ if [ -f /var/log/nginx/access.log ]; then
 
     # DigitalOcean includes 1TB transfer, check if we're exceeding
     if [ "$(echo "$TOTAL_GB < 1000" | bc)" -eq 1 ]; then
-        REPORT+="✅ Well within 1TB transfer limit\n"
+        REPORT+="Well within 1TB transfer limit\n"
     else
-        REPORT+="⚠️  Approaching/exceeding 1TB limit (may incur overage charges)\n"
+        REPORT+="Approaching/exceeding 1TB limit (may incur overage charges)\n"
     fi
     REPORT+="\n"
 else
@@ -152,7 +152,7 @@ SAVINGS_TOTAL=0
 
 # Recommendation 1: Droplet Sizing
 if [ "${MEMORY_PERCENT%.*}" -lt 50 ] && [ "${CPU_PERCENT}" -lt 30 ]; then
-    REPORT+="🔹 RECOMMENDATION #1: Consider Downsizing Droplets\n"
+    REPORT+="RECOMMENDATION #1: Consider Downsizing Droplets\n"
     REPORT+="  Current: 1GB RAM droplets at \$6/month each\n"
     REPORT+="  Suggested: 512MB RAM droplets at \$4/month each\n"
     REPORT+="  Savings: \$4/month (\$48/year)\n"
@@ -161,11 +161,11 @@ if [ "${MEMORY_PERCENT%.*}" -lt 50 ] && [ "${CPU_PERCENT}" -lt 30 ]; then
     REPORT+="  Action: Monitor peak usage for 1 month before deciding\n\n"
     SAVINGS_TOTAL=$((SAVINGS_TOTAL + 4))
 else
-    REPORT+="✅ Droplet sizing appears appropriate\n\n"
+    REPORT+="Droplet sizing appears appropriate\n\n"
 fi
 
 # Recommendation 2: Combine Droplets
-REPORT+="🔹 RECOMMENDATION #2: Consolidate Droplets\n"
+REPORT+="RECOMMENDATION #2: Consolidate Droplets\n"
 REPORT+="  Current: 2 separate droplets (\$12/month)\n"
 REPORT+="  Suggested: Run n8n on main droplet\n"
 REPORT+="  Savings: \$6/month (\$72/year)\n"
@@ -177,7 +177,7 @@ SAVINGS_TOTAL=$((SAVINGS_TOTAL + 6))
 # Recommendation 3: Optimize Backups
 if [ -d /root/backups ]; then
     BACKUP_SIZE=$(du -sh /root/backups | awk '{print $1}')
-    REPORT+="🔹 RECOMMENDATION #3: Optimize Backup Storage\n"
+    REPORT+="RECOMMENDATION #3: Optimize Backup Storage\n"
     REPORT+="  Current backup size: $BACKUP_SIZE\n"
     REPORT+="  • Compress older backups (>7 days)\n"
     REPORT+="  • Reduce retention from 30 to 14 days\n"
@@ -186,12 +186,12 @@ if [ -d /root/backups ]; then
 fi
 
 # Recommendation 4: Free Service Alternatives
-REPORT+="🔹 RECOMMENDATION #4: Service Optimization\n"
+REPORT+="RECOMMENDATION #4: Service Optimization\n"
 REPORT+="  Current setup already uses free tiers effectively:\n"
-REPORT+="  ✅ Let's Encrypt SSL (free)\n"
-REPORT+="  ✅ smtp2go free tier (1,000 emails/month)\n"
-REPORT+="  ✅ ImprovMX email forwarding (free)\n"
-REPORT+="  ✅ Google Analytics (free)\n\n"
+REPORT+="  Let's Encrypt SSL (free)\n"
+REPORT+="  smtp2go free tier (1,000 emails/month)\n"
+REPORT+="  ImprovMX email forwarding (free)\n"
+REPORT+="  Google Analytics (free)\n\n"
 
 REPORT+="  Monitor email usage:\n"
 if [ -f /var/log/mail.log ]; then
@@ -199,9 +199,9 @@ if [ -f /var/log/mail.log ]; then
     REPORT+="  • Current: ~$MONTHLY_EMAILS emails/month\n"
     REPORT+="  • smtp2go limit: 1,000/month\n"
     if [ "$MONTHLY_EMAILS" -gt 800 ]; then
-        REPORT+="  ⚠️  Approaching smtp2go limit\n"
+        REPORT+="  Approaching smtp2go limit\n"
     else
-        REPORT+="  ✅ Well within limits\n"
+        REPORT+="  Well within limits\n"
     fi
 else
     REPORT+="  • Email logs not available\n"
@@ -209,7 +209,7 @@ fi
 REPORT+="\n"
 
 # Recommendation 5: Performance Optimizations
-REPORT+="🔹 RECOMMENDATION #5: Performance Optimizations\n"
+REPORT+="RECOMMENDATION #5: Performance Optimizations\n"
 REPORT+="  These don't reduce cost but improve resource efficiency:\n"
 REPORT+="  • Enable nginx caching for static assets\n"
 REPORT+="  • Implement CDN (Cloudflare free tier)\n"
@@ -217,7 +217,7 @@ REPORT+="  • Optimize database queries\n"
 REPORT+="  • Review PM2 memory usage\n\n"
 
 # Recommendation 6: Revenue Optimization
-REPORT+="🔹 RECOMMENDATION #6: Revenue Optimization\n"
+REPORT+="RECOMMENDATION #6: Revenue Optimization\n"
 REPORT+="  Google AdSense is configured. To maximize revenue:\n"
 REPORT+="  • Review ad placement for better visibility\n"
 REPORT+="  • Analyze which pages get most traffic\n"
@@ -279,11 +279,11 @@ if [ -f /var/log/performance-metrics/metrics-$(date +%Y-%m).csv ]; then
     REPORT+="Average API Response Time: ${AVG_API_RESPONSE}ms\n\n"
 
     if [ "$(echo "$AVG_MEMORY < 60" | bc)" -eq 1 ]; then
-        REPORT+="📊 Trend: Consistent low memory usage suggests potential for downsizing\n"
+        REPORT+="Trend: Consistent low memory usage suggests potential for downsizing\n"
     fi
 
     if [ -n "$AVG_API_RESPONSE" ] && [ "$AVG_API_RESPONSE" -lt 200 ]; then
-        REPORT+="📊 Trend: Fast response times indicate good performance\n"
+        REPORT+="Trend: Fast response times indicate good performance\n"
     fi
     REPORT+="\n"
 else
@@ -300,10 +300,10 @@ REPORT+="Current infrastructure is cost-effective and well-optimized.\n\n"
 if [ "$SAVINGS_TOTAL" -gt 5 ]; then
     REPORT+="Potential savings of \$${SAVINGS_TOTAL}/month are available through\n"
     REPORT+="droplet consolidation and optimization.\n\n"
-    REPORT+="⚠️  Recommendation: Prioritize testing droplet consolidation\n"
+    REPORT+="Recommendation: Prioritize testing droplet consolidation\n"
     REPORT+="to reduce costs by 50% while maintaining performance.\n"
 else
-    REPORT+="✅ Infrastructure is already highly optimized.\n"
+    REPORT+="Infrastructure is already highly optimized.\n"
     REPORT+="Focus on revenue optimization through AdSense.\n"
 fi
 

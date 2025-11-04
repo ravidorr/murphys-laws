@@ -110,7 +110,7 @@ if [ -f "$NGINX_ACCESS_LOG" ]; then
     # 4xx errors
     ERROR_4XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 4[0-9][0-9] ' | wc -l)
     if [ "$ERROR_4XX" -gt 0 ]; then
-        REPORT+="⚠️  4xx Client Errors: $ERROR_4XX\n"
+        REPORT+="4xx Client Errors: $ERROR_4XX\n"
         REPORT+="Top 404 URLs:\n"
         grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 404 ' | awk '{print $7}' | sort | uniq -c | sort -rn | head -10 | while read count url; do
             REPORT+="  $url: $count times\n"
@@ -121,13 +121,13 @@ if [ -f "$NGINX_ACCESS_LOG" ]; then
     # 5xx errors
     ERROR_5XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 5[0-9][0-9] ' | wc -l)
     if [ "$ERROR_5XX" -gt 0 ]; then
-        REPORT+="⚠️  5xx Server Errors: $ERROR_5XX\n"
+        REPORT+="5xx Server Errors: $ERROR_5XX\n"
         grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 5[0-9][0-9] ' | tail -10 | while read line; do
             REPORT+="  $line\n"
         done
         REPORT+="\n"
     else
-        REPORT+="✅ No 5xx server errors\n\n"
+        REPORT+="No 5xx server errors\n\n"
     fi
 
     # Suspicious User Agents
@@ -154,7 +154,7 @@ for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do
 done
 
 if [ "$SQL_ATTEMPTS" -gt 0 ]; then
-    REPORT+="⚠️  Detected $SQL_ATTEMPTS potential SQL injection attempts\n\n"
+    REPORT+="Detected $SQL_ATTEMPTS potential SQL injection attempts\n\n"
     REPORT+="Sample attempts:\n"
 
     for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do
@@ -173,9 +173,9 @@ if [ "$SQL_ATTEMPTS" -gt 0 ]; then
     done
     REPORT+="\n"
 
-    log "⚠️  Found $SQL_ATTEMPTS SQL injection attempts"
+    log "Found $SQL_ATTEMPTS SQL injection attempts"
 else
-    REPORT+="✅ No SQL injection attempts detected\n\n"
+    REPORT+="No SQL injection attempts detected\n\n"
     log "No SQL injection attempts found"
 fi
 
@@ -193,7 +193,7 @@ for pattern in "${XSS_PATTERNS[@]}"; do
 done
 
 if [ "$XSS_ATTEMPTS" -gt 0 ]; then
-    REPORT+="⚠️  Detected $XSS_ATTEMPTS potential XSS attempts\n\n"
+    REPORT+="Detected $XSS_ATTEMPTS potential XSS attempts\n\n"
     REPORT+="Sample attempts:\n"
 
     for pattern in "${XSS_PATTERNS[@]}"; do
@@ -203,9 +203,9 @@ if [ "$XSS_ATTEMPTS" -gt 0 ]; then
     done
     REPORT+="\n"
 
-    log "⚠️  Found $XSS_ATTEMPTS XSS attempts"
+    log "Found $XSS_ATTEMPTS XSS attempts"
 else
-    REPORT+="✅ No XSS attempts detected\n\n"
+    REPORT+="No XSS attempts detected\n\n"
     log "No XSS attempts found"
 fi
 
@@ -223,7 +223,7 @@ for pattern in "${PATH_TRAVERSAL_PATTERNS[@]}"; do
 done
 
 if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
-    REPORT+="⚠️  Detected $TRAVERSAL_ATTEMPTS potential path traversal attempts\n\n"
+    REPORT+="Detected $TRAVERSAL_ATTEMPTS potential path traversal attempts\n\n"
     REPORT+="Sample attempts:\n"
 
     for pattern in "${PATH_TRAVERSAL_PATTERNS[@]}"; do
@@ -233,9 +233,9 @@ if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
     done
     REPORT+="\n"
 
-    log "⚠️  Found $TRAVERSAL_ATTEMPTS path traversal attempts"
+    log "Found $TRAVERSAL_ATTEMPTS path traversal attempts"
 else
-    REPORT+="✅ No path traversal attempts detected\n\n"
+    REPORT+="No path traversal attempts detected\n\n"
     log "No path traversal attempts found"
 fi
 
@@ -253,7 +253,7 @@ for pattern in "${COMMAND_INJECTION_PATTERNS[@]}"; do
 done
 
 if [ "$CMD_ATTEMPTS" -gt 0 ]; then
-    REPORT+="⚠️  Detected $CMD_ATTEMPTS potential command injection attempts\n\n"
+    REPORT+="Detected $CMD_ATTEMPTS potential command injection attempts\n\n"
     REPORT+="Sample attempts:\n"
 
     for pattern in "${COMMAND_INJECTION_PATTERNS[@]}"; do
@@ -263,9 +263,9 @@ if [ "$CMD_ATTEMPTS" -gt 0 ]; then
     done
     REPORT+="\n"
 
-    log "⚠️  Found $CMD_ATTEMPTS command injection attempts"
+    log "Found $CMD_ATTEMPTS command injection attempts"
 else
-    REPORT+="✅ No command injection attempts detected\n\n"
+    REPORT+="No command injection attempts detected\n\n"
     log "No command injection attempts found"
 fi
 
@@ -279,7 +279,7 @@ if [ -f "$AUTH_LOG" ]; then
     FAILED_SSH=$(grep "Failed password" "$AUTH_LOG" | grep "$(date +%b\ %d)" | wc -l)
 
     if [ "$FAILED_SSH" -gt 20 ]; then
-        REPORT+="⚠️  Detected $FAILED_SSH failed SSH login attempts today\n\n"
+        REPORT+="Detected $FAILED_SSH failed SSH login attempts today\n\n"
 
         REPORT+="Top attacking IPs:\n"
         grep "Failed password" "$AUTH_LOG" | grep "$(date +%b\ %d)" | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn | head -10 | while read count ip; do
@@ -287,9 +287,9 @@ if [ -f "$AUTH_LOG" ]; then
         done
         REPORT+="\n"
 
-        log "⚠️  Found $FAILED_SSH SSH brute force attempts"
+        log "Found $FAILED_SSH SSH brute force attempts"
     else
-        REPORT+="✅ No significant brute force activity ($FAILED_SSH failed attempts)\n\n"
+        REPORT+="No significant brute force activity ($FAILED_SSH failed attempts)\n\n"
         log "No significant brute force activity"
     fi
 fi
@@ -313,7 +313,7 @@ if [ -f "$NGINX_ERROR_LOG" ]; then
 
         log "Rate limiting triggered $RATE_LIMIT_HITS times"
     else
-        REPORT+="✅ No rate limiting triggered\n\n"
+        REPORT+="No rate limiting triggered\n\n"
     fi
 fi
 
@@ -332,7 +332,7 @@ if [ -f "/root/murphys-laws/logs/api-error.log" ]; then
         done
         REPORT+="\n"
     else
-        REPORT+="✅ No recent API errors\n\n"
+        REPORT+="No recent API errors\n\n"
     fi
 fi
 
@@ -343,14 +343,14 @@ SUMMARY="Log Analysis Summary - $(date +%Y-%m-%d)\n"
 SUMMARY+="=======================================\n\n"
 
 if [ "$TOTAL_ISSUES" -gt 0 ]; then
-    SUMMARY+="⚠️  SECURITY ISSUES DETECTED:\n"
+    SUMMARY+="SECURITY ISSUES DETECTED:\n"
     [ "$SQL_ATTEMPTS" -gt 0 ] && SUMMARY+="  • SQL Injection: $SQL_ATTEMPTS attempts\n"
     [ "$XSS_ATTEMPTS" -gt 0 ] && SUMMARY+="  • XSS: $XSS_ATTEMPTS attempts\n"
     [ "$TRAVERSAL_ATTEMPTS" -gt 0 ] && SUMMARY+="  • Path Traversal: $TRAVERSAL_ATTEMPTS attempts\n"
     [ "$CMD_ATTEMPTS" -gt 0 ] && SUMMARY+="  • Command Injection: $CMD_ATTEMPTS attempts\n"
     SUMMARY+="\nTotal attack attempts: $TOTAL_ISSUES\n\n"
 else
-    SUMMARY+="✅ No security issues detected in logs\n\n"
+    SUMMARY+="No security issues detected in logs\n\n"
 fi
 
 SUMMARY+="Total requests today: $TOTAL_REQUESTS\n"

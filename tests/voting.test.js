@@ -1,11 +1,12 @@
 import { getUserVote, voteLaw, unvoteLaw, toggleVote } from '../src/utils/voting.js';
 
-// Mock constants to test fallback URL branches
+// Mock constants
 vi.mock('../src/utils/constants.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    API_FALLBACK_URL: '' // Empty string to test the fallback
+    API_BASE_URL: 'http://primary-api.com',
+    API_FALLBACK_URL: 'http://fallback-api.com'
   };
 });
 
@@ -155,12 +156,11 @@ describe('Voting utilities', () => {
     });
 
     it('uses fallback URL on primary failure', async () => {
-
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'Service unavailable' })
+        json: async () => ({ error: 'Service unavailable' })
       });
 
       // Fallback succeeds
@@ -171,37 +171,35 @@ describe('Voting utilities', () => {
 
       const result = await voteLaw(123, 'up');
       expect(result).toEqual({ upvotes: 11, downvotes: 2 });
+      expect(getUserVote(123)).toBe('up');
       expect(fetchSpy).toHaveBeenCalledTimes(2);
-
     });
 
     it('handles fallback error with error property', async () => {
-
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'Service unavailable' })
+        json: async () => ({ error: 'Service unavailable' })
       });
 
-      // Fallback also fails with error property
+      // Fallback also fails
       fetchSpy.mockResolvedValueOnce({
         ok: false,
-        status: 400,
+        status: 500,
         json: async () => ({ error: 'Fallback error' })
       });
 
       await expect(voteLaw(123, 'up')).rejects.toThrow('Fallback error');
-
     });
 
     it('handles fallback error with invalid JSON', async () => {
 
-      // Primary fails
+      // Primary fails with error property
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'Service unavailable' })
+        json: async () => ({ error: 'Service unavailable' })
       });
 
       // Fallback fails with invalid JSON
@@ -261,12 +259,11 @@ describe('Voting utilities', () => {
     });
 
     it('uses fallback URL on primary failure', async () => {
-
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'Service unavailable' })
+        json: async () => ({ error: 'Service unavailable' })
       });
 
       // Fallback succeeds
@@ -277,37 +274,35 @@ describe('Voting utilities', () => {
 
       const result = await unvoteLaw(123);
       expect(result).toEqual({ upvotes: 10, downvotes: 2 });
+      expect(getUserVote(123)).toBeNull();
       expect(fetchSpy).toHaveBeenCalledTimes(2);
-
     });
 
     it('handles fallback error with error property', async () => {
-
       // Primary fails
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'Service unavailable' })
+        json: async () => ({ error: 'Service unavailable' })
       });
 
-      // Fallback also fails with error property
+      // Fallback also fails
       fetchSpy.mockResolvedValueOnce({
         ok: false,
-        status: 400,
+        status: 500,
         json: async () => ({ error: 'Fallback error' })
       });
 
       await expect(unvoteLaw(123)).rejects.toThrow('Fallback error');
-
     });
 
     it('handles fallback error with invalid JSON', async () => {
 
-      // Primary fails
+      // Primary fails with error property
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
-        json: async () => ({ message: 'Service unavailable' })
+        json: async () => ({ error: 'Service unavailable' })
       });
 
       // Fallback fails with invalid JSON

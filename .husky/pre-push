@@ -2,8 +2,8 @@
 
 # Deployment reminder
 echo ""
-echo "📦 Code pushed to GitHub!"
+echo "Code pushed to GitHub!"
 echo ""
-echo "🚀 Remember to deploy to production:"
+echo "Remember to deploy to production:"
 echo "   npm run deploy"
 echo ""

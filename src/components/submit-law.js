@@ -1,9 +1,10 @@
 // Submit a Law section component
+// Refactored to use generic API request helper
 
 import templateHtml from '@views/templates/submit-law-section.html?raw';
-import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 import { showSuccess, showError } from './notification.js';
 import { fetchAPI } from '../utils/api.js';
+import { apiPost } from '../utils/request.js';
 import { hydrateIcons } from '@utils/icons.js';
 
 export function SubmitLawSection() {
@@ -108,85 +109,9 @@ export function SubmitLawSection() {
     }
   }
 
-  // Submit law to API
+  // Submit law to API - Uses generic request helper (eliminates ~80 lines of duplicate code)
   async function submitLaw(lawData) {
-    const apiUrl = API_BASE_URL || '';
-    const fallbackUrl = API_FALLBACK_URL || 'http://127.0.0.1:8787';
-
-    const endpoint = '/api/laws';
-    const primaryUrl = `${apiUrl}${endpoint}`;
-
-    try {
-      const response = await fetch(primaryUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(lawData)
-      });
-
-      if (!response.ok) {
-        // Try to get error message from response
-        let errorMessage;
-        try {
-          const errorData = await response.json();
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-        } catch {
-          // If can't parse JSON, provide user-friendly message based on status
-          if (response.status === 404) {
-            errorMessage = 'The submission endpoint is not available. Please make sure the API server is running.';
-          } else if (response.status >= 500) {
-            errorMessage = 'The server encountered an error. Please try again later.';
-          } else if (response.status === 400) {
-            errorMessage = 'Invalid submission. Please check your input.';
-          } else {
-            errorMessage = `Unable to submit (error ${response.status}). Please try again.`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      return await response.json();
-    } catch {
-      // Try fallback URL
-
-      const fallbackFullUrl = `${fallbackUrl}${endpoint}`;
-      const fallbackResponse = await fetch(fallbackFullUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(lawData)
-      });
-
-      if (!fallbackResponse.ok) {
-        let errorMessage;
-        try {
-          const errorData = await fallbackResponse.json();
-          if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-        } catch {
-          // Provide user-friendly message based on status
-          if (fallbackResponse.status === 404) {
-            errorMessage = 'The submission endpoint is not available. Please make sure the API server is running.';
-          } else if (fallbackResponse.status >= 500) {
-            errorMessage = 'The server encountered an error. Please try again later.';
-          } else if (fallbackResponse.status === 400) {
-            errorMessage = 'Invalid submission. Please check your input.';
-          } else {
-            errorMessage = `Unable to submit (error ${fallbackResponse.status}). Please try again.`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      return await fallbackResponse.json();
-    }
+    return await apiPost('/api/laws', lawData);
   }
 
   // Add event listeners to check validity

@@ -232,11 +232,11 @@ pm2 restart all
 
 ## Important Notes
 
-- ✅ **DO** build locally and deploy `dist/`
-- ✅ **DO** use `npm run deploy` for deployments
-- ❌ **DON'T** run `npm run preview:build` on the droplet (it rebuilds)
-- ❌ **DON'T** run `vite build` on the droplet unless absolutely necessary
-- ❌ **DON'T** disable swap space
+- **DO** build locally and deploy `dist/`
+- **DO** use `npm run deploy` for deployments
+- **DON'T** run `npm run preview:build` on the droplet (it rebuilds)
+- **DON'T** run `vite build` on the droplet unless absolutely necessary
+- **DON'T** disable swap space
 
 ---
 

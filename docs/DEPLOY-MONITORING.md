@@ -146,7 +146,7 @@ sudo crontab -e
 
 #### 6. Update Nginx Configuration (Rate Limiting & Security Headers)
 
-**⚠️  IMPORTANT**: Test nginx configuration before applying!
+**IMPORTANT**: Test nginx configuration before applying!
 
 ```bash
 # Upload nginx configs

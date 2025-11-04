@@ -2,7 +2,7 @@
 
 Complete guide for testing backup and restore procedures on both droplets.
 
-## 🎯 Testing Approaches
+## Testing Approaches
 
 ### Option 1: Non-Disruptive Testing (Recommended First)
 Tests backup integrity without affecting production.
@@ -20,7 +20,7 @@ Complete restore simulation on a test environment.
 
 ---
 
-## 🧪 Option 1: Non-Disruptive Testing
+## Option 1: Non-Disruptive Testing
 
 ### Main Droplet (167.99.53.90)
 
@@ -46,15 +46,15 @@ sudo /usr/local/bin/test-backup-restore.sh
 ```
 
 **What the test does:**
-1. ✅ Verifies backup files exist (database, environment, application)
-2. ✅ Tests database integrity with SQLite PRAGMA checks
-3. ✅ Compares backup data with production (row counts)
-4. ✅ Restores to temporary location (no production impact)
-5. ✅ Tests application archive extraction
-6. ✅ Verifies environment file contents
-7. ✅ Checks backup freshness (< 30 hours)
-8. ✅ Validates backup script and cron configuration
-9. ✅ Reviews backup logs for errors
+1. Verifies backup files exist (database, environment, application)
+2. Tests database integrity with SQLite PRAGMA checks
+3. Compares backup data with production (row counts)
+4. Restores to temporary location (no production impact)
+5. Tests application archive extraction
+6. Verifies environment file contents
+7. Checks backup freshness (< 30 hours)
+8. Validates backup script and cron configuration
+9. Reviews backup logs for errors
 
 #### Step 3: Review Results
 
@@ -67,7 +67,7 @@ cat /tmp/backup-restore-test-$(date +%Y-%m-%d).txt
 
 **Expected Output:**
 ```
-✅ ALL TESTS PASSED - Backups are ready for disaster recovery
+ALL TESTS PASSED - Backups are ready for disaster recovery
 Total Tests: 20
 Passed: 20
 Failed: 0
@@ -118,7 +118,7 @@ ssh ravidor@45.55.74.28
 LATEST_N8N_BACKUP=$(ls -t /root/backups/n8n-*.db 2>/dev/null | head -1)
 
 if [ -n "$LATEST_N8N_BACKUP" ]; then
-    echo "✅ n8n backup found: $(basename $LATEST_N8N_BACKUP)"
+    echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
 
     # Test integrity
     sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
@@ -132,7 +132,7 @@ if [ -n "$LATEST_N8N_BACKUP" ]; then
     echo "Workflows in production:"
     docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
 else
-    echo "❌ No n8n backup found"
+    echo "No n8n backup found"
 fi
 ```
 
@@ -147,14 +147,14 @@ git pull
 
 # Count workflow files
 WORKFLOW_COUNT=$(ls -1 workflows/*.json 2>/dev/null | wc -l)
-echo "✅ GitHub has $WORKFLOW_COUNT workflow files"
+echo "GitHub has $WORKFLOW_COUNT workflow files"
 
 # Verify files are valid JSON
 for file in workflows/*.json; do
     if jq empty "$file" 2>/dev/null; then
-        echo "✅ Valid JSON: $(basename $file)"
+        echo "Valid JSON: $(basename $file)"
     else
-        echo "❌ Invalid JSON: $(basename $file)"
+        echo "Invalid JSON: $(basename $file)"
     fi
 done
 
@@ -187,9 +187,9 @@ rm -rf "$TEST_DIR"
 
 ---
 
-## 🚨 Option 2: Full Disaster Recovery Drill
+## Option 2: Full Disaster Recovery Drill
 
-**⚠️  WARNING**: This simulates a real disaster recovery. Schedule during maintenance window.
+** WARNING**: This simulates a real disaster recovery. Schedule during maintenance window.
 
 ### Prerequisites
 
@@ -309,7 +309,7 @@ Issues Encountered:
 Lessons Learned:
 [LIST IMPROVEMENTS]
 
-Status: ✅ Success / ❌ Failed
+Status: Success / Failed
 EOF
 
 # Email report
@@ -368,7 +368,7 @@ curl -I https://n8n.murphys-laws.com
 
 ---
 
-## 📊 Testing Schedule
+## Testing Schedule
 
 ### Recommended Testing Frequency
 
@@ -397,7 +397,7 @@ Quarterly Recovery Drills:
 
 ---
 
-## ✅ Success Criteria
+## Success Criteria
 
 ### Non-Disruptive Test Success
 - All 9 test sections pass
@@ -414,7 +414,7 @@ Quarterly Recovery Drills:
 
 ---
 
-## 🚨 If Tests Fail
+## If Tests Fail
 
 ### Common Issues and Solutions
 
@@ -457,7 +457,7 @@ pm2 start ecosystem.config.cjs
 
 ---
 
-## 📋 Testing Checklist
+## Testing Checklist
 
 ### Before Testing
 - [ ] Recent backups exist (< 24 hours)
@@ -487,7 +487,7 @@ pm2 start ecosystem.config.cjs
 
 ---
 
-## 📝 Test Report Template
+## Test Report Template
 
 Copy this template for each test:
 
@@ -525,7 +525,7 @@ RTO (Recovery Time): XX hours
 RPO (Data Loss): XX hours
 Services Restored: XX/XX
 
-STATUS: ✅ PASSED / ⚠️  ISSUES / ❌ FAILED
+STATUS: PASSED /  ISSUES / FAILED
 
 NEXT TEST: YYYY-MM-DD
 ```

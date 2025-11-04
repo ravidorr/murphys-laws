@@ -1,6 +1,6 @@
 # Database Management Guide
 
-## ⚠️ IMPORTANT: Never commit murphys.db directly!
+## IMPORTANT: Never commit murphys.db directly!
 
 The production database contains user data (votes, submissions) that must never be overwritten.
 
@@ -43,18 +43,19 @@ GitHub Actions will automatically run the migration on production when you merge
 - `003_create_comments_table.sql` - Create a new table
 - `004_law_of_the_day_history.sql` - Law of the Day tracking table
 - `005_add_index_on_votes.sql` - Add database index
+- `006_add_performance_indexes.sql` - Add performance indexes for query optimization
 
 Always use sequential numbers (001, 002, 003...).
 
 ## Common Mistakes to Avoid
 
-❌ **DON'T:** Modify `murphys.db` and commit it
-❌ **DON'T:** Run SQL directly on production server
-❌ **DON'T:** Remove `murphys.db` from `.gitignore`
+**DON'T:** Modify `murphys.db` and commit it
+**DON'T:** Run SQL directly on production server
+**DON'T:** Remove `murphys.db` from `.gitignore`
 
-✅ **DO:** Create migration files
-✅ **DO:** Test migrations locally first
-✅ **DO:** Use `npm run migrate` to apply changes
+**DO:** Create migration files
+**DO:** Test migrations locally first
+**DO:** Use `npm run migrate` to apply changes
 
 ## Troubleshooting
 

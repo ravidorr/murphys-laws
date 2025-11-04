@@ -1,6 +1,7 @@
 import { defineRoute, navigate, startRouter, forceRender } from './router.js';
 import { Header } from './components/header.js';
 import { Footer } from './components/footer.js';
+import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS } from './utils/constants.js';
 import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
@@ -74,9 +75,7 @@ function layout(node) {
   // Ask MathJax (if present) to typeset this freshly rendered view.
   // We wait until MathJax is loaded and the node is attached to the DOM.
   const typesetWhenReady = (element) => {
-    const MATHJAX_POLL_INTERVAL = 50;
     const MATHJAX_DEFER_TIMEOUT = 0;
-    const MAX_ATTEMPTS = 200;
 
     let attempts = 0;
 
@@ -94,7 +93,7 @@ function layout(node) {
       }
 
       attempts += 1;
-      if (attempts < MAX_ATTEMPTS) {
+      if (attempts < MATHJAX_MAX_ATTEMPTS) {
         // Try again shortly in case MathJax script (loaded async) isn't ready yet
         setTimeout(attempt, MATHJAX_POLL_INTERVAL);
       }

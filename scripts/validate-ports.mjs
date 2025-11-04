@@ -36,7 +36,7 @@ function extractPort(content, pattern) {
 }
 
 try {
-  log('\n🔍 Validating port configuration consistency...\n', 'blue');
+  log('\nValidating port configuration consistency...\n', 'blue');
 
   // Read vite.config.js
   const viteConfig = readFileSync(resolve(ROOT, 'vite.config.js'), 'utf-8');
@@ -60,7 +60,7 @@ try {
   const apiDefaultPort = extractPort(apiServer, /PORT\s*\|\|\s*(\d+)/);
 
   // Display found ports
-  log('📋 Found Ports:', 'blue');
+  log('Found Ports:', 'blue');
   console.log(`  vite.config.js (preview):     ${vitePreviewPort || 'NOT FOUND'}`);
   console.log(`  vite.config.js (server):      ${viteServerPort || 'NOT FOUND'}`);
   console.log(`  ecosystem.config.cjs:         ${ecosystemFrontendPort || 'NOT FOUND'}`);
@@ -87,30 +87,30 @@ try {
   // Report results
   console.log();
   if (errors.length === 0 && warnings.length === 0) {
-    log('✅ All ports are consistent!', 'green');
+    log('All ports are consistent!', 'green');
     log(`   Frontend: ${vitePreviewPort}`, 'green');
     log(`   API: ${nginxApiPort}`, 'green');
     process.exit(0);
   } else {
     if (errors.length > 0) {
-      log('❌ Port Configuration Errors:', 'red');
+      log('Port Configuration Errors:', 'red');
       errors.forEach(err => log(`   - ${err}`, 'red'));
     }
     if (warnings.length > 0) {
-      log('\n⚠️  Port Configuration Warnings:', 'yellow');
+      log('\nPort Configuration Warnings:', 'yellow');
       warnings.forEach(warn => log(`   - ${warn}`, 'yellow'));
       log('   (Warnings are OK if you set PORT env var on the droplet)', 'yellow');
     }
 
     if (errors.length > 0) {
-      log('\n💡 Fix ports in the configuration files before deploying.', 'blue');
+      log('\nFix ports in the configuration files before deploying.', 'blue');
       process.exit(1);
     } else {
-      log('\n✅ No critical errors found.', 'green');
+      log('\nNo critical errors found.', 'green');
       process.exit(0);
     }
   }
 } catch (error) {
-  log(`\n❌ Error reading configuration files: ${error.message}`, 'red');
+  log(`\nError reading configuration files: ${error.message}`, 'red');
   process.exit(1);
 }

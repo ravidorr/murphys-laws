@@ -1,28 +1,28 @@
 # Check if database file is being committed
 if git diff --cached --name-only | grep -q "^murphys\.db$"; then
-  echo "❌ ERROR: You're trying to commit murphys.db!"
+  echo "ERROR: You're trying to commit murphys.db!"
   echo ""
   echo "This will overwrite production data. Please use migrations instead."
   echo ""
-  echo "📖 See DATABASE.md for how to make schema changes safely."
+  echo "See DATABASE.md for how to make schema changes safely."
   echo ""
   echo "To unstage: git reset murphys.db"
   exit 1
 fi
 
 # Run tests before allowing commit
-echo "🧪 Running tests..."
+echo "Running tests..."
 npm test
 if [ $? -ne 0 ]; then
   echo ""
-  echo "❌ Tests failed! Commit blocked."
+  echo "Tests failed! Commit blocked."
   echo ""
   echo "Please fix the failing tests before committing."
   echo "Run 'npm test' to see detailed test results."
   exit 1
 fi
 
-echo "✅ All tests passed!"
+echo "All tests passed!"
 
 node scripts/sanitize-husky-hooks.mjs
 npx lint-staged

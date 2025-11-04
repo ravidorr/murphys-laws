@@ -4,12 +4,12 @@ Monitors the health of both the Murphy's Laws frontend and API servers and sends
 
 ## Features
 
-- ✅ Checks frontend server (HTML response)
-- ✅ Checks API server (`/api/health` endpoint)
-- ✅ Sends email alerts on failures
-- ✅ 10-second timeout per check
-- ✅ Detailed error reporting
-- ✅ HTML email formatting
+- Checks frontend server (HTML response)
+- Checks API server (`/api/health` endpoint)
+- Sends email alerts on failures
+- 10-second timeout per check
+- Detailed error reporting
+- HTML email formatting
 
 ## Requirements
 
@@ -149,3 +149,4 @@ The script has a 10-second timeout per check. If checks consistently timeout:
 - SendGrid: Use API key as password
 - AWS SES: Use SMTP credentials from SES console
 - Mailgun: Use SMTP credentials from Mailgun settings
+

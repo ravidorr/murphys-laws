@@ -1,51 +1,25 @@
-import { firstAttributionLine } from '../utils/attribution.js';
-import { escapeHtml } from '../utils/sanitize.js';
+// Refactored to use shared law card renderer
 import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
-import { getUserVote, addVotingListeners } from '../utils/voting.js';
+import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { renderLawCards } from '../utils/law-card-renderer.js';
+import { LAW_CARD_MIN_HEIGHT } from '../utils/constants.js';
 
-function renderLawCard(law, index, rankOffset) {
-  const up = Number.isFinite(law.upvotes) ? law.upvotes : 0;
-  const down = Number.isFinite(law.downvotes) ? law.downvotes : 0;
-  const attribution = firstAttributionLine(law);
-  const userVote = getUserVote(law.id);
-
-  const safeId = escapeHtml(String(law.id));
-  const safeTitle = law.title ? escapeHtml(law.title) : '';
-  const safeText = escapeHtml(law.text || '');
-  const titleText = safeTitle ? `<strong>${safeTitle}:</strong> ${safeText}` : safeText;
-
-  const rankMarkup = typeof rankOffset === 'number'
-    ? `<span class="rank">#${index + rankOffset}</span>`
-    : '';
-
-  return `
-    <div class="law-card-mini" data-law-id="${safeId}">
-      <p class="law-card-text">
-        ${rankMarkup}
-        ${titleText}
-      </p>
-      ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
-      <div class="law-card-footer">
-        <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${safeId}" aria-label="Upvote this law">
-          <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
-          <span class="count-num">${up}</span>
-        </button>
-        <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${safeId}" aria-label="Downvote this law">
-          <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
-          <span class="count-num">${down}</span>
-        </button>
-      </div>
-    </div>
-  `;
-}
-
+/**
+ * Creates a reusable law list section component with loading states and error handling
+ * @param {Object} options - Component configuration
+ * @param {string} options.accentText - Accent text for title (e.g., "Top")
+ * @param {string} options.remainderText - Remainder text for title (e.g., " Voted")
+ * @returns {Object} Component interface with element and render methods
+ * @returns {HTMLDivElement} returns.el - The component container element
+ * @returns {Function} returns.renderLaws - Function to render laws
+ * @returns {Function} returns.renderError - Function to render error state
+ */
 export function createLawListSection({ accentText, remainderText }) {
   const el = document.createElement('div');
   el.className = 'card';
-  // Reserve space for 3 law cards to prevent layout shift
-  // Each mini card is ~120px, plus title (~40px) = ~400px total
-  el.style.minHeight = '400px';
+  // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
+  el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
   el.innerHTML = `
     <div class="card-content">
@@ -71,10 +45,11 @@ export function createLawListSection({ accentText, remainderText }) {
     const endIndex = startIndex + (Number.isFinite(limit) && limit > 0 ? limit : validLaws.length);
     const sliced = validLaws.slice(startIndex, endIndex);
 
+    // Use shared law card renderer (eliminates duplicate HTML generation)
     content.innerHTML = `
       <h4 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h4>
       <div class="card-text">
-        ${sliced.map((law, index) => renderLawCard(law, index, rankOffset)).join('')}
+        ${renderLawCards(sliced, { rankOffset })}
       </div>
     `;
     hydrateIcons(content);

@@ -18,12 +18,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = resolve(__dirname, '..', 'murphys.db');
 const BACKUP_PATH = resolve(__dirname, '..', 'murphys.db.pre-migrate-backup');
 
-function log(msg, emoji = '✓') {
-  console.log(`${emoji} ${msg}`);
+function log(msg) {
+  console.log(`${msg}`);
 }
 
 function error(msg) {
-  console.error(`❌ ${msg}`);
+  console.error(`${msg}`);
   process.exit(1);
 }
 
@@ -39,12 +39,12 @@ function getSql(sql) {
 if (!existsSync(DB_PATH)) {
   error('Database file not found at: ' + DB_PATH);
 }
-log('Database file exists', '✓');
+log('Database file exists');
 
 // Check 2: Database is readable
 try {
   const stats = statSync(DB_PATH);
-  log(`Database size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`, '✓');
+  log(`Database size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 } catch (err) {
   error('Cannot read database file: ' + err.message);
 }
@@ -57,7 +57,7 @@ for (const table of requiredTables) {
     if (!result) {
       error(`Required table '${table}' not found`);
     }
-    log(`Table '${table}' exists`, '✓');
+    log(`Table '${table}' exists`);
   } catch (err) {
     error(`Failed to check table '${table}': ${err.message}`);
   }
@@ -67,7 +67,7 @@ for (const table of requiredTables) {
 try {
   const lawCount = getSql('SELECT COUNT(*) FROM laws;');
   const voteCount = getSql('SELECT COUNT(*) FROM votes;');
-  log(`Database has ${lawCount} laws and ${voteCount} votes`, '📊');
+  log(`Database has ${lawCount} laws and ${voteCount} votes`);
 } catch (err) {
   error('Failed to count data: ' + err.message);
 }
@@ -76,10 +76,10 @@ try {
 try {
   copyFileSync(DB_PATH, BACKUP_PATH);
   const backupStats = statSync(BACKUP_PATH);
-  log(`Pre-migration backup created: ${(backupStats.size / 1024 / 1024).toFixed(2)} MB`, '💾');
+  log(`Pre-migration backup created: ${(backupStats.size / 1024 / 1024).toFixed(2)} MB`);
 } catch (err) {
   error('Failed to create backup: ' + err.message);
 }
 
-console.log('\n✅ All safety checks passed! Safe to run migrations.\n');
+console.log('\nAll safety checks passed! Safe to run migrations.\n');
 process.exit(0);

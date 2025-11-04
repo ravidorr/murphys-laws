@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('home → browse via header', async ({ page }) => {
+test('home -> browse via header', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.getByRole('banner').getByText("Murphy's Law of the Day", { exact: true })).toBeVisible();
 
@@ -17,7 +17,7 @@ test('search in header routes to browse and shows query', async ({ page }) => {
   await expect(page.getByText('Search query: gravity')).toBeVisible();
 });
 
-test('home law click → law detail and back via button', async ({ page }) => {
+test('home law click -> law detail and back via button', async ({ page }) => {
   await page.goto('/index.html');
   // Click first law block (uses data-law-id)
   const firstLaw = page.locator('[data-law-id]').first();

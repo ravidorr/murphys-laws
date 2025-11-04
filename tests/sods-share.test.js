@@ -356,7 +356,7 @@ describe('Sod\'s share module', () => {
 
       await vi.waitFor(() => {
         expect(sendBtn.disabled).toBe(false);
-        expect(sendBtn.textContent).toBe('✉️ Send Email');
+        expect(sendBtn.textContent).toBe('Send Email');
       });
     });
   });

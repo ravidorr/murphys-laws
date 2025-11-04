@@ -49,7 +49,7 @@ function question(prompt) {
 // ============================================
 
 async function showAnalytics() {
-  console.log('\n📊 Murphy\'s Law Statistics\n');
+  console.log('\nMurphy\'s Law Statistics\n');
 
   const stats = await runSqlJson(`
     SELECT
@@ -121,11 +121,11 @@ async function listInReview() {
   const laws = await runSqlJson(sql);
 
   if (laws.length === 0) {
-    console.log('\n✅ No laws pending review!\n');
+    console.log('\nNo laws pending review!\n');
     return [];
   }
 
-  console.log(`\n📋 ${laws.length} law(s) pending review:\n`);
+  console.log(`\n${laws.length} law(s) pending review:\n`);
 
   laws.forEach((law, idx) => {
     const attributions = JSON.parse(law.attributions);
@@ -161,7 +161,7 @@ async function reviewPendingLaws() {
     const law = laws.find(l => l.id === lawId);
 
     if (!law) {
-      console.log('❌ Law ID not found in pending review list.\n');
+      console.log('Law ID not found in pending review list.\n');
       continue;
     }
 
@@ -170,7 +170,7 @@ async function reviewPendingLaws() {
 }
 
 async function reviewSingleLaw(law) {
-  console.log(`\n📝 Reviewing Law #${law.id}:`);
+  console.log(`\nReviewing Law #${law.id}:`);
   console.log(`   Title: ${law.title || '(no title)'}`);
   console.log(`   Text: ${law.text}\n`);
 
@@ -178,16 +178,16 @@ async function reviewSingleLaw(law) {
 
   if (decision.toLowerCase() === 'a') {
     await updateStatus(law.id, 'published');
-    console.log(`✅ Law #${law.id} approved and published!\n`);
+    console.log(`Law #${law.id} approved and published!\n`);
   } else if (decision.toLowerCase() === 'r') {
     await updateStatus(law.id, 'rejected');
-    console.log(`❌ Law #${law.id} rejected!\n`);
+    console.log(`Law #${law.id} rejected!\n`);
   } else if (decision.toLowerCase() === 'e') {
     await editLaw(law);
   } else if (decision.toLowerCase() === 'n') {
     await addNote(law.id);
   } else {
-    console.log('⏭️  Skipped.\n');
+    console.log('Skipped.\n');
   }
 }
 
@@ -197,7 +197,7 @@ async function updateStatus(lawId, newStatus) {
 }
 
 async function editLaw(law) {
-  console.log('\n✏️  Edit Law\n');
+  console.log('\nEdit Law\n');
 
   const newTitle = await question(`Title [${law.title || 'none'}]: `);
   const newText = await question(`Text [press Enter to keep current]: `);
@@ -208,14 +208,14 @@ async function editLaw(law) {
   const sql = `UPDATE laws SET title = ?, text = ? WHERE id = ?`;
   await runSqlJson(sql, [title, text, law.id]);
 
-  console.log(`✅ Law #${law.id} updated!\n`);
+  console.log(`Law #${law.id} updated!\n`);
 }
 
 async function addNote(lawId) {
   const note = await question('Enter admin note: ');
   const sql = `UPDATE laws SET admin_notes = ? WHERE id = ?`;
   await runSqlJson(sql, [note.trim(), lawId]);
-  console.log(`✅ Note added to Law #${lawId}!\n`);
+  console.log(`Note added to Law #${lawId}!\n`);
 }
 
 // ============================================
@@ -223,7 +223,7 @@ async function addNote(lawId) {
 // ============================================
 
 async function managePublishedLaws() {
-  console.log('\n📚 Manage Published Laws\n');
+  console.log('\nManage Published Laws\n');
 
   const searchTerm = await question('Search by keyword (or press Enter for all): ');
 
@@ -282,7 +282,7 @@ async function managePublishedLaws() {
 // ============================================
 
 async function findDuplicates() {
-  console.log('\n🔍 Finding Duplicate Laws...\n');
+  console.log('\nFinding Duplicate Laws...\n');
 
   const sql = `
     SELECT
@@ -301,7 +301,7 @@ async function findDuplicates() {
   const duplicates = await runSqlJson(sql);
 
   if (duplicates.length === 0) {
-    console.log('✅ No exact duplicate laws found!\n');
+    console.log('No exact duplicate laws found!\n');
     return;
   }
 
@@ -318,7 +318,7 @@ async function findDuplicates() {
   const [keepId, deleteId] = merge.split(',').map(s => parseInt(s.trim(), 10));
 
   if (!keepId || !deleteId) {
-    console.log('❌ Invalid format.\n');
+    console.log('Invalid format.\n');
     return;
   }
 
@@ -326,7 +326,7 @@ async function findDuplicates() {
 }
 
 async function mergeLaws(keepId, deleteId) {
-  console.log(`\n🔀 Merging Law #${deleteId} into Law #${keepId}...\n`);
+  console.log(`\nMerging Law #${deleteId} into Law #${keepId}...\n`);
 
   // Move attributions
   await runSqlJson(`UPDATE attributions SET law_id = ? WHERE law_id = ?`, [keepId, deleteId]);
@@ -337,7 +337,7 @@ async function mergeLaws(keepId, deleteId) {
   // Delete the duplicate
   await runSqlJson(`DELETE FROM laws WHERE id = ?`, [deleteId]);
 
-  console.log(`✅ Laws merged successfully!\n`);
+  console.log(`Laws merged successfully!\n`);
 }
 
 // ============================================
@@ -345,13 +345,13 @@ async function mergeLaws(keepId, deleteId) {
 // ============================================
 
 async function manageAttributions() {
-  console.log('\n👤 Manage Attributions\n');
+  console.log('\nManage Attributions\n');
 
   const lawId = await question('Enter law ID: ');
   const id = parseInt(lawId, 10);
 
   if (!id) {
-    console.log('❌ Invalid law ID.\n');
+    console.log('Invalid law ID.\n');
     return;
   }
 
@@ -384,11 +384,11 @@ async function manageAttributions() {
       VALUES (?, ?, ?, ?);
     `, [id, name.trim(), contactType.trim(), contactValue.trim() || null]);
 
-    console.log('✅ Attribution added!\n');
+    console.log('Attribution added!\n');
   } else if (action.toLowerCase() === 'd') {
     const attId = await question('Enter attribution ID to delete: ');
     await runSqlJson(`DELETE FROM attributions WHERE id = ?`, [parseInt(attId, 10)]);
-    console.log('✅ Attribution deleted!\n');
+    console.log('Attribution deleted!\n');
   }
 }
 
@@ -402,7 +402,7 @@ function showHelp() {
 │           Murphy's Law CLI - Help Documentation                │
 └────────────────────────────────────────────────────────────────┘
 
-🚀 GETTING STARTED
+GETTING STARTED
   To run the CLI:
     $ npm run review
 
@@ -417,18 +417,18 @@ function showHelp() {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📋 REVIEW PENDING LAWS (Option 1)
+REVIEW PENDING LAWS (Option 1)
 
   How to use:
     1. Select option [1] from main menu
     2. View list of all pending laws
     3. Enter a law ID to review it
     4. Choose an action:
-       [a]pprove → Sets status to "published" (visible on site)
-       [r]eject  → Sets status to "rejected" (hidden from site)
-       [e]dit    → Edit title and text before approving
-       [n]ote    → Add internal admin notes
-       [c]ancel  → Skip this law
+       [a]pprove -> Sets status to "published" (visible on site)
+       [r]eject  -> Sets status to "rejected" (hidden from site)
+       [e]dit    -> Edit title and text before approving
+       [n]ote    -> Add internal admin notes
+       [c]ancel  -> Skip this law
     5. Enter [q] to return to main menu
 
   Example workflow:
@@ -437,13 +437,13 @@ function showHelp() {
     [a]pprove, [r]eject, [e]dit, [n]ote, or [c]ancel? e
     Title [none]: The Law of Technology
     Text [press Enter to keep current]: <Enter>
-    ✅ Law #2369 updated!
+    Law #2369 updated!
     [a]pprove, [r]eject, [e]dit, [n]ote, or [c]ancel? a
-    ✅ Law #2369 approved and published!
+    Law #2369 approved and published!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 VIEW ANALYTICS (Option 2)
+VIEW ANALYTICS (Option 2)
 
   How to use:
     1. Select option [2] from main menu
@@ -457,7 +457,7 @@ function showHelp() {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📚 MANAGE PUBLISHED LAWS (Option 3)
+MANAGE PUBLISHED LAWS (Option 3)
 
   How to use:
     1. Select option [3] from main menu
@@ -481,11 +481,11 @@ function showHelp() {
     Enter law ID to edit, or "q" to return: 42
     Title [Murphy's Original Law]: Murphy's Original Law
     Text [press Enter to keep current]: <Enter>
-    ✅ Law #42 updated!
+    Law #42 updated!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔍 FIND & MERGE DUPLICATES (Option 4)
+FIND & MERGE DUPLICATES (Option 4)
 
   How to use:
     1. Select option [4] from main menu
@@ -505,21 +505,21 @@ function showHelp() {
     1. Law #42 ⟷ Law #128
        Text: Anything that can go wrong will go wrong.
     Enter IDs to merge (format: "keep,delete") or "q": 42,128
-    🔀 Merging Law #128 into Law #42...
-    ✅ Laws merged successfully!
+    Merging Law #128 into Law #42...
+    Laws merged successfully!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-👤 MANAGE ATTRIBUTIONS (Option 5)
+MANAGE ATTRIBUTIONS (Option 5)
 
   How to use:
     1. Select option [5] from main menu
     2. Enter a law ID
     3. View current attributions for that law
     4. Choose an action:
-       [a]dd    → Add a new attribution
-       [d]elete → Remove an attribution
-       [q]uit   → Return to main menu
+       [a]dd    -> Add a new attribution
+       [d]elete -> Remove an attribution
+       [q]uit   -> Return to main menu
 
   Attribution fields:
     - Name (required): Person or source name
@@ -535,11 +535,11 @@ function showHelp() {
     Name: John Doe
     Contact type (email/url/text): email
     Contact value (optional): john@example.com
-    ✅ Attribution added!
+    Attribution added!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💡 TIPS & BEST PRACTICES
+TIPS & BEST PRACTICES
 
   • Use Ctrl+C to force quit at any time
   • Law IDs are permanent and auto-incrementing
@@ -563,18 +563,18 @@ async function showMenu() {
 │   Murphy's Law CLI - Main Menu         │
 └────────────────────────────────────────┘
 
-  [1] 📋 Review Pending Laws
-  [2] 📊 View Analytics
-  [3] 📚 Manage Published Laws
-  [4] 🔍 Find & Merge Duplicates
-  [5] 👤 Manage Attributions
-  [6] ❓ Help
-  [q] ❌ Exit
+  [1] Review Pending Laws
+  [2] View Analytics
+  [3] Manage Published Laws
+  [4] Find & Merge Duplicates
+  [5] Manage Attributions
+  [6] Help
+  [q] Exit
 `);
 }
 
 async function main() {
-  console.log('🔍 Murphy\'s Law Review Tool\n');
+  console.log('Murphy\'s Law Review Tool\n');
 
   while (true) {
     await showMenu();
@@ -601,11 +601,11 @@ async function main() {
         break;
       case 'q':
       case 'Q':
-        console.log('👋 Goodbye!\n');
+        console.log('Goodbye!\n');
         rl.close();
         return;
       default:
-        console.log('❌ Invalid option. Try again.\n');
+        console.log('Invalid option. Try again.\n');
     }
   }
 }

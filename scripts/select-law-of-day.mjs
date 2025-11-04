@@ -128,7 +128,7 @@ async function selectLawOfDay() {
     VALUES (?, ?)
   `, [lawId, today]);
 
-  console.log(`[Law of the Day] ✓ Selected Law ID ${lawId} for ${today}`);
+  console.log(`[Law of the Day] Selected Law ID ${lawId} for ${today}`);
   console.log(`[Law of the Day] Text: "${lawText.substring(0, 80)}..."`);
 }
 

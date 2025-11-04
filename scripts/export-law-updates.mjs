@@ -75,7 +75,7 @@ function generateMigration(lawIds) {
     );
     statements.push('');
 
-    console.log(`✓ Added law #${law.id}: ${law.title || '(no title)'}`);
+    console.log(`Added law #${law.id}: ${law.title || '(no title)'}`);
   }
 
   statements.push('COMMIT;');

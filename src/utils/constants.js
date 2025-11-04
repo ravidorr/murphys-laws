@@ -2,18 +2,44 @@
 
 // Pagination
 export const LAWS_PER_PAGE = 25;
+export const MAX_LAWS_PER_REQUEST = 200; // API limit for maximum laws per request
+export const DEFAULT_LAWS_PER_REQUEST = 50; // Default number of laws if not specified
+
+// Component sizing (prevent layout shift)
+export const LAW_CARD_MIN_HEIGHT = 400; // px - Space for 3 law cards (~120px each) + title (~40px)
+export const LAW_CARD_ITEM_HEIGHT = 120; // px - Approximate height of each law card
+export const WIDGET_CARD_COUNT = 3; // Number of laws to display in widget cards
+
+// MathJax configuration
+export const MATHJAX_POLL_INTERVAL = 50; // ms - Interval to poll for MathJax initialization
+export const MATHJAX_MAX_ATTEMPTS = 200; // Maximum attempts to wait for MathJax (10 seconds total)
 
 // Site metadata
 export const SITE_NAME = "Murphy's Law Archive";
-export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://murphys-laws.com';
+// Support both Vite (import.meta.env) and Node.js (process.env)
+const getEnvVar = (viteKey, nodeKey, defaultValue) => {
+  // Try Vite environment first
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    const value = import.meta.env[viteKey];
+    if (value !== undefined) return value;
+  }
+  // Try Node.js environment
+  if (typeof process !== 'undefined' && process.env) {
+    const value = process.env[nodeKey];
+    if (value !== undefined) return value;
+  }
+  // Return default
+  return defaultValue;
+};
+export const SITE_URL = getEnvVar('VITE_SITE_URL', 'SITE_URL', 'https://murphys-laws.com');
 export const SITE_DEFAULT_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";
 export const SITE_DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/social/home.png`;
 export const SOCIAL_IMAGE_SOD = `${SITE_URL}/social/sods-calculator.png`;
 export const SOCIAL_IMAGE_TOAST = `${SITE_URL}/social/buttered-toast-calculator.png`;
 
 // API endpoints
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-export const API_FALLBACK_URL = import.meta.env.VITE_API_FALLBACK_URL || 'http://127.0.0.1:8787';
+export const API_BASE_URL = getEnvVar('VITE_API_URL', 'API_URL', '');
+export const API_FALLBACK_URL = getEnvVar('VITE_API_FALLBACK_URL', 'API_FALLBACK_URL', 'http://127.0.0.1:8787');
 export const API_SHARE_CALCULATION_ENDPOINT = '/api/share-calculation';
 
 // Fetch defaults
