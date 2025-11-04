@@ -25,6 +25,9 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Generate index.html with inlined law-of-day data
+        run: node scripts/generate-index-html.mjs > dist/index.html
+
       - name: Upload build artifacts
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -137,7 +140,11 @@ jobs:
             sudo cp "$TARGET_DIR/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh
             sudo cp "$TARGET_DIR/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh
             sudo cp "$TARGET_DIR/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh
+            sudo cp "$TARGET_DIR/scripts/regenerate-index-html.sh" /usr/local/bin/regenerate-index-html.sh
             sudo chmod +x /usr/local/bin/*.sh
+
+            # Install cron job to regenerate index.html daily at midnight UTC
+            (crontab -l 2>/dev/null | grep -v regenerate-index-html; echo "0 0 * * * /usr/local/bin/regenerate-index-html.sh >> /var/log/regenerate-index-html.log 2>&1") | crontab -
 
             # Restart services (delete and recreate to ensure config changes are loaded)
             pm2 delete all || true
