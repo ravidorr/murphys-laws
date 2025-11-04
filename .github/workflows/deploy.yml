@@ -83,6 +83,17 @@ jobs:
 
             cd "$TARGET_DIR"
 
+            # Verify Node version matches expected version
+            ACTUAL_NODE_VERSION=$(node --version)
+            EXPECTED_NODE_VERSION="v22"
+            if [[ ! "$ACTUAL_NODE_VERSION" =~ ^$EXPECTED_NODE_VERSION ]]; then
+              echo "ERROR: Node version mismatch!"
+              echo "Expected: $EXPECTED_NODE_VERSION.x"
+              echo "Actual: $ACTUAL_NODE_VERSION"
+              exit 1
+            fi
+            echo "✓ Node version verified: $ACTUAL_NODE_VERSION"
+
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
 
@@ -132,6 +143,18 @@ jobs:
             pm2 delete all || true
             pm2 start ecosystem.config.cjs
             pm2 save
+
+            # Verify PM2 is using the correct Node interpreter
+            PM2_INTERPRETER=$(pm2 show murphys-api | grep 'interpreter ' | awk '{print $3}')
+            EXPECTED_INTERPRETER="/root/.nvm/versions/node/v22.20.0/bin/node"
+            if [[ "$PM2_INTERPRETER" != "$EXPECTED_INTERPRETER" ]]; then
+              echo "ERROR: PM2 interpreter mismatch!"
+              echo "Expected: $EXPECTED_INTERPRETER"
+              echo "Actual: $PM2_INTERPRETER"
+              pm2 logs --lines 50 --nostream
+              exit 1
+            fi
+            echo "✓ PM2 interpreter verified: $PM2_INTERPRETER"
 
             # Wait for services to start
             sleep 5
