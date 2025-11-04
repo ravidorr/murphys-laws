@@ -68,8 +68,12 @@ The collection includes a fascinating philosophical debate between various reade
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- **Node.js 22+** and npm 10+ (required for native module compatibility)
+  - Use `nvm use 22` to ensure correct version
+  - See `.nvmrc` for exact version specification
 - sqlite3 CLI available on PATH
+
+> **Note**: Node.js v22 is required for native modules like better-sqlite3. Using a different version will cause NODE_MODULE_VERSION mismatch errors.
 
 ### Getting Started
 
