@@ -138,7 +138,7 @@ jobs:
             # Health check - verify API is responding
             if ! curl -f http://127.0.0.1:8787/api/law-of-day > /dev/null 2>&1; then
               echo "ERROR: API health check failed after deployment!"
-              pm2 logs --lines 50
+              pm2 logs --lines 50 --nostream
               exit 1
             fi
 
