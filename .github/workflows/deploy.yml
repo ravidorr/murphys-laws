@@ -128,8 +128,9 @@ jobs:
             sudo cp "$TARGET_DIR/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh
             sudo chmod +x /usr/local/bin/*.sh
 
-            # Restart services
-            pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
+            # Restart services (delete and recreate to ensure config changes are loaded)
+            pm2 delete all || true
+            pm2 start ecosystem.config.cjs
             pm2 save
 
             # Wait for services to start
