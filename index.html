@@ -17,7 +17,8 @@
     <!-- Preload critical API request for LCP -->
     <link rel="preload" href="/api/law-of-day" as="fetch" crossorigin="anonymous">
 
-    <!-- DNS prefetch for less critical origins -->
+    <!-- DNS prefetch for analytics and less critical origins -->
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://mirrors.creativecommons.org">
 
     <meta property="og:type" content="website" />
@@ -38,6 +39,12 @@
     <link rel="preload" href="styles/site.css" as="style">
     <link rel="stylesheet" href="styles/site.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="styles/site.css"></noscript>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = window.gtag || function gtag() {
+        window.dataLayer.push(arguments);
+      };
+    </script>
     <!-- Critical CSS: Prevents FOUC while main stylesheet loads asynchronously -->
     <style>
       /* CSS Variables - must match variables.css exactly */
