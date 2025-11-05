@@ -6,6 +6,11 @@ import { showSuccess, showError } from './notification.js';
 import { fetchAPI } from '../utils/api.js';
 import { apiPost } from '../utils/request.js';
 import { hydrateIcons } from '@utils/icons.js';
+import {
+  getCachedCategories,
+  setCachedCategories,
+  deferUntilIdle
+} from '../utils/category-cache.js';
 
 export function SubmitLawSection() {
   const el = document.createElement('section');
@@ -22,13 +27,35 @@ export function SubmitLawSection() {
   const messageDiv = el.querySelector('.submit-message');
   const charCounter = el.querySelector('.submit-char-counter');
   const categorySelect = el.querySelector('#submit-category');
+  let categoriesLoaded = false;
+
+  // Populate dropdown with cached categories
+  function populateFromCache() {
+    const cached = getCachedCategories();
+    if (cached && cached.length > 0) {
+      cached.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.title;
+        categorySelect.appendChild(option);
+      });
+    }
+  }
 
   // Load categories into dropdown
   async function loadCategories() {
+    if (categoriesLoaded) return;
+    categoriesLoaded = true;
+
     try {
       const response = await fetchAPI('/api/categories');
       if (response && response.data && Array.isArray(response.data)) {
         const categories = response.data;
+        setCachedCategories(categories);
+        
+        // Clear existing options (except any that might have been cached)
+        categorySelect.innerHTML = '<option value="">Select a category (optional)</option>';
+        
         categories.forEach(category => {
           const option = document.createElement('option');
           option.value = category.id;
@@ -38,11 +65,24 @@ export function SubmitLawSection() {
       }
     } catch {
       // Don't show error to user as category is optional
+      // If fetch fails, keep cached options if they exist
     }
   }
 
-  // Load categories when component is created
-  loadCategories();
+  // Lazy load on user interaction (fallback)
+  categorySelect?.addEventListener('focus', () => {
+    if (!categoriesLoaded) {
+      loadCategories();
+    }
+  }, { once: true });
+
+  // Initialize: populate from cache immediately, then load fresh data when idle
+  populateFromCache();
+  
+  // Defer loading categories until browser is idle (non-blocking)
+  deferUntilIdle(() => {
+    loadCategories();
+  }, 2000);
 
   // Function to check if submit should be enabled
   function checkSubmitValidity() {
@@ -189,3 +229,4 @@ export function SubmitLawSection() {
 
   return el;
 }
+
