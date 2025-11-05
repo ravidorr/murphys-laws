@@ -240,7 +240,6 @@ footer .footer-nav {
   justify-content: center;
   align-items: center;
   min-height: var(--footer-ad-min-height);
-  transition: min-height 0.4s ease;
 }
 
 @media (width <= 768px) {
@@ -252,8 +251,8 @@ footer .footer-nav {
 }
 
 .footer-ad-shell[data-loaded="true"] {
-  min-height: 0;
-  padding: 0;
+  /* Keep min-height to prevent layout shift */
+  padding: 1rem;
 }
 
 .footer-ad-reserved {
