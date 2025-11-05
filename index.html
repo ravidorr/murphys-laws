@@ -38,7 +38,9 @@
     <link rel="preload" href="styles/site.css" as="style">
     <link rel="stylesheet" href="styles/site.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="styles/site.css"></noscript>
+    <!-- Critical CSS: Prevents FOUC while main stylesheet loads asynchronously -->
     <style>
+      /* CSS Variables - must match variables.css exactly */
       :root {
         --bg: #fff;
         --fg: #111827;
@@ -57,66 +59,13 @@
         }
       }
 
-      html,
-      body {
+      /* Base styles - must match base.css exactly */
+      html, body {
         margin: 0;
         padding: 0;
-        min-height: 100%;
         background: var(--bg);
         color: var(--fg);
         font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
-      }
-
-      body {
-        display: flex;
-        flex-direction: column;
-      }
-
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      /* Ensure links are distinguishable for accessibility */
-      p a, .small a {
-        text-decoration: underline;
-        text-decoration-thickness: 1px;
-        text-underline-offset: 2px;
-      }
-
-      p a:hover, .small a:hover {
-        text-decoration-thickness: 2px;
-      }
-
-      button,
-      input,
-      select,
-      textarea {
-        font-family: inherit;
-      }
-
-      .container {
-        width: min(100%, 76rem);
-        margin: 0 auto;
-        padding: 0 1.5rem;
-      }
-
-      .min-h-screen {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .flex {
-        display: flex;
-      }
-
-      .flex-col {
-        flex-direction: column;
-      }
-
-      .page {
-        padding: 2rem 0;
       }
     </style>
   </head>
