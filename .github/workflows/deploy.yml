@@ -25,6 +25,9 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Generate index.html with inlined law-of-day data
+        run: node scripts/generate-index-html.mjs > dist/index.html
+
       - name: Upload build artifacts
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -127,9 +130,6 @@ jobs:
             npm rebuild better-sqlite3
 
             npm run migrate:safe
-
-            # Generate index.html with inlined law-of-day data
-            node scripts/generate-index-html.mjs > dist/index.html
 
             # Update server maintenance scripts
             sudo cp "$TARGET_DIR/scripts/daily-report.sh" /usr/local/bin/daily-report.sh
