@@ -108,8 +108,8 @@ npm run e2e                      # End-to-end tests (Playwright)
 
 **Test Coverage**
 - Views: Sod's Law Calculator, Buttered Toast Calculator, Home, Browse, Law Detail, Auth
-- Components: Simple calculator widgets, Header, Law cards, Submit form
-- Utilities: Voting system, API client, Sanitization, Attribution rendering
+- Components: Simple calculator widgets, Header, Law cards, Submit form, Advanced search
+- Utilities: Voting system, API client, Sanitization, Attribution rendering, Category caching
 - Current coverage: High coverage across critical paths
 
 **Linting**
@@ -135,9 +135,10 @@ npm run db:rebuild               # Rebuild DB from scratch
 - Entry point: `src/main.js`
 - Views: `src/views/` (home, browse, law-detail, sods-calculator, buttered-toast-calculator, etc.)
 - Components: `src/components/` (header, navigation, calculator widgets)
-- Utilities: `src/utils/` (API request handler, voting, sanitization, law card rendering, pagination, search info, DOM helpers)
+- Utilities: `src/utils/` (API request handler, voting, sanitization, law card rendering, pagination, search info, DOM helpers, category caching)
 - Styling: `styles/site.css` (prefer classes over inline styles)
 - MathJax integration for formula rendering with interactive tooltips
+- Performance optimizations: Deferred loading with `requestIdleCallback`, localStorage caching for categories/attributions (1-hour TTL)
 
 **Backend**
 - API server: `scripts/api-server.mjs` (Node.js + SQLite)

@@ -1,5 +1,6 @@
 import { SubmitLawSection } from '@components/submit-law.js';
 import * as api from '@utils/api.js';
+import * as cacheUtils from '@utils/category-cache.js';
 
 function createLocalThis() {
   const context = {};
@@ -15,12 +16,18 @@ function createLocalThis() {
 
 describe('SubmitLawSection component', () => {
   const local = createLocalThis();
+  let deferUntilIdleSpy;
 
   beforeEach(() => {
     vi.clearAllMocks();
     const self = local();
     self.el = null;
     self.appended = false;
+    deferUntilIdleSpy = vi.spyOn(cacheUtils, 'deferUntilIdle').mockImplementation((callback) => {
+      // Execute immediately for testing
+      callback();
+    });
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -30,6 +37,7 @@ describe('SubmitLawSection component', () => {
     }
     self.el = null;
     self.appended = false;
+    localStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -117,8 +125,8 @@ describe('SubmitLawSection component', () => {
   it('loads categories on mount', async () => {
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({
       data: [
-        { id: 1, name: 'General' },
-        { id: 2, name: 'Technology' }
+        { id: 1, title: 'General' },
+        { id: 2, title: 'Technology' }
       ]
     });
 
@@ -130,7 +138,50 @@ describe('SubmitLawSection component', () => {
     const options = categorySelect.querySelectorAll('option');
 
     expect(options.length).toBeGreaterThan(1);
+    expect(deferUntilIdleSpy).toHaveBeenCalled();
+  });
 
+  it('populates categories from cache immediately', () => {
+    const categories = [
+      { id: 1, title: 'General' },
+      { id: 2, title: 'Technology' }
+    ];
+
+    // Set cache before mounting
+    cacheUtils.setCachedCategories(categories);
+
+    const el = mountSection({ append: true });
+
+    // Should populate immediately from cache
+    const categorySelect = el.querySelector('#submit-category');
+    const options = categorySelect.querySelectorAll('option');
+
+    expect(options.length).toBeGreaterThan(1);
+    expect(categorySelect.textContent).toMatch(/General/);
+    expect(categorySelect.textContent).toMatch(/Technology/);
+  });
+
+  it('loads categories on focus if not loaded yet', async () => {
+    const categories = [
+      { id: 1, title: 'General' }
+    ];
+
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({
+      data: categories
+    });
+
+    // Mock deferUntilIdle to not execute immediately
+    deferUntilIdleSpy.mockImplementation(() => {});
+
+    const el = mountSection({ append: true });
+
+    // Trigger focus event to lazy load
+    const categorySelect = el.querySelector('#submit-category');
+    categorySelect.dispatchEvent(new Event('focus', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(categorySelect.textContent).toMatch(/General/);
+    });
   });
 
   it('handles category loading error gracefully', async () => {

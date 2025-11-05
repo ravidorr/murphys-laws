@@ -1,6 +1,7 @@
 import { Browse } from '@views/browse.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
+import * as cacheUtils from '../src/utils/category-cache.js';
 
 // Mock voting module
 vi.mock('../src/utils/voting.js', async (importOriginal) => {
@@ -16,6 +17,7 @@ describe('Browse view', () => {
   let fetchLawsSpy;
   let getUserVoteSpy;
   let toggleVoteSpy;
+  let deferUntilIdleSpy;
 
   beforeEach(() => {
     // Mock API responses
@@ -32,6 +34,11 @@ describe('Browse view', () => {
     vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
     vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
 
+    // Mock deferUntilIdle to execute immediately for testing
+    deferUntilIdleSpy = vi.spyOn(cacheUtils, 'deferUntilIdle').mockImplementation((callback) => {
+      callback();
+    });
+
     // Get references to the mocked functions
     getUserVoteSpy = voting.getUserVote;
     toggleVoteSpy = voting.toggleVote;
@@ -39,9 +46,11 @@ describe('Browse view', () => {
     // Clear mock call history
     getUserVoteSpy.mockClear();
     toggleVoteSpy.mockClear();
+    localStorage.clear();
   });
 
   afterEach(() => {
+    localStorage.clear();
     vi.restoreAllMocks();
   });
 
