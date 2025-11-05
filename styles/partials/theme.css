@@ -201,6 +201,11 @@
     color: var(--dark-dark-fg);
   }
 
+  /* Calculator simple values - ensure sufficient contrast in dark mode */
+  .sod-simple-value {
+    color: var(--dark-link-hover);
+  }
+
   /* Skeleton loading */
   .skeleton {
     background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
