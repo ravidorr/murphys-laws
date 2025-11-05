@@ -1,9 +1,7 @@
-const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E';
 const ADSENSE_SRC = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3615614508734124';
 
 let analyticsBootstrapStarted = false;
 let thirdPartyTriggered = false;
-let gtagPromise;
 let adsensePromise;
 
 // Track loaded scripts without polluting DOM attributes
@@ -85,23 +83,6 @@ function triggerThirdPartyLoads() {
   }
 
   thirdPartyTriggered = true;
-
-  window.dataLayer = window.dataLayer || [];
-
-  if (!window.gtag) {
-    window.gtag = function gtag() {
-      window.dataLayer.push(arguments);
-    };
-  }
-
-  if (!gtagPromise) {
-    gtagPromise = loadScript(GTAG_SRC).then(() => {
-      if (window.gtag) {
-        window.gtag('js', new Date());
-        window.gtag('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
-      }
-    });
-  }
 }
 
 function cleanupInteractionListeners(listener) {
