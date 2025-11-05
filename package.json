@@ -9,6 +9,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
+    "postinstall": "npm rebuild better-sqlite3 --build-from-source",
     "dev": "vite",
     "dev:bg": "vite > logs/dev-server.log 2>&1 & echo $! > logs/dev-server.pid",
     "dev:clean": "rm -rf node_modules/.vite && npm run dev",
