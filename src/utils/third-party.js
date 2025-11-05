@@ -1,10 +1,8 @@
-const GTM_SRC = 'https://www.googletagmanager.com/gtm.js?id=GTM-KD4H36BH';
 const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E';
 const ADSENSE_SRC = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3615614508734124';
 
 let analyticsBootstrapStarted = false;
 let thirdPartyTriggered = false;
-let gtmPromise;
 let gtagPromise;
 let adsensePromise;
 
@@ -94,12 +92,6 @@ function triggerThirdPartyLoads() {
     window.gtag = function gtag() {
       window.dataLayer.push(arguments);
     };
-  }
-
-  window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
-
-  if (!gtmPromise) {
-    gtmPromise = loadScript(GTM_SRC);
   }
 
   if (!gtagPromise) {
