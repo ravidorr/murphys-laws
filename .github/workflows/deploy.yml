@@ -124,7 +124,8 @@ jobs:
 
             # Rebuild native modules for production Node version
             # This ensures modules like better-sqlite3 work with the production Node version
-            npm rebuild better-sqlite3
+            # Use --build-from-source to avoid prebuilt binary issues
+            npm rebuild better-sqlite3 --build-from-source
 
             npm run migrate:safe
 
