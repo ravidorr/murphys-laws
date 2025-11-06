@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
 describe('Footer component', () => {
@@ -154,5 +155,73 @@ describe('Footer component', () => {
     const container = el.querySelector('.container');
     container.click();
     expect(navigated).toBe('');
+  });
+
+  it('does not prime ad if already loaded', () => {
+    window.adsbygoogle = [];
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    adSlot.dataset.loaded = 'true';
+
+    // Should not throw and should not create duplicate ad
+    expect(() => {
+      el.dispatchEvent(new Event('adslot:init'));
+    }).not.toThrow();
+  });
+
+  it('primes ad when document is already complete', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Ad should be primed (ready to load on interaction)
+    const adSlot = el.querySelector('[data-ad-slot]');
+    expect(adSlot).toBeTruthy();
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
+
+  it('waits for load event when document is not complete', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should have added load event listener
+    expect(addEventListenerSpy).toHaveBeenCalledWith('load', expect.any(Function), { once: true });
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+    addEventListenerSpy.mockRestore();
   });
 });
