@@ -31,6 +31,7 @@ export default defineConfig({
       '@components': path.resolve(__dirname, 'src/components'),
       '@modules': path.resolve(__dirname, 'src/modules'),
       '@utils': path.resolve(__dirname, 'src/utils'),
+      '@shared': path.resolve(__dirname, '../shared'),
     }
   },
   test: {
