@@ -135,10 +135,11 @@ npm run db:rebuild               # Rebuild DB from scratch
 - Entry point: `src/main.js`
 - Views: `src/views/` (home, browse, law-detail, sods-calculator, buttered-toast-calculator, etc.)
 - Components: `src/components/` (header, navigation, calculator widgets)
-- Utilities: `src/utils/` (API request handler, voting, sanitization, law card rendering, pagination, search info, DOM helpers, category caching)
+- Utilities: `src/utils/` (API request handler, voting, sanitization, law card rendering, pagination, search info, DOM helpers, category caching, third-party scripts)
 - Styling: `styles/site.css` (prefer classes over inline styles)
 - MathJax integration for formula rendering with interactive tooltips
 - Performance optimizations: Deferred loading with `requestIdleCallback`, localStorage caching for categories/attributions (1-hour TTL)
+- Third-party scripts: Google Analytics and AdSense loaded via `src/utils/third-party.js` (deferred until user interaction for performance)
 
 **Backend**
 - API server: `scripts/api-server.mjs` (Node.js + SQLite)
@@ -416,6 +417,12 @@ The application integrates with the following external services:
 **Analytics & Monetization**
 - **Google Analytics** (https://analytics.google.com/) - Website traffic and user behavior analytics
 - **Google AdSense** (https://adsense.google.com/) - Advertisement monetization
+  - Publisher ID: `ca-pub-3615614508734124`
+  - Verification code: Included in `index.html` `<head>` section (required for AdSense approval)
+  - Ad loading: Handled by `src/utils/third-party.js` (`ensureAdsense()` function)
+  - Ad placement: Footer component (`src/components/footer.js`)
+  - Privacy policy: Includes required AdSense disclosures (see `src/views/templates/privacy.html`)
+  - `ads.txt`: Located at `/public/ads.txt` and `/dist/ads.txt` (must be accessible at root domain)
 - **Google Tag Manager** (https://tagmanager.google.com/) - Tag and analytics management
   - Container ID: GTM-KD4H36BH
 

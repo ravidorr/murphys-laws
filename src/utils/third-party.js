@@ -1,5 +1,4 @@
 const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E';
-const ADSENSE_SRC = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3615614508734124';
 
 let analyticsBootstrapStarted = false;
 let thirdPartyTriggered = false;
@@ -145,17 +144,29 @@ export function ensureAdsense() {
     return Promise.resolve();
   }
 
-  if (window.adsbygoogle && window.adsbygoogle.loaded) {
+  // If AdSense is already loaded, return immediately
+  if (window.adsbygoogle) {
     return Promise.resolve();
   }
 
+  // Script is in index.html, so wait for it to load
+  // This provides a promise-based API for footer.js to know when it's safe to create ads
   if (!adsensePromise) {
-    adsensePromise = loadScript(ADSENSE_SRC, {
-      async: true,
-      crossOrigin: 'anonymous',
-    }).catch((error) => {
-      adsensePromise = undefined;
-      throw error;
+    adsensePromise = new Promise((resolve) => {
+      // Poll for adsbygoogle to appear (script loads asynchronously)
+      const checkInterval = setInterval(() => {
+        if (window.adsbygoogle) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 50);
+
+      // Timeout after 5 seconds - resolve anyway to not block ad creation
+      // adsbygoogle.push() will handle the case if script isn't loaded yet
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve();
+      }, 5000);
     });
   }
 

@@ -25,7 +25,7 @@ describe('Privacy page', () => {
     });
 
     expect(el.textContent).toMatch(/Last updated:/);
-    expect(el.textContent).toMatch(/2025-10-18/);
+    expect(el.textContent).toMatch(/2025-11-06/);
   });
 
   it('shows What We Collect section', () => {
