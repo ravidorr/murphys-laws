@@ -18,6 +18,7 @@ import {
   createLawSubmissionEmailHtml,
 } from '../src/modules/law-submission-email-template.js';
 import { MAX_LAWS_PER_REQUEST, DEFAULT_LAWS_PER_REQUEST } from '../src/utils/constants.js';
+import { parseSignedRequest, generateConfirmationCode } from '../src/utils/facebook-signed-request.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,6 +38,10 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['*']; // Allow all in development, restrict in production
+
+// Facebook configuration - Required for data deletion callback
+const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
+const BASE_URL = process.env.BASE_URL || `http://${HOST}:${PORT}`;
 
 // Initialize database with better-sqlite3 (fixes SQL injection vulnerability)
 const db = new Database(DB_PATH, {
@@ -885,6 +890,82 @@ const server = http.createServer(async (req, res) => {
       const r = rows[0];
       const data = { ...r, attributions: safeParseJsonArray(r.attributions) };
       return sendJson(res, 200, data, req);
+    }
+
+    // POST /api/facebook/data-deletion - Facebook data deletion callback
+    // Required by Facebook when users delete their account or remove the app
+    // https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback
+    if (req.method === 'POST' && pathname === '/api/facebook/data-deletion') {
+      try {
+        // Check if Facebook app secret is configured
+        if (!FACEBOOK_APP_SECRET) {
+          console.error('Facebook data deletion request received but FACEBOOK_APP_SECRET is not configured');
+          return sendJson(res, 500, {
+            error: 'Server configuration error: Facebook app secret not configured'
+          }, req);
+        }
+
+        const body = await readBody(req);
+
+        // Facebook sends a signed_request parameter
+        if (!body.signed_request) {
+          return badRequest(res, 'Missing signed_request parameter', req);
+        }
+
+        // Verify and parse the signed request
+        const payload = parseSignedRequest(body.signed_request, FACEBOOK_APP_SECRET);
+
+        if (!payload) {
+          console.error('Failed to verify Facebook signed request');
+          return sendJson(res, 400, {
+            error: 'Invalid signed request'
+          }, req);
+        }
+
+        // Extract Facebook user ID from the payload
+        const facebookUserId = payload.user_id;
+
+        if (!facebookUserId) {
+          return badRequest(res, 'Missing user_id in signed request', req);
+        }
+
+        // Generate unique confirmation code
+        const confirmationCode = generateConfirmationCode(facebookUserId);
+
+        // Get requester IP for audit trail
+        const ipAddress = getVoterIdentifier(req);
+
+        // Store the deletion request in database for audit/compliance
+        const stmt = db.prepare(`
+          INSERT INTO facebook_data_deletion_requests
+            (facebook_user_id, confirmation_code, status, request_payload, ip_address)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+
+        stmt.run(
+          facebookUserId,
+          confirmationCode,
+          'completed', // Mark as completed since we don't store Facebook user data
+          JSON.stringify(payload),
+          ipAddress
+        );
+
+        console.log(`Facebook data deletion request processed: user_id=${facebookUserId}, confirmation_code=${confirmationCode}`);
+
+        // Return the required response format per Facebook documentation
+        // url: Where users can check deletion status
+        // confirmation_code: Unique identifier for this deletion request
+        return sendJson(res, 200, {
+          url: `${BASE_URL}/data-deletion/status?code=${confirmationCode}`,
+          confirmation_code: confirmationCode
+        }, req);
+
+      } catch (error) {
+        console.error('Error processing Facebook data deletion request:', error);
+        return sendJson(res, 500, {
+          error: 'Failed to process data deletion request'
+        }, req);
+      }
     }
 
     return notFound(res, req);
