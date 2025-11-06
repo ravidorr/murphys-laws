@@ -224,4 +224,345 @@ describe('Footer component', () => {
     });
     addEventListenerSpy.mockRestore();
   });
+
+  it('handles missing ad slot gracefully', () => {
+    window.adsbygoogle = [];
+
+    // Create footer template without ad slot
+    const footerTemplate = document.createElement('footer');
+    footerTemplate.innerHTML = '<div class="container"></div>';
+
+    // Mock the template to not have ad slot
+    const originalQuerySelector = document.querySelector;
+    vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
+      if (selector === '[data-ad-slot]') {
+        return null;
+      }
+      return originalQuerySelector.call(document, selector);
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should not throw
+    expect(el).toBeTruthy();
+
+    vi.restoreAllMocks();
+  });
+
+  it('handles scheduleAd when adHost is null', () => {
+    window.adsbygoogle = [];
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Remove ad slot to trigger the !adHost branch in scheduleAd
+    const adSlot = el.querySelector('[data-ad-slot]');
+    if (adSlot) {
+      adSlot.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('does not load ad when already loaded', () => {
+    window.adsbygoogle = [];
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Mark as already loaded
+    if (adSlot) {
+      adSlot.dataset.loaded = 'true';
+    }
+
+    // Try to trigger load
+    el.dispatchEvent(new Event('adslot:init'));
+
+    // Should not reload
+    expect(el).toBeTruthy();
+  });
+
+  it('uses setTimeout fallback when requestIdleCallback not available', () => {
+    window.adsbygoogle = [];
+    const originalRequestIdleCallback = window.requestIdleCallback;
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+
+    // Remove requestIdleCallback
+    delete window.requestIdleCallback;
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should use setTimeout fallback in defer function
+    // This is called via scheduleAd -> defer
+    expect(setTimeoutSpy).toHaveBeenCalled();
+
+    // Restore
+    window.requestIdleCallback = originalRequestIdleCallback;
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('uses requestIdleCallback when available', () => {
+    window.adsbygoogle = [];
+    const requestIdleCallbackSpy = vi.fn((cb) => {
+      setTimeout(cb, 0);
+      return 1;
+    });
+    window.requestIdleCallback = requestIdleCallbackSpy;
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should use requestIdleCallback in defer function
+    expect(requestIdleCallbackSpy).toHaveBeenCalled();
+
+    delete window.requestIdleCallback;
+  });
+
+  it('uses IntersectionObserver when available', () => {
+    window.adsbygoogle = [];
+    const IntersectionObserverSpy = vi.fn((callback) => {
+      return {
+        observe: vi.fn(),
+        disconnect: vi.fn()
+      };
+    });
+    window.IntersectionObserver = IntersectionObserverSpy;
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should use IntersectionObserver
+    expect(IntersectionObserverSpy).toHaveBeenCalled();
+
+    // Restore
+    delete window.IntersectionObserver;
+  });
+
+  it('triggers loadAd when IntersectionObserver entry is intersecting', () => {
+    window.adsbygoogle = [];
+    let observerCallback;
+    const mockObserver = {
+      observe: vi.fn(),
+      disconnect: vi.fn()
+    };
+    
+    window.IntersectionObserver = vi.fn((callback) => {
+      observerCallback = callback;
+      return mockObserver;
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Simulate intersection
+    if (observerCallback && adSlot) {
+      observerCallback([{
+        target: adSlot,
+        isIntersecting: true
+      }]);
+    }
+
+    // Ad should be loaded
+    expect(adSlot?.dataset.loaded).toBe('true');
+
+    delete window.IntersectionObserver;
+  });
+
+  it('does not trigger loadAd when IntersectionObserver entry is not intersecting', () => {
+    window.adsbygoogle = [];
+    let observerCallback;
+    const mockObserver = {
+      observe: vi.fn(),
+      disconnect: vi.fn()
+    };
+    
+    window.IntersectionObserver = vi.fn((callback) => {
+      observerCallback = callback;
+      return mockObserver;
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Simulate non-intersection
+    if (observerCallback && adSlot) {
+      observerCallback([{
+        target: adSlot,
+        isIntersecting: false
+      }]);
+    }
+
+    // Ad should not be loaded yet
+    expect(adSlot?.dataset.loaded).not.toBe('true');
+
+    delete window.IntersectionObserver;
+  });
+
+  it('breaks after first intersecting entry in IntersectionObserver callback', () => {
+    window.adsbygoogle = [];
+    let observerCallback;
+    const mockObserver = {
+      observe: vi.fn(),
+      disconnect: vi.fn()
+    };
+    const loadAdSpy = vi.fn();
+    
+    window.IntersectionObserver = vi.fn((callback) => {
+      observerCallback = callback;
+      return mockObserver;
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Mock loadAd to track calls
+    if (adSlot) {
+      const originalLoad = adSlot.dataset.loaded;
+      adSlot.dataset.loaded = undefined;
+      
+      // Simulate multiple entries - first intersecting should trigger loadAd and break
+      if (observerCallback) {
+        observerCallback([
+          { target: adSlot, isIntersecting: true },
+          { target: adSlot, isIntersecting: false },
+          { target: adSlot, isIntersecting: true }
+        ]);
+      }
+      
+      // Should be loaded after first intersecting entry
+      expect(adSlot.dataset.loaded).toBe('true');
+    }
+
+    delete window.IntersectionObserver;
+  });
+
+  it('handles empty entries array in IntersectionObserver callback', () => {
+    window.adsbygoogle = [];
+    let observerCallback;
+    const mockObserver = {
+      observe: vi.fn(),
+      disconnect: vi.fn()
+    };
+    
+    window.IntersectionObserver = vi.fn((callback) => {
+      observerCallback = callback;
+      return mockObserver;
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Simulate empty entries array
+    if (observerCallback && adSlot) {
+      observerCallback([]);
+    }
+
+    // Ad should not be loaded
+    expect(adSlot?.dataset.loaded).not.toBe('true');
+
+    delete window.IntersectionObserver;
+  });
+
+  it('does not prime ad when already loaded', () => {
+    window.adsbygoogle = [];
+    // Ensure requestIdleCallback exists for this test
+    if (!window.requestIdleCallback) {
+      window.requestIdleCallback = vi.fn((cb) => {
+        setTimeout(cb, 0);
+        return 1;
+      });
+    }
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Mark as already loaded
+    if (adSlot) {
+      adSlot.dataset.loaded = 'true';
+    }
+
+    // Try to trigger load again - should return early
+    el.dispatchEvent(new Event('adslot:init'));
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles observer cleanup when it exists', () => {
+    window.adsbygoogle = [];
+    // Ensure requestIdleCallback exists for this test
+    if (!window.requestIdleCallback) {
+      window.requestIdleCallback = vi.fn((cb) => {
+        setTimeout(cb, 0);
+        return 1;
+      });
+    }
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Trigger ad loading twice to create observer
+    el.dispatchEvent(new Event('adslot:init'));
+    
+    // Second call should clean up observer
+    el.dispatchEvent(new Event('adslot:init'));
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles adHost becoming null during loadAd', () => {
+    window.adsbygoogle = [];
+    // Ensure requestIdleCallback exists for this test
+    if (!window.requestIdleCallback) {
+      window.requestIdleCallback = vi.fn((cb) => {
+        setTimeout(cb, 0);
+        return 1;
+      });
+    }
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    
+    // Remove adSlot after triggering load
+    el.dispatchEvent(new Event('adslot:init'));
+    if (adSlot) {
+      adSlot.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
 });

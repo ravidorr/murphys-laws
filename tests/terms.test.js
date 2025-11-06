@@ -230,4 +230,54 @@ describe('Terms page', () => {
     expect(el.querySelectorAll('section').length).toBeGreaterThan(10);
   });
 
+  it('does not navigate when navTarget is missing', () => {
+    const onNavigate = vi.fn();
+    const el = Terms({ onNavigate });
+
+    // Create a nav button without data-nav attribute
+    const fakeNavBtn = document.createElement('button');
+    fakeNavBtn.setAttribute('data-nav', ''); // Empty nav target
+    el.appendChild(fakeNavBtn);
+
+    fakeNavBtn.click();
+
+    // Should not call onNavigate when navTarget is empty
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate when clicking element without data-nav ancestor', () => {
+    const onNavigate = vi.fn();
+    const el = Terms({ onNavigate });
+
+    // Create an element that doesn't have data-nav ancestor
+    const regularDiv = document.createElement('div');
+    regularDiv.textContent = 'Regular content';
+    el.appendChild(regularDiv);
+
+    regularDiv.click();
+
+    // Should not call onNavigate when no navBtn found
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('calls preventDefault when clicking nav link', () => {
+    const onNavigate = vi.fn();
+    const el = Terms({ onNavigate });
+
+    const contactLink = el.querySelector('[data-nav="contact"]');
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    let preventDefaultCalled = false;
+    
+    Object.defineProperty(event, 'preventDefault', {
+      value: () => { preventDefaultCalled = true; },
+      writable: true,
+      configurable: true
+    });
+
+    contactLink.dispatchEvent(event);
+
+    expect(preventDefaultCalled).toBe(true);
+    expect(onNavigate).toHaveBeenCalledWith('contact');
+  });
+
 });

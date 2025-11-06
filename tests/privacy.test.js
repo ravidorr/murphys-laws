@@ -179,4 +179,56 @@ describe('Privacy page', () => {
     expect(el.textContent).toMatch(/Send us a note/);
   });
 
+  it('does not navigate when navTarget is missing', () => {
+    const onNavigate = vi.fn();
+    const el = Privacy({ onNavigate });
+
+    // Create a nav button without data-nav attribute
+    const fakeNavBtn = document.createElement('button');
+    fakeNavBtn.setAttribute('data-nav', ''); // Empty nav target
+    el.appendChild(fakeNavBtn);
+
+    fakeNavBtn.click();
+
+    // Should not call onNavigate when navTarget is empty
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate when clicking element without data-nav ancestor', () => {
+    const onNavigate = vi.fn();
+    const el = Privacy({ onNavigate });
+
+    // Create an element that doesn't have data-nav ancestor
+    const regularDiv = document.createElement('div');
+    regularDiv.textContent = 'Regular content';
+    el.appendChild(regularDiv);
+
+    regularDiv.click();
+
+    // Should not call onNavigate when no navBtn found
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('calls preventDefault when clicking nav link', () => {
+    const onNavigate = vi.fn();
+    const el = Privacy({ onNavigate });
+
+    // Find any nav link in privacy page
+    const navLink = el.querySelector('[data-nav]');
+    if (navLink) {
+      const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+      let preventDefaultCalled = false;
+      
+      Object.defineProperty(event, 'preventDefault', {
+        value: () => { preventDefaultCalled = true; },
+        writable: true,
+        configurable: true
+      });
+
+      navLink.dispatchEvent(event);
+
+      expect(preventDefaultCalled).toBe(true);
+    }
+  });
+
 });

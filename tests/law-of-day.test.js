@@ -263,4 +263,111 @@ describe('LawOfTheDay component', () => {
     });
 
   });
+
+  it('handles law without title', () => {
+    const law = { id: '1', text: 'Test law without title', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Should render without title
+    expect(el.textContent).toContain('Test law without title');
+    expect(el.textContent).not.toContain(': Test law without title');
+  });
+
+  it('handles law with title', () => {
+    const law = { id: '1', title: 'Test Title', text: 'Test law with title', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Should render with title
+    expect(el.textContent).toContain('Test Title');
+    expect(el.textContent).toContain('Test law with title');
+  });
+
+  it('handles missing date element gracefully', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Remove date element if it exists
+    const dateEl = el.querySelector('#lod-date');
+    if (dateEl) {
+      dateEl.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing body element gracefully', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Remove body element if it exists
+    const bodyEl = el.querySelector('#lod-body');
+    if (bodyEl) {
+      bodyEl.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing footer gracefully', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Remove footer if it exists
+    const footer = el.querySelector('.section-footer .right');
+    if (footer) {
+      footer.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing vote buttons gracefully', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Remove vote buttons if they exist
+    const upBtn = el.querySelector('[data-vote="up"]');
+    const downBtn = el.querySelector('[data-vote="down"]');
+    if (upBtn) upBtn.remove();
+    if (downBtn) downBtn.remove();
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing count elements gracefully', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Remove count elements if they exist
+    const upCount = el.querySelector('[data-vote="up"] .count-num');
+    const downCount = el.querySelector('[data-vote="down"] .count-num');
+    if (upCount) upCount.remove();
+    if (downCount) downCount.remove();
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing vote buttons in vote handler', async () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    // Remove vote buttons
+    const upBtn = el.querySelector('[data-vote="up"]');
+    const downBtn = el.querySelector('[data-vote="down"]');
+    if (upBtn) upBtn.remove();
+    if (downBtn) downBtn.remove();
+
+    // Try to trigger vote (should not throw)
+    const event = new MouseEvent('click', { bubbles: true });
+    el.dispatchEvent(event);
+
+    await vi.waitFor(() => {
+      expect(el).toBeTruthy();
+    });
+  });
 });

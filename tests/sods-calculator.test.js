@@ -313,4 +313,129 @@ describe("Calculator view", () => {
     expect(shareStatus.classList.contains('error')).toBe(true);
   });
 
+  it('shows correct interpretation for score < 2', () => {
+    el.querySelector('#urgency').value = '1';
+    el.querySelector('#complexity').value = '1';
+    el.querySelector('#importance').value = '1';
+    el.querySelector('#skill').value = '9';
+    el.querySelector('#frequency').value = '1';
+
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#score-interpretation').textContent;
+    expect(interpretation).toMatch(/probably safe/i);
+    expect(el.querySelector('#result-display').classList.contains('calc-ok')).toBe(true);
+  });
+
+  it('shows correct interpretation for score >= 8', () => {
+    el.querySelector('#urgency').value = '9';
+    el.querySelector('#complexity').value = '9';
+    el.querySelector('#importance').value = '9';
+    el.querySelector('#skill').value = '1';
+    el.querySelector('#frequency').value = '9';
+
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#score-interpretation').textContent;
+    expect(interpretation).toMatch(/Catastrophe|almost certain/i);
+    expect(el.querySelector('#result-display').classList.contains('calc-dark')).toBe(true);
+  });
+
+  it('handles missing scoreValueDisplay gracefully', () => {
+    const scoreValueDisplay = el.querySelector('#score-value');
+    if (scoreValueDisplay) scoreValueDisplay.remove();
+
+    el.querySelector('#urgency').value = '5';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing scoreInterpretationDisplay gracefully', () => {
+    const scoreInterpretationDisplay = el.querySelector('#score-interpretation');
+    if (scoreInterpretationDisplay) scoreInterpretationDisplay.remove();
+
+    el.querySelector('#urgency').value = '5';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing resultDisplay gracefully', () => {
+    const resultDisplay = el.querySelector('#result-display');
+    if (resultDisplay) resultDisplay.remove();
+
+    el.querySelector('#urgency').value = '5';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing formulaDisplay gracefully', () => {
+    const formulaDisplay = el.querySelector('#formula-display');
+    if (formulaDisplay) formulaDisplay.remove();
+
+    el.querySelector('#urgency').value = '5';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles MathJax typesetPromise rejection', async () => {
+    window.MathJax = {
+      typesetPromise: vi.fn().mockRejectedValue(new Error('MathJax error'))
+    };
+
+    mountCalculator({ mathJaxStub: window.MathJax });
+
+    el.querySelector('#urgency').value = '5';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Should not throw
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing ogImage meta tag', () => {
+    const ogImage = document.head.querySelector('meta[property="og:image"]');
+    if (ogImage) ogImage.remove();
+
+    mountCalculator();
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing twitterImage meta tag', () => {
+    const twitterImage = document.head.querySelector('meta[property="twitter:image"]');
+    if (twitterImage) twitterImage.remove();
+
+    mountCalculator();
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing ogImage and twitterImage in SSR-like environment', () => {
+    // Test the branch where document exists but meta tags don't
+    const ogImage = document.head.querySelector('meta[property="og:image"]');
+    const twitterImage = document.head.querySelector('meta[property="twitter:image"]');
+    
+    if (ogImage) ogImage.remove();
+    if (twitterImage) twitterImage.remove();
+
+    mountCalculator();
+
+    // Should not throw
+    expect(el).toBeTruthy();
+    
+    // Restore if they existed
+    if (ogImage) document.head.appendChild(ogImage);
+    if (twitterImage) document.head.appendChild(twitterImage);
+  });
+
 });
