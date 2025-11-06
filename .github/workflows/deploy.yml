@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package.json,backend/package-lock.json,backend/ecosystem.config.cjs,nginx.conf,web/vite.config.js"
+          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,nginx.conf,web/vite.config.js"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -72,7 +72,6 @@ jobs:
             sudo install -m 644 "$STAGING_DIR/backend/ecosystem.config.cjs" "$TARGET_DIR/backend/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
             sudo install -m 644 "$STAGING_DIR/backend/package.json" "$TARGET_DIR/backend/package.json"
-            sudo install -m 644 "$STAGING_DIR/backend/package-lock.json" "$TARGET_DIR/backend/package-lock.json"
             sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"
 
             sudo chown -R root:root "$TARGET_DIR"
@@ -125,8 +124,8 @@ jobs:
             fi
 
             # Run migrations using staged migrations
-            # Use npm ci for clean install from lock file
-            npm ci
+            # Use npm install (monorepo doesn't have individual lock files)
+            npm install
 
             # Rebuild native modules for production Node version
             # This ensures modules like better-sqlite3 work with the production Node version
