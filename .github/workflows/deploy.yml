@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,nginx.conf,web/vite.config.js"
+          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,shared/modules/,nginx.conf,web/vite.config.js"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -61,6 +61,8 @@ jobs:
             sudo install -d -m 755 "$TARGET_DIR/backend/utils"
             sudo install -d -m 755 "$TARGET_DIR/backend/config"
             sudo install -d -m 755 "$TARGET_DIR/backend/logs"
+            sudo install -d -m 755 "$TARGET_DIR/shared"
+            sudo install -d -m 755 "$TARGET_DIR/shared/modules"
 
             sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
             sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
@@ -68,6 +70,7 @@ jobs:
             sudo rsync -a --delete "$STAGING_DIR/backend/modules/" "$TARGET_DIR/backend/modules/"
             sudo rsync -a --delete "$STAGING_DIR/backend/utils/" "$TARGET_DIR/backend/utils/"
             sudo rsync -a --delete "$STAGING_DIR/backend/config/" "$TARGET_DIR/backend/config/"
+            sudo rsync -a --delete "$STAGING_DIR/shared/modules/" "$TARGET_DIR/shared/modules/"
 
             sudo install -m 644 "$STAGING_DIR/backend/ecosystem.config.cjs" "$TARGET_DIR/backend/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
