@@ -332,7 +332,7 @@ describe('API utilities', () => {
       const result = await fetchLawOfTheDay();
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/law-of-day'),
+        expect.stringContaining('/api/v1/law-of-day'),
         expect.any(Object)
       );
       expect(result).toEqual({

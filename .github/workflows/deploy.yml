@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,scripts/,db/,src/,package*.json,ecosystem.config.cjs,nginx.conf,vite.config.js"
+          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package*.json,backend/ecosystem.config.cjs,nginx.conf,web/vite.config.js"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -52,22 +52,28 @@ jobs:
             sudo install -d -m 755 "$STAGING_DIR"
             sudo install -d -m 755 "$TARGET_DIR"
 
-            sudo install -d -m 755 "$TARGET_DIR/dist"
-            sudo install -d -m 755 "$TARGET_DIR/scripts"
-            sudo install -d -m 755 "$TARGET_DIR/db"
-            sudo install -d -m 755 "$TARGET_DIR/src"
-            sudo install -d -m 755 "$TARGET_DIR/logs"
+            sudo install -d -m 755 "$TARGET_DIR/web"
+            sudo install -d -m 755 "$TARGET_DIR/web/dist"
+            sudo install -d -m 755 "$TARGET_DIR/backend"
+            sudo install -d -m 755 "$TARGET_DIR/backend/scripts"
+            sudo install -d -m 755 "$TARGET_DIR/backend/db"
+            sudo install -d -m 755 "$TARGET_DIR/backend/modules"
+            sudo install -d -m 755 "$TARGET_DIR/backend/utils"
+            sudo install -d -m 755 "$TARGET_DIR/backend/config"
+            sudo install -d -m 755 "$TARGET_DIR/backend/logs"
 
-            sudo rsync -a --delete "$STAGING_DIR/dist/" "$TARGET_DIR/dist/"
-            sudo rsync -a --delete "$STAGING_DIR/scripts/" "$TARGET_DIR/scripts/"
-            sudo rsync -a --delete "$STAGING_DIR/db/" "$TARGET_DIR/db/"
-            sudo rsync -a --delete "$STAGING_DIR/src/" "$TARGET_DIR/src/"
+            sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
+            sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
+            sudo rsync -a --delete "$STAGING_DIR/backend/db/" "$TARGET_DIR/backend/db/"
+            sudo rsync -a --delete "$STAGING_DIR/backend/modules/" "$TARGET_DIR/backend/modules/"
+            sudo rsync -a --delete "$STAGING_DIR/backend/utils/" "$TARGET_DIR/backend/utils/"
+            sudo rsync -a --delete "$STAGING_DIR/backend/config/" "$TARGET_DIR/backend/config/"
 
-            sudo install -m 644 "$STAGING_DIR/ecosystem.config.cjs" "$TARGET_DIR/ecosystem.config.cjs"
+            sudo install -m 644 "$STAGING_DIR/backend/ecosystem.config.cjs" "$TARGET_DIR/backend/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
-            sudo install -m 644 "$STAGING_DIR/package.json" "$TARGET_DIR/package.json"
-            sudo install -m 644 "$STAGING_DIR/package-lock.json" "$TARGET_DIR/package-lock.json"
-            sudo install -m 644 "$STAGING_DIR/vite.config.js" "$TARGET_DIR/vite.config.js"
+            sudo install -m 644 "$STAGING_DIR/backend/package.json" "$TARGET_DIR/backend/package.json"
+            sudo install -m 644 "$STAGING_DIR/backend/package-lock.json" "$TARGET_DIR/backend/package-lock.json"
+            sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"
 
             sudo chown -R root:root "$TARGET_DIR"
 
@@ -81,7 +87,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 22
 
-            cd "$TARGET_DIR"
+            cd "$TARGET_DIR/backend"
 
             # Verify Node version matches expected version
             ACTUAL_NODE_VERSION=$(node --version)
@@ -130,17 +136,18 @@ jobs:
             npm run migrate:safe
 
             # Update server maintenance scripts
-            sudo cp "$TARGET_DIR/scripts/daily-report.sh" /usr/local/bin/daily-report.sh
-            sudo cp "$TARGET_DIR/scripts/vulnerability-scanner.sh" /usr/local/bin/vulnerability-scanner.sh
-            sudo cp "$TARGET_DIR/scripts/cost-optimization-report.sh" /usr/local/bin/cost-optimization-report.sh
-            sudo cp "$TARGET_DIR/scripts/test-backup-restore.sh" /usr/local/bin/test-backup-restore.sh
-            sudo cp "$TARGET_DIR/scripts/health-monitor.sh" /usr/local/bin/health-monitor.sh
-            sudo cp "$TARGET_DIR/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh
-            sudo cp "$TARGET_DIR/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh
-            sudo cp "$TARGET_DIR/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh
-            sudo chmod +x /usr/local/bin/*.sh
+            sudo cp "$TARGET_DIR/backend/scripts/daily-report.sh" /usr/local/bin/daily-report.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/vulnerability-scanner.sh" /usr/local/bin/vulnerability-scanner.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/cost-optimization-report.sh" /usr/local/bin/cost-optimization-report.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/test-backup-restore.sh" /usr/local/bin/test-backup-restore.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/health-monitor.sh" /usr/local/bin/health-monitor.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
+            sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
 
             # Restart services (delete and recreate to ensure config changes are loaded)
+            cd "$TARGET_DIR/backend"
             pm2 delete all || true
             pm2 start ecosystem.config.cjs
             pm2 save
@@ -161,7 +168,7 @@ jobs:
             sleep 5
 
             # Health check - verify API is responding
-            if ! curl -f http://127.0.0.1:8787/api/law-of-day > /dev/null 2>&1; then
+            if ! curl -f http://127.0.0.1:8787/api/v1/law-of-day > /dev/null 2>&1; then
               echo "ERROR: API health check failed after deployment!"
               pm2 logs --lines 50 --nostream
               exit 1

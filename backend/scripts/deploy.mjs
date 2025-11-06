@@ -42,39 +42,61 @@ function exec(cmd, description) {
 async function deploy() {
   log('\nStarting deployment to production droplet\n', 'blue');
 
-  // Step 1: Build locally
-  exec('npm run build', 'Building project locally');
+  // Step 1: Build locally (from root of monorepo)
+  exec('cd .. && npm run build', 'Building project locally');
 
-  // Step 2: Sync dist/ folder to droplet
-  log('\nSyncing dist/ folder to droplet...', 'blue');
+  // Step 2: Sync web/dist/ folder to droplet
+  log('\nSyncing web/dist/ folder to droplet...', 'blue');
   exec(
-    `rsync -avz --delete dist/ ${DROPLET_HOST}:${DROPLET_PATH}/dist/`,
-    'Syncing dist folder'
+    `rsync -avz --delete ../web/dist/ ${DROPLET_HOST}:${DROPLET_PATH}/web/dist/`,
+    'Syncing web dist folder'
   );
 
-  // Step 3: Sync scripts/ and ecosystem config (in case they changed)
-  log('\n Syncing scripts and config...', 'blue');
+  // Step 3: Sync backend files
+  log('\nSyncing backend files...', 'blue');
   exec(
-    `rsync -avz scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/scripts/`,
-    'Syncing scripts'
+    `rsync -avz --delete scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
+    'Syncing backend scripts'
   );
   exec(
-    `rsync -avz ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/`,
+    `rsync -avz --delete modules/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/modules/`,
+    'Syncing backend modules'
+  );
+  exec(
+    `rsync -avz --delete utils/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/utils/`,
+    'Syncing backend utils'
+  );
+  exec(
+    `rsync -avz --delete db/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/db/`,
+    'Syncing backend db'
+  );
+  exec(
+    `rsync -avz ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
     'Syncing PM2 config'
   );
+  exec(
+    `rsync -avz package.json package-lock.json ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
+    'Syncing backend package files'
+  );
 
-  // Step 3.5: Update server maintenance scripts in /usr/local/bin/
+  // Step 3.5: Sync web config
+  exec(
+    `rsync -avz ../web/vite.config.js ${DROPLET_HOST}:${DROPLET_PATH}/web/`,
+    'Syncing web vite config'
+  );
+
+  // Step 3.6: Update server maintenance scripts in /usr/local/bin/
   log('\nUpdating server maintenance scripts...', 'blue');
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/scripts/daily-report.sh /usr/local/bin/daily-report.sh && sudo chmod +x /usr/local/bin/daily-report.sh"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
     'Updating daily report script'
   );
 
-  // Step 4: Restart PM2 services
+  // Step 4: Install dependencies and restart PM2 services
   log('\nRestarting services on droplet...', 'blue');
   exec(
-    `ssh ${DROPLET_HOST} "cd ${DROPLET_PATH} && pm2 restart ecosystem.config.cjs"`,
-    'Restarting PM2 services'
+    `ssh ${DROPLET_HOST} "cd ${DROPLET_PATH}/backend && npm ci && pm2 restart ecosystem.config.cjs"`,
+    'Installing dependencies and restarting PM2 services'
   );
 
   // Step 5: Check status
