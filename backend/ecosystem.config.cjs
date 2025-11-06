@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'murphys-api',
-      script: 'scripts/api-server.mjs',
+      script: './scripts/api-server.mjs',
       interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
       cwd: '/root/murphys-laws',
       instances: 1,

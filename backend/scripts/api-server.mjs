@@ -11,14 +11,14 @@ import {
   createSodsEmailHtml,
   createSodsEmailSubject,
   createSodsEmailText,
-} from '../src/modules/sods-email-template.js';
+} from '../modules/sods-email-template.js';
 import {
   createLawSubmissionEmailSubject,
   createLawSubmissionEmailText,
   createLawSubmissionEmailHtml,
-} from '../src/modules/law-submission-email-template.js';
-import { MAX_LAWS_PER_REQUEST, DEFAULT_LAWS_PER_REQUEST } from '../src/utils/constants.js';
-import { parseSignedRequest, generateConfirmationCode } from '../src/utils/facebook-signed-request.js';
+} from '../modules/law-submission-email-template.js';
+import { MAX_LAWS_PER_REQUEST, DEFAULT_LAWS_PER_REQUEST } from '../utils/constants.js';
+import { parseSignedRequest, generateConfirmationCode } from '../utils/facebook-signed-request.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
