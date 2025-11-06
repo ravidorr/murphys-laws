@@ -89,8 +89,6 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 22
 
-            cd "$TARGET_DIR/backend"
-
             # Verify Node version matches expected version
             ACTUAL_NODE_VERSION=$(node --version)
             EXPECTED_NODE_VERSION="v22"
@@ -101,6 +99,13 @@ jobs:
               exit 1
             fi
             echo "✓ Node version verified: $ACTUAL_NODE_VERSION"
+
+            # Clean up old root-level files from pre-monorepo structure
+            cd "$TARGET_DIR"
+            rm -f package.json ecosystem.config.cjs .env 2>/dev/null || true
+            rm -rf config modules scripts utils logs 2>/dev/null || true
+
+            cd "$TARGET_DIR/backend"
 
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
@@ -118,11 +123,11 @@ jobs:
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             EOF
 
-            echo "Contents of $TARGET_DIR:" 
+            echo "Contents of $TARGET_DIR/backend:"
             ls -la
 
             if [ ! -f package.json ]; then
-              echo "package.json missing in $TARGET_DIR" >&2
+              echo "package.json missing in $TARGET_DIR/backend" >&2
               exit 1
             fi
 
