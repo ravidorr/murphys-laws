@@ -48,7 +48,7 @@ export function SubmitLawSection() {
     categoriesLoaded = true;
 
     try {
-      const response = await fetchAPI('/api/categories');
+      const response = await fetchAPI('/api/v1/categories');
       if (response && response.data && Array.isArray(response.data)) {
         const categories = response.data;
         setCachedCategories(categories);
@@ -151,7 +151,7 @@ export function SubmitLawSection() {
 
   // Submit law to API - Uses generic request helper (eliminates ~80 lines of duplicate code)
   async function submitLaw(lawData) {
-    return await apiPost('/api/laws', lawData);
+    return await apiPost('/api/v1/laws', lawData);
   }
 
   // Add event listeners to check validity

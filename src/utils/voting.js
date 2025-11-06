@@ -42,7 +42,7 @@ export async function voteLaw(lawId, voteType) {
     throw new Error('voteType must be "up" or "down"');
   }
 
-  const endpoint = `/api/laws/${lawId}/vote`;
+  const endpoint = `/api/v1/laws/${lawId}/vote`;
 
   // Use generic API request helper - eliminates duplicate fetch logic
   const result = await apiPost(endpoint, { vote_type: voteType });
@@ -62,7 +62,7 @@ export async function voteLaw(lawId, voteType) {
  * @throws {Error} If unvote fails
  */
 export async function unvoteLaw(lawId) {
-  const endpoint = `/api/laws/${lawId}/vote`;
+  const endpoint = `/api/v1/laws/${lawId}/vote`;
 
   // Use generic API request helper - eliminates duplicate fetch logic
   const result = await apiDelete(endpoint);

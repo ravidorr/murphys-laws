@@ -21,11 +21,11 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiRequest('/api/test');
+      const result = await apiRequest('/api/v1/test');
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
@@ -45,13 +45,13 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiRequest('/api/test', {
+      const result = await apiRequest('/api/v1/test', {
         method: 'POST',
         body: requestBody
       });
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -71,10 +71,10 @@ describe('request utilities', () => {
         json: async () => ({ success: true })
       });
 
-      await apiRequest('/api/test', { method: 'DELETE' });
+      await apiRequest('/api/v1/test', { method: 'DELETE' });
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({
           method: 'DELETE'
         })
@@ -88,12 +88,12 @@ describe('request utilities', () => {
         json: async () => ({})
       });
 
-      await apiRequest('/api/test', {
+      await apiRequest('/api/v1/test', {
         headers: { 'X-Custom-Header': 'value' }
       });
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({
           headers: expect.objectContaining({
             'Accept': 'application/json',
@@ -116,11 +116,11 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiRequest('/api/test');
+      const result = await apiRequest('/api/v1/test');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${API_BASE_URL}/api/test`, expect.any(Object));
-      expect(fetchSpy).toHaveBeenNthCalledWith(2, `${API_FALLBACK_URL}/api/test`, expect.any(Object));
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${API_BASE_URL}/api/v1/test`, expect.any(Object));
+      expect(fetchSpy).toHaveBeenNthCalledWith(2, `${API_FALLBACK_URL}/api/v1/test`, expect.any(Object));
       expect(result).toEqual(mockData);
     });
 
@@ -142,7 +142,7 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiRequest('/api/test');
+      const result = await apiRequest('/api/v1/test');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockData);
@@ -152,7 +152,7 @@ describe('request utilities', () => {
       fetchSpy.mockRejectedValue(new Error('Primary failed'));
 
       await expect(
-        apiRequest('/api/test', { skipFallback: true })
+        apiRequest('/api/v1/test', { skipFallback: true })
       ).rejects.toThrow('Network error');
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -166,7 +166,7 @@ describe('request utilities', () => {
     it('throws error when both primary and fallback fail', async () => {
       fetchSpy.mockRejectedValue(new Error('Request failed'));
 
-      await expect(apiRequest('/api/test')).rejects.toThrow('Network error');
+      await expect(apiRequest('/api/v1/test')).rejects.toThrow('Network error');
       // Only 1 call because the mock rejects for both primary and fallback immediately
       expect(fetchSpy).toHaveBeenCalled();
     });
@@ -179,7 +179,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('The requested resource was not found');
     });
 
@@ -191,7 +191,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Law not found' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Law not found');
     });
 
@@ -203,7 +203,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Server error' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Server error');
     });
 
@@ -214,7 +214,7 @@ describe('request utilities', () => {
         json: async () => ({ message: 'Not found' }) // No error property
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('The requested resource was not found');
     });
 
@@ -225,7 +225,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Too many requests' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Too many requests');
     });
 
@@ -236,7 +236,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Bad request' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Bad request');
     });
 
@@ -247,7 +247,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Unauthorized' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Unauthorized');
     });
 
@@ -258,7 +258,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Forbidden' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Forbidden');
     });
 
@@ -269,7 +269,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Bad gateway' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Bad gateway');
     });
 
@@ -280,7 +280,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Teapot error' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Teapot error');
     });
 
@@ -290,7 +290,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Invalid JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/v1/test', { skipFallback: true }))
         .rejects.toThrow('Invalid response from server');
     });
 
@@ -300,7 +300,7 @@ describe('request utilities', () => {
       // Fallback also fails with network error
       fetchSpy.mockRejectedValueOnce(new Error('Fallback network error'));
 
-      await expect(apiRequest('/api/test'))
+      await expect(apiRequest('/api/v1/test'))
         .rejects.toThrow('Network error');
       
       expect(fetchSpy).toHaveBeenCalledTimes(2);
@@ -316,10 +316,10 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiGet('/api/test');
+      const result = await apiGet('/api/v1/test');
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({ method: 'GET' })
       );
       expect(result).toEqual(mockData);
@@ -332,10 +332,10 @@ describe('request utilities', () => {
         json: async () => ({})
       });
 
-      await apiGet('/api/test', { q: 'search', limit: '10' });
+      await apiGet('/api/v1/test', { q: 'search', limit: '10' });
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test?q=search&limit=10`,
+        `${API_BASE_URL}/api/v1/test?q=search&limit=10`,
         expect.objectContaining({
           method: 'GET'
         })
@@ -353,10 +353,10 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiPost('/api/test', requestBody);
+      const result = await apiPost('/api/v1/test', requestBody);
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(requestBody),
@@ -375,10 +375,10 @@ describe('request utilities', () => {
         json: async () => ({})
       });
 
-      await apiPost('/api/test', null);
+      await apiPost('/api/v1/test', null);
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({
           method: 'POST',
           headers: expect.not.objectContaining({
@@ -400,10 +400,10 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiDelete('/api/test');
+      const result = await apiDelete('/api/v1/test');
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/test`,
+        `${API_BASE_URL}/api/v1/test`,
         expect.objectContaining({ method: 'DELETE' })
       );
       expect(result).toEqual(mockData);
@@ -422,7 +422,7 @@ describe('request utilities', () => {
         json: async () => mockData
       });
 
-      const result = await apiDelete('/api/test');
+      const result = await apiDelete('/api/v1/test');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockData);

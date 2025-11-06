@@ -428,6 +428,34 @@ function safeParseJsonArray(s) {
   }
 }
 
+/**
+ * Normalize API pathname to handle both /api/... and /api/v1/... routes
+ * Returns the normalized pathname (without version) and whether it's a v1 request
+ * @param {string} pathname - Original pathname
+ * @returns {Object} { normalized: string, isV1: boolean }
+ */
+function normalizeApiPath(pathname) {
+  // Handle /api/v1/... routes
+  if (pathname.startsWith('/api/v1/')) {
+    return {
+      normalized: pathname.replace('/api/v1/', '/api/'),
+      isV1: true
+    };
+  }
+  // Handle /api/... routes (backward compatibility)
+  if (pathname.startsWith('/api/')) {
+    return {
+      normalized: pathname,
+      isV1: false
+    };
+  }
+  // Return as-is for non-API routes
+  return {
+    normalized: pathname,
+    isV1: false
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     const origin = getCorsOrigin(req);
@@ -449,9 +477,11 @@ const server = http.createServer(async (req, res) => {
 
   const parsed = url.parse(req.url, true);
   const pathname = parsed.pathname || '';
+  const { normalized: normalizedPath } = normalizeApiPath(pathname);
 
   try {
-    if (req.method === 'GET' && pathname === '/api/health') {
+    // Health check endpoint (no versioning)
+    if (req.method === 'GET' && (pathname === '/api/health' || pathname === '/api/v1/health')) {
       // Test database query and measure performance
       const dbStartTime = Date.now();
       try {
@@ -465,7 +495,8 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    if (req.method === 'GET' && pathname === '/api/laws') {
+    // GET /api/laws or /api/v1/laws - List laws with pagination and filtering
+    if (req.method === 'GET' && normalizedPath === '/api/laws') {
       const limit = Math.max(1, Math.min(MAX_LAWS_PER_REQUEST, Number(parsed.query.limit || DEFAULT_LAWS_PER_REQUEST)));
       const offset = Math.max(0, Number(parsed.query.offset || 0));
       const q = (parsed.query.q || '').toString().trim();
@@ -515,8 +546,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { data, limit, offset, total, q, category_id: categoryId, attribution }, req);
     }
 
-    // GET /api/law-of-day - Get the Law of the Day
-    if (req.method === 'GET' && pathname === '/api/law-of-day') {
+    // GET /api/law-of-day or /api/v1/law-of-day - Get the Law of the Day
+    if (req.method === 'GET' && normalizedPath === '/api/law-of-day') {
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
       // Check if we already have a law of the day for today
@@ -595,8 +626,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { law, featured_date: today }, req);
     }
 
-    // POST /api/laws - Submit a new law for review
-    if (req.method === 'POST' && pathname === '/api/laws') {
+    // POST /api/laws or /api/v1/laws - Submit a new law for review
+    if (req.method === 'POST' && normalizedPath === '/api/laws') {
       const identifier = getVoterIdentifier(req);
       const rateLimit = checkRateLimit(identifier, 'submit');
 
@@ -683,8 +714,8 @@ const server = http.createServer(async (req, res) => {
       }, req);
     }
 
-    // POST /api/laws/:id/vote - Vote on a law
-    const voteMatch = /^\/api\/laws\/(\d+)\/vote$/.exec(pathname);
+    // POST /api/laws/:id/vote or /api/v1/laws/:id/vote - Vote on a law
+    const voteMatch = /^\/api\/laws\/(\d+)\/vote$/.exec(normalizedPath);
     if (req.method === 'POST' && voteMatch) {
       const identifier = getVoterIdentifier(req);
       const rateLimit = checkRateLimit(identifier, 'vote');
@@ -760,8 +791,8 @@ const server = http.createServer(async (req, res) => {
       }, req);
     }
 
-    // GET /api/categories - Get all categories
-    if (req.method === 'GET' && pathname === '/api/categories') {
+    // GET /api/categories or /api/v1/categories - Get all categories
+    if (req.method === 'GET' && normalizedPath === '/api/categories') {
       const stmt = db.prepare(`
         SELECT id, slug, title, description
         FROM categories
@@ -771,8 +802,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { data: categories }, req);
     }
 
-    // GET /api/categories/:id - Get a single category by ID
-    const categoryIdMatch = pathname.match(/^\/api\/categories\/(\d+)$/);
+    // GET /api/categories/:id or /api/v1/categories/:id - Get a single category by ID
+    const categoryIdMatch = normalizedPath.match(/^\/api\/categories\/(\d+)$/);
     if (req.method === 'GET' && categoryIdMatch) {
       const categoryId = parseInt(categoryIdMatch[1], 10);
       const stmt = db.prepare(`
@@ -789,8 +820,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, category, req);
     }
 
-    // GET /api/attributions - Get unique attribution names
-    if (req.method === 'GET' && pathname === '/api/attributions') {
+    // GET /api/attributions or /api/v1/attributions - Get unique attribution names
+    if (req.method === 'GET' && normalizedPath === '/api/attributions') {
       const stmt = db.prepare(`
         SELECT DISTINCT name
         FROM attributions
@@ -801,8 +832,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { data: attributions }, req);
     }
 
-    // POST /api/share-calculation - Share calculation result via email
-    if (req.method === 'POST' && pathname === '/api/share-calculation') {
+    // POST /api/share-calculation or /api/v1/share-calculation - Share calculation result via email
+    if (req.method === 'POST' && normalizedPath === '/api/share-calculation') {
       const identifier = getVoterIdentifier(req);
       const rateLimit = checkRateLimit(identifier, 'email');
 
@@ -880,8 +911,8 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // GET /api/laws/:id - Get a single law
-    const lawIdMatch = /^\/api\/laws\/(\d+)$/.exec(pathname);
+    // GET /api/laws/:id or /api/v1/laws/:id - Get a single law
+    const lawIdMatch = /^\/api\/laws\/(\d+)$/.exec(normalizedPath);
     if (req.method === 'GET' && lawIdMatch) {
       const id = Number(lawIdMatch[1]);
       const stmt = db.prepare(oneSql);
@@ -892,7 +923,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, data, req);
     }
 
-    // POST /api/facebook/data-deletion - Facebook data deletion callback
+    // POST /api/facebook/data-deletion - Facebook data deletion callback (no versioning)
     // Required by Facebook when users delete their account or remove the app
     // https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback
     if (req.method === 'POST' && pathname === '/api/facebook/data-deletion') {

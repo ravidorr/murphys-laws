@@ -150,7 +150,8 @@ npm run db:rebuild               # Rebuild DB from scratch
 
 **Backend**
 - API server: `scripts/api-server.mjs` (Node.js + SQLite)
-- Endpoints: `/api/health`, `/api/laws`, `/api/laws/:id`, `/api/law-of-day`
+- Endpoints: `/api/v1/laws`, `/api/v1/laws/:id`, `/api/v1/law-of-day`, `/api/v1/categories`, `/api/v1/attributions`, `/api/v1/laws/:id/vote`, `/api/v1/share-calculation` (all support backward-compatible `/api/...` paths)
+- Health check: `/api/health` (no versioning)
 - Data pipeline: Markdown files -> SQLite via `scripts/build-sqlite.mjs`
 - Cron job: `scripts/select-law-of-day.mjs` (daily at midnight UTC)
 

@@ -238,7 +238,7 @@ describe('API utilities', () => {
         json: async () => ({ data: [] })
       });
 
-      const result = await fetchAPI('/api/laws');
+      const result = await fetchAPI('/api/v1/laws');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: [] });
@@ -258,7 +258,7 @@ describe('API utilities', () => {
         json: async () => ({ data: [] })
       });
 
-      const result = await fetchAPI('/api/laws');
+      const result = await fetchAPI('/api/v1/laws');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: [] });
@@ -273,7 +273,7 @@ describe('API utilities', () => {
         status: 503
       });
 
-      await expect(fetchAPI('/api/laws')).rejects.toThrow('Fallback fetch not ok: 503');
+      await expect(fetchAPI('/api/v1/laws')).rejects.toThrow('Fallback fetch not ok: 503');
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
     });
@@ -286,7 +286,7 @@ describe('API utilities', () => {
       });
 
       const params = new URLSearchParams({ q: 'test', limit: '10' });
-      await fetchAPI('/api/laws', params);
+      await fetchAPI('/api/v1/laws', params);
 
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining('q=test'),
@@ -313,7 +313,7 @@ describe('API utilities', () => {
         json: async () => ({ data: [] })
       });
 
-      const result = await fetchAPI('/api/laws');
+      const result = await fetchAPI('/api/v1/laws');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       expect(result).toEqual({ data: [] });
@@ -332,7 +332,7 @@ describe('API utilities', () => {
       const result = await fetchLawOfTheDay();
 
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/api/law-of-day'),
+        expect.stringContaining('/api/v1/law-of-day'),
         expect.any(Object)
       );
       expect(result).toEqual({

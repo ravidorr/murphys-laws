@@ -1,4 +1,5 @@
 import { escapeHtml } from './sanitize.js';
+import { fetchAPI } from './api.js';
 
 /**
  * Updates the search info display with current filter information
@@ -28,10 +29,11 @@ export async function updateSearchInfo(infoElement, filters) {
   if (filters.category_id) {
     // Fetch category name
     try {
-      const response = await fetch(`/api/categories/${filters.category_id}`);
-      if (response.ok) {
-        const category = await response.json();
+      const category = await fetchAPI(`/api/v1/categories/${filters.category_id}`);
+      if (category && category.title) {
         filterParts.push(`in category <strong>${escapeHtml(category.title)}</strong>`);
+      } else {
+        filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
       }
     } catch {
       filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
