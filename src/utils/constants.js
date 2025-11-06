@@ -17,7 +17,7 @@ export const MATHJAX_MAX_ATTEMPTS = 200; // Maximum attempts to wait for MathJax
 // Site metadata
 export const SITE_NAME = "Murphy's Law Archive";
 // Support both Vite (import.meta.env) and Node.js (process.env)
-const getEnvVar = (viteKey, nodeKey, defaultValue) => {
+export function getEnvVar(viteKey, nodeKey, defaultValue) {
   // Try Vite environment first
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const value = import.meta.env[viteKey];
@@ -30,7 +30,7 @@ const getEnvVar = (viteKey, nodeKey, defaultValue) => {
   }
   // Return default
   return defaultValue;
-};
+}
 export const SITE_URL = getEnvVar('VITE_SITE_URL', 'SITE_URL', 'https://murphys-laws.com');
 export const SITE_DEFAULT_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";
 export const SITE_DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/social/home.png`;
