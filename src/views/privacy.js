@@ -5,7 +5,7 @@ export function Privacy({ onNavigate }) {
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
-  const lastUpdated = '2025-10-18';
+  const lastUpdated = '2025-11-06';
 
   el.innerHTML = templateHtml.replace('{{lastUpdated}}', lastUpdated);
 
