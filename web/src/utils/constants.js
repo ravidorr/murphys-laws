@@ -15,24 +15,31 @@ export const MATHJAX_MAX_ATTEMPTS = 200; // Maximum attempts to wait for MathJax
 // Site metadata
 export const SITE_NAME = "Murphy's Law Archive";
 
-// Environment variable helper for Vite
-const getEnvVar = (viteKey, defaultValue) => {
+// Environment variable helper for Vite and Node.js
+export const getEnvVar = (viteKey, nodeKey, defaultValue) => {
+  // Try Vite environment first
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const value = import.meta.env[viteKey];
     if (value !== undefined) return value;
   }
+  // Try Node.js environment
+  if (typeof process !== 'undefined' && process.env) {
+    const value = process.env[nodeKey];
+    if (value !== undefined) return value;
+  }
+  // Return default
   return defaultValue;
 };
 
-export const SITE_URL = getEnvVar('VITE_SITE_URL', 'https://murphys-laws.com');
+export const SITE_URL = getEnvVar('VITE_SITE_URL', 'SITE_URL', 'https://murphys-laws.com');
 export const SITE_DEFAULT_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";
 export const SITE_DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/social/home.png`;
 export const SOCIAL_IMAGE_SOD = `${SITE_URL}/social/sods-calculator.png`;
 export const SOCIAL_IMAGE_TOAST = `${SITE_URL}/social/buttered-toast-calculator.png`;
 
 // API endpoints
-export const API_BASE_URL = getEnvVar('VITE_API_URL', '');
-export const API_FALLBACK_URL = getEnvVar('VITE_API_FALLBACK_URL', 'http://127.0.0.1:8787');
+export const API_BASE_URL = getEnvVar('VITE_API_URL', 'API_URL', '');
+export const API_FALLBACK_URL = getEnvVar('VITE_API_FALLBACK_URL', 'API_FALLBACK_URL', 'http://127.0.0.1:8787');
 export const API_SHARE_CALCULATION_ENDPOINT = '/api/v1/share-calculation';
 
 // Fetch defaults
