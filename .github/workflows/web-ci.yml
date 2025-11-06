@@ -4,12 +4,12 @@ on:
   push:
     paths:
       - 'web/**'
-      - 'shared/**'
+      - 'shared/modules/**'
       - '.github/workflows/web-ci.yml'
   pull_request:
     paths:
       - 'web/**'
-      - 'shared/**'
+      - 'shared/modules/**'
 
 jobs:
   test-and-build:
@@ -25,7 +25,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
+      - name: Install dependencies (root - npm workspaces)
         run: npm ci
 
       - name: Lint JavaScript

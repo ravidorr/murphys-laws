@@ -5,18 +5,17 @@ on:
     paths:
       - 'backend/**'
       - 'shared/data/**'
+      - 'shared/modules/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     paths:
       - 'backend/**'
       - 'shared/data/**'
+      - 'shared/modules/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
 
     steps:
       - uses: actions/checkout@v4
@@ -26,16 +25,18 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
+      - name: Install dependencies (root - npm workspaces)
         run: npm ci
 
       - name: Build database
         run: npm run build:db
+        working-directory: backend
 
       - name: Run tests
         run: npm test
+        working-directory: backend
 
       - name: Check database exists
-        run: test -f db/murphys-laws.sqlite
+        run: test -f backend/murphys.db
