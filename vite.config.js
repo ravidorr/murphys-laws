@@ -48,7 +48,8 @@ export default defineConfig({
         '**/*.config.js',
         '**/*.config.ts',
         '**/*.config.cjs',
-        'src/main.js',        // Entry point - integration tested via e2e
+        'src/main.js', // Entry point - tested via e2e (Playwright) integration tests that exercise routing, navigation, and search
+        'src/utils/facebook-signed-request.js', // Server-side utility (uses Node.js crypto, used in scripts/api-server.mjs but not currently tested)
       ],
       thresholds: {
         lines: 90,
