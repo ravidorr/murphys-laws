@@ -228,7 +228,7 @@ export function initShareCalculation({ root, getCalculationState }) {
 
     try {
       const state = getState();
-      const endpoint = '/api/share-calculation';
+      const endpoint = '/api/v1/share-calculation';
       const primaryUrl = `${API_BASE_URL}${endpoint}`;
       const fallbackUrl = `${API_FALLBACK_URL}${endpoint}`;
 

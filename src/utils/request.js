@@ -5,7 +5,7 @@ import { API_BASE_URL, API_FALLBACK_URL } from './constants.js';
 
 /**
  * Generic API request handler with automatic fallback and error handling
- * @param {string} endpoint - API endpoint (e.g., '/api/laws')
+ * @param {string} endpoint - API endpoint (e.g., '/api/v1/laws')
  * @param {Object} options - Fetch options
  * @param {string} options.method - HTTP method (GET, POST, DELETE, etc.)
  * @param {Object} options.body - Request body (will be JSON.stringified)

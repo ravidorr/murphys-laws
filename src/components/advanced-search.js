@@ -63,7 +63,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
     // Fetch categories (always fetch fresh, but use cache as fallback)
     try {
-      const catData = await fetchAPI('/api/categories');
+      const catData = await fetchAPI('/api/v1/categories');
       categories = catData.data || [];
       setCachedCategories(categories);
     } catch {
@@ -85,7 +85,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
     // Fetch attributions
     try {
-      const attData = await fetchAPI('/api/attributions');
+      const attData = await fetchAPI('/api/v1/attributions');
       attributions = attData.data || [];
       setCachedAttributions(attributions);
     } catch {

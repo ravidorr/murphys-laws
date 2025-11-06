@@ -3,7 +3,7 @@ import { API_BASE_URL, API_FALLBACK_URL, DEFAULT_FETCH_HEADERS } from './constan
 
 /**
  * Fetches from API with automatic fallback
- * @param {string} endpoint - API endpoint (e.g., '/api/laws')
+ * @param {string} endpoint - API endpoint (e.g., '/api/v1/laws')
  * @param {URLSearchParams|Object} params - Query parameters
  * @returns {Promise<any>} JSON response
  */
@@ -50,7 +50,7 @@ export async function fetchLaw(lawId) {
     throw new Error('Invalid law ID');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/laws/${numericId}`);
+  const response = await fetch(`${API_BASE_URL}/api/v1/laws/${numericId}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch law: ${response.status}`);
   }
@@ -90,7 +90,7 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
     params.attribution = attribution.trim();
   }
 
-  return await fetchAPI('/api/laws', params);
+  return await fetchAPI('/api/v1/laws', params);
 }
 
 /**
@@ -102,7 +102,7 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
  * @returns {Promise<Object>} Response with law data
  */
 export async function fetchLawOfTheDay() {
-  const response = await fetchAPI('/api/law-of-day');
+  const response = await fetchAPI('/api/v1/law-of-day');
   // Return in same format as fetchLaws for compatibility
   return { data: [response.law], total: 1, limit: 1, offset: 0 };
 }

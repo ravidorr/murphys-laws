@@ -24,7 +24,7 @@ describe('Voting API integration', () => {
       const result = await voteLaw(123, 'up');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/laws/123/vote'),
+        expect.stringContaining('/api/v1/laws/123/vote'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -90,7 +90,7 @@ describe('Voting API integration', () => {
       await unvoteLaw(123);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/laws/123/vote'),
+        expect.stringContaining('/api/v1/laws/123/vote'),
         expect.objectContaining({
           method: 'DELETE'
         })
