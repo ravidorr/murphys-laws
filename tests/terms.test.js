@@ -280,4 +280,28 @@ describe('Terms page', () => {
     expect(onNavigate).toHaveBeenCalledWith('contact');
   });
 
+  it('does not process click when target is not Element', () => {
+    const onNavigate = vi.fn();
+    const el = Terms({ onNavigate });
+
+    // Create a text node (not an Element)
+    const textNode = document.createTextNode('Some text');
+    el.appendChild(textNode);
+
+    // Create a click event with text node as target
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    
+    // Manually set target to text node (simulating what happens in real DOM)
+    Object.defineProperty(event, 'target', {
+      value: textNode,
+      writable: true,
+      configurable: true
+    });
+
+    el.dispatchEvent(event);
+
+    // Should not call onNavigate when target is not Element
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
 });
