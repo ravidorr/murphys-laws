@@ -22,3 +22,43 @@ murphys.db-wal
 
 .continue/
 .claude/
+
+# ===== Monorepo Structure =====
+
+# Migration backups
+.migration-backup-*/
+
+# iOS
+ios/DerivedData/
+ios/build/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcshareddata/
+ios/Pods/
+ios/.DS_Store
+ios/*.ipa
+ios/*.dSYM.zip
+ios/*.mobileprovision
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots
+ios/fastlane/test_output
+
+# Android
+android/.gradle/
+android/local.properties
+android/.idea/
+android/captures/
+android/*.apk
+android/*.aab
+android/app/release/
+android/.cxx/
+android/.externalNativeBuild/
+
+# Platform-specific node_modules
+backend/node_modules/
+web/node_modules/
+
+# Platform-specific build outputs
+backend/dist/
+web/dist/

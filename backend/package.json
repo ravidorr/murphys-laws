@@ -1,0 +1,26 @@
+{
+  "name": "murphys-laws-backend",
+  "version": "1.0.0",
+  "description": "Murphy's Laws API Server",
+  "type": "module",
+  "main": "scripts/api-server.mjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "node scripts/api-server.mjs",
+    "dev": "node --watch scripts/api-server.mjs",
+    "build:db": "node scripts/build-sqlite.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "test": "echo \"Backend tests not yet implemented\" && exit 0"
+  },
+  "keywords": ["murphys-law", "api", "backend"],
+  "author": "",
+  "license": "CC0-1.0",
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "^16.4.7",
+    "nodemailer": "^7.0.7",
+    "validator": "^13.15.20"
+  }
+}
