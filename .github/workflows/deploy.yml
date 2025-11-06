@@ -132,7 +132,7 @@ jobs:
             # Use --build-from-source to avoid prebuilt binary issues
             npm rebuild better-sqlite3 --build-from-source
 
-            npm run migrate:safe
+            npm run migrate
 
             # Update server maintenance scripts
             sudo cp "$TARGET_DIR/backend/scripts/daily-report.sh" /usr/local/bin/daily-report.sh 2>/dev/null || true
