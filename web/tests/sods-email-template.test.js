@@ -1,4 +1,4 @@
-import * as sodsEmailTemplate from '@modules/sods-email-template.js';
+import * as sodsEmailTemplate from '../../shared/modules/sods-email-template.js';
 
 function createLocalThis() {
   const context = {};
