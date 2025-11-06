@@ -11,7 +11,7 @@ import {
   createSodsEmailHtml,
   createSodsEmailSubject,
   createSodsEmailText,
-} from '../modules/sods-email-template.js';
+} from '../../shared/modules/sods-email-template.js';
 import {
   createLawSubmissionEmailSubject,
   createLawSubmissionEmailText,

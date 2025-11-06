@@ -1,7 +1,7 @@
 import {
   createSodsEmailPreviewHtml,
   createSodsEmailSubject
-} from '@modules/sods-email-template.js';
+} from '@shared/modules/sods-email-template.js';
 import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
