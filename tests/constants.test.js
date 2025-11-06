@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, API_FALLBACK_URL } from '../src/utils/constants.js';
+import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, API_FALLBACK_URL, LOADING_MESSAGES } from '../src/utils/constants.js';
 
 function createLocalThis() {
   const context = {};
@@ -31,9 +31,10 @@ describe('Constants', () => {
       expect(messages.size).toBeGreaterThan(1);
     });
 
-    it('returns a message containing "Loading"', () => {
+    it('returns a valid loading message from the list', () => {
       const message = getRandomLoadingMessage();
-      expect(message.toLowerCase()).toContain('loading');
+      // Verify the message is one of the valid loading messages
+      expect(LOADING_MESSAGES).toContain(message);
     });
   });
 
