@@ -1,6 +1,6 @@
 # API Endpoints Used by Frontend
 
-This document lists all API endpoints used by the Murphy's Laws frontend application. All endpoints are now versioned with `/api/v1/` prefix for mobile app support, while maintaining backward compatibility with `/api/` routes.
+This document lists all API endpoints used by the Murphy's Laws frontend application. All endpoints are versioned with `/api/v1/` prefix for mobile app support.
 
 ## Base URLs
 
@@ -9,17 +9,16 @@ This document lists all API endpoints used by the Murphy's Laws frontend applica
 
 ## API Versioning
 
-All API endpoints support both versioned and non-versioned paths:
-- **Versioned (recommended)**: `/api/v1/{endpoint}` - Use this for new mobile apps and frontend
-- **Legacy (backward compatible)**: `/api/{endpoint}` - Still supported for backward compatibility
+All API endpoints use the `/api/v1/` prefix:
+- **Versioned endpoints**: `/api/v1/{endpoint}` - Use this for all API calls
 
-The frontend now uses `/api/v1/` endpoints by default. The API server automatically handles both versions and routes them to the same handlers.
+The frontend uses `/api/v1/` endpoints by default. Mobile apps should also use `/api/v1/` endpoints.
 
 ## API Endpoints
 
 ### 1. Laws Endpoints
 
-#### GET `/api/v1/laws` (or `/api/laws` for backward compatibility)
+#### GET `/api/v1/laws`
 Fetch laws with pagination, sorting, and filtering.
 
 **Query Parameters:**
@@ -50,7 +49,7 @@ Fetch laws with pagination, sorting, and filtering.
 
 ---
 
-#### GET `/api/v1/laws/{id}` (or `/api/laws/{id}` for backward compatibility)
+#### GET `/api/v1/laws/{id}`
 Fetch a single law by ID.
 
 **Path Parameters:**
@@ -78,7 +77,7 @@ Fetch a single law by ID.
 
 ---
 
-#### POST `/api/v1/laws` (or `/api/laws` for backward compatibility)
+#### POST `/api/v1/laws`
 Submit a new law for review.
 
 **Request Body:**
@@ -108,7 +107,7 @@ Submit a new law for review.
 
 ### 2. Voting Endpoints
 
-#### POST `/api/v1/laws/{id}/vote` (or `/api/laws/{id}/vote` for backward compatibility)
+#### POST `/api/v1/laws/{id}/vote`
 Vote on a law (upvote or downvote).
 
 **Path Parameters:**
@@ -136,7 +135,7 @@ Vote on a law (upvote or downvote).
 
 ---
 
-#### DELETE `/api/v1/laws/{id}/vote` (or `/api/laws/{id}/vote` for backward compatibility)
+#### DELETE `/api/v1/laws/{id}/vote`
 Remove vote from a law.
 
 **Path Parameters:**
@@ -159,7 +158,7 @@ Remove vote from a law.
 
 ### 3. Law of the Day Endpoint
 
-#### GET `/api/v1/law-of-day` (or `/api/law-of-day` for backward compatibility)
+#### GET `/api/v1/law-of-day`
 Get the law of the day (daily rotating law selected by algorithm).
 
 **Response:**
@@ -191,7 +190,7 @@ Get the law of the day (daily rotating law selected by algorithm).
 
 ### 4. Categories Endpoints
 
-#### GET `/api/v1/categories` (or `/api/categories` for backward compatibility)
+#### GET `/api/v1/categories`
 Get all categories.
 
 **Response:**
@@ -213,7 +212,7 @@ Get all categories.
 
 ---
 
-#### GET `/api/v1/categories/{id}` (or `/api/categories/{id}` for backward compatibility)
+#### GET `/api/v1/categories/{id}`
 Get a single category by ID.
 
 **Path Parameters:**
@@ -235,7 +234,7 @@ Get a single category by ID.
 
 ### 5. Attributions Endpoint
 
-#### GET `/api/v1/attributions` (or `/api/attributions` for backward compatibility)
+#### GET `/api/v1/attributions`
 Get all attributions (submitters).
 
 **Response:**
@@ -257,7 +256,7 @@ Get all attributions (submitters).
 
 ### 6. Share Calculation Endpoint
 
-#### POST `/api/v1/share-calculation` (or `/api/share-calculation` for backward compatibility)
+#### POST `/api/v1/share-calculation`
 Share SOD (Sod's Law) calculation via email.
 
 **Request Body:**
@@ -293,7 +292,7 @@ Share SOD (Sod's Law) calculation via email.
 
 ## Summary
 
-Total API endpoints: **10** (all support both `/api/v1/...` and `/api/...` paths)
+Total API endpoints: **10** (all use `/api/v1/...` prefix)
 
 1. `GET /api/v1/laws` - List laws with filters
 2. `GET /api/v1/laws/{id}` - Get single law
@@ -309,18 +308,16 @@ Total API endpoints: **10** (all support both `/api/v1/...` and `/api/...` paths
 ## Implementation Details
 
 ### API Server (`scripts/api-server.mjs`)
-- Uses `normalizeApiPath()` helper function to handle both `/api/v1/...` and `/api/...` routes
-- All route handlers check the normalized pathname
-- Backward compatibility maintained - old `/api/...` endpoints still work
+- All route handlers check for `/api/v1/...` paths directly
+- Simple, clean routing without backward compatibility overhead
 
 ### Frontend (`src/utils/`)
-- All API calls now use `/api/v1/...` endpoints
+- All API calls use `/api/v1/...` endpoints
 - `API_VERSION_PREFIX` constant defined in `src/utils/constants.js` as `/api/v1`
-- API utility functions (`fetchAPI`, `apiRequest`, etc.) updated to use v1 endpoints
+- API utility functions (`fetchAPI`, `apiRequest`, etc.) use v1 endpoints
 
 ### Notes
-- **Versioned endpoints** (`/api/v1/...`) are recommended for new mobile apps and frontend code
-- **Legacy endpoints** (`/api/...`) remain supported for backward compatibility
+- **All endpoints** use `/api/v1/...` prefix
 - Some endpoints use query parameters for filtering (GET `/api/v1/laws`)
 - Some endpoints use path parameters (GET `/api/v1/laws/{id}`)
 - POST endpoints require JSON request bodies
