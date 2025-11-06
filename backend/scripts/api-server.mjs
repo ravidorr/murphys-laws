@@ -11,12 +11,12 @@ import {
   createSodsEmailHtml,
   createSodsEmailSubject,
   createSodsEmailText,
-} from '../modules/sods-email-template.js';
+} from '../../shared/modules/sods-email-template.js';
 import {
   createLawSubmissionEmailSubject,
   createLawSubmissionEmailText,
   createLawSubmissionEmailHtml,
-} from '../modules/law-submission-email-template.js';
+} from '../../shared/modules/law-submission-email-template.js';
 import { MAX_LAWS_PER_REQUEST, DEFAULT_LAWS_PER_REQUEST } from '../utils/constants.js';
 import { parseSignedRequest, generateConfirmationCode } from '../utils/facebook-signed-request.js';
 
