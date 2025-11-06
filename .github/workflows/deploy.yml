@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package*.json,backend/ecosystem.config.cjs,nginx.conf,web/vite.config.js"
+          source: "web/dist/,backend/scripts/,backend/db/,backend/modules/,backend/utils/,backend/config/,backend/package.json,backend/package-lock.json,backend/ecosystem.config.cjs,nginx.conf,web/vite.config.js"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
