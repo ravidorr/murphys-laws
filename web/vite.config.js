@@ -37,13 +37,22 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    include: [
+      'tests/**/*.test.js',
+      '../shared/**/*.test.js'
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary', 'lcov'],
+      include: [
+        'src/**/*.js',
+        '../shared/**/*.js'
+      ],
       exclude: [
         'e2e/**',
         'node_modules/**',
         'tests/**',
+        '../shared/**/*.test.js',
         'scripts/**',
         'dist/**',
         '**/*.config.js',
