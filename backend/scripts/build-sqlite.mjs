@@ -4,7 +4,7 @@ import path from 'node:path';
 
 // Config
 const ROOT = path.resolve(process.cwd());
-const SOURCE_DIR = path.join(ROOT, 'murphys-laws');
+const SOURCE_DIR = path.join(ROOT, '../shared/data/murphys-laws');
 
 function slugify(s) {
   return String(s)
