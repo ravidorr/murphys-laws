@@ -106,6 +106,13 @@ npm run test:coverage            # Run tests with coverage report
 npm run e2e                      # End-to-end tests (Playwright)
 ```
 
+**Pre-commit Hooks**
+- Tests must pass before committing
+- Coverage must meet thresholds (90% for all metrics)
+- Emergency bypass: `SKIP_COVERAGE_CHECK=1 git commit -m "message"`
+  - ⚠️ Only use for emergency commits!
+  - Coverage checks help maintain code quality
+
 **Test Coverage**
 - Views: Sod's Law Calculator, Buttered Toast Calculator, Home, Browse, Law Detail, Auth
 - Components: Simple calculator widgets, Header, Law cards, Submit form, Advanced search

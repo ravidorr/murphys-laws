@@ -24,5 +24,19 @@ fi
 
 echo "All tests passed!"
 
+# Check coverage thresholds (90% for all metrics)
+# Can be bypassed with SKIP_COVERAGE_CHECK=1 for emergency commits
+echo ""
+echo "Checking coverage thresholds..."
+node scripts/check-coverage.mjs
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "Coverage check failed! Commit blocked."
+  echo ""
+  echo "For emergency commits, use:"
+  echo "  SKIP_COVERAGE_CHECK=1 git commit -m \"your message\""
+  exit 1
+fi
+
 node scripts/sanitize-husky-hooks.mjs
 npx lint-staged
