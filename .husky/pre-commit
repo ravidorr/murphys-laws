@@ -39,5 +39,4 @@ if [ $? -ne 0 ]; then
 fi
 
 node web/scripts/sanitize-husky-hooks.mjs
-# TODO: Re-enable lint-staged after monorepo migration is complete
-# npx lint-staged
+npx lint-staged

@@ -1,0 +1,14 @@
+{
+  "web/**/*.{js,mjs}": [
+    "cd web && eslint --fix"
+  ],
+  "web/styles/**/*.css": [
+    "cd web && stylelint --fix"
+  ],
+  "backend/**/*.{js,mjs}": [
+    "cd backend && eslint --fix || echo 'Linting skipped: backend eslint not configured yet'"
+  ],
+  "shared/**/*.{js,mjs}": [
+    "eslint --fix || echo 'Linting skipped: shared eslint not configured yet'"
+  ]
+}
