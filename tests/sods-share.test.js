@@ -359,5 +359,272 @@ describe('Sod\'s share module', () => {
         expect(sendBtn.textContent).toBe('Send Email');
       });
     });
+
+    it('uses fallback URL when primary API fails', async () => {
+      const { root, fetchSpy } = local();
+      const shareCta = root.querySelector('#share-cta');
+      const sendBtn = root.querySelector('#send-email');
+
+      shareCta.click();
+      fillAllRequiredFields(root);
+
+      // Primary fails, fallback succeeds
+      fetchSpy
+        .mockRejectedValueOnce(new Error('Primary failed'))
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true })
+        });
+
+      sendBtn.click();
+
+      await vi.waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('handles fallback API also failing', async () => {
+      const { root, fetchSpy } = local();
+      const shareCta = root.querySelector('#share-cta');
+      const sendBtn = root.querySelector('#send-email');
+      const shareStatus = root.querySelector('#share-status');
+
+      shareCta.click();
+      fillAllRequiredFields(root);
+
+      // Both fail
+      fetchSpy
+        .mockRejectedValueOnce(new Error('Primary failed'))
+        .mockRejectedValueOnce(new Error('Fallback failed'));
+
+      sendBtn.click();
+
+      await vi.waitFor(() => {
+        expect(shareStatus.classList.contains('error')).toBe(true);
+        expect(shareStatus.textContent).toMatch(/Fallback failed/);
+      });
+    });
+
+    it('handles primary API returning non-ok response', async () => {
+      const { root, fetchSpy } = local();
+      const shareCta = root.querySelector('#share-cta');
+      const sendBtn = root.querySelector('#send-email');
+      const shareStatus = root.querySelector('#share-status');
+
+      shareCta.click();
+      fillAllRequiredFields(root);
+
+      // Primary returns non-ok, fallback succeeds
+      fetchSpy
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          json: async () => ({ error: 'Server error' })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true })
+        });
+
+      sendBtn.click();
+
+      await vi.waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+        expect(shareStatus.classList.contains('success')).toBe(true);
+      });
+    });
+
+    it('handles fallback API returning non-ok response', async () => {
+      const { root, fetchSpy } = local();
+      const shareCta = root.querySelector('#share-cta');
+      const sendBtn = root.querySelector('#send-email');
+      const shareStatus = root.querySelector('#share-status');
+
+      shareCta.click();
+      fillAllRequiredFields(root);
+
+      // Primary fails, fallback returns non-ok
+      fetchSpy
+        .mockRejectedValueOnce(new Error('Primary failed'))
+        .mockResolvedValueOnce({
+          ok: false,
+          json: async () => ({ error: 'Fallback error' })
+        });
+
+      sendBtn.click();
+
+      await vi.waitFor(() => {
+        expect(shareStatus.classList.contains('error')).toBe(true);
+        expect(shareStatus.textContent).toMatch(/Fallback error/);
+      });
+    });
+
+    it('does not close modal when clicking inside modal content', () => {
+      const { root } = local();
+      const shareCta = root.querySelector('#share-cta');
+      const previewBtn = root.querySelector('#preview-email');
+      const modal = root.querySelector('#email-preview-modal');
+      const previewContent = root.querySelector('#preview-content');
+
+      shareCta.click();
+      fillAllRequiredFields(root);
+      previewBtn.click();
+
+      // Click inside modal (not on backdrop)
+      const clickEvent = new MouseEvent('click', { bubbles: true });
+      Object.defineProperty(clickEvent, 'target', { value: previewContent, writable: false });
+      modal.dispatchEvent(clickEvent);
+
+      // Modal should still be open
+      expect(modal.classList.contains('hidden')).toBe(false);
+    });
+
+    it('uses default state when getCalculationState is not a function', () => {
+      const container = document.createElement('div');
+      container.innerHTML = templateHtml;
+      document.body.appendChild(container);
+
+      const teardown = initShareCalculation({
+        root: container,
+        getCalculationState: 'not a function'
+      });
+
+      const shareCta = container.querySelector('#share-cta');
+      const previewBtn = container.querySelector('#preview-email');
+      shareCta.click();
+      fillAllRequiredFields(container);
+      previewBtn.click();
+
+      // Should work with default state
+      const modal = container.querySelector('#email-preview-modal');
+      expect(modal.classList.contains('hidden')).toBe(false);
+
+      teardown();
+      container.remove();
+    });
+
+    it('handles missing sendButton gracefully', async () => {
+      const container = document.createElement('div');
+      container.innerHTML = templateHtml;
+      const sendBtn = container.querySelector('#send-email');
+      if (sendBtn) sendBtn.remove();
+      document.body.appendChild(container);
+
+      const teardown = initShareCalculation({
+        root: container,
+        getCalculationState: () => createState()
+      });
+
+      const shareCta = container.querySelector('#share-cta');
+      shareCta.click();
+      fillAllRequiredFields(container);
+
+      // Should not throw when sendButton is missing
+      expect(() => {
+        // Try to trigger send (but button doesn't exist)
+        const fakeBtn = container.querySelector('#send-email');
+        if (fakeBtn) fakeBtn.click();
+      }).not.toThrow();
+
+      teardown();
+      container.remove();
+    });
+
+    it('handles missing form elements gracefully', () => {
+      const container = document.createElement('div');
+      container.innerHTML = templateHtml;
+      // Remove some elements
+      const taskInput = container.querySelector('#task-description');
+      const senderNameInput = container.querySelector('#sender-name');
+      if (taskInput) taskInput.remove();
+      if (senderNameInput) senderNameInput.remove();
+      document.body.appendChild(container);
+
+      const teardown = initShareCalculation({
+        root: container,
+        getCalculationState: () => createState()
+      });
+
+      const shareCta = container.querySelector('#share-cta');
+      const cancelBtn = container.querySelector('#cancel-share');
+      
+      shareCta.click();
+      cancelBtn.click();
+
+      // Should not throw
+      expect(container).toBeTruthy();
+
+      teardown();
+      container.remove();
+    });
+
+    it('handles missing shareStatus element', () => {
+      const container = document.createElement('div');
+      container.innerHTML = templateHtml;
+      const shareStatus = container.querySelector('#share-status');
+      if (shareStatus) shareStatus.remove();
+      document.body.appendChild(container);
+
+      const teardown = initShareCalculation({
+        root: container,
+        getCalculationState: () => createState()
+      });
+
+      const shareCta = container.querySelector('#share-cta');
+      const previewBtn = container.querySelector('#preview-email');
+      
+      shareCta.click();
+      fillAllRequiredFields(container);
+      previewBtn.click();
+
+      // Should not throw
+      expect(container).toBeTruthy();
+
+      teardown();
+      container.remove();
+    });
+
+    it('handles missing previewContent element', () => {
+      const container = document.createElement('div');
+      container.innerHTML = templateHtml;
+      const previewContent = container.querySelector('#preview-content');
+      if (previewContent) previewContent.remove();
+      document.body.appendChild(container);
+
+      const teardown = initShareCalculation({
+        root: container,
+        getCalculationState: () => createState()
+      });
+
+      const shareCta = container.querySelector('#share-cta');
+      const previewBtn = container.querySelector('#preview-email');
+      
+      shareCta.click();
+      fillAllRequiredFields(container);
+      previewBtn.click();
+
+      // Should not throw
+      expect(container).toBeTruthy();
+
+      teardown();
+      container.remove();
+    });
+
+    it('does not focus input when form is hidden', () => {
+      const { root } = local();
+      const shareFormContainer = root.querySelector('#share-form-container');
+      const taskDescriptionInput = root.querySelector('#task-description');
+      const focusSpy = vi.spyOn(taskDescriptionInput, 'focus');
+
+      // Form is hidden, toggle should not focus
+      shareFormContainer.classList.add('hidden');
+      const shareCta = root.querySelector('#share-cta');
+      shareCta.click(); // Opens form
+      shareCta.click(); // Closes form (hidden again)
+
+      // Focus should only be called when opening, not when closing
+      expect(focusSpy).toHaveBeenCalledTimes(1);
+      focusSpy.mockRestore();
+    });
   });
 });

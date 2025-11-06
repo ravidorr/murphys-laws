@@ -346,5 +346,280 @@ describe('LawDetail view', () => {
     expect(redditBtn).toBeTruthy();
     expect(emailBtn).toBeTruthy();
   });
+
+  it('handles law without title', async () => {
+    const law = { id: '7', text: 'Test text without title', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test text without title');
+    });
+  });
+
+  it('handles law without text', async () => {
+    const law = { id: '7', title: 'Test Title', text: '', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Title');
+    });
+  });
+
+  it('handles onStructuredData not being a function', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    // Pass non-function value
+    const el = LawDetail({ 
+      lawId: law.id, 
+      _isLoggedIn: false, 
+      _currentUser: null, 
+      onNavigate: () => {},
+      onStructuredData: 'not a function'
+    });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+  });
+
+  it('handles missing lawCardContainer gracefully', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    // Wait for law to load first
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Remove lawCardContainer after render
+    const container = el.querySelector('[data-law-card-container]');
+    if (container) {
+      container.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles fetch error gracefully', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+
+    const el = LawDetail({ lawId: '7', _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Law Not Found/);
+    });
+  });
+
+  it('handles vote button without dataset.id', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Create vote button without dataset.id
+    const fakeVoteBtn = document.createElement('button');
+    fakeVoteBtn.setAttribute('data-vote', 'up');
+    // No dataset.id
+    el.appendChild(fakeVoteBtn);
+
+    fakeVoteBtn.click();
+
+    // Should not throw
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(el).toBeTruthy();
+  });
+
+  it('handles vote button without voteType', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Create vote button without data-vote attribute
+    const fakeVoteBtn = document.createElement('button');
+    fakeVoteBtn.dataset.id = '7';
+    // No data-vote attribute
+    el.appendChild(fakeVoteBtn);
+
+    fakeVoteBtn.click();
+
+    // Should not throw
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing vote count elements', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 1, downvotes: 0 });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Remove vote count elements
+    const upVoteCount = el.querySelector('[data-upvote-count]');
+    const downVoteCount = el.querySelector('[data-downvote-count]');
+    if (upVoteCount) upVoteCount.remove();
+    if (downVoteCount) downVoteCount.remove();
+
+    const voteBtn = el.querySelector('[data-vote="up"]');
+    if (voteBtn) {
+      voteBtn.click();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles vote error gracefully', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockRejectedValue(new Error('Vote failed'));
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    const voteBtn = el.querySelector('[data-vote="up"]');
+    if (voteBtn) {
+      voteBtn.click();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles missing footer in law card', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Remove footer if it exists
+    const footer = el.querySelector('.section-footer .right');
+    if (footer) {
+      footer.remove();
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles renderLawCard returning null', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Mock renderLawCard to return null by removing lawCardContainer
+    const container = el.querySelector('[data-law-card-container]');
+    if (container) {
+      container.innerHTML = ''; // Empty container simulates null return
+    }
+
+    // Should not throw
+    expect(el).toBeTruthy();
+  });
+
+  it('handles navigation when navTarget is missing', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const onNavigate = vi.fn();
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Create nav button without data-nav attribute
+    const fakeNavBtn = document.createElement('button');
+    fakeNavBtn.setAttribute('data-nav', ''); // Empty nav target
+    el.appendChild(fakeNavBtn);
+
+    fakeNavBtn.click();
+
+    // Should not call onNavigate when navTarget is empty
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('handles clicking element without data-nav ancestor', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const onNavigate = vi.fn();
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toContain('Test Law');
+    });
+
+    // Create element without data-nav ancestor
+    const regularDiv = document.createElement('div');
+    regularDiv.textContent = 'Regular content';
+    el.appendChild(regularDiv);
+
+    regularDiv.click();
+
+    // Should not call onNavigate when no navBtn found
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
 });
 

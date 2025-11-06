@@ -57,52 +57,52 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
   }
 
   // Load categories and attributions
-  async function loadFilters() {
-    if (filtersLoaded) return;
+  async function loadFilters(forceReload = false) {
+    if (filtersLoaded && !forceReload) return;
     filtersLoaded = true;
 
+    // Fetch categories (always fetch fresh, but use cache as fallback)
     try {
-      // Fetch categories (always fetch fresh, but use cache as fallback)
-      try {
-        const catData = await fetchAPI('/api/categories');
-        categories = catData.data || [];
-        setCachedCategories(categories);
-      } catch {
-        // Fallback to cache if fetch fails
-        const cached = getCachedCategories();
-        if (cached) {
-          categories = cached;
-        }
-      }
-
-      // Update category dropdown
-      if (categories.length > 0) {
-        categorySelect.innerHTML = '<option value="">All Categories</option>' +
-          categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${cat.title}</option>`).join('');
-      }
-
-      // Fetch attributions
-      try {
-        const attData = await fetchAPI('/api/attributions');
-        attributions = attData.data || [];
-        setCachedAttributions(attributions);
-      } catch {
-        // Fallback to cache if fetch fails
-        const cached = getCachedAttributions();
-        if (cached) {
-          attributions = cached;
-        }
-      }
-
-      // Update attribution dropdown
-      if (attributions.length > 0) {
-        attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-          attributions.map(att => `<option value="${att.name}" ${att.name === selectedAttribution ? 'selected' : ''}>${att.name}</option>`).join('');
-      }
-
+      const catData = await fetchAPI('/api/categories');
+      categories = catData.data || [];
+      setCachedCategories(categories);
     } catch {
-      categorySelect.innerHTML = '<option value="">Error loading categories</option>';
-      attributionSelect.innerHTML = '<option value="">Error loading attributions</option>';
+      // Fallback to cache if fetch fails
+      const cached = getCachedCategories();
+      if (cached && cached.length > 0) {
+        categories = cached;
+      } else {
+        // Show error if no cache available
+        categorySelect.innerHTML = '<option value="">Error loading categories</option>';
+      }
+    }
+
+    // Update category dropdown
+    if (categories.length > 0) {
+      categorySelect.innerHTML = '<option value="">All Categories</option>' +
+        categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${cat.title}</option>`).join('');
+    }
+
+    // Fetch attributions
+    try {
+      const attData = await fetchAPI('/api/attributions');
+      attributions = attData.data || [];
+      setCachedAttributions(attributions);
+    } catch {
+      // Fallback to cache if fetch fails
+      const cached = getCachedAttributions();
+      if (cached && cached.length > 0) {
+        attributions = cached;
+      } else {
+        // Show error if no cache available
+        attributionSelect.innerHTML = '<option value="">Error loading attributions</option>';
+      }
+    }
+
+    // Update attribution dropdown
+    if (attributions.length > 0) {
+      attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
+        attributions.map(att => `<option value="${att.name}" ${att.name === selectedAttribution ? 'selected' : ''}>${att.name}</option>`).join('');
     }
   }
 
@@ -114,14 +114,16 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     categorySelect?.addEventListener('focus', () => {
       if (!categoryLoadAttempted && categories.length === 0) {
         categoryLoadAttempted = true;
-        loadFilters();
+        // Force reload if filters were already loaded but categories are still empty
+        loadFilters(categories.length === 0 && filtersLoaded);
       }
     }, { once: true });
 
     attributionSelect?.addEventListener('focus', () => {
       if (!attributionLoadAttempted && attributions.length === 0) {
         attributionLoadAttempted = true;
-        loadFilters();
+        // Force reload if filters were already loaded but attributions are still empty
+        loadFilters(attributions.length === 0 && filtersLoaded);
       }
     }, { once: true });
   }

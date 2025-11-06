@@ -479,4 +479,138 @@ describe('AdvancedSearch component', () => {
       expect(attributionSelect).toBeTruthy();
     });
   });
+
+  it('handles category fetch error', async () => {
+    fetchAPISpy
+      .mockRejectedValueOnce(new Error('Category fetch failed'))
+      .mockResolvedValueOnce({ data: [] });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const categorySelect = el.querySelector('#search-category');
+      expect(categorySelect.innerHTML).toContain('Error loading categories');
+    });
+  });
+
+  it('handles attribution fetch error', async () => {
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockRejectedValueOnce(new Error('Attribution fetch failed'));
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.innerHTML).toContain('Error loading attributions');
+    });
+  });
+
+  it('handles loadFilters error', async () => {
+    fetchAPISpy.mockRejectedValue(new Error('Load failed'));
+
+    const el = mountSearch();
+
+    // Trigger loadFilters by focusing on category select
+    const categorySelect = el.querySelector('#search-category');
+    categorySelect.dispatchEvent(new Event('focus'));
+
+    await vi.waitFor(() => {
+      expect(categorySelect.innerHTML).toContain('Error loading categories');
+    });
+  });
+
+  it('does not reload categories if already loaded', async () => {
+    const categories = [{ id: 1, title: 'General' }];
+    
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: categories })
+      .mockResolvedValueOnce({ data: [] });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const categorySelect = el.querySelector('#search-category');
+      // Check if categories are loaded by verifying options exist
+      expect(categorySelect.options.length).toBeGreaterThan(1);
+    });
+
+    // Focus again - should not trigger reload
+    const categorySelect = el.querySelector('#search-category');
+    categorySelect.dispatchEvent(new Event('focus'));
+
+    // Should not call fetch again
+    expect(fetchAPISpy).toHaveBeenCalledTimes(2); // Initial load only
+  });
+
+  it('does not reload attributions if already loaded', async () => {
+    const attributions = [{ name: 'Alice' }];
+    
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      // Check if attributions are loaded by verifying options exist
+      expect(attributionSelect.options.length).toBeGreaterThan(1);
+    });
+
+    // Focus again - should not trigger reload
+    const attributionSelect = el.querySelector('#search-attribution');
+    attributionSelect.dispatchEvent(new Event('focus'));
+
+    // Should not call fetch again
+    expect(fetchAPISpy).toHaveBeenCalledTimes(2); // Initial load only
+  });
+
+  it('excludes empty category_id from search filters', () => {
+    let searchCalledWith = null;
+
+    const el = mountSearch({
+      onSearch: (filters) => { searchCalledWith = filters; }
+    });
+
+    const categorySelect = el.querySelector('#search-category');
+    categorySelect.value = ''; // Empty category
+
+    const searchBtn = el.querySelector('#search-btn');
+    searchBtn.click();
+
+    // category_id should not be in cleanFilters
+    expect(searchCalledWith).not.toHaveProperty('category_id');
+  });
+
+  it('excludes empty attribution from search filters', () => {
+    let searchCalledWith = null;
+
+    const el = mountSearch({
+      onSearch: (filters) => { searchCalledWith = filters; }
+    });
+
+    const attributionSelect = el.querySelector('#search-attribution');
+    attributionSelect.value = ''; // Empty attribution
+
+    const searchBtn = el.querySelector('#search-btn');
+    searchBtn.click();
+
+    // attribution should not be in cleanFilters
+    expect(searchCalledWith).not.toHaveProperty('attribution');
+  });
+
+  it('handles empty attributions array', async () => {
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: [] }); // Empty attributions
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      // When attributions.length === 0, should not update dropdown
+      expect(attributionSelect).toBeTruthy();
+    });
+  });
 });

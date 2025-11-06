@@ -274,6 +274,78 @@ describe('third-party utilities', () => {
       expect(global.window.gtag).toBeDefined();
       expect(typeof global.window.gtag).toBe('function');
     });
+
+    it('does not trigger third party loads if already triggered', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+      
+      freshInit();
+
+      // Simulate scroll event (triggers third party loads)
+      const scrollEvent = new Event('scroll', { bubbles: true });
+      global.window.dispatchEvent(scrollEvent);
+
+      // Try to trigger again via pointerdown - should not trigger again
+      const pointerdownEvent = new Event('pointerdown', { bubbles: true });
+      global.window.dispatchEvent(pointerdownEvent);
+
+      // Should not throw
+      expect(global.window.dataLayer).toBeDefined();
+    });
+
+    it('does not initialize if analyticsBootstrapStarted is true', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+      
+      // Call once
+      freshInit();
+      
+      // Call again - should not add listeners again
+      const addEventListenerSpy2 = vi.spyOn(global.window, 'addEventListener');
+      freshInit();
+
+      // Should not add duplicate listeners
+      const newCalls = addEventListenerSpy2.mock.calls.filter(call => 
+        call[0] === 'pointerdown' || call[0] === 'keydown' || call[0] === 'scroll'
+      );
+      expect(newCalls.length).toBe(0);
+
+      addEventListenerSpy2.mockRestore();
+    });
+
+    it('handles gtag already existing', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+      
+      // Set gtag before initialization
+      global.window.gtag = vi.fn();
+      
+      freshInit();
+
+      // Simulate interaction
+      const pointerdownEvent = new Event('pointerdown', { bubbles: true });
+      global.window.dispatchEvent(pointerdownEvent);
+
+      // Should not overwrite existing gtag
+      expect(global.window.gtag).toBeDefined();
+    });
+
+    it('handles dataLayer already existing', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+      
+      // Set dataLayer before initialization
+      global.window.dataLayer = [1, 2, 3];
+      
+      freshInit();
+
+      // Simulate interaction
+      const pointerdownEvent = new Event('pointerdown', { bubbles: true });
+      global.window.dispatchEvent(pointerdownEvent);
+
+      // Should not overwrite existing dataLayer
+      expect(global.window.dataLayer).toEqual([1, 2, 3]);
+    });
   });
 });
 

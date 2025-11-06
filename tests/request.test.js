@@ -206,6 +206,105 @@ describe('request utilities', () => {
       await expect(apiRequest('/api/test', { skipFallback: true }))
         .rejects.toThrow('Server error');
     });
+
+    it('handles error response without error property', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ message: 'Not found' }) // No error property
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('The requested resource was not found');
+    });
+
+    it('handles 429 rate limit error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: 'Too many requests' })
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Too many requests');
+    });
+
+    it('handles 400 bad request error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: 'Bad request' })
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Bad request');
+    });
+
+    it('handles 401 unauthorized error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'Unauthorized' })
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Unauthorized');
+    });
+
+    it('handles 403 forbidden error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: 'Forbidden' })
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Forbidden');
+    });
+
+    it('handles 502 bad gateway error (>= 500)', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: async () => ({ error: 'Bad gateway' })
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Bad gateway');
+    });
+
+    it('handles unknown status code', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 418, // I'm a teapot
+        json: async () => ({ error: 'Teapot error' })
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Teapot error');
+    });
+
+    it('handles JSON parsing error in response', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => { throw new Error('Invalid JSON'); }
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Invalid response from server');
+    });
+
+    it('handles fallback also failing with network error', async () => {
+      // Primary fails with network error
+      fetchSpy.mockRejectedValueOnce(new Error('Primary network error'));
+      // Fallback also fails with network error
+      fetchSpy.mockRejectedValueOnce(new Error('Fallback network error'));
+
+      await expect(apiRequest('/api/test'))
+        .rejects.toThrow('Network error');
+      
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('apiGet', () => {
