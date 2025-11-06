@@ -3,12 +3,10 @@
 ## User Engagement Features
 - Comments/Discussion: Allow users to share stories about when they've experienced each law
 - User Accounts: Enable users to save favorite laws, track their submissions
-- Social Sharing: Add "Share on Twitter/Facebook" buttons with pre-formatted text
 - Law Collections: Let users create themed collections (e.g., "Work Laws", "Tech Laws")
 
 ## Content Enhancements
 - Categories/Tags: Organize laws by theme (work, life, technology, relationships)
-- Search Functionality: Full-text search across all laws
 - Related Laws: Show similar or related laws on detail pages
 - Law Origins: Add historical context and original sources where known
 
