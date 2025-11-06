@@ -1,8 +1,8 @@
 import {
   createSodsEmailPreviewHtml,
   createSodsEmailSubject
-} from '@shared/modules/sods-email-template.js';
-import { API_BASE_URL, API_FALLBACK_URL } from '../utils/constants.js';
+} from '../../../shared/modules/sods-email-template.js';
+import { API_BASE_URL, API_FALLBACK_URL, API_SHARE_CALCULATION_ENDPOINT } from '../utils/constants.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SENDING_BUTTON_TEXT = 'Sending...';
@@ -228,9 +228,8 @@ export function initShareCalculation({ root, getCalculationState }) {
 
     try {
       const state = getState();
-      const endpoint = '/api/v1/share-calculation';
-      const primaryUrl = `${API_BASE_URL}${endpoint}`;
-      const fallbackUrl = `${API_FALLBACK_URL}${endpoint}`;
+      const primaryUrl = `${API_BASE_URL}${API_SHARE_CALCULATION_ENDPOINT}`;
+      const fallbackUrl = `${API_FALLBACK_URL}${API_SHARE_CALCULATION_ENDPOINT}`;
 
       const requestBody = JSON.stringify({
         email: recipientEmail,

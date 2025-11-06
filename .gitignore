@@ -59,6 +59,10 @@ android/.externalNativeBuild/
 backend/node_modules/
 web/node_modules/
 
+# Workspace-specific package-lock.json (should only be at root)
+backend/package-lock.json
+web/package-lock.json
+
 # Platform-specific build outputs
 backend/dist/
 web/dist/
