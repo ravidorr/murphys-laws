@@ -18,10 +18,15 @@
     "lint:css": "stylelint \"styles/**/*.css\"",
     "lint:css:fix": "stylelint \"styles/**/*.css\" --fix"
   },
-  "keywords": ["murphys-law", "web", "frontend"],
+  "keywords": [
+    "murphys-law",
+    "web",
+    "frontend"
+  ],
   "author": "",
   "license": "CC0-1.0",
   "dependencies": {
+    "marked": "^17.0.0",
     "mathjax": "^3.2.2",
     "mathjax-full": "^3.2.2"
   },

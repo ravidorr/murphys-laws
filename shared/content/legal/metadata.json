@@ -1,0 +1,26 @@
+{
+  "about": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-11-07",
+    "description": "About Murphy's Law Archive - history, purpose, and features"
+  },
+  "privacy": {
+    "version": "1.1.0",
+    "lastUpdated": "2025-11-06",
+    "description": "Privacy Policy - data collection, usage, and protection practices"
+  },
+  "terms": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-10-18",
+    "description": "Terms of Service - usage guidelines and legal agreements"
+  },
+  "contact": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-11-07",
+    "description": "Contact information and support channels"
+  },
+  "schema": {
+    "version": "1.0.0",
+    "description": "This metadata tracks versions and last-updated dates for all legal content files. Update the lastUpdated field whenever content changes to ensure consistency across all platforms."
+  }
+}
