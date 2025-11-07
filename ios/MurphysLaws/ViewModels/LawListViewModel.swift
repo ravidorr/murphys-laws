@@ -25,6 +25,11 @@ class LawListViewModel: ObservableObject {
     private var currentOffset = 0
     private let limit = Constants.API.defaultLimit
 
+    // MARK: - Init
+    init(categoryID: Int? = nil) {
+        self.selectedCategoryID = categoryID
+    }
+
     // MARK: - Load Laws
     func loadLaws(refresh: Bool = false) async {
         if refresh {
@@ -112,6 +117,13 @@ class LawListViewModel: ObservableObject {
             searchQuery = query
         }
         selectedCategoryID = categoryID
+        await loadLaws(refresh: true)
+    }
+
+    // MARK: - Apply Sort Order
+    func applySort(by: String, order: String = "desc") async {
+        sortBy = by
+        sortOrder = order
         await loadLaws(refresh: true)
     }
 
