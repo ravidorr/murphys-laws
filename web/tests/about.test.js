@@ -159,4 +159,36 @@ describe('About page', () => {
     expect(blockquote.textContent).toMatch(/Anything that can go wrong/);
   });
 
+  it('does not trigger onNavigate when clicking non-HTMLElement target', () => {
+    let navigated = '';
+    const el = About({
+      onNavigate: (page) => { navigated = page; }
+    });
+
+    // Create a mock event with a non-HTMLElement target
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'target', {
+      value: { notAnHTMLElement: true },
+      writable: true
+    });
+
+    el.dispatchEvent(event);
+    expect(navigated).toBe('');
+  });
+
+  it('does not trigger onNavigate when navTarget is empty', () => {
+    let navigated = '';
+    const el = About({
+      onNavigate: (page) => { navigated = page; }
+    });
+
+    // Create a nav button with empty data-nav attribute
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', '');
+    el.appendChild(navBtn);
+
+    navBtn.click();
+    expect(navigated).toBe('');
+  });
+
 });
