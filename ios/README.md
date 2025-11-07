@@ -2,7 +2,7 @@
 
 Native iOS application for browsing Murphy's Laws, voting on favorites, and calculating the probability of tasks going wrong using Sod's Law formula.
 
-## 🎯 Features
+## Features
 
 - **Law of the Day**: Discover a new Murphy's Law every day
 - **Browse Laws**: Explore the complete archive with search and filters
@@ -11,13 +11,13 @@ Native iOS application for browsing Murphy's Laws, voting on favorites, and calc
 - **Sod's Law Calculator**: Calculate the probability of your task going wrong
 - **Submit Laws**: Contribute your own Murphy's Law variations
 
-## 📋 Requirements
+## Requirements
 
 - iOS 16.0+
 - Xcode 14.0+
 - Swift 5.7+
 
-## 🚀 Quick Start
+## Quick Start
 
 ### For First-Time Setup (Automated)
 
@@ -33,8 +33,8 @@ open MurphysLaws.xcodeproj
 **Option 2: Using Make**
 ```bash
 cd ios
-make setup    # Generate Xcode project
-make open     # Open in Xcode
+make setup # Generate Xcode project
+make open # Open in Xcode
 ```
 
 **Prerequisites**: Install [XcodeGen](https://github.com/yonaskolb/XcodeGen)
@@ -62,31 +62,31 @@ open MurphysLaws.xcodeproj
 
 Then press `⌘R` to build and run.
 
-## 🏗️ Architecture
+## Architecture
 
 The app follows MVVM (Model-View-ViewModel) architecture with a Repository pattern:
 
 ```
 MurphysLaws/
-├── App/                    # App entry point and navigation
-├── Models/                 # Data models (Law, Category, Attribution, Vote)
-├── Views/                  # SwiftUI views organized by feature
-│   ├── Home/              # Law of the Day and featured content
-│   ├── Browse/            # Law browsing and detail views
-│   ├── Categories/        # Category browsing
-│   ├── Calculator/        # Sod's Law Calculator
-│   ├── Submit/            # Law submission form
-│   ├── More/              # Settings and about
-│   └── Shared/            # Reusable components
-├── ViewModels/            # Business logic and state management
-├── Services/              # API and voting services
-├── Repositories/          # Data access layer with caching
-└── Utilities/             # Constants and helpers
+├── App/                # App entry point and navigation
+├── Models/             # Data models (Law, Category, Attribution, Vote)
+├── Views/              # SwiftUI views organized by feature
+│ ├── Home/             # Law of the Day and featured content
+│ ├── Browse/           # Law browsing and detail views
+│ ├── Categories/       # Category browsing
+│ ├── Calculator/       # Sod's Law Calculator
+│ ├── Submit/           # Law submission form
+│ ├── More/             # Settings and about
+│ └── Shared/           # Reusable components
+├── ViewModels/         # Business logic and state management
+├── Services/           # API and voting services
+├── Repositories/       # Data access layer with caching
+└── Utilities/          # Constants and helpers
 ```
 
 **Architecture Details**: See [Mobile Architecture](../shared/docs/MOBILE-ARCHITECTURE.md#ios-architecture)
 
-## 🔧 Configuration
+## Configuration
 
 ### API Endpoint
 
@@ -104,7 +104,7 @@ static let baseURL = "http://localhost:8787/api/v1"
 - **Category Cache**: 1-hour TTL
 - **Law of the Day Cache**: 24-hour TTL
 
-## 🧪 Testing
+## Testing
 
 ### Manual Testing
 
@@ -122,27 +122,27 @@ static let baseURL = "http://localhost:8787/api/v1"
 
 # Or via command line
 xcodebuild test \
-  -project MurphysLaws.xcodeproj \
-  -scheme MurphysLaws \
-  -destination 'platform=iOS Simulator,name=iPhone 15'
+ -project MurphysLaws.xcodeproj \
+ -scheme MurphysLaws \
+ -destination 'platform=iOS Simulator,name=iPhone 15'
 
 # Or using Make
 make test
 ```
 
 **Test Coverage:**
-- ✅ `LawListViewModelTests` - Browse, search, and filtering
-- ✅ `HomeViewModelTests` - Law of the day and featured content
-- ✅ `CalculatorViewModelTests` - Sod's Law probability calculator
-- ✅ UI tests for navigation, voting, search, and calculator
+- `LawListViewModelTests` - Browse, search, and filtering
+- `HomeViewModelTests` - Law of the day and featured content
+- `CalculatorViewModelTests` - Sod's Law probability calculator
+- UI tests for navigation, voting, search, and calculator
 
-## 📚 Documentation
+## Documentation
 
 - **Setup Guide**: [SETUP.md](./SETUP.md) - Detailed Xcode setup instructions
 - **PRD**: [iOS PRD](../shared/docs/MOBILE-IOS-PRD.md) - Complete feature specifications
 - **API**: [API Documentation](../shared/docs/API.md) - Backend API endpoints
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Build errors**: Ensure all files are added to Xcode target
 **API fails**: Verify `baseURL` in Constants.swift
@@ -150,27 +150,27 @@ make test
 
 See [SETUP.md](./SETUP.md#troubleshooting) for detailed troubleshooting.
 
-## 📱 Status
+## Status
 
-✅ **MVP Complete & Test-Ready** - All core features implemented:
-- ✅ Data models (Law, Category, Attribution, Vote)
-- ✅ API service with URLSession
-- ✅ Repository layer with caching
-- ✅ ViewModels for all features
-- ✅ Complete UI implementation
-  - ✅ Home with Law of the Day
-  - ✅ Browse with search and filters
-  - ✅ Category browsing
-  - ✅ Law detail with voting
-  - ✅ Sod's Law Calculator
-  - ✅ Submit law form
-  - ✅ Settings and about
-- ✅ Xcode project configuration (project.yml)
-- ✅ Setup automation (generate-xcode-project.sh, Makefile)
-- ✅ Info.plist and Assets.xcassets
-- ✅ Unit test suite (3 test files, 25+ tests)
-- ✅ UI test suite (4 test files, 15+ tests)
-- ✅ DeviceID utility for voting
+ **MVP Complete & Test-Ready** - All core features implemented:
+- Data models (Law, Category, Attribution, Vote)
+- API service with URLSession
+- Repository layer with caching
+- ViewModels for all features
+- Complete UI implementation
+ - Home with Law of the Day
+ - Browse with search and filters
+ - Category browsing
+ - Law detail with voting
+ - Sod's Law Calculator
+ - Submit law form
+ - Settings and about
+- Xcode project configuration (project.yml)
+- Setup automation (generate-xcode-project.sh, Makefile)
+- Info.plist and Assets.xcassets
+- Unit test suite (3 test files, 25+ tests)
+- UI test suite (4 test files, 15+ tests)
+- DeviceID utility for voting
 
 **Next Steps**:
 - Run `make setup` to generate Xcode project
@@ -179,7 +179,7 @@ See [SETUP.md](./SETUP.md#troubleshooting) for detailed troubleshooting.
 - Test on physical device
 - App Store submission preparation
 
-## 🤝 Contributing
+## Contributing
 
 When adding features:
 1. Follow MVVM architecture
@@ -188,6 +188,6 @@ When adding features:
 4. Add loading states with `ProgressView`
 5. Support pull-to-refresh
 
-## 👤 Author
+## Author
 
 Raanan Avidor - [murphys-laws.com](https://murphys-laws.com)

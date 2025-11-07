@@ -24,13 +24,13 @@ This document outlines the recommended repository structure for adding native iO
 ### Current State
 
 ```
-murphys-laws/                  # Single repository
-├── src/                       # Web app frontend (Vanilla JS)
-├── scripts/                   # Backend API server (Node.js)
-├── db/                        # SQLite database
-├── docs/                      # Documentation
-├── tests/                     # Web app tests
-└── public/                    # Static assets
+murphys-laws/ # Single repository
+├── src/ # Web app frontend (Vanilla JS)
+├── scripts/ # Backend API server (Node.js)
+├── db/ # SQLite database
+├── docs/ # Documentation
+├── tests/ # Web app tests
+└── public/ # Static assets
 ```
 
 ### Goal
@@ -46,18 +46,18 @@ Add native iOS and Android apps that share the same backend API and database.
 **Single repository containing web, iOS, Android, and backend**
 
 **Pros:**
-- ✅ Shared backend API - all platforms use same codebase
-- ✅ Single source of truth for documentation
-- ✅ Atomic commits across all platforms
-- ✅ Unified issue tracking and project management
-- ✅ Easier to keep API versions synchronized
-- ✅ Simpler CI/CD pipeline coordination
-- ✅ Single `git clone` for contributors
+- Shared backend API - all platforms use same codebase
+- Single source of truth for documentation
+- Atomic commits across all platforms
+- Unified issue tracking and project management
+- Easier to keep API versions synchronized
+- Simpler CI/CD pipeline coordination
+- Single `git clone` for contributors
 
 **Cons:**
-- ⚠️ Larger repository size
-- ⚠️ More complex CI/CD (need platform-specific jobs)
-- ⚠️ iOS/Android developers must clone entire repo
+- Larger repository size
+- More complex CI/CD (need platform-specific jobs)
+- iOS/Android developers must clone entire repo
 
 **Best for:** Teams where backend and mobile are tightly coupled (your case)
 
@@ -68,17 +68,17 @@ Add native iOS and Android apps that share the same backend API and database.
 **Three repositories: web, iOS, Android**
 
 **Pros:**
-- ✅ Smaller repository sizes
-- ✅ Independent release cycles
-- ✅ Easier permissions management per platform
-- ✅ Simpler CI/CD per repo
+- Smaller repository sizes
+- Independent release cycles
+- Easier permissions management per platform
+- Simpler CI/CD per repo
 
 **Cons:**
-- ❌ API changes require coordinated updates across 3 repos
-- ❌ Fragmented documentation
-- ❌ Difficult to track cross-platform features
-- ❌ More complex version management
-- ❌ Separate issue trackers (or cross-repo references)
+- API changes require coordinated updates across 3 repos
+- Fragmented documentation
+- Difficult to track cross-platform features
+- More complex version management
+- Separate issue trackers (or cross-repo references)
 
 **Best for:** Independent apps with separate backends
 
@@ -89,15 +89,15 @@ Add native iOS and Android apps that share the same backend API and database.
 **Two repositories: web + backend, mobile (iOS + Android)**
 
 **Pros:**
-- ✅ iOS and Android teams share repo
-- ✅ Shared mobile documentation
-- ✅ Backend separate from mobile
-- ✅ Smaller web repo
+- iOS and Android teams share repo
+- Shared mobile documentation
+- Backend separate from mobile
+- Smaller web repo
 
 **Cons:**
-- ❌ API versioning harder to coordinate
-- ❌ Backend changes require updates in 2 repos
-- ❌ Duplicated documentation
+- API versioning harder to coordinate
+- Backend changes require updates in 2 repos
+- Duplicated documentation
 
 **Best for:** Large teams with dedicated mobile/web divisions
 
@@ -108,159 +108,159 @@ Add native iOS and Android apps that share the same backend API and database.
 ### Proposed Directory Structure
 
 ```
-murphys-laws/                           # Root repository
+murphys-laws/ # Root repository
 │
-├── README.md                           # Main project README
+├── README.md # Main project README
 ├── LICENSE
-├── .gitignore                          # Combined gitignore for all platforms
+├── .gitignore # Combined gitignore for all platforms
 │
-├── docs/                               # Shared documentation
-│   ├── README.md                       # Documentation index
-│   ├── API.md                          # API endpoint documentation
-│   ├── DATABASE.md                     # Database schema
-│   ├── DEPLOYMENT.md                   # Deployment guide (web/API)
-│   ├── MOBILE-IOS-PRD.md              # iOS PRD
-│   ├── MOBILE-ANDROID-PRD.md          # Android PRD
-│   ├── MOBILE-ARCHITECTURE.md         # Mobile architecture
-│   └── MOBILE-REPOSITORY-STRUCTURE.md # This file
+├── docs/ # Shared documentation
+│ ├── README.md # Documentation index
+│ ├── API.md # API endpoint documentation
+│ ├── DATABASE.md # Database schema
+│ ├── DEPLOYMENT.md # Deployment guide (web/API)
+│ ├── MOBILE-IOS-PRD.md # iOS PRD
+│ ├── MOBILE-ANDROID-PRD.md # Android PRD
+│ ├── MOBILE-ARCHITECTURE.md # Mobile architecture
+│ └── MOBILE-REPOSITORY-STRUCTURE.md # This file
 │
-├── backend/                            # Shared backend (renamed from root)
-│   ├── README.md                       # Backend-specific README
-│   ├── package.json
-│   ├── scripts/
-│   │   ├── api-server.mjs             # API server
-│   │   ├── build-sqlite.mjs           # Data importer
-│   │   └── migrate.mjs                # Database migrations
-│   ├── db/
-│   │   ├── schema.sql
-│   │   └── migrations/
-│   ├── tests/                          # Backend tests
-│   └── config/
+├── backend/ # Shared backend (renamed from root)
+│ ├── README.md # Backend-specific README
+│ ├── package.json
+│ ├── scripts/
+│ │ ├── api-server.mjs # API server
+│ │ ├── build-sqlite.mjs # Data importer
+│ │ └── migrate.mjs # Database migrations
+│ ├── db/
+│ │ ├── schema.sql
+│ │ └── migrations/
+│ ├── tests/ # Backend tests
+│ └── config/
 │
-├── web/                                # Web application (moved from root)
-│   ├── README.md                       # Web-specific README
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── index.html
-│   ├── src/
-│   │   ├── main.js
-│   │   ├── router.js
-│   │   ├── views/
-│   │   ├── components/
-│   │   ├── modules/
-│   │   └── utils/
-│   ├── styles/
-│   ├── public/
-│   ├── tests/                          # Web tests
-│   └── e2e/                            # Web e2e tests
+├── web/ # Web application (moved from root)
+│ ├── README.md # Web-specific README
+│ ├── package.json
+│ ├── vite.config.js
+│ ├── index.html
+│ ├── src/
+│ │ ├── main.js
+│ │ ├── router.js
+│ │ ├── views/
+│ │ ├── components/
+│ │ ├── modules/
+│ │ └── utils/
+│ ├── styles/
+│ ├── public/
+│ ├── tests/ # Web tests
+│ └── e2e/ # Web e2e tests
 │
-├── ios/                                # iOS application
-│   ├── README.md                       # iOS-specific README
-│   ├── MurphysLaws.xcodeproj/         # Xcode project
-│   ├── MurphysLaws.xcworkspace/       # Xcode workspace (if using SPM)
-│   ├── MurphysLaws/                   # Main app target
-│   │   ├── App/
-│   │   │   ├── MurphysLawsApp.swift
-│   │   │   └── AppDelegate.swift
-│   │   ├── Models/
-│   │   │   ├── Law.swift
-│   │   │   ├── Category.swift
-│   │   │   └── Vote.swift
-│   │   ├── ViewModels/
-│   │   │   ├── LawListViewModel.swift
-│   │   │   ├── LawDetailViewModel.swift
-│   │   │   └── SearchViewModel.swift
-│   │   ├── Views/
-│   │   │   ├── Home/
-│   │   │   ├── Browse/
-│   │   │   ├── Search/
-│   │   │   └── Calculators/
-│   │   ├── Services/
-│   │   │   ├── APIService.swift
-│   │   │   ├── CacheService.swift
-│   │   │   └── VotingService.swift
-│   │   ├── Repositories/
-│   │   │   └── LawRepository.swift
-│   │   ├── Utilities/
-│   │   │   ├── Constants.swift
-│   │   │   ├── Extensions/
-│   │   │   └── NetworkMonitor.swift
-│   │   └── Resources/
-│   │       ├── Assets.xcassets
-│   │       └── Info.plist
-│   ├── MurphysLawsTests/              # Unit tests
-│   ├── MurphysLawsUITests/            # UI tests
-│   └── Podfile                         # (if using CocoaPods, optional)
+├── ios/ # iOS application
+│ ├── README.md # iOS-specific README
+│ ├── MurphysLaws.xcodeproj/ # Xcode project
+│ ├── MurphysLaws.xcworkspace/ # Xcode workspace (if using SPM)
+│ ├── MurphysLaws/ # Main app target
+│ │ ├── App/
+│ │ │ ├── MurphysLawsApp.swift
+│ │ │ └── AppDelegate.swift
+│ │ ├── Models/
+│ │ │ ├── Law.swift
+│ │ │ ├── Category.swift
+│ │ │ └── Vote.swift
+│ │ ├── ViewModels/
+│ │ │ ├── LawListViewModel.swift
+│ │ │ ├── LawDetailViewModel.swift
+│ │ │ └── SearchViewModel.swift
+│ │ ├── Views/
+│ │ │ ├── Home/
+│ │ │ ├── Browse/
+│ │ │ ├── Search/
+│ │ │ └── Calculators/
+│ │ ├── Services/
+│ │ │ ├── APIService.swift
+│ │ │ ├── CacheService.swift
+│ │ │ └── VotingService.swift
+│ │ ├── Repositories/
+│ │ │ └── LawRepository.swift
+│ │ ├── Utilities/
+│ │ │ ├── Constants.swift
+│ │ │ ├── Extensions/
+│ │ │ └── NetworkMonitor.swift
+│ │ └── Resources/
+│ │ ├── Assets.xcassets
+│ │ └── Info.plist
+│ ├── MurphysLawsTests/ # Unit tests
+│ ├── MurphysLawsUITests/ # UI tests
+│ └── Podfile # (if using CocoaPods, optional)
 │
-├── android/                            # Android application
-│   ├── README.md                       # Android-specific README
-│   ├── build.gradle.kts               # Project-level build file
-│   ├── settings.gradle.kts
-│   ├── gradle.properties
-│   ├── app/
-│   │   ├── build.gradle.kts           # App-level build file
-│   │   ├── proguard-rules.pro
-│   │   └── src/
-│   │       ├── main/
-│   │       │   ├── AndroidManifest.xml
-│   │       │   ├── java/com/murphyslaws/
-│   │       │   │   ├── MurphysLawsApplication.kt
-│   │       │   │   ├── MainActivity.kt
-│   │       │   │   ├── data/
-│   │       │   │   │   ├── local/
-│   │       │   │   │   │   ├── LawDatabase.kt
-│   │       │   │   │   │   ├── dao/
-│   │       │   │   │   │   └── entities/
-│   │       │   │   │   ├── remote/
-│   │       │   │   │   │   ├── ApiService.kt
-│   │       │   │   │   │   ├── dto/
-│   │       │   │   │   │   └── NetworkModule.kt
-│   │       │   │   │   └── repository/
-│   │       │   │   ├── domain/
-│   │       │   │   │   ├── model/
-│   │       │   │   │   ├── repository/
-│   │       │   │   │   └── usecase/
-│   │       │   │   ├── presentation/
-│   │       │   │   │   ├── home/
-│   │       │   │   │   ├── browse/
-│   │       │   │   │   ├── search/
-│   │       │   │   │   └── navigation/
-│   │       │   │   ├── util/
-│   │       │   │   └── di/
-│   │       │   └── res/
-│   │       │       ├── values/
-│   │       │       ├── drawable/
-│   │       │       └── mipmap/
-│   │       ├── test/                   # Unit tests
-│   │       └── androidTest/            # Instrumented tests
-│   └── gradle/
+├── android/ # Android application
+│ ├── README.md # Android-specific README
+│ ├── build.gradle.kts # Project-level build file
+│ ├── settings.gradle.kts
+│ ├── gradle.properties
+│ ├── app/
+│ │ ├── build.gradle.kts # App-level build file
+│ │ ├── proguard-rules.pro
+│ │ └── src/
+│ │ ├── main/
+│ │ │ ├── AndroidManifest.xml
+│ │ │ ├── java/com/murphyslaws/
+│ │ │ │ ├── MurphysLawsApplication.kt
+│ │ │ │ ├── MainActivity.kt
+│ │ │ │ ├── data/
+│ │ │ │ │ ├── local/
+│ │ │ │ │ │ ├── LawDatabase.kt
+│ │ │ │ │ │ ├── dao/
+│ │ │ │ │ │ └── entities/
+│ │ │ │ │ ├── remote/
+│ │ │ │ │ │ ├── ApiService.kt
+│ │ │ │ │ │ ├── dto/
+│ │ │ │ │ │ └── NetworkModule.kt
+│ │ │ │ │ └── repository/
+│ │ │ │ ├── domain/
+│ │ │ │ │ ├── model/
+│ │ │ │ │ ├── repository/
+│ │ │ │ │ └── usecase/
+│ │ │ │ ├── presentation/
+│ │ │ │ │ ├── home/
+│ │ │ │ │ ├── browse/
+│ │ │ │ │ ├── search/
+│ │ │ │ │ └── navigation/
+│ │ │ │ ├── util/
+│ │ │ │ └── di/
+│ │ │ └── res/
+│ │ │ ├── values/
+│ │ │ ├── drawable/
+│ │ │ └── mipmap/
+│ │ ├── test/ # Unit tests
+│ │ └── androidTest/ # Instrumented tests
+│ └── gradle/
 │
-├── shared/                             # Shared resources (optional)
-│   ├── assets/                         # Design assets
-│   │   ├── icons/
-│   │   ├── logos/
-│   │   └── screenshots/
-│   └── data/                           # Shared data
-│       └── murphys-laws/               # Law markdown files
+├── shared/ # Shared resources (optional)
+│ ├── assets/ # Design assets
+│ │ ├── icons/
+│ │ ├── logos/
+│ │ └── screenshots/
+│ └── data/ # Shared data
+│ └── murphys-laws/ # Law markdown files
 │
-├── .github/                            # GitHub configuration
-│   ├── workflows/                      # GitHub Actions
-│   │   ├── backend-ci.yml              # Backend tests
-│   │   ├── web-ci.yml                  # Web tests and build
-│   │   ├── ios-ci.yml                  # iOS build and test
-│   │   └── android-ci.yml              # Android build and test
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md
-│   │   ├── feature_request.md
-│   │   ├── ios_bug.md
-│   │   └── android_bug.md
-│   └── CODEOWNERS                      # Code ownership
+├── .github/ # GitHub configuration
+│ ├── workflows/ # GitHub Actions
+│ │ ├── backend-ci.yml # Backend tests
+│ │ ├── web-ci.yml # Web tests and build
+│ │ ├── ios-ci.yml # iOS build and test
+│ │ └── android-ci.yml # Android build and test
+│ ├── ISSUE_TEMPLATE/
+│ │ ├── bug_report.md
+│ │ ├── feature_request.md
+│ │ ├── ios_bug.md
+│ │ └── android_bug.md
+│ └── CODEOWNERS # Code ownership
 │
-├── .gitignore                          # Combined gitignore
-└── scripts/                            # Repository management scripts
-    ├── setup-ios.sh                    # iOS setup helper
-    ├── setup-android.sh                # Android setup helper
-    └── sync-api-docs.sh                # Sync API docs across platforms
+├── .gitignore # Combined gitignore
+└── scripts/ # Repository management scripts
+ ├── setup-ios.sh # iOS setup helper
+ ├── setup-android.sh # Android setup helper
+ └── sync-api-docs.sh # Sync API docs across platforms
 ```
 
 ---
@@ -320,13 +320,13 @@ android/app/release/
 
 A comprehensive collection of Murphy's Laws available on web, iOS, and Android.
 
-## 📱 Platforms
+## Platforms
 
 - **Web**: https://murphys-laws.com
 - **iOS**: Available on the App Store
 - **Android**: Available on Google Play
 
-## 🏗️ Repository Structure
+## Repository Structure
 
 - `backend/` - Shared Node.js API server
 - `web/` - Web application (Vanilla JS + Vite)
@@ -334,7 +334,7 @@ A comprehensive collection of Murphy's Laws available on web, iOS, and Android.
 - `android/` - Android app (Kotlin + Jetpack Compose)
 - `docs/` - Documentation
 
-## 🚀 Quick Start
+## Quick Start
 
 See platform-specific READMEs:
 - [Backend Setup](backend/README.md)
@@ -342,7 +342,7 @@ See platform-specific READMEs:
 - [iOS Development](ios/README.md)
 - [Android Development](android/README.md)
 
-## 📚 Documentation
+## Documentation
 
 - [API Documentation](docs/API.md)
 - [Mobile Architecture](docs/MOBILE-ARCHITECTURE.md)
@@ -366,8 +366,8 @@ Node.js API server serving web, iOS, and Android clients.
 cd backend
 npm install
 cp .env.example .env
-npm run build:db  # Build SQLite database
-npm start         # Start API server on port 8787
+npm run build:db # Build SQLite database
+npm start # Start API server on port 8787
 ```
 
 ## API Endpoints
@@ -397,21 +397,21 @@ Vanilla JavaScript web application.
 ```bash
 cd web
 npm install
-npm run dev   # Start dev server on port 5173
+npm run dev # Start dev server on port 5173
 ```
 
 ## Build
 
 ```bash
-npm run build      # Build for production
-npm run preview    # Preview production build
+npm run build # Build for production
+npm run preview # Preview production build
 ```
 
 ## Testing
 
 ```bash
-npm test              # Unit tests
-npm run test:e2e      # E2E tests
+npm test # Unit tests
+npm run test:e2e # E2E tests
 ```
 ```
 
@@ -446,7 +446,7 @@ open MurphysLaws.xcodeproj
 ## Testing
 
 ```bash
-⌘U  # Run unit tests
+⌘U # Run unit tests
 ```
 
 ## Architecture
@@ -486,8 +486,8 @@ cd android
 ## Testing
 
 ```bash
-./gradlew test              # Unit tests
-./gradlew connectedAndroidTest  # Instrumented tests
+./gradlew test # Unit tests
+./gradlew connectedAndroidTest # Instrumented tests
 ```
 
 ## Architecture
@@ -506,28 +506,28 @@ See [Mobile Architecture](../docs/MOBILE-ARCHITECTURE.md#android-architecture)
 name: Backend CI
 
 on:
-  push:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci.yml'
-  pull_request:
-    paths:
-      - 'backend/**'
+ push:
+ paths:
+ - 'backend/**'
+ - '.github/workflows/backend-ci.yml'
+ pull_request:
+ paths:
+ - 'backend/**'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-      - run: npm ci
-      - run: npm test
-      - run: npm run test:coverage
+ test:
+ runs-on: ubuntu-latest
+ defaults:
+ run:
+ working-directory: backend
+ steps:
+ - uses: actions/checkout@v3
+ - uses: actions/setup-node@v3
+ with:
+ node-version: '22'
+ - run: npm ci
+ - run: npm test
+ - run: npm run test:coverage
 ```
 
 **`.github/workflows/web-ci.yml`:**
@@ -535,31 +535,31 @@ jobs:
 name: Web CI
 
 on:
-  push:
-    paths:
-      - 'web/**'
-      - 'backend/**'  # Web depends on backend
-      - '.github/workflows/web-ci.yml'
-  pull_request:
-    paths:
-      - 'web/**'
-      - 'backend/**'
+ push:
+ paths:
+ - 'web/**'
+ - 'backend/**' # Web depends on backend
+ - '.github/workflows/web-ci.yml'
+ pull_request:
+ paths:
+ - 'web/**'
+ - 'backend/**'
 
 jobs:
-  test-and-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - run: npm run test:e2e
+ test-and-build:
+ runs-on: ubuntu-latest
+ defaults:
+ run:
+ working-directory: web
+ steps:
+ - uses: actions/checkout@v3
+ - uses: actions/setup-node@v3
+ with:
+ node-version: '22'
+ - run: npm ci
+ - run: npm test
+ - run: npm run build
+ - run: npm run test:e2e
 ```
 
 **`.github/workflows/ios-ci.yml`:**
@@ -567,34 +567,34 @@ jobs:
 name: iOS CI
 
 on:
-  push:
-    paths:
-      - 'ios/**'
-      - '.github/workflows/ios-ci.yml'
-  pull_request:
-    paths:
-      - 'ios/**'
+ push:
+ paths:
+ - 'ios/**'
+ - '.github/workflows/ios-ci.yml'
+ pull_request:
+ paths:
+ - 'ios/**'
 
 jobs:
-  build-and-test:
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ios
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build
-        run: |
-          xcodebuild build \
-            -project MurphysLaws.xcodeproj \
-            -scheme MurphysLaws \
-            -destination 'platform=iOS Simulator,name=iPhone 15'
-      - name: Test
-        run: |
-          xcodebuild test \
-            -project MurphysLaws.xcodeproj \
-            -scheme MurphysLaws \
-            -destination 'platform=iOS Simulator,name=iPhone 15'
+ build-and-test:
+ runs-on: macos-latest
+ defaults:
+ run:
+ working-directory: ios
+ steps:
+ - uses: actions/checkout@v3
+ - name: Build
+ run: |
+ xcodebuild build \
+ -project MurphysLaws.xcodeproj \
+ -scheme MurphysLaws \
+ -destination 'platform=iOS Simulator,name=iPhone 15'
+ - name: Test
+ run: |
+ xcodebuild test \
+ -project MurphysLaws.xcodeproj \
+ -scheme MurphysLaws \
+ -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
 **`.github/workflows/android-ci.yml`:**
@@ -602,35 +602,35 @@ jobs:
 name: Android CI
 
 on:
-  push:
-    paths:
-      - 'android/**'
-      - '.github/workflows/android-ci.yml'
-  pull_request:
-    paths:
-      - 'android/**'
+ push:
+ paths:
+ - 'android/**'
+ - '.github/workflows/android-ci.yml'
+ pull_request:
+ paths:
+ - 'android/**'
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      - name: Build
-        run: ./gradlew build
-      - name: Test
-        run: ./gradlew test
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+ build-and-test:
+ runs-on: ubuntu-latest
+ defaults:
+ run:
+ working-directory: android
+ steps:
+ - uses: actions/checkout@v3
+ - uses: actions/setup-java@v3
+ with:
+ distribution: 'temurin'
+ java-version: '17'
+ - name: Build
+ run: ./gradlew build
+ - name: Test
+ run: ./gradlew test
+ - name: Upload APK
+ uses: actions/upload-artifact@v3
+ with:
+ name: app-debug
+ path: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
@@ -642,11 +642,11 @@ jobs:
 **`version.json`** (root):
 ```json
 {
-  "api_version": "1.0.0",
-  "web_version": "2.1.0",
-  "ios_version": "1.0.0",
-  "android_version": "1.0.0",
-  "minimum_api_version": "1.0.0"
+ "api_version": "1.0.0",
+ "web_version": "2.1.0",
+ "ios_version": "1.0.0",
+ "android_version": "1.0.0",
+ "minimum_api_version": "1.0.0"
 }
 ```
 
@@ -655,10 +655,10 @@ jobs:
 **Backend (`backend/package.json`):**
 ```json
 {
-  "version": "1.0.0",
-  "engines": {
-    "node": ">=22.0.0"
-  }
+ "version": "1.0.0",
+ "engines": {
+ "node": ">=22.0.0"
+ }
 }
 ```
 
@@ -673,10 +673,10 @@ jobs:
 **Android (`android/app/build.gradle.kts`):**
 ```kotlin
 android {
-    defaultConfig {
-        versionCode = 1
-        versionName = "1.0.0"
-    }
+ defaultConfig {
+ versionCode = 1
+ versionName = "1.0.0"
+ }
 }
 ```
 
@@ -711,21 +711,21 @@ mv index.html web/index.html
 **Step 2: Update paths in package.json scripts**
 ```json
 {
-  "scripts": {
-    "dev:backend": "cd backend && npm run dev",
-    "dev:web": "cd web && npm run dev",
-    "dev": "npm run dev:backend & npm run dev:web",
-    "build:web": "cd web && npm run build",
-    "test:backend": "cd backend && npm test",
-    "test:web": "cd web && npm test"
-  }
+ "scripts": {
+ "dev:backend": "cd backend && npm run dev",
+ "dev:web": "cd web && npm run dev",
+ "dev": "npm run dev:backend & npm run dev:web",
+ "build:web": "cd web && npm run build",
+ "test:backend": "cd backend && npm test",
+ "test:web": "cd web && npm test"
+ }
 }
 ```
 
 **Step 3: Update imports in backend**
 ```javascript
 // backend/scripts/build-sqlite.mjs
-const LAWS_DIR = '../shared/data/murphys-laws';  // Updated path
+const LAWS_DIR = '../shared/data/murphys-laws'; // Updated path
 ```
 
 **Step 4: Update web imports**
@@ -782,14 +782,14 @@ mkdir -p .github/workflows
 If you prefer minimal disruption to the existing web/backend setup:
 
 ```
-murphys-laws/                  # Existing structure unchanged
-├── src/                       # Web frontend (keep as-is)
-├── scripts/                   # Backend (keep as-is)
-├── db/                        # Database (keep as-is)
-├── mobile/                    # NEW: Mobile apps only
-│   ├── ios/
-│   └── android/
-└── docs/                      # Documentation
+murphys-laws/ # Existing structure unchanged
+├── src/ # Web frontend (keep as-is)
+├── scripts/ # Backend (keep as-is)
+├── db/ # Database (keep as-is)
+├── mobile/ # NEW: Mobile apps only
+│ ├── ios/
+│ └── android/
+└── docs/ # Documentation
 ```
 
 **Pros:** Minimal changes to existing setup
@@ -802,9 +802,9 @@ murphys-laws/                  # Existing structure unchanged
 ```
 murphys-laws/
 ├── platforms/
-│   ├── web/
-│   ├── ios/
-│   └── android/
+│ ├── web/
+│ ├── ios/
+│ └── android/
 ├── backend/
 ├── shared/
 └── docs/
@@ -819,12 +819,12 @@ murphys-laws/
 
 **Use the Monorepo structure** with these key principles:
 
-1. ✅ **Single repository** for all platforms
-2. ✅ **Clear directory separation** (backend/, web/, ios/, android/)
-3. ✅ **Shared documentation** in docs/
-4. ✅ **Platform-specific READMEs** in each directory
-5. ✅ **Path-based CI/CD** triggers in GitHub Actions
-6. ✅ **Shared data** in shared/ directory
+1. **Single repository** for all platforms
+2. **Clear directory separation** (backend/, web/, ios/, android/)
+3. **Shared documentation** in docs/
+4. **Platform-specific READMEs** in each directory
+5. **Path-based CI/CD** triggers in GitHub Actions
+6. **Shared data** in shared/ directory
 
 **Why?**
 - Your backend API is the single source of truth

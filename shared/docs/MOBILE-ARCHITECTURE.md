@@ -30,40 +30,40 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                         CLIENT LAYER                        │
+│ CLIENT LAYER │
 ├──────────────────────┬──────────────────────┬───────────────┤
-│                      │                      │               │
-│   iOS App            │   Android App        │   Web App     │
-│   (Swift/SwiftUI)    │   (Kotlin/Compose)   │   (Vanilla JS)│
-│                      │                      │               │
+│ │ │ │
+│ iOS App │ Android App │ Web App │
+│ (Swift/SwiftUI) │ (Kotlin/Compose) │ (Vanilla JS)│
+│ │ │ │
 └──────────┬───────────┴──────────┬───────────┴───────┬───────┘
-           │                      │                   │
-           └──────────────────────┼───────────────────┘
-                                  │
-                          ┌───────▼────────┐
-                          │                │
-                          │  HTTPS/JSON    │
-                          │                │
-                          └───────┬────────┘
-                                  │
+ │ │ │
+ └──────────────────────┼───────────────────┘
+ │
+ ┌───────▼────────┐
+ │ │
+ │ HTTPS/JSON │
+ │ │
+ └───────┬────────┘
+ │
 ┌─────────────────────────────────▼───────────────────────────┐
-│                       API LAYER                             │
+│ API LAYER │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   Node.js API Server (scripts/api-server.mjs)              │
-│   • Versioned Endpoints: /api/v1/*                         │
-│   • Rate Limiting (IP + Device ID)                         │
-│   • CORS Management                                        │
-│   • Request Validation                                     │
-│                                                             │
+│ │
+│ Node.js API Server (scripts/api-server.mjs) │
+│ • Versioned Endpoints: /api/v1/* │
+│ • Rate Limiting (IP + Device ID) │
+│ • CORS Management │
+│ • Request Validation │
+│ │
 └──────────────────────────────┬──────────────────────────────┘
-                               │
-                      ┌────────▼─────────┐
-                      │                  │
-                      │   SQLite DB      │
-                      │   (better-sqlite3)│
-                      │                  │
-                      └──────────────────┘
+ │
+ ┌────────▼─────────┐
+ │ │
+ │ SQLite DB │
+ │ (better-sqlite3)│
+ │ │
+ └──────────────────┘
 ```
 
 ### Technology Stack
@@ -155,26 +155,26 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 
 {
-  "data": [
-    {
-      "id": 123,
-      "text": "If anything can go wrong, it will",
-      "title": "Murphy's Original Law",
-      "upvotes": 42,
-      "downvotes": 3,
-      "created_at": "2024-01-15T10:30:00Z",
-      "attributions": [
-        {
-          "name": "Edward A. Murphy Jr.",
-          "contact_type": "url",
-          "contact_value": "https://en.wikipedia.org/wiki/Edward_A._Murphy_Jr."
-        }
-      ]
-    }
-  ],
-  "total": 1234,
-  "limit": 25,
-  "offset": 0
+ "data": [
+ {
+ "id": 123,
+ "text": "If anything can go wrong, it will",
+ "title": "Murphy's Original Law",
+ "upvotes": 42,
+ "downvotes": 3,
+ "created_at": "2024-01-15T10:30:00Z",
+ "attributions": [
+ {
+ "name": "Edward A. Murphy Jr.",
+ "contact_type": "url",
+ "contact_value": "https://en.wikipedia.org/wiki/Edward_A._Murphy_Jr."
+ }
+ ]
+ }
+ ],
+ "total": 1234,
+ "limit": 25,
+ "offset": 0
 }
 ```
 
@@ -186,15 +186,15 @@ Content-Type: application/json
 X-Device-ID: 550e8400-e29b-41d4-a716-446655440000
 
 {
-  "vote_type": "up"
+ "vote_type": "up"
 }
 
 HTTP/1.1 200 OK
 Content-Type: application/json
 
 {
-  "upvotes": 43,
-  "downvotes": 3
+ "upvotes": 43,
+ "downvotes": 3
 }
 ```
 
@@ -205,9 +205,9 @@ HTTP/1.1 429 Too Many Requests
 Content-Type: application/json
 
 {
-  "error": "Rate limit exceeded",
-  "message": "Too many votes. Please try again in 60 seconds.",
-  "retry_after": 60
+ "error": "Rate limit exceeded",
+ "message": "Too many votes. Please try again in 60 seconds.",
+ "retry_after": 60
 }
 ```
 
@@ -224,11 +224,11 @@ Content-Type: application/json
 ```javascript
 // Backend (api-server.mjs)
 function getUserIdentifier(req) {
-  // Priority: device_id > IP address
-  return req.headers['x-device-id']
-    || req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-    || req.headers['x-real-ip']
-    || req.socket.remoteAddress;
+ // Priority: device_id > IP address
+ return req.headers['x-device-id']
+ || req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+ || req.headers['x-real-ip']
+ || req.socket.remoteAddress;
 }
 ```
 
@@ -240,41 +240,41 @@ function getUserIdentifier(req) {
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                   │
+│ PRESENTATION LAYER │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────┐      ┌──────────────┐               │
-│  │   SwiftUI    │◄─────│  ViewModel   │               │
-│  │    Views     │      │   (Observable)│               │
-│  └──────────────┘      └───────┬──────┘               │
-│                                 │                       │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ │
+│ │ SwiftUI │◄─────│ ViewModel │ │
+│ │ Views │ │ (Observable)│ │
+│ └──────────────┘ └───────┬──────┘ │
+│ │ │
 └─────────────────────────────────┼───────────────────────┘
-                                  │
+ │
 ┌─────────────────────────────────▼───────────────────────┐
-│                     DOMAIN LAYER                        │
+│ DOMAIN LAYER │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────┐      ┌──────────────┐               │
-│  │   Models     │      │  Use Cases   │               │
-│  │   (structs)  │      │  (optional)  │               │
-│  └──────────────┘      └───────┬──────┘               │
-│                                 │                       │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ │
+│ │ Models │ │ Use Cases │ │
+│ │ (structs) │ │ (optional) │ │
+│ └──────────────┘ └───────┬──────┘ │
+│ │ │
 └─────────────────────────────────┼───────────────────────┘
-                                  │
+ │
 ┌─────────────────────────────────▼───────────────────────┐
-│                      DATA LAYER                         │
+│ DATA LAYER │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────┐      ┌──────────────┐               │
-│  │ Repository   │──────│  API Client  │               │
-│  │              │      │  (URLSession)│               │
-│  └──────┬───────┘      └──────────────┘               │
-│         │                                              │
-│  ┌──────▼───────┐                                     │
-│  │ Cache Service│                                     │
-│  │ (UserDefaults)│                                    │
-│  └──────────────┘                                     │
-│                                                         │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ │
+│ │ Repository │──────│ API Client │ │
+│ │ │ │ (URLSession)│ │
+│ └──────┬───────┘ └──────────────┘ │
+│ │ │
+│ ┌──────▼───────┐ │
+│ │ Cache Service│ │
+│ │ (UserDefaults)│ │
+│ └──────────────┘ │
+│ │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -283,21 +283,21 @@ function getUserIdentifier(req) {
 #### 1. Views (SwiftUI)
 ```swift
 struct LawListView: View {
-    @StateObject private var viewModel = LawListViewModel()
+ @StateObject private var viewModel = LawListViewModel()
 
-    var body: some View {
-        List {
-            ForEach(viewModel.laws) { law in
-                LawCardView(law: law)
-                    .onTapGesture {
-                        viewModel.selectLaw(law)
-                    }
-            }
-        }
-        .task {
-            await viewModel.loadLaws()
-        }
-    }
+ var body: some View {
+ List {
+ ForEach(viewModel.laws) { law in
+ LawCardView(law: law)
+ .onTapGesture {
+ viewModel.selectLaw(law)
+ }
+ }
+ }
+ .task {
+ await viewModel.loadLaws()
+ }
+ }
 }
 ```
 
@@ -305,80 +305,80 @@ struct LawListView: View {
 ```swift
 @MainActor
 class LawListViewModel: ObservableObject {
-    @Published var laws: [Law] = []
-    @Published var isLoading = false
-    @Published var error: Error?
+ @Published var laws: [Law] = []
+ @Published var isLoading = false
+ @Published var error: Error?
 
-    private let repository: LawRepository
+ private let repository: LawRepository
 
-    init(repository: LawRepository = LawRepositoryImpl()) {
-        self.repository = repository
-    }
+ init(repository: LawRepository = LawRepositoryImpl()) {
+ self.repository = repository
+ }
 
-    func loadLaws() async {
-        isLoading = true
-        defer { isLoading = false }
+ func loadLaws() async {
+ isLoading = true
+ defer { isLoading = false }
 
-        do {
-            laws = try await repository.fetchLaws()
-        } catch {
-            self.error = error
-        }
-    }
+ do {
+ laws = try await repository.fetchLaws()
+ } catch {
+ self.error = error
+ }
+ }
 }
 ```
 
 #### 3. Repository
 ```swift
 protocol LawRepository {
-    func fetchLaws(limit: Int, offset: Int) async throws -> [Law]
-    func voteLaw(id: Int, voteType: VoteType) async throws -> VoteResponse
+ func fetchLaws(limit: Int, offset: Int) async throws -> [Law]
+ func voteLaw(id: Int, voteType: VoteType) async throws -> VoteResponse
 }
 
 class LawRepositoryImpl: LawRepository {
-    private let apiService: APIService
-    private let cacheService: CacheService
+ private let apiService: APIService
+ private let cacheService: CacheService
 
-    func fetchLaws(limit: Int = 25, offset: Int = 0) async throws -> [Law] {
-        // Check cache first
-        if let cachedLaws = cacheService.getCachedLaws(), offset == 0 {
-            return cachedLaws
-        }
+ func fetchLaws(limit: Int = 25, offset: Int = 0) async throws -> [Law] {
+ // Check cache first
+ if let cachedLaws = cacheService.getCachedLaws(), offset == 0 {
+ return cachedLaws
+ }
 
-        // Fetch from API
-        let response = try await apiService.fetchLaws(limit: limit, offset: offset)
+ // Fetch from API
+ let response = try await apiService.fetchLaws(limit: limit, offset: offset)
 
-        // Cache for future
-        if offset == 0 {
-            cacheService.cacheLaws(response.data)
-        }
+ // Cache for future
+ if offset == 0 {
+ cacheService.cacheLaws(response.data)
+ }
 
-        return response.data
-    }
+ return response.data
+ }
 }
 ```
 
 #### 4. API Service
 ```swift
 class APIService {
-    let baseURL = "https://murphys-laws.com/api/v1"
+ let baseURL = "https://murphys-laws.com/api/v1"
 
-    func fetchLaws(limit: Int, offset: Int) async throws -> LawsResponse {
-        var components = URLComponents(string: "\(baseURL)/laws")!
-        components.queryItems = [
-            URLQueryItem(name: "limit", value: "\(limit)"),
-            URLQueryItem(name: "offset", value: "\(offset)")
-        ]
+ func fetchLaws(limit: Int, offset: Int) async throws -> LawsResponse {
+ var components = URLComponents(string: "\(baseURL)/laws")!
+ components.queryItems = [
+ URLQueryItem(name: "limit", value: "\(limit)"),
+ URLQueryItem(name: "offset", value: "\(offset)")
+ ]
 
-        let (data, response) = try await URLSession.shared.data(from: components.url!)
+ let (data, response) = try await URLSession.shared.data(from: components.url!)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.invalidResponse
-        }
+ guard let httpResponse = response as? HTTPURLResponse,
+ (200...299).contains(httpResponse.statusCode) else {
+ throw APIError.invalidResponse
+ }
 
-        return try JSONDecoder().decode(LawsResponse.self, from: data)
-    }
+ return try JSONDecoder().decode(LawsResponse.self, from: data)
+ }
 }
 ```
 
@@ -387,34 +387,34 @@ class APIService {
 ```
 MurphysLaws/
 ├── App/
-│   ├── MurphysLawsApp.swift          # Entry point
-│   └── AppDelegate.swift
+│ ├── MurphysLawsApp.swift # Entry point
+│ └── AppDelegate.swift
 ├── Models/
-│   ├── Law.swift
-│   ├── Category.swift
-│   └── Vote.swift
+│ ├── Law.swift
+│ ├── Category.swift
+│ └── Vote.swift
 ├── ViewModels/
-│   ├── LawListViewModel.swift
-│   ├── LawDetailViewModel.swift
-│   └── SearchViewModel.swift
+│ ├── LawListViewModel.swift
+│ ├── LawDetailViewModel.swift
+│ └── SearchViewModel.swift
 ├── Views/
-│   ├── Home/
-│   ├── Browse/
-│   ├── Search/
-│   └── Calculators/
+│ ├── Home/
+│ ├── Browse/
+│ ├── Search/
+│ └── Calculators/
 ├── Services/
-│   ├── APIService.swift
-│   ├── CacheService.swift
-│   └── VotingService.swift
+│ ├── APIService.swift
+│ ├── CacheService.swift
+│ └── VotingService.swift
 ├── Repositories/
-│   └── LawRepository.swift
+│ └── LawRepository.swift
 ├── Utilities/
-│   ├── Constants.swift
-│   ├── Extensions/
-│   └── NetworkMonitor.swift
+│ ├── Constants.swift
+│ ├── Extensions/
+│ └── NetworkMonitor.swift
 └── Resources/
-    ├── Assets.xcassets
-    └── Info.plist
+ ├── Assets.xcassets
+ └── Info.plist
 ```
 
 ---
@@ -425,45 +425,45 @@ MurphysLaws/
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                   │
+│ PRESENTATION LAYER │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────┐      ┌──────────────┐               │
-│  │   Compose    │◄─────│  ViewModel   │               │
-│  │   Screens    │      │  (StateFlow) │               │
-│  └──────────────┘      └───────┬──────┘               │
-│                                 │                       │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ │
+│ │ Compose │◄─────│ ViewModel │ │
+│ │ Screens │ │ (StateFlow) │ │
+│ └──────────────┘ └───────┬──────┘ │
+│ │ │
 └─────────────────────────────────┼───────────────────────┘
-                                  │
+ │
 ┌─────────────────────────────────▼───────────────────────┐
-│                     DOMAIN LAYER                        │
+│ DOMAIN LAYER │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────┐      ┌──────────────┐               │
-│  │   Models     │      │  Use Cases   │               │
-│  │  (data class)│      │              │               │
-│  └──────────────┘      └───────┬──────┘               │
-│                                 │                       │
-│  ┌──────────────────────────────▼──┐                  │
-│  │  Repository Interfaces           │                  │
-│  └──────────────┬───────────────────┘                  │
-│                 │                                       │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ │
+│ │ Models │ │ Use Cases │ │
+│ │ (data class)│ │ │ │
+│ └──────────────┘ └───────┬──────┘ │
+│ │ │
+│ ┌──────────────────────────────▼──┐ │
+│ │ Repository Interfaces │ │
+│ └──────────────┬───────────────────┘ │
+│ │ │
 └─────────────────┼───────────────────────────────────────┘
-                  │
+ │
 ┌─────────────────▼───────────────────────────────────────┐
-│                      DATA LAYER                         │
+│ DATA LAYER │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────────┐      ┌──────────────┐           │
-│  │ Repository Impl  │──────│  API Service │           │
-│  │                  │      │  (Retrofit)  │           │
-│  └────────┬─────────┘      └──────────────┘           │
-│           │                                            │
-│  ┌────────▼─────────┐                                 │
-│  │  Room Database   │                                 │
-│  │  (Local Cache)   │                                 │
-│  └──────────────────┘                                 │
-│                                                         │
+│ │
+│ ┌──────────────────┐ ┌──────────────┐ │
+│ │ Repository Impl │──────│ API Service │ │
+│ │ │ │ (Retrofit) │ │
+│ └────────┬─────────┘ └──────────────┘ │
+│ │ │
+│ ┌────────▼─────────┐ │
+│ │ Room Database │ │
+│ │ (Local Cache) │ │
+│ └──────────────────┘ │
+│ │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -473,19 +473,19 @@ MurphysLaws/
 ```kotlin
 @Composable
 fun LawListScreen(
-    viewModel: LawListViewModel = hiltViewModel()
+ viewModel: LawListViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LazyColumn {
-        items(uiState.laws) { law ->
-            LawCard(
-                law = law,
-                onLawClick = { viewModel.onLawClick(law) },
-                onVote = { voteType -> viewModel.voteLaw(law.id, voteType) }
-            )
-        }
-    }
+ LazyColumn {
+ items(uiState.laws) { law ->
+ LawCard(
+ law = law,
+ onLawClick = { viewModel.onLawClick(law) },
+ onVote = { voteType -> viewModel.voteLaw(law.id, voteType) }
+ )
+ }
+ }
 }
 ```
 
@@ -493,137 +493,137 @@ fun LawListScreen(
 ```kotlin
 @HiltViewModel
 class LawListViewModel @Inject constructor(
-    private val getLawsUseCase: GetLawsUseCase,
-    private val voteLawUseCase: VoteLawUseCase
+ private val getLawsUseCase: GetLawsUseCase,
+ private val voteLawUseCase: VoteLawUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LawListUiState())
-    val uiState: StateFlow<LawListUiState> = _uiState.asStateFlow()
+ private val _uiState = MutableStateFlow(LawListUiState())
+ val uiState: StateFlow<LawListUiState> = _uiState.asStateFlow()
 
-    init {
-        loadLaws()
-    }
+ init {
+ loadLaws()
+ }
 
-    fun loadLaws() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+ fun loadLaws() {
+ viewModelScope.launch {
+ _uiState.update { it.copy(isLoading = true) }
 
-            getLawsUseCase()
-                .catch { error ->
-                    _uiState.update { it.copy(error = error, isLoading = false) }
-                }
-                .collect { laws ->
-                    _uiState.update { it.copy(laws = laws, isLoading = false) }
-                }
-        }
-    }
+ getLawsUseCase()
+ .catch { error ->
+ _uiState.update { it.copy(error = error, isLoading = false) }
+ }
+ .collect { laws ->
+ _uiState.update { it.copy(laws = laws, isLoading = false) }
+ }
+ }
+ }
 
-    fun voteLaw(lawId: Int, voteType: VoteType) {
-        viewModelScope.launch {
-            voteLawUseCase(lawId, voteType)
-                .onSuccess { response ->
-                    // Update law in list with new vote counts
-                }
-                .onFailure { error ->
-                    // Show error
-                }
-        }
-    }
+ fun voteLaw(lawId: Int, voteType: VoteType) {
+ viewModelScope.launch {
+ voteLawUseCase(lawId, voteType)
+ .onSuccess { response ->
+ // Update law in list with new vote counts
+ }
+ .onFailure { error ->
+ // Show error
+ }
+ }
+ }
 }
 
 data class LawListUiState(
-    val laws: List<Law> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: Throwable? = null
+ val laws: List<Law> = emptyList(),
+ val isLoading: Boolean = false,
+ val error: Throwable? = null
 )
 ```
 
 #### 3. Use Cases
 ```kotlin
 class GetLawsUseCase @Inject constructor(
-    private val lawRepository: LawRepository
+ private val lawRepository: LawRepository
 ) {
-    operator fun invoke(
-        limit: Int = 25,
-        offset: Int = 0,
-        query: String? = null
-    ): Flow<List<Law>> = lawRepository.getLaws(limit, offset, query)
+ operator fun invoke(
+ limit: Int = 25,
+ offset: Int = 0,
+ query: String? = null
+ ): Flow<List<Law>> = lawRepository.getLaws(limit, offset, query)
 }
 
 class VoteLawUseCase @Inject constructor(
-    private val lawRepository: LawRepository
+ private val lawRepository: LawRepository
 ) {
-    suspend operator fun invoke(
-        lawId: Int,
-        voteType: VoteType
-    ): Result<VoteResponse> = lawRepository.voteLaw(lawId, voteType)
+ suspend operator fun invoke(
+ lawId: Int,
+ voteType: VoteType
+ ): Result<VoteResponse> = lawRepository.voteLaw(lawId, voteType)
 }
 ```
 
 #### 4. Repository
 ```kotlin
 interface LawRepository {
-    fun getLaws(limit: Int, offset: Int, query: String?): Flow<List<Law>>
-    suspend fun voteLaw(lawId: Int, voteType: VoteType): Result<VoteResponse>
+ fun getLaws(limit: Int, offset: Int, query: String?): Flow<List<Law>>
+ suspend fun voteLaw(lawId: Int, voteType: VoteType): Result<VoteResponse>
 }
 
 class LawRepositoryImpl @Inject constructor(
-    private val apiService: ApiService,
-    private val lawDao: LawDao,
-    private val networkMonitor: NetworkMonitor
+ private val apiService: ApiService,
+ private val lawDao: LawDao,
+ private val networkMonitor: NetworkMonitor
 ) : LawRepository {
 
-    override fun getLaws(
-        limit: Int,
-        offset: Int,
-        query: String?
-    ): Flow<List<Law>> = flow {
-        // Emit cached data first (if offset = 0)
-        if (offset == 0) {
-            val cached = lawDao.getLaws().firstOrNull()
-            if (cached.isNotEmpty()) {
-                emit(cached.map { it.toDomainModel() })
-            }
-        }
+ override fun getLaws(
+ limit: Int,
+ offset: Int,
+ query: String?
+ ): Flow<List<Law>> = flow {
+ // Emit cached data first (if offset = 0)
+ if (offset == 0) {
+ val cached = lawDao.getLaws().firstOrNull()
+ if (cached.isNotEmpty()) {
+ emit(cached.map { it.toDomainModel() })
+ }
+ }
 
-        // Fetch from API
-        try {
-            val response = apiService.getLaws(limit, offset, query = query)
-            val laws = response.data.map { it.toDomainModel() }
+ // Fetch from API
+ try {
+ val response = apiService.getLaws(limit, offset, query = query)
+ val laws = response.data.map { it.toDomainModel() }
 
-            // Cache if first page
-            if (offset == 0) {
-                lawDao.insertLaws(laws.map { it.toEntity() })
-            }
+ // Cache if first page
+ if (offset == 0) {
+ lawDao.insertLaws(laws.map { it.toEntity() })
+ }
 
-            emit(laws)
-        } catch (e: Exception) {
-            // If offline and no cache, throw error
-            if (!networkMonitor.isConnected && offset > 0) {
-                throw e
-            }
-        }
-    }
+ emit(laws)
+ } catch (e: Exception) {
+ // If offline and no cache, throw error
+ if (!networkMonitor.isConnected && offset > 0) {
+ throw e
+ }
+ }
+ }
 }
 ```
 
 #### 5. API Service (Retrofit)
 ```kotlin
 interface ApiService {
-    @GET("laws")
-    suspend fun getLaws(
-        @Query("limit") limit: Int = 25,
-        @Query("offset") offset: Int = 0,
-        @Query("q") query: String? = null,
-        @Query("category_id") categoryId: Int? = null
-    ): LawsResponse
+ @GET("laws")
+ suspend fun getLaws(
+ @Query("limit") limit: Int = 25,
+ @Query("offset") offset: Int = 0,
+ @Query("q") query: String? = null,
+ @Query("category_id") categoryId: Int? = null
+ ): LawsResponse
 
-    @POST("laws/{id}/vote")
-    suspend fun voteLaw(
-        @Path("id") id: Int,
-        @Body voteRequest: VoteRequest,
-        @Header("X-Device-ID") deviceId: String
-    ): VoteResponse
+ @POST("laws/{id}/vote")
+ suspend fun voteLaw(
+ @Path("id") id: Int,
+ @Body voteRequest: VoteRequest,
+ @Header("X-Device-ID") deviceId: String
+ ): VoteResponse
 }
 ```
 
@@ -632,30 +632,30 @@ interface ApiService {
 ```
 app/src/main/java/com/murphyslaws/
 ├── data/
-│   ├── local/
-│   │   ├── LawDatabase.kt
-│   │   ├── dao/
-│   │   └── entities/
-│   ├── remote/
-│   │   ├── ApiService.kt
-│   │   ├── dto/
-│   │   └── NetworkModule.kt
-│   └── repository/
-│       └── LawRepositoryImpl.kt
+│ ├── local/
+│ │ ├── LawDatabase.kt
+│ │ ├── dao/
+│ │ └── entities/
+│ ├── remote/
+│ │ ├── ApiService.kt
+│ │ ├── dto/
+│ │ └── NetworkModule.kt
+│ └── repository/
+│ └── LawRepositoryImpl.kt
 ├── domain/
-│   ├── model/
-│   ├── repository/
-│   └── usecase/
+│ ├── model/
+│ ├── repository/
+│ └── usecase/
 ├── presentation/
-│   ├── home/
-│   ├── browse/
-│   ├── search/
-│   └── navigation/
+│ ├── home/
+│ ├── browse/
+│ ├── search/
+│ └── navigation/
 ├── util/
-│   └── Constants.kt
+│ └── Constants.kt
 └── di/
-    ├── AppModule.kt
-    └── DatabaseModule.kt
+ ├── AppModule.kt
+ └── DatabaseModule.kt
 ```
 
 ---
@@ -684,47 +684,47 @@ State Management:
 **iOS Implementation:**
 ```swift
 class VotingService {
-    func voteLaw(id: Int, voteType: VoteType) async throws {
-        // 1. Update local state
-        VoteManager.shared.setVote(voteType, for: id)
+ func voteLaw(id: Int, voteType: VoteType) async throws {
+ // 1. Update local state
+ VoteManager.shared.setVote(voteType, for: id)
 
-        // 2. Update UI (via notification/Combine)
-        NotificationCenter.default.post(name: .lawVoteChanged, object: id)
+ // 2. Update UI (via notification/Combine)
+ NotificationCenter.default.post(name: .lawVoteChanged, object: id)
 
-        // 3. Send to backend
-        do {
-            let response = try await apiService.voteLaw(id: id, voteType: voteType)
-            // Success - local state already updated
-        } catch {
-            // Revert local state
-            VoteManager.shared.removeVote(for: id)
-            throw error
-        }
-    }
+ // 3. Send to backend
+ do {
+ let response = try await apiService.voteLaw(id: id, voteType: voteType)
+ // Success - local state already updated
+ } catch {
+ // Revert local state
+ VoteManager.shared.removeVote(for: id)
+ throw error
+ }
+ }
 }
 ```
 
 **Android Implementation:**
 ```kotlin
 class VotingService @Inject constructor(
-    private val apiService: ApiService,
-    private val voteManager: VoteManager
+ private val apiService: ApiService,
+ private val voteManager: VoteManager
 ) {
-    suspend fun voteLaw(lawId: Int, voteType: VoteType): Result<VoteResponse> {
-        // 1. Update local state
-        voteManager.setVote(lawId, voteType)
+ suspend fun voteLaw(lawId: Int, voteType: VoteType): Result<VoteResponse> {
+ // 1. Update local state
+ voteManager.setVote(lawId, voteType)
 
-        // 2. Send to backend
-        return try {
-            val deviceId = DeviceInfo.getDeviceId()
-            val response = apiService.voteLaw(lawId, VoteRequest(voteType.value), deviceId)
-            Result.success(response)
-        } catch (e: Exception) {
-            // Revert local state
-            voteManager.removeVote(lawId)
-            Result.failure(e)
-        }
-    }
+ // 2. Send to backend
+ return try {
+ val deviceId = DeviceInfo.getDeviceId()
+ val response = apiService.voteLaw(lawId, VoteRequest(voteType.value), deviceId)
+ Result.success(response)
+ } catch (e: Exception) {
+ // Revert local state
+ voteManager.removeVote(lawId)
+ Result.failure(e)
+ }
+ }
 }
 ```
 
@@ -737,46 +737,46 @@ Both platforms debounce search input to avoid excessive API calls.
 **iOS (Combine):**
 ```swift
 class SearchViewModel: ObservableObject {
-    @Published var searchQuery = ""
-    @Published var results: [Law] = []
+ @Published var searchQuery = ""
+ @Published var results: [Law] = []
 
-    private var cancellables = Set<AnyCancellable>()
+ private var cancellables = Set<AnyCancellable>()
 
-    init() {
-        $searchQuery
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { [weak self] query in
-                self?.performSearch(query: query)
-            }
-            .store(in: &cancellables)
-    }
+ init() {
+ $searchQuery
+ .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+ .removeDuplicates()
+ .sink { [weak self] query in
+ self?.performSearch(query: query)
+ }
+ .store(in: &cancellables)
+ }
 }
 ```
 
 **Android (Flow):**
 ```kotlin
 class SearchViewModel @Inject constructor(
-    private val searchLawsUseCase: SearchLawsUseCase
+ private val searchLawsUseCase: SearchLawsUseCase
 ) : ViewModel() {
 
-    private val searchQuery = MutableStateFlow("")
+ private val searchQuery = MutableStateFlow("")
 
-    val searchResults: StateFlow<List<Law>> = searchQuery
-        .debounce(300)
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
-            if (query.isEmpty()) {
-                flowOf(emptyList())
-            } else {
-                searchLawsUseCase(query)
-            }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+ val searchResults: StateFlow<List<Law>> = searchQuery
+ .debounce(300)
+ .distinctUntilChanged()
+ .flatMapLatest { query ->
+ if (query.isEmpty()) {
+ flowOf(emptyList())
+ } else {
+ searchLawsUseCase(query)
+ }
+ }
+ .stateIn(
+ scope = viewModelScope,
+ started = SharingStarted.WhileSubscribed(5000),
+ initialValue = emptyList()
+ )
 }
 ```
 
@@ -800,17 +800,17 @@ class SearchViewModel @Inject constructor(
 
 ```
 User Action
-    ↓
+ ↓
 View Event
-    ↓
+ ↓
 ViewModel Method
-    ↓
+ ↓
 Repository/Service Call
-    ↓
+ ↓
 Update @Published Properties
-    ↓
+ ↓
 SwiftUI Auto-Refresh
-    ↓
+ ↓
 UI Update
 ```
 
@@ -818,25 +818,25 @@ UI Update
 ```swift
 // View
 Button("Upvote") {
-    viewModel.vote(.up)
+ viewModel.vote(.up)
 }
 
 // ViewModel
 @Published var voteCount = 0
 
 func vote(_ type: VoteType) {
-    Task {
-        // Optimistic update
-        voteCount += 1
+ Task {
+ // Optimistic update
+ voteCount += 1
 
-        do {
-            let response = try await repository.voteLaw(id: lawId, voteType: type)
-            voteCount = response.upvotes  // Update with server value
-        } catch {
-            voteCount -= 1  // Revert
-            errorMessage = error.localizedDescription
-        }
-    }
+ do {
+ let response = try await repository.voteLaw(id: lawId, voteType: type)
+ voteCount = response.upvotes // Update with server value
+ } catch {
+ voteCount -= 1 // Revert
+ errorMessage = error.localizedDescription
+ }
+ }
 }
 ```
 
@@ -844,15 +844,15 @@ func vote(_ type: VoteType) {
 
 ```
 User Action
-    ↓
+ ↓
 ViewModel Event Handler
-    ↓
+ ↓
 Use Case Execution (Coroutine)
-    ↓
+ ↓
 Update StateFlow/MutableState
-    ↓
+ ↓
 Compose Recomposition
-    ↓
+ ↓
 UI Update
 ```
 
@@ -860,7 +860,7 @@ UI Update
 ```kotlin
 // Screen
 Button(onClick = { viewModel.vote(VoteType.UP) }) {
-    Text("Upvote")
+ Text("Upvote")
 }
 
 // ViewModel
@@ -868,18 +868,18 @@ private val _uiState = MutableStateFlow(LawDetailUiState())
 val uiState = _uiState.asStateFlow()
 
 fun vote(voteType: VoteType) {
-    viewModelScope.launch {
-        // Optimistic update
-        _uiState.update { it.copy(upvotes = it.upvotes + 1) }
+ viewModelScope.launch {
+ // Optimistic update
+ _uiState.update { it.copy(upvotes = it.upvotes + 1) }
 
-        voteLawUseCase(lawId, voteType)
-            .onSuccess { response ->
-                _uiState.update { it.copy(upvotes = response.upvotes) }
-            }
-            .onFailure { error ->
-                _uiState.update { it.copy(upvotes = it.upvotes - 1) }
-            }
-    }
+ voteLawUseCase(lawId, voteType)
+ .onSuccess { response ->
+ _uiState.update { it.copy(upvotes = response.upvotes) }
+ }
+ .onFailure { error ->
+ _uiState.update { it.copy(upvotes = it.upvotes - 1) }
+ }
+ }
 }
 ```
 
@@ -891,26 +891,26 @@ fun vote(voteType: VoteType) {
 
 ```
 ┌─────────────────────────────────────┐
-│          USER INTERFACE             │
+│ USER INTERFACE │
 └────────────┬────────────────────────┘
-             │
-             ▼
+ │
+ ▼
 ┌─────────────────────────────────────┐
-│        IN-MEMORY CACHE              │
-│  (ViewModel state, last used data)  │
+│ IN-MEMORY CACHE │
+│ (ViewModel state, last used data) │
 └────────────┬────────────────────────┘
-             │
-             ▼
+ │
+ ▼
 ┌─────────────────────────────────────┐
-│       PERSISTENT CACHE              │
-│  iOS: UserDefaults / CoreData       │
-│  Android: DataStore / Room          │
+│ PERSISTENT CACHE │
+│ iOS: UserDefaults / CoreData │
+│ Android: DataStore / Room │
 └────────────┬────────────────────────┘
-             │
-             ▼
+ │
+ ▼
 ┌─────────────────────────────────────┐
-│          NETWORK API                │
-│  (Source of truth)                  │
+│ NETWORK API │
+│ (Source of truth) │
 └─────────────────────────────────────┘
 ```
 
@@ -933,24 +933,24 @@ fun vote(voteType: VoteType) {
 **iOS (UserDefaults for MVP):**
 ```swift
 class CacheService {
-    func cacheLaws(_ laws: [Law]) {
-        let encoder = JSONEncoder()
-        if let data = try? encoder.encode(laws) {
-            UserDefaults.standard.set(data, forKey: "cached_laws")
-            UserDefaults.standard.set(Date(), forKey: "cached_laws_timestamp")
-        }
-    }
+ func cacheLaws(_ laws: [Law]) {
+ let encoder = JSONEncoder()
+ if let data = try? encoder.encode(laws) {
+ UserDefaults.standard.set(data, forKey: "cached_laws")
+ UserDefaults.standard.set(Date(), forKey: "cached_laws_timestamp")
+ }
+ }
 
-    func getCachedLaws() -> [Law]? {
-        guard let timestamp = UserDefaults.standard.object(forKey: "cached_laws_timestamp") as? Date,
-              Date().timeIntervalSince(timestamp) < 3600,  // 1 hour
-              let data = UserDefaults.standard.data(forKey: "cached_laws") else {
-            return nil
-        }
+ func getCachedLaws() -> [Law]? {
+ guard let timestamp = UserDefaults.standard.object(forKey: "cached_laws_timestamp") as? Date,
+ Date().timeIntervalSince(timestamp) < 3600, // 1 hour
+ let data = UserDefaults.standard.data(forKey: "cached_laws") else {
+ return nil
+ }
 
-        let decoder = JSONDecoder()
-        return try? decoder.decode([Law].self, from: data)
-    }
+ let decoder = JSONDecoder()
+ return try? decoder.decode([Law].self, from: data)
+ }
 }
 ```
 
@@ -958,19 +958,19 @@ class CacheService {
 ```kotlin
 @Database(entities = [LawEntity::class], version = 1)
 abstract class LawDatabase : RoomDatabase() {
-    abstract fun lawDao(): LawDao
+ abstract fun lawDao(): LawDao
 }
 
 @Dao
 interface LawDao {
-    @Query("SELECT * FROM laws WHERE cachedAt > :minTimestamp ORDER BY id DESC LIMIT 100")
-    fun getCachedLaws(minTimestamp: Long = System.currentTimeMillis() - 3600000): Flow<List<LawEntity>>
+ @Query("SELECT * FROM laws WHERE cachedAt > :minTimestamp ORDER BY id DESC LIMIT 100")
+ fun getCachedLaws(minTimestamp: Long = System.currentTimeMillis() - 3600000): Flow<List<LawEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertLaws(laws: List<LawEntity>)
+ @Insert(onConflict = OnConflictStrategy.REPLACE)
+ suspend fun insertLaws(laws: List<LawEntity>)
 
-    @Query("DELETE FROM laws WHERE cachedAt < :timestamp")
-    suspend fun clearOldCache(timestamp: Long)
+ @Query("DELETE FROM laws WHERE cachedAt < :timestamp")
+ suspend fun clearOldCache(timestamp: Long)
 }
 ```
 
@@ -982,37 +982,37 @@ interface LawDao {
 
 ```
 ┌─────────────────┐
-│  Mobile Apps    │
-│  (iOS/Android)  │
+│ Mobile Apps │
+│ (iOS/Android) │
 └────────┬────────┘
-         │
-         │ Register device token
-         ▼
+ │
+ │ Register device token
+ ▼
 ┌─────────────────┐
-│   Backend API   │
-│  (Node.js)      │
+│ Backend API │
+│ (Node.js) │
 └────────┬────────┘
-         │
-         │ Store tokens
-         ▼
+ │
+ │ Store tokens
+ ▼
 ┌─────────────────┐
-│   Database      │
-│   (device_tokens│
-│    table)       │
+│ Database │
+│ (device_tokens│
+│ table) │
 └─────────────────┘
 
 Daily Job (Cron):
 ┌─────────────────┐
-│ Law of Day      │
+│ Law of Day │
 │ Selection Script│
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│ FCM Service     │
-│ (Send to all    │
-│  registered     │
-│  devices)       │
+│ FCM Service │
+│ (Send to all │
+│ registered │
+│ devices) │
 └─────────────────┘
 ```
 
@@ -1023,15 +1023,15 @@ Daily Job (Cron):
 **Database Schema:**
 ```sql
 CREATE TABLE device_tokens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id TEXT UNIQUE NOT NULL,
-    token TEXT NOT NULL,
-    platform TEXT CHECK(platform IN ('ios', 'android')) NOT NULL,
-    notification_enabled BOOLEAN DEFAULT 1,
-    notification_time TEXT DEFAULT '09:00',  -- Local time
-    timezone TEXT DEFAULT 'UTC',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ device_id TEXT UNIQUE NOT NULL,
+ token TEXT NOT NULL,
+ platform TEXT CHECK(platform IN ('ios', 'android')) NOT NULL,
+ notification_enabled BOOLEAN DEFAULT 1,
+ notification_time TEXT DEFAULT '09:00', -- Local time
+ timezone TEXT DEFAULT 'UTC',
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -1040,11 +1040,11 @@ CREATE TABLE device_tokens (
 // Register device token
 POST /api/v1/notifications/register
 Body: {
-  device_id: "uuid",
-  token: "fcm_token",
-  platform: "ios",
-  notification_time: "09:00",
-  timezone: "America/New_York"
+ device_id: "uuid",
+ token: "fcm_token",
+ platform: "ios",
+ notification_time: "09:00",
+ timezone: "America/New_York"
 }
 
 // Unregister device
@@ -1054,9 +1054,9 @@ Body: { device_id: "uuid" }
 // Update preferences
 PUT /api/v1/notifications/preferences
 Body: {
-  device_id: "uuid",
-  notification_enabled: true,
-  notification_time: "10:00"
+ device_id: "uuid",
+ notification_enabled: true,
+ notification_time: "10:00"
 }
 ```
 
@@ -1067,37 +1067,37 @@ import admin from 'firebase-admin';
 import Database from 'better-sqlite3';
 
 async function sendLawOfDayNotifications() {
-  const db = new Database('db/murphys-laws.sqlite');
+ const db = new Database('db/murphys-laws.sqlite');
 
-  // Get today's law
-  const law = db.prepare(`
-    SELECT l.* FROM laws l
-    JOIN law_of_the_day_history h ON l.id = h.law_id
-    WHERE h.featured_date = DATE('now')
-  `).get();
+ // Get today's law
+ const law = db.prepare(`
+ SELECT l.* FROM laws l
+ JOIN law_of_the_day_history h ON l.id = h.law_id
+ WHERE h.featured_date = DATE('now')
+ `).get();
 
-  // Get all device tokens with notifications enabled
-  const devices = db.prepare(`
-    SELECT * FROM device_tokens
-    WHERE notification_enabled = 1
-  `).all();
+ // Get all device tokens with notifications enabled
+ const devices = db.prepare(`
+ SELECT * FROM device_tokens
+ WHERE notification_enabled = 1
+ `).all();
 
-  // Group by timezone and send at appropriate time
-  for (const device of devices) {
-    const message = {
-      notification: {
-        title: "Law of the Day",
-        body: law.text.substring(0, 100) + "..."
-      },
-      data: {
-        law_id: law.id.toString(),
-        type: "law_of_day"
-      },
-      token: device.token
-    };
+ // Group by timezone and send at appropriate time
+ for (const device of devices) {
+ const message = {
+ notification: {
+ title: "Law of the Day",
+ body: law.text.substring(0, 100) + "..."
+ },
+ data: {
+ law_id: law.id.toString(),
+ type: "law_of_day"
+ },
+ token: device.token
+ };
 
-    await admin.messaging().send(message);
-  }
+ await admin.messaging().send(message);
+ }
 }
 ```
 
@@ -1108,41 +1108,41 @@ import UserNotifications
 import FirebaseMessaging
 
 class NotificationService {
-    func requestPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-            if granted {
-                DispatchQueue.main.async {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            }
-        }
-    }
+ func requestPermission() {
+ UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+ if granted {
+ DispatchQueue.main.async {
+ UIApplication.shared.registerForRemoteNotifications()
+ }
+ }
+ }
+ }
 
-    func registerDeviceToken(_ fcmToken: String) async {
-        let deviceId = DeviceInfo.deviceID
-        let request = NotificationRegistrationRequest(
-            deviceId: deviceId,
-            token: fcmToken,
-            platform: "ios",
-            notificationTime: "09:00",
-            timezone: TimeZone.current.identifier
-        )
+ func registerDeviceToken(_ fcmToken: String) async {
+ let deviceId = DeviceInfo.deviceID
+ let request = NotificationRegistrationRequest(
+ deviceId: deviceId,
+ token: fcmToken,
+ platform: "ios",
+ notificationTime: "09:00",
+ timezone: TimeZone.current.identifier
+ )
 
-        try? await apiService.registerForNotifications(request)
-    }
+ try? await apiService.registerForNotifications(request)
+ }
 }
 
 // AppDelegate
 func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    Messaging.messaging().apnsToken = deviceToken
+ Messaging.messaging().apnsToken = deviceToken
 
-    Messaging.messaging().token { token, error in
-        if let token = token {
-            Task {
-                await NotificationService.shared.registerDeviceToken(token)
-            }
-        }
-    }
+ Messaging.messaging().token { token, error in
+ if let token = token {
+ Task {
+ await NotificationService.shared.registerDeviceToken(token)
+ }
+ }
+ }
 }
 ```
 
@@ -1150,41 +1150,41 @@ func application(_ application: UIApplication, didRegisterForRemoteNotifications
 
 ```kotlin
 class NotificationService @Inject constructor(
-    private val apiService: ApiService
+ private val apiService: ApiService
 ) {
-    suspend fun registerForNotifications() {
-        FirebaseMessaging.getInstance().token.await()?.let { token ->
-            val deviceId = DeviceInfo.getDeviceId()
-            val request = NotificationRegistrationRequest(
-                deviceId = deviceId,
-                token = token,
-                platform = "android",
-                notificationTime = "09:00",
-                timezone = TimeZone.getDefault().id
-            )
+ suspend fun registerForNotifications() {
+ FirebaseMessaging.getInstance().token.await()?.let { token ->
+ val deviceId = DeviceInfo.getDeviceId()
+ val request = NotificationRegistrationRequest(
+ deviceId = deviceId,
+ token = token,
+ platform = "android",
+ notificationTime = "09:00",
+ timezone = TimeZone.getDefault().id
+ )
 
-            apiService.registerForNotifications(request)
-        }
-    }
+ apiService.registerForNotifications(request)
+ }
+ }
 }
 
 class FirebaseMessagingService : FirebaseMessagingService() {
-    override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        remoteMessage.notification?.let { notification ->
-            showNotification(
-                title = notification.title ?: "Murphy's Laws",
-                body = notification.body ?: "",
-                lawId = remoteMessage.data["law_id"]?.toIntOrNull()
-            )
-        }
-    }
+ override fun onMessageReceived(remoteMessage: RemoteMessage) {
+ remoteMessage.notification?.let { notification ->
+ showNotification(
+ title = notification.title ?: "Murphy's Laws",
+ body = notification.body ?: "",
+ lawId = remoteMessage.data["law_id"]?.toIntOrNull()
+ )
+ }
+ }
 
-    override fun onNewToken(token: String) {
-        // Update token on backend
-        CoroutineScope(Dispatchers.IO).launch {
-            NotificationService().registerForNotifications()
-        }
-    }
+ override fun onNewToken(token: String) {
+ // Update token on backend
+ CoroutineScope(Dispatchers.IO).launch {
+ NotificationService().registerForNotifications()
+ }
+ }
 }
 ```
 
@@ -1199,8 +1199,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 **Implementation:**
 - Generate UUID on first app launch
 - Store securely:
-  - iOS: Keychain (encrypted, survives app reinstall)
-  - Android: EncryptedSharedPreferences
+ - iOS: Keychain (encrypted, survives app reinstall)
+ - Android: EncryptedSharedPreferences
 - Never share with third parties
 - Used only for vote deduplication
 
@@ -1209,46 +1209,46 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 import Security
 
 class DeviceInfo {
-    static var deviceID: String {
-        if let existingID = getKeychainValue(for: "device_id") {
-            return existingID
-        }
+ static var deviceID: String {
+ if let existingID = getKeychainValue(for: "device_id") {
+ return existingID
+ }
 
-        let newID = UUID().uuidString
-        saveToKeychain(value: newID, for: "device_id")
-        return newID
-    }
+ let newID = UUID().uuidString
+ saveToKeychain(value: newID, for: "device_id")
+ return newID
+ }
 
-    private static func saveToKeychain(value: String, for key: String) {
-        let data = value.data(using: .utf8)!
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data
-        ]
-        SecItemAdd(query as CFDictionary, nil)
-    }
+ private static func saveToKeychain(value: String, for key: String) {
+ let data = value.data(using: .utf8)!
+ let query: [String: Any] = [
+ kSecClass as String: kSecClassGenericPassword,
+ kSecAttrAccount as String: key,
+ kSecValueData as String: data
+ ]
+ SecItemAdd(query as CFDictionary, nil)
+ }
 }
 ```
 
 **Android:**
 ```kotlin
 class DeviceInfo(private val context: Context) {
-    private val sharedPreferences = EncryptedSharedPreferences.create(
-        "secure_prefs",
-        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-        context,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+ private val sharedPreferences = EncryptedSharedPreferences.create(
+ "secure_prefs",
+ MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+ context,
+ EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+ EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+ )
 
-    fun getDeviceId(): String {
-        return sharedPreferences.getString("device_id", null) ?: run {
-            val newId = UUID.randomUUID().toString()
-            sharedPreferences.edit().putString("device_id", newId).apply()
-            newId
-        }
-    }
+ fun getDeviceId(): String {
+ return sharedPreferences.getString("device_id", null) ?: run {
+ val newId = UUID.randomUUID().toString()
+ sharedPreferences.edit().putString("device_id", newId).apply()
+ newId
+ }
+ }
 }
 ```
 
@@ -1258,8 +1258,8 @@ class DeviceInfo(private val context: Context) {
 ```xml
 <key>NSAppTransportSecurity</key>
 <dict>
-    <key>NSAllowsArbitraryLoads</key>
-    <false/>
+ <key>NSAllowsArbitraryLoads</key>
+ <false/>
 </dict>
 ```
 
@@ -1267,11 +1267,11 @@ class DeviceInfo(private val context: Context) {
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false">
-        <trust-anchors>
-            <certificates src="system" />
-        </trust-anchors>
-    </base-config>
+ <base-config cleartextTrafficPermitted="false">
+ <trust-anchors>
+ <certificates src="system" />
+ </trust-anchors>
+ </base-config>
 </network-security-config>
 ```
 
@@ -1339,29 +1339,29 @@ class DeviceInfo(private val context: Context) {
 **iOS:**
 ```swift
 class LawViewModelTests: XCTestCase {
-    func testVotingUpdatesCount() async {
-        let mockRepo = MockLawRepository()
-        let viewModel = LawViewModel(repository: mockRepo)
+ func testVotingUpdatesCount() async {
+ let mockRepo = MockLawRepository()
+ let viewModel = LawViewModel(repository: mockRepo)
 
-        await viewModel.vote(.up)
+ await viewModel.vote(.up)
 
-        XCTAssertEqual(viewModel.upvotes, 1)
-    }
+ XCTAssertEqual(viewModel.upvotes, 1)
+ }
 }
 ```
 
 **Android:**
 ```kotlin
 class LawViewModelTest {
-    @Test
-    fun `voting updates count`() = runTest {
-        val mockRepo = FakeLawRepository()
-        val viewModel = LawViewModel(mockRepo)
+ @Test
+ fun `voting updates count`() = runTest {
+ val mockRepo = FakeLawRepository()
+ val viewModel = LawViewModel(mockRepo)
 
-        viewModel.vote(VoteType.UP)
+ viewModel.vote(VoteType.UP)
 
-        assertEquals(1, viewModel.uiState.value.upvotes)
-    }
+ assertEquals(1, viewModel.uiState.value.upvotes)
+ }
 }
 ```
 
@@ -1370,11 +1370,11 @@ class LawViewModelTest {
 **iOS (XCUITest):**
 ```swift
 func testBrowseLaws() {
-    let app = XCUIApplication()
-    app.launch()
+ let app = XCUIApplication()
+ app.launch()
 
-    app.tabBars.buttons["Browse"].tap()
-    XCTAssertTrue(app.tables.cells.count > 0)
+ app.tabBars.buttons["Browse"].tap()
+ XCTAssertTrue(app.tables.cells.count > 0)
 }
 ```
 
@@ -1382,11 +1382,11 @@ func testBrowseLaws() {
 ```kotlin
 @Test
 fun browseLawsDisplaysList() {
-    composeTestRule.setContent {
-        LawListScreen()
-    }
+ composeTestRule.setContent {
+ LawListScreen()
+ }
 
-    composeTestRule.onNodeWithText("Murphy's Law").assertExists()
+ composeTestRule.onNodeWithText("Murphy's Law").assertExists()
 }
 ```
 
@@ -1400,21 +1400,21 @@ fun browseLawsDisplaysList() {
 ```bash
 # Build archive
 xcodebuild archive \
-  -workspace MurphysLaws.xcworkspace \
-  -scheme MurphysLaws \
-  -archivePath build/MurphysLaws.xcarchive
+ -workspace MurphysLaws.xcworkspace \
+ -scheme MurphysLaws \
+ -archivePath build/MurphysLaws.xcarchive
 
 # Export IPA
 xcodebuild -exportArchive \
-  -archivePath build/MurphysLaws.xcarchive \
-  -exportPath build/ \
-  -exportOptionsPlist ExportOptions.plist
+ -archivePath build/MurphysLaws.xcarchive \
+ -exportPath build/ \
+ -exportOptionsPlist ExportOptions.plist
 
 # Upload to TestFlight
 xcrun altool --upload-app \
-  -f build/MurphysLaws.ipa \
-  -u $APPLE_ID \
-  -p $APP_SPECIFIC_PASSWORD
+ -f build/MurphysLaws.ipa \
+ -u $APPLE_ID \
+ -p $APP_SPECIFIC_PASSWORD
 ```
 
 **App Store Release:**
@@ -1432,9 +1432,9 @@ xcrun altool --upload-app \
 
 # Sign with release key
 jarsigner -verbose \
-  -keystore release.keystore \
-  app/build/outputs/bundle/release/app-release.aab \
-  upload
+ -keystore release.keystore \
+ app/build/outputs/bundle/release/app-release.aab \
+ upload
 
 # Upload to Play Console (manual or via API)
 ```
@@ -1451,20 +1451,20 @@ jarsigner -verbose \
 name: iOS Build & Test
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+ push:
+ branches: [ main ]
+ pull_request:
+ branches: [ main ]
 
 jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build
-        run: xcodebuild build -workspace MurphysLaws.xcworkspace -scheme MurphysLaws
-      - name: Test
-        run: xcodebuild test -workspace MurphysLaws.xcworkspace -scheme MurphysLaws
+ build:
+ runs-on: macos-latest
+ steps:
+ - uses: actions/checkout@v3
+ - name: Build
+ run: xcodebuild build -workspace MurphysLaws.xcworkspace -scheme MurphysLaws
+ - name: Test
+ run: xcodebuild test -workspace MurphysLaws.xcworkspace -scheme MurphysLaws
 ```
 
 ---

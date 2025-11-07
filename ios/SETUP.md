@@ -35,45 +35,45 @@ Your Xcode project should match this file structure:
 ```
 MurphysLaws/
 ├── App/
-│   ├── MurphysLawsApp.swift       # App entry point
-│   └── ContentView.swift          # Main navigation
+│ ├── MurphysLawsApp.swift      # App entry point
+│ └── ContentView.swift         # Main navigation
 ├── Models/
-│   ├── Law.swift
-│   ├── Category.swift
-│   ├── Attribution.swift
-│   └── Vote.swift
+│ ├── Law.swift
+│ ├── Category.swift
+│ ├── Attribution.swift
+│ └── Vote.swift
 ├── Views/
-│   ├── Home/
-│   │   ├── HomeView.swift
-│   │   └── LawOfDayCard.swift
-│   ├── Browse/
-│   │   ├── BrowseView.swift
-│   │   ├── LawDetailView.swift
-│   │   └── FilterView.swift
-│   ├── Categories/
-│   │   └── CategoriesView.swift
-│   ├── Calculator/
-│   │   └── CalculatorView.swift
-│   ├── Submit/
-│   │   └── SubmitLawView.swift
-│   ├── More/
-│   │   └── MoreView.swift
-│   └── Shared/
-│       └── LawCard.swift
+│ ├── Home/
+│ │ ├── HomeView.swift
+│ │ └── LawOfDayCard.swift
+│ ├── Browse/
+│ │ ├── BrowseView.swift
+│ │ ├── LawDetailView.swift
+│ │ └── FilterView.swift
+│ ├── Categories/
+│ │ └── CategoriesView.swift
+│ ├── Calculator/
+│ │ └── CalculatorView.swift
+│ ├── Submit/
+│ │ └── SubmitLawView.swift
+│ ├── More/
+│ │ └── MoreView.swift
+│ └── Shared/
+│ └── LawCard.swift
 ├── ViewModels/
-│   ├── LawListViewModel.swift
-│   ├── LawDetailViewModel.swift
-│   ├── HomeViewModel.swift
-│   └── CategoryListViewModel.swift
+│ ├── LawListViewModel.swift
+│ ├── LawDetailViewModel.swift
+│ ├── HomeViewModel.swift
+│ └── CategoryListViewModel.swift
 ├── Services/
-│   ├── APIService.swift
-│   └── VotingService.swift
+│ ├── APIService.swift
+│ └── VotingService.swift
 ├── Repositories/
-│   ├── LawRepository.swift
-│   └── CategoryRepository.swift
+│ ├── LawRepository.swift
+│ └── CategoryRepository.swift
 └── Utilities/
-    ├── Constants.swift
-    └── DeviceID.swift
+ ├── Constants.swift
+ └── DeviceID.swift
 ```
 
 ### 3. Import Files into Xcode
@@ -82,13 +82,13 @@ MurphysLaws/
 
 1. In Xcode's Project Navigator, select the `MurphysLaws` group
 2. From Finder, drag each directory into Xcode:
-   - Drag `App/` folder → creates App group
-   - Drag `Models/` folder → creates Models group
-   - Continue for all directories
+ - Drag `App/` folder → creates App group
+ - Drag `Models/` folder → creates Models group
+ - Continue for all directories
 3. In the import dialog:
-   - ✅ **Create groups** (not folder references)
-   - ❌ **Copy items if needed** (unchecked - files already in place)
-   - ✅ Add to target: MurphysLaws
+ - **Create groups** (not folder references)
+ - **Copy items if needed** (unchecked - files already in place)
+ - Add to target: MurphysLaws
 
 **Option B: Add Files Menu**
 
@@ -105,7 +105,7 @@ Ensure all Swift files are included in the app target:
 
 1. Select any `.swift` file
 2. Open File Inspector (⌥⌘1)
-3. Under "Target Membership", ensure ✅ MurphysLaws is checked
+3. Under "Target Membership", ensure MurphysLaws is checked
 4. If any files are missing, check their target membership
 
 ### 5. Configure Build Settings
@@ -144,8 +144,8 @@ Add these keys to `Info.plist` (if not present):
 ```xml
 <key>NSAppTransportSecurity</key>
 <dict>
-    <key>NSAllowsArbitraryLoads</key>
-    <false/>
+ <key>NSAllowsArbitraryLoads</key>
+ <false/>
 </dict>
 ```
 
@@ -162,8 +162,8 @@ Add these keys to `Info.plist` (if not present):
 
 1. Select `AccentColor` in Assets
 2. Set color:
-   - Light: System Blue (#007AFF) or custom brand color
-   - Dark: Same or adjusted for dark mode
+ - Light: System Blue (#007AFF) or custom brand color
+ - Dark: Same or adjusted for dark mode
 
 ### 8. Build and Test
 
@@ -181,11 +181,11 @@ Add these keys to `Info.plist` (if not present):
 
 #### Expected Behavior
 
-✅ **Home Tab**: Shows "Loading Law of the Day..." then displays a law
-✅ **Browse Tab**: Shows list of laws with search bar
-✅ **Categories Tab**: Shows grid of category cards
-✅ **Calculator Tab**: Shows calculator with sliders
-✅ **More Tab**: Shows settings and info options
+ **Home Tab**: Shows "Loading Law of the Day..." then displays a law
+ **Browse Tab**: Shows list of laws with search bar
+ **Categories Tab**: Shows grid of category cards
+ **Calculator Tab**: Shows calculator with sliders
+ **More Tab**: Shows settings and info options
 
 ### 9. Configure for Local Development (Optional)
 
@@ -196,8 +196,8 @@ To test against local backend:
 
 ```swift
 enum API {
-    static let baseURL = "http://localhost:8787/api/v1"
-    // ... rest of constants
+ static let baseURL = "http://localhost:8787/api/v1"
+ // ... rest of constants
 }
 ```
 
@@ -270,4 +270,4 @@ enum API {
 4. **Run** (⌘R) to test functionality
 5. **Commit** changes to git
 
-Happy coding! 🚀
+Happy coding! 

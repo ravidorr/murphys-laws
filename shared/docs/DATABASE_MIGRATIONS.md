@@ -66,16 +66,16 @@ BEGIN TRANSACTION;
 
 -- Update law #2373
 UPDATE laws SET
-  title = 'Finagle''s First Law',
-  text = 'If an experiment works, something has gone wrong',
-  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+ title = 'Finagle''s First Law',
+ text = 'If an experiment works, something has gone wrong',
+ updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = 2373;
 
 -- Update law #2374
 UPDATE laws SET
-  title = 'Finagle''s Second Law',
-  text = 'No matter what the anticipated result...',
-  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+ title = 'Finagle''s Second Law',
+ text = 'No matter what the anticipated result...',
+ updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = 2374;
 
 COMMIT;
@@ -114,7 +114,7 @@ The migration system will:
 | **Purpose** | Schema changes & data updates | Initial data population |
 | **When to use** | Deploying structure or content changes | Fresh database setup |
 | **Production safe** | Yes - preserves existing data | No - can overwrite data |
-| **Versioned** |Yes - numbered files |  Regenerated from markdown |
+| **Versioned** |Yes - numbered files | Regenerated from markdown |
 | **Tracked** |Yes - in `schema_migrations` | No tracking |
 | **Command** | `npm run migrate` | `npm run db:import` |
 
@@ -171,7 +171,7 @@ npm run db:export-updates 42 123
 # 4. Commit and push
 git add db/migrations/002_update_law_content_*.sql
 git commit -m "data: update Murphy's Law and Cole's Law"
-git push  # ← Migrations run automatically!
+git push # ← Migrations run automatically!
 ```
 
 ### What Happens Automatically:
@@ -179,19 +179,19 @@ git push  # ← Migrations run automatically!
 ```
 git push origin main
 [GitHub Actions]
-    1. Checkout code & install dependencies
-    2. Build project
-    3. Deploy to server
-    4. SSH into production server:
-       * Backup database (murphys.db.backup)
-       * Pull latest code (including migration files)
-       * Restore production database
-       * Run safety checks (table structure, data counts)
-       * Create pre-migration backup
-       * Run migrations (npm run migrate:safe)
-       * Verify success or rollback
-       * Show applied migrations in logs
-       * Restart PM2 services
+ 1. Checkout code & install dependencies
+ 2. Build project
+ 3. Deploy to server
+ 4. SSH into production server:
+ * Backup database (murphys.db.backup)
+ * Pull latest code (including migration files)
+ * Restore production database
+ * Run safety checks (table structure, data counts)
+ * Create pre-migration backup
+ * Run migrations (npm run migrate:safe)
+ * Verify success or rollback
+ * Show applied migrations in logs
+ * Restart PM2 services
 ```
 
 ### Viewing Migration Results:

@@ -45,43 +45,43 @@ npm run health-check
 ## Setting Up on n8n.io
 
 1. **Create a Cron Workflow** in n8n
-   - Trigger: Cron node (e.g., every 5 minutes: `*/5 * * * *`)
+ - Trigger: Cron node (e.g., every 5 minutes: `*/5 * * * *`)
 
 2. **Add Execute Command Node**
-   - Command: `cd /path/to/murphys-laws && npm run health-check`
-   - Or use the direct script: `node /path/to/murphys-laws/scripts/health-check.mjs`
+ - Command: `cd /path/to/murphys-laws && npm run health-check`
+ - Or use the direct script: `node /path/to/murphys-laws/scripts/health-check.mjs`
 
 3. **Environment Variables**
-   - Make sure your n8n environment has access to the `.env` file
-   - Or set environment variables directly in n8n
+ - Make sure your n8n environment has access to the `.env` file
+ - Or set environment variables directly in n8n
 
 ### Example n8n Workflow
 
 ```json
 {
-  "nodes": [
-    {
-      "name": "Schedule Trigger",
-      "type": "n8n-nodes-base.cron",
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 5
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "Run Health Check",
-      "type": "n8n-nodes-base.executeCommand",
-      "parameters": {
-        "command": "cd /path/to/murphys-laws && npm run health-check"
-      }
-    }
-  ]
+ "nodes": [
+ {
+ "name": "Schedule Trigger",
+ "type": "n8n-nodes-base.cron",
+ "parameters": {
+ "rule": {
+ "interval": [
+ {
+ "field": "minutes",
+ "minutesInterval": 5
+ }
+ ]
+ }
+ }
+ },
+ {
+ "name": "Run Health Check",
+ "type": "n8n-nodes-base.executeCommand",
+ "parameters": {
+ "command": "cd /path/to/murphys-laws && npm run health-check"
+ }
+ }
+ ]
 }
 ```
 

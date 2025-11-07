@@ -6,13 +6,13 @@ This directory contains resources shared across all platforms (web, iOS, Android
 
 ```
 shared/
-├── docs/              # Documentation
-├── data/              # Shared data files
-│   └── murphys-laws/  # Law markdown files
-└── assets/            # Design assets
-    ├── icons/         # App icons
-    ├── logos/         # Logos
-    └── screenshots/   # App screenshots
+├── docs/ # Documentation
+├── data/ # Shared data files
+│ └── murphys-laws/ # Law markdown files
+└── assets/ # Design assets
+ ├── icons/ # App icons
+ ├── logos/ # Logos
+ └── screenshots/ # App screenshots
 ```
 
 ## Documentation

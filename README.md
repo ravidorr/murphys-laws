@@ -4,34 +4,34 @@ A comprehensive collection of Murphy's Laws - humorous observations about life's
 
 Available on **Web**, **iOS**, and **Android**.
 
-## 📱 Platforms
+## Platforms
 
 - **Web**: https://murphys-laws.com
-- **iOS**: 🚧 Coming Soon
-- **Android**: 🚧 Coming Soon
+- **iOS**: Coming Soon
+- **Android**: Coming Soon
 
-## 🏗️ Repository Structure
+## Repository Structure
 
 This is a monorepo containing:
 
 ```
 murphys-laws/
-├── backend/       # Node.js API server (shared by all platforms)
-├── web/           # Web application (Vanilla JS + Vite)
-├── ios/           # iOS app (Swift + SwiftUI)
-├── android/       # Android app (Kotlin + Jetpack Compose)
-└── shared/        # Shared resources and documentation
+├── backend/        # Node.js API server (shared by all platforms)
+├── web/            # Web application (Vanilla JS + Vite)
+├── ios/            # iOS app (Swift + SwiftUI)
+├── android/        # Android app (Kotlin + Jetpack Compose)
+└── shared/         # Shared resources and documentation
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Backend (API Server)
 
 ```bash
 cd backend
 npm install
-npm run build:db    # Build SQLite database
-npm run dev         # Start API server
+npm run build:db # Build SQLite database
+npm run dev # Start API server
 ```
 
 ### Web Application
@@ -39,7 +39,7 @@ npm run dev         # Start API server
 ```bash
 cd web
 npm install
-npm run dev         # Start dev server
+npm run dev # Start dev server
 ```
 
 ### iOS App
@@ -58,7 +58,7 @@ cd android
 # Or open in Android Studio
 ```
 
-## 📚 Documentation
+## Documentation
 
 - **Architecture**: [Mobile Architecture Guide](shared/docs/MOBILE-ARCHITECTURE.md)
 - **API**: [API Documentation](shared/docs/API.md)
@@ -67,7 +67,7 @@ cd android
 - **Deployment**: [Deployment Guide](shared/docs/DEPLOYMENT.md)
 - **Repository Structure**: [Repository Structure Guide](shared/docs/MOBILE-REPOSITORY-STRUCTURE.md)
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run all tests
@@ -78,7 +78,7 @@ npm run test:backend
 npm run test:web
 ```
 
-## 🛠️ Development
+## Development
 
 ### Prerequisites
 
@@ -108,7 +108,7 @@ npm run dev:backend
 npm run dev:web
 ```
 
-## 📦 Building
+## Building
 
 ```bash
 # Build everything
@@ -119,7 +119,7 @@ npm run build:web
 npm run build:backend:db
 ```
 
-## 🚢 Deployment
+## Deployment
 
 See [Deployment Guide](shared/docs/DEPLOYMENT.md) for detailed instructions.
 
@@ -128,7 +128,7 @@ See [Deployment Guide](shared/docs/DEPLOYMENT.md) for detailed instructions.
 npm run deploy
 ```
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -136,14 +136,14 @@ npm run deploy
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under CC0 1.0 Universal (Public Domain).
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Thanks to all contributors who have submitted Murphy's Laws over the years!
 
 ---
 
-**Made with ❤️ for anyone who's ever experienced Murphy's Law in action**
+**Made with for anyone who's ever experienced Murphy's Law in action**

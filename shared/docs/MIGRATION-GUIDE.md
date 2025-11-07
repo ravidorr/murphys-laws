@@ -25,25 +25,25 @@ This guide walks through migrating the Murphy's Laws repository from its current
 ### Current Structure
 ```
 murphys-laws/
-├── src/              # Web frontend
-├── scripts/          # Backend API
-├── db/               # Database
-├── tests/            # Tests
-├── styles/           # CSS
-├── public/           # Assets
-└── murphys-laws/     # Law data
+├── src/ # Web frontend
+├── scripts/ # Backend API
+├── db/ # Database
+├── tests/ # Tests
+├── styles/ # CSS
+├── public/ # Assets
+└── murphys-laws/ # Law data
 ```
 
 ### New Structure (Monorepo)
 ```
 murphys-laws/
-├── backend/          # Node.js API (moved from scripts/)
-├── web/              # Web app (moved from src/)
-├── ios/              # iOS app (new)
-├── android/          # Android app (new)
-└── shared/           # Shared resources
-    ├── docs/         # Documentation
-    └── data/         # Law data
+├── backend/ # Node.js API (moved from scripts/)
+├── web/ # Web app (moved from src/)
+├── ios/ # iOS app (new)
+├── android/ # Android app (new)
+└── shared/ # Shared resources
+ ├── docs/ # Documentation
+ └── data/ # Law data
 ```
 
 ---
@@ -69,16 +69,16 @@ murphys-laws/
 **`package.json`:**
 - **Current:** Single `package.json` at root
 - **New:** Three `package.json` files:
-  - `package.json` (root) - Workspace manager
-  - `backend/package.json` - Backend dependencies
-  - `web/package.json` - Web dependencies
+ - `package.json` (root) - Workspace manager
+ - `backend/package.json` - Backend dependencies
+ - `web/package.json` - Web dependencies
 
 **Scripts:**
 - **Current:** `npm run dev` → starts Vite
 - **New:**
-  - `npm run dev` → starts both backend + web
-  - `npm run dev:backend` → backend only
-  - `npm run dev:web` → web only
+ - `npm run dev` → starts both backend + web
+ - `npm run dev:backend` → backend only
+ - `npm run dev:web` → web only
 
 **Paths:**
 - Backend references to law data: `'murphys-laws'` → `'../shared/data/murphys-laws'`
@@ -103,22 +103,22 @@ murphys-laws/
 ### Before You Begin
 
 1. **Commit all changes:**
-   ```bash
-   git status
-   git add .
-   git commit -m "chore: prepare for monorepo migration"
-   ```
+ ```bash
+ git status
+ git add .
+ git commit -m "chore: prepare for monorepo migration"
+ ```
 
 2. **Ensure clean working directory:**
-   ```bash
-   git status
-   # Should show: "nothing to commit, working tree clean"
-   ```
+ ```bash
+ git status
+ # Should show: "nothing to commit, working tree clean"
+ ```
 
 3. **Backup important files (optional but recommended):**
-   ```bash
-   cp -r . ../murphys-laws-backup
-   ```
+ ```bash
+ cp -r . ../murphys-laws-backup
+ ```
 
 ### System Requirements
 
@@ -178,16 +178,16 @@ Execute the actual migration:
 3. Asks: "Proceed with migration? [y/N]"
 
 **What Happens:**
-1. ✅ Creates backup in `.migration-backup-<timestamp>/`
-2. ✅ Creates new directory structure
-3. ✅ Moves all files to new locations
-4. ✅ Updates paths in configuration files
-5. ✅ Splits `package.json` into workspace structure
-6. ✅ Creates platform-specific READMEs
-7. ✅ Creates GitHub Actions workflows
-8. ✅ Updates `.gitignore`
-9. ✅ Installs dependencies for all workspaces
-10. ✅ Verifies migration integrity
+1. Creates backup in `.migration-backup-<timestamp>/`
+2. Creates new directory structure
+3. Moves all files to new locations
+4. Updates paths in configuration files
+5. Splits `package.json` into workspace structure
+6. Creates platform-specific READMEs
+7. Creates GitHub Actions workflows
+8. Updates `.gitignore`
+9. Installs dependencies for all workspaces
+10. Verifies migration integrity
 
 **Duration:** ~2-5 minutes depending on repository size
 
@@ -196,34 +196,34 @@ Execute the actual migration:
 ℹ Starting monorepo migration...
 
 Current structure:
-  src/       → web/src/
-  scripts/   → backend/scripts/
-  db/        → backend/db/
-  docs/      → shared/docs/
+ src/ → web/src/
+ scripts/ → backend/scripts/
+ db/ → backend/db/
+ docs/ → shared/docs/
 
 Proceed with migration? [y/N] y
 
 ℹ Creating backup at: .migration-backup-20250106-143022
-✓ Backed up: src
-✓ Backed up: scripts
+ Backed up: src
+ Backed up: scripts
 ...
-✓ Backup created successfully
+ Backup created successfully
 
 ℹ Creating new directory structure...
-✓ Created: backend/
-✓ Created: web/
+ Created: backend/
+ Created: web/
 ...
 
-✓ Migration complete!
+ Migration complete!
 
 ℹ Backup location: .migration-backup-20250106-143022
 ℹ To rollback: ./scripts/migrate-to-monorepo.sh --rollback .migration-backup-20250106-143022
 
 ℹ Next steps:
-  1. Review changes: git status
-  2. Test backend: cd backend && npm run build:db && npm start
-  3. Test web: cd web && npm run dev
-  4. Commit changes: git add . && git commit -m 'chore: migrate to monorepo structure'
+ 1. Review changes: git status
+ 2. Test backend: cd backend && npm run build:db && npm start
+ 3. Test web: cd web && npm run dev
+ 4. Commit changes: git add . && git commit -m 'chore: migrate to monorepo structure'
 ```
 
 ### Step 4: Force Mode (Skip Confirmations)
@@ -234,7 +234,7 @@ For automated scripts or if you're confident:
 ./scripts/migrate-to-monorepo.sh --force
 ```
 
-⚠️ **Warning:** This skips all confirmation prompts!
+ **Warning:** This skips all confirmation prompts!
 
 ---
 
@@ -243,69 +243,69 @@ For automated scripts or if you're confident:
 ### After Migration
 
 1. **Review Git Status:**
-   ```bash
-   git status
-   ```
+ ```bash
+ git status
+ ```
 
-   **Expected:**
-   - Many files deleted (old locations)
-   - Many files added (new locations)
-   - New files created (READMEs, workflows)
+ **Expected:**
+ - Many files deleted (old locations)
+ - Many files added (new locations)
+ - New files created (READMEs, workflows)
 
 2. **Check Directory Structure:**
-   ```bash
-   ls -la
-   # Should show: backend/ web/ ios/ android/ shared/
-   ```
+ ```bash
+ ls -la
+ # Should show: backend/ web/ ios/ android/ shared/
+ ```
 
 3. **Verify Backend:**
-   ```bash
-   cd backend
-   ls
-   # Should show: scripts/ db/ package.json README.md
+ ```bash
+ cd backend
+ ls
+ # Should show: scripts/ db/ package.json README.md
 
-   # Test database build
-   npm run build:db
+ # Test database build
+ npm run build:db
 
-   # Start API server
-   npm start
-   # Should start on http://127.0.0.1:8787
-   ```
+ # Start API server
+ npm start
+ # Should start on http://127.0.0.1:8787
+ ```
 
 4. **Verify Web:**
-   ```bash
-   cd ../web
-   ls
-   # Should show: src/ styles/ public/ package.json README.md
+ ```bash
+ cd ../web
+ ls
+ # Should show: src/ styles/ public/ package.json README.md
 
-   # Start dev server
-   npm run dev
-   # Should start on http://localhost:5173
-   ```
+ # Start dev server
+ npm run dev
+ # Should start on http://localhost:5173
+ ```
 
 5. **Verify Shared:**
-   ```bash
-   cd ../shared
-   ls data/
-   # Should show: murphys-laws/
+ ```bash
+ cd ../shared
+ ls data/
+ # Should show: murphys-laws/
 
-   ls docs/
-   # Should show: MOBILE-IOS-PRD.md, MOBILE-ANDROID-PRD.md, etc.
-   ```
+ ls docs/
+ # Should show: MOBILE-IOS-PRD.md, MOBILE-ANDROID-PRD.md, etc.
+ ```
 
 6. **Test API Endpoints:**
-   ```bash
-   # With backend running
-   curl http://127.0.0.1:8787/api/v1/laws?limit=5
-   # Should return JSON with laws
-   ```
+ ```bash
+ # With backend running
+ curl http://127.0.0.1:8787/api/v1/laws?limit=5
+ # Should return JSON with laws
+ ```
 
 7. **Test Web App:**
-   ```bash
-   # With web dev server running
-   # Open http://localhost:5173 in browser
-   # Should load homepage with Law of the Day
-   ```
+ ```bash
+ # With web dev server running
+ # Open http://localhost:5173 in browser
+ # Should load homepage with Law of the Day
+ ```
 
 ### Automated Verification
 
@@ -316,7 +316,7 @@ The script includes built-in verification:
 # ...migration runs...
 # At the end:
 ℹ Verifying migration...
-✓ Migration verification passed!
+ Migration verification passed!
 ```
 
 ---
@@ -534,12 +534,12 @@ git commit -m "chore: migrate to monorepo structure
 
 **Before:**
 ```bash
-npm run build    # Built web app
+npm run build # Built web app
 ```
 
 **After:**
 ```bash
-npm run build:web    # Build web app
+npm run build:web # Build web app
 # OR
 cd web && npm run build
 ```
@@ -643,8 +643,8 @@ git log --follow web/src/main.js
 ### Q: Do I need to update documentation links?
 
 **A:** The script updates most links automatically. Check these:
-- README.md - ✅ Updated by script
-- Documentation links in code - ⚠️ May need manual update
+- README.md - Updated by script
+- Documentation links in code - May need manual update
 
 **Example manual update:**
 ```javascript
@@ -718,33 +718,33 @@ After successful migration, verify:
 After migration is complete and verified:
 
 1. **Commit Changes:**
-   ```bash
-   git add .
-   git commit -m "chore: migrate to monorepo structure"
-   ```
+ ```bash
+ git add .
+ git commit -m "chore: migrate to monorepo structure"
+ ```
 
 2. **Push to Remote:**
-   ```bash
-   git push origin <branch-name>
-   ```
+ ```bash
+ git push origin <branch-name>
+ ```
 
 3. **Update Team:**
-   - Share migration guide with team
-   - Update onboarding documentation
-   - Run team walkthrough if needed
+ - Share migration guide with team
+ - Update onboarding documentation
+ - Run team walkthrough if needed
 
 4. **Create iOS/Android Projects:**
-   - Follow [iOS PRD](../shared/docs/MOBILE-IOS-PRD.md)
-   - Follow [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md)
+ - Follow [iOS PRD](../shared/docs/MOBILE-IOS-PRD.md)
+ - Follow [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md)
 
 5. **Update CI/CD:**
-   - Review GitHub Actions workflows
-   - Update any external CI/CD (if applicable)
+ - Review GitHub Actions workflows
+ - Update any external CI/CD (if applicable)
 
 6. **Monitor:**
-   - Watch for issues in first few days
-   - Check deployment pipeline
-   - Gather team feedback
+ - Watch for issues in first few days
+ - Check deployment pipeline
+ - Gather team feedback
 
 ---
 

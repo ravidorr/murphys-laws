@@ -116,12 +116,12 @@ The iOS app will be a native Swift application that:
 - As a user, I want infinite scroll for seamless browsing
 
 **Acceptance Criteria:**
-- ✅ Display law cards with text, upvote/downvote counts, and category tags
-- ✅ Implement pagination matching web app (25 laws per page)
-- ✅ Pull-to-refresh clears cache and fetches fresh data
-- ✅ Infinite scroll automatically loads next page when scrolling near bottom
-- ✅ Loading states with skeleton screens
-- ✅ Error states with retry button
+- Display law cards with text, upvote/downvote counts, and category tags
+- Implement pagination matching web app (25 laws per page)
+- Pull-to-refresh clears cache and fetches fresh data
+- Infinite scroll automatically loads next page when scrolling near bottom
+- Loading states with skeleton screens
+- Error states with retry button
 
 **API Endpoints:**
 - `GET /api/v1/laws?limit=25&offset=0&sort=score&order=desc`
@@ -143,12 +143,12 @@ The iOS app will be a native Swift application that:
 - As a user, I want to share laws via iOS share sheet
 
 **Acceptance Criteria:**
-- ✅ Full law text displayed with proper typography
-- ✅ Attribution names with contact info (if available)
-- ✅ Vote buttons with real-time count updates
-- ✅ Native iOS share sheet integration
-- ✅ Related laws section (if available)
-- ✅ Category tags (tappable to filter)
+- Full law text displayed with proper typography
+- Attribution names with contact info (if available)
+- Vote buttons with real-time count updates
+- Native iOS share sheet integration
+- Related laws section (if available)
+- Category tags (tappable to filter)
 
 **API Endpoints:**
 - `GET /api/v1/laws/{id}`
@@ -172,11 +172,11 @@ The iOS app will be a native Swift application that:
 - As a user, I want to change my vote (upvote → downvote or remove)
 
 **Acceptance Criteria:**
-- ✅ Vote buttons change color when voted (green for up, red for down)
-- ✅ Vote counts update immediately (optimistic UI)
-- ✅ Haptic feedback on vote action
-- ✅ Vote state persists across app restarts (UserDefaults + backend sync)
-- ✅ Handle vote conflicts (e.g., already voted from web)
+- Vote buttons change color when voted (green for up, red for down)
+- Vote counts update immediately (optimistic UI)
+- Haptic feedback on vote action
+- Vote state persists across app restarts (UserDefaults + backend sync)
+- Handle vote conflicts (e.g., already voted from web)
 
 **API Endpoints:**
 - `POST /api/v1/laws/{id}/vote` - Body: `{"vote_type": "up"}`
@@ -199,12 +199,12 @@ The iOS app will be a native Swift application that:
 - As a user, I want to see search suggestions
 
 **Acceptance Criteria:**
-- ✅ Search bar in navigation with real-time results
-- ✅ Category filter chips (horizontal scrollable list)
-- ✅ Attribution dropdown/picker
-- ✅ Combined filters (e.g., search + category)
-- ✅ Clear filters button
-- ✅ Search history (last 10 searches)
+- Search bar in navigation with real-time results
+- Category filter chips (horizontal scrollable list)
+- Attribution dropdown/picker
+- Combined filters (e.g., search + category)
+- Clear filters button
+- Search history (last 10 searches)
 
 **API Endpoints:**
 - `GET /api/v1/laws?q=murphy&category_id=5&attribution=John`
@@ -227,12 +227,12 @@ The iOS app will be a native Swift application that:
 - As a user, I want to view past Laws of the Day
 
 **Acceptance Criteria:**
-- ✅ Dedicated "Law of the Day" card on home screen
-- ✅ Special styling/badge to distinguish it
-- ✅ Tap to view full details
-- ✅ Share button directly from card
-- ✅ Push notification opt-in during onboarding
-- ✅ Notification sent at user-selected time (default 9 AM local time)
+- Dedicated "Law of the Day" card on home screen
+- Special styling/badge to distinguish it
+- Tap to view full details
+- Share button directly from card
+- Push notification opt-in during onboarding
+- Notification sent at user-selected time (default 9 AM local time)
 
 **API Endpoints:**
 - `GET /api/v1/law-of-day`
@@ -254,14 +254,14 @@ The iOS app will be a native Swift application that:
 - As a user, I want confirmation when submitted
 
 **Acceptance Criteria:**
-- ✅ Form with law text field (10-1000 chars, validated)
-- ✅ Optional title field
-- ✅ Optional author name and email fields
-- ✅ "Submit anonymously" toggle
-- ✅ Category picker (required)
-- ✅ Form validation with inline errors
-- ✅ Success confirmation alert
-- ✅ Submission status: "Your law is under review"
+- Form with law text field (10-1000 chars, validated)
+- Optional title field
+- Optional author name and email fields
+- "Submit anonymously" toggle
+- Category picker (required)
+- Form validation with inline errors
+- Success confirmation alert
+- Submission status: "Your law is under review"
 
 **API Endpoints:**
 - `POST /api/v1/laws`
@@ -284,18 +284,18 @@ The iOS app will be a native Swift application that:
 - As a user, I want to share calculation results
 
 **Acceptance Criteria:**
-- ✅ Input sliders for:
-  - Urgency (U): 1-10
-  - Complexity (C): 1-10
-  - Importance (I): 1-10
-  - Skill Level (S): 1-10
-  - Frequency (F): 1-10
-- ✅ Real-time probability calculation
-- ✅ Formula display: `((U+C+I) × (10-S))/20 × A × 1/(1-sin(F/10))`
-- ✅ Result interpretation (Low/Medium/High risk)
-- ✅ Color-coded result (green/yellow/red)
-- ✅ Share via iOS share sheet
-- ✅ Optional: Email results (uses existing API)
+- Input sliders for:
+ - Urgency (U): 1-10
+ - Complexity (C): 1-10
+ - Importance (I): 1-10
+ - Skill Level (S): 1-10
+ - Frequency (F): 1-10
+- Real-time probability calculation
+- Formula display: `((U+C+I) × (10-S))/20 × A × 1/(1-sin(F/10))`
+- Result interpretation (Low/Medium/High risk)
+- Color-coded result (green/yellow/red)
+- Share via iOS share sheet
+- Optional: Email results (uses existing API)
 
 **API Endpoints:**
 - `POST /api/v1/share-calculation` (optional, for email)
@@ -316,11 +316,11 @@ The iOS app will be a native Swift application that:
 - As a user, I want to see how many laws are in each category
 
 **Acceptance Criteria:**
-- ✅ List of all categories with law counts
-- ✅ Category descriptions/subtitles
-- ✅ Tap category to view filtered law list
-- ✅ Category icons/colors for visual distinction
-- ✅ Alphabetical sorting
+- List of all categories with law counts
+- Category descriptions/subtitles
+- Tap category to view filtered law list
+- Category icons/colors for visual distinction
+- Alphabetical sorting
 
 **API Endpoints:**
 - `GET /api/v1/categories`
@@ -414,29 +414,29 @@ The iOS app will be a native Swift application that:
 ```
 TabView (Bottom Navigation)
 ├─ Home
-│  ├─ Law of the Day Widget
-│  ├─ Top Voted Laws Widget
-│  ├─ Trending Laws Widget
-│  └─ Recently Added Laws Widget
+│ ├─ Law of the Day Widget
+│ ├─ Top Voted Laws Widget
+│ ├─ Trending Laws Widget
+│ └─ Recently Added Laws Widget
 ├─ Browse
-│  ├─ Search Bar
-│  ├─ Category Filter Chips
-│  ├─ Law List (Infinite Scroll)
-│  └─ Law Detail (Push Navigation)
+│ ├─ Search Bar
+│ ├─ Category Filter Chips
+│ ├─ Law List (Infinite Scroll)
+│ └─ Law Detail (Push Navigation)
 ├─ Categories
-│  ├─ Category List
-│  └─ Filtered Law List (Push Navigation)
+│ ├─ Category List
+│ └─ Filtered Law List (Push Navigation)
 ├─ Calculators
-│  ├─ Sod's Law Calculator
-│  └─ Toast Calculator (v1.1)
+│ ├─ Sod's Law Calculator
+│ └─ Toast Calculator (v1.1)
 └─ More
-   ├─ Submit Law
-   ├─ Favorites (v1.1)
-   ├─ Settings
-   │  ├─ Notification Preferences
-   │  ├─ Theme Selection (v1.1)
-   │  └─ About/Privacy Policy
-   └─ About
+ ├─ Submit Law
+ ├─ Favorites (v1.1)
+ ├─ Settings
+ │ ├─ Notification Preferences
+ │ ├─ Theme Selection (v1.1)
+ │ └─ About/Privacy Policy
+ └─ About
 ```
 
 ### Screen Layouts
@@ -444,91 +444,91 @@ TabView (Bottom Navigation)
 #### Home Screen
 ```
 ┌─────────────────────────┐
-│ Navigation Bar          │
-│ "Murphy's Laws"         │
+│ Navigation Bar │
+│ "Murphy's Laws" │
 ├─────────────────────────┤
-│ 🌟 Law of the Day      │
+│ Law of the Day │
 │ ┌─────────────────────┐ │
-│ │ "If anything can   │ │
+│ │ "If anything can │ │
 │ │ go wrong, it will" │ │
-│ │                     │ │
-│ │ ⬆ 42   ⬇ 3   Share │ │
+│ │ │ │
+│ │ ⬆ 42 ⬇ 3 Share │ │
 │ └─────────────────────┘ │
 ├─────────────────────────┤
-│ Top Voted Laws          │
-│ [Horizontal Scroll]     │
+│ Top Voted Laws │
+│ [Horizontal Scroll] │
 ├─────────────────────────┤
-│ Trending Laws           │
-│ [Horizontal Scroll]     │
+│ Trending Laws │
+│ [Horizontal Scroll] │
 └─────────────────────────┘
 ```
 
 #### Browse Screen
 ```
 ┌─────────────────────────┐
-│ Search Bar 🔍          │
+│ Search Bar │
 ├─────────────────────────┤
 │ [Tech] [Love] [Work]... │ ← Category chips
 ├─────────────────────────┤
 │ ┌─────────────────────┐ │
-│ │ Law Title          │ │
+│ │ Law Title │ │
 │ │ Law text preview...│ │
-│ │ ⬆ 10   ⬇ 2        │ │
+│ │ ⬆ 10 ⬇ 2 │ │
 │ └─────────────────────┘ │
 │ ┌─────────────────────┐ │
-│ │ Another law...     │ │
+│ │ Another law... │ │
 │ └─────────────────────┘ │
-│ ... (infinite scroll)   │
+│ ... (infinite scroll) │
 └─────────────────────────┘
 ```
 
 #### Law Detail Screen
 ```
 ┌─────────────────────────┐
-│ ← Back        Share ↗  │
+│ ← Back Share ↗ │
 ├─────────────────────────┤
-│ Law Title (if exists)   │
-│                         │
+│ Law Title (if exists) │
+│ │
 │ Full law text displayed │
 │ with proper spacing and │
-│ typography...           │
-│                         │
-│ [Technology] [Office]   │ ← Category tags
-│                         │
-│ ⬆ Upvote (42)          │
-│ ⬇ Downvote (3)         │
-│                         │
+│ typography... │
+│ │
+│ [Technology] [Office] │ ← Category tags
+│ │
+│ ⬆ Upvote (42) │
+│ ⬇ Downvote (3) │
+│ │
 │ ─────────────────────── │
-│ Attribution:            │
-│ Submitted by John Doe   │
-│ john@example.com        │
-│                         │
-│ Related Laws:           │
-│ - Similar law 1         │
-│ - Similar law 2         │
+│ Attribution: │
+│ Submitted by John Doe │
+│ john@example.com │
+│ │
+│ Related Laws: │
+│ - Similar law 1 │
+│ - Similar law 2 │
 └─────────────────────────┘
 ```
 
 #### Sod's Law Calculator
 ```
 ┌─────────────────────────┐
-│ Sod's Law Calculator    │
+│ Sod's Law Calculator │
 ├─────────────────────────┤
-│ Urgency:        [●─────] 5 │
-│ Complexity:     [●●●───] 7 │
-│ Importance:     [●●●●──] 8 │
-│ Skill Level:    [●●●───] 6 │
-│ Frequency:      [●●────] 4 │
-│                         │
+│ Urgency: [●─────] 5 │
+│ Complexity: [●●●───] 7 │
+│ Importance: [●●●●──] 8 │
+│ Skill Level: [●●●───] 6 │
+│ Frequency: [●●────] 4 │
+│ │
 │ ─────────────────────── │
-│                         │
-│ Formula:                │
+│ │
+│ Formula: │
 │ ((U+C+I)×(10-S))/20×... │
-│                         │
-│ Result: 78.5% 🔴       │
-│ "High risk of failure"  │
-│                         │
-│ [Share Results]         │
+│ │
+│ Result: 78.5% │
+│ "High risk of failure" │
+│ │
+│ [Share Results] │
 └─────────────────────────┘
 ```
 
@@ -584,54 +584,54 @@ TabView (Bottom Navigation)
 ```
 MurphysLaws/
 ├── App/
-│   ├── MurphysLawsApp.swift       # App entry point
-│   └── AppDelegate.swift           # App lifecycle
+│ ├── MurphysLawsApp.swift # App entry point
+│ └── AppDelegate.swift # App lifecycle
 ├── Models/
-│   ├── Law.swift                   # Law data model
-│   ├── Category.swift              # Category model
-│   ├── Attribution.swift           # Attribution model
-│   └── Vote.swift                  # Vote model
+│ ├── Law.swift # Law data model
+│ ├── Category.swift # Category model
+│ ├── Attribution.swift # Attribution model
+│ └── Vote.swift # Vote model
 ├── ViewModels/
-│   ├── LawListViewModel.swift     # Browse laws logic
-│   ├── LawDetailViewModel.swift   # Law detail logic
-│   ├── SearchViewModel.swift      # Search logic
-│   └── CalculatorViewModel.swift  # Calculator logic
+│ ├── LawListViewModel.swift # Browse laws logic
+│ ├── LawDetailViewModel.swift # Law detail logic
+│ ├── SearchViewModel.swift # Search logic
+│ └── CalculatorViewModel.swift # Calculator logic
 ├── Views/
-│   ├── Home/
-│   │   ├── HomeView.swift
-│   │   └── LawOfTheDayCard.swift
-│   ├── Browse/
-│   │   ├── LawListView.swift
-│   │   ├── LawCardView.swift
-│   │   └── LawDetailView.swift
-│   ├── Search/
-│   │   ├── SearchView.swift
-│   │   └── FilterView.swift
-│   ├── Categories/
-│   │   └── CategoryListView.swift
-│   ├── Calculators/
-│   │   ├── SodsLawCalculatorView.swift
-│   │   └── ToastCalculatorView.swift (v1.1)
-│   └── Submit/
-│       └── SubmitLawView.swift
+│ ├── Home/
+│ │ ├── HomeView.swift
+│ │ └── LawOfTheDayCard.swift
+│ ├── Browse/
+│ │ ├── LawListView.swift
+│ │ ├── LawCardView.swift
+│ │ └── LawDetailView.swift
+│ ├── Search/
+│ │ ├── SearchView.swift
+│ │ └── FilterView.swift
+│ ├── Categories/
+│ │ └── CategoryListView.swift
+│ ├── Calculators/
+│ │ ├── SodsLawCalculatorView.swift
+│ │ └── ToastCalculatorView.swift (v1.1)
+│ └── Submit/
+│ └── SubmitLawView.swift
 ├── Services/
-│   ├── APIService.swift            # HTTP client
-│   ├── CacheService.swift          # Local caching
-│   ├── VotingService.swift         # Vote management
-│   └── NotificationService.swift   # Push notifications
+│ ├── APIService.swift # HTTP client
+│ ├── CacheService.swift # Local caching
+│ ├── VotingService.swift # Vote management
+│ └── NotificationService.swift # Push notifications
 ├── Repositories/
-│   ├── LawRepository.swift         # Law data access
-│   └── CategoryRepository.swift    # Category data access
+│ ├── LawRepository.swift # Law data access
+│ └── CategoryRepository.swift # Category data access
 ├── Utilities/
-│   ├── Constants.swift             # App constants
-│   ├── Extensions/
-│   │   ├── View+Extensions.swift
-│   │   └── Color+Extensions.swift
-│   └── NetworkMonitor.swift        # Network reachability
+│ ├── Constants.swift # App constants
+│ ├── Extensions/
+│ │ ├── View+Extensions.swift
+│ │ └── Color+Extensions.swift
+│ └── NetworkMonitor.swift # Network reachability
 └── Resources/
-    ├── Assets.xcassets             # Images, colors
-    ├── Localizable.strings         # i18n strings
-    └── Info.plist                  # App configuration
+ ├── Assets.xcassets # Images, colors
+ ├── Localizable.strings # i18n strings
+ └── Info.plist # App configuration
 ```
 
 ### Dependencies
@@ -639,8 +639,8 @@ MurphysLaws/
 #### Swift Package Manager (SPM)
 ```swift
 dependencies: [
-  .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.8.0"),
-  // Alternative: Use native URLSession (recommended for simplicity)
+ .package(url: "https://github.com/Alamofire/Alamofire.git", from: "5.8.0"),
+ // Alternative: Use native URLSession (recommended for simplicity)
 ]
 ```
 
@@ -651,42 +651,42 @@ dependencies: [
 #### API Client Example
 ```swift
 class APIService {
-    let baseURL = "https://murphys-laws.com/api/v1"
+ let baseURL = "https://murphys-laws.com/api/v1"
 
-    func fetchLaws(
-        limit: Int = 25,
-        offset: Int = 0,
-        query: String? = nil,
-        categoryID: Int? = nil
-    ) async throws -> LawsResponse {
-        var components = URLComponents(string: "\(baseURL)/laws")!
-        components.queryItems = [
-            URLQueryItem(name: "limit", value: "\(limit)"),
-            URLQueryItem(name: "offset", value: "\(offset)")
-        ]
-        if let query = query {
-            components.queryItems?.append(URLQueryItem(name: "q", value: query))
-        }
-        if let categoryID = categoryID {
-            components.queryItems?.append(URLQueryItem(name: "category_id", value: "\(categoryID)"))
-        }
+ func fetchLaws(
+ limit: Int = 25,
+ offset: Int = 0,
+ query: String? = nil,
+ categoryID: Int? = nil
+ ) async throws -> LawsResponse {
+ var components = URLComponents(string: "\(baseURL)/laws")!
+ components.queryItems = [
+ URLQueryItem(name: "limit", value: "\(limit)"),
+ URLQueryItem(name: "offset", value: "\(offset)")
+ ]
+ if let query = query {
+ components.queryItems?.append(URLQueryItem(name: "q", value: query))
+ }
+ if let categoryID = categoryID {
+ components.queryItems?.append(URLQueryItem(name: "category_id", value: "\(categoryID)"))
+ }
 
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
-        return try JSONDecoder().decode(LawsResponse.self, from: data)
-    }
+ let (data, _) = try await URLSession.shared.data(from: components.url!)
+ return try JSONDecoder().decode(LawsResponse.self, from: data)
+ }
 
-    func voteLaw(id: Int, voteType: VoteType) async throws -> VoteResponse {
-        var request = URLRequest(url: URL(string: "\(baseURL)/laws/\(id)/vote")!)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(DeviceInfo.deviceID, forHTTPHeaderField: "X-Device-ID")
+ func voteLaw(id: Int, voteType: VoteType) async throws -> VoteResponse {
+ var request = URLRequest(url: URL(string: "\(baseURL)/laws/\(id)/vote")!)
+ request.httpMethod = "POST"
+ request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+ request.setValue(DeviceInfo.deviceID, forHTTPHeaderField: "X-Device-ID")
 
-        let body = ["vote_type": voteType.rawValue]
-        request.httpBody = try JSONEncoder().encode(body)
+ let body = ["vote_type": voteType.rawValue]
+ request.httpBody = try JSONEncoder().encode(body)
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return try JSONDecoder().decode(VoteResponse.self, from: data)
-    }
+ let (data, _) = try await URLSession.shared.data(for: request)
+ return try JSONDecoder().decode(VoteResponse.self, from: data)
+ }
 }
 ```
 
@@ -694,43 +694,43 @@ class APIService {
 
 ```swift
 struct Law: Codable, Identifiable {
-    let id: Int
-    let text: String
-    let title: String?
-    let upvotes: Int
-    let downvotes: Int
-    let createdAt: Date
-    let attributions: [Attribution]?
+ let id: Int
+ let text: String
+ let title: String?
+ let upvotes: Int
+ let downvotes: Int
+ let createdAt: Date
+ let attributions: [Attribution]?
 
-    var score: Int { upvotes - downvotes }
+ var score: Int { upvotes - downvotes }
 
-    enum CodingKeys: String, CodingKey {
-        case id, text, title, upvotes, downvotes, attributions
-        case createdAt = "created_at"
-    }
+ enum CodingKeys: String, CodingKey {
+ case id, text, title, upvotes, downvotes, attributions
+ case createdAt = "created_at"
+ }
 }
 
 struct Category: Codable, Identifiable {
-    let id: Int
-    let title: String
-    let slug: String
-    let description: String?
+ let id: Int
+ let title: String
+ let slug: String
+ let description: String?
 }
 
 struct Attribution: Codable {
-    let name: String
-    let contactType: String?
-    let contactValue: String?
+ let name: String
+ let contactType: String?
+ let contactValue: String?
 
-    enum CodingKeys: String, CodingKey {
-        case name
-        case contactType = "contact_type"
-        case contactValue = "contact_value"
-    }
+ enum CodingKeys: String, CodingKey {
+ case name
+ case contactType = "contact_type"
+ case contactValue = "contact_value"
+ }
 }
 
 enum VoteType: String, Codable {
-    case up, down
+ case up, down
 }
 ```
 
@@ -739,26 +739,26 @@ enum VoteType: String, Codable {
 #### UserDefaults Keys
 ```swift
 struct StorageKeys {
-    static let votes = "user_votes"              // [law_id: vote_type]
-    static let categories = "cached_categories"  // [Category]
-    static let lastSync = "last_sync_date"       // Date
-    static let deviceID = "device_identifier"    // UUID
+ static let votes = "user_votes" // [law_id: vote_type]
+ static let categories = "cached_categories" // [Category]
+ static let lastSync = "last_sync_date" // Date
+ static let deviceID = "device_identifier" // UUID
 }
 ```
 
 #### Vote Tracking
 ```swift
 class VoteManager {
-    func getVote(for lawID: Int) -> VoteType? {
-        let votes = UserDefaults.standard.dictionary(forKey: StorageKeys.votes) as? [String: String]
-        return votes?["\(lawID)"].flatMap { VoteType(rawValue: $0) }
-    }
+ func getVote(for lawID: Int) -> VoteType? {
+ let votes = UserDefaults.standard.dictionary(forKey: StorageKeys.votes) as? [String: String]
+ return votes?["\(lawID)"].flatMap { VoteType(rawValue: $0) }
+ }
 
-    func setVote(_ voteType: VoteType, for lawID: Int) {
-        var votes = UserDefaults.standard.dictionary(forKey: StorageKeys.votes) as? [String: String] ?? [:]
-        votes["\(lawID)"] = voteType.rawValue
-        UserDefaults.standard.set(votes, forKey: StorageKeys.votes)
-    }
+ func setVote(_ voteType: VoteType, for lawID: Int) {
+ var votes = UserDefaults.standard.dictionary(forKey: StorageKeys.votes) as? [String: String] ?? [:]
+ votes["\(lawID)"] = voteType.rawValue
+ UserDefaults.standard.set(votes, forKey: StorageKeys.votes)
+ }
 }
 ```
 
@@ -766,26 +766,26 @@ class VoteManager {
 
 ```swift
 enum APIError: LocalizedError {
-    case networkError(Error)
-    case invalidResponse
-    case decodingError(Error)
-    case serverError(Int)
-    case rateLimitExceeded
+ case networkError(Error)
+ case invalidResponse
+ case decodingError(Error)
+ case serverError(Int)
+ case rateLimitExceeded
 
-    var errorDescription: String? {
-        switch self {
-        case .networkError:
-            return "Network connection failed. Please check your internet."
-        case .invalidResponse:
-            return "Invalid server response."
-        case .decodingError:
-            return "Failed to parse data."
-        case .serverError(let code):
-            return "Server error: \(code)"
-        case .rateLimitExceeded:
-            return "Too many requests. Please try again later."
-        }
-    }
+ var errorDescription: String? {
+ switch self {
+ case .networkError:
+ return "Network connection failed. Please check your internet."
+ case .invalidResponse:
+ return "Invalid server response."
+ case .decodingError:
+ return "Failed to parse data."
+ case .serverError(let code):
+ return "Server error: \(code)"
+ case .rateLimitExceeded:
+ return "Too many requests. Please try again later."
+ }
+ }
 }
 ```
 
@@ -839,41 +839,41 @@ enum APIError: LocalizedError {
 ## Development Timeline
 
 ### Phase 1: Foundation (Weeks 1-2)
-- ✅ Xcode project setup
-- ✅ API client implementation
-- ✅ Data models and repositories
-- ✅ Basic navigation structure
-- ✅ Design system (colors, typography, components)
+- Xcode project setup
+- API client implementation
+- Data models and repositories
+- Basic navigation structure
+- Design system (colors, typography, components)
 
 ### Phase 2: Core Features (Weeks 3-5)
-- ✅ Home screen with Law of the Day
-- ✅ Browse laws list with pagination
-- ✅ Law detail view
-- ✅ Voting functionality
-- ✅ Search and filters
-- ✅ Category browsing
+- Home screen with Law of the Day
+- Browse laws list with pagination
+- Law detail view
+- Voting functionality
+- Search and filters
+- Category browsing
 
 ### Phase 3: Secondary Features (Weeks 6-7)
-- ✅ Submit law form
-- ✅ Sod's Law Calculator
-- ✅ Share functionality
-- ✅ Settings screen
-- ✅ About/Privacy Policy pages
+- Submit law form
+- Sod's Law Calculator
+- Share functionality
+- Settings screen
+- About/Privacy Policy pages
 
 ### Phase 4: Polish & Testing (Week 8)
-- ✅ UI/UX polish
-- ✅ Performance optimization
-- ✅ Bug fixes
-- ✅ Unit tests (ViewModels, Services)
-- ✅ UI tests (critical flows)
-- ✅ Accessibility audit (VoiceOver, Dynamic Type)
+- UI/UX polish
+- Performance optimization
+- Bug fixes
+- Unit tests (ViewModels, Services)
+- UI tests (critical flows)
+- Accessibility audit (VoiceOver, Dynamic Type)
 
 ### Phase 5: App Store Submission (Week 9)
-- ✅ App Store assets (screenshots, preview video)
-- ✅ App Store listing (description, keywords)
-- ✅ Privacy policy update
-- ✅ TestFlight beta testing
-- ✅ Submit for review
+- App Store assets (screenshots, preview video)
+- App Store listing (description, keywords)
+- Privacy policy update
+- TestFlight beta testing
+- Submit for review
 
 **Total Timeline:** 9 weeks (2.25 months) for MVP
 
@@ -882,29 +882,29 @@ enum APIError: LocalizedError {
 ## Future Enhancements
 
 ### Version 1.1 (Post-Launch)
-- ✅ Home screen widgets
-- ✅ Offline mode with Core Data
-- ✅ Buttered Toast Calculator
-- ✅ Favorites/Bookmarks
-- ✅ Dark mode (manual toggle)
+- Home screen widgets
+- Offline mode with Core Data
+- Buttered Toast Calculator
+- Favorites/Bookmarks
+- Dark mode (manual toggle)
 
 ### Version 1.2
-- ✅ User accounts (sign in with Apple)
-- ✅ Cross-device sync (favorites, votes)
-- ✅ Law submission voting (upvote pending submissions)
-- ✅ Achievement badges (e.g., "Voted on 100 laws")
+- User accounts (sign in with Apple)
+- Cross-device sync (favorites, votes)
+- Law submission voting (upvote pending submissions)
+- Achievement badges (e.g., "Voted on 100 laws")
 
 ### Version 1.3
-- ✅ Social features (comments, discussions)
-- ✅ Collections (user-curated lists)
-- ✅ Advanced calculator (custom formulas)
-- ✅ Siri Shortcuts integration
+- Social features (comments, discussions)
+- Collections (user-curated lists)
+- Advanced calculator (custom formulas)
+- Siri Shortcuts integration
 
 ### Version 2.0
-- ✅ AI-powered law recommendations
-- ✅ Personalized feed based on interests
-- ✅ Community features (user profiles, followers)
-- ✅ Premium subscription (ad-free, exclusive content)
+- AI-powered law recommendations
+- Personalized feed based on interests
+- Community features (user profiles, followers)
+- Premium subscription (ad-free, exclusive content)
 
 ---
 
