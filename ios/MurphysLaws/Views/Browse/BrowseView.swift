@@ -56,7 +56,7 @@ struct BrowseView: View {
                     Button {
                         showingFilters.toggle()
                     } label: {
-                        Image(systemImage: "line.3.horizontal.decrease.circle")
+                        Image(systemName: "line.3.horizontal.decrease.circle")
                     }
                 }
             }
