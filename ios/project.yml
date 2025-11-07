@@ -18,6 +18,10 @@ targets:
       - path: MurphysLaws
         excludes:
           - "**/*.md"
+      - path: ../shared/content
+        name: shared/content
+        type: folder
+        buildPhase: resources
     info:
       path: MurphysLaws/Info.plist
       properties:
