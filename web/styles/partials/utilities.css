@@ -68,7 +68,9 @@
 .accent-text {
   background: linear-gradient(90deg, var(--btn-primary-bg), var(--gradient-blue));
   color: transparent;
+  -webkit-background-clip: text;
   background-clip: text;
+  font-weight: 700;
 }
 
 .blockquote {

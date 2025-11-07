@@ -10,7 +10,8 @@ describe('markdown-content.js', () => {
       expect(html).toContain('<article class="card content-card">');
       expect(html).toContain('<div class="card-content">');
       // Check for HTML entity encoded apostrophe (&#39;)
-      expect(html).toContain('About Murphy');
+      expect(html).toContain('About');
+      expect(html).toContain('Murphy');
       expect(html).toContain('Law Archive');
       expect(html).toContain('</article>');
     });
@@ -20,7 +21,8 @@ describe('markdown-content.js', () => {
       
       expect(html).toContain('<article class="card content-card">');
       expect(html).toContain('<div class="card-content">');
-      expect(html).toContain('Privacy Policy');
+      expect(html).toContain('Privacy');
+      expect(html).toContain('Policy');
       expect(html).toContain('</article>');
     });
 
@@ -48,6 +50,10 @@ describe('markdown-content.js', () => {
       expect(html).toContain('Last updated:');
       expect(html).toContain('<header class="content-header">');
       expect(html).toContain('<p class="small">');
+      // Verify "Last updated:" appears only once (fixes duplicate date bug)
+      const lastUpdatedMatches = html.match(/Last updated:/g);
+      expect(lastUpdatedMatches).toBeTruthy();
+      expect(lastUpdatedMatches.length).toBe(1);
     });
 
     it('includes last updated date for terms page', () => {
@@ -56,6 +62,10 @@ describe('markdown-content.js', () => {
       expect(html).toContain('Last updated:');
       expect(html).toContain('<header class="content-header">');
       expect(html).toContain('<p class="small">');
+      // Verify "Last updated:" appears only once (fixes duplicate date bug)
+      const lastUpdatedMatches = html.match(/Last updated:/g);
+      expect(lastUpdatedMatches).toBeTruthy();
+      expect(lastUpdatedMatches.length).toBe(1);
     });
 
     it('does not include last updated date for about page', () => {
@@ -77,8 +87,17 @@ describe('markdown-content.js', () => {
     it('applies styling enhancements to h1 tags', () => {
       const html = getPageContent('about');
       
+      // Accent-text should wrap only the first word
       expect(html).toContain('<h1><span class="accent-text">');
-      expect(html).toContain('</span></h1>');
+      expect(html).toContain('</span>');
+      expect(html).toContain('</h1>');
+      // Verify the structure: accent-text span comes before closing h1
+      const h1Match = html.match(/<h1>[\s\S]*?<\/h1>/);
+      expect(h1Match).toBeTruthy();
+      if (h1Match) {
+        expect(h1Match[0]).toContain('<span class="accent-text">');
+        expect(h1Match[0].indexOf('</span>')).toBeLessThan(h1Match[0].indexOf('</h1>'));
+      }
     });
 
     it('applies styling enhancements to h2 tags', () => {
@@ -86,7 +105,35 @@ describe('markdown-content.js', () => {
       
       expect(html).toContain('<section class="content-section">');
       expect(html).toContain('<h2><span class="accent-text">');
-      expect(html).toContain('</span></h2>');
+      expect(html).toContain('</span>');
+      expect(html).toContain('</h2>');
+      // Verify the structure: accent-text span wraps only first word, comes before closing h2
+      const h2Matches = html.match(/<h2>[\s\S]*?<\/h2>/g);
+      expect(h2Matches).toBeTruthy();
+      if (h2Matches) {
+        h2Matches.forEach(h2Tag => {
+          expect(h2Tag).toContain('<span class="accent-text">');
+          expect(h2Tag.indexOf('</span>')).toBeLessThan(h2Tag.indexOf('</h2>'));
+        });
+      }
+    });
+
+    it('applies styling enhancements to h3 tags', () => {
+      const html = getPageContent('about');
+      
+      // About page has h3 tags in "What You'll Find" section
+      expect(html).toContain('<h3><span class="accent-text">');
+      expect(html).toContain('</span>');
+      expect(html).toContain('</h3>');
+      // Verify the structure: accent-text span wraps only first word, comes before closing h3
+      const h3Matches = html.match(/<h3>[\s\S]*?<\/h3>/g);
+      expect(h3Matches).toBeTruthy();
+      if (h3Matches) {
+        h3Matches.forEach(h3Tag => {
+          expect(h3Tag).toContain('<span class="accent-text">');
+          expect(h3Tag.indexOf('</span>')).toBeLessThan(h3Tag.indexOf('</h3>'));
+        });
+      }
     });
 
     it('wraps h2 sections properly', () => {
@@ -302,28 +349,37 @@ describe('markdown-content.js', () => {
       expect(headerSection).not.toContain('Last updated:');
     });
 
-    it('ensures all h1 tags have accent-text spans', () => {
+    it('ensures all h1 tags have accent-text spans wrapping first word only', () => {
       const pages = ['about', 'privacy', 'terms', 'contact'];
       
       pages.forEach(page => {
         const html = getPageContent(page);
-        const h1Matches = html.match(/<h1[^>]*>/g) || [];
+        const h1Matches = html.match(/<h1>[\s\S]*?<\/h1>/g) || [];
         
         h1Matches.forEach(h1Tag => {
-          // Find the corresponding closing h1
-          const h1Index = html.indexOf(h1Tag);
-          const h1EndIndex = html.indexOf('</h1>', h1Index);
-          const h1Content = html.substring(h1Index, h1EndIndex + 5);
-          
-          expect(h1Content).toContain('<span class="accent-text">');
-          expect(h1Content).toContain('</span>');
+          // Verify accent-text wraps only the first word
+          expect(h1Tag).toContain('<span class="accent-text">');
+          expect(h1Tag).toContain('</span>');
+          // The closing span should come before the closing h1 (not right before it)
+          const spanEndIndex = h1Tag.indexOf('</span>');
+          const h1EndIndex = h1Tag.indexOf('</h1>');
+          expect(spanEndIndex).toBeLessThan(h1EndIndex);
+          // There should be content after the closing span (the rest of the heading)
+          const afterSpan = h1Tag.substring(spanEndIndex + 7, h1EndIndex).trim();
+          // For multi-word headings, there should be content after the span
+          if (h1Tag.match(/<span class="accent-text">[^<]+<\/span>/)) {
+            const firstWordMatch = h1Tag.match(/<span class="accent-text">([^<]+)<\/span>/);
+            if (firstWordMatch && h1Tag.length > firstWordMatch[0].length + 10) {
+              expect(afterSpan.length).toBeGreaterThan(0);
+            }
+          }
         });
       });
     });
 
-    it('ensures all h2 tags have accent-text spans and section wrappers', () => {
+    it('ensures all h2 tags have accent-text spans wrapping first word only and section wrappers', () => {
       const html = getPageContent('about');
-      const h2Matches = html.match(/<h2[^>]*>/g) || [];
+      const h2Matches = html.match(/<h2>[\s\S]*?<\/h2>/g) || [];
       
       h2Matches.forEach(h2Tag => {
         // Find the section containing this h2
@@ -336,15 +392,19 @@ describe('markdown-content.js', () => {
         expect(sectionStart).toBeLessThan(h2Index);
         expect(sectionEnd).toBeGreaterThan(h2Index);
         
-        // Check for accent-text span
-        const h2Content = html.substring(h2Index, html.indexOf('</h2>', h2Index) + 5);
-        expect(h2Content).toContain('<span class="accent-text">');
+        // Check for accent-text span wrapping only first word
+        expect(h2Tag).toContain('<span class="accent-text">');
+        expect(h2Tag).toContain('</span>');
+        // The closing span should come before the closing h2
+        const spanEndIndex = h2Tag.indexOf('</span>');
+        const h2EndIndex = h2Tag.indexOf('</h2>');
+        expect(spanEndIndex).toBeLessThan(h2EndIndex);
       });
     });
 
     it('handles content without paragraph after h1 (privacy/terms branch)', () => {
       // Mock marked.parse to return HTML without paragraph after h1
-      // This tests the branch where firstPEnd === -1 (line 132)
+      // This tests the branch where firstPMatch is null
       vi.spyOn(marked, 'parse').mockReturnValueOnce(
         '<h1>Privacy Policy</h1><h2>Section</h2><p>Content</p>'
       );
@@ -354,7 +414,7 @@ describe('markdown-content.js', () => {
         // Should still return valid HTML even without paragraph after h1
         expect(html).toContain('<article class="card content-card">');
         expect(html).toContain('</article>');
-        // Should not crash when firstPEnd === -1
+        // Should not crash when firstPMatch is null
       } finally {
         vi.restoreAllMocks();
       }
@@ -362,7 +422,7 @@ describe('markdown-content.js', () => {
 
     it('handles content without paragraph after h1 (about/contact branch)', () => {
       // Mock marked.parse to return HTML without paragraph after h1
-      // This tests the branch where firstPEnd === -1 (line 150)
+      // This tests the branch where firstPMatch is null
       vi.spyOn(marked, 'parse').mockReturnValueOnce(
         '<h1>About</h1><h2>Section</h2><p>Content</p>'
       );
@@ -372,7 +432,7 @@ describe('markdown-content.js', () => {
         // Should still return valid HTML even without paragraph after h1
         expect(html).toContain('<article class="card content-card">');
         expect(html).toContain('</article>');
-        // Should not crash when firstPEnd === -1
+        // Should not crash when firstPMatch is null
       } finally {
         vi.restoreAllMocks();
       }
@@ -419,16 +479,15 @@ describe('markdown-content.js', () => {
       }
     });
 
-    it('handles case where headerContentMatch is null (no h1 with accent-text)', () => {
-      // Mock marked.parse to return HTML that won't match the header pattern
-      // This tests the branch where headerContentMatch is null
+    it('handles case where h1Match is null (no h1 tag)', () => {
+      // Mock marked.parse to return HTML without h1 tag
+      // This tests the branch where h1Match is null
       vi.spyOn(marked, 'parse').mockReturnValueOnce(
-        '<h1>Title</h1><h2>Section</h2><p>Content</p>'
+        '<h2>Section</h2><p>Content</p>'
       );
 
       try {
-        // After enhanceMarkdownHtml, the h1 will have accent-text span
-        // But if the pattern doesn't match for some reason, it should still work
+        // Should still return valid HTML even without h1
         const html = getPageContent('contact');
         expect(html).toContain('<article class="card content-card">');
         expect(html).toContain('</article>');
