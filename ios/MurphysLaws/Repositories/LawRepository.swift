@@ -7,7 +7,6 @@
 
 import Foundation
 
-@MainActor
 class LawRepository: ObservableObject {
     private let apiService = APIService.shared
 

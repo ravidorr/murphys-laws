@@ -35,7 +35,7 @@ struct FilterView: View {
                             Text("All Categories")
                             Spacer()
                             if selectedCategoryID == nil {
-                                Image(systemImage: "checkmark")
+                                Image(systemName: "checkmark")
                                     .foregroundColor(.accentColor)
                             }
                         }
