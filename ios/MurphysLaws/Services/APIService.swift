@@ -36,7 +36,6 @@ enum APIError: LocalizedError {
     }
 }
 
-@MainActor
 class APIService: ObservableObject {
     static let shared = APIService()
 
