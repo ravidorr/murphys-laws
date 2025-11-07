@@ -263,7 +263,7 @@ describe('third-party utilities', () => {
       // Reload module to reset state
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
-      
+
       freshInit();
 
       // Simulate keydown event
@@ -273,6 +273,47 @@ describe('third-party utilities', () => {
       // After interaction, gtag should be initialized
       expect(global.window.gtag).toBeDefined();
       expect(typeof global.window.gtag).toBe('function');
+    });
+
+    it('resolves ensureAdsense after timeout if adsbygoogle never appears', async () => {
+      vi.resetModules();
+      const { ensureAdsense: freshEnsureAdsense } = await import('../src/utils/third-party.js');
+
+      vi.useFakeTimers();
+
+      const promise = freshEnsureAdsense();
+
+      // Fast-forward past the 5 second timeout
+      vi.advanceTimersByTime(5001);
+
+      // Promise should resolve even without adsbygoogle
+      await promise;
+
+      expect(true).toBe(true); // Test passes if promise resolves
+
+      vi.useRealTimers();
+    });
+
+    it('clears interval on timeout in ensureAdsense', async () => {
+      vi.resetModules();
+      const { ensureAdsense: freshEnsureAdsense } = await import('../src/utils/third-party.js');
+
+      vi.useFakeTimers();
+
+      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+
+      const promise = freshEnsureAdsense();
+
+      // Fast-forward to timeout
+      vi.advanceTimersByTime(5000);
+
+      await promise;
+
+      // clearInterval should be called by timeout
+      expect(clearIntervalSpy).toHaveBeenCalled();
+
+      clearIntervalSpy.mockRestore();
+      vi.useRealTimers();
     });
   });
 });
