@@ -104,10 +104,10 @@ struct HomeView: View {
             }
             .overlay {
                 if let error = viewModel.error, viewModel.lawOfDay == nil {
-                    ContentUnavailableView(
-                        "Error Loading Data",
+                    EmptyStateView(
+                        title: "Error Loading Data",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(error.localizedDescription)
+                        description: error.localizedDescription
                     )
                 }
             }

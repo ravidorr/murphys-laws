@@ -18,16 +18,16 @@ struct CategoriesView: View {
                 if viewModel.isLoading && viewModel.categories.isEmpty {
                     ProgressView("Loading categories...")
                 } else if let errorMessage = viewModel.errorMessage, viewModel.categories.isEmpty {
-                    ContentUnavailableView(
-                        "Error Loading Categories",
+                    EmptyStateView(
+                        title: "Error Loading Categories",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(errorMessage)
+                        description: errorMessage
                     )
                 } else if viewModel.categories.isEmpty {
-                    ContentUnavailableView(
-                        "No Categories",
+                    EmptyStateView(
+                        title: "No Categories",
                         systemImage: "folder",
-                        description: Text("No categories available")
+                        description: "No categories available"
                     )
                 } else {
                     ScrollView {
@@ -118,16 +118,16 @@ struct CategoryDetailView: View {
                 if viewModel.laws.isEmpty && viewModel.isLoading {
                     ProgressView("Loading laws...")
                 } else if let error = viewModel.error, viewModel.laws.isEmpty {
-                    ContentUnavailableView(
-                        "Error Loading Laws",
+                    EmptyStateView(
+                        title: "Error Loading Laws",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(error.localizedDescription)
+                        description: error.localizedDescription
                     )
                 } else if viewModel.laws.isEmpty {
-                    ContentUnavailableView(
-                        "No Laws Found",
+                    EmptyStateView(
+                        title: "No Laws Found",
                         systemImage: "doc.text.magnifyingglass",
-                        description: Text("No laws in this category yet")
+                        description: "No laws in this category yet"
                     )
                 } else {
                     List {
