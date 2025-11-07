@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E06EE7367A4443023013451 /* ContentPage.swift */; };
+		C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4265272671CFACD29C9446B /* SharedContentLoader.swift */; };
+		556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */; };
 		00803AFD5319150572230A8D /* NavigationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */; };
 		0D343C8000BC86125F8EB613 /* LawListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F356080AC2E2B74B7AE8DFF /* LawListViewModel.swift */; };
 		0D94D334343E4BAE9168D147 /* CategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62C955AD19A9AF5E90C5C7B /* CategoriesView.swift */; };
@@ -65,6 +68,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6E06EE7367A4443023013451 /* ContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPage.swift; sourceTree = "<group>"; };
+		B4265272671CFACD29C9446B /* SharedContentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentLoader.swift; sourceTree = "<group>"; };
+		9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		045708B48A09D6F63EAD5ACA /* LawDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailView.swift; sourceTree = "<group>"; };
 		04A3B86BE05FF749E63F97CF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		0A4A458B2333FBA01D004AED /* MurphysLaws.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = MurphysLaws.xcodeproj; sourceTree = "<group>"; };
@@ -133,6 +139,7 @@
 		114B704B30B2D54912510EC7 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				B4265272671CFACD29C9446B /* SharedContentLoader.swift */,
 				FDC433B4623925DE473337FF /* APIService.swift */,
 				D5B769A933753CDE8E606F18 /* VotingService.swift */,
 			);
@@ -159,6 +166,7 @@
 		2A949C29CF73FF0CA72524A7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				6E06EE7367A4443023013451 /* ContentPage.swift */,
 				5DA9B5B613B0E7969E41C543 /* Attribution.swift */,
 				E721EC9623E2602B825284F3 /* Category.swift */,
 				C86C7CE3B4E821D79B4BBE67 /* Law.swift */,
@@ -304,6 +312,7 @@
 		E10221C4F670CCD426FEFA16 /* More */ = {
 			isa = PBXGroup;
 			children = (
+				9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */,
 				9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */,
 			);
 			path = More;
@@ -423,6 +432,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */,
+				C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */,
+				556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */,
 				425CF7AF7AE6FC7DB0C0B1C6 /* CalculatorUITests.swift in Sources */,
 				00803AFD5319150572230A8D /* NavigationUITests.swift in Sources */,
 				F8BEFE8D710B14865363242D /* SearchAndFilterUITests.swift in Sources */,
