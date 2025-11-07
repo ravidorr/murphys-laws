@@ -11,34 +11,17 @@ struct SubmitLawView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = SubmitLawViewModel()
 
-    @State private var lawText = ""
-    @State private var lawTitle = ""
-    @State private var attributionName = ""
-    @State private var contactType: ContactType = .none
-    @State private var contactValue = ""
-    @State private var attributionNote = ""
-    @State private var selectedCategories: Set<Int> = []
-
     @State private var showingSuccess = false
-    @State private var showingError = false
-
-    enum ContactType: String, CaseIterable {
-        case none = "None"
-        case email = "Email"
-        case twitter = "Twitter"
-        case website = "Website"
-        case other = "Other"
-    }
 
     var body: some View {
         NavigationStack {
             Form {
                 // Law content section
                 Section {
-                    TextField("Law text (required)", text: $lawText, axis: .vertical)
+                    TextField("Law text (required)", text: $viewModel.lawText, axis: .vertical)
                         .lineLimit(3...10)
 
-                    TextField("Title (optional)", text: $lawTitle)
+                    TextField("Title (optional)", text: $viewModel.title)
                 } header: {
                     Text("Law Content")
                 } footer: {
@@ -47,13 +30,13 @@ struct SubmitLawView: View {
 
                 // Categories section
                 Section {
-                    if viewModel.categories.isEmpty && viewModel.isLoadingCategories {
+                    if viewModel.categories.isEmpty && viewModel.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity, alignment: .center)
                     } else {
                         ForEach(viewModel.categories) { category in
                             Button {
-                                toggleCategory(category.id)
+                                viewModel.selectedCategoryID = category.id
                             } label: {
                                 HStack {
                                     Image(systemName: category.iconName)
@@ -61,7 +44,7 @@ struct SubmitLawView: View {
                                     Text(category.title)
                                         .foregroundColor(.primary)
                                     Spacer()
-                                    if selectedCategories.contains(category.id) {
+                                    if viewModel.selectedCategoryID == category.id {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(.accentColor)
                                     }
@@ -77,27 +60,18 @@ struct SubmitLawView: View {
 
                 // Attribution section
                 Section {
-                    TextField("Your name", text: $attributionName)
+                    TextField("Your name", text: $viewModel.authorName)
 
-                    Picker("Contact Type", selection: $contactType) {
-                        ForEach(ContactType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }
+                    TextField("Email (optional)", text: $viewModel.authorEmail)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
 
-                    if contactType != .none {
-                        TextField(contactPlaceholder, text: $contactValue)
-                            .textContentType(contactType == .email ? .emailAddress : nil)
-                            .keyboardType(contactType == .email ? .emailAddress : .default)
-                            .autocapitalization(contactType == .email ? .none : .sentences)
-                    }
-
-                    TextField("Note (optional)", text: $attributionNote, axis: .vertical)
-                        .lineLimit(2...5)
+                    Toggle("Submit anonymously", isOn: $viewModel.submitAnonymously)
                 } header: {
-                    Text("Attribution (Optional)")
+                    Text("Attribution")
                 } footer: {
-                    Text("Add your name and contact information if you'd like to be credited")
+                    Text("Add your name and email if you'd like to be credited. Or submit anonymously.")
                 }
             }
             .navigationTitle("Submit a Law")
@@ -112,10 +86,13 @@ struct SubmitLawView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Submit") {
                         Task {
-                            await submitLaw()
+                            await viewModel.submitLaw()
+                            if viewModel.errorMessage == nil {
+                                showingSuccess = true
+                            }
                         }
                     }
-                    .disabled(!isFormValid || viewModel.isSubmitting)
+                    .disabled(!viewModel.isValid || viewModel.isSubmitting)
                 }
             }
             .overlay {
@@ -144,11 +121,13 @@ struct SubmitLawView: View {
             } message: {
                 Text("Your law has been submitted and is pending review. Thank you for your contribution!")
             }
-            .alert("Error", isPresented: $showingError) {
-                Button("OK", role: .cancel) { }
+            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+                Button("OK", role: .cancel) {
+                    viewModel.errorMessage = nil
+                }
             } message: {
-                if let error = viewModel.error {
-                    Text(error.localizedDescription)
+                if let error = viewModel.errorMessage {
+                    Text(error)
                 }
             }
             .task {
@@ -156,48 +135,6 @@ struct SubmitLawView: View {
                     await viewModel.loadCategories()
                 }
             }
-        }
-    }
-
-    private var contactPlaceholder: String {
-        switch contactType {
-        case .none: return ""
-        case .email: return "your.email@example.com"
-        case .twitter: return "@username"
-        case .website: return "https://yourwebsite.com"
-        case .other: return "Contact information"
-        }
-    }
-
-    private var isFormValid: Bool {
-        !lawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private func toggleCategory(_ id: Int) {
-        if selectedCategories.contains(id) {
-            selectedCategories.remove(id)
-        } else {
-            selectedCategories.insert(id)
-        }
-    }
-
-    private func submitLaw() async {
-        let submission = LawSubmission(
-            text: lawText.trimmingCharacters(in: .whitespacesAndNewlines),
-            title: lawTitle.isEmpty ? nil : lawTitle.trimmingCharacters(in: .whitespacesAndNewlines),
-            attributionName: attributionName.isEmpty ? nil : attributionName.trimmingCharacters(in: .whitespacesAndNewlines),
-            contactType: contactType == .none ? nil : contactType.rawValue.lowercased(),
-            contactValue: contactValue.isEmpty ? nil : contactValue.trimmingCharacters(in: .whitespacesAndNewlines),
-            attributionNote: attributionNote.isEmpty ? nil : attributionNote.trimmingCharacters(in: .whitespacesAndNewlines),
-            categoryIDs: selectedCategories.isEmpty ? nil : Array(selectedCategories)
-        )
-
-        await viewModel.submitLaw(submission)
-
-        if viewModel.error == nil {
-            showingSuccess = true
-        } else {
-            showingError = true
         }
     }
 }
