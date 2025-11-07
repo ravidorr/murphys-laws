@@ -1,0 +1,92 @@
+name: MurphysLaws
+options:
+  bundleIdPrefix: com.murphyslaws
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  xcodeVersion: "14.0"
+
+settings:
+  MARKETING_VERSION: "1.0"
+  CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  MurphysLaws:
+    type: application
+    platform: iOS
+    sources:
+      - path: MurphysLaws
+        excludes:
+          - "**/*.md"
+    info:
+      path: MurphysLaws/Info.plist
+      properties:
+        CFBundleDisplayName: Murphy's Laws
+        CFBundleDevelopmentRegion: en
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UIApplicationSupportsIndirectInputEvents: true
+        UILaunchScreen:
+          UIColorName: LaunchScreenBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSPhotoLibraryAddUsageDescription: "Save and share Murphy's Laws as images"
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLaws
+      INFOPLIST_FILE: MurphysLaws/Info.plist
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      SWIFT_VERSION: "5.9"
+      ENABLE_PREVIEWS: YES
+    scheme:
+      testTargets:
+        - MurphysLawsTests
+        - MurphysLawsUITests
+
+  MurphysLawsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - MurphysLawsTests
+    dependencies:
+      - target: MurphysLaws
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLawsTests
+      SWIFT_VERSION: "5.9"
+
+  MurphysLawsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - MurphysLawsUITests
+    dependencies:
+      - target: MurphysLaws
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLawsUITests
+      SWIFT_VERSION: "5.9"
+
+schemes:
+  MurphysLaws:
+    build:
+      targets:
+        MurphysLaws: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - MurphysLawsTests
+        - MurphysLawsUITests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
