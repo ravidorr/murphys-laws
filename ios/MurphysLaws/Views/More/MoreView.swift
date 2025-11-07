@@ -9,6 +9,9 @@ import SwiftUI
 
 struct MoreView: View {
     @State private var showingAbout = false
+    @State private var showingPrivacy = false
+    @State private var showingTerms = false
+    @State private var showingContact = false
     @State private var showingSubmit = false
 
     var body: some View {
@@ -38,11 +41,15 @@ struct MoreView: View {
                         Label("Visit Website", systemImage: "safari")
                     }
 
-                    Link(destination: URL(string: "https://murphys-laws.com/privacy")!) {
+                    Button {
+                        showingPrivacy = true
+                    } label: {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
 
-                    Link(destination: URL(string: "https://murphys-laws.com/terms")!) {
+                    Button {
+                        showingTerms = true
+                    } label: {
                         Label("Terms of Service", systemImage: "doc.text")
                     }
                 } header: {
@@ -74,8 +81,14 @@ struct MoreView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    Link(destination: URL(string: "mailto:hello@murphys-laws.com")!) {
+                    Button {
+                        showingContact = true
+                    } label: {
                         Label("Contact Support", systemImage: "envelope")
+                    }
+
+                    Link(destination: URL(string: "mailto:contact@murphys-laws.com")!) {
+                        Label("Email Us", systemImage: "paperplane")
                     }
                 } header: {
                     Text("App")
@@ -83,7 +96,16 @@ struct MoreView: View {
             }
             .navigationTitle("More")
             .sheet(isPresented: $showingAbout) {
-                AboutView()
+                MarkdownContentView(page: .about)
+            }
+            .sheet(isPresented: $showingPrivacy) {
+                MarkdownContentView(page: .privacy)
+            }
+            .sheet(isPresented: $showingTerms) {
+                MarkdownContentView(page: .terms)
+            }
+            .sheet(isPresented: $showingContact) {
+                MarkdownContentView(page: .contact)
             }
             .sheet(isPresented: $showingSubmit) {
                 SubmitLawView()

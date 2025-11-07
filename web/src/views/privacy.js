@@ -1,13 +1,11 @@
-import templateHtml from '@views/templates/privacy.html?raw';
+import { getPageContent } from '@utils/markdown-content.js';
 
 export function Privacy({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
-  const lastUpdated = '2025-11-06';
-
-  el.innerHTML = templateHtml.replace('{{lastUpdated}}', lastUpdated);
+  el.innerHTML = getPageContent('privacy');
 
   el.addEventListener('click', (e) => {
     const target = e.target;

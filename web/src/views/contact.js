@@ -1,11 +1,11 @@
-import templateHtml from '@views/templates/contact.html?raw';
+import { getPageContent } from '@utils/markdown-content.js';
 
 export function Contact({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
-  el.innerHTML = templateHtml;
+  el.innerHTML = getPageContent('contact');
 
   el.addEventListener('click', (e) => {
     const target = e.target;
