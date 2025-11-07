@@ -17,14 +17,14 @@ export default defineConfig({
     {
       command: 'npm start',
       url: 'http://127.0.0.1:8787/api/v1/health',
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       cwd: '../backend',
     },
     {
       command: 'npm run preview',
       url: 'http://localhost:5173',
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
     },
   ],
