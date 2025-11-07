@@ -16,91 +16,103 @@ struct BrowseView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(viewModel.laws) { law in
-                    LawListRow(law: law)
-                        .onTapGesture {
-                            selectedLaw = law
-                            showingLawDetail = true
-                        }
-                        .onAppear {
-                            // Load more when approaching end
-                            if viewModel.shouldLoadMore(currentLaw: law) {
-                                Task {
-                                    await viewModel.loadMore()
-                                }
+            lawListContent
+                .navigationTitle("Browse Laws")
+                .searchable(text: $searchText, prompt: "Search laws...")
+                .onChange(of: searchText) { _, newValue in
+                    Task {
+                        await viewModel.applyFilters(query: newValue.isEmpty ? nil : newValue)
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        filterButton
+                    }
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .task {
+                    if viewModel.laws.isEmpty {
+                        await viewModel.loadLaws()
+                    }
+                }
+                .sheet(isPresented: $showingLawDetail) {
+                    lawDetailSheet
+                }
+                .sheet(isPresented: $showingFilters) {
+                    FilterView(viewModel: viewModel)
+                }
+                .overlay {
+                    contentOverlay
+                }
+        }
+    }
+
+    private var lawListContent: some View {
+        List {
+            ForEach(viewModel.laws) { law in
+                LawListRow(law: law)
+                    .onTapGesture {
+                        selectedLaw = law
+                        showingLawDetail = true
+                    }
+                    .onAppear {
+                        // Load more when approaching end
+                        if viewModel.shouldLoadMore(currentLaw: law) {
+                            Task {
+                                await viewModel.loadMore()
                             }
                         }
-                }
+                    }
+            }
 
-                // Loading more indicator
-                if viewModel.isLoadingMore {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
-                    .padding()
+            // Loading more indicator
+            if viewModel.isLoadingMore {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
                 }
+                .padding()
             }
-            .listStyle(.plain)
-            .navigationTitle("Browse Laws")
-            .searchable(text: $searchText, prompt: "Search laws...")
-            .onChange(of: searchText) { _, newValue in
-                Task {
-                    await viewModel.applyFilters(query: newValue.isEmpty ? nil : newValue)
-                }
+        }
+        .listStyle(.plain)
+    }
+
+    private var filterButton: some View {
+        Button {
+            showingFilters.toggle()
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+        }
+    }
+
+    @ViewBuilder
+    private var lawDetailSheet: some View {
+        if let law = selectedLaw {
+            NavigationStack {
+                LawDetailView(lawID: law.id)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingFilters.toggle()
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                    }
-                }
-            }
-            .refreshable {
-                await viewModel.refresh()
-            }
-            .task {
-                if viewModel.laws.isEmpty {
-                    await viewModel.loadLaws()
-                }
-            }
-            .sheet(isPresented: $showingLawDetail) {
-                if let law = selectedLaw {
-                    NavigationStack {
-                        LawDetailView(lawID: law.id)
-                    }
-                }
-            }
-            .sheet(isPresented: $showingFilters) {
-                FilterView(viewModel: viewModel)
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.laws.isEmpty {
-                    ProgressView("Loading laws...")
-                }
-            }
-            .overlay {
-                if let error = viewModel.error, viewModel.laws.isEmpty {
-                    EmptyStateView(
-                        title: "Error Loading Laws",
-                        systemImage: "exclamationmark.triangle",
-                        description: error.localizedDescription
-                    )
-                }
-            }
-            .overlay {
-                if !viewModel.isLoading && viewModel.laws.isEmpty {
-                    EmptyStateView(
-                        title: "No Laws Found",
-                        systemImage: "magnifyingglass",
-                        description: "Try adjusting your search or filters"
-                    )
-                }
-            }
+        }
+    }
+
+    @ViewBuilder
+    private var contentOverlay: some View {
+        if viewModel.isLoading && viewModel.laws.isEmpty {
+            ProgressView("Loading laws...")
+        } else if let error = viewModel.error, viewModel.laws.isEmpty {
+            EmptyStateView(
+                title: "Error Loading Laws",
+                systemImage: "exclamationmark.triangle",
+                description: error.localizedDescription
+            )
+        } else if !viewModel.isLoading && viewModel.laws.isEmpty {
+            EmptyStateView(
+                title: "No Laws Found",
+                systemImage: "magnifyingglass",
+                description: "Try adjusting your search or filters"
+            )
         }
     }
 }
