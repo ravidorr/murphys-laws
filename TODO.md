@@ -43,6 +43,42 @@ E2E tests are temporarily disabled because the Vite dev server's API proxy doesn
 
 ---
 
+## ✅ Recently Completed
+
+### iOS App MVP
+**Status:** Complete - All core features implemented
+**Location:** `ios/MurphysLaws/`
+
+**What's Done:**
+- ✅ MVVM architecture with Repository pattern
+- ✅ Complete data models (Law, Category, Attribution, Vote)
+- ✅ API service with URLSession (no external dependencies)
+- ✅ Repository layer with caching (UserDefaults)
+- ✅ ViewModels for all features
+- ✅ Complete UI implementation:
+  - Home view with Law of the Day
+  - Browse laws with search and filters
+  - Category browsing with grid layout
+  - Law detail with voting functionality
+  - Sod's Law Calculator with interactive sliders
+  - Submit law form with categories and attribution
+  - Settings and about pages
+
+**Next Steps for iOS:**
+- Create Xcode project file (.xcodeproj)
+- Add app icons and launch screen
+- Configure Info.plist and entitlements
+- Unit test coverage for ViewModels
+- UI test coverage with XCTest
+- App Store submission preparation
+
+**Documentation:**
+- README: `ios/README.md`
+- Setup Guide: `ios/SETUP.md`
+- PRD: `shared/docs/MOBILE-IOS-PRD.md`
+
+---
+
 ## 🟢 Potential Next Steps for Murphy's Laws
 
 ## User Engagement Features
