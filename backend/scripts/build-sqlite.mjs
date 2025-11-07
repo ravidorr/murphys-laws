@@ -260,17 +260,26 @@ buildSQL()
     console.log(`Creating database at: ${DB_PATH}`);
     const db = new Database(DB_PATH);
 
-    // First, load and execute the schema
-    const schemaPath = path.join(ROOT, 'db', 'schema.sql');
-    const schema = await fs.readFile(schemaPath, 'utf8');
-    console.log('Executing schema...');
-    db.exec(schema);
+    // Run all migrations in order (these create the schema)
+    const migrationsDir = path.join(ROOT, 'db', 'migrations');
+    const migrationFiles = (await fs.readdir(migrationsDir))
+      .filter(f => f.endsWith('.sql'))
+      .sort();  // Sort to run in order: 001_, 002_, etc.
 
-    // Then execute the generated SQL
+    console.log(`Running ${migrationFiles.length} migrations...`);
+    for (const file of migrationFiles) {
+      const migrationPath = path.join(migrationsDir, file);
+      const migration = await fs.readFile(migrationPath, 'utf8');
+      console.log(`  - ${file}`);
+      db.exec(migration);
+    }
+
+    // Then execute the generated SQL to insert data
     console.log('Inserting data...');
     db.exec(sql);
+
     db.close();
-    console.log(`✅ Database created successfully`);
+    console.log(`✅ Database created successfully with all migrations`);
   })
   .catch(err => {
     console.error('Error building SQL:', err);
