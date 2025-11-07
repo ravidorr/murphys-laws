@@ -154,10 +154,10 @@ struct LawDetailView: View {
         }
         .overlay {
             if let error = viewModel.error, viewModel.law == nil {
-                ContentUnavailableView(
-                    "Error Loading Law",
+                EmptyStateView(
+                    title: "Error Loading Law",
                     systemImage: "exclamationmark.triangle",
-                    description: Text(error.localizedDescription)
+                    description: error.localizedDescription
                 )
             }
         }

@@ -85,19 +85,19 @@ struct BrowseView: View {
             }
             .overlay {
                 if let error = viewModel.error, viewModel.laws.isEmpty {
-                    ContentUnavailableView(
-                        "Error Loading Laws",
+                    EmptyStateView(
+                        title: "Error Loading Laws",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(error.localizedDescription)
+                        description: error.localizedDescription
                     )
                 }
             }
             .overlay {
                 if !viewModel.isLoading && viewModel.laws.isEmpty {
-                    ContentUnavailableView(
-                        "No Laws Found",
+                    EmptyStateView(
+                        title: "No Laws Found",
                         systemImage: "magnifyingglass",
-                        description: Text("Try adjusting your search or filters")
+                        description: "Try adjusting your search or filters"
                     )
                 }
             }
