@@ -21,7 +21,7 @@ struct BrowseView: View {
             lawListContent
                 .navigationTitle("Browse Laws")
                 .searchable(text: $searchText, prompt: "Search laws...")
-                .onChange(of: searchText) { _, newValue in
+                .onChange(of: searchText) { newValue in
                     Task {
                         await viewModel.applyFilters(
                             query: newValue.isEmpty ? nil : newValue,
@@ -29,7 +29,7 @@ struct BrowseView: View {
                         )
                     }
                 }
-                .onChange(of: selectedCategoryID) { _, newValue in
+                .onChange(of: selectedCategoryID) { newValue in
                     Task {
                         await viewModel.applyFilters(
                             query: searchText.isEmpty ? nil : searchText,
@@ -37,7 +37,7 @@ struct BrowseView: View {
                         )
                     }
                 }
-                .onChange(of: sortOrder) { _, newValue in
+                .onChange(of: sortOrder) { newValue in
                     Task {
                         switch newValue {
                         case .newest:
