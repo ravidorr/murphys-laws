@@ -17,11 +17,11 @@ struct CategoriesView: View {
             Group {
                 if viewModel.isLoading && viewModel.categories.isEmpty {
                     ProgressView("Loading categories...")
-                } else if let error = viewModel.error, viewModel.categories.isEmpty {
+                } else if let errorMessage = viewModel.errorMessage, viewModel.categories.isEmpty {
                     ContentUnavailableView(
                         "Error Loading Categories",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(error.localizedDescription)
+                        description: Text(errorMessage)
                     )
                 } else if viewModel.categories.isEmpty {
                     ContentUnavailableView(
@@ -51,7 +51,7 @@ struct CategoriesView: View {
             }
             .navigationTitle("Categories")
             .refreshable {
-                await viewModel.loadCategories(forceRefresh: true)
+                await viewModel.refreshCategories()
             }
             .task {
                 if viewModel.categories.isEmpty {
@@ -140,7 +140,7 @@ struct CategoryDetailView: View {
                             .onAppear {
                                 if viewModel.shouldLoadMore(currentLaw: law) {
                                     Task {
-                                        await viewModel.loadLaws()
+                                        await viewModel.loadMore()
                                     }
                                 }
                             }

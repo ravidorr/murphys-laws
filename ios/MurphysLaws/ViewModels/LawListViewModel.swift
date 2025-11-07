@@ -25,6 +25,11 @@ class LawListViewModel: ObservableObject {
     private var currentOffset = 0
     private let limit = Constants.API.defaultLimit
 
+    // MARK: - Init
+    init(categoryID: Int? = nil) {
+        self.selectedCategoryID = categoryID
+    }
+
     // MARK: - Load Laws
     func loadLaws(refresh: Bool = false) async {
         if refresh {
