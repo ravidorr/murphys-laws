@@ -120,6 +120,13 @@ class LawListViewModel: ObservableObject {
         await loadLaws(refresh: true)
     }
 
+    // MARK: - Apply Sort Order
+    func applySort(by: String, order: String = "desc") async {
+        sortBy = by
+        sortOrder = order
+        await loadLaws(refresh: true)
+    }
+
     // MARK: - Clear Filters
     func clearFilters() async {
         searchQuery = ""

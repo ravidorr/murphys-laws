@@ -13,6 +13,8 @@ struct BrowseView: View {
     @State private var selectedLaw: Law?
     @State private var searchText = ""
     @State private var showingFilters = false
+    @State private var selectedCategoryID: Int?
+    @State private var sortOrder: FilterView.SortOrder = .newest
 
     var body: some View {
         NavigationStack {
@@ -21,7 +23,32 @@ struct BrowseView: View {
                 .searchable(text: $searchText, prompt: "Search laws...")
                 .onChange(of: searchText) { _, newValue in
                     Task {
-                        await viewModel.applyFilters(query: newValue.isEmpty ? nil : newValue)
+                        await viewModel.applyFilters(
+                            query: newValue.isEmpty ? nil : newValue,
+                            categoryID: selectedCategoryID
+                        )
+                    }
+                }
+                .onChange(of: selectedCategoryID) { _, newValue in
+                    Task {
+                        await viewModel.applyFilters(
+                            query: searchText.isEmpty ? nil : searchText,
+                            categoryID: newValue
+                        )
+                    }
+                }
+                .onChange(of: sortOrder) { _, newValue in
+                    Task {
+                        switch newValue {
+                        case .newest:
+                            await viewModel.applySort(by: "created_at", order: "desc")
+                        case .oldest:
+                            await viewModel.applySort(by: "created_at", order: "asc")
+                        case .topVoted:
+                            await viewModel.applySort(by: "score", order: "desc")
+                        case .controversial:
+                            await viewModel.applySort(by: "controversy", order: "desc")
+                        }
                     }
                 }
                 .toolbar {
@@ -41,7 +68,10 @@ struct BrowseView: View {
                     lawDetailSheet
                 }
                 .sheet(isPresented: $showingFilters) {
-                    FilterView(viewModel: viewModel)
+                    FilterView(
+                        selectedCategoryID: $selectedCategoryID,
+                        sortOrder: $sortOrder
+                    )
                 }
                 .overlay {
                     contentOverlay
