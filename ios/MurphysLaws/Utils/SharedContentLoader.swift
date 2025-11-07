@@ -47,7 +47,7 @@ class SharedContentLoader {
 
     /// Load metadata from JSON file
     private func loadMetadata() {
-        guard let url = Bundle.main.url(forResource: "metadata", withExtension: "json", subdirectory: "shared/content/legal"),
+        guard let url = Bundle.main.url(forResource: "metadata", withExtension: "json", subdirectory: "shared/content"),
               let data = try? Data(contentsOf: url),
               let decoded = try? JSONDecoder().decode(ContentMetadataRoot.self, from: data) else {
             print("Warning: Could not load content metadata")
@@ -64,7 +64,7 @@ class SharedContentLoader {
         guard let url = Bundle.main.url(
             forResource: page.rawValue,
             withExtension: "md",
-            subdirectory: "shared/content/legal"
+            subdirectory: "shared/content"
         ) else {
             print("Could not find \(page.rawValue).md in bundle")
             return nil

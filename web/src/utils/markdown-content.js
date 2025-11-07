@@ -1,11 +1,11 @@
 import { marked } from 'marked';
 
 // Import markdown files from shared content
-import aboutMd from '../../../shared/content/legal/about.md?raw';
-import privacyMd from '../../../shared/content/legal/privacy.md?raw';
-import termsMd from '../../../shared/content/legal/terms.md?raw';
-import contactMd from '../../../shared/content/legal/contact.md?raw';
-import metadata from '../../../shared/content/legal/metadata.json';
+import aboutMd from '../../../shared/content/about.md?raw';
+import privacyMd from '../../../shared/content/privacy.md?raw';
+import termsMd from '../../../shared/content/terms.md?raw';
+import contactMd from '../../../shared/content/contact.md?raw';
+import metadata from '../../../shared/content/metadata.json';
 
 // Configure marked for consistent rendering
 marked.setOptions({
