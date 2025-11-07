@@ -18,8 +18,8 @@ targets:
       - path: MurphysLaws
         excludes:
           - "**/*.md"
-      - path: ../shared/content/legal
-        name: shared/content/legal
+      - path: ../shared/content
+        name: shared/content
         type: folder
         buildPhase: resources
     info:
