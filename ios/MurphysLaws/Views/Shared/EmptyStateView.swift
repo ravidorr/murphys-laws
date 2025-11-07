@@ -13,6 +13,12 @@ struct EmptyStateView: View {
     let systemImage: String
     let description: String
 
+    init(title: String, systemImage: String, description: String) {
+        self.title = title
+        self.systemImage = systemImage
+        self.description = description
+    }
+
     var body: some View {
         VStack(spacing: Constants.UI.spacingL) {
             Image(systemName: systemImage)
