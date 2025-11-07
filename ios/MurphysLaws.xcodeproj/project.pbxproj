@@ -432,9 +432,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */,
-				C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */,
-				556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */,
 				425CF7AF7AE6FC7DB0C0B1C6 /* CalculatorUITests.swift in Sources */,
 				00803AFD5319150572230A8D /* NavigationUITests.swift in Sources */,
 				F8BEFE8D710B14865363242D /* SearchAndFilterUITests.swift in Sources */,
@@ -456,6 +453,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */,
+				C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */,
+				556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */,
 				5C54EF13C0862FE20402ABD3 /* APIService.swift in Sources */,
 				AFC70EF23C30FC1B9471037E /* Attribution.swift in Sources */,
 				D9E7FEE430FABE2B6AF6B823 /* BrowseView.swift in Sources */,
