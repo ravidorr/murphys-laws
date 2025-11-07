@@ -22,7 +22,7 @@ struct LawOfDayCard: View {
             VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                 // Badge
                 HStack {
-                    Image(systemImage: "star.fill")
+                    Image(systemName: "star.fill")
                     Text("Law of the Day")
                         .font(.subheadline)
                         .fontWeight(.semibold)

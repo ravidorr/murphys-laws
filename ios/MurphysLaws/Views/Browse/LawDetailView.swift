@@ -134,7 +134,7 @@ struct LawDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if let law = viewModel.law {
                     ShareLink(item: law.shareText) {
-                        Image(systemImage: "square.and.arrow.up")
+                        Image(systemName: "square.and.arrow.up")
                     }
                 }
             }
@@ -154,10 +154,10 @@ struct LawDetailView: View {
         }
         .overlay {
             if let error = viewModel.error, viewModel.law == nil {
-                ContentUnavailableView(
-                    "Error Loading Law",
+                EmptyStateView(
+                    title: "Error Loading Law",
                     systemImage: "exclamationmark.triangle",
-                    description: Text(error.localizedDescription)
+                    description: error.localizedDescription
                 )
             }
         }
@@ -175,7 +175,7 @@ struct VoteButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: Constants.UI.spacingS) {
-                Image(systemImage: voteType.iconName)
+                Image(systemName: voteType.iconName)
                     .font(.title2)
                     .foregroundColor(isSelected ? iconColor : .gray)
 
@@ -209,7 +209,7 @@ struct CategoryChip: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemImage: category.iconName)
+            Image(systemName: category.iconName)
                 .font(.caption2)
             Text(category.title)
                 .font(.caption)

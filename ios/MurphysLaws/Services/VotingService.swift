@@ -7,7 +7,6 @@
 
 import Foundation
 
-@MainActor
 class VotingService: ObservableObject {
     static let shared = VotingService()
 
@@ -40,47 +39,56 @@ class VotingService: ObservableObject {
 
     // MARK: - Vote Actions
     func vote(lawID: Int, voteType: VoteType) async throws {
-        // Optimistic update
-        let previousVote = votes[lawID]
-        votes[lawID] = voteType
-        saveVotes()
+        // Optimistic update on main thread
+        let previousVote = await MainActor.run { votes[lawID] }
+        await MainActor.run {
+            votes[lawID] = voteType
+            saveVotes()
+        }
 
         do {
             // Sync with backend
             _ = try await apiService.voteLaw(id: lawID, voteType: voteType)
         } catch {
-            // Rollback on error
-            if let previous = previousVote {
-                votes[lawID] = previous
-            } else {
-                votes.removeValue(forKey: lawID)
+            // Rollback on error on main thread
+            await MainActor.run {
+                if let previous = previousVote {
+                    votes[lawID] = previous
+                } else {
+                    votes.removeValue(forKey: lawID)
+                }
+                saveVotes()
             }
-            saveVotes()
             throw error
         }
     }
 
     func removeVote(lawID: Int) async throws {
-        // Optimistic update
-        let previousVote = votes[lawID]
-        votes.removeValue(forKey: lawID)
-        saveVotes()
+        // Optimistic update on main thread
+        let previousVote = await MainActor.run { votes[lawID] }
+        await MainActor.run {
+            votes.removeValue(forKey: lawID)
+            saveVotes()
+        }
 
         do {
             // Sync with backend
             _ = try await apiService.removeVote(lawID: lawID)
         } catch {
-            // Rollback on error
-            if let previous = previousVote {
-                votes[lawID] = previous
+            // Rollback on error on main thread
+            await MainActor.run {
+                if let previous = previousVote {
+                    votes[lawID] = previous
+                }
+                saveVotes()
             }
-            saveVotes()
             throw error
         }
     }
 
     func toggleVote(lawID: Int, voteType: VoteType) async throws {
-        if let currentVote = votes[lawID] {
+        let currentVote = await MainActor.run { votes[lawID] }
+        if let currentVote = currentVote {
             if currentVote == voteType {
                 // Remove vote if clicking same button
                 try await removeVote(lawID: lawID)
@@ -95,6 +103,7 @@ class VotingService: ObservableObject {
     }
 
     // MARK: - Bulk Operations
+    @MainActor
     func clearAllVotes() {
         votes.removeAll()
         saveVotes()
