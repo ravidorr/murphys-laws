@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import Database from 'better-sqlite3';
 
-// Config
-const ROOT = path.resolve(process.cwd());
+// Config - use __dirname equivalent for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const ROOT = path.resolve(__dirname, '..');  // backend/ directory
 const SOURCE_DIR = path.join(ROOT, '../shared/data/murphys-laws');
+const DB_PATH = path.join(ROOT, 'murphys.db');
 
 function slugify(s) {
   return String(s)
@@ -29,226 +35,148 @@ async function listMarkdownFiles(dir) {
   return out.sort();
 }
 
-function splitLines(content) {
-  return content.split(/\r?\n/);
-}
-
-// Extract H1 title from file
-function extractTitle(lines) {
-  for (const line of lines) {
-    const m = /^#\s+(.+)/.exec(line.trim());
-    if (m) return m[1].trim();
-  }
-  // Fallback: basename
-  return null;
-}
-
-function stripMarkdownLinks(text) {
-  // Replace [text](url) with text; keep mailto and http separately where needed
-  // Allow URL to span whitespace/newlines if the source was wrapped
-  return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1').replace(/\[([^\]]+)\]\(([^)]+)\)/gs, '$1');
-}
-
 function parseAttributions(text) {
-  // Collect multiple "Sent by ..." phrases; return {cleanText, attributions[]}
-  const atts = [];
-  let clean = text;
+  const attrs = [];
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/gs;
+  const matches = [...text.matchAll(linkRegex)];
 
-  const trimNote = (s) => (s ? s.replace(/^[-–—:,;\s()]+/, '').trim() : '');
+  for (const m of matches) {
+    const name = m[1].trim();
+    const contactValue = m[2].trim();
+    if (!name || !contactValue) continue;
 
-  function removeOnce(from, fragment) {
-    const idx = from.indexOf(fragment);
-    return idx === -1 ? from : (from.slice(0, idx) + from.slice(idx + fragment.length)).replace(/\s{2,}/g, ' ').trim();
+    let contactType = 'url';
+    if (contactValue.startsWith('mailto:')) {
+      contactType = 'email';
+    } else if (!/^https?:\/\//i.test(contactValue)) {
+      contactType = 'text';
+    }
+
+    const actualContact = contactType === 'email'
+      ? contactValue.replace(/^mailto:\s*/i, '').trim()
+      : contactValue;
+
+    attrs.push({
+      name,
+      contact_type: contactType,
+      contact_value: actualContact,
+      source_fragment: m[0],
+    });
   }
 
-  let i = 0;
-  const lower = text.toLowerCase();
-  while (true) {
-    const found = lower.indexOf('sent by', i);
-    if (found === -1) break;
-    let cursor = found + 'sent by'.length;
-    while (cursor < text.length && /\s/.test(text[cursor])) cursor++;
-
-    // Determine end of sentence carefully:
-    // If a Markdown link exists, extend end past the closing ')' then the next '.'
-    let end = text.length;
-    let linkStart = text.indexOf('[', cursor);
-    let tempEndDot = text.indexOf('.', cursor);
-
-    if (linkStart !== -1) {
-      const rb = text.indexOf(']', linkStart + 1);
-      const lp = rb !== -1 ? text.indexOf('(', rb + 1) : -1;
-      if (rb !== -1 && lp !== -1 && lp - rb <= 3) {
-        let rp = text.indexOf(')', lp + 1);
-        if (rp !== -1) {
-          const afterRpDot = text.indexOf('.', rp + 1);
-          end = afterRpDot === -1 ? text.length : afterRpDot + 1;
-        } else {
-          end = tempEndDot === -1 ? text.length : tempEndDot + 1;
-        }
-      } else {
-        end = tempEndDot === -1 ? text.length : tempEndDot + 1;
-      }
-    } else {
-      end = tempEndDot === -1 ? text.length : tempEndDot + 1;
-    }
-
-    const sentence = text.slice(cursor, end);
-
-    let raw = text.slice(found, end);
-    let name = null;
-    let contact_type = 'text';
-    let contact_value = null;
-    let note = null;
-
-    // Look for a Markdown link anywhere in the sentence
-    const linkM = /\[([^\]]+)\]\(([^)]+)\)/s.exec(sentence);
-    if (linkM) {
-      name = linkM[1].trim();
-      let url = (linkM[2] || '').replace(/\s+/g, '');
-      if (url.startsWith('mailto:')) {
-        contact_type = 'email';
-        contact_value = url.replace(/^mailto:/, '');
-      } else if (/^https?:\/\//i.test(url)) {
-        contact_type = 'url';
-        contact_value = url;
-      } else {
-        contact_type = 'text';
-        contact_value = url;
-      }
-      note = trimNote(sentence.slice(linkM.index + linkM[0].length).replace(/[.]+$/, '')) || null;
-      atts.push({ name, contact_type, contact_value, note, source_fragment: raw });
-      clean = removeOnce(clean, raw);
-      i = end;
-      continue;
-    }
-
-    // Plain text variant: take the sentence body as name + optional metadata
-    const body = sentence.replace(/^\s+|[.]+$/g, '');
-
-    // Fallback: if body contains a Markdown link, extract from it
-    const bodyLink = /\[([^\]]+)\]\(([^)]+)\)/s.exec(body);
-    if (bodyLink) {
-      name = bodyLink[1].trim();
-      let url = (bodyLink[2] || '').replace(/\s+/g, '');
-      if (url.startsWith('mailto:')) {
-        contact_type = 'email';
-        contact_value = url.replace(/^mailto:/, '');
-      } else if (/^https?:\/\//i.test(url)) {
-        contact_type = 'url';
-        contact_value = url;
-      } else {
-        contact_type = 'text';
-        contact_value = url;
-      }
-      note = trimNote(body.slice(bodyLink.index + bodyLink[0].length)) || null;
-    } else {
-      const splitM = /^(.*?)(?:\s*[-–—:,;()]+\s*|\s{2,})(.+)$/.exec(body);
-      if (splitM) {
-        name = splitM[1].trim().replace(/,$/, '');
-        note = trimNote(splitM[2]) || null;
-      } else {
-        const [nm, ...rest] = body.split(',');
-        name = (nm || '').trim();
-        note = trimNote(rest.join(',')).trim() || null;
-      }
-      contact_value = name;
-    }
-
-    atts.push({ name, contact_type, contact_value, note, source_fragment: raw });
-    clean = removeOnce(clean, raw);
-    i = end;
-  }
-
-  return { cleanText: clean.trim().replace(/\s{2,}/g, ' '), attributions: atts };
+  const cleanText = text.replace(linkRegex, (match, linkText) => linkText).trim();
+  return { cleanText, attributions: attrs };
 }
 
-function extractTitlePrefix(text) {
-  // Patterns like "X's Law: ...", "Something Principle: ..."
-  const m = /^([^:]{3,}?)\s*:\s*(.+)$/.exec(text);
-  if (!m) return { title: null, remainder: text };
-  const title = m[1].trim();
-  const remainder = m[2].trim();
-  return { title, remainder };
-}
+function normalizeText(txt) {
+  let result = txt
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    .replace(/–/g, '-')
+    .replace(/—/g, '--')
+    .trim();
 
-function isTopBullet(line) {
-  return /^\*\s+/.test(line);
-}
-
-function isSubBullet(line) {
-  return /^\s{2,}\*\s+/.test(line);
-}
-
-function normalizeText(t) {
-  return stripMarkdownLinks(t).replace(/\s+/g, ' ').trim();
-}
-
-function splitInlineCorollaries(text) {
-  // Split on occurrences of "Corollary:" (case-insensitive)
-  const parts = text.split(/\b[Cc]orollary:\s*/);
-  if (parts.length === 1) return { base: text, corollaries: [] };
-  const base = parts.shift().trim().replace(/[;,.]+$/, '');
-  const corollaries = parts.map((p) => p.trim().replace(/[;]+$/, '')).filter(Boolean);
-  return { base, corollaries };
+  result = result.replace(/^["']|["']$/g, '');
+  return result.trim();
 }
 
 async function buildSQL() {
   const files = await listMarkdownFiles(SOURCE_DIR);
+  const statements = ['BEGIN TRANSACTION;'];
 
-  const statements = [];
-  statements.push('BEGIN TRANSACTION;');
+  for (const file of files) {
+    const basename = path.basename(file, '.md');
+    const rel = path.relative(ROOT, file);
+    const slug = slugify(basename);
+    const content = await fs.readFile(file, 'utf8');
+    const lines = content.split('\n');
 
-  for (const filePath of files) {
-    const rel = path.relative(ROOT, filePath);
-    const content = await fs.readFile(filePath, 'utf8');
-    const lines = splitLines(content);
-    const fileTitle = extractTitle(lines) || path.basename(filePath, '.md');
-    const catSlug = slugify(fileTitle);
+    const titleLine = lines.find(l => l.trim().startsWith('#'));
+    const title = titleLine ? titleLine.replace(/^#\s+/, '').trim() : basename;
 
-    // Upsert category
+    // category
     statements.push(
-      `INSERT INTO categories (slug, title, source_file_path) VALUES (${q(catSlug)}, ${q(fileTitle)}, ${q(rel)})\n` +
+      `INSERT INTO categories (slug, title, source_file_path) VALUES (${q(slug)}, ${q(title)}, ${q(rel)})\n` +
       `ON CONFLICT(slug) DO UPDATE SET title=excluded.title;`
     );
 
-    // Iterate lines to capture top bullets and their sub-bullets
+    function isTopBullet(line) {
+      return /^\*\s+/.test(line);
+    }
+    function isSubBullet(line) {
+      return /^\s+\*\s+/.test(line);
+    }
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (!isTopBullet(line.trim())) continue;
-      const position = i + 1; // 1-indexed line number
+      if (!isTopBullet(line)) continue;
 
-      // gather contiguous continuation lines that belong to this bullet (not sub-bullets)
-      let k = i + 1;
-      const cont = [];
-      while (k < lines.length && !isTopBullet(lines[k].trim()) && !isSubBullet(lines[k]) && lines[k].trim() !== '') {
-        cont.push(lines[k].trim());
-        k++;
+      const position = i + 1;
+      let stripped = line.replace(/^\*\s+/, '').trim();
+
+      // continuation lines (not bullets)
+      const continuation = [];
+      let j = i + 1;
+      while (j < lines.length && !isTopBullet(lines[j].trim()) && !isSubBullet(lines[j]) && lines[j].trim() !== '') {
+        continuation.push(lines[j].trim());
+        j++;
       }
 
-      const parentRaw = [line.replace(/^\*\s+/, '').trim(), ...cont].join(' ');
-      let { cleanText: cleanedParent, attributions: parentAtts } = parseAttributions(parentRaw);
-      const { title: maybeTitle, remainder } = extractTitlePrefix(cleanedParent);
-      const { base, corollaries: inlineCors } = splitInlineCorollaries(remainder || cleanedParent);
-      const parentText = normalizeText(base || cleanedParent);
+      let rawMd = [stripped, ...continuation].join(' ');
+      let { cleanText, attributions } = parseAttributions(rawMd);
 
-      // Insert parent law
-      const lawSlug = null; // we can generate later based on text if needed
+      // detect corollary/comment
+      let title = null;
+      let body = cleanText;
+
+      const colonM = /^([^:]{3,}?)\s*:\s*(.+)$/.exec(cleanText);
+      if (colonM) {
+        const possibleTitle = colonM[1].trim();
+        body = colonM[2].trim();
+
+        if (
+          /corollary/i.test(possibleTitle) ||
+          /(murphy|cole|law|rule|principle|theory|paradox)\b/i.test(possibleTitle) ||
+          possibleTitle.length > 12
+        ) {
+          title = possibleTitle;
+        } else {
+          body = cleanText; // fallback if the ':' is just mid-sentence
+        }
+      }
+
+      // fix double-space after colon if we see a link structure
+      const linkM = /\[([^\]]+)\]\(([^)]+)\)/s.exec(body);
+      if (linkM && body.indexOf(linkM[0]) < body.length * 0.7) {
+        const splitter = /^(.*?)(?:\s*[-–—:,;()]+\s*|\s{2,})(.+)$/.exec(body);
+        if (splitter && splitter[1].length > 3 && splitter[2].length > 3) {
+          const partA = splitter[1].trim();
+          const partB = splitter[2].trim();
+          if (partB.includes(linkM[0])) {
+            title = partA;
+            body = partB;
+          }
+        }
+      }
+
+      body = normalizeText(body);
+
+      // law insertion
       statements.push(
         `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
-        `VALUES (${q(lawSlug)}, ${q(maybeTitle)}, ${q(parentText)}, ${q(parentRaw)}, NULL, ${q(rel)}, ${position})\n` +
+        `VALUES (NULL, ${q(title)}, ${q(body)}, ${q(rawMd)}, NULL, ${q(rel)}, ${position})\n` +
         `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
       );
 
-      // Category link
+      // link to category
       statements.push(
         `INSERT OR IGNORE INTO law_categories (law_id, category_id, position)\n` +
         `SELECT laws.id, categories.id, ${position} FROM laws, categories\n` +
-        `WHERE laws.first_seen_file_path=${q(rel)} AND laws.first_seen_line_number=${position} AND categories.slug=${q(catSlug)};`
+        `WHERE laws.first_seen_file_path=${q(rel)} AND laws.first_seen_line_number=${position} AND categories.slug=${q(slug)};`
       );
 
-      // Parent attributions
-      for (const att of parentAtts) {
+      // attributions
+      for (const att of attributions) {
         statements.push(
           `INSERT INTO attributions (law_id, name, contact_type, contact_value, note, source_fragment)\n` +
           `SELECT laws.id, ${q(att.name)}, ${q(att.contact_type)}, ${q(att.contact_value)}, ${q(att.note || null)}, ${q(att.source_fragment)} FROM laws\n` +
@@ -256,27 +184,7 @@ async function buildSQL() {
         );
       }
 
-      // Inline corollaries as separate laws + relation
-      for (const cor of inlineCors) {
-        const corText = normalizeText(cor.replace(/^[-–—\s]*/, ''));
-        if (!corText) continue;
-        statements.push(
-          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
-          `VALUES (NULL, NULL, ${q(corText)}, ${q('Corollary: ' + cor)}, NULL, ${q(rel)}, ${position} /* inline corollary */)\n` +
-          `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
-        );
-        // relation (from corollary to parent)
-        statements.push(
-          `INSERT INTO law_relations (from_law_id, to_law_id, relation_type, note)\n` +
-          `SELECT child.id, parent.id, 'COROLLARY_OF', NULL\n` +
-          `FROM laws AS parent, laws AS child\n` +
-          `WHERE parent.first_seen_file_path=${q(rel)} AND parent.first_seen_line_number=${position}\n` +
-          `  AND child.first_seen_file_path=${q(rel)} AND child.first_seen_line_number=${position};`
-        );
-      }
-
-      // Lookahead sub-bullets
-      let j = Math.max(i + 1, k);
+      // sub-bullets
       while (j < lines.length && isSubBullet(lines[j])) {
         const subLine = lines[j];
         const subPos = j + 1;
@@ -347,8 +255,22 @@ function q(v) {
 
 // Run
 buildSQL()
-  .then(sql => {
-    process.stdout.write(sql + '\n');
+  .then(async sql => {
+    // Create database file and execute SQL
+    console.log(`Creating database at: ${DB_PATH}`);
+    const db = new Database(DB_PATH);
+
+    // First, load and execute the schema
+    const schemaPath = path.join(ROOT, 'db', 'schema.sql');
+    const schema = await fs.readFile(schemaPath, 'utf8');
+    console.log('Executing schema...');
+    db.exec(schema);
+
+    // Then execute the generated SQL
+    console.log('Inserting data...');
+    db.exec(sql);
+    db.close();
+    console.log(`✅ Database created successfully`);
   })
   .catch(err => {
     console.error('Error building SQL:', err);
