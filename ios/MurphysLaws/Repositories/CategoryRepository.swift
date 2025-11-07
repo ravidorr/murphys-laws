@@ -7,7 +7,6 @@
 
 import Foundation
 
-@MainActor
 class CategoryRepository: ObservableObject {
     private let apiService = APIService.shared
     private let cacheKey = Constants.Storage.cachedCategories
