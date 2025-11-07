@@ -1,4 +1,4 @@
-import * as lawSubmissionTemplate from '../src/modules/law-submission-email-template.js';
+import * as lawSubmissionTemplate from '../../shared/modules/law-submission-email-template.js';
 
 describe('Law submission email template', () => {
   describe('createLawSubmissionEmailSubject', () => {

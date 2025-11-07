@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export default defineConfig({
   server: {
-    host: '127.0.0.1',
+    host: '0.0.0.0',
     port: 5175,
     strictPort: true,
     open: '/',
@@ -22,7 +22,14 @@ export default defineConfig({
       'murphys-laws.com',
       'www.murphys-laws.com',
       '45.55.124.212'
-    ]
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   resolve: {
     alias: {
