@@ -33,10 +33,10 @@ Fetch laws with pagination, sorting, and filtering.
 **Response:**
 ```json
 {
-  "data": [/* array of law objects */],
-  "total": 1234,
-  "limit": 25,
-  "offset": 0
+ "data": [/* array of law objects */],
+ "total": 1234,
+ "limit": 25,
+ "offset": 0
 }
 ```
 
@@ -58,16 +58,16 @@ Fetch a single law by ID.
 **Response:**
 ```json
 {
-  "id": 1,
-  "text": "Law text...",
-  "title": "Law title",
-  "author": "Author name",
-  "upvotes": 10,
-  "downvotes": 2,
-  "attributions": [/* array of attribution objects */],
-  "submittedBy": "Submitter name",
-  "created_at": "2024-01-01T00:00:00Z",
-  // ... other fields
+ "id": 1,
+ "text": "Law text...",
+ "title": "Law title",
+ "author": "Author name",
+ "upvotes": 10,
+ "downvotes": 2,
+ "attributions": [/* array of attribution objects */],
+ "submittedBy": "Submitter name",
+ "created_at": "2024-01-01T00:00:00Z",
+ // ... other fields
 }
 ```
 
@@ -83,20 +83,20 @@ Submit a new law for review.
 **Request Body:**
 ```json
 {
-  "text": "Law text (required, min 10 chars)",
-  "title": "Law title (optional)",
-  "author": "Author name (optional, required if not anonymous)",
-  "email": "author@example.com (optional, required if not anonymous)",
-  "anonymous": false,
-  "category_id": 1
+ "text": "Law text (required, min 10 chars)",
+ "title": "Law title (optional)",
+ "author": "Author name (optional, required if not anonymous)",
+ "email": "author@example.com (optional, required if not anonymous)",
+ "anonymous": false,
+ "category_id": 1
 }
 ```
 
 **Response:**
 ```json
 {
-  "id": 123,
-  "message": "Law submitted successfully"
+ "id": 123,
+ "message": "Law submitted successfully"
 }
 ```
 
@@ -116,15 +116,15 @@ Vote on a law (upvote or downvote).
 **Request Body:**
 ```json
 {
-  "vote_type": "up" // or "down"
+ "vote_type": "up" // or "down"
 }
 ```
 
 **Response:**
 ```json
 {
-  "upvotes": 10,
-  "downvotes": 2
+ "upvotes": 10,
+ "downvotes": 2
 }
 ```
 
@@ -144,8 +144,8 @@ Remove vote from a law.
 **Response:**
 ```json
 {
-  "upvotes": 9,
-  "downvotes": 2
+ "upvotes": 9,
+ "downvotes": 2
 }
 ```
 
@@ -164,21 +164,21 @@ Get the law of the day (daily rotating law selected by algorithm).
 **Response:**
 ```json
 {
-  "law": {
-    "id": 1,
-    "text": "Law text...",
-    // ... other law fields
-  }
+ "law": {
+ "id": 1,
+ "text": "Law text...",
+ // ... other law fields
+ }
 }
 ```
 
 **Note:** The frontend wraps this in a format compatible with `fetchLaws()`:
 ```json
 {
-  "data": [/* law object */],
-  "total": 1,
-  "limit": 1,
-  "offset": 0
+ "data": [/* law object */],
+ "total": 1,
+ "limit": 1,
+ "offset": 0
 }
 ```
 
@@ -196,13 +196,13 @@ Get all categories.
 **Response:**
 ```json
 {
-  "data": [
-    {
-      "id": 1,
-      "title": "Category Name",
-      // ... other fields
-    }
-  ]
+ "data": [
+ {
+ "id": 1,
+ "title": "Category Name",
+ // ... other fields
+ }
+ ]
 }
 ```
 
@@ -221,9 +221,9 @@ Get a single category by ID.
 **Response:**
 ```json
 {
-  "id": 1,
-  "title": "Category Name",
-  // ... other fields
+ "id": 1,
+ "title": "Category Name",
+ // ... other fields
 }
 ```
 
@@ -240,12 +240,12 @@ Get all attributions (submitters).
 **Response:**
 ```json
 {
-  "data": [
-    {
-      "name": "Attribution Name",
-      // ... other fields
-    }
-  ]
+ "data": [
+ {
+ "name": "Attribution Name",
+ // ... other fields
+ }
+ ]
 }
 ```
 
@@ -262,26 +262,26 @@ Share SOD (Sod's Law) calculation via email.
 **Request Body:**
 ```json
 {
-  "email": "recipient@example.com",
-  "taskDescription": "Task description",
-  "senderName": "Sender Name",
-  "senderEmail": "sender@example.com",
-  "recipientName": "Recipient Name",
-  "urgency": 5,
-  "complexity": 5,
-  "importance": 5,
-  "skill": 5,
-  "frequency": 5,
-  "probability": "0.50",
-  "interpretation": "Interpretation text"
+ "email": "recipient@example.com",
+ "taskDescription": "Task description",
+ "senderName": "Sender Name",
+ "senderEmail": "sender@example.com",
+ "recipientName": "Recipient Name",
+ "urgency": 5,
+ "complexity": 5,
+ "importance": 5,
+ "skill": 5,
+ "frequency": 5,
+ "probability": "0.50",
+ "interpretation": "Interpretation text"
 }
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "message": "Email sent successfully"
+ "success": true,
+ "message": "Email sent successfully"
 }
 ```
 

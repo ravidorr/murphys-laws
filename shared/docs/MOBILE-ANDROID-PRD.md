@@ -117,12 +117,12 @@ The Android app will be a native Kotlin application that:
 - As a user, I want infinite scroll for seamless browsing
 
 **Acceptance Criteria:**
-- ✅ Display law cards with text, upvote/downvote counts, and category chips
-- ✅ Implement pagination matching web app (25 laws per page)
-- ✅ SwipeRefresh for pull-to-refresh
-- ✅ Infinite scroll automatically loads next page when scrolling near bottom
-- ✅ Loading states with shimmer effect (Compose placeholder)
-- ✅ Error states with retry button
+- Display law cards with text, upvote/downvote counts, and category chips
+- Implement pagination matching web app (25 laws per page)
+- SwipeRefresh for pull-to-refresh
+- Infinite scroll automatically loads next page when scrolling near bottom
+- Loading states with shimmer effect (Compose placeholder)
+- Error states with retry button
 
 **API Endpoints:**
 - `GET /api/v1/laws?limit=25&offset=0&sort=score&order=desc`
@@ -144,12 +144,12 @@ The Android app will be a native Kotlin application that:
 - As a user, I want to share laws via Android share sheet
 
 **Acceptance Criteria:**
-- ✅ Full law text displayed with Material 3 typography
-- ✅ Attribution names with contact info (if available)
-- ✅ Vote buttons with real-time count updates
-- ✅ Native Android share sheet integration
-- ✅ Related laws section (if available)
-- ✅ Category chips (tappable to filter)
+- Full law text displayed with Material 3 typography
+- Attribution names with contact info (if available)
+- Vote buttons with real-time count updates
+- Native Android share sheet integration
+- Related laws section (if available)
+- Category chips (tappable to filter)
 
 **API Endpoints:**
 - `GET /api/v1/laws/{id}`
@@ -173,11 +173,11 @@ The Android app will be a native Kotlin application that:
 - As a user, I want to change my vote (upvote → downvote or remove)
 
 **Acceptance Criteria:**
-- ✅ Vote buttons change color when voted (Material 3 colors)
-- ✅ Vote counts update immediately (optimistic UI)
-- ✅ Haptic feedback on vote action (Vibrator API)
-- ✅ Vote state persists across app restarts (SharedPreferences + backend sync)
-- ✅ Handle vote conflicts (e.g., already voted from web)
+- Vote buttons change color when voted (Material 3 colors)
+- Vote counts update immediately (optimistic UI)
+- Haptic feedback on vote action (Vibrator API)
+- Vote state persists across app restarts (SharedPreferences + backend sync)
+- Handle vote conflicts (e.g., already voted from web)
 
 **API Endpoints:**
 - `POST /api/v1/laws/{id}/vote` - Body: `{"vote_type": "up"}`
@@ -200,12 +200,12 @@ The Android app will be a native Kotlin application that:
 - As a user, I want to see search suggestions
 
 **Acceptance Criteria:**
-- ✅ Search bar in top app bar with real-time results
-- ✅ Category filter chips (horizontal scrollable)
-- ✅ Attribution dropdown/dialog picker
-- ✅ Combined filters (e.g., search + category)
-- ✅ Clear filters button
-- ✅ Search history (last 10 searches)
+- Search bar in top app bar with real-time results
+- Category filter chips (horizontal scrollable)
+- Attribution dropdown/dialog picker
+- Combined filters (e.g., search + category)
+- Clear filters button
+- Search history (last 10 searches)
 
 **API Endpoints:**
 - `GET /api/v1/laws?q=murphy&category_id=5&attribution=John`
@@ -228,12 +228,12 @@ The Android app will be a native Kotlin application that:
 - As a user, I want to view past Laws of the Day
 
 **Acceptance Criteria:**
-- ✅ Dedicated "Law of the Day" card on home screen
-- ✅ Special styling/badge to distinguish it
-- ✅ Tap to view full details
-- ✅ Share button directly from card
-- ✅ Push notification opt-in during onboarding
-- ✅ Notification sent at user-selected time (default 9 AM local time)
+- Dedicated "Law of the Day" card on home screen
+- Special styling/badge to distinguish it
+- Tap to view full details
+- Share button directly from card
+- Push notification opt-in during onboarding
+- Notification sent at user-selected time (default 9 AM local time)
 
 **API Endpoints:**
 - `GET /api/v1/law-of-day`
@@ -255,14 +255,14 @@ The Android app will be a native Kotlin application that:
 - As a user, I want confirmation when submitted
 
 **Acceptance Criteria:**
-- ✅ Form with law text field (10-1000 chars, validated)
-- ✅ Optional title field
-- ✅ Optional author name and email fields
-- ✅ "Submit anonymously" switch
-- ✅ Category dropdown (required)
-- ✅ Form validation with inline errors
-- ✅ Success confirmation Snackbar
-- ✅ Submission status: "Your law is under review"
+- Form with law text field (10-1000 chars, validated)
+- Optional title field
+- Optional author name and email fields
+- "Submit anonymously" switch
+- Category dropdown (required)
+- Form validation with inline errors
+- Success confirmation Snackbar
+- Submission status: "Your law is under review"
 
 **API Endpoints:**
 - `POST /api/v1/laws`
@@ -285,18 +285,18 @@ The Android app will be a native Kotlin application that:
 - As a user, I want to share calculation results
 
 **Acceptance Criteria:**
-- ✅ Input sliders for:
-  - Urgency (U): 1-10
-  - Complexity (C): 1-10
-  - Importance (I): 1-10
-  - Skill Level (S): 1-10
-  - Frequency (F): 1-10
-- ✅ Real-time probability calculation
-- ✅ Formula display: `((U+C+I) × (10-S))/20 × A × 1/(1-sin(F/10))`
-- ✅ Result interpretation (Low/Medium/High risk)
-- ✅ Color-coded result (green/yellow/red)
-- ✅ Share via Android share sheet
-- ✅ Optional: Email results (uses existing API)
+- Input sliders for:
+ - Urgency (U): 1-10
+ - Complexity (C): 1-10
+ - Importance (I): 1-10
+ - Skill Level (S): 1-10
+ - Frequency (F): 1-10
+- Real-time probability calculation
+- Formula display: `((U+C+I) × (10-S))/20 × A × 1/(1-sin(F/10))`
+- Result interpretation (Low/Medium/High risk)
+- Color-coded result (green/yellow/red)
+- Share via Android share sheet
+- Optional: Email results (uses existing API)
 
 **API Endpoints:**
 - `POST /api/v1/share-calculation` (optional, for email)
@@ -317,11 +317,11 @@ The Android app will be a native Kotlin application that:
 - As a user, I want to see how many laws are in each category
 
 **Acceptance Criteria:**
-- ✅ List of all categories with law counts
-- ✅ Category descriptions/subtitles
-- ✅ Tap category to view filtered law list
-- ✅ Category icons/colors for visual distinction
-- ✅ Alphabetical sorting
+- List of all categories with law counts
+- Category descriptions/subtitles
+- Tap category to view filtered law list
+- Category icons/colors for visual distinction
+- Alphabetical sorting
 
 **API Endpoints:**
 - `GET /api/v1/categories`
@@ -416,29 +416,29 @@ The Android app will be a native Kotlin application that:
 ```
 BottomNavigation
 ├─ Home
-│  ├─ Law of the Day Card
-│  ├─ Top Voted Laws Widget
-│  ├─ Trending Laws Widget
-│  └─ Recently Added Laws Widget
+│ ├─ Law of the Day Card
+│ ├─ Top Voted Laws Widget
+│ ├─ Trending Laws Widget
+│ └─ Recently Added Laws Widget
 ├─ Browse
-│  ├─ Search Bar
-│  ├─ Category Filter Chips
-│  ├─ Law List (Infinite Scroll)
-│  └─ Law Detail (New Screen)
+│ ├─ Search Bar
+│ ├─ Category Filter Chips
+│ ├─ Law List (Infinite Scroll)
+│ └─ Law Detail (New Screen)
 ├─ Categories
-│  ├─ Category List
-│  └─ Filtered Law List (New Screen)
+│ ├─ Category List
+│ └─ Filtered Law List (New Screen)
 ├─ Calculators
-│  ├─ Sod's Law Calculator
-│  └─ Toast Calculator (v1.1)
+│ ├─ Sod's Law Calculator
+│ └─ Toast Calculator (v1.1)
 └─ More
-   ├─ Submit Law
-   ├─ Favorites (v1.1)
-   ├─ Settings
-   │  ├─ Notification Preferences
-   │  ├─ Theme Selection (v1.1)
-   │  └─ About/Privacy Policy
-   └─ About
+ ├─ Submit Law
+ ├─ Favorites (v1.1)
+ ├─ Settings
+ │ ├─ Notification Preferences
+ │ ├─ Theme Selection (v1.1)
+ │ └─ About/Privacy Policy
+ └─ About
 ```
 
 ### Screen Layouts
@@ -446,108 +446,108 @@ BottomNavigation
 #### Home Screen (Material 3)
 ```
 ┌─────────────────────────┐
-│ Top App Bar             │
-│ "Murphy's Laws"         │
+│ Top App Bar │
+│ "Murphy's Laws" │
 ├─────────────────────────┤
-│ 🌟 Law of the Day      │
+│ Law of the Day │
 │ ┌─────────────────────┐ │
-│ │ Surface Container   │ │
-│ │ "If anything can   │ │
+│ │ Surface Container │ │
+│ │ "If anything can │ │
 │ │ go wrong, it will" │ │
-│ │                     │ │
-│ │ ⬆ 42   ⬇ 3   📤   │ │
+│ │ │ │
+│ │ ⬆ 42 ⬇ 3 │ │
 │ └─────────────────────┘ │
 ├─────────────────────────┤
-│ Top Voted Laws          │
-│ [Horizontal Pager]      │
+│ Top Voted Laws │
+│ [Horizontal Pager] │
 ├─────────────────────────┤
-│ Trending Laws           │
-│ [Horizontal Pager]      │
+│ Trending Laws │
+│ [Horizontal Pager] │
 └─────────────────────────┘
-│ Bottom Navigation       │
+│ Bottom Navigation │
 └─────────────────────────┘
 ```
 
 #### Browse Screen
 ```
 ┌─────────────────────────┐
-│ Search Bar 🔍          │
+│ Search Bar │
 ├─────────────────────────┤
 │ [Tech] [Love] [Work]... │ ← Filter chips
 ├─────────────────────────┤
 │ ┌─────────────────────┐ │
-│ │ Law Title          │ │
+│ │ Law Title │ │
 │ │ Law text preview...│ │
-│ │ Tech • Office      │ │
-│ │ ⬆ 10   ⬇ 2        │ │
+│ │ Tech • Office │ │
+│ │ ⬆ 10 ⬇ 2 │ │
 │ └─────────────────────┘ │
 │ ┌─────────────────────┐ │
-│ │ Another law...     │ │
+│ │ Another law... │ │
 │ └─────────────────────┘ │
-│ ... (infinite scroll)   │
+│ ... (infinite scroll) │
 └─────────────────────────┘
-│ Bottom Navigation       │
+│ Bottom Navigation │
 └─────────────────────────┘
 ```
 
 #### Law Detail Screen
 ```
 ┌─────────────────────────┐
-│ ← Back        📤 Share │
+│ ← Back Share │
 ├─────────────────────────┤
-│ Law Title (if exists)   │
-│                         │
+│ Law Title (if exists) │
+│ │
 │ Full law text displayed │
-│ with Material 3         │
-│ typography...           │
-│                         │
-│ [Technology] [Office]   │ ← Chips
-│                         │
-│ ⬆ Upvote (42)          │
-│ ⬇ Downvote (3)         │
-│                         │
+│ with Material 3 │
+│ typography... │
+│ │
+│ [Technology] [Office] │ ← Chips
+│ │
+│ ⬆ Upvote (42) │
+│ ⬇ Downvote (3) │
+│ │
 │ ─────────────────────── │
-│ Attribution:            │
-│ Submitted by John Doe   │
-│ john@example.com        │
-│                         │
-│ Related Laws:           │
-│ - Similar law 1         │
-│ - Similar law 2         │
+│ Attribution: │
+│ Submitted by John Doe │
+│ john@example.com │
+│ │
+│ Related Laws: │
+│ - Similar law 1 │
+│ - Similar law 2 │
 └─────────────────────────┘
 ```
 
 #### Sod's Law Calculator
 ```
 ┌─────────────────────────┐
-│ Sod's Law Calculator    │
+│ Sod's Law Calculator │
 ├─────────────────────────┤
-│ Urgency                 │
-│ ━━━━━●━━━━━━━━━━━━━ 5  │
-│                         │
-│ Complexity              │
-│ ━━━━━━━●━━━━━━━━━━━ 7  │
-│                         │
-│ Importance              │
-│ ━━━━━━━━●━━━━━━━━━━ 8  │
-│                         │
-│ Skill Level             │
-│ ━━━━━━●━━━━━━━━━━━━ 6  │
-│                         │
-│ Frequency               │
-│ ━━━━●━━━━━━━━━━━━━━ 4  │
-│                         │
+│ Urgency │
+│ ━━━━━●━━━━━━━━━━━━━ 5 │
+│ │
+│ Complexity │
+│ ━━━━━━━●━━━━━━━━━━━ 7 │
+│ │
+│ Importance │
+│ ━━━━━━━━●━━━━━━━━━━ 8 │
+│ │
+│ Skill Level │
+│ ━━━━━━●━━━━━━━━━━━━ 6 │
+│ │
+│ Frequency │
+│ ━━━━●━━━━━━━━━━━━━━ 4 │
+│ │
 │ ─────────────────────── │
-│                         │
-│ Formula:                │
+│ │
+│ Formula: │
 │ ((U+C+I)×(10-S))/20×... │
-│                         │
+│ │
 │ ┌─────────────────────┐ │
-│ │ Result: 78.5% 🔴   │ │
-│ │ "High risk"        │ │
+│ │ Result: 78.5% │ │
+│ │ "High risk" │ │
 │ └─────────────────────┘ │
-│                         │
-│ [Share Results]         │
+│ │
+│ [Share Results] │
 └─────────────────────────┘
 ```
 
@@ -609,90 +609,90 @@ BottomNavigation
 ```
 app/src/main/
 ├── java/com/murphyslaws/
-│   ├── MurphysLawsApplication.kt  # App entry point
-│   ├── MainActivity.kt             # Main activity
-│   │
-│   ├── data/
-│   │   ├── local/
-│   │   │   ├── LawDatabase.kt     # Room database
-│   │   │   ├── dao/
-│   │   │   │   ├── LawDao.kt
-│   │   │   │   └── CategoryDao.kt
-│   │   │   └── entities/
-│   │   │       ├── LawEntity.kt
-│   │   │       └── CategoryEntity.kt
-│   │   ├── remote/
-│   │   │   ├── ApiService.kt      # Retrofit interface
-│   │   │   ├── dto/
-│   │   │   │   ├── LawDto.kt
-│   │   │   │   └── CategoryDto.kt
-│   │   │   └── NetworkModule.kt   # Hilt module
-│   │   └── repository/
-│   │       ├── LawRepositoryImpl.kt
-│   │       └── CategoryRepositoryImpl.kt
-│   │
-│   ├── domain/
-│   │   ├── model/
-│   │   │   ├── Law.kt             # Domain models
-│   │   │   ├── Category.kt
-│   │   │   └── Vote.kt
-│   │   ├── repository/
-│   │   │   ├── LawRepository.kt   # Interfaces
-│   │   │   └── CategoryRepository.kt
-│   │   └── usecase/
-│   │       ├── GetLawsUseCase.kt
-│   │       ├── VoteLawUseCase.kt
-│   │       └── SearchLawsUseCase.kt
-│   │
-│   ├── presentation/
-│   │   ├── home/
-│   │   │   ├── HomeScreen.kt
-│   │   │   ├── HomeViewModel.kt
-│   │   │   └── components/
-│   │   │       └── LawOfTheDayCard.kt
-│   │   ├── browse/
-│   │   │   ├── LawListScreen.kt
-│   │   │   ├── LawListViewModel.kt
-│   │   │   ├── LawDetailScreen.kt
-│   │   │   ├── LawDetailViewModel.kt
-│   │   │   └── components/
-│   │   │       ├── LawCard.kt
-│   │   │       └── VoteButtons.kt
-│   │   ├── search/
-│   │   │   ├── SearchScreen.kt
-│   │   │   └── SearchViewModel.kt
-│   │   ├── categories/
-│   │   │   ├── CategoryListScreen.kt
-│   │   │   └── CategoryViewModel.kt
-│   │   ├── calculators/
-│   │   │   ├── SodsLawCalculatorScreen.kt
-│   │   │   └── CalculatorViewModel.kt
-│   │   ├── submit/
-│   │   │   ├── SubmitLawScreen.kt
-│   │   │   └── SubmitViewModel.kt
-│   │   └── navigation/
-│   │       └── NavGraph.kt
-│   │
-│   ├── util/
-│   │   ├── Constants.kt
-│   │   ├── DeviceInfo.kt
-│   │   ├── NetworkMonitor.kt
-│   │   └── DateUtils.kt
-│   │
-│   └── di/
-│       ├── AppModule.kt           # Hilt modules
-│       ├── DatabaseModule.kt
-│       └── NetworkModule.kt
+│ ├── MurphysLawsApplication.kt # App entry point
+│ ├── MainActivity.kt # Main activity
+│ │
+│ ├── data/
+│ │ ├── local/
+│ │ │ ├── LawDatabase.kt # Room database
+│ │ │ ├── dao/
+│ │ │ │ ├── LawDao.kt
+│ │ │ │ └── CategoryDao.kt
+│ │ │ └── entities/
+│ │ │ ├── LawEntity.kt
+│ │ │ └── CategoryEntity.kt
+│ │ ├── remote/
+│ │ │ ├── ApiService.kt # Retrofit interface
+│ │ │ ├── dto/
+│ │ │ │ ├── LawDto.kt
+│ │ │ │ └── CategoryDto.kt
+│ │ │ └── NetworkModule.kt # Hilt module
+│ │ └── repository/
+│ │ ├── LawRepositoryImpl.kt
+│ │ └── CategoryRepositoryImpl.kt
+│ │
+│ ├── domain/
+│ │ ├── model/
+│ │ │ ├── Law.kt # Domain models
+│ │ │ ├── Category.kt
+│ │ │ └── Vote.kt
+│ │ ├── repository/
+│ │ │ ├── LawRepository.kt # Interfaces
+│ │ │ └── CategoryRepository.kt
+│ │ └── usecase/
+│ │ ├── GetLawsUseCase.kt
+│ │ ├── VoteLawUseCase.kt
+│ │ └── SearchLawsUseCase.kt
+│ │
+│ ├── presentation/
+│ │ ├── home/
+│ │ │ ├── HomeScreen.kt
+│ │ │ ├── HomeViewModel.kt
+│ │ │ └── components/
+│ │ │ └── LawOfTheDayCard.kt
+│ │ ├── browse/
+│ │ │ ├── LawListScreen.kt
+│ │ │ ├── LawListViewModel.kt
+│ │ │ ├── LawDetailScreen.kt
+│ │ │ ├── LawDetailViewModel.kt
+│ │ │ └── components/
+│ │ │ ├── LawCard.kt
+│ │ │ └── VoteButtons.kt
+│ │ ├── search/
+│ │ │ ├── SearchScreen.kt
+│ │ │ └── SearchViewModel.kt
+│ │ ├── categories/
+│ │ │ ├── CategoryListScreen.kt
+│ │ │ └── CategoryViewModel.kt
+│ │ ├── calculators/
+│ │ │ ├── SodsLawCalculatorScreen.kt
+│ │ │ └── CalculatorViewModel.kt
+│ │ ├── submit/
+│ │ │ ├── SubmitLawScreen.kt
+│ │ │ └── SubmitViewModel.kt
+│ │ └── navigation/
+│ │ └── NavGraph.kt
+│ │
+│ ├── util/
+│ │ ├── Constants.kt
+│ │ ├── DeviceInfo.kt
+│ │ ├── NetworkMonitor.kt
+│ │ └── DateUtils.kt
+│ │
+│ └── di/
+│ ├── AppModule.kt # Hilt modules
+│ ├── DatabaseModule.kt
+│ └── NetworkModule.kt
 │
 ├── res/
-│   ├── values/
-│   │   ├── colors.xml
-│   │   ├── strings.xml
-│   │   └── themes.xml
-│   ├── drawable/
-│   ├── mipmap/                    # App icons
-│   └── xml/
-│       └── network_security_config.xml
+│ ├── values/
+│ │ ├── colors.xml
+│ │ ├── strings.xml
+│ │ └── themes.xml
+│ ├── drawable/
+│ ├── mipmap/ # App icons
+│ └── xml/
+│ └── network_security_config.xml
 │
 └── AndroidManifest.xml
 ```
@@ -701,52 +701,52 @@ app/src/main/
 
 ```kotlin
 dependencies {
-    // Core
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
+ // Core
+ implementation("androidx.core:core-ktx:1.12.0")
+ implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+ implementation("androidx.activity:activity-compose:1.8.2")
 
-    // Compose
-    val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
-    implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+ // Compose
+ val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
+ implementation(composeBom)
+ implementation("androidx.compose.ui:ui")
+ implementation("androidx.compose.material3:material3")
+ implementation("androidx.compose.ui:ui-tooling-preview")
+ debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+ // Navigation
+ implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // Dependency Injection
-    implementation("com.google.dagger:hilt-android:2.50")
-    kapt("com.google.dagger:hilt-compiler:2.50")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+ // Dependency Injection
+ implementation("com.google.dagger:hilt-android:2.50")
+ kapt("com.google.dagger:hilt-compiler:2.50")
+ implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
-    // Network
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+ // Network
+ implementation("com.squareup.retrofit2:retrofit:2.9.0")
+ implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+ implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Local Storage
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
+ // Local Storage
+ implementation("androidx.room:room-runtime:2.6.1")
+ implementation("androidx.room:room-ktx:2.6.1")
+ kapt("androidx.room:room-compiler:2.6.1")
+ implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // Paging
-    implementation("androidx.paging:paging-runtime-ktx:3.2.1")
-    implementation("androidx.paging:paging-compose:3.2.1")
+ // Paging
+ implementation("androidx.paging:paging-runtime-ktx:3.2.1")
+ implementation("androidx.paging:paging-compose:3.2.1")
 
-    // WorkManager (for notifications)
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
+ // WorkManager (for notifications)
+ implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Coil (Image loading)
-    implementation("io.coil-kt:coil-compose:2.5.0")
+ // Coil (Image loading)
+ implementation("io.coil-kt:coil-compose:2.5.0")
 
-    // Testing
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+ // Testing
+ testImplementation("junit:junit:4.13.2")
+ androidTestImplementation("androidx.test.ext:junit:1.1.5")
+ androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
 ```
 
@@ -755,80 +755,80 @@ dependencies {
 #### API Service (Retrofit)
 ```kotlin
 interface ApiService {
-    @GET("laws")
-    suspend fun getLaws(
-        @Query("limit") limit: Int = 25,
-        @Query("offset") offset: Int = 0,
-        @Query("sort") sort: String = "score",
-        @Query("order") order: String = "desc",
-        @Query("q") query: String? = null,
-        @Query("category_id") categoryId: Int? = null,
-        @Query("attribution") attribution: String? = null
-    ): LawsResponse
+ @GET("laws")
+ suspend fun getLaws(
+ @Query("limit") limit: Int = 25,
+ @Query("offset") offset: Int = 0,
+ @Query("sort") sort: String = "score",
+ @Query("order") order: String = "desc",
+ @Query("q") query: String? = null,
+ @Query("category_id") categoryId: Int? = null,
+ @Query("attribution") attribution: String? = null
+ ): LawsResponse
 
-    @GET("laws/{id}")
-    suspend fun getLaw(@Path("id") id: Int): Law
+ @GET("laws/{id}")
+ suspend fun getLaw(@Path("id") id: Int): Law
 
-    @POST("laws/{id}/vote")
-    suspend fun voteLaw(
-        @Path("id") id: Int,
-        @Body voteRequest: VoteRequest,
-        @Header("X-Device-ID") deviceId: String
-    ): VoteResponse
+ @POST("laws/{id}/vote")
+ suspend fun voteLaw(
+ @Path("id") id: Int,
+ @Body voteRequest: VoteRequest,
+ @Header("X-Device-ID") deviceId: String
+ ): VoteResponse
 
-    @DELETE("laws/{id}/vote")
-    suspend fun unvoteLaw(
-        @Path("id") id: Int,
-        @Header("X-Device-ID") deviceId: String
-    ): VoteResponse
+ @DELETE("laws/{id}/vote")
+ suspend fun unvoteLaw(
+ @Path("id") id: Int,
+ @Header("X-Device-ID") deviceId: String
+ ): VoteResponse
 
-    @GET("law-of-day")
-    suspend fun getLawOfTheDay(): LawOfDayResponse
+ @GET("law-of-day")
+ suspend fun getLawOfTheDay(): LawOfDayResponse
 
-    @GET("categories")
-    suspend fun getCategories(): CategoriesResponse
+ @GET("categories")
+ suspend fun getCategories(): CategoriesResponse
 
-    @POST("laws")
-    suspend fun submitLaw(@Body law: SubmitLawRequest): SubmitLawResponse
+ @POST("laws")
+ suspend fun submitLaw(@Body law: SubmitLawRequest): SubmitLawResponse
 
-    @POST("share-calculation")
-    suspend fun shareCalculation(@Body calculation: CalculationRequest): GenericResponse
+ @POST("share-calculation")
+ suspend fun shareCalculation(@Body calculation: CalculationRequest): GenericResponse
 }
 ```
 
 #### Repository Implementation
 ```kotlin
 class LawRepositoryImpl @Inject constructor(
-    private val apiService: ApiService,
-    private val lawDao: LawDao,
-    private val networkMonitor: NetworkMonitor
+ private val apiService: ApiService,
+ private val lawDao: LawDao,
+ private val networkMonitor: NetworkMonitor
 ) : LawRepository {
 
-    override fun getLaws(
-        limit: Int,
-        offset: Int,
-        query: String?,
-        categoryId: Int?
-    ): Flow<PagingData<Law>> = Pager(
-        config = PagingConfig(pageSize = 25, enablePlaceholders = false),
-        pagingSourceFactory = {
-            LawPagingSource(apiService, lawDao, query, categoryId)
-        }
-    ).flow
+ override fun getLaws(
+ limit: Int,
+ offset: Int,
+ query: String?,
+ categoryId: Int?
+ ): Flow<PagingData<Law>> = Pager(
+ config = PagingConfig(pageSize = 25, enablePlaceholders = false),
+ pagingSourceFactory = {
+ LawPagingSource(apiService, lawDao, query, categoryId)
+ }
+ ).flow
 
-    override suspend fun voteLaw(lawId: Int, voteType: VoteType): Result<VoteResponse> {
-        return try {
-            val deviceId = DeviceInfo.getDeviceId()
-            val response = apiService.voteLaw(
-                id = lawId,
-                voteRequest = VoteRequest(voteType.value),
-                deviceId = deviceId
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+ override suspend fun voteLaw(lawId: Int, voteType: VoteType): Result<VoteResponse> {
+ return try {
+ val deviceId = DeviceInfo.getDeviceId()
+ val response = apiService.voteLaw(
+ id = lawId,
+ voteRequest = VoteRequest(voteType.value),
+ deviceId = deviceId
+ )
+ Result.success(response)
+ } catch (e: Exception) {
+ Result.failure(e)
+ }
+ }
 }
 ```
 
@@ -837,44 +837,44 @@ class LawRepositoryImpl @Inject constructor(
 ```kotlin
 // Domain Model
 data class Law(
-    val id: Int,
-    val text: String,
-    val title: String?,
-    val upvotes: Int,
-    val downvotes: Int,
-    val createdAt: String,
-    val attributions: List<Attribution>?
+ val id: Int,
+ val text: String,
+ val title: String?,
+ val upvotes: Int,
+ val downvotes: Int,
+ val createdAt: String,
+ val attributions: List<Attribution>?
 ) {
-    val score: Int get() = upvotes - downvotes
+ val score: Int get() = upvotes - downvotes
 }
 
 // Network DTO
 @Serializable
 data class LawDto(
-    val id: Int,
-    val text: String,
-    val title: String?,
-    val upvotes: Int,
-    val downvotes: Int,
-    @SerialName("created_at") val createdAt: String,
-    val attributions: List<AttributionDto>?
+ val id: Int,
+ val text: String,
+ val title: String?,
+ val upvotes: Int,
+ val downvotes: Int,
+ @SerialName("created_at") val createdAt: String,
+ val attributions: List<AttributionDto>?
 )
 
 // Room Entity
 @Entity(tableName = "laws")
 data class LawEntity(
-    @PrimaryKey val id: Int,
-    val text: String,
-    val title: String?,
-    val upvotes: Int,
-    val downvotes: Int,
-    val createdAt: String,
-    val cachedAt: Long = System.currentTimeMillis()
+ @PrimaryKey val id: Int,
+ val text: String,
+ val title: String?,
+ val upvotes: Int,
+ val downvotes: Int,
+ val createdAt: String,
+ val cachedAt: Long = System.currentTimeMillis()
 )
 
 enum class VoteType(val value: String) {
-    UP("up"),
-    DOWN("down")
+ UP("up"),
+ DOWN("down")
 }
 ```
 
@@ -883,27 +883,27 @@ enum class VoteType(val value: String) {
 #### DataStore (SharedPreferences replacement)
 ```kotlin
 class VoteManager @Inject constructor(
-    private val dataStore: DataStore<Preferences>
+ private val dataStore: DataStore<Preferences>
 ) {
-    private val votesKey = stringPreferencesKey("user_votes")
+ private val votesKey = stringPreferencesKey("user_votes")
 
-    fun getVote(lawId: Int): Flow<VoteType?> = dataStore.data.map { prefs ->
-        prefs[votesKey]?.let { json ->
-            val votes = Json.decodeFromString<Map<String, String>>(json)
-            votes[lawId.toString()]?.let { VoteType.valueOf(it.uppercase()) }
-        }
-    }
+ fun getVote(lawId: Int): Flow<VoteType?> = dataStore.data.map { prefs ->
+ prefs[votesKey]?.let { json ->
+ val votes = Json.decodeFromString<Map<String, String>>(json)
+ votes[lawId.toString()]?.let { VoteType.valueOf(it.uppercase()) }
+ }
+ }
 
-    suspend fun setVote(lawId: Int, voteType: VoteType) {
-        dataStore.edit { prefs ->
-            val currentVotes = prefs[votesKey]?.let {
-                Json.decodeFromString<MutableMap<String, String>>(it)
-            } ?: mutableMapOf()
+ suspend fun setVote(lawId: Int, voteType: VoteType) {
+ dataStore.edit { prefs ->
+ val currentVotes = prefs[votesKey]?.let {
+ Json.decodeFromString<MutableMap<String, String>>(it)
+ } ?: mutableMapOf()
 
-            currentVotes[lawId.toString()] = voteType.value
-            prefs[votesKey] = Json.encodeToString(currentVotes)
-        }
-    }
+ currentVotes[lawId.toString()] = voteType.value
+ prefs[votesKey] = Json.encodeToString(currentVotes)
+ }
+ }
 }
 ```
 
@@ -911,25 +911,25 @@ class VoteManager @Inject constructor(
 
 ```kotlin
 sealed class ApiResult<out T> {
-    data class Success<T>(val data: T) : ApiResult<T>()
-    data class Error(val exception: Exception) : ApiResult<Nothing>()
-    object Loading : ApiResult<Nothing>()
+ data class Success<T>(val data: T) : ApiResult<T>()
+ data class Error(val exception: Exception) : ApiResult<Nothing>()
+ object Loading : ApiResult<Nothing>()
 }
 
 sealed class ApiError : Exception() {
-    object NetworkError : ApiError()
-    object ServerError : ApiError()
-    data class HttpError(val code: Int) : ApiError()
-    object RateLimitExceeded : ApiError()
-    object Unknown : ApiError()
+ object NetworkError : ApiError()
+ object ServerError : ApiError()
+ data class HttpError(val code: Int) : ApiError()
+ object RateLimitExceeded : ApiError()
+ object Unknown : ApiError()
 }
 
 fun ApiError.toMessage(): String = when (this) {
-    is ApiError.NetworkError -> "Network connection failed. Please check your internet."
-    is ApiError.ServerError -> "Server error. Please try again later."
-    is ApiError.HttpError -> "Error: HTTP $code"
-    is ApiError.RateLimitExceeded -> "Too many requests. Please try again later."
-    is ApiError.Unknown -> "An unknown error occurred."
+ is ApiError.NetworkError -> "Network connection failed. Please check your internet."
+ is ApiError.ServerError -> "Server error. Please try again later."
+ is ApiError.HttpError -> "Error: HTTP $code"
+ is ApiError.RateLimitExceeded -> "Too many requests. Please try again later."
+ is ApiError.Unknown -> "An unknown error occurred."
 }
 ```
 
@@ -985,43 +985,43 @@ fun ApiError.toMessage(): String = when (this) {
 ## Development Timeline
 
 ### Phase 1: Foundation (Weeks 1-2)
-- ✅ Android Studio project setup
-- ✅ Hilt dependency injection setup
-- ✅ Retrofit API client implementation
-- ✅ Room database setup
-- ✅ Data models and repositories
-- ✅ Basic navigation structure
-- ✅ Material 3 theme setup
+- Android Studio project setup
+- Hilt dependency injection setup
+- Retrofit API client implementation
+- Room database setup
+- Data models and repositories
+- Basic navigation structure
+- Material 3 theme setup
 
 ### Phase 2: Core Features (Weeks 3-5)
-- ✅ Home screen with Law of the Day
-- ✅ Browse laws list with Paging 3
-- ✅ Law detail screen
-- ✅ Voting functionality
-- ✅ Search and filters
-- ✅ Category browsing
+- Home screen with Law of the Day
+- Browse laws list with Paging 3
+- Law detail screen
+- Voting functionality
+- Search and filters
+- Category browsing
 
 ### Phase 3: Secondary Features (Weeks 6-7)
-- ✅ Submit law form
-- ✅ Sod's Law Calculator
-- ✅ Share functionality (Android Intent)
-- ✅ Settings screen
-- ✅ About/Privacy Policy pages
+- Submit law form
+- Sod's Law Calculator
+- Share functionality (Android Intent)
+- Settings screen
+- About/Privacy Policy pages
 
 ### Phase 4: Polish & Testing (Week 8)
-- ✅ UI/UX polish
-- ✅ Performance optimization
-- ✅ Bug fixes
-- ✅ Unit tests (ViewModels, Repositories, UseCases)
-- ✅ UI tests (Compose UI tests)
-- ✅ Accessibility audit (TalkBack, Large Text)
+- UI/UX polish
+- Performance optimization
+- Bug fixes
+- Unit tests (ViewModels, Repositories, UseCases)
+- UI tests (Compose UI tests)
+- Accessibility audit (TalkBack, Large Text)
 
 ### Phase 5: Google Play Submission (Week 9)
-- ✅ Google Play assets (screenshots, feature graphic)
-- ✅ Google Play listing (description, keywords)
-- ✅ Privacy policy update
-- ✅ Internal testing track
-- ✅ Submit for review
+- Google Play assets (screenshots, feature graphic)
+- Google Play listing (description, keywords)
+- Privacy policy update
+- Internal testing track
+- Submit for review
 
 **Total Timeline:** 9 weeks (2.25 months) for MVP
 
@@ -1030,29 +1030,29 @@ fun ApiError.toMessage(): String = when (this) {
 ## Future Enhancements
 
 ### Version 1.1 (Post-Launch)
-- ✅ Home screen widgets (Glance)
-- ✅ Offline mode with Room caching
-- ✅ Buttered Toast Calculator
-- ✅ Favorites/Bookmarks
-- ✅ Material You dynamic theming
+- Home screen widgets (Glance)
+- Offline mode with Room caching
+- Buttered Toast Calculator
+- Favorites/Bookmarks
+- Material You dynamic theming
 
 ### Version 1.2
-- ✅ User accounts (Google Sign-In)
-- ✅ Cross-device sync (favorites, votes)
-- ✅ Law submission voting (upvote pending submissions)
-- ✅ Achievement system (e.g., "Voted on 100 laws")
+- User accounts (Google Sign-In)
+- Cross-device sync (favorites, votes)
+- Law submission voting (upvote pending submissions)
+- Achievement system (e.g., "Voted on 100 laws")
 
 ### Version 1.3
-- ✅ Social features (comments, discussions)
-- ✅ Collections (user-curated lists)
-- ✅ Advanced calculator (custom formulas)
-- ✅ Android Auto support
+- Social features (comments, discussions)
+- Collections (user-curated lists)
+- Advanced calculator (custom formulas)
+- Android Auto support
 
 ### Version 2.0
-- ✅ AI-powered law recommendations (ML Kit)
-- ✅ Personalized feed based on interests
-- ✅ Community features (user profiles, followers)
-- ✅ Premium subscription (ad-free, exclusive content)
+- AI-powered law recommendations (ML Kit)
+- Personalized feed based on interests
+- Community features (user profiles, followers)
+- Premium subscription (ad-free, exclusive content)
 
 ---
 

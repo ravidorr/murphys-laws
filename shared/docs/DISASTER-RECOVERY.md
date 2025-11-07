@@ -19,12 +19,12 @@ This document provides step-by-step procedures for recovering from various disas
 - **Primary Administrator**: ravidor@gmail.com
 - **Domain Registrar**: (Add registrar info)
 - **Hosting Provider**: DigitalOcean
-  - Main Droplet IP: 167.99.53.90
-  - n8n Droplet IP: 45.55.74.28
+ - Main Droplet IP: 167.99.53.90
+ - n8n Droplet IP: 45.55.74.28
 - **DNS Provider**: DigitalOcean
 - **Email Services**:
-  - Forwarding: ImprovMX (improvmx.com)
-  - SMTP: smtp2go.com
+ - Forwarding: ImprovMX (improvmx.com)
+ - SMTP: smtp2go.com
 
 ---
 
@@ -80,41 +80,41 @@ sqlite3 /root/backups/murphys-2025-01-15-020000.db "PRAGMA integrity_check;"
 **Recovery Steps**:
 
 1. **Stop services**:
-   ```bash
-   ssh ravidor@167.99.53.90
-   pm2 stop all
-   ```
+ ```bash
+ ssh ravidor@167.99.53.90
+ pm2 stop all
+ ```
 
 2. **Verify database is corrupted**:
-   ```bash
-   sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
-   ```
+ ```bash
+ sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
+ ```
 
 3. **Find latest backup**:
-   ```bash
-   ls -lt /root/backups/*.db | head -1
-   ```
+ ```bash
+ ls -lt /root/backups/*.db | head -1
+ ```
 
 4. **Restore database**:
-   ```bash
-   cp /root/backups/murphys-YYYY-MM-DD-HHMMSS.db /root/murphys-laws/murphys.db
-   ```
+ ```bash
+ cp /root/backups/murphys-YYYY-MM-DD-HHMMSS.db /root/murphys-laws/murphys.db
+ ```
 
 5. **Verify restored database**:
-   ```bash
-   sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
-   sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
-   ```
+ ```bash
+ sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
+ sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
+ ```
 
 6. **Restart services**:
-   ```bash
-   pm2 restart all
-   ```
+ ```bash
+ pm2 restart all
+ ```
 
 7. **Verify application**:
-   ```bash
-   curl https://murphys-laws.com/api/health
-   ```
+ ```bash
+ curl https://murphys-laws.com/api/health
+ ```
 
 **Expected Recovery Time**: 5-10 minutes
 **Data Loss**: Up to 24 hours (since last backup)
@@ -131,50 +131,50 @@ sqlite3 /root/backups/murphys-2025-01-15-020000.db "PRAGMA integrity_check;"
 **Recovery Steps**:
 
 1. **Create new DigitalOcean droplet**:
-   - OS: Ubuntu 24.04 LTS
-   - Size: 1GB RAM minimum
-   - Region: NYC3 (or nearest to users)
-   - Add SSH key: `~/.ssh/id_ed25519_digitalocean.pub`
+ - OS: Ubuntu 24.04 LTS
+ - Size: 1GB RAM minimum
+ - Region: NYC3 (or nearest to users)
+ - Add SSH key: `~/.ssh/id_ed25519_digitalocean.pub`
 
 2. **Initial server setup**:
-   ```bash
-   # SSH into new droplet
-   ssh root@<NEW_IP>
+ ```bash
+ # SSH into new droplet
+ ssh root@<NEW_IP>
 
-   # Update system
-   apt update && apt upgrade -y
+ # Update system
+ apt update && apt upgrade -y
 
-   # Install required packages
-   apt install -y nginx git sqlite3 certbot python3-certbot-nginx \
-                  fail2ban ufw nodejs npm jq bc curl wget
+ # Install required packages
+ apt install -y nginx git sqlite3 certbot python3-certbot-nginx \
+ fail2ban ufw nodejs npm jq bc curl wget
 
-   # Create user
-   adduser ravidor
-   usermod -aG sudo ravidor
-   mkdir -p /home/ravidor/.ssh
-   cp /root/.ssh/authorized_keys /home/ravidor/.ssh/
-   chown -R ravidor:ravidor /home/ravidor/.ssh
-   chmod 700 /home/ravidor/.ssh
-   chmod 600 /home/ravidor/.ssh/authorized_keys
-   ```
+ # Create user
+ adduser ravidor
+ usermod -aG sudo ravidor
+ mkdir -p /home/ravidor/.ssh
+ cp /root/.ssh/authorized_keys /home/ravidor/.ssh/
+ chown -R ravidor:ravidor /home/ravidor/.ssh
+ chmod 700 /home/ravidor/.ssh
+ chmod 600 /home/ravidor/.ssh/authorized_keys
+ ```
 
 3. **Security hardening**:
-   ```bash
-   # Configure SSH
-   sed -i 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-   sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-   systemctl restart sshd
+ ```bash
+ # Configure SSH
+ sed -i 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+ sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+ systemctl restart sshd
 
-   # Configure firewall
-   ufw default deny incoming
-   ufw default allow outgoing
-   ufw allow 22/tcp
-   ufw allow 80/tcp
-   ufw allow 443/tcp
-   ufw --force enable
+ # Configure firewall
+ ufw default deny incoming
+ ufw default allow outgoing
+ ufw allow 22/tcp
+ ufw allow 80/tcp
+ ufw allow 443/tcp
+ ufw --force enable
 
-   # Configure fail2ban
-   cat > /etc/fail2ban/jail.local << 'EOF'
+ # Configure fail2ban
+ cat > /etc/fail2ban/jail.local << 'EOF'
 [DEFAULT]
 bantime = 1h
 findtime = 10m
@@ -185,149 +185,149 @@ enabled = true
 port = 22
 logpath = /var/log/auth.log
 EOF
-   systemctl enable fail2ban
-   systemctl start fail2ban
-   ```
+ systemctl enable fail2ban
+ systemctl start fail2ban
+ ```
 
 4. **Install Node.js (via nvm)**:
-   ```bash
-   sudo -u ravidor bash << 'EOF'
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-   source ~/.bashrc
-   nvm install 22
-   nvm use 22
-   npm install -g pm2
-   EOF
-   ```
+ ```bash
+ sudo -u ravidor bash << 'EOF'
+ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+ source ~/.bashrc
+ nvm install 22
+ nvm use 22
+ npm install -g pm2
+ EOF
+ ```
 
 5. **Clone repository**:
-   ```bash
-   cd /root
-   git clone https://github.com/ravidorr/murphys-laws.git
-   cd murphys-laws
-   ```
+ ```bash
+ cd /root
+ git clone https://github.com/ravidorr/murphys-laws.git
+ cd murphys-laws
+ ```
 
 6. **Restore database from backup**:
 
-   If you have access to old droplet:
-   ```bash
-   scp ravidor@167.99.53.90:/root/backups/murphys-*.db /root/murphys-laws/murphys.db
-   ```
+ If you have access to old droplet:
+ ```bash
+ scp ravidor@167.99.53.90:/root/backups/murphys-*.db /root/murphys-laws/murphys.db
+ ```
 
-   If old droplet is gone, you'll need to rebuild from source:
-   ```bash
-   npm ci
-   npm run db:rebuild
-   ```
+ If old droplet is gone, you'll need to rebuild from source:
+ ```bash
+ npm ci
+ npm run db:rebuild
+ ```
 
 7. **Configure environment**:
-   ```bash
-   cat > .env << 'EOF'
+ ```bash
+ cat > .env << 'EOF'
 SMTP_HOST=mail.smtp2go.com
 SMTP_PORT=2525
 SMTP_USER=your-smtp-username
 SMTP_PASS=your-smtp-password
 EMAIL_FROM=alerts@murphys-laws.com
 EOF
-   ```
+ ```
 
 8. **Build application**:
-   ```bash
-   npm ci
-   npm run build
-   ```
+ ```bash
+ npm ci
+ npm run build
+ ```
 
 9. **Install and start PM2**:
-   ```bash
-   pm2 start ecosystem.config.cjs
-   pm2 save
-   pm2 startup
-   ```
+ ```bash
+ pm2 start ecosystem.config.cjs
+ pm2 save
+ pm2 startup
+ ```
 
 10. **Configure nginx**:
-    ```bash
-    # Copy enhanced nginx config
-    cp config/nginx-rate-limiting.conf /etc/nginx/conf.d/rate-limiting.conf
-    cp config/nginx-murphys-laws-enhanced.conf /etc/nginx/sites-available/murphys-laws
-    ln -s /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-enabled/
-    rm /etc/nginx/sites-enabled/default
+ ```bash
+ # Copy enhanced nginx config
+ cp config/nginx-rate-limiting.conf /etc/nginx/conf.d/rate-limiting.conf
+ cp config/nginx-murphys-laws-enhanced.conf /etc/nginx/sites-available/murphys-laws
+ ln -s /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-enabled/
+ rm /etc/nginx/sites-enabled/default
 
-    # Test configuration
-    nginx -t
+ # Test configuration
+ nginx -t
 
-    # Restart nginx
-    systemctl restart nginx
-    ```
+ # Restart nginx
+ systemctl restart nginx
+ ```
 
 11. **Configure SSL certificate**:
-    ```bash
-    certbot --nginx -d murphys-laws.com -d www.murphys-laws.com \
-            --non-interactive --agree-tos --email ravidor@gmail.com
-    ```
+ ```bash
+ certbot --nginx -d murphys-laws.com -d www.murphys-laws.com \
+ --non-interactive --agree-tos --email ravidor@gmail.com
+ ```
 
 12. **Install monitoring scripts**:
-    ```bash
-    # Copy scripts
-    cp scripts/daily-report.sh /usr/local/bin/daily-report.sh
-    cp scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
-    cp scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh
-    cp scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh
-    cp scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh
-    cp scripts/log-analyzer.sh /usr/local/bin/log-analyzer.sh
+ ```bash
+ # Copy scripts
+ cp scripts/daily-report.sh /usr/local/bin/daily-report.sh
+ cp scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
+ cp scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh
+ cp scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh
+ cp scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh
+ cp scripts/log-analyzer.sh /usr/local/bin/log-analyzer.sh
 
-    # Make executable
-    chmod +x /usr/local/bin/*.sh
+ # Make executable
+ chmod +x /usr/local/bin/*.sh
 
-    # Configure cron jobs
-    crontab -e
-    ```
+ # Configure cron jobs
+ crontab -e
+ ```
 
-    Add these lines:
-    ```cron
-    # Law of the Day selection (daily at midnight UTC)
-    0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
+ Add these lines:
+ ```cron
+ # Law of the Day selection (daily at midnight UTC)
+ 0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
 
-    # Backup (daily at 2 AM)
-    0 2 * * * /usr/local/bin/backup-murphys.sh
+ # Backup (daily at 2 AM)
+ 0 2 * * * /usr/local/bin/backup-murphys.sh
 
-    # Daily status report (8 AM UTC)
-    0 5 * * * /usr/local/bin/daily-report.sh
+ # Daily status report (8 AM UTC)
+ 0 5 * * * /usr/local/bin/daily-report.sh
 
-    # SSL monitoring (daily at 9 AM)
-    0 9 * * * /usr/local/bin/ssl-monitor.sh
+ # SSL monitoring (daily at 9 AM)
+ 0 9 * * * /usr/local/bin/ssl-monitor.sh
 
-    # Log analysis (daily at 11 PM)
-    0 23 * * * /usr/local/bin/log-analyzer.sh
+ # Log analysis (daily at 11 PM)
+ 0 23 * * * /usr/local/bin/log-analyzer.sh
 
-    # Vulnerability scanning (weekly, Sunday at 3 AM)
-    0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh
+ # Vulnerability scanning (weekly, Sunday at 3 AM)
+ 0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh
 
-    # Health monitoring (every 5 minutes)
-    */5 * * * * /usr/local/bin/health-monitor.sh
+ # Health monitoring (every 5 minutes)
+ */5 * * * * /usr/local/bin/health-monitor.sh
 
-    # Performance tracking (hourly)
-    0 * * * * /usr/local/bin/performance-tracker.sh
-    ```
+ # Performance tracking (hourly)
+ 0 * * * * /usr/local/bin/performance-tracker.sh
+ ```
 
 13. **Update DNS**:
-    - Update A record for murphys-laws.com to <NEW_IP>
-    - Update A record for www.murphys-laws.com to <NEW_IP>
-    - Wait for DNS propagation (5-30 minutes)
+ - Update A record for murphys-laws.com to <NEW_IP>
+ - Update A record for www.murphys-laws.com to <NEW_IP>
+ - Wait for DNS propagation (5-30 minutes)
 
 14. **Verify services**:
-    ```bash
-    # Check PM2
-    pm2 list
+ ```bash
+ # Check PM2
+ pm2 list
 
-    # Check nginx
-    curl -I https://murphys-laws.com
+ # Check nginx
+ curl -I https://murphys-laws.com
 
-    # Check API
-    curl https://murphys-laws.com/api/health
+ # Check API
+ curl https://murphys-laws.com/api/health
 
-    # Check SSL
-    curl -vI https://murphys-laws.com 2>&1 | grep "SSL certificate"
-    ```
+ # Check SSL
+ curl -vI https://murphys-laws.com 2>&1 | grep "SSL certificate"
+ ```
 
 **Expected Recovery Time**: 2-4 hours
 **Data Loss**: Up to 24 hours (database) + any recent submissions
@@ -341,75 +341,75 @@ EOF
 1. **Create new droplet** (same as main droplet steps 1-3)
 
 2. **Install Docker**:
-   ```bash
-   curl -fsSL https://get.docker.com | sh
-   systemctl enable docker
-   systemctl start docker
-   ```
+ ```bash
+ curl -fsSL https://get.docker.com | sh
+ systemctl enable docker
+ systemctl start docker
+ ```
 
 3. **Create n8n directory**:
-   ```bash
-   mkdir -p /var/lib/docker/volumes/n8n_data/_data
-   ```
+ ```bash
+ mkdir -p /var/lib/docker/volumes/n8n_data/_data
+ ```
 
 4. **Restore workflows from GitHub**:
-   ```bash
-   cd /home/deploy
-   git clone https://github.com/ravidorr/n8n-workflows.git
-   ```
+ ```bash
+ cd /home/deploy
+ git clone https://github.com/ravidorr/n8n-workflows.git
+ ```
 
 5. **Start n8n**:
-   ```bash
-   docker run -d \
-     --name n8n \
-     --restart unless-stopped \
-     -p 127.0.0.1:5678:5678 \
-     -v n8n_data:/home/node/.n8n \
-     -e N8N_HOST=n8n.murphys-laws.com \
-     -e N8N_PROTOCOL=https \
-     n8nio/n8n
-   ```
+ ```bash
+ docker run -d \
+ --name n8n \
+ --restart unless-stopped \
+ -p 127.0.0.1:5678:5678 \
+ -v n8n_data:/home/node/.n8n \
+ -e N8N_HOST=n8n.murphys-laws.com \
+ -e N8N_PROTOCOL=https \
+ n8nio/n8n
+ ```
 
 6. **Configure nginx for n8n**:
-   ```bash
-   # Create nginx config
-   cat > /etc/nginx/sites-available/n8n << 'EOF'
+ ```bash
+ # Create nginx config
+ cat > /etc/nginx/sites-available/n8n << 'EOF'
 server {
-    server_name n8n.murphys-laws.com;
+ server_name n8n.murphys-laws.com;
 
-    location / {
-        proxy_pass http://127.0.0.1:5678;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
+ location / {
+ proxy_pass http://127.0.0.1:5678;
+ proxy_http_version 1.1;
+ proxy_set_header Upgrade $http_upgrade;
+ proxy_set_header Connection 'upgrade';
+ proxy_set_header Host $host;
+ proxy_cache_bypass $http_upgrade;
+ }
 
-    listen 80;
+ listen 80;
 }
 EOF
 
-   ln -s /etc/nginx/sites-available/n8n /etc/nginx/sites-enabled/
-   nginx -t
-   systemctl restart nginx
-   ```
+ ln -s /etc/nginx/sites-available/n8n /etc/nginx/sites-enabled/
+ nginx -t
+ systemctl restart nginx
+ ```
 
 7. **Configure SSL**:
-   ```bash
-   certbot --nginx -d n8n.murphys-laws.com \
-           --non-interactive --agree-tos --email ravidor@gmail.com
-   ```
+ ```bash
+ certbot --nginx -d n8n.murphys-laws.com \
+ --non-interactive --agree-tos --email ravidor@gmail.com
+ ```
 
 8. **Import workflows**:
-   - Access n8n UI: https://n8n.murphys-laws.com
-   - Import each workflow JSON from GitHub
+ - Access n8n UI: https://n8n.murphys-laws.com
+ - Import each workflow JSON from GitHub
 
 9. **Install monitoring scripts**:
-   (Same as main droplet, but use n8n-specific scripts)
+ (Same as main droplet, but use n8n-specific scripts)
 
 10. **Update DNS**:
-    - Update A record for n8n.murphys-laws.com to <NEW_IP>
+ - Update A record for n8n.murphys-laws.com to <NEW_IP>
 
 **Expected Recovery Time**: 1-2 hours
 **Data Loss**: Minimal (workflows backed up to GitHub)
@@ -425,30 +425,30 @@ EOF
 **Recovery Steps**:
 
 1. **Check certificate status**:
-   ```bash
-   openssl x509 -enddate -noout -in /etc/letsencrypt/live/murphys-laws.com/cert.pem
-   ```
+ ```bash
+ openssl x509 -enddate -noout -in /etc/letsencrypt/live/murphys-laws.com/cert.pem
+ ```
 
 2. **Renew certificate**:
-   ```bash
-   certbot renew --force-renewal
-   ```
+ ```bash
+ certbot renew --force-renewal
+ ```
 
 3. **Restart nginx**:
-   ```bash
-   systemctl restart nginx
-   ```
+ ```bash
+ systemctl restart nginx
+ ```
 
 4. **Verify renewal**:
-   ```bash
-   curl -vI https://murphys-laws.com 2>&1 | grep "expire date"
-   ```
+ ```bash
+ curl -vI https://murphys-laws.com 2>&1 | grep "expire date"
+ ```
 
 5. **Check auto-renewal is enabled**:
-   ```bash
-   systemctl status certbot.timer
-   systemctl enable certbot.timer
-   ```
+ ```bash
+ systemctl status certbot.timer
+ systemctl enable certbot.timer
+ ```
 
 **Expected Recovery Time**: 5 minutes
 **Data Loss**: None
@@ -465,42 +465,42 @@ EOF
 **Recovery Steps**:
 
 1. **Check PM2 status**:
-   ```bash
-   ssh ravidor@167.99.53.90
-   pm2 list
-   pm2 logs
-   ```
+ ```bash
+ ssh ravidor@167.99.53.90
+ pm2 list
+ pm2 logs
+ ```
 
 2. **Restart PM2 processes**:
-   ```bash
-   pm2 restart all
-   ```
+ ```bash
+ pm2 restart all
+ ```
 
 3. **If restart fails, check logs**:
-   ```bash
-   tail -100 /root/murphys-laws/logs/api-error.log
-   tail -100 /root/murphys-laws/logs/frontend-error.log
-   ```
+ ```bash
+ tail -100 /root/murphys-laws/logs/api-error.log
+ tail -100 /root/murphys-laws/logs/frontend-error.log
+ ```
 
 4. **Check for port conflicts**:
-   ```bash
-   lsof -i :5175
-   lsof -i :8787
-   ```
+ ```bash
+ lsof -i :5175
+ lsof -i :8787
+ ```
 
 5. **If needed, rebuild and redeploy**:
-   ```bash
-   cd /root/murphys-laws
-   git pull
-   npm ci
-   npm run build
-   pm2 restart all
-   ```
+ ```bash
+ cd /root/murphys-laws
+ git pull
+ npm ci
+ npm run build
+ pm2 restart all
+ ```
 
 6. **Verify health**:
-   ```bash
-   curl https://murphys-laws.com/api/health
-   ```
+ ```bash
+ curl https://murphys-laws.com/api/health
+ ```
 
 **Expected Recovery Time**: 5-15 minutes
 **Data Loss**: None
@@ -533,17 +533,17 @@ After any recovery, verify these services:
 **Recommended**: Test recovery procedures quarterly
 
 1. **Test database restore**:
-   ```bash
-   # On development/staging environment
-   cp /root/backups/murphys-latest.db /tmp/test-restore.db
-   sqlite3 /tmp/test-restore.db "PRAGMA integrity_check;"
-   ```
+ ```bash
+ # On development/staging environment
+ cp /root/backups/murphys-latest.db /tmp/test-restore.db
+ sqlite3 /tmp/test-restore.db "PRAGMA integrity_check;"
+ ```
 
 2. **Test backup retrieval**:
-   ```bash
-   # Verify backups are accessible
-   ls -lh /root/backups/
-   ```
+ ```bash
+ # Verify backups are accessible
+ ls -lh /root/backups/
+ ```
 
 3. **Document any issues** encountered during testing
 

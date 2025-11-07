@@ -1,6 +1,6 @@
 # iOS App Setup Instructions
 
-## ✨ Easiest: Open Swift Package (No Installation Required!)
+## Easiest: Open Swift Package (No Installation Required!)
 
 **Just double-click `Package.swift` in Finder, or run:**
 
@@ -44,40 +44,40 @@ If you prefer not to use XcodeGen:
 1. **Open Xcode** and select "Create a new Xcode project"
 2. Choose **iOS > App** template
 3. Configure the project:
-   - Product Name: `MurphysLaws`
-   - Team: Your development team
-   - Organization Identifier: `com.murphyslaws`
-   - Interface: **SwiftUI**
-   - Language: **Swift**
+ - Product Name: `MurphysLaws`
+ - Team: Your development team
+ - Organization Identifier: `com.murphyslaws`
+ - Interface: **SwiftUI**
+ - Language: **Swift**
 4. **Save location**: Navigate to the `murphys-laws/ios/` directory
 5. **Important**: When saving, choose "Don't create Git repository" (it already exists)
 6. In Xcode's Project Navigator, you should now see the folder structure
 
 7. **Add existing files**:
-   - Delete the default `ContentView.swift` and `MurphysLawsApp.swift` that Xcode created
-   - In Xcode, right-click on `MurphysLaws` folder
-   - Select "Add Files to MurphysLaws..."
-   - Navigate to the `MurphysLaws` folder with all the source files
-   - Select all folders (App, Models, Views, ViewModels, Services, Repositories, Utilities)
-   - **Important options**:
-     - ✅ Create groups
-     - ✅ Add to target: MurphysLaws
-     - ❌ Copy items if needed (leave unchecked)
-   - Click "Add"
+ - Delete the default `ContentView.swift` and `MurphysLawsApp.swift` that Xcode created
+ - In Xcode, right-click on `MurphysLaws` folder
+ - Select "Add Files to MurphysLaws..."
+ - Navigate to the `MurphysLaws` folder with all the source files
+ - Select all folders (App, Models, Views, ViewModels, Services, Repositories, Utilities)
+ - **Important options**:
+ - Create groups
+ - Add to target: MurphysLaws
+ - Copy items if needed (leave unchecked)
+ - Click "Add"
 
 8. **Add test targets**:
-   - Right-click on the project root
-   - Select "Add Files to MurphysLaws..."
-   - Add the `MurphysLawsTests` folder
-   - Add the `MurphysLawsUITests` folder
-   - Ensure they're added to their respective test targets
+ - Right-click on the project root
+ - Select "Add Files to MurphysLaws..."
+ - Add the `MurphysLawsTests` folder
+ - Add the `MurphysLawsUITests` folder
+ - Ensure they're added to their respective test targets
 
 9. **Configure Info.plist**:
-   - The Info.plist file is already created at `MurphysLaws/Info.plist`
-   - In Project Settings > General, ensure the Info.plist path is set to `MurphysLaws/Info.plist`
+ - The Info.plist file is already created at `MurphysLaws/Info.plist`
+ - In Project Settings > General, ensure the Info.plist path is set to `MurphysLaws/Info.plist`
 
 10. **Configure Assets**:
-    - Replace the default `Assets.xcassets` with the one in `MurphysLaws/Assets.xcassets`
+ - Replace the default `Assets.xcassets` with the one in `MurphysLaws/Assets.xcassets`
 
 ## Verify Setup
 

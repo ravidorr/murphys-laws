@@ -65,22 +65,22 @@ adb shell am start -n com.murphyslaws/.MainActivity
 ```
 android/app/src/main/
 ├── java/com/murphyslaws/
-│   ├── data/                   # Data layer
-│   │   ├── local/              # Room database
-│   │   ├── remote/             # API (Retrofit)
-│   │   └── repository/         # Repository implementations
-│   ├── domain/                 # Domain layer
-│   │   ├── model/              # Domain models
-│   │   ├── repository/         # Repository interfaces
-│   │   └── usecase/            # Use cases
-│   ├── presentation/           # Presentation layer
-│   │   ├── home/               # Home screen
-│   │   ├── browse/             # Browse laws
-│   │   ├── search/             # Search
-│   │   └── navigation/         # Navigation
-│   ├── util/                   # Utilities
-│   └── di/                     # Hilt modules
-└── res/                        # Android resources
+│ ├── data/             # Data layer
+│ │ ├── local/          # Room database
+│ │ ├── remote/         # API (Retrofit)
+│ │ └── repository/     # Repository implementations
+│ ├── domain/           # Domain layer
+│ │ ├── model/          # Domain models
+│ │ ├── repository/     # Repository interfaces
+│ │ └── usecase/        # Use cases
+│ ├── presentation/     # Presentation layer
+│ │ ├── home/           # Home screen
+│ │ ├── browse/         # Browse laws
+│ │ ├── search/         # Search
+│ │ └── navigation/     # Navigation
+│ ├── util/             # Utilities
+│ └── di/               # Hilt modules
+└── res/                # Android resources
 ```
 
 ## Architecture
@@ -94,6 +94,6 @@ See [Mobile Architecture](../shared/docs/MOBILE-ARCHITECTURE.md#android-architec
 
 ## Status
 
-🚧 **Coming Soon** - Android app is not yet implemented.
+ **Coming Soon** - Android app is not yet implemented.
 
 See [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md) for planned features and timeline.

@@ -18,9 +18,9 @@ Navigate to: **GitHub Repository -> Settings -> Secrets and variables -> Actions
 - **Value**: Contents of `~/.ssh/id_ed25519_digitalocean` (private key)
 - **Description**: SSH private key for authentication
 - **How to get it**:
-  ```bash
-  cat ~/.ssh/id_ed25519_digitalocean
-  ```
+ ```bash
+ cat ~/.ssh/id_ed25519_digitalocean
+ ```
 - **Format**: Should start with `-----BEGIN OPENSSH PRIVATE KEY-----` and end with `-----END OPENSSH PRIVATE KEY-----`
 - **Important**: Copy the entire key including the header and footer lines
 

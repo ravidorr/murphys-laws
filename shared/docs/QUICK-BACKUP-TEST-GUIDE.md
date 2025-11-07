@@ -80,21 +80,21 @@ ssh root@45.55.74.28
 LATEST_N8N_BACKUP=$(ls -t /root/backups/n8n-*.db 2>/dev/null | head -1)
 
 if [ -n "$LATEST_N8N_BACKUP" ]; then
-    echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
+ echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
 
-    # Test integrity
-    sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
-    # Should output: ok
+ # Test integrity
+ sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
+ # Should output: ok
 
-    # Check workflow count
-    echo "Workflows in backup:"
-    sqlite3 "$LATEST_N8N_BACKUP" "SELECT COUNT(*) FROM workflow_entity;"
+ # Check workflow count
+ echo "Workflows in backup:"
+ sqlite3 "$LATEST_N8N_BACKUP" "SELECT COUNT(*) FROM workflow_entity;"
 
-    # Compare with production
-    echo "Workflows in production:"
-    docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
+ # Compare with production
+ echo "Workflows in production:"
+ docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
 else
-    echo "No n8n backup found"
+ echo "No n8n backup found"
 fi
 ```
 
@@ -113,11 +113,11 @@ echo "GitHub has $WORKFLOW_COUNT workflow files"
 
 # Verify files are valid JSON
 for file in workflows/*.json; do
-    if jq empty "$file" 2>/dev/null; then
-        echo "Valid JSON: $(basename $file)"
-    else
-        echo "Invalid JSON: $(basename $file)"
-    fi
+ if jq empty "$file" 2>/dev/null; then
+ echo "Valid JSON: $(basename $file)"
+ else
+ echo "Invalid JSON: $(basename $file)"
+ fi
 done
 
 # Check recent backup history

@@ -75,10 +75,10 @@ ssh ravidor@167.99.53.90
 TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
 cd /root
 tar -czf /root/backups/murphys-laws-manual-$TIMESTAMP.tar.gz \
-    --exclude='node_modules' \
-    --exclude='logs' \
-    --exclude='.git' \
-    murphys-laws/
+ --exclude='node_modules' \
+ --exclude='logs' \
+ --exclude='.git' \
+ murphys-laws/
 
 # Verify archive
 tar -tzf /root/backups/murphys-laws-manual-$TIMESTAMP.tar.gz | head
@@ -90,11 +90,11 @@ tar -tzf /root/backups/murphys-laws-manual-$TIMESTAMP.tar.gz | head
 # From your local machine
 # Download database backup
 scp ravidor@167.99.53.90:/root/backups/murphys-2025-01-26-020000.db \
-    ~/local-backups/
+ ~/local-backups/
 
 # Download full backup
 scp ravidor@167.99.53.90:/root/backups/murphys-laws-2025-01-26-020000.tar.gz \
-    ~/local-backups/
+ ~/local-backups/
 
 # Verify download
 sqlite3 ~/local-backups/murphys-2025-01-26-020000.db "SELECT COUNT(*) FROM laws;"
@@ -224,10 +224,10 @@ curl https://murphys-laws.com/api/health
 
 # 2. From your local machine, upload backups
 scp ~/local-backups/murphys-2025-01-26-020000.db \
-    ravidor@<NEW_SERVER_IP>:/tmp/
+ ravidor@<NEW_SERVER_IP>:/tmp/
 
 scp ~/local-backups/.env-2025-01-26-020000 \
-    ravidor@<NEW_SERVER_IP>:/tmp/
+ ravidor@<NEW_SERVER_IP>:/tmp/
 
 # 3. SSH into new server
 ssh ravidor@<NEW_SERVER_IP>
@@ -269,7 +269,7 @@ docker stop n8n
 
 # 2. Restore database
 cp /root/backups/n8n-2025-01-26-020000.db \
-   /var/lib/docker/volumes/n8n_data/_data/database.sqlite
+ /var/lib/docker/volumes/n8n_data/_data/database.sqlite
 
 # 3. Start n8n
 docker start n8n
@@ -329,9 +329,9 @@ DIFF=$((PROD_COUNT - BACKUP_COUNT))
 echo "Difference: $DIFF"
 
 if [ $DIFF -lt 10 ]; then
-    echo "Backup test PASSED - difference within acceptable range"
+ echo "Backup test PASSED - difference within acceptable range"
 else
-    echo "Backup test WARNING - significant difference detected"
+ echo "Backup test WARNING - significant difference detected"
 fi
 
 # 9. Clean up
@@ -358,15 +358,15 @@ Create `/usr/local/bin/verify-backups.sh`:
 LATEST_BACKUP=$(ls -t /root/backups/murphys-*.db 2>/dev/null | head -1)
 
 if [ -z "$LATEST_BACKUP" ]; then
-    echo "ERROR: No backups found" | mail -s "[Murphy's Laws] Backup Verification Failed" ravidor@gmail.com
-    exit 1
+ echo "ERROR: No backups found" | mail -s "[Murphy's Laws] Backup Verification Failed" ravidor@gmail.com
+ exit 1
 fi
 
 if sqlite3 $LATEST_BACKUP "PRAGMA integrity_check;" | grep -q "ok"; then
-    echo "Backup verification passed: $LATEST_BACKUP"
+ echo "Backup verification passed: $LATEST_BACKUP"
 else
-    echo "ERROR: Backup integrity check failed: $LATEST_BACKUP" | mail -s "[Murphy's Laws] Backup Corruption Detected" ravidor@gmail.com
-    exit 1
+ echo "ERROR: Backup integrity check failed: $LATEST_BACKUP" | mail -s "[Murphy's Laws] Backup Corruption Detected" ravidor@gmail.com
+ exit 1
 fi
 ```
 
@@ -430,9 +430,9 @@ scp ravidor@167.99.53.90:/root/backups/.env-$DATE-* $BACKUP_DIR/
 
 # Verify download
 if [ -f $BACKUP_DIR/murphys-$DATE-*.db ]; then
-    echo "Backup downloaded successfully"
+ echo "Backup downloaded successfully"
 else
-    echo "Backup download failed" | mail -s "Backup Download Failed" ravidor@gmail.com
+ echo "Backup download failed" | mail -s "Backup Download Failed" ravidor@gmail.com
 fi
 
 # Delete backups older than 90 days
@@ -492,8 +492,8 @@ du -sh /root/backups
 # Don't use this backup for restore!
 # Check when the corruption started
 for backup in /root/backups/murphys-*.db; do
-    echo "Checking $backup..."
-    sqlite3 $backup "PRAGMA integrity_check;"
+ echo "Checking $backup..."
+ sqlite3 $backup "PRAGMA integrity_check;"
 done
 
 # Use the most recent backup that passes integrity check

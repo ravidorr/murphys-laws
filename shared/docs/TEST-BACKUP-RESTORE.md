@@ -118,21 +118,21 @@ ssh ravidor@45.55.74.28
 LATEST_N8N_BACKUP=$(ls -t /root/backups/n8n-*.db 2>/dev/null | head -1)
 
 if [ -n "$LATEST_N8N_BACKUP" ]; then
-    echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
+ echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
 
-    # Test integrity
-    sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
-    # Should output: ok
+ # Test integrity
+ sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
+ # Should output: ok
 
-    # Check workflow count
-    echo "Workflows in backup:"
-    sqlite3 "$LATEST_N8N_BACKUP" "SELECT COUNT(*) FROM workflow_entity;"
+ # Check workflow count
+ echo "Workflows in backup:"
+ sqlite3 "$LATEST_N8N_BACKUP" "SELECT COUNT(*) FROM workflow_entity;"
 
-    # Compare with production
-    echo "Workflows in production:"
-    docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
+ # Compare with production
+ echo "Workflows in production:"
+ docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
 else
-    echo "No n8n backup found"
+ echo "No n8n backup found"
 fi
 ```
 
@@ -151,11 +151,11 @@ echo "GitHub has $WORKFLOW_COUNT workflow files"
 
 # Verify files are valid JSON
 for file in workflows/*.json; do
-    if jq empty "$file" 2>/dev/null; then
-        echo "Valid JSON: $(basename $file)"
-    else
-        echo "Invalid JSON: $(basename $file)"
-    fi
+ if jq empty "$file" 2>/dev/null; then
+ echo "Valid JSON: $(basename $file)"
+ else
+ echo "Invalid JSON: $(basename $file)"
+ fi
 done
 
 # Check git history
@@ -197,12 +197,12 @@ rm -rf "$TEST_DIR"
 2. **Notify users** (if applicable)
 3. **Have recent backups** (< 24 hours old)
 4. **Document current state**:
-   ```bash
-   # On main droplet
-   pm2 list > /tmp/pm2-before.txt
-   systemctl list-units --state=active > /tmp/services-before.txt
-   df -h > /tmp/disk-before.txt
-   ```
+ ```bash
+ # On main droplet
+ pm2 list > /tmp/pm2-before.txt
+ systemctl list-units --state=active > /tmp/services-before.txt
+ df -h > /tmp/disk-before.txt
+ ```
 
 ### Drill Procedure - Main Droplet
 
@@ -334,7 +334,7 @@ docker rm n8n
 
 # Simulate data corruption
 sudo mv /var/lib/docker/volumes/n8n_data/_data/database.sqlite \
-     /var/lib/docker/volumes/n8n_data/_data/database.sqlite.FAILED
+ /var/lib/docker/volumes/n8n_data/_data/database.sqlite.FAILED
 ```
 
 #### Execute Recovery
@@ -343,17 +343,17 @@ sudo mv /var/lib/docker/volumes/n8n_data/_data/database.sqlite \
 # 1. Restore from local backup
 LATEST_BACKUP=$(ls -t /root/backups/n8n-*.db | head -1)
 sudo cp "$LATEST_BACKUP" \
-     /var/lib/docker/volumes/n8n_data/_data/database.sqlite
+ /var/lib/docker/volumes/n8n_data/_data/database.sqlite
 
 # 2. Start n8n container
 docker run -d \
-  --name n8n \
-  --restart unless-stopped \
-  -p 127.0.0.1:5678:5678 \
-  -v n8n_data:/home/node/.n8n \
-  -e N8N_HOST=n8n.murphys-laws.com \
-  -e N8N_PROTOCOL=https \
-  n8nio/n8n
+ --name n8n \
+ --restart unless-stopped \
+ -p 127.0.0.1:5678:5678 \
+ -v n8n_data:/home/node/.n8n \
+ -e N8N_HOST=n8n.murphys-laws.com \
+ -e N8N_PROTOCOL=https \
+ n8nio/n8n
 
 # 3. Wait for startup
 sleep 30
@@ -509,10 +509,10 @@ Failed: XX
 ISSUES FOUND:
 -------------
 1. [Issue description]
-   Solution: [How it was fixed]
+ Solution: [How it was fixed]
 
 2. [Issue description]
-   Solution: [How it was fixed]
+ Solution: [How it was fixed]
 
 RECOMMENDATIONS:
 ----------------
@@ -525,7 +525,7 @@ RTO (Recovery Time): XX hours
 RPO (Data Loss): XX hours
 Services Restored: XX/XX
 
-STATUS: PASSED /  ISSUES / FAILED
+STATUS: PASSED / ISSUES / FAILED
 
 NEXT TEST: YYYY-MM-DD
 ```

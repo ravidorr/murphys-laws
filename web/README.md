@@ -82,16 +82,16 @@ VITE_API_FALLBACK_URL=http://127.0.0.1:8787
 ```
 web/
 ├── src/
-│   ├── main.js              # Entry point
-│   ├── router.js            # Client-side routing
-│   ├── views/               # Page views
-│   ├── components/          # Reusable components
-│   ├── modules/             # Shared logic
-│   └── utils/               # Helper functions
-├── styles/                  # CSS stylesheets
-├── public/                  # Static assets
-├── tests/                   # Unit tests
-└── e2e/                     # End-to-end tests
+│ ├── main.js           # Entry point
+│ ├── router.js         # Client-side routing
+│ ├── views/            # Page views
+│ ├── components/       # Reusable components
+│ ├── modules/          # Shared logic
+│ └── utils/            # Helper functions
+├── styles/             # CSS stylesheets
+├── public/             # Static assets
+├── tests/              # Unit tests
+└── e2e/                # End-to-end tests
 ```
 
 ## Architecture

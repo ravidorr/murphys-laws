@@ -1,6 +1,6 @@
 # Murphy's Laws - TODO
 
-## 🔴 Urgent / High Priority
+## Urgent / High Priority
 
 ### Re-enable E2E Tests
 **Status:** Blocked - API proxy issue in CI
@@ -10,27 +10,27 @@
 E2E tests are temporarily disabled because the Vite dev server's API proxy doesn't work in CI. The frontend loads successfully, but API calls to `/api/v1/law-of-day` and `/api/v1/laws` fail, causing no dynamic content to render.
 
 **What We've Tried:**
-- ✅ Fixed health check endpoint paths (`/api/health`)
-- ✅ Fixed port configuration (5175)
-- ✅ Changed host binding to `0.0.0.0`
-- ✅ Fixed database creation with all migrations
-- ✅ Corrected test selectors
-- ✅ Verified backend CORS configuration
+- Fixed health check endpoint paths (`/api/health`)
+- Fixed port configuration (5175)
+- Changed host binding to `0.0.0.0`
+- Fixed database creation with all migrations
+- Corrected test selectors
+- Verified backend CORS configuration
 
 **Possible Solutions:**
 1. **Debug Vite proxy in CI:**
-   - Add logging to see if proxy receives requests
-   - Check if backend server is actually accessible from Vite process
-   - Investigate CI networking/process isolation issues
+ - Add logging to see if proxy receives requests
+ - Check if backend server is actually accessible from Vite process
+ - Investigate CI networking/process isolation issues
 
 2. **Alternative approach:**
-   - Use built files instead of dev server
-   - Set up nginx or static server with proxy configuration
-   - Or run backend and frontend on same origin
+ - Use built files instead of dev server
+ - Set up nginx or static server with proxy configuration
+ - Or run backend and frontend on same origin
 
 3. **Simplify tests:**
-   - Focus on static content and navigation only
-   - Move API-dependent tests to integration tests that mock responses
+ - Focus on static content and navigation only
+ - Move API-dependent tests to integration tests that mock responses
 
 **Files to modify when re-enabling:**
 - `.github/workflows/web-ci.yml` - Uncomment `e2e-tests` job
@@ -43,26 +43,26 @@ E2E tests are temporarily disabled because the Vite dev server's API proxy doesn
 
 ---
 
-## ✅ Recently Completed
+## Recently Completed
 
 ### iOS App MVP
 **Status:** Complete - All core features implemented
 **Location:** `ios/MurphysLaws/`
 
 **What's Done:**
-- ✅ MVVM architecture with Repository pattern
-- ✅ Complete data models (Law, Category, Attribution, Vote)
-- ✅ API service with URLSession (no external dependencies)
-- ✅ Repository layer with caching (UserDefaults)
-- ✅ ViewModels for all features
-- ✅ Complete UI implementation:
-  - Home view with Law of the Day
-  - Browse laws with search and filters
-  - Category browsing with grid layout
-  - Law detail with voting functionality
-  - Sod's Law Calculator with interactive sliders
-  - Submit law form with categories and attribution
-  - Settings and about pages
+- MVVM architecture with Repository pattern
+- Complete data models (Law, Category, Attribution, Vote)
+- API service with URLSession (no external dependencies)
+- Repository layer with caching (UserDefaults)
+- ViewModels for all features
+- Complete UI implementation:
+ - Home view with Law of the Day
+ - Browse laws with search and filters
+ - Category browsing with grid layout
+ - Law detail with voting functionality
+ - Sod's Law Calculator with interactive sliders
+ - Submit law form with categories and attribution
+ - Settings and about pages
 
 **Next Steps for iOS:**
 - Create Xcode project file (.xcodeproj)
@@ -79,7 +79,7 @@ E2E tests are temporarily disabled because the Vite dev server's API proxy doesn
 
 ---
 
-## 🟢 Potential Next Steps for Murphy's Laws
+## Potential Next Steps for Murphy's Laws
 
 ## User Engagement Features
 - Comments/Discussion: Allow users to share stories about when they've experienced each law

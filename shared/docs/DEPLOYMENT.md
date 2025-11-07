@@ -34,19 +34,19 @@ echo '/swapfile none swap sw 0 0' >> /etc/fstab
 2. **Create PM2 ecosystem config** (`ecosystem.config.cjs`):
 ```javascript
 module.exports = {
-  apps: [
-    {
-      name: 'murphys-api',
-      script: 'scripts/api-server.mjs',
-      // ... config ...
-    },
-    {
-      name: 'murphys-frontend',
-      script: 'npx',
-      args: 'vite preview --host 0.0.0.0 --port 5175',  // No build!
-      // ... config ...
-    }
-  ]
+ apps: [
+ {
+ name: 'murphys-api',
+ script: 'scripts/api-server.mjs',
+ // ... config ...
+ },
+ {
+ name: 'murphys-frontend',
+ script: 'npx',
+ args: 'vite preview --host 0.0.0.0 --port 5175', // No build!
+ // ... config ...
+ }
+ ]
 };
 ```
 
@@ -275,14 +275,14 @@ ssh root@45.55.124.212 "cd /root/murphys-laws && node scripts/select-law-of-day.
 
 ```
 Local Dev Machine
-  └─> npm run build (builds dist/)
-  └─> npm run deploy
-      └─> rsync dist/ to droplet
-      └─> pm2 restart
+ └─> npm run build (builds dist/)
+ └─> npm run deploy
+ └─> rsync dist/ to droplet
+ └─> pm2 restart
 
 Droplet (45.55.124.212)
-  ├─> murphys-api (Node.js on :8787)
-  └─> murphys-frontend (vite preview on :5175, serves pre-built dist/)
+ ├─> murphys-api (Node.js on :8787)
+ └─> murphys-frontend (vite preview on :5175, serves pre-built dist/)
 ```
 
 ---
