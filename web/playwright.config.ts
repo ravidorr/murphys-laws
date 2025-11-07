@@ -7,22 +7,23 @@ export default defineConfig({
   fullyParallel: true,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5175',
     trace: 'on-first-retry',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  // Start both API (8787) and preview (5173) for E2E
+  // Start both API (8787) and preview (5175) for E2E
   webServer: [
     {
-      command: 'npm run api',
+      command: 'npm start',
       url: 'http://127.0.0.1:8787/api/health',
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
+      cwd: '../backend',
     },
     {
-      command: 'npm run preview',
-      url: 'http://localhost:5173',
+      command: 'npm run dev',
+      url: 'http://localhost:5175',
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
     },
