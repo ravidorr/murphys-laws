@@ -224,4 +224,234 @@ describe('Footer component', () => {
     });
     addEventListenerSpy.mockRestore();
   });
+
+  it('uses IntersectionObserver when available to load ads', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+
+    // Ensure IntersectionObserver is available
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+    const mockIntersectionObserver = vi.fn((callback, options) => {
+      // Store the callback so we can trigger it
+      mockIntersectionObserver.lastCallback = callback;
+      mockIntersectionObserver.lastOptions = options;
+      return {
+        observe: observeMock,
+        disconnect: disconnectMock
+      };
+    });
+    global.IntersectionObserver = mockIntersectionObserver;
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // IntersectionObserver should have been created
+    expect(mockIntersectionObserver).toHaveBeenCalled();
+    expect(observeMock).toHaveBeenCalled();
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
+
+  it('loads ad when IntersectionObserver detects visibility', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+
+    let intersectionCallback;
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+    const mockIntersectionObserver = vi.fn((callback) => {
+      intersectionCallback = callback;
+      return {
+        observe: observeMock,
+        disconnect: disconnectMock
+      };
+    });
+    global.IntersectionObserver = mockIntersectionObserver;
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Trigger intersection
+    if (intersectionCallback) {
+      intersectionCallback([{ isIntersecting: true }]);
+    }
+
+    // Ad should be loaded
+    const adSlot = el.querySelector('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).toBe('true');
+    expect(disconnectMock).toHaveBeenCalled();
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
+
+  it('uses setTimeout fallback when requestIdleCallback is not available', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+    const originalRequestIdleCallback = window.requestIdleCallback;
+
+    // Remove IntersectionObserver to trigger the else branch
+    const originalIntersectionObserver = global.IntersectionObserver;
+    delete global.IntersectionObserver;
+
+    // Remove requestIdleCallback to trigger setTimeout branch
+    delete window.requestIdleCallback;
+
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should use setTimeout instead of requestIdleCallback
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+    if (originalRequestIdleCallback) {
+      window.requestIdleCallback = originalRequestIdleCallback;
+    }
+    if (originalIntersectionObserver) {
+      global.IntersectionObserver = originalIntersectionObserver;
+    }
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('uses requestIdleCallback when available', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+
+    // Remove IntersectionObserver to trigger the else branch
+    const originalIntersectionObserver = global.IntersectionObserver;
+    delete global.IntersectionObserver;
+
+    // Ensure requestIdleCallback is available
+    const requestIdleCallbackSpy = vi.fn((cb) => {
+      // Don't actually call the callback to avoid side effects
+      return 1;
+    });
+    window.requestIdleCallback = requestIdleCallbackSpy;
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Should use requestIdleCallback
+    expect(requestIdleCallbackSpy).toHaveBeenCalledWith(expect.any(Function), { timeout: 1500 });
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+    if (originalIntersectionObserver) {
+      global.IntersectionObserver = originalIntersectionObserver;
+    }
+  });
+
+  it('handles user interactions to trigger ad loading', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    // Simulate pointerdown event
+    window.dispatchEvent(new Event('pointerdown'));
+
+    // Ad should be loaded after user interaction
+    const adSlot = el.querySelector('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).toBe('true');
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
+
+  it('does not load ad twice when already loaded', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => {}
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+
+    // Load ad first time
+    el.dispatchEvent(new Event('adslot:init'));
+    expect(adSlot?.dataset.loaded).toBe('true');
+
+    const firstAdCount = window.adsbygoogle.length;
+
+    // Try to load again
+    el.dispatchEvent(new Event('adslot:init'));
+
+    // Should not create duplicate ad
+    expect(window.adsbygoogle.length).toBe(firstAdCount);
+
+    // Restore
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
 });

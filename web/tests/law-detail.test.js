@@ -346,5 +346,49 @@ describe('LawDetail view', () => {
     expect(redditBtn).toBeTruthy();
     expect(emailBtn).toBeTruthy();
   });
+
+  it('calls onStructuredData callback when provided', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const onStructuredDataSpy = vi.fn();
+
+    const el = LawDetail({
+      lawId: law.id,
+      _isLoggedIn: false,
+      _currentUser: null,
+      onNavigate: () => {},
+      onStructuredData: onStructuredDataSpy
+    });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // onStructuredData should have been called with the law data
+    expect(onStructuredDataSpy).toHaveBeenCalledWith(law);
+  });
+
+  it('handles voting errors gracefully', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockRejectedValue(new Error('Network error'));
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => {} });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const upvoteBtn = el.querySelector('[data-vote="up"]');
+
+    // Should not throw when voting fails
+    upvoteBtn?.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // If we got here without throwing, the error was handled gracefully
+    expect(toggleVoteSpy).toHaveBeenCalled();
+  });
 });
 
