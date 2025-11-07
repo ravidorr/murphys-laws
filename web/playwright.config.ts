@@ -15,10 +15,11 @@ export default defineConfig({
   // Start both API (8787) and preview (5173) for E2E
   webServer: [
     {
-      command: 'npm run api',
-      url: 'http://127.0.0.1:8787/api/health',
+      command: 'cd ../backend && npm start',
+      url: 'http://127.0.0.1:8787/api/v1/health',
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
+      cwd: '..',
     },
     {
       command: 'npm run preview',
