@@ -48,6 +48,19 @@ class SubmitLawViewModel: ObservableObject {
 
     // MARK: - Validation
     var isValid: Bool {
+        // Simple non-mutating validation for UI state
+        let hasLawText = !lawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let lawTextLengthOK = lawText.count >= Constants.Validation.lawTextMinLength && lawText.count <= Constants.Validation.lawTextMaxLength
+        let hasCategorySelected = selectedCategoryID != nil
+        let titleLengthOK = title.isEmpty || title.count <= Constants.Validation.titleMaxLength
+        let emailValid = authorEmail.isEmpty || isValidEmail(authorEmail)
+        let hasAuthorInfo = submitAnonymously || !authorName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        return hasLawText && lawTextLengthOK && hasCategorySelected && titleLengthOK && emailValid && hasAuthorInfo
+    }
+
+    // Validate and populate error messages
+    func validate() {
         validationErrors.removeAll()
 
         // Validate law text
@@ -78,8 +91,6 @@ class SubmitLawViewModel: ObservableObject {
         if !submitAnonymously && authorName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             validationErrors["authorName"] = "Author name is required (or check 'Submit anonymously')"
         }
-
-        return validationErrors.isEmpty
     }
 
     private func isValidEmail(_ email: String) -> Bool {
@@ -89,7 +100,11 @@ class SubmitLawViewModel: ObservableObject {
 
     // MARK: - Submit Law
     func submitLaw() async {
-        guard isValid else { return }
+        validate()
+        guard validationErrors.isEmpty else {
+            errorMessage = validationErrors.values.first
+            return
+        }
 
         isSubmitting = true
         errorMessage = nil
