@@ -50,40 +50,96 @@ function markdownToHtml(markdownContent, options = {}) {
 }
 
 /**
+ * Wrap the first word of a heading with accent-text span
+ * @param {string} headingText - The text content of the heading
+ * @returns {string} - HTML with first word wrapped in accent-text
+ */
+function wrapFirstWordWithAccent(headingText) {
+  // Extract text content (remove any existing HTML tags)
+  const textOnly = headingText.replace(/<[^>]*>/g, '').trim();
+  
+  if (!textOnly) {
+    return headingText;
+  }
+  
+  // Find the first word - match word characters, hyphens, and apostrophes
+  // Stop at spaces, ampersands, or other punctuation
+  const firstWordMatch = textOnly.match(/^([\w'-]+)/);
+  
+  if (firstWordMatch) {
+    const firstWord = firstWordMatch[1];
+    const rest = textOnly.substring(firstWord.length); // Don't trim - preserve spacing
+    
+    // If there's rest (after trimming for check), wrap first word and add rest with preserved spacing
+    if (rest.trim()) {
+      return `<span class="accent-text">${firstWord}</span>${rest}`;
+    } else {
+      // Only one word, wrap it
+      return `<span class="accent-text">${firstWord}</span>`;
+    }
+  }
+  
+  // Fallback: wrap entire text if no word match
+  return `<span class="accent-text">${textOnly}</span>`;
+}
+
+/**
  * Process markdown HTML to add styling classes
  * @param {string} html - HTML from markdown
  * @returns {string} - HTML with added classes
  */
 function enhanceMarkdownHtml(html) {
-  // Add styling classes to elements
-  html = html.replace(/<h1>/g, '<h1><span class="accent-text">');
-  html = html.replace(/<\/h1>/g, '</span></h1>');
+  // Process h1 tags - wrap first word with accent-text
+  html = html.replace(/<h1>([^<]+)<\/h1>/g, (match, content) => {
+    return `<h1>${wrapFirstWordWithAccent(content)}</h1>`;
+  });
 
-  // Wrap sections
-  html = html.replace(/<h2>/g, '<section class="content-section">\n      <h2><span class="accent-text">');
-  html = html.replace(/<\/h2>/g, '</span></h2>');
+  // Process h3 tags first (before h2 processing) - wrap first word with accent-text
+  html = html.replace(/<h3>([^<]+)<\/h3>/g, (match, content) => {
+    return `<h3>${wrapFirstWordWithAccent(content)}</h3>`;
+  });
 
-  // Add closing section tags (simplified approach - wraps each h2 section)
+  // Process h2 tags - wrap first word with accent-text and add section wrapper
+  // We need to process from end to start to avoid index issues
+  const h2Matches = [];
+  let h2Regex = /<h2>([^<]+)<\/h2>/g;
+  let match;
+  while ((match = h2Regex.exec(html)) !== null) {
+    h2Matches.push({
+      index: match.index,
+      fullMatch: match[0],
+      content: match[1]
+    });
+  }
+
+  // Replace h2 tags from end to start to preserve indices
+  for (let i = h2Matches.length - 1; i >= 0; i--) {
+    const h2Match = h2Matches[i];
+    const replacement = `<section class="content-section">\n      <h2>${wrapFirstWordWithAccent(h2Match.content)}</h2>`;
+    html = html.substring(0, h2Match.index) + replacement + html.substring(h2Match.index + h2Match.fullMatch.length);
+  }
+
+  // Close sections properly - find each section and close it before the next section or at the end
   const sections = html.split('<section class="content-section">');
   if (sections.length > 1) {
     html = sections[0]; // Content before first section
     for (let i = 1; i < sections.length; i++) {
-      // For each section, close it before the next one or at the end
-      if (i < sections.length - 1) {
-        const nextSectionIndex = sections[i].lastIndexOf('</section>');
-        if (nextSectionIndex === -1) {
-          html += '<section class="content-section">' + sections[i] + '\n    </section>\n    ';
-        } else {
-          html += '<section class="content-section">' + sections[i];
-        }
+      const sectionContent = sections[i];
+      // Find where this section should end (before next section or at end)
+      const nextSectionIndex = sectionContent.indexOf('<section class="content-section">');
+      
+      if (nextSectionIndex !== -1) {
+        // Next section starts within this content - close before it
+        html += '<section class="content-section">' + 
+                sectionContent.substring(0, nextSectionIndex) + 
+                '\n    </section>\n    ' +
+                sectionContent.substring(nextSectionIndex);
       } else {
-        html += '<section class="content-section">' + sections[i] + '\n    </section>';
+        // This is the last section - close at the end
+        html += '<section class="content-section">' + sectionContent + '\n    </section>';
       }
     }
   }
-
-  // Add header styling
-  html = html.replace(/<header class="content-header">/, '<header class="content-header">\n      ');
 
   return html;
 }
@@ -114,50 +170,48 @@ export function getPageContent(page) {
   // Wrap in card structure
   let output = '<article class="card content-card">\n  <div class="card-content">\n';
 
-  // Add last updated for privacy and terms
-  if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
-    const headerContentMatch = html.match(/<h1><span class="accent-text">([^<]+)<\/span><\/h1>/);
-    if (headerContentMatch) {
-      const title = headerContentMatch[1];
-      html = html.replace(
-        headerContentMatch[0],
-        `    <header class="content-header">
-      <p class="small">Last updated: ${meta.lastUpdated}</p>
-      <h1><span class="accent-text">${title}</span></h1>`
-      );
-
-      // Find the first paragraph after h1 and close the header
-      const afterH1 = html.indexOf('</h1>') + 5;
-      const firstPEnd = html.indexOf('</p>', afterH1);
-      if (firstPEnd !== -1) {
-        const leadText = html.substring(afterH1, firstPEnd + 4);
-        html = html.replace(
-          headerContentMatch[0] + leadText,
-          `    <header class="content-header">
-      <p class="small">Last updated: ${meta.lastUpdated}</p>
-      <h1><span class="accent-text">${title}</span></h1>
-      <p class="lead">${leadText.replace('<p>', '').replace('</p>', '')}</p>
-    </header>`
-        );
+  // Extract h1 and first paragraph to create header section
+  const h1Match = html.match(/<h1>([\s\S]*?)<\/h1>/);
+  if (h1Match) {
+    const h1Content = h1Match[0];
+    const h1Index = html.indexOf(h1Content);
+    const afterH1 = h1Index + h1Content.length;
+    
+    // Find the first paragraph after h1
+    const firstPMatch = html.substring(afterH1).match(/<p>([\s\S]*?)<\/p>/);
+    
+    if (firstPMatch) {
+      const firstPContent = firstPMatch[0];
+      const firstPText = firstPMatch[1];
+      const headerEnd = afterH1 + html.substring(afterH1).indexOf(firstPContent) + firstPContent.length;
+      
+      // Build header section
+      let headerHtml = '    <header class="content-header">\n';
+      
+      // Add last updated for privacy and terms only
+      if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
+        headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
       }
-    }
-  } else {
-    // For about and contact, just add header wrapper
-    const headerContentMatch = html.match(/<h1><span class="accent-text">([^<]+)<\/span><\/h1>/);
-    if (headerContentMatch) {
-      const afterH1 = html.indexOf('</h1>') + 5;
-      const firstPEnd = html.indexOf('</p>', afterH1);
-      if (firstPEnd !== -1) {
-        const title = headerContentMatch[1];
-        const leadText = html.substring(afterH1, firstPEnd + 4);
-        html = html.replace(
-          headerContentMatch[0] + leadText,
-          `    <header class="content-header">
-      <h1><span class="accent-text">${title}</span></h1>
-      <p class="lead">${leadText.replace('<p>', '').replace('</p>', '')}</p>
-    </header>`
-        );
+      
+      headerHtml += `      ${h1Content}\n`;
+      headerHtml += `      <p class="lead">${firstPText}</p>\n`;
+      headerHtml += '    </header>';
+      
+      // Replace h1 and first paragraph with header section
+      html = html.substring(0, h1Index) + headerHtml + html.substring(headerEnd);
+    } else {
+      // No paragraph after h1, just wrap h1 in header
+      let headerHtml = '    <header class="content-header">\n';
+      
+      // Add last updated for privacy and terms only
+      if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
+        headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
       }
+      
+      headerHtml += `      ${h1Content}\n`;
+      headerHtml += '    </header>';
+      
+      html = html.substring(0, h1Index) + headerHtml + html.substring(afterH1);
     }
   }
 
