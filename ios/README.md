@@ -19,9 +19,32 @@ Native iOS application for browsing Murphy's Laws, voting on favorites, and calc
 
 ## 🚀 Quick Start
 
-### For First-Time Setup
+### For First-Time Setup (Automated)
 
-The iOS source code has been created but requires Xcode project setup:
+The iOS source code is complete. Generate the Xcode project automatically:
+
+**Option 1: Using the setup script**
+```bash
+cd ios
+./generate-xcode-project.sh
+open MurphysLaws.xcodeproj
+```
+
+**Option 2: Using Make**
+```bash
+cd ios
+make setup    # Generate Xcode project
+make open     # Open in Xcode
+```
+
+**Prerequisites**: Install [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+```bash
+brew install xcodegen
+```
+
+### For First-Time Setup (Manual)
+
+If you prefer manual setup or don't have XcodeGen:
 
 1. Open Xcode and create a new iOS App project
 2. Save to this `ios/` directory with name `MurphysLaws`
@@ -92,17 +115,26 @@ static let baseURL = "http://localhost:8787/api/v1"
 - [ ] Calculator computes correctly
 - [ ] Share functionality works
 
-### Unit Tests (TODO)
+### Unit Tests
 
 ```bash
-⌘U in Xcode
+# In Xcode: Press ⌘U
 
 # Or via command line
 xcodebuild test \
   -project MurphysLaws.xcodeproj \
   -scheme MurphysLaws \
   -destination 'platform=iOS Simulator,name=iPhone 15'
+
+# Or using Make
+make test
 ```
+
+**Test Coverage:**
+- ✅ `LawListViewModelTests` - Browse, search, and filtering
+- ✅ `HomeViewModelTests` - Law of the day and featured content
+- ✅ `CalculatorViewModelTests` - Sod's Law probability calculator
+- ✅ UI tests for navigation, voting, search, and calculator
 
 ## 📚 Documentation
 
@@ -120,7 +152,7 @@ See [SETUP.md](./SETUP.md#troubleshooting) for detailed troubleshooting.
 
 ## 📱 Status
 
-✅ **MVP Complete** - All core features implemented:
+✅ **MVP Complete & Test-Ready** - All core features implemented:
 - ✅ Data models (Law, Category, Attribution, Vote)
 - ✅ API service with URLSession
 - ✅ Repository layer with caching
@@ -133,12 +165,18 @@ See [SETUP.md](./SETUP.md#troubleshooting) for detailed troubleshooting.
   - ✅ Sod's Law Calculator
   - ✅ Submit law form
   - ✅ Settings and about
+- ✅ Xcode project configuration (project.yml)
+- ✅ Setup automation (generate-xcode-project.sh, Makefile)
+- ✅ Info.plist and Assets.xcassets
+- ✅ Unit test suite (3 test files, 25+ tests)
+- ✅ UI test suite (4 test files, 15+ tests)
+- ✅ DeviceID utility for voting
 
 **Next Steps**:
-- Create Xcode project file
-- Add app icons and assets
-- Unit test coverage
-- UI test coverage
+- Run `make setup` to generate Xcode project
+- Add app icon images (1024x1024 PNG)
+- Run tests and fix any issues
+- Test on physical device
 - App Store submission preparation
 
 ## 🤝 Contributing
