@@ -202,57 +202,6 @@ struct SubmitLawView: View {
     }
 }
 
-// MARK: - Submit Law ViewModel
-@MainActor
-class SubmitLawViewModel: ObservableObject {
-    @Published var categories: [Category] = []
-    @Published var isLoadingCategories = false
-    @Published var isSubmitting = false
-    @Published var error: Error?
-
-    private let apiService = APIService.shared
-    private let categoryRepository = CategoryRepository.shared
-
-    func loadCategories() async {
-        isLoadingCategories = true
-        error = nil
-
-        do {
-            categories = try await categoryRepository.fetchCategories()
-        } catch {
-            self.error = error
-            print("Error loading categories: \(error)")
-        }
-
-        isLoadingCategories = false
-    }
-
-    func submitLaw(_ submission: LawSubmission) async {
-        isSubmitting = true
-        error = nil
-
-        do {
-            _ = try await apiService.submitLaw(submission)
-        } catch {
-            self.error = error
-            print("Error submitting law: \(error)")
-        }
-
-        isSubmitting = false
-    }
-}
-
-// MARK: - Law Submission Model
-struct LawSubmission: Codable {
-    let text: String
-    let title: String?
-    let attributionName: String?
-    let contactType: String?
-    let contactValue: String?
-    let attributionNote: String?
-    let categoryIDs: [Int]?
-}
-
 #Preview {
     SubmitLawView()
 }
