@@ -22,7 +22,7 @@ test: ## Run unit tests
 		xcodebuild test \
 			-project MurphysLaws.xcodeproj \
 			-scheme MurphysLaws \
-			-destination 'platform=iOS Simulator,name=iPhone 15'; \
+			-destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)'; \
 	else \
 		echo "❌ Xcode project not found. Run 'make setup' first."; \
 		exit 1; \
@@ -33,7 +33,7 @@ build: ## Build the app
 		xcodebuild build \
 			-project MurphysLaws.xcodeproj \
 			-scheme MurphysLaws \
-			-destination 'platform=iOS Simulator,name=iPhone 15'; \
+			-destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)'; \
 	else \
 		echo "❌ Xcode project not found. Run 'make setup' first."; \
 		exit 1; \
