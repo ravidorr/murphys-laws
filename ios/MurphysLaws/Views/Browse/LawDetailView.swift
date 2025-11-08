@@ -9,13 +9,15 @@ import SwiftUI
 
 struct LawDetailView: View {
     let lawID: Int
+    let initialLaw: Law?  // Optional: pass the law data we already have
 
     @StateObject private var viewModel: LawDetailViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(lawID: Int) {
+    init(lawID: Int, law: Law? = nil) {
         self.lawID = lawID
-        _viewModel = StateObject(wrappedValue: LawDetailViewModel(lawID: lawID))
+        self.initialLaw = law
+        _viewModel = StateObject(wrappedValue: LawDetailViewModel(lawID: lawID, initialLaw: law))
     }
 
     var body: some View {
@@ -128,22 +130,7 @@ struct LawDetailView: View {
                                 }
                             }
                             .padding()
-
-                            Divider()
                         }
-
-                        // Share section
-                        VStack(spacing: Constants.UI.spacingM) {
-                            ShareLink(item: law.shareText) {
-                                Label("Share This Law", systemImage: "square.and.arrow.up")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.accentColor)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(Constants.UI.cornerRadiusM)
-                            }
-                        }
-                        .padding()
                     }
                 }
                 .refreshable {
@@ -178,12 +165,19 @@ struct LawDetailView: View {
         .task {
             print("🔍 LawDetailView task started for lawID: \(lawID)")
             print("🔍 viewModel.law is nil: \(viewModel.law == nil)")
+            
+            // Only fetch if we don't already have the law data
             if viewModel.law == nil {
                 await viewModel.loadLaw()
                 print("🔍 After loadLaw - viewModel.law is nil: \(viewModel.law == nil)")
                 if let error = viewModel.error {
                     print("❌ Error: \(error)")
                 }
+            } else {
+                print("✅ Already have law data, skipping fetch")
+                // Optionally refresh in the background to get latest vote counts
+                // Uncomment if you want to always fetch fresh data:
+                // await viewModel.refresh()
             }
         }
     }

@@ -65,7 +65,8 @@ struct BrowseView: View {
                 }
                 .sheet(item: $selectedLaw) { law in
                     NavigationStack {
-                        LawDetailView(lawID: law.id)
+                        LawDetailView(lawID: law.id, law: law)
+                            .id(law.id)  // Force view recreation for each law
                     }
                 }
                 .sheet(isPresented: $showingFilters) {
