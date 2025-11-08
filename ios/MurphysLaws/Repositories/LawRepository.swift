@@ -170,7 +170,7 @@ class LawRepository: ObservableObject {
         } catch {
 #if DEBUG
             // Fallback to mock data on error in debug mode
-            print("⚠️ API failed, falling back to mock data: \(error)")
+            logWarning("API failed, falling back to mock data: \(error.localizedDescription)")
             return await fetchMockLaws(
                 limit: limit,
                 offset: offset,
@@ -227,34 +227,34 @@ class LawRepository: ObservableObject {
 
     // MARK: - Fetch Law Detail
     func fetchLawDetail(id: Int) async throws -> Law {
-        print("🔍 LawRepository.fetchLawDetail called for ID: \(id)")
+        logDebug("LawRepository.fetchLawDetail called for ID: \(id)")
 #if DEBUG
         if useMockData {
-            print("🧪 Using mock data mode")
+            logInfo("Using mock data mode")
             if let law = mockLaws.first(where: { $0.id == id }) {
-                print("✅ Found mock law with ID \(id): \(law.title ?? law.text)")
+                logDebug("Found mock law with ID \(id): \(law.title ?? law.text)")
                 try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                 return law
             }
-            print("❌ No mock law found for ID \(id)")
+            logWarning("No mock law found for ID \(id)")
             throw NSError(domain: "LawRepository", code: 404, userInfo: [NSLocalizedDescriptionKey: "Law not found"])
         }
 #endif
         
         do {
-            print("🌐 Fetching from API for ID \(id)...")
+            logDebug("Fetching from API for ID \(id)...")
             let result = try await apiService.fetchLawDetail(id: id)
-            print("✅ API returned law: \(result.title ?? result.text)")
+            logInfo("API returned law: \(result.title ?? result.text)")
             return result
         } catch {
-            print("❌ API error: \(error.localizedDescription)")
+            logError("API error: \(error.localizedDescription)")
 #if DEBUG
             // Fallback to mock data
             if let law = mockLaws.first(where: { $0.id == id }) {
-                print("⚠️ Falling back to mock law with matching ID \(id)")
+                logWarning("Falling back to mock law with matching ID \(id)")
                 return law
             }
-            print("⚠️ No matching mock law, returning first mock law (ID: \(mockLaws.first?.id ?? -1))")
+            logWarning("No matching mock law, returning first mock law (ID: \(mockLaws.first?.id ?? -1))")
             return mockLaws.first ?? Law(
                 id: id,
                 text: "Mock Law (Error Fallback)",

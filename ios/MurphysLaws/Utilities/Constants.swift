@@ -8,9 +8,67 @@
 import Foundation
 
 enum Constants {
+    // MARK: - Configuration Loader
+    private static let config: NSDictionary? = {
+        guard let path = Bundle.main.path(forResource: "Config", ofType: "plist") else {
+            print("⚠️ Config.plist not found. Using default values.")
+            return nil
+        }
+        return NSDictionary(contentsOfFile: path)
+    }()
+    
+    // MARK: - Environment
+    enum Environment {
+        static let current: String = {
+            guard let config = Constants.config,
+                  let env = config["Environment"] as? String else {
+                return "production"
+            }
+            return env
+        }()
+        
+        static let isDevelopment = current == "development"
+        static let isProduction = current == "production"
+        
+        static let enableAnalytics: Bool = {
+            guard let config = Constants.config else { return true }
+            return config["EnableAnalytics"] as? Bool ?? true
+        }()
+        
+        static let enableCrashReporting: Bool = {
+            guard let config = Constants.config else { return true }
+            return config["EnableCrashReporting"] as? Bool ?? true
+        }()
+        
+        static let logLevel: String = {
+            guard let config = Constants.config,
+                  let level = config["LogLevel"] as? String else {
+                return "info"
+            }
+            return level
+        }()
+    }
+    
     // MARK: - API Configuration
     enum API {
-        static let baseURL = "https://murphys-laws.com/api/v1"
+        static let baseURL: String = {
+            guard let config = Constants.config,
+                  let url = config["APIBaseURL"] as? String else {
+                // Fallback to default if plist not found
+                print("⚠️ Using default API URL")
+                return "https://murphys-laws.com/api/v1"
+            }
+            return url
+        }()
+        
+        static let apiKey: String? = {
+            guard let config = Constants.config,
+                  let key = config["APIKey"] as? String,
+                  !key.isEmpty else {
+                return nil
+            }
+            return key
+        }()
 
         // Endpoints
         static let laws = "/laws"

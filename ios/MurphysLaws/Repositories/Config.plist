@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Environment</key>
+	<string>development</string>
+	<key>APIBaseURL</key>
+	<string>https://murphys-laws.com/api/v1</string>
+	<key>APIKey</key>
+	<string></string>
+	<key>EnableAnalytics</key>
+	<true/>
+	<key>EnableCrashReporting</key>
+	<true/>
+	<key>LogLevel</key>
+	<string>debug</string>
+</dict>
+</plist>

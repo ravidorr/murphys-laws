@@ -18,12 +18,21 @@
 		1A09CE1C64FC1138A5FF60F3 /* TEST_FIXES_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 4FE74A80952C37827296F759 /* TEST_FIXES_SUMMARY.md */; };
 		1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */; };
 		27C5F22B9A2B55EDFC842A58 /* Law.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86C7CE3B4E821D79B4BBE67 /* Law.swift */; };
+		29768EAC2EBFFF8800E7F4EF /* Config.plist.template in Resources */ = {isa = PBXBuildFile; fileRef = 29768EAB2EBFFF8800E7F4EF /* Config.plist.template */; };
+		29768EB12EBFFF8D00E7F4EF /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = 29768EB02EBFFF8D00E7F4EF /* Config.plist */; };
+		29768EB32EBFFF9700E7F4EF /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 29768EB22EBFFF9700E7F4EF /* .gitignore */; };
+		29768EB52EBFFFB800E7F4EF /* CONFIG_README.md in Resources */ = {isa = PBXBuildFile; fileRef = 29768EB42EBFFFB800E7F4EF /* CONFIG_README.md */; };
+		29768EB72EBFFFC400E7F4EF /* ConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29768EB62EBFFFC400E7F4EF /* ConfigurationTests.swift */; };
+		29768EB92EBFFFD200E7F4EF /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29768EB82EBFFFD200E7F4EF /* Logger.swift */; };
+		29768EBB2EBFFFFA00E7F4EF /* validate-config.sh in Resources */ = {isa = PBXBuildFile; fileRef = 29768EBA2EBFFFFA00E7F4EF /* validate-config.sh */; };
+		29768EBD2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 29768EBC2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md */; };
+		29768EBF2EC0003500E7F4EF /* QUICK_START.md in Resources */ = {isa = PBXBuildFile; fileRef = 29768EBE2EC0003500E7F4EF /* QUICK_START.md */; };
+		29768EC12EC0005D00E7F4EF /* CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 29768EC02EC0005D00E7F4EF /* CHECKLIST.md */; };
 		298ED01B2EBF70190008BE54 /* MathFormulaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 298ED01A2EBF70190008BE54 /* MathFormulaView.swift */; };
 		298ED01D2EBF74430008BE54 /* EMPTY_SHEET_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED01C2EBF74430008BE54 /* EMPTY_SHEET_FIX.md */; };
 		298ED01F2EBF79ED0008BE54 /* WRONG_LAW_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED01E2EBF79ED0008BE54 /* WRONG_LAW_FIX.md */; };
 		298ED0212EBF7CF40008BE54 /* VOTING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0202EBF7CF40008BE54 /* VOTING_FIX.md */; };
 		298ED0232EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0222EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md */; };
-		298ED0252EBFFDE90008BE54 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0242EBFFDE90008BE54 /* Info.plist */; };
 		298ED0272EBFFE080008BE54 /* CODE_SIGNING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0262EBFFE080008BE54 /* CODE_SIGNING_FIX.md */; };
 		2B7AA225646E10CC7312586F /* SubmitLawView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FDC3EDA6F01BC05B88F558 /* SubmitLawView.swift */; };
 		33049F95190C44F3823E6C5C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2ED3D3B91669FD814A1C06D /* Assets.xcassets */; };
@@ -95,6 +104,16 @@
 		1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawListViewModelTests.swift; sourceTree = "<group>"; };
 		1C55D3A6FD616CB1C4AD8F18 /* LaunchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
 		265273D4ACC856695FD2CF50 /* Vote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vote.swift; sourceTree = "<group>"; };
+		29768EAB2EBFFF8800E7F4EF /* Config.plist.template */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Config.plist.template; sourceTree = "<group>"; };
+		29768EB02EBFFF8D00E7F4EF /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
+		29768EB22EBFFF9700E7F4EF /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		29768EB42EBFFFB800E7F4EF /* CONFIG_README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONFIG_README.md; sourceTree = "<group>"; };
+		29768EB62EBFFFC400E7F4EF /* ConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationTests.swift; sourceTree = "<group>"; };
+		29768EB82EBFFFD200E7F4EF /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		29768EBA2EBFFFFA00E7F4EF /* validate-config.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "validate-config.sh"; sourceTree = "<group>"; };
+		29768EBC2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONFIGURATION_SUMMARY.md; sourceTree = "<group>"; };
+		29768EBE2EC0003500E7F4EF /* QUICK_START.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START.md; sourceTree = "<group>"; };
+		29768EC02EC0005D00E7F4EF /* CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHECKLIST.md; sourceTree = "<group>"; };
 		298ED01A2EBF70190008BE54 /* MathFormulaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathFormulaView.swift; sourceTree = "<group>"; };
 		298ED01C2EBF74430008BE54 /* EMPTY_SHEET_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = EMPTY_SHEET_FIX.md; sourceTree = "<group>"; };
 		298ED01E2EBF79ED0008BE54 /* WRONG_LAW_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WRONG_LAW_FIX.md; sourceTree = "<group>"; };
@@ -161,6 +180,16 @@
 				2CE1346FFCDE3DDCEE69F106 /* LawRepository.swift */,
 				298ED0242EBFFDE90008BE54 /* Info.plist */,
 				298ED0262EBFFE080008BE54 /* CODE_SIGNING_FIX.md */,
+				29768EAB2EBFFF8800E7F4EF /* Config.plist.template */,
+				29768EB02EBFFF8D00E7F4EF /* Config.plist */,
+				29768EB22EBFFF9700E7F4EF /* .gitignore */,
+				29768EB42EBFFFB800E7F4EF /* CONFIG_README.md */,
+				29768EB62EBFFFC400E7F4EF /* ConfigurationTests.swift */,
+				29768EB82EBFFFD200E7F4EF /* Logger.swift */,
+				29768EBA2EBFFFFA00E7F4EF /* validate-config.sh */,
+				29768EBC2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md */,
+				29768EBE2EC0003500E7F4EF /* QUICK_START.md */,
+				29768EC02EC0005D00E7F4EF /* CHECKLIST.md */,
 			);
 			path = Repositories;
 			sourceTree = "<group>";
@@ -497,17 +526,24 @@
 				33049F95190C44F3823E6C5C /* Assets.xcassets in Resources */,
 				7E774E26E9DCF9B05AD0480D /* MurphysLaws.xcodeproj in Resources */,
 				B5CF459C2545A3C354FA6F06 /* about.md in Resources */,
+				29768EAC2EBFFF8800E7F4EF /* Config.plist.template in Resources */,
+				29768EB32EBFFF9700E7F4EF /* .gitignore in Resources */,
+				29768EBF2EC0003500E7F4EF /* QUICK_START.md in Resources */,
 				298ED0212EBF7CF40008BE54 /* VOTING_FIX.md in Resources */,
 				84869700F6EB9BB6D5676697 /* contact.md in Resources */,
 				298ED0272EBFFE080008BE54 /* CODE_SIGNING_FIX.md in Resources */,
+				29768EC12EC0005D00E7F4EF /* CHECKLIST.md in Resources */,
 				915DB1864B355BE88CDC8BD2 /* content in Resources */,
 				298ED01D2EBF74430008BE54 /* EMPTY_SHEET_FIX.md in Resources */,
+				29768EB52EBFFFB800E7F4EF /* CONFIG_README.md in Resources */,
 				512FC6FA12AF119AE1AE6085 /* metadata.json in Resources */,
+				29768EBB2EBFFFFA00E7F4EF /* validate-config.sh in Resources */,
 				298ED01F2EBF79ED0008BE54 /* WRONG_LAW_FIX.md in Resources */,
 				1052B66D90A10F891BECCC85 /* privacy.md in Resources */,
+				29768EB12EBFFF8D00E7F4EF /* Config.plist in Resources */,
+				29768EBD2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md in Resources */,
 				298ED0232EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md in Resources */,
 				7709942B73800C1A0AC8A746 /* terms.md in Resources */,
-				298ED0252EBFFDE90008BE54 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -552,6 +588,7 @@
 			files = (
 				5C54EF13C0862FE20402ABD3 /* APIService.swift in Sources */,
 				AFC70EF23C30FC1B9471037E /* Attribution.swift in Sources */,
+				29768EB72EBFFFC400E7F4EF /* ConfigurationTests.swift in Sources */,
 				D9E7FEE430FABE2B6AF6B823 /* BrowseView.swift in Sources */,
 				3913E1CF37BFD2FAC495C6D7 /* CalculatorView.swift in Sources */,
 				86DA34046A005DB14FC1A8C7 /* CalculatorViewModel.swift in Sources */,
@@ -575,6 +612,7 @@
 				0D343C8000BC86125F8EB613 /* LawListViewModel.swift in Sources */,
 				58AF40343C809A85903A9B14 /* LawOfDayCard.swift in Sources */,
 				49FA408589A664074331A528 /* LawRepository.swift in Sources */,
+				29768EB92EBFFFD200E7F4EF /* Logger.swift in Sources */,
 				298ED01B2EBF70190008BE54 /* MathFormulaView.swift in Sources */,
 				9962FA39F054E552E4A53EC5 /* MarkdownContentView.swift in Sources */,
 				1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */,
