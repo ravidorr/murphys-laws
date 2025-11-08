@@ -16,8 +16,6 @@ targets:
     platform: iOS
     sources:
       - path: MurphysLaws
-        excludes:
-          - "**/*.md"
       - path: ../shared/content
         name: content
         type: folder
