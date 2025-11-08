@@ -142,7 +142,15 @@ class MockLawRepository: LawRepository {
     var lastSearchQuery: String?
     var lastCategoryID: Int?
 
-    override func fetchLaws(limit: Int = 25, offset: Int = 0, query: String? = nil, categoryID: Int? = nil) async throws -> [Law] {
+    override func fetchLaws(
+        limit: Int = 25,
+        offset: Int = 0,
+        query: String? = nil,
+        categoryID: Int? = nil,
+        attributionID: Int? = nil,
+        sort: String = "score",
+        order: String = "desc"
+    ) async throws -> LawsResponse {
         lastSearchQuery = query
         lastCategoryID = categoryID
 
@@ -150,10 +158,10 @@ class MockLawRepository: LawRepository {
             throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
         }
 
-        return lawsToReturn
+        return LawsResponse(data: lawsToReturn, total: lawsToReturn.count, limit: limit, offset: offset)
     }
 
-    override func fetchLaw(id: Int) async throws -> Law {
+    override func fetchLawDetail(id: Int) async throws -> Law {
         if shouldFail {
             throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
         }
