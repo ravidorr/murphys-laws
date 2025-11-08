@@ -7,15 +7,19 @@
 
 import SwiftUI
 
-struct MarkdownContentView: View {
-    let page: ContentPage
+public struct MarkdownContentView: View {
+    public let page: ContentPage
     @Environment(\.dismiss) private var dismiss
 
     @State private var markdownContent: AttributedString = AttributedString("")
     @State private var isLoading = true
     @State private var error: String?
 
-    var body: some View {
+    public init(page: ContentPage) {
+        self.page = page
+    }
+
+    public var body: some View {
         NavigationStack {
             Group {
                 if isLoading {
