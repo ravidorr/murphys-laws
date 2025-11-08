@@ -54,6 +54,36 @@ class APIService: ObservableObject {
 
     private init() {}
 
+    // MARK: - Response Models
+    struct LawsResponse: Codable {
+        let data: [Law]
+        let total: Int
+        let limit: Int
+        let offset: Int
+    }
+    
+    struct LawDetailResponse: Codable {
+        let law: Law
+    }
+    
+    struct LawOfDayResponse: Codable {
+        let law: Law
+        let featuredDate: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case law
+            case featuredDate = "featured_date"
+        }
+    }
+    
+    struct CategoriesResponse: Codable {
+        let data: [Category]
+    }
+    
+    struct AttributionsResponse: Codable {
+        let data: [Attribution]
+    }
+
     // MARK: - Generic Request Method
     private func request<T: Decodable>(
         endpoint: String,
@@ -195,9 +225,11 @@ class APIService: ObservableObject {
 
     // MARK: - Categories Endpoints
     func fetchCategories() async throws -> [Category] {
+        print("🌐 APIService.fetchCategories: Making API request to \(Constants.API.categories)")
         let response: CategoriesResponse = try await request(
             endpoint: Constants.API.categories
         )
+        print("✅ APIService.fetchCategories: Received response with \(response.data.count) categories")
         return response.data
     }
 

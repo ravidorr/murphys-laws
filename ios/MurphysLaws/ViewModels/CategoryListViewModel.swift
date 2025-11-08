@@ -21,13 +21,22 @@ class CategoryListViewModel: ObservableObject {
 
     /// Load all categories
     func loadCategories() async {
+        print("🏷️ CategoryListViewModel: Starting to load categories...")
         isLoading = true
         errorMessage = nil
 
         do {
             categories = try await repository.fetchCategories()
+            print("✅ CategoryListViewModel: Loaded \(categories.count) categories")
+            if categories.isEmpty {
+                print("⚠️ CategoryListViewModel: Categories array is empty!")
+            } else {
+                print("📋 Categories: \(categories.map { $0.title })")
+            }
             isLoading = false
         } catch {
+            print("❌ CategoryListViewModel: Error loading categories: \(error)")
+            print("❌ Error details: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             isLoading = false
         }
