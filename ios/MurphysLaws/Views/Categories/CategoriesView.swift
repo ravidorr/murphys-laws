@@ -10,7 +10,6 @@ import SwiftUI
 struct CategoriesView: View {
     @StateObject private var viewModel = CategoryListViewModel()
     @State private var selectedCategory: Category?
-    @State private var showingCategoryDetail = false
 
     var body: some View {
         NavigationStack {
@@ -41,7 +40,6 @@ struct CategoriesView: View {
                             ForEach(viewModel.categories) { category in
                                 CategoryCard(category: category) {
                                     selectedCategory = category
-                                    showingCategoryDetail = true
                                 }
                             }
                         }
@@ -58,10 +56,8 @@ struct CategoriesView: View {
                     await viewModel.loadCategories()
                 }
             }
-            .sheet(isPresented: $showingCategoryDetail) {
-                if let category = selectedCategory {
-                    CategoryDetailView(category: category)
-                }
+            .sheet(item: $selectedCategory) { category in
+                CategoryDetailView(category: category)
             }
         }
     }

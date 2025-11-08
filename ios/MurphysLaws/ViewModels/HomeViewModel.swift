@@ -13,10 +13,14 @@ class HomeViewModel: ObservableObject {
     @Published var topVotedLaws: [Law] = []
     @Published var trendingLaws: [Law] = []
     @Published var recentlyAdded: [Law] = []
-    @Published var isLoadingLawOfDay = false
+    @Published var isLoadingLawOfDay = true  // Start as true to show skeleton immediately
     @Published var errorMessage: String?
+    
+    private var hasLoadedInitialData = false
 
     private let repository: LawRepository
+    private let minimumLoadingDuration: TimeInterval = 1.0
+    private let loadingTimeout: TimeInterval = 20.0
 
     init(repository: LawRepository = LawRepository()) {
         self.repository = repository
@@ -26,16 +30,52 @@ class HomeViewModel: ObservableObject {
     func loadLawOfTheDay() async {
         isLoadingLawOfDay = true
         errorMessage = nil
+        
+        let startTime = Date()
 
         do {
-            let lawOfDayResponse = try await repository.fetchLawOfDay()
-            lawOfTheDay = lawOfDayResponse.law
+            // Create a timeout task
+            try await withThrowingTaskGroup(of: Law.self) { group in
+                // Add the actual fetch task
+                group.addTask {
+                    let lawOfDayResponse = try await self.repository.fetchLawOfDay()
+                    return lawOfDayResponse.law
+                }
+                
+                // Add a timeout task
+                group.addTask {
+                    try await Task.sleep(nanoseconds: UInt64(self.loadingTimeout * 1_000_000_000))
+                    throw URLError(.timedOut)
+                }
+                
+                // Wait for the first task to complete
+                if let result = try await group.next() {
+                    self.lawOfTheDay = result
+                    group.cancelAll()
+                } else {
+                    throw URLError(.unknown)
+                }
+            }
+        } catch is CancellationError {
+            // Task was cancelled, ignore
         } catch {
-            errorMessage = error.localizedDescription
+            if (error as? URLError)?.code == .timedOut {
+                errorMessage = "Loading took too long. Please check your connection and try again."
+            } else {
+                errorMessage = error.localizedDescription
+            }
             print("Error loading law of the day: \(error)")
+        }
+        
+        // Ensure minimum loading duration
+        let elapsedTime = Date().timeIntervalSince(startTime)
+        if elapsedTime < minimumLoadingDuration {
+            let remainingTime = minimumLoadingDuration - elapsedTime
+            try? await Task.sleep(nanoseconds: UInt64(remainingTime * 1_000_000_000))
         }
 
         isLoadingLawOfDay = false
+        hasLoadedInitialData = true
     }
 
     // MARK: - Load Top Voted Laws
@@ -88,6 +128,9 @@ class HomeViewModel: ObservableObject {
 
     // MARK: - Load Home Data
     func loadHomeData() async {
+        // Only load if we haven't loaded initial data yet
+        guard !hasLoadedInitialData else { return }
+        
         await loadLawOfTheDay()
         await loadTopVotedLaws()
         await loadRecentlyAdded()
@@ -102,6 +145,9 @@ class HomeViewModel: ObservableObject {
 
     // MARK: - Refresh
     func refresh() async {
-        await loadHomeData()
+        isLoadingLawOfDay = true
+        await loadLawOfTheDay()
+        await loadTopVotedLaws()
+        await loadRecentlyAdded()
     }
 }
