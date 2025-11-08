@@ -99,7 +99,15 @@ struct HomeView: View {
             }
             .overlay {
                 if viewModel.isLoadingLawOfDay && viewModel.lawOfTheDay == nil {
-                    ProgressView("Loading...")
+                    VStack(spacing: Constants.UI.spacingM) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Loading...")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(uiColor: .systemBackground))
                 }
             }
             .overlay {
