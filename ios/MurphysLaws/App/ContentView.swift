@@ -12,40 +12,64 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Home Tab
+            // Home Tab - Always load first
             HomeView()
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
 
-            // Browse Tab
-            BrowseView()
-                .tabItem {
-                    Label("Browse", systemImage: "list.bullet")
+            // Browse Tab - Lazy load
+            Group {
+                if selectedTab == 1 || selectedTab == 0 {
+                    BrowseView()
+                } else {
+                    Color.clear
                 }
-                .tag(1)
+            }
+            .tabItem {
+                Label("Browse", systemImage: "list.bullet")
+            }
+            .tag(1)
 
-            // Categories Tab
-            CategoriesView()
-                .tabItem {
-                    Label("Categories", systemImage: "folder.fill")
+            // Categories Tab - Lazy load
+            Group {
+                if selectedTab == 2 {
+                    CategoriesView()
+                } else {
+                    Color.clear
                 }
-                .tag(2)
+            }
+            .tabItem {
+                Label("Categories", systemImage: "folder.fill")
+            }
+            .tag(2)
 
-            // Calculator Tab
-            CalculatorView()
-                .tabItem {
-                    Label("Calculator", systemImage: "function")
+            // Calculator Tab - Lazy load
+            Group {
+                if selectedTab == 3 {
+                    CalculatorView()
+                } else {
+                    Color.clear
                 }
-                .tag(3)
+            }
+            .tabItem {
+                Label("Calculator", systemImage: "function")
+            }
+            .tag(3)
 
-            // More Tab
-            MoreView()
-                .tabItem {
-                    Label("More", systemImage: "ellipsis.circle.fill")
+            // More Tab - Lazy load
+            Group {
+                if selectedTab == 4 {
+                    MoreView()
+                } else {
+                    Color.clear
                 }
-                .tag(4)
+            }
+            .tabItem {
+                Label("More", systemImage: "ellipsis.circle.fill")
+            }
+            .tag(4)
         }
     }
 }
