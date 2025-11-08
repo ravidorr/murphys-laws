@@ -19,7 +19,7 @@ targets:
         excludes:
           - "**/*.md"
       - path: ../shared/content
-        name: shared/content
+        name: content
         type: folder
         buildPhase: resources
     info:
