@@ -52,7 +52,20 @@ struct VoteRequest: Codable {
 }
 
 struct VoteResponse: Codable {
-    let success: Bool
-    let upvotes: Int?
-    let downvotes: Int?
+    let lawID: Int
+    let voteType: String
+    let upvotes: Int
+    let downvotes: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case lawID = "law_id"
+        case voteType = "vote_type"
+        case upvotes
+        case downvotes
+    }
+    
+    // Convenience property to check if vote was successful
+    var success: Bool {
+        return upvotes >= 0 && downvotes >= 0
+    }
 }
