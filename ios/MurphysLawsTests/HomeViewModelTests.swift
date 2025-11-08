@@ -110,14 +110,15 @@ final class HomeViewModelTests: XCTestCase {
     }
 }
 
-// MARK: - Extended Mock Repository
+// MARK: - Mock Repository
 
-extension MockLawRepository {
+class MockLawRepository: LawRepository {
+    var shouldFail = false
     var lawOfDayToReturn: Law?
     var topVotedToReturn: [Law] = []
     var trendingToReturn: [Law] = []
 
-    func fetchLawOfTheDay() async throws -> Law {
+    override func fetchLawOfDay() async throws -> LawOfDayResponse {
         if shouldFail {
             throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
         }
@@ -126,22 +127,33 @@ extension MockLawRepository {
             throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No law of day"])
         }
 
-        return law
+        let dateFormatter = ISO8601DateFormatter()
+        return LawOfDayResponse(law: law, featuredDate: dateFormatter.string(from: Date()))
     }
 
-    func fetchTopVotedLaws(limit: Int = 10) async throws -> [Law] {
+    override func fetchLaws(
+        limit: Int = 25,
+        offset: Int = 0,
+        query: String? = nil,
+        categoryID: Int? = nil,
+        attributionID: Int? = nil,
+        sort: String = "score",
+        order: String = "desc"
+    ) async throws -> LawsResponse {
         if shouldFail {
             throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
         }
 
-        return topVotedToReturn
-    }
-
-    func fetchTrendingLaws(limit: Int = 10) async throws -> [Law] {
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
+        // Return appropriate laws based on sort parameter
+        let laws: [Law]
+        if sort == "trending" {
+            laws = trendingToReturn
+        } else if sort == "score" {
+            laws = topVotedToReturn
+        } else {
+            laws = topVotedToReturn
         }
 
-        return trendingToReturn
+        return LawsResponse(data: laws, total: laws.count, limit: limit, offset: offset)
     }
 }
