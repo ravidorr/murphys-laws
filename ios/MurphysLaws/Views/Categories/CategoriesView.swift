@@ -98,6 +98,8 @@ struct CategoryCard: View {
                     .stroke(category.iconColor.opacity(0.3), lineWidth: 1)
             )
         }
+        .accessibilityIdentifier("CategoryCard-\(category.id)")
+        .accessibilityLabel("Category: \(category.title)")
     }
 }
 

@@ -18,17 +18,14 @@ class LawListViewModel: ObservableObject {
     // Filters
     @Published var searchQuery: String = ""
     @Published var selectedCategoryID: Int?
-    @Published var sortBy: String = "score"
+    @Published var sortBy: String = "created_at"
     @Published var sortOrder: String = "desc"
+
+    @Published var currentPage: Int = 0
 
     private let repository: LawRepository
     private var currentOffset = 0
     private let limit = Constants.API.defaultLimit
-
-    // Computed property for current page (1-indexed)
-    var currentPage: Int {
-        currentOffset / limit
-    }
 
     // MARK: - Init
     init(repository: LawRepository = LawRepository(), categoryID: Int? = nil) {
@@ -42,6 +39,7 @@ class LawListViewModel: ObservableObject {
             currentOffset = 0
             laws.removeAll()
             hasMorePages = true
+            currentPage = 0
         }
 
         guard !isLoading else { return }
@@ -62,6 +60,10 @@ class LawListViewModel: ObservableObject {
                 laws = response.data
             } else {
                 laws.append(contentsOf: response.data)
+            }
+
+            if !response.data.isEmpty {
+                currentPage += 1
             }
 
             currentOffset += response.data.count
@@ -94,6 +96,10 @@ class LawListViewModel: ObservableObject {
             laws.append(contentsOf: response.data)
             currentOffset += response.data.count
             hasMorePages = response.data.count >= limit
+
+            if !response.data.isEmpty {
+                currentPage += 1
+            }
 
         } catch {
             errorMessage = error.localizedDescription
@@ -155,3 +161,4 @@ class LawListViewModel: ObservableObject {
         await loadLaws(refresh: true)
     }
 }
+

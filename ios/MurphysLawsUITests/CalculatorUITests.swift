@@ -6,6 +6,7 @@ final class CalculatorUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["UI-TESTING"]
         app.launch()
     }
 

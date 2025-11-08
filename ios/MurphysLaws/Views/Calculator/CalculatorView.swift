@@ -208,6 +208,7 @@ struct ParameterSlider: View {
 
             Slider(value: $value, in: 1...10, step: 1)
                 .tint(.accentColor)
+                .accessibilityIdentifier("\(title) Slider")
 
             Text(description)
                 .font(.caption)

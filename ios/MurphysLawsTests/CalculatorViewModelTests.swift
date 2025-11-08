@@ -86,11 +86,11 @@ final class CalculatorViewModelTests: XCTestCase {
     }
 
     func testRiskLevel_Medium() {
-        // Given
-        viewModel.urgency = 5.0
-        viewModel.complexity = 5.0
+        // Given - Values that produce medium risk (30-60%)
+        viewModel.urgency = 6.0
+        viewModel.complexity = 6.0
         viewModel.importance = 5.0
-        viewModel.skillLevel = 5.0
+        viewModel.skillLevel = 6.0
         viewModel.frequency = 5.0
 
         // When
@@ -99,6 +99,9 @@ final class CalculatorViewModelTests: XCTestCase {
 
         // Then
         XCTAssertEqual(riskLevel.rawValue, "Medium")
+        // Verify probability is in medium range
+        XCTAssertGreaterThanOrEqual(viewModel.probability, 30)
+        XCTAssertLessThan(viewModel.probability, 60)
     }
 
     func testRiskLevel_High() {
@@ -136,11 +139,11 @@ final class CalculatorViewModelTests: XCTestCase {
     }
 
     func testRiskColor_Medium() {
-        // Given
-        viewModel.urgency = 5.0
-        viewModel.complexity = 5.0
+        // Given - Values that produce medium risk (30-60%)
+        viewModel.urgency = 6.0
+        viewModel.complexity = 6.0
         viewModel.importance = 5.0
-        viewModel.skillLevel = 5.0
+        viewModel.skillLevel = 6.0
         viewModel.frequency = 5.0
 
         // When
@@ -148,9 +151,12 @@ final class CalculatorViewModelTests: XCTestCase {
         let color = viewModel.riskColor
 
         // Then
-        // Color should be yellow/orange for medium risk
+        // Color should be yellow for medium risk
         XCTAssertNotNil(color)
         XCTAssertEqual(color, "yellow")
+        // Verify probability is in medium range
+        XCTAssertGreaterThanOrEqual(viewModel.probability, 30)
+        XCTAssertLessThan(viewModel.probability, 60)
     }
 
     func testRiskColor_High() {
