@@ -59,7 +59,7 @@ class VotingService: ObservableObject {
             print("❌ Backend sync failed: \(error.localizedDescription)")
             
             // Check if it's a network error vs a real error
-            if let urlError = error as? URLError {
+            if error is URLError {
                 // Network errors - keep the vote locally, will sync later
                 print("🌐 Network error - keeping vote locally for future sync")
                 // Don't rollback for network issues
@@ -103,7 +103,7 @@ class VotingService: ObservableObject {
             print("❌ Backend sync failed: \(error.localizedDescription)")
             
             // Check if it's a network error vs a real error
-            if let urlError = error as? URLError {
+            if error is URLError {
                 // Network errors - keep the removal locally, will sync later
                 print("🌐 Network error - keeping removal locally for future sync")
                 // Don't rollback for network issues
