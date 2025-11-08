@@ -32,9 +32,13 @@ final class HomeViewModelTests: XCTestCase {
             id: 1,
             text: "If anything can go wrong, it will.",
             title: "Murphy's Law",
+            slug: "murphys-law",
+            rawMarkdown: nil,
+            originNote: nil,
             upvotes: 100,
             downvotes: 5,
             createdAt: Date(),
+            updatedAt: Date(),
             attributions: nil,
             categories: nil
         )
@@ -66,8 +70,8 @@ final class HomeViewModelTests: XCTestCase {
     func testLoadTopVotedLawsSuccess() async {
         // Given
         let mockLaws = [
-            Law(id: 1, text: "Law 1", title: nil, upvotes: 50, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil),
-            Law(id: 2, text: "Law 2", title: nil, upvotes: 40, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 50, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil),
+            Law(id: 2, text: "Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 40, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.topVotedToReturn = mockLaws
 
@@ -82,7 +86,7 @@ final class HomeViewModelTests: XCTestCase {
     func testLoadTrendingLawsSuccess() async {
         // Given
         let mockLaws = [
-            Law(id: 3, text: "Trending Law", title: nil, upvotes: 30, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 3, text: "Trending Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 30, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.trendingToReturn = mockLaws
 
@@ -95,7 +99,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefreshAllContent() async {
         // Given
-        let mockLaw = Law(id: 1, text: "Test", title: nil, upvotes: 10, downvotes: 0, createdAt: Date(), attributions: nil, categories: nil)
+        let mockLaw = Law(id: 1, text: "Test", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 0, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         mockRepository.lawOfDayToReturn = mockLaw
         mockRepository.topVotedToReturn = [mockLaw]
         mockRepository.trendingToReturn = [mockLaw]
@@ -107,41 +111,5 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.lawOfTheDay)
         XCTAssertFalse(viewModel.topVotedLaws.isEmpty)
         XCTAssertFalse(viewModel.trendingLaws.isEmpty)
-    }
-}
-
-// MARK: - Extended Mock Repository
-
-extension MockLawRepository {
-    var lawOfDayToReturn: Law?
-    var topVotedToReturn: [Law] = []
-    var trendingToReturn: [Law] = []
-
-    func fetchLawOfTheDay() async throws -> Law {
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        guard let law = lawOfDayToReturn else {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No law of day"])
-        }
-
-        return law
-    }
-
-    func fetchTopVotedLaws(limit: Int = 10) async throws -> [Law] {
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        return topVotedToReturn
-    }
-
-    func fetchTrendingLaws(limit: Int = 10) async throws -> [Law] {
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        return trendingToReturn
     }
 }

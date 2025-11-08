@@ -9,50 +9,95 @@ import Foundation
 
 @MainActor
 class HomeViewModel: ObservableObject {
-    @Published var lawOfDay: Law?
-    @Published var topVoted: [Law] = []
+    @Published var lawOfTheDay: Law?
+    @Published var topVotedLaws: [Law] = []
+    @Published var trendingLaws: [Law] = []
     @Published var recentlyAdded: [Law] = []
-    @Published var isLoading = false
-    @Published var error: Error?
+    @Published var isLoadingLawOfDay = false
+    @Published var errorMessage: String?
 
-    private let lawRepository = LawRepository()
+    private let repository: LawRepository
 
-    // MARK: - Load Home Data
-    func loadHomeData() async {
-        isLoading = true
-        error = nil
+    init(repository: LawRepository = LawRepository()) {
+        self.repository = repository
+    }
+
+    // MARK: - Load Law of the Day
+    func loadLawOfTheDay() async {
+        isLoadingLawOfDay = true
+        errorMessage = nil
 
         do {
-            // Load Law of the Day
-            let lawOfDayResponse = try await lawRepository.fetchLawOfDay()
-            lawOfDay = lawOfDayResponse.law
+            let lawOfDayResponse = try await repository.fetchLawOfDay()
+            lawOfTheDay = lawOfDayResponse.law
+        } catch {
+            errorMessage = error.localizedDescription
+            print("Error loading law of the day: \(error)")
+        }
 
-            // Load Top Voted Laws (optional widget)
-            async let topVotedTask = lawRepository.fetchLaws(
+        isLoadingLawOfDay = false
+    }
+
+    // MARK: - Load Top Voted Laws
+    func loadTopVotedLaws() async {
+        do {
+            let response = try await repository.fetchLaws(
                 limit: 5,
                 offset: 0,
-                sort: "upvotes",
+                sort: "score",
                 order: "desc"
             )
+            topVotedLaws = response.data
+        } catch {
+            errorMessage = error.localizedDescription
+            print("Error loading top voted laws: \(error)")
+        }
+    }
 
-            // Load Recently Added Laws (optional widget)
-            async let recentTask = lawRepository.fetchLaws(
+    // MARK: - Load Trending Laws
+    func loadTrendingLaws() async {
+        do {
+            let response = try await repository.fetchLaws(
+                limit: 5,
+                offset: 0,
+                sort: "trending",
+                order: "desc"
+            )
+            trendingLaws = response.data
+        } catch {
+            errorMessage = error.localizedDescription
+            print("Error loading trending laws: \(error)")
+        }
+    }
+
+    // MARK: - Load Recently Added Laws
+    func loadRecentlyAdded() async {
+        do {
+            let response = try await repository.fetchLaws(
                 limit: 5,
                 offset: 0,
                 sort: "created_at",
                 order: "desc"
             )
-
-            let (topVotedResponse, recentResponse) = try await (topVotedTask, recentTask)
-            topVoted = topVotedResponse.data
-            recentlyAdded = recentResponse.data
-
+            recentlyAdded = response.data
         } catch {
-            self.error = error
-            print("Error loading home data: \(error)")
+            errorMessage = error.localizedDescription
+            print("Error loading recently added laws: \(error)")
         }
+    }
 
-        isLoading = false
+    // MARK: - Load Home Data
+    func loadHomeData() async {
+        await loadLawOfTheDay()
+        await loadTopVotedLaws()
+        await loadRecentlyAdded()
+    }
+
+    // MARK: - Refresh All
+    func refreshAll() async {
+        await loadLawOfTheDay()
+        await loadTopVotedLaws()
+        await loadTrendingLaws()
     }
 
     // MARK: - Refresh

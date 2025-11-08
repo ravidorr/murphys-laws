@@ -96,16 +96,16 @@ struct MoreView: View {
             }
             .navigationTitle("More")
             .sheet(isPresented: $showingAbout) {
-                MarkdownContentView(page: .about)
+                MarkdownContentView(page: ContentPage.about)
             }
             .sheet(isPresented: $showingPrivacy) {
-                MarkdownContentView(page: .privacy)
+                MarkdownContentView(page: ContentPage.privacy)
             }
             .sheet(isPresented: $showingTerms) {
-                MarkdownContentView(page: .terms)
+                MarkdownContentView(page: ContentPage.terms)
             }
             .sheet(isPresented: $showingContact) {
-                MarkdownContentView(page: .contact)
+                MarkdownContentView(page: ContentPage.contact)
             }
             .sheet(isPresented: $showingSubmit) {
                 SubmitLawView()

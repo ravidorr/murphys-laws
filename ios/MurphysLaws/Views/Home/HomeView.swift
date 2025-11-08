@@ -17,7 +17,7 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: Constants.UI.spacingL) {
                     // Law of the Day
-                    if let lawOfDay = viewModel.lawOfDay {
+                    if let lawOfDay = viewModel.lawOfTheDay {
                         VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                             Text("Law of the Day")
                                 .font(.title2)
@@ -32,7 +32,7 @@ struct HomeView: View {
                     }
 
                     // Top Voted Section
-                    if !viewModel.topVoted.isEmpty {
+                    if !viewModel.topVotedLaws.isEmpty {
                         VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                             Text("Top Voted Laws")
                                 .font(.title3)
@@ -41,7 +41,7 @@ struct HomeView: View {
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: Constants.UI.spacingM) {
-                                    ForEach(viewModel.topVoted) { law in
+                                    ForEach(viewModel.topVotedLaws) { law in
                                         LawCard(law: law)
                                             .frame(width: 300)
                                             .onTapGesture {
@@ -86,7 +86,7 @@ struct HomeView: View {
                 await viewModel.refresh()
             }
             .task {
-                if viewModel.lawOfDay == nil {
+                if viewModel.lawOfTheDay == nil {
                     await viewModel.loadHomeData()
                 }
             }
@@ -98,16 +98,16 @@ struct HomeView: View {
                 }
             }
             .overlay {
-                if viewModel.isLoading && viewModel.lawOfDay == nil {
+                if viewModel.isLoadingLawOfDay && viewModel.lawOfTheDay == nil {
                     ProgressView("Loading...")
                 }
             }
             .overlay {
-                if let error = viewModel.error, viewModel.lawOfDay == nil {
+                if let errorMessage = viewModel.errorMessage, viewModel.lawOfTheDay == nil {
                     EmptyStateView(
                         title: "Error Loading Data",
                         systemImage: "exclamationmark.triangle",
-                        description: error.localizedDescription
+                        description: errorMessage
                     )
                 }
             }
