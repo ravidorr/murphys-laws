@@ -117,11 +117,11 @@ struct CategoryDetailView: View {
             Group {
                 if viewModel.laws.isEmpty && viewModel.isLoading {
                     ProgressView("Loading laws...")
-                } else if let error = viewModel.error, viewModel.laws.isEmpty {
+                } else if let errorMessage = viewModel.errorMessage, viewModel.laws.isEmpty {
                     EmptyStateView(
                         title: "Error Loading Laws",
                         systemImage: "exclamationmark.triangle",
-                        description: error.localizedDescription
+                        description: errorMessage
                     )
                 } else if viewModel.laws.isEmpty {
                     EmptyStateView(
