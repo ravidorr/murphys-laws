@@ -1,4 +1,5 @@
 import XCTest
+import XCTest
 @testable import MurphysLaws
 
 @MainActor
@@ -131,26 +132,6 @@ final class LawListViewModelTests: XCTestCase {
         // Then
         XCTAssertEqual(viewModel.laws.count, 1)
         XCTAssertEqual(mockRepository.lastCategoryID, 1)
-    }
-}
-
-// MARK: - Mock Repository
-@MainActor
-class MockLawRepository {
-    var lawsToReturn: [Law] = []
-    var shouldFail = false
-    var lastCategoryID: Int?
-    var lastSearchQuery: String?
-    
-    func fetchLaws(page: Int = 0, categoryID: Int? = nil, query: String? = nil) async throws -> [Law] {
-        lastCategoryID = categoryID
-        lastSearchQuery = query
-        
-        if shouldFail {
-            throw NSError(domain: "MockError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-        
-        return lawsToReturn
     }
 }
 
