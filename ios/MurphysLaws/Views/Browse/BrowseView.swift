@@ -9,7 +9,6 @@ import SwiftUI
 
 struct BrowseView: View {
     @StateObject private var viewModel = LawListViewModel()
-    @State private var showingLawDetail = false
     @State private var selectedLaw: Law?
     @State private var searchText = ""
     @State private var showingFilters = false
@@ -64,8 +63,11 @@ struct BrowseView: View {
                         await viewModel.loadLaws()
                     }
                 }
-                .sheet(isPresented: $showingLawDetail) {
-                    lawDetailSheet
+                .sheet(item: $selectedLaw) { law in
+                    NavigationStack {
+                        LawDetailView(lawID: law.id, law: law)
+                            .id(law.id)  // Force view recreation for each law
+                    }
                 }
                 .sheet(isPresented: $showingFilters) {
                     FilterView(
@@ -84,7 +86,6 @@ struct BrowseView: View {
             ForEach(viewModel.laws) { law in
                 Button {
                     selectedLaw = law
-                    showingLawDetail = true
                 } label: {
                     LawListRow(law: law)
                 }
@@ -117,15 +118,6 @@ struct BrowseView: View {
             showingFilters.toggle()
         } label: {
             Image(systemName: "line.3.horizontal.decrease.circle")
-        }
-    }
-
-    @ViewBuilder
-    private var lawDetailSheet: some View {
-        if let law = selectedLaw {
-            NavigationStack {
-                LawDetailView(lawID: law.id)
-            }
         }
     }
 

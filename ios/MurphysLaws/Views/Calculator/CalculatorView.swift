@@ -95,27 +95,33 @@ struct CalculatorView: View {
 
                     // Formula section
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
-                        Text("Formula")
-                            .font(.headline)
+                        HStack {
+                            Text("Formula")
+                                .font(.headline)
+                            Spacer()
+                            Text("Swipe to view →")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
 
                         VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
-                            Text(viewModel.formulaString)
-                                .font(.system(.body, design: .monospaced))
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(Constants.UI.cornerRadiusM)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                MathFormulaView(viewModel.formulaString, fontSize: 16)
+                                    .padding()
+                            }
+                            .background(Color(.systemGray6))
+                            .cornerRadius(Constants.UI.cornerRadiusM)
 
                             Text("With your values:")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
 
-                            Text(viewModel.formulaWithValues)
-                                .font(.system(.caption, design: .monospaced))
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(Constants.UI.cornerRadiusM)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                MathFormulaView(viewModel.formulaWithValues, fontSize: 14)
+                                    .padding()
+                            }
+                            .background(Color(.systemGray6))
+                            .cornerRadius(Constants.UI.cornerRadiusM)
                         }
                     }
                     .padding()

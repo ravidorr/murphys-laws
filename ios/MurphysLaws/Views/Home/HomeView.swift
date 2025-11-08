@@ -9,101 +9,106 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @State private var showingLawDetail = false
     @State private var selectedLaw: Law?
 
     var body: some View {
         NavigationStack {
+            // Always show content immediately - no conditional rendering at the top level
             ScrollView {
                 VStack(spacing: Constants.UI.spacingL) {
-                    // Law of the Day
-                    if let lawOfDay = viewModel.lawOfTheDay {
-                        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
-                            Text("Law of the Day")
-                                .font(.title2)
-                                .fontWeight(.bold)
-
+                    // Law of the Day - Show skeleton or actual content
+                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                        Text("Law of the Day")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        if let lawOfDay = viewModel.lawOfTheDay {
                             LawOfDayCard(law: lawOfDay) {
                                 selectedLaw = lawOfDay
-                                showingLawDetail = true
                             }
+                        } else {
+                            // Always show skeleton when no data
+                            SkeletonLawOfDayCard()
                         }
-                        .padding(.horizontal)
                     }
+                    .padding(.horizontal)
 
-                    // Top Voted Section
-                    if !viewModel.topVotedLaws.isEmpty {
-                        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
-                            Text("Top Voted Laws")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .padding(.horizontal)
+                    // Top Voted Section - Show skeleton or actual content
+                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                        Text("Top Voted Laws")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal)
 
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: Constants.UI.spacingM) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Constants.UI.spacingM) {
+                                if !viewModel.topVotedLaws.isEmpty {
                                     ForEach(viewModel.topVotedLaws) { law in
                                         LawCard(law: law)
                                             .frame(width: 300)
                                             .onTapGesture {
                                                 selectedLaw = law
-                                                showingLawDetail = true
                                             }
                                     }
+                                } else {
+                                    // Always show skeleton cards when no data
+                                    ForEach(0..<3, id: \.self) { _ in
+                                        SkeletonLawCard()
+                                            .frame(width: 300)
+                                    }
                                 }
-                                .padding(.horizontal)
                             }
+                            .padding(.horizontal)
                         }
                     }
 
-                    // Recently Added Section
-                    if !viewModel.recentlyAdded.isEmpty {
-                        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
-                            Text("Recently Added")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .padding(.horizontal)
+                    // Recently Added Section - Show skeleton or actual content
+                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                        Text("Recently Added")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal)
 
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: Constants.UI.spacingM) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: Constants.UI.spacingM) {
+                                if !viewModel.recentlyAdded.isEmpty {
                                     ForEach(viewModel.recentlyAdded) { law in
                                         LawCard(law: law)
                                             .frame(width: 300)
                                             .onTapGesture {
                                                 selectedLaw = law
-                                                showingLawDetail = true
                                             }
                                     }
+                                } else {
+                                    // Always show skeleton cards when no data
+                                    ForEach(0..<3, id: \.self) { _ in
+                                        SkeletonLawCard()
+                                            .frame(width: 300)
+                                    }
                                 }
-                                .padding(.horizontal)
                             }
+                            .padding(.horizontal)
                         }
                     }
                 }
                 .padding(.vertical)
             }
+            .background(Color(uiColor: .systemBackground))
             .navigationTitle("Murphy's Laws")
             .refreshable {
                 await viewModel.refresh()
             }
             .task {
-                if viewModel.lawOfTheDay == nil {
-                    await viewModel.loadHomeData()
-                }
+                await viewModel.loadHomeData()
             }
-            .sheet(isPresented: $showingLawDetail) {
-                if let law = selectedLaw {
-                    NavigationStack {
-                        LawDetailView(lawID: law.id)
-                    }
+            .sheet(item: $selectedLaw) { law in
+                NavigationStack {
+                    LawDetailView(lawID: law.id, law: law)
+                        .id(law.id)  // Force view recreation for each law
                 }
             }
             .overlay {
-                if viewModel.isLoadingLawOfDay && viewModel.lawOfTheDay == nil {
-                    ProgressView("Loading...")
-                }
-            }
-            .overlay {
-                if let errorMessage = viewModel.errorMessage, viewModel.lawOfTheDay == nil {
+                if let errorMessage = viewModel.errorMessage, viewModel.lawOfTheDay == nil && !viewModel.isLoadingLawOfDay {
                     EmptyStateView(
                         title: "Error Loading Data",
                         systemImage: "exclamationmark.triangle",
@@ -115,7 +120,63 @@ struct HomeView: View {
     }
 }
 
-#Preview {
+#Preview("Home View") {
     HomeView()
         .environmentObject(VotingService.shared)
+}
+
+#Preview("Loading State with Skeletons") {
+    NavigationStack {
+        ScrollView {
+            VStack(spacing: Constants.UI.spacingL) {
+                // Law of the Day Skeleton
+                VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    Text("Law of the Day")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    SkeletonLawOfDayCard()
+                }
+                .padding(.horizontal)
+                
+                // Top Voted Section Skeleton
+                VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    Text("Top Voted Laws")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Constants.UI.spacingM) {
+                            ForEach(0..<3, id: \.self) { _ in
+                                SkeletonLawCard()
+                                    .frame(width: 300)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
+                // Recently Added Section Skeleton
+                VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    Text("Recently Added")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Constants.UI.spacingM) {
+                            ForEach(0..<3, id: \.self) { _ in
+                                SkeletonLawCard()
+                                    .frame(width: 300)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+            }
+            .padding(.vertical)
+        }
+        .navigationTitle("Murphy's Laws")
+    }
 }
