@@ -78,10 +78,11 @@ final class CalculatorViewModelTests: XCTestCase {
         viewModel.frequency = 1.0
 
         // When
+        viewModel.calculate()
         let riskLevel = viewModel.riskLevel
 
         // Then
-        XCTAssertEqual(riskLevel, "Low")
+        XCTAssertEqual(riskLevel.rawValue, "Low")
     }
 
     func testRiskLevel_Medium() {
@@ -93,10 +94,11 @@ final class CalculatorViewModelTests: XCTestCase {
         viewModel.frequency = 5.0
 
         // When
+        viewModel.calculate()
         let riskLevel = viewModel.riskLevel
 
         // Then
-        XCTAssertEqual(riskLevel, "Medium")
+        XCTAssertEqual(riskLevel.rawValue, "Medium")
     }
 
     func testRiskLevel_High() {
@@ -108,10 +110,11 @@ final class CalculatorViewModelTests: XCTestCase {
         viewModel.frequency = 10.0
 
         // When
+        viewModel.calculate()
         let riskLevel = viewModel.riskLevel
 
         // Then
-        XCTAssertEqual(riskLevel, "High")
+        XCTAssertEqual(riskLevel.rawValue, "High")
     }
 
     func testRiskColor_Low() {
@@ -123,11 +126,13 @@ final class CalculatorViewModelTests: XCTestCase {
         viewModel.frequency = 1.0
 
         // When
+        viewModel.calculate()
         let color = viewModel.riskColor
 
         // Then
         // Color should be green for low risk
         XCTAssertNotNil(color)
+        XCTAssertEqual(color, "green")
     }
 
     func testRiskColor_Medium() {
@@ -139,11 +144,13 @@ final class CalculatorViewModelTests: XCTestCase {
         viewModel.frequency = 5.0
 
         // When
+        viewModel.calculate()
         let color = viewModel.riskColor
 
         // Then
         // Color should be yellow/orange for medium risk
         XCTAssertNotNil(color)
+        XCTAssertEqual(color, "yellow")
     }
 
     func testRiskColor_High() {
@@ -155,11 +162,13 @@ final class CalculatorViewModelTests: XCTestCase {
         viewModel.frequency = 10.0
 
         // When
+        viewModel.calculate()
         let color = viewModel.riskColor
 
         // Then
         // Color should be red for high risk
         XCTAssertNotNil(color)
+        XCTAssertEqual(color, "red")
     }
 
     func testResetValues() {

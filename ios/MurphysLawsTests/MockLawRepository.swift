@@ -68,9 +68,13 @@ class MockLawRepository: LawRepository {
             id: id,
             text: "Mock Law",
             title: nil,
+            slug: "mock-law",
+            rawMarkdown: nil,
+            originNote: nil,
             upvotes: 0,
             downvotes: 0,
             createdAt: Date(),
+            updatedAt: Date(),
             attributions: nil,
             categories: nil
         )
