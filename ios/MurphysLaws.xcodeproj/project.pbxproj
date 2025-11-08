@@ -22,7 +22,6 @@
 		29768EB12EBFFF8D00E7F4EF /* Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = 29768EB02EBFFF8D00E7F4EF /* Config.plist */; };
 		29768EB32EBFFF9700E7F4EF /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 29768EB22EBFFF9700E7F4EF /* .gitignore */; };
 		29768EB52EBFFFB800E7F4EF /* CONFIG_README.md in Resources */ = {isa = PBXBuildFile; fileRef = 29768EB42EBFFFB800E7F4EF /* CONFIG_README.md */; };
-		29768EB72EBFFFC400E7F4EF /* ConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29768EB62EBFFFC400E7F4EF /* ConfigurationTests.swift */; };
 		29768EB92EBFFFD200E7F4EF /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29768EB82EBFFFD200E7F4EF /* Logger.swift */; };
 		29768EBB2EBFFFFA00E7F4EF /* validate-config.sh in Resources */ = {isa = PBXBuildFile; fileRef = 29768EBA2EBFFFFA00E7F4EF /* validate-config.sh */; };
 		29768EBD2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 29768EBC2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md */; };
@@ -109,7 +108,6 @@
 		29768EB02EBFFF8D00E7F4EF /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Config.plist; sourceTree = "<group>"; };
 		29768EB22EBFFF9700E7F4EF /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		29768EB42EBFFFB800E7F4EF /* CONFIG_README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONFIG_README.md; sourceTree = "<group>"; };
-		29768EB62EBFFFC400E7F4EF /* ConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationTests.swift; sourceTree = "<group>"; };
 		29768EB82EBFFFD200E7F4EF /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		29768EBA2EBFFFFA00E7F4EF /* validate-config.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "validate-config.sh"; sourceTree = "<group>"; };
 		29768EBC2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONFIGURATION_SUMMARY.md; sourceTree = "<group>"; };
@@ -186,7 +184,6 @@
 				29768EB02EBFFF8D00E7F4EF /* Config.plist */,
 				29768EB22EBFFF9700E7F4EF /* .gitignore */,
 				29768EB42EBFFFB800E7F4EF /* CONFIG_README.md */,
-				29768EB62EBFFFC400E7F4EF /* ConfigurationTests.swift */,
 				29768EB82EBFFFD200E7F4EF /* Logger.swift */,
 				29768EBA2EBFFFFA00E7F4EF /* validate-config.sh */,
 				29768EBC2EC0001900E7F4EF /* CONFIGURATION_SUMMARY.md */,
@@ -592,7 +589,6 @@
 			files = (
 				5C54EF13C0862FE20402ABD3 /* APIService.swift in Sources */,
 				AFC70EF23C30FC1B9471037E /* Attribution.swift in Sources */,
-				29768EB72EBFFFC400E7F4EF /* ConfigurationTests.swift in Sources */,
 				D9E7FEE430FABE2B6AF6B823 /* BrowseView.swift in Sources */,
 				3913E1CF37BFD2FAC495C6D7 /* CalculatorView.swift in Sources */,
 				86DA34046A005DB14FC1A8C7 /* CalculatorViewModel.swift in Sources */,
