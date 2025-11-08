@@ -90,12 +90,12 @@ public struct MarkdownContentView: View {
             return
         }
 
-        // Convert markdown string to AttributedString
+        // Convert markdown string to AttributedString with full markdown support
         do {
             markdownContent = try AttributedString(
                 markdown: content,
                 options: AttributedString.MarkdownParsingOptions(
-                    interpretedSyntax: .inlineOnlyPreservingWhitespace
+                    interpretedSyntax: .full
                 )
             )
             isLoading = false
