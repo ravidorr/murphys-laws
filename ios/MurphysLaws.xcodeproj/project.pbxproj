@@ -91,7 +91,7 @@
 		4B254F29435390C11AEDA12F /* MurphysLawsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurphysLawsApp.swift; sourceTree = "<group>"; };
 		52E7F37A98F3CA8F2BD0F4D9 /* CalculatorUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorUITests.swift; sourceTree = "<group>"; };
 		535B04B1531B0D7550DD7476 /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
-		5B496C30B4D01E873AC35F4A /* MurphysLawsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MurphysLawsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B496C30B4D01E873AC35F4A /* MurphysLawsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MurphysLawsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DA9B5B613B0E7969E41C543 /* Attribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Attribution.swift; sourceTree = "<group>"; };
 		6E06EE7367A4443023013451 /* ContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPage.swift; sourceTree = "<group>"; };
 		6E36A786E080D591D637BCB1 /* DeviceID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceID.swift; sourceTree = "<group>"; };
@@ -102,7 +102,7 @@
 		9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
 		A2ED3D3B91669FD814A1C06D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A9147BE68F0EFC513C9F2A92 /* MurphysLaws.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MurphysLaws.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9147BE68F0EFC513C9F2A92 /* MurphysLaws.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MurphysLaws.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAC173281AAC9AB2537D2E88 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
 		B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUITests.swift; sourceTree = "<group>"; };
 		B4265272671CFACD29C9446B /* SharedContentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentLoader.swift; sourceTree = "<group>"; };
@@ -117,7 +117,7 @@
 		D5B769A933753CDE8E606F18 /* VotingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VotingService.swift; sourceTree = "<group>"; };
 		D62C955AD19A9AF5E90C5C7B /* CategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesView.swift; sourceTree = "<group>"; };
 		DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawViewModel.swift; sourceTree = "<group>"; };
-		E3E26F45D2C953790DF82253 /* MurphysLawsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MurphysLawsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E3E26F45D2C953790DF82253 /* MurphysLawsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MurphysLawsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E486AD4C8B7C12A517DABD10 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		E590CE9B0966A46756CFD59E /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		E721EC9623E2602B825284F3 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
@@ -396,7 +396,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1400;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					93B3FBC99A6FCE0F3F8E715D = {
 						TestTargetID = 1E8E90165E23502BED88EE9E;
@@ -596,6 +596,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -617,6 +618,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -735,6 +737,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -749,6 +752,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
