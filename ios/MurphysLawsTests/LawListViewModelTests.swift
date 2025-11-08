@@ -133,39 +133,3 @@ final class LawListViewModelTests: XCTestCase {
         XCTAssertEqual(mockRepository.lastCategoryID, 1)
     }
 }
-
-// MARK: - Mock Repository
-
-class MockLawRepository: LawRepository {
-    var lawsToReturn: [Law] = []
-    var shouldFail = false
-    var lastSearchQuery: String?
-    var lastCategoryID: Int?
-
-    override func fetchLaws(
-        limit: Int = 25,
-        offset: Int = 0,
-        query: String? = nil,
-        categoryID: Int? = nil,
-        attributionID: Int? = nil,
-        sort: String = "score",
-        order: String = "desc"
-    ) async throws -> LawsResponse {
-        lastSearchQuery = query
-        lastCategoryID = categoryID
-
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        return LawsResponse(data: lawsToReturn, total: lawsToReturn.count, limit: limit, offset: offset)
-    }
-
-    override func fetchLawDetail(id: Int) async throws -> Law {
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        return lawsToReturn.first ?? Law(id: id, text: "Mock Law", title: nil, upvotes: 0, downvotes: 0, createdAt: Date(), attributions: nil, categories: nil)
-    }
-}

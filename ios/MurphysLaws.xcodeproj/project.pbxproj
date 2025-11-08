@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		69591B8815A2E4E2A154D808 /* MockLawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */; };
 		D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E06EE7367A4443023013451 /* ContentPage.swift */; };
 		C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4265272671CFACD29C9446B /* SharedContentLoader.swift */; };
 		556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */; };
@@ -68,6 +69,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLawRepository.swift; sourceTree = "<group>"; };
 		6E06EE7367A4443023013451 /* ContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPage.swift; sourceTree = "<group>"; };
 		B4265272671CFACD29C9446B /* SharedContentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentLoader.swift; sourceTree = "<group>"; };
 		9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
@@ -224,6 +226,7 @@
 		77F4C22E0761349A73A2D075 /* MurphysLawsTests */ = {
 			isa = PBXGroup;
 			children = (
+				2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */,
 				CA45708E5874015B18EDD4FB /* CalculatorViewModelTests.swift */,
 				C39071912628B8D7170205D3 /* HomeViewModelTests.swift */,
 				1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */,
@@ -443,6 +446,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				69591B8815A2E4E2A154D808 /* MockLawRepository.swift in Sources */,
 				C5C061DFFF91CB361AAC27DE /* CalculatorViewModelTests.swift in Sources */,
 				7C64A32048B746BB8334CB22 /* HomeViewModelTests.swift in Sources */,
 				785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */,
