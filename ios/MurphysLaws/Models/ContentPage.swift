@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum ContentPage: String, CaseIterable {
+public enum ContentPage: String, CaseIterable {
     case about
     case privacy
     case terms

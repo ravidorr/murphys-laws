@@ -7,8 +7,8 @@
 
 import Foundation
 
-class SharedContentLoader {
-    static let shared = SharedContentLoader()
+public class SharedContentLoader {
+    public static let shared = SharedContentLoader()
 
     private var contentCache: [ContentPage: String] = [:]
     private var lastUpdatedCache: [ContentPage: String] = [:]
@@ -16,7 +16,7 @@ class SharedContentLoader {
     private init() {}
 
     /// Load markdown content for a given page
-    func loadContent(for page: ContentPage) -> String? {
+    public func loadContent(for page: ContentPage) -> String? {
         // Check cache first
         if let cached = contentCache[page] {
             return cached
@@ -35,7 +35,7 @@ class SharedContentLoader {
     }
 
     /// Get last updated date for a given page
-    func getLastUpdated(for page: ContentPage) -> String? {
+    public func getLastUpdated(for page: ContentPage) -> String? {
         // Check cache first
         if let cached = lastUpdatedCache[page] {
             return cached
@@ -60,7 +60,7 @@ class SharedContentLoader {
     }
 
     /// Clear all cached content
-    func clearCache() {
+    public func clearCache() {
         contentCache.removeAll()
         lastUpdatedCache.removeAll()
     }
