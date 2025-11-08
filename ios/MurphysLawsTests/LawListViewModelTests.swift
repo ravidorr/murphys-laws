@@ -59,25 +59,35 @@ final class LawListViewModelTests: XCTestCase {
     }
 
     func testLoadMoreLaws() async {
-        // Given
+        // Given - Set up initial batch with enough items to trigger hasMorePages
+        // The limit is typically 25, so we need to return at least that many or manually set hasMorePages
         let firstBatch = [
             Law(id: 1, text: "Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
+        
+        mockRepository.lawsToReturn = firstBatch
+        await viewModel.loadLaws()
+        
+        XCTAssertEqual(viewModel.laws.count, 1, "Should have 1 law after initial load")
+        XCTAssertEqual(viewModel.currentPage, 1)
+
+        // Manually set hasMorePages to true so loadMore doesn't early return
+        viewModel.hasMorePages = true
+
+        // When - Provide a second batch (simulating next page)
         let secondBatch = [
             Law(id: 2, text: "Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
-
-        mockRepository.lawsToReturn = firstBatch
-        await viewModel.loadLaws()
-
         mockRepository.lawsToReturn = secondBatch
-
-        // When
+        
         await viewModel.loadMoreLaws()
 
         // Then
-        XCTAssertEqual(viewModel.laws.count, 2)
-        XCTAssertEqual(viewModel.currentPage, 2)
+        // After loading more, we should have both laws
+        XCTAssertEqual(viewModel.laws.count, 2, "Should have 2 laws total (first batch + second batch)")
+        XCTAssertEqual(viewModel.laws[0].id, 1, "First law should still be Law 1")
+        XCTAssertEqual(viewModel.laws[1].id, 2, "Second law should be Law 2")
+        XCTAssertEqual(viewModel.currentPage, 2, "Should be on page 2")
     }
 
     func testRefreshLaws() async {
