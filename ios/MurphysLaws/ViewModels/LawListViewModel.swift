@@ -12,7 +12,7 @@ class LawListViewModel: ObservableObject {
     @Published var laws: [Law] = []
     @Published var isLoading = false
     @Published var isLoadingMore = false
-    @Published var error: Error?
+    @Published var errorMessage: String?
     @Published var hasMorePages = true
 
     // Filters
@@ -21,12 +21,18 @@ class LawListViewModel: ObservableObject {
     @Published var sortBy: String = "score"
     @Published var sortOrder: String = "desc"
 
-    private let repository = LawRepository()
+    private let repository: LawRepository
     private var currentOffset = 0
     private let limit = Constants.API.defaultLimit
 
+    // Computed property for current page (1-indexed)
+    var currentPage: Int {
+        currentOffset / limit
+    }
+
     // MARK: - Init
-    init(categoryID: Int? = nil) {
+    init(repository: LawRepository = LawRepository(), categoryID: Int? = nil) {
+        self.repository = repository
         self.selectedCategoryID = categoryID
     }
 
@@ -40,7 +46,7 @@ class LawListViewModel: ObservableObject {
 
         guard !isLoading else { return }
         isLoading = true
-        error = nil
+        errorMessage = nil
 
         do {
             let response = try await repository.fetchLaws(
@@ -62,7 +68,7 @@ class LawListViewModel: ObservableObject {
             hasMorePages = response.data.count >= limit
 
         } catch {
-            self.error = error
+            errorMessage = error.localizedDescription
             print("Error loading laws: \(error)")
         }
 
@@ -90,11 +96,16 @@ class LawListViewModel: ObservableObject {
             hasMorePages = response.data.count >= limit
 
         } catch {
-            self.error = error
+            errorMessage = error.localizedDescription
             print("Error loading more laws: \(error)")
         }
 
         isLoadingMore = false
+    }
+
+    // MARK: - Load More Laws (Test-friendly alias)
+    func loadMoreLaws() async {
+        await loadMore()
     }
 
     // MARK: - Check if should load more
@@ -108,6 +119,16 @@ class LawListViewModel: ObservableObject {
 
     // MARK: - Refresh
     func refresh() async {
+        await loadLaws(refresh: true)
+    }
+
+    // MARK: - Refresh Laws (Test-friendly alias)
+    func refreshLaws() async {
+        await refresh()
+    }
+
+    // MARK: - Search Laws
+    func searchLaws() async {
         await loadLaws(refresh: true)
     }
 

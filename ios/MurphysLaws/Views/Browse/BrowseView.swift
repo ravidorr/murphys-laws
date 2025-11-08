@@ -131,11 +131,11 @@ struct BrowseView: View {
     private var contentOverlay: some View {
         if viewModel.isLoading && viewModel.laws.isEmpty {
             ProgressView("Loading laws...")
-        } else if let error = viewModel.error, viewModel.laws.isEmpty {
+        } else if let errorMessage = viewModel.errorMessage, viewModel.laws.isEmpty {
             EmptyStateView(
                 title: "Error Loading Laws",
                 systemImage: "exclamationmark.triangle",
-                description: error.localizedDescription
+                description: errorMessage
             )
         } else if !viewModel.isLoading && viewModel.laws.isEmpty {
             EmptyStateView(
