@@ -65,13 +65,13 @@ final class NavigationUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
 
         // Wait for laws to load
-        sleep(2)
+        sleep(3)
         
-        // Find law in list using accessibility identifier
-        let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
+        // Find law button
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
         
-        XCTAssertTrue(firstLawRow.waitForExistence(timeout: 3), "Law row should exist")
-        firstLawRow.tap()
+        XCTAssertTrue(firstLawButton.waitForExistence(timeout: 5), "Law button should exist")
+        firstLawButton.tap()
 
         // Verify detail view elements - sheet presentation
         sleep(1)

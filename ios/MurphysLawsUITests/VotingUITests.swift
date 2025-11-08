@@ -19,23 +19,20 @@ final class VotingUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
 
         // Wait for laws to load
-        sleep(2)
+        sleep(3)
         
-        // Find first law using accessibility identifier
-        let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
+        // Find first law button using accessibility identifier
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
         
-        if firstLawRow.waitForExistence(timeout: 3) {
-            firstLawRow.tap()
-        } else {
-            // Fallback to any tappable button
-            let lawButtons = app.buttons.allElementsBoundByIndex.filter { $0.isHittable }
-            if lawButtons.count > 0 {
-                lawButtons.first?.tap()
-            } else {
-                XCTFail("No law buttons found to test")
-                return
-            }
+        if !firstLawButton.waitForExistence(timeout: 5) {
+            XCTFail("No law buttons found - mock data may not be loading")
+            return
         }
+        
+        firstLawButton.tap()
+        
+        // Wait for sheet to present
+        sleep(1)
 
         // Find and tap upvote button using accessibility identifier
         let upvoteButton = app.buttons["Upvote"]
@@ -52,22 +49,18 @@ final class VotingUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
 
         // Wait for laws to load
-        sleep(2)
+        sleep(3)
         
-        // Find first law using accessibility identifier
-        let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
+        // Find first law button
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
         
-        if firstLawRow.waitForExistence(timeout: 3) {
-            firstLawRow.tap()
-        } else {
-            let lawButtons = app.buttons.allElementsBoundByIndex.filter { $0.isHittable }
-            if lawButtons.count > 0 {
-                lawButtons.first?.tap()
-            } else {
-                XCTFail("No law buttons found to test")
-                return
-            }
+        if !firstLawButton.waitForExistence(timeout: 5) {
+            XCTFail("No law buttons found")
+            return
         }
+        
+        firstLawButton.tap()
+        sleep(1)
 
         // Find and tap downvote button
         let downvoteButton = app.buttons["Downvote"]
@@ -84,22 +77,18 @@ final class VotingUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
 
         // Wait for laws to load
-        sleep(2)
+        sleep(3)
         
-        // Find first law using accessibility identifier
-        let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
+        // Find first law button
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
         
-        if firstLawRow.waitForExistence(timeout: 3) {
-            firstLawRow.tap()
-        } else {
-            let lawButtons = app.buttons.allElementsBoundByIndex.filter { $0.isHittable }
-            if lawButtons.count > 0 {
-                lawButtons.first?.tap()
-            } else {
-                XCTFail("No law buttons found to test")
-                return
-            }
+        if !firstLawButton.waitForExistence(timeout: 5) {
+            XCTFail("No law buttons found")
+            return
         }
+        
+        firstLawButton.tap()
+        sleep(1)
 
         // Upvote
         let upvoteButton = app.buttons["Upvote"]
@@ -128,22 +117,18 @@ final class VotingUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
 
         // Wait for laws to load
-        sleep(2)
+        sleep(3)
         
-        // Find first law using accessibility identifier
-        let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
+        // Find first law button
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
         
-        if firstLawRow.waitForExistence(timeout: 3) {
-            firstLawRow.tap()
-        } else {
-            let lawButtons = app.buttons.allElementsBoundByIndex.filter { $0.isHittable }
-            if lawButtons.count > 0 {
-                lawButtons.first?.tap()
-            } else {
-                XCTFail("No law buttons found to test")
-                return
-            }
+        if !firstLawButton.waitForExistence(timeout: 5) {
+            XCTFail("No law buttons found")
+            return
         }
+        
+        firstLawButton.tap()
+        sleep(1)
 
         // Upvote the law
         let upvoteButton = app.buttons["Upvote"]
@@ -151,8 +136,7 @@ final class VotingUITests: XCTestCase {
         upvoteButton.tap()
 
         // Go back - dismiss sheet
-        let closeButton = app.buttons["Close"]
-        if closeButton.exists {
+        if let closeButton = app.buttons["Close"].firstMatch as? XCUIElement, closeButton.exists {
             closeButton.tap()
         } else {
             // Swipe down to dismiss
@@ -162,12 +146,12 @@ final class VotingUITests: XCTestCase {
         sleep(1)
 
         // Re-open the same law using the same identifier
-        let sameFirstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
-        if sameFirstLawRow.waitForExistence(timeout: 3) {
-            sameFirstLawRow.tap()
+        let sameFirstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
+        if sameFirstLawButton.waitForExistence(timeout: 3) {
+            sameFirstLawButton.tap()
         } else {
-            let lawButtons = app.buttons.allElementsBoundByIndex.filter { $0.isHittable }
-            lawButtons.first?.tap()
+            XCTFail("Law button disappeared after closing detail")
+            return
         }
 
         // Verify upvote button still exists (persistence check)
