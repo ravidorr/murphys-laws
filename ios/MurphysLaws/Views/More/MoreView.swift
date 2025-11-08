@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MoreView: View {
+    @EnvironmentObject private var tabCoordinator: TabNavigationCoordinator
     @State private var showingAbout = false
     @State private var showingPrivacy = false
     @State private var showingTerms = false
@@ -109,6 +110,12 @@ struct MoreView: View {
             }
             .sheet(isPresented: $showingSubmit) {
                 SubmitLawView()
+            }
+            .onChange(of: tabCoordinator.showingContact) { newValue in
+                showingContact = newValue
+            }
+            .onChange(of: tabCoordinator.showingSubmit) { newValue in
+                showingSubmit = newValue
             }
         }
     }

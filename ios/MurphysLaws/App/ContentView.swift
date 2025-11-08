@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var tabCoordinator = TabNavigationCoordinator.shared
     @State private var selectedTab = 0
 
     var body: some View {
@@ -71,7 +72,40 @@ struct ContentView: View {
             }
             .tag(4)
         }
+        .environmentObject(tabCoordinator)
+        .onChange(of: tabCoordinator.targetTab) { newValue in
+            if let newValue = newValue {
+                selectedTab = newValue.rawValue
+                // Reset after navigation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    tabCoordinator.targetTab = nil
+                }
+            }
+        }
     }
+}
+
+// MARK: - Tab Navigation Coordinator
+class TabNavigationCoordinator: ObservableObject {
+    static let shared = TabNavigationCoordinator()
+    
+    @Published var targetTab: AppTab?
+    @Published var showingSubmit = false
+    @Published var showingContact = false
+    
+    private init() {}
+    
+    func navigate(to destination: AppTab) {
+        targetTab = destination
+    }
+}
+
+enum AppTab: Int {
+    case home = 0
+    case browse = 1
+    case categories = 2
+    case calculator = 3
+    case more = 4
 }
 
 #Preview {
