@@ -21,7 +21,8 @@ let package = Package(
             name: "MurphysLaws",
             path: "MurphysLaws",
             resources: [
-                .process("Assets.xcassets")
+                .process("Assets.xcassets"),
+                .copy("Resources")
             ]
         ),
         .testTarget(
