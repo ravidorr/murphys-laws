@@ -11,24 +11,38 @@ if git diff --cached --name-only | grep -q "^murphys\.db$"; then
 fi
 
 # Run tests before allowing commit
-echo "Running tests..."
-npm test
+# Run backend tests (no coverage needed)
+echo "Running backend tests..."
+npm run test:backend
 if [ $? -ne 0 ]; then
   echo ""
-  echo "Tests failed! Commit blocked."
+  echo "Backend tests failed! Commit blocked."
   echo ""
   echo "Please fix the failing tests before committing."
-  echo "Run 'npm test' to see detailed test results."
   exit 1
 fi
 
+# Run web tests with coverage (avoids running tests twice)
+echo ""
+echo "Running web tests with coverage..."
+cd web && npm run test:coverage
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "Web tests failed! Commit blocked."
+  echo ""
+  echo "Please fix the failing tests before committing."
+  exit 1
+fi
+cd ..
+
+echo ""
 echo "All tests passed!"
 
 # Check coverage thresholds (90% for all metrics)
 # Can be bypassed with SKIP_COVERAGE_CHECK=1 for emergency commits
 echo ""
 echo "Checking coverage thresholds..."
-node web/scripts/check-coverage.mjs
+node web/scripts/check-coverage.mjs --skip-test-run
 if [ $? -ne 0 ]; then
   echo ""
   echo "Coverage check failed! Commit blocked."
