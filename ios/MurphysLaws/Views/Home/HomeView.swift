@@ -9,7 +9,6 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @State private var showingLawDetail = false
     @State private var selectedLaw: Law?
 
     var body: some View {
@@ -26,7 +25,6 @@ struct HomeView: View {
                         if let lawOfDay = viewModel.lawOfTheDay {
                             LawOfDayCard(law: lawOfDay) {
                                 selectedLaw = lawOfDay
-                                showingLawDetail = true
                             }
                         } else {
                             // Always show skeleton when no data
@@ -50,7 +48,6 @@ struct HomeView: View {
                                             .frame(width: 300)
                                             .onTapGesture {
                                                 selectedLaw = law
-                                                showingLawDetail = true
                                             }
                                     }
                                 } else {
@@ -80,7 +77,6 @@ struct HomeView: View {
                                             .frame(width: 300)
                                             .onTapGesture {
                                                 selectedLaw = law
-                                                showingLawDetail = true
                                             }
                                     }
                                 } else {
@@ -105,11 +101,9 @@ struct HomeView: View {
             .task {
                 await viewModel.loadHomeData()
             }
-            .sheet(isPresented: $showingLawDetail) {
-                if let law = selectedLaw {
-                    NavigationStack {
-                        LawDetailView(lawID: law.id)
-                    }
+            .sheet(item: $selectedLaw) { law in
+                NavigationStack {
+                    LawDetailView(lawID: law.id)
                 }
             }
             .overlay {
