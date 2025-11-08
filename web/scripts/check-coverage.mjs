@@ -6,12 +6,13 @@
  * Can be bypassed with SKIP_COVERAGE_CHECK=1 environment variable
  * 
  * Usage:
- *   node scripts/check-coverage.mjs
+ *   node scripts/check-coverage.mjs                    # Runs tests with coverage, then checks
+ *   node scripts/check-coverage.mjs --skip-test-run   # Only checks existing coverage report
  *   SKIP_COVERAGE_CHECK=1 git commit  # Emergency bypass
  */
 
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -27,6 +28,9 @@ const THRESHOLDS = {
   statements: 90
 };
 
+// Check for --skip-test-run flag
+const skipTestRun = process.argv.includes('--skip-test-run');
+
 // Emergency bypass
 if (process.env.SKIP_COVERAGE_CHECK === '1') {
   console.log('⚠️  SKIP_COVERAGE_CHECK=1 detected - skipping coverage check');
@@ -39,11 +43,21 @@ console.log('Thresholds:', THRESHOLDS);
 console.log('');
 
 try {
-  // Run coverage test
-  execSync('npm run test:coverage', {
-    stdio: 'inherit',
-    cwd: ROOT_DIR
-  });
+  // Run coverage test (unless skipped)
+  if (!skipTestRun) {
+    execSync('npm run test:coverage', {
+      stdio: 'inherit',
+      cwd: ROOT_DIR
+    });
+  } else {
+    // Verify coverage report exists
+    const coveragePath = join(ROOT_DIR, 'coverage', 'coverage-summary.json');
+    if (!existsSync(coveragePath)) {
+      console.error('❌ Coverage report not found!');
+      console.error('   Run tests with coverage first: npm run test:coverage');
+      process.exit(1);
+    }
+  }
 
   // Parse coverage summary
   const coveragePath = join(ROOT_DIR, 'coverage', 'coverage-summary.json');
