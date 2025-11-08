@@ -99,6 +99,11 @@ class APIService: ObservableObject {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(DeviceInfo.deviceID, forHTTPHeaderField: "X-Device-ID")
+        
+        // Add API key if available
+        if let apiKey = Constants.API.apiKey {
+            request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
+        }
 
         // Add custom headers
         headers?.forEach { key, value in
