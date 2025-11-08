@@ -151,7 +151,8 @@ final class VotingUITests: XCTestCase {
         upvoteButton.tap()
 
         // Go back - dismiss sheet
-        if let closeButton = app.buttons["Close"].firstMatch as? XCUIElement, closeButton.exists {
+        let closeButton = app.buttons["Close"]
+        if closeButton.exists {
             closeButton.tap()
         } else {
             // Swipe down to dismiss
