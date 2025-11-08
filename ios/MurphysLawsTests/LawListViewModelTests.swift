@@ -28,8 +28,8 @@ final class LawListViewModelTests: XCTestCase {
     func testLoadLawsSuccess() async {
         // Given
         let mockLaws = [
-            Law(id: 1, text: "Test Law 1", title: nil, upvotes: 10, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil),
-            Law(id: 2, text: "Test Law 2", title: nil, upvotes: 5, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Test Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil),
+            Law(id: 2, text: "Test Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = mockLaws
 
@@ -60,10 +60,10 @@ final class LawListViewModelTests: XCTestCase {
     func testLoadMoreLaws() async {
         // Given
         let firstBatch = [
-            Law(id: 1, text: "Law 1", title: nil, upvotes: 10, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         let secondBatch = [
-            Law(id: 2, text: "Law 2", title: nil, upvotes: 5, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 2, text: "Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
 
         mockRepository.lawsToReturn = firstBatch
@@ -82,13 +82,13 @@ final class LawListViewModelTests: XCTestCase {
     func testRefreshLaws() async {
         // Given
         let initialLaws = [
-            Law(id: 1, text: "Old Law", title: nil, upvotes: 10, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Old Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = initialLaws
         await viewModel.loadLaws()
 
         let refreshedLaws = [
-            Law(id: 2, text: "New Law", title: nil, upvotes: 5, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 2, text: "New Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = refreshedLaws
 
@@ -104,7 +104,7 @@ final class LawListViewModelTests: XCTestCase {
     func testSearchLaws() async {
         // Given
         let searchResults = [
-            Law(id: 3, text: "Murphy's Law", title: nil, upvotes: 100, downvotes: 5, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 3, text: "Murphy's Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 100, downvotes: 5, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = searchResults
 
@@ -120,7 +120,7 @@ final class LawListViewModelTests: XCTestCase {
     func testFilterByCategory() async {
         // Given
         let filteredLaws = [
-            Law(id: 4, text: "Tech Law", title: nil, upvotes: 20, downvotes: 3, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 4, text: "Tech Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 20, downvotes: 3, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = filteredLaws
 
