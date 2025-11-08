@@ -27,18 +27,23 @@ class LawDetailViewModel: ObservableObject {
 
     // MARK: - Load Law Detail
     func loadLaw() async {
+        print("📥 LawDetailViewModel.loadLaw() starting for lawID: \(lawID)")
         isLoading = true
         error = nil
 
         do {
+            print("🌐 Fetching law detail from repository...")
             law = try await lawRepository.fetchLawDetail(id: lawID)
+            print("✅ Law loaded successfully: \(law?.title ?? law?.text ?? "unknown")")
             currentVote = votingService.getVote(for: lawID)
         } catch {
             self.error = error
-            print("Error loading law detail: \(error)")
+            print("❌ Error loading law detail: \(error)")
+            print("❌ Error localizedDescription: \(error.localizedDescription)")
         }
 
         isLoading = false
+        print("📥 LawDetailViewModel.loadLaw() completed. isLoading=\(isLoading), law is nil: \(law == nil), error: \(error?.localizedDescription ?? "none")")
     }
 
     // MARK: - Voting

@@ -99,7 +99,7 @@ class CalculatorViewModel: ObservableObject {
 
     // MARK: - Formula String
     var formulaString: String {
-        "((U+C+I) × (10-S)) / 20 × A × 1/(1-sin(F/10))"
+        "\\frac{(U+C+I) \\times (10-S)}{20} \\times A \\times \\frac{1}{1-\\sin(\\frac{F}{10})}"
     }
 
     var formulaDescription: String {
@@ -113,7 +113,7 @@ class CalculatorViewModel: ObservableObject {
         let s = Int(skillLevel)
         let f = Int(frequency)
 
-        return "((\(u)+\(c)+\(i)) × (10-\(s))) / 20 × 1.0 × 1/(1-sin(\(f)/10))"
+        return "\\frac{(\(u)+\(c)+\(i)) \\times (10-\(s))}{20} \\times 1.0 \\times \\frac{1}{1-\\sin(\\frac{\(f)}{10})}"
     }
 
     // MARK: - Risk Color

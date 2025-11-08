@@ -18,6 +18,8 @@
 		1A09CE1C64FC1138A5FF60F3 /* TEST_FIXES_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 4FE74A80952C37827296F759 /* TEST_FIXES_SUMMARY.md */; };
 		1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */; };
 		27C5F22B9A2B55EDFC842A58 /* Law.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86C7CE3B4E821D79B4BBE67 /* Law.swift */; };
+		298ED01B2EBF70190008BE54 /* MathFormulaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 298ED01A2EBF70190008BE54 /* MathFormulaView.swift */; };
+		298ED01D2EBF74430008BE54 /* EMPTY_SHEET_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED01C2EBF74430008BE54 /* EMPTY_SHEET_FIX.md */; };
 		2B7AA225646E10CC7312586F /* SubmitLawView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FDC3EDA6F01BC05B88F558 /* SubmitLawView.swift */; };
 		33049F95190C44F3823E6C5C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2ED3D3B91669FD814A1C06D /* Assets.xcassets */; };
 		34CBDDAD4BF3F4EDA20FE518 /* ImprovedTestExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 401F0A8FA88BC3C74BF94D41 /* ImprovedTestExample.swift */; };
@@ -88,6 +90,8 @@
 		1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawListViewModelTests.swift; sourceTree = "<group>"; };
 		1C55D3A6FD616CB1C4AD8F18 /* LaunchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
 		265273D4ACC856695FD2CF50 /* Vote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vote.swift; sourceTree = "<group>"; };
+		298ED01A2EBF70190008BE54 /* MathFormulaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathFormulaView.swift; sourceTree = "<group>"; };
+		298ED01C2EBF74430008BE54 /* EMPTY_SHEET_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = EMPTY_SHEET_FIX.md; sourceTree = "<group>"; };
 		2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLawRepository.swift; sourceTree = "<group>"; };
 		2CE1346FFCDE3DDCEE69F106 /* LawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawRepository.swift; sourceTree = "<group>"; };
 		3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailViewModel.swift; sourceTree = "<group>"; };
@@ -246,6 +250,8 @@
 				3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */,
 				0F356080AC2E2B74B7AE8DFF /* LawListViewModel.swift */,
 				DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */,
+				298ED01A2EBF70190008BE54 /* MathFormulaView.swift */,
+				298ED01C2EBF74430008BE54 /* EMPTY_SHEET_FIX.md */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -478,6 +484,7 @@
 				B5CF459C2545A3C354FA6F06 /* about.md in Resources */,
 				84869700F6EB9BB6D5676697 /* contact.md in Resources */,
 				915DB1864B355BE88CDC8BD2 /* content in Resources */,
+				298ED01D2EBF74430008BE54 /* EMPTY_SHEET_FIX.md in Resources */,
 				512FC6FA12AF119AE1AE6085 /* metadata.json in Resources */,
 				1052B66D90A10F891BECCC85 /* privacy.md in Resources */,
 				7709942B73800C1A0AC8A746 /* terms.md in Resources */,
@@ -548,6 +555,7 @@
 				0D343C8000BC86125F8EB613 /* LawListViewModel.swift in Sources */,
 				58AF40343C809A85903A9B14 /* LawOfDayCard.swift in Sources */,
 				49FA408589A664074331A528 /* LawRepository.swift in Sources */,
+				298ED01B2EBF70190008BE54 /* MathFormulaView.swift in Sources */,
 				9962FA39F054E552E4A53EC5 /* MarkdownContentView.swift in Sources */,
 				1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */,
 				BB9ABE4CA8E1673DD55C3100 /* MurphysLawsApp.swift in Sources */,

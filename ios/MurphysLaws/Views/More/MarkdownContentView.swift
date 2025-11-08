@@ -385,12 +385,17 @@ struct FlowTextWithLinks: View {
     
     @Environment(\.openURL) private var openURL
     
+    private enum Segment {
+        case text(String)
+        case link(HTMLLink)
+    }
+    
     var body: some View {
         // Build text segments between links
         let segments = buildSegments()
         
         // Create horizontal flow of text and links by concatenating Text views
-        segments.map { segment in
+        let combinedText = segments.map { segment -> Text in
             switch segment {
             case .text(let string):
                 var text = parseMarkdownText(string)
@@ -421,10 +426,12 @@ struct FlowTextWithLinks: View {
                 }
             }
         }.reduce(Text(""), +)
-        .font(font)
-        .onTapGesture {
-            handleTap()
-        }
+        
+        combinedText
+            .font(font)
+            .onTapGesture {
+                handleTap()
+            }
     }
     
     private func isInternalLink(_ href: String) -> Bool {
@@ -452,11 +459,6 @@ struct FlowTextWithLinks: View {
                 return
             }
         }
-    }
-    
-    private enum Segment {
-        case text(String)
-        case link(HTMLLink)
     }
     
     private func buildSegments() -> [Segment] {
