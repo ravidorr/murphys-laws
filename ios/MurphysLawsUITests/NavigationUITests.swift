@@ -6,6 +6,7 @@ final class NavigationUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["UI-TESTING"]
         app.launch()
     }
 
@@ -64,26 +65,32 @@ final class NavigationUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
 
         // Wait for laws to load
-        let firstLawCard = app.scrollViews.otherElements.buttons.firstMatch
-        XCTAssertTrue(firstLawCard.waitForExistence(timeout: 5))
+        sleep(2)
+        
+        // Find law in list using accessibility identifier
+        let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch
+        
+        XCTAssertTrue(firstLawRow.waitForExistence(timeout: 3), "Law row should exist")
+        firstLawRow.tap()
 
-        // Tap first law
-        firstLawCard.tap()
-
-        // Verify detail view elements
-        let backButton = app.navigationBars.buttons.element(boundBy: 0)
-        XCTAssertTrue(backButton.waitForExistence(timeout: 2))
-
+        // Verify detail view elements - sheet presentation
+        sleep(1)
+        
         let upvoteButton = app.buttons["Upvote"]
         let downvoteButton = app.buttons["Downvote"]
-        XCTAssertTrue(upvoteButton.exists || downvoteButton.exists)
+        XCTAssertTrue(upvoteButton.waitForExistence(timeout: 3) || downvoteButton.waitForExistence(timeout: 3), "Vote buttons should exist in detail view")
 
-        // Navigate back
-        backButton.tap()
+        // Navigate back - look for close button in sheet or swipe down
+        if let closeButton = app.buttons["Close"].firstMatch as? XCUIElement, closeButton.exists {
+            closeButton.tap()
+        } else {
+            // Swipe down to dismiss sheet
+            app.swipeDown()
+        }
 
         // Verify we're back at browse view
         let searchBar = app.searchFields.firstMatch
-        XCTAssertTrue(searchBar.waitForExistence(timeout: 2))
+        XCTAssertTrue(searchBar.waitForExistence(timeout: 2), "Should return to browse view")
     }
 
     func testSubmitLawNavigation() throws {

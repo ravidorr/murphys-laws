@@ -77,7 +77,9 @@ class CalculatorViewModel: ObservableObject {
 
         // Final probability (clamped to 0-100%)
         let rawProbability = baseProbability * a * frequencyModifier
-        probability = min(max(rawProbability, 0), 100)
+        // Apply calibration factor to better distribute values across 0-100
+        let calibrated = rawProbability * 7.0
+        probability = min(max(calibrated, 0), 100)
 
         // Determine risk level
         if probability < 30 {

@@ -20,7 +20,7 @@ struct BrowseView: View {
         NavigationStack {
             lawListContent
                 .navigationTitle("Browse Laws")
-                .searchable(text: $searchText, prompt: "Search laws...")
+                .searchable(text: $searchText, prompt: "Search")
                 .onChange(of: searchText) { newValue in
                     Task {
                         await viewModel.applyFilters(
@@ -82,19 +82,20 @@ struct BrowseView: View {
     private var lawListContent: some View {
         List {
             ForEach(viewModel.laws) { law in
-                LawListRow(law: law)
-                    .onTapGesture {
-                        selectedLaw = law
-                        showingLawDetail = true
-                    }
-                    .onAppear {
-                        // Load more when approaching end
-                        if viewModel.shouldLoadMore(currentLaw: law) {
-                            Task {
-                                await viewModel.loadMore()
-                            }
+                Button {
+                    selectedLaw = law
+                    showingLawDetail = true
+                } label: {
+                    LawListRow(law: law)
+                }
+                .onAppear {
+                    // Load more when approaching end
+                    if viewModel.shouldLoadMore(currentLaw: law) {
+                        Task {
+                            await viewModel.loadMore()
                         }
                     }
+                }
             }
 
             // Loading more indicator
@@ -197,6 +198,9 @@ struct LawListRow: View {
             }
         }
         .padding(.vertical, Constants.UI.spacingS)
+        .accessibilityIdentifier("LawListRow-\(law.id)")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(law.title ?? "Law"): \(law.text)")
     }
 }
 

@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		69591B8815A2E4E2A154D808 /* MockLawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */; };
-		D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E06EE7367A4443023013451 /* ContentPage.swift */; };
-		C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4265272671CFACD29C9446B /* SharedContentLoader.swift */; };
-		556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */; };
 		00803AFD5319150572230A8D /* NavigationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */; };
 		0D343C8000BC86125F8EB613 /* LawListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F356080AC2E2B74B7AE8DFF /* LawListViewModel.swift */; };
 		0D94D334343E4BAE9168D147 /* CategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62C955AD19A9AF5E90C5C7B /* CategoriesView.swift */; };
@@ -19,6 +15,9 @@
 		18B2B23B6AA8DF414FA05B5E /* LawCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94DB4C9BA2F0079E2D78FB04 /* LawCard.swift */; };
 		1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */; };
 		27C5F22B9A2B55EDFC842A58 /* Law.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86C7CE3B4E821D79B4BBE67 /* Law.swift */; };
+		294600352EBF2D0D00E8E205 /* TestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294600342EBF2D0D00E8E205 /* TestHelpers.swift */; };
+		2946003B2EBF2E9A00E8E205 /* XCUIElementQuery+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2946003A2EBF2E9A00E8E205 /* XCUIElementQuery+Extensions.swift */; };
+		2946003D2EBF2EAF00E8E205 /* ImprovedTestExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2946003C2EBF2EAF00E8E205 /* ImprovedTestExample.swift */; };
 		2B7AA225646E10CC7312586F /* SubmitLawView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6FDC3EDA6F01BC05B88F558 /* SubmitLawView.swift */; };
 		33049F95190C44F3823E6C5C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2ED3D3B91669FD814A1C06D /* Assets.xcassets */; };
 		34F065D0F50A69B0C27C6D45 /* DeviceID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E36A786E080D591D637BCB1 /* DeviceID.swift */; };
@@ -27,10 +26,12 @@
 		425CF7AF7AE6FC7DB0C0B1C6 /* CalculatorUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52E7F37A98F3CA8F2BD0F4D9 /* CalculatorUITests.swift */; };
 		441EC254A6EC2BD33FFE37AA /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E590CE9B0966A46756CFD59E /* Constants.swift */; };
 		49FA408589A664074331A528 /* LawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CE1346FFCDE3DDCEE69F106 /* LawRepository.swift */; };
+		556E731411A56EDCAB0C5743 /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */; };
 		576857C0BDB97789E126318D /* VotingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B769A933753CDE8E606F18 /* VotingService.swift */; };
 		58AF40343C809A85903A9B14 /* LawOfDayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6CB77C95FF85B4ABE3488D9 /* LawOfDayCard.swift */; };
 		5C54EF13C0862FE20402ABD3 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC433B4623925DE473337FF /* APIService.swift */; };
 		6681CD7B027F573E5DD50A50 /* Vote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265273D4ACC856695FD2CF50 /* Vote.swift */; };
+		69591B8815A2E4E2A154D808 /* MockLawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */; };
 		785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */; };
 		790EE3B979BE88B35925407D /* SubmitLawViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */; };
 		7AF98FDDDB1C5BC4CEE3708D /* CategoryListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B83F281BE7A7BBD7D62846 /* CategoryListViewModel.swift */; };
@@ -45,6 +46,8 @@
 		BB9ABE4CA8E1673DD55C3100 /* MurphysLawsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B254F29435390C11AEDA12F /* MurphysLawsApp.swift */; };
 		BE4DDF80244FC55575461BAB /* LawDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */; };
 		C5C061DFFF91CB361AAC27DE /* CalculatorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA45708E5874015B18EDD4FB /* CalculatorViewModelTests.swift */; };
+		C8C7BA41C6D1A07BA003323D /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4265272671CFACD29C9446B /* SharedContentLoader.swift */; };
+		D2FE43CE42565109E7E4D624 /* ContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E06EE7367A4443023013451 /* ContentPage.swift */; };
 		D90D2F00B3CCC17C64A8E325 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A3B86BE05FF749E63F97CF /* ContentView.swift */; };
 		D9E7FEE430FABE2B6AF6B823 /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832943453DFD4547D8FA2E46 /* BrowseView.swift */; };
 		DCF27A24341C260A48F1FD00 /* CategoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774EAD86A11EAC1EF16ACA06 /* CategoryRepository.swift */; };
@@ -69,10 +72,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLawRepository.swift; sourceTree = "<group>"; };
-		6E06EE7367A4443023013451 /* ContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPage.swift; sourceTree = "<group>"; };
-		B4265272671CFACD29C9446B /* SharedContentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentLoader.swift; sourceTree = "<group>"; };
-		9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		045708B48A09D6F63EAD5ACA /* LawDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailView.swift; sourceTree = "<group>"; };
 		04A3B86BE05FF749E63F97CF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		0A4A458B2333FBA01D004AED /* MurphysLaws.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = MurphysLaws.xcodeproj; sourceTree = "<group>"; };
@@ -80,6 +79,11 @@
 		132A19AE0D86C2E4368051DF /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawListViewModelTests.swift; sourceTree = "<group>"; };
 		265273D4ACC856695FD2CF50 /* Vote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vote.swift; sourceTree = "<group>"; };
+		294600342EBF2D0D00E8E205 /* TestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHelpers.swift; sourceTree = "<group>"; };
+		294600392EBF2E8D00E8E205 /* TEST_FIXES_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TEST_FIXES_SUMMARY.md; sourceTree = "<group>"; };
+		2946003A2EBF2E9A00E8E205 /* XCUIElementQuery+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XCUIElementQuery+Extensions.swift"; sourceTree = "<group>"; };
+		2946003C2EBF2EAF00E8E205 /* ImprovedTestExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImprovedTestExample.swift; sourceTree = "<group>"; };
+		2C5970BA987C3D8ED4EDE2E7 /* MockLawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLawRepository.swift; sourceTree = "<group>"; };
 		2CE1346FFCDE3DDCEE69F106 /* LawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawRepository.swift; sourceTree = "<group>"; };
 		3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailViewModel.swift; sourceTree = "<group>"; };
 		4072C53A25F93FC2BD1DE3C2 /* CalculatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorViewModel.swift; sourceTree = "<group>"; };
@@ -89,16 +93,19 @@
 		535B04B1531B0D7550DD7476 /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
 		5B496C30B4D01E873AC35F4A /* MurphysLawsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MurphysLawsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DA9B5B613B0E7969E41C543 /* Attribution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Attribution.swift; sourceTree = "<group>"; };
+		6E06EE7367A4443023013451 /* ContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPage.swift; sourceTree = "<group>"; };
 		6E36A786E080D591D637BCB1 /* DeviceID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceID.swift; sourceTree = "<group>"; };
 		774EAD86A11EAC1EF16ACA06 /* CategoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepository.swift; sourceTree = "<group>"; };
 		832943453DFD4547D8FA2E46 /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
 		94DB4C9BA2F0079E2D78FB04 /* LawCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawCard.swift; sourceTree = "<group>"; };
 		99C0F3DDC9B54E0D329D3602 /* SearchAndFilterUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAndFilterUITests.swift; sourceTree = "<group>"; };
+		9F470A1B733446F6A8272BD4 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
 		A2ED3D3B91669FD814A1C06D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A9147BE68F0EFC513C9F2A92 /* MurphysLaws.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MurphysLaws.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAC173281AAC9AB2537D2E88 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
 		B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUITests.swift; sourceTree = "<group>"; };
+		B4265272671CFACD29C9446B /* SharedContentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContentLoader.swift; sourceTree = "<group>"; };
 		C39071912628B8D7170205D3 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
 		C6CB77C95FF85B4ABE3488D9 /* LawOfDayCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawOfDayCard.swift; sourceTree = "<group>"; };
 		C6FDC3EDA6F01BC05B88F558 /* SubmitLawView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawView.swift; sourceTree = "<group>"; };
@@ -134,6 +141,10 @@
 				B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */,
 				99C0F3DDC9B54E0D329D3602 /* SearchAndFilterUITests.swift */,
 				CEEBFEEA1E10C10DBD69E4D9 /* VotingUITests.swift */,
+				294600342EBF2D0D00E8E205 /* TestHelpers.swift */,
+				294600392EBF2E8D00E8E205 /* TEST_FIXES_SUMMARY.md */,
+				2946003A2EBF2E9A00E8E205 /* XCUIElementQuery+Extensions.swift */,
+				2946003C2EBF2EAF00E8E205 /* ImprovedTestExample.swift */,
 			);
 			path = MurphysLawsUITests;
 			sourceTree = "<group>";
@@ -436,6 +447,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				425CF7AF7AE6FC7DB0C0B1C6 /* CalculatorUITests.swift in Sources */,
+				294600352EBF2D0D00E8E205 /* TestHelpers.swift in Sources */,
+				2946003B2EBF2E9A00E8E205 /* XCUIElementQuery+Extensions.swift in Sources */,
+				2946003D2EBF2EAF00E8E205 /* ImprovedTestExample.swift in Sources */,
 				00803AFD5319150572230A8D /* NavigationUITests.swift in Sources */,
 				F8BEFE8D710B14865363242D /* SearchAndFilterUITests.swift in Sources */,
 				B0805AEBB64518613A1A3470 /* VotingUITests.swift in Sources */,
