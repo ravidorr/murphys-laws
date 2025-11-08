@@ -12,21 +12,24 @@ class LawListViewModel: ObservableObject {
     @Published var laws: [Law] = []
     @Published var isLoading = false
     @Published var isLoadingMore = false
-    @Published var error: Error?
+    @Published var errorMessage: String?
     @Published var hasMorePages = true
 
     // Filters
     @Published var searchQuery: String = ""
     @Published var selectedCategoryID: Int?
-    @Published var sortBy: String = "score"
+    @Published var sortBy: String = "created_at"
     @Published var sortOrder: String = "desc"
 
-    private let repository = LawRepository()
+    @Published var currentPage: Int = 0
+
+    private let repository: LawRepository
     private var currentOffset = 0
     private let limit = Constants.API.defaultLimit
 
     // MARK: - Init
-    init(categoryID: Int? = nil) {
+    init(repository: LawRepository = LawRepository(), categoryID: Int? = nil) {
+        self.repository = repository
         self.selectedCategoryID = categoryID
     }
 
@@ -36,11 +39,12 @@ class LawListViewModel: ObservableObject {
             currentOffset = 0
             laws.removeAll()
             hasMorePages = true
+            currentPage = 0
         }
 
         guard !isLoading else { return }
         isLoading = true
-        error = nil
+        errorMessage = nil
 
         do {
             let response = try await repository.fetchLaws(
@@ -58,11 +62,15 @@ class LawListViewModel: ObservableObject {
                 laws.append(contentsOf: response.data)
             }
 
+            if !response.data.isEmpty {
+                currentPage += 1
+            }
+
             currentOffset += response.data.count
             hasMorePages = response.data.count >= limit
 
         } catch {
-            self.error = error
+            errorMessage = error.localizedDescription
             print("Error loading laws: \(error)")
         }
 
@@ -89,12 +97,21 @@ class LawListViewModel: ObservableObject {
             currentOffset += response.data.count
             hasMorePages = response.data.count >= limit
 
+            if !response.data.isEmpty {
+                currentPage += 1
+            }
+
         } catch {
-            self.error = error
+            errorMessage = error.localizedDescription
             print("Error loading more laws: \(error)")
         }
 
         isLoadingMore = false
+    }
+
+    // MARK: - Load More Laws (Test-friendly alias)
+    func loadMoreLaws() async {
+        await loadMore()
     }
 
     // MARK: - Check if should load more
@@ -108,6 +125,16 @@ class LawListViewModel: ObservableObject {
 
     // MARK: - Refresh
     func refresh() async {
+        await loadLaws(refresh: true)
+    }
+
+    // MARK: - Refresh Laws (Test-friendly alias)
+    func refreshLaws() async {
+        await refresh()
+    }
+
+    // MARK: - Search Laws
+    func searchLaws() async {
         await loadLaws(refresh: true)
     }
 
@@ -134,3 +161,4 @@ class LawListViewModel: ObservableObject {
         await loadLaws(refresh: true)
     }
 }
+

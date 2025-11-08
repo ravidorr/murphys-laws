@@ -1,4 +1,5 @@
 import XCTest
+import XCTest
 @testable import MurphysLaws
 
 @MainActor
@@ -28,8 +29,8 @@ final class LawListViewModelTests: XCTestCase {
     func testLoadLawsSuccess() async {
         // Given
         let mockLaws = [
-            Law(id: 1, text: "Test Law 1", title: nil, upvotes: 10, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil),
-            Law(id: 2, text: "Test Law 2", title: nil, upvotes: 5, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Test Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil),
+            Law(id: 2, text: "Test Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = mockLaws
 
@@ -58,37 +59,47 @@ final class LawListViewModelTests: XCTestCase {
     }
 
     func testLoadMoreLaws() async {
-        // Given
+        // Given - Set up initial batch with enough items to trigger hasMorePages
+        // The limit is typically 25, so we need to return at least that many or manually set hasMorePages
         let firstBatch = [
-            Law(id: 1, text: "Law 1", title: nil, upvotes: 10, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
-        let secondBatch = [
-            Law(id: 2, text: "Law 2", title: nil, upvotes: 5, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
-        ]
-
+        
         mockRepository.lawsToReturn = firstBatch
         await viewModel.loadLaws()
+        
+        XCTAssertEqual(viewModel.laws.count, 1, "Should have 1 law after initial load")
+        XCTAssertEqual(viewModel.currentPage, 1)
 
+        // Manually set hasMorePages to true so loadMore doesn't early return
+        viewModel.hasMorePages = true
+
+        // When - Provide a second batch (simulating next page)
+        let secondBatch = [
+            Law(id: 2, text: "Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
+        ]
         mockRepository.lawsToReturn = secondBatch
-
-        // When
+        
         await viewModel.loadMoreLaws()
 
         // Then
-        XCTAssertEqual(viewModel.laws.count, 2)
-        XCTAssertEqual(viewModel.currentPage, 2)
+        // After loading more, we should have both laws
+        XCTAssertEqual(viewModel.laws.count, 2, "Should have 2 laws total (first batch + second batch)")
+        XCTAssertEqual(viewModel.laws[0].id, 1, "First law should still be Law 1")
+        XCTAssertEqual(viewModel.laws[1].id, 2, "Second law should be Law 2")
+        XCTAssertEqual(viewModel.currentPage, 2, "Should be on page 2")
     }
 
     func testRefreshLaws() async {
         // Given
         let initialLaws = [
-            Law(id: 1, text: "Old Law", title: nil, upvotes: 10, downvotes: 2, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 1, text: "Old Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 2, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = initialLaws
         await viewModel.loadLaws()
 
         let refreshedLaws = [
-            Law(id: 2, text: "New Law", title: nil, upvotes: 5, downvotes: 1, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 2, text: "New Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = refreshedLaws
 
@@ -104,7 +115,7 @@ final class LawListViewModelTests: XCTestCase {
     func testSearchLaws() async {
         // Given
         let searchResults = [
-            Law(id: 3, text: "Murphy's Law", title: nil, upvotes: 100, downvotes: 5, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 3, text: "Murphy's Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 100, downvotes: 5, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = searchResults
 
@@ -120,7 +131,7 @@ final class LawListViewModelTests: XCTestCase {
     func testFilterByCategory() async {
         // Given
         let filteredLaws = [
-            Law(id: 4, text: "Tech Law", title: nil, upvotes: 20, downvotes: 3, createdAt: Date(), attributions: nil, categories: nil)
+            Law(id: 4, text: "Tech Law", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 20, downvotes: 3, createdAt: Date(), updatedAt: Date(), attributions: nil, categories: nil)
         ]
         mockRepository.lawsToReturn = filteredLaws
 
@@ -134,30 +145,3 @@ final class LawListViewModelTests: XCTestCase {
     }
 }
 
-// MARK: - Mock Repository
-
-class MockLawRepository: LawRepository {
-    var lawsToReturn: [Law] = []
-    var shouldFail = false
-    var lastSearchQuery: String?
-    var lastCategoryID: Int?
-
-    override func fetchLaws(limit: Int = 25, offset: Int = 0, query: String? = nil, categoryID: Int? = nil) async throws -> [Law] {
-        lastSearchQuery = query
-        lastCategoryID = categoryID
-
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        return lawsToReturn
-    }
-
-    override func fetchLaw(id: Int) async throws -> Law {
-        if shouldFail {
-            throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
-        }
-
-        return lawsToReturn.first ?? Law(id: id, text: "Mock Law", title: nil, upvotes: 0, downvotes: 0, createdAt: Date(), attributions: nil, categories: nil)
-    }
-}

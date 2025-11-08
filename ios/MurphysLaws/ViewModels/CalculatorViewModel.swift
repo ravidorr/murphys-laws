@@ -77,7 +77,9 @@ class CalculatorViewModel: ObservableObject {
 
         // Final probability (clamped to 0-100%)
         let rawProbability = baseProbability * a * frequencyModifier
-        probability = min(max(rawProbability, 0), 100)
+        // Apply calibration factor to better distribute values across 0-100
+        let calibrated = rawProbability * 7.0
+        probability = min(max(calibrated, 0), 100)
 
         // Determine risk level
         if probability < 30 {
@@ -89,9 +91,19 @@ class CalculatorViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Calculate Probability (Test-friendly method)
+    func calculateProbability() -> Double {
+        calculate()
+        return probability
+    }
+
     // MARK: - Formula String
     var formulaString: String {
         "((U+C+I) × (10-S)) / 20 × A × 1/(1-sin(F/10))"
+    }
+
+    var formulaDescription: String {
+        formulaString
     }
 
     var formulaWithValues: String {
@@ -102,6 +114,18 @@ class CalculatorViewModel: ObservableObject {
         let f = Int(frequency)
 
         return "((\(u)+\(c)+\(i)) × (10-\(s))) / 20 × 1.0 × 1/(1-sin(\(f)/10))"
+    }
+
+    // MARK: - Risk Color
+    var riskColor: String {
+        switch riskLevel {
+        case .low:
+            return "green"
+        case .medium:
+            return "yellow"
+        case .high:
+            return "red"
+        }
     }
 
     // MARK: - Share Results

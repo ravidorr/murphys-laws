@@ -192,6 +192,9 @@ struct VoteButton: View {
             .background(isSelected ? iconColor.opacity(0.1) : Color(.systemGray6))
             .cornerRadius(Constants.UI.cornerRadiusM)
         }
+        .accessibilityIdentifier(voteType.displayName)
+        .accessibilityLabel(voteType.displayName)
+        .accessibilityValue("\(count) votes")
         .disabled(isLoading)
     }
 
