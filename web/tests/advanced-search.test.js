@@ -98,7 +98,9 @@ describe('AdvancedSearch component', () => {
       expect(categorySelect.textContent).toMatch(/Technology/);
     });
 
-    expect(deferUntilIdleSpy).toHaveBeenCalled();
+    // When there's no cache, loadFilters() is called immediately (not deferred)
+    // deferUntilIdle is only called when cache exists
+    expect(deferUntilIdleSpy).not.toHaveBeenCalled();
   });
 
   it('loads attributions successfully', async () => {
@@ -119,7 +121,9 @@ describe('AdvancedSearch component', () => {
       expect(attributionSelect.textContent).toMatch(/Bob/);
     });
 
-    expect(deferUntilIdleSpy).toHaveBeenCalled();
+    // When there's no cache, loadFilters() is called immediately (not deferred)
+    // deferUntilIdle is only called when cache exists
+    expect(deferUntilIdleSpy).not.toHaveBeenCalled();
   });
 
   it('handles filter loading errors gracefully', async () => {
@@ -127,14 +131,15 @@ describe('AdvancedSearch component', () => {
 
     const el = mountSearch();
 
-    // Wait for deferred callback to execute
+    // Wait for loadFilters() to execute (called immediately when no cache)
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const categorySelect = el.querySelector('#search-category');
     // When fetch fails and no cache exists, dropdown keeps "Loading..." text
     // This is expected behavior - user can still use the dropdown
     expect(categorySelect).toBeTruthy();
-    expect(deferUntilIdleSpy).toHaveBeenCalled();
+    // When there's no cache, loadFilters() is called immediately (not deferred)
+    expect(deferUntilIdleSpy).not.toHaveBeenCalled();
   });
 
   it('populates dropdowns from cache immediately', () => {
@@ -161,6 +166,9 @@ describe('AdvancedSearch component', () => {
     expect(categorySelect.textContent).toMatch(/Technology/);
     expect(attributionSelect.textContent).toMatch(/Alice/);
     expect(attributionSelect.textContent).toMatch(/Bob/);
+    
+    // When cache exists, deferUntilIdle should be called to load fresh data
+    expect(deferUntilIdleSpy).toHaveBeenCalled();
   });
 
   it('loads categories on focus if not loaded yet', async () => {

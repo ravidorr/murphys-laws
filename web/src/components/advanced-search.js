@@ -114,16 +114,16 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     categorySelect?.addEventListener('focus', () => {
       if (!categoryLoadAttempted && categories.length === 0) {
         categoryLoadAttempted = true;
-        // Force reload if filters were already loaded but categories are still empty
-        loadFilters(categories.length === 0 && filtersLoaded);
+        // Force reload if categories are empty (whether filters were loaded or not)
+        loadFilters(true);
       }
     }, { once: true });
 
     attributionSelect?.addEventListener('focus', () => {
       if (!attributionLoadAttempted && attributions.length === 0) {
         attributionLoadAttempted = true;
-        // Force reload if filters were already loaded but attributions are still empty
-        loadFilters(attributions.length === 0 && filtersLoaded);
+        // Force reload if attributions are empty (whether filters were loaded or not)
+        loadFilters(true);
       }
     }, { once: true });
   }
@@ -164,11 +164,17 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
   populateDropdowns();
   setupLazyLoad();
   
-  // Defer loading filters until browser is idle (non-blocking)
-  // This removes /api/categories from the critical rendering path
-  deferUntilIdle(() => {
+  // If no cache exists, load immediately; otherwise defer until idle
+  const cachedCategories = getCachedCategories();
+  if (cachedCategories && cachedCategories.length > 0) {
+    // We have cache, so we can defer loading fresh data
+    deferUntilIdle(() => {
+      loadFilters();
+    }, 2000);
+  } else {
+    // No cache, load immediately so dropdown gets populated
     loadFilters();
-  }, 2000);
+  }
 
   return el;
 }

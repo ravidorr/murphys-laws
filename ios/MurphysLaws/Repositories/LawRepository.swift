@@ -144,7 +144,7 @@ class LawRepository: ObservableObject {
         attributionID: Int? = nil,
         sort: String = "score",
         order: String = "desc"
-    ) async throws -> LawsResponse {
+    ) async throws -> APIService.LawsResponse {
 #if DEBUG
         // Use mock data in UI testing mode
         if useMockData {
@@ -190,7 +190,7 @@ class LawRepository: ObservableObject {
         offset: Int,
         query: String?,
         categoryID: Int?
-    ) async -> LawsResponse {
+    ) async -> APIService.LawsResponse {
         var filteredLaws = mockLaws
         
         // Apply search filter
@@ -216,7 +216,7 @@ class LawRepository: ObservableObject {
         // Simulate network delay
         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
         
-        return LawsResponse(
+        return APIService.LawsResponse(
             data: page,
             total: filteredLaws.count,
             limit: limit,
@@ -276,12 +276,12 @@ class LawRepository: ObservableObject {
     }
 
     // MARK: - Fetch Law of Day
-    func fetchLawOfDay() async throws -> LawOfDayResponse {
+    func fetchLawOfDay() async throws -> APIService.LawOfDayResponse {
 #if DEBUG
         if useMockData {
             let dateFormatter = ISO8601DateFormatter()
             try? await Task.sleep(nanoseconds: 300_000_000)
-            return LawOfDayResponse(
+            return APIService.LawOfDayResponse(
                 law: mockLaws.first ?? Law.mock,
                 featuredDate: dateFormatter.string(from: Date())
             )
@@ -293,7 +293,7 @@ class LawRepository: ObservableObject {
         } catch {
 #if DEBUG
             let dateFormatter = ISO8601DateFormatter()
-            return LawOfDayResponse(
+            return APIService.LawOfDayResponse(
                 law: mockLaws.first ?? Law.mock,
                 featuredDate: dateFormatter.string(from: Date())
             )
