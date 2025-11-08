@@ -5,18 +5,6 @@
       location = "self:">
    </FileRef>
    <FileRef
-      location = "group:INFO_PLIST_FIX.md">
-   </FileRef>
-   <FileRef
-      location = "group:diagnose-infoplist.sh">
-   </FileRef>
-   <FileRef
-      location = "group:INFO_PLIST_VISUAL_GUIDE.md">
-   </FileRef>
-   <FileRef
-      location = "group:ConfigurationTests_XCTest.swift">
-   </FileRef>
-   <FileRef
-      location = "group:TESTING_FIX.md">
+      location = "group:TEST_TARGET_VERIFICATION.md">
    </FileRef>
 </Workspace>
