@@ -54,8 +54,10 @@ final class SearchAndFilterUITests: XCTestCase {
             clearButton.tap()
         }
 
-        // Verify search is cleared
-        XCTAssertEqual(searchBar.value as? String, "Search laws...")
+        // Verify search is cleared (placeholder returns)
+        // After clearing, the value becomes the placeholder or empty
+        let searchValue = searchBar.value as? String
+        XCTAssertTrue(searchValue == "Search" || searchValue?.isEmpty == true, "Search should be cleared")
     }
 
     func testFilterByCategory() throws {

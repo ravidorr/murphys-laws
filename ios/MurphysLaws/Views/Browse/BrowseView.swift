@@ -88,6 +88,7 @@ struct BrowseView: View {
                 } label: {
                     LawListRow(law: law)
                 }
+                .accessibilityIdentifier("LawButton-\(law.id)")
                 .onAppear {
                     // Load more when approaching end
                     if viewModel.shouldLoadMore(currentLaw: law) {
