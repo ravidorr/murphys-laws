@@ -63,6 +63,7 @@
 		BB9ABE4CA8E1673DD55C3100 /* MurphysLawsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B254F29435390C11AEDA12F /* MurphysLawsApp.swift */; };
 		BE4DDF80244FC55575461BAB /* LawDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */; };
 		C5C061DFFF91CB361AAC27DE /* CalculatorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA45708E5874015B18EDD4FB /* CalculatorViewModelTests.swift */; };
+		CF12A34B5678DEF901234567 /* ConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB34567890CDEF1234567890 /* ConfigurationTests.swift */; };
 		D90D2F00B3CCC17C64A8E325 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A3B86BE05FF749E63F97CF /* ContentView.swift */; };
 		D9E7FEE430FABE2B6AF6B823 /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832943453DFD4547D8FA2E46 /* BrowseView.swift */; };
 		DCF27A24341C260A48F1FD00 /* CategoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774EAD86A11EAC1EF16ACA06 /* CategoryRepository.swift */; };
@@ -129,6 +130,7 @@
 		A2ED3D3B91669FD814A1C06D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A9147BE68F0EFC513C9F2A92 /* MurphysLaws.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MurphysLaws.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAC173281AAC9AB2537D2E88 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
+		AB34567890CDEF1234567890 /* ConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationTests.swift; sourceTree = "<group>"; };
 		B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUITests.swift; sourceTree = "<group>"; };
 		B40A0EDD85D6771C9CF0E939 /* content */ = {isa = PBXFileReference; lastKnownFileType = folder; name = content; path = ../shared/content; sourceTree = SOURCE_ROOT; };
 		B64BEE8775DE8A88773886FA /* about.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = about.md; sourceTree = "<group>"; };
@@ -283,6 +285,7 @@
 			isa = PBXGroup;
 			children = (
 				CA45708E5874015B18EDD4FB /* CalculatorViewModelTests.swift */,
+				AB34567890CDEF1234567890 /* ConfigurationTests.swift */,
 				C39071912628B8D7170205D3 /* HomeViewModelTests.swift */,
 				1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */,
 				2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */,
@@ -540,6 +543,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C5C061DFFF91CB361AAC27DE /* CalculatorViewModelTests.swift in Sources */,
+				CF12A34B5678DEF901234567 /* ConfigurationTests.swift in Sources */,
 				7C64A32048B746BB8334CB22 /* HomeViewModelTests.swift in Sources */,
 				785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */,
 				5EC30FCA8E474C1BA9E91ACE /* MockLawRepository.swift in Sources */,
@@ -699,7 +703,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 5.9;
 			};
 			name = Debug;
 		};
@@ -829,7 +833,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
 		};
