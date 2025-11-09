@@ -22,7 +22,7 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.lawOfTheDay)
         XCTAssertTrue(viewModel.topVotedLaws.isEmpty)
         XCTAssertTrue(viewModel.trendingLaws.isEmpty)
-        XCTAssertFalse(viewModel.isLoadingLawOfDay)
+        XCTAssertTrue(viewModel.isLoadingLawOfDay) // Starts as true to show skeleton
         XCTAssertNil(viewModel.errorMessage)
     }
 

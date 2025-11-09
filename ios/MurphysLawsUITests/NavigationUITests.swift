@@ -78,7 +78,8 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(upvoteButton.waitForExistence(timeout: 3) || downvoteButton.waitForExistence(timeout: 3), "Vote buttons should exist in detail view")
 
         // Navigate back - look for close button in sheet or swipe down
-        if let closeButton = app.buttons["Close"].firstMatch as? XCUIElement, closeButton.exists {
+        let closeButton = app.buttons["Close"].firstMatch
+        if closeButton.exists {
             closeButton.tap()
         } else {
             // Swipe down to dismiss sheet
