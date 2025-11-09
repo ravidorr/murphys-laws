@@ -136,7 +136,7 @@ class LawRepository: ObservableObject {
 #endif
 
     // MARK: - Fetch Laws
-    func fetchLaws(
+    open func fetchLaws(
         limit: Int = Constants.API.defaultLimit,
         offset: Int = 0,
         query: String? = nil,
@@ -226,7 +226,7 @@ class LawRepository: ObservableObject {
 #endif
 
     // MARK: - Fetch Law Detail
-    func fetchLawDetail(id: Int) async throws -> Law {
+    open func fetchLawDetail(id: Int) async throws -> Law {
         logDebug("LawRepository.fetchLawDetail called for ID: \(id)")
 #if DEBUG
         if useMockData {
@@ -276,7 +276,7 @@ class LawRepository: ObservableObject {
     }
 
     // MARK: - Fetch Law of Day
-    func fetchLawOfDay() async throws -> APIService.LawOfDayResponse {
+    open func fetchLawOfDay() async throws -> APIService.LawOfDayResponse {
 #if DEBUG
         if useMockData {
             let dateFormatter = ISO8601DateFormatter()
