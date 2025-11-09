@@ -62,6 +62,7 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLawsTests
       SWIFT_VERSION: "5.9"
+      GENERATE_INFOPLIST_FILE: YES
 
   MurphysLawsUITests:
     type: bundle.ui-testing
@@ -73,6 +74,7 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLawsUITests
       SWIFT_VERSION: "5.9"
+      GENERATE_INFOPLIST_FILE: YES
 
 schemes:
   MurphysLaws:
