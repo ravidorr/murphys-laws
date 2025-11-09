@@ -153,6 +153,11 @@ jobs:
             sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
             sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
 
+            # Disable standalone vulnerability scanner cron job (it's included in daily report)
+            echo "Disabling standalone vulnerability scanner cron job..."
+            sudo crontab -l | grep -v "vulnerability-scanner.sh" | sudo crontab - || true
+            echo "✓ Standalone vulnerability scanner cron job disabled"
+
             # Restart services (delete and recreate to ensure config changes are loaded)
             cd "$TARGET_DIR/backend"
             pm2 delete all || true
