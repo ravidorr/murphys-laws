@@ -18,7 +18,7 @@ class MockLawRepository: LawRepository {
     var lastSearchQuery: String?
     var lastCategoryID: Int?
 
-    override func fetchLawOfDay() async throws -> LawOfDayResponse {
+    override func fetchLawOfDay() async throws -> APIService.LawOfDayResponse {
         if shouldFail {
             throw NSError(domain: "TestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
         }
@@ -28,7 +28,7 @@ class MockLawRepository: LawRepository {
         }
 
         let dateFormatter = ISO8601DateFormatter()
-        return LawOfDayResponse(law: law, featuredDate: dateFormatter.string(from: Date()))
+        return APIService.LawOfDayResponse(law: law, featuredDate: dateFormatter.string(from: Date()))
     }
 
     override func fetchLaws(
@@ -39,7 +39,7 @@ class MockLawRepository: LawRepository {
         attributionID: Int? = nil,
         sort: String = "score",
         order: String = "desc"
-    ) async throws -> LawsResponse {
+    ) async throws -> APIService.LawsResponse {
         lastSearchQuery = query
         lastCategoryID = categoryID
 
@@ -57,7 +57,7 @@ class MockLawRepository: LawRepository {
             laws = lawsToReturn.isEmpty ? topVotedToReturn : lawsToReturn
         }
 
-        return LawsResponse(data: laws, total: laws.count, limit: limit, offset: offset)
+        return APIService.LawsResponse(data: laws, total: laws.count, limit: limit, offset: offset)
     }
 
     override func fetchLawDetail(id: Int) async throws -> Law {
