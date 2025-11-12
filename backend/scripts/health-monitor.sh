@@ -7,7 +7,7 @@
 #############################################################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="/root/murphys-laws"  # Hardcoded for cron execution
 LOG_FILE="/var/log/health-monitor.log"
 HEALTH_CHECK_FAILURES="/var/tmp/health-check-failures"
 
