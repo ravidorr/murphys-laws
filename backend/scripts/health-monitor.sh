@@ -55,7 +55,7 @@ log "Running health check monitor"
 cd "$PROJECT_DIR" || exit 1
 
 # Run the health check script
-if node scripts/health-check.mjs > /tmp/health-check-output.txt 2>&1; then
+if node backend/scripts/health-check.mjs > /tmp/health-check-output.txt 2>&1; then
     log "Health check passed"
     reset_failure_count
     exit 0
@@ -108,7 +108,7 @@ Please investigate the root cause of the failures."
 
         # Wait a bit and run health check again
         sleep 10
-        if node scripts/health-check.mjs > /tmp/health-check-retest.txt 2>&1; then
+        if node backend/scripts/health-check.mjs > /tmp/health-check-retest.txt 2>&1; then
             log "Health check passed after restart"
             exit 0
         else
