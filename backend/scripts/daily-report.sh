@@ -197,7 +197,7 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 if [ -f "$DB_PATH" ]; then
     # Query the law_of_the_day_history table for today's date
     # Show title and text (matching website display)
-    TODAY_DATE=$(date +%Y-%m-%d)
+    TODAY_DATE=$(date -u +%Y-%m-%d)
     LAW_OF_DAY=$(sqlite3 "$DB_PATH" "
         SELECT COALESCE(l.title || ': ', '') || l.text
         FROM law_of_the_day_history lod
