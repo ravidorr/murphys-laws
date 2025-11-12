@@ -62,7 +62,7 @@ This consolidated approach reduces email noise while providing comprehensive dai
 
 ```bash
 # From your local machine in the project directory
-scp scripts/health-check.mjs ravidor@167.99.53.90:/tmp/
+scp backend/scripts/health-check.mjs ravidor@167.99.53.90:/tmp/
 scp scripts/health-monitor.sh ravidor@167.99.53.90:/tmp/
 scp scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
 scp scripts/ssl-monitor.sh ravidor@167.99.53.90:/tmp/
@@ -79,8 +79,8 @@ scp scripts/cost-optimization-report.sh ravidor@167.99.53.90:/tmp/
 ssh ravidor@167.99.53.90
 
 # Move health check script to project directory (it's a Node.js script)
-sudo cp /tmp/health-check.mjs /root/murphys-laws/scripts/
-sudo chmod +x /root/murphys-laws/scripts/health-check.mjs
+sudo cp /tmp/health-check.mjs /root/murphys-laws/backend/scripts/
+sudo chmod +x /root/murphys-laws/backend/scripts/health-check.mjs
 
 # Move shell scripts to /usr/local/bin
 sudo cp /tmp/health-monitor.sh /usr/local/bin/
@@ -143,14 +143,11 @@ sudo crontab -e
 ```
 
 ```cron
-# Law of the Day selection (daily at midnight UTC)
-0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
-
-# Regenerate index.html (daily at midnight UTC)
-0 0 * * * /usr/local/bin/regenerate-index-html.sh >> /var/log/regenerate-index-html.log 2>&1
-
 # Backup (daily at 4 AM UTC)
 0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1
+
+# Law of the Day selection (daily at midnight UTC)
+0 0 * * * cd /root/murphys-laws && /usr/bin/node backend/scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
 
 # Daily status report (5 AM UTC) - includes SSL monitoring, log analysis, vulnerability scan, and cost report
 0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1
@@ -205,7 +202,7 @@ sudo systemctl reload nginx
 ```bash
 # Test health check
 cd /root/murphys-laws
-node scripts/health-check.mjs
+node backend/scripts/health-check.mjs
 
 # Expected: Should report frontend and API response times
 

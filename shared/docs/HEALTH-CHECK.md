@@ -49,7 +49,7 @@ npm run health-check
 
 2. **Add Execute Command Node**
  - Command: `cd /path/to/murphys-laws && npm run health-check`
- - Or use the direct script: `node /path/to/murphys-laws/scripts/health-check.mjs`
+ - Or use the direct script: `node /path/to/murphys-laws/backend/scripts/health-check.mjs`
 
 3. **Environment Variables**
  - Make sure your n8n environment has access to the `.env` file
@@ -138,7 +138,7 @@ The script has a 10-second timeout per check. If checks consistently timeout:
 
 ## Script Details
 
-**Location**: `scripts/health-check.mjs`
+**Location**: `backend/scripts/health-check.mjs`
 
 **Checks Performed**:
 1. Frontend: GET request to main URL, expects 200 status and `text/html` content-type

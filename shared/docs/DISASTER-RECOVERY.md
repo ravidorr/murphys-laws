@@ -284,14 +284,11 @@ EOF
 
  Add these lines:
  ```cron
- # Law of the Day selection (daily at midnight UTC)
- 0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
-
- # Regenerate index.html (daily at midnight UTC)
- 0 0 * * * /usr/local/bin/regenerate-index-html.sh >> /var/log/regenerate-index-html.log 2>&1
-
  # Backup (daily at 4 AM UTC)
  0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1
+
+ # Law of the Day selection (daily at midnight UTC)
+ 0 0 * * * cd /root/murphys-laws && /usr/bin/node backend/scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
 
  # Daily status report (5 AM UTC) - includes SSL monitoring, log analysis, vulnerability scan, and cost report
  0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1
