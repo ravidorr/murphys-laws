@@ -287,27 +287,23 @@ EOF
  # Law of the Day selection (daily at midnight UTC)
  0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
 
- # Backup (daily at 2 AM)
- 0 2 * * * /usr/local/bin/backup-murphys.sh
+ # Regenerate index.html (daily at midnight UTC)
+ 0 0 * * * /usr/local/bin/regenerate-index-html.sh >> /var/log/regenerate-index-html.log 2>&1
 
- # Daily status report (8 AM UTC)
- 0 5 * * * /usr/local/bin/daily-report.sh
+ # Backup (daily at 4 AM UTC)
+ 0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1
 
- # SSL monitoring (daily at 9 AM)
- 0 9 * * * /usr/local/bin/ssl-monitor.sh
+ # Daily status report (5 AM UTC) - includes SSL monitoring, log analysis, vulnerability scan, and cost report
+ 0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1
 
- # Log analysis (daily at 11 PM)
- 0 23 * * * /usr/local/bin/log-analyzer.sh
-
- # Vulnerability scanning (weekly, Sunday at 3 AM)
- 0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh
-
- # Health monitoring (every 5 minutes)
- */5 * * * * /usr/local/bin/health-monitor.sh
+ # Health monitoring (every 5 minutes) - proactive service restart and real-time alerts
+ */5 * * * * /usr/local/bin/health-monitor.sh >> /var/log/health-monitor.log 2>&1
 
  # Performance tracking (hourly)
- 0 * * * * /usr/local/bin/performance-tracker.sh
+ 0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
  ```
+
+ **Note:** SSL monitoring, log analysis, vulnerability scanning (Sundays), and cost optimization (1st of month) are all integrated into the daily-report.sh script and run as part of the daily status report at 5 AM UTC.
 
 13. **Update DNS**:
  - Update A record for murphys-laws.com to <NEW_IP>

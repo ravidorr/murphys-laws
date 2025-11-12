@@ -9,7 +9,7 @@ The following enhancements have been created:
 **Health & Performance Monitoring:**
 - Enhanced health checks with response time tracking
 - Performance metrics collection (hourly)
-- Automated service restart on failures
+- Automated service restart on failures (every 5 minutes)
 
 **Security Enhancements:**
 - Enhanced nginx rate limiting
@@ -23,6 +23,30 @@ The following enhancements have been created:
 - Disaster recovery documentation
 - Backup restore procedures
 - Cost optimization reporting
+
+## How Monitoring Works
+
+The monitoring system uses two approaches:
+
+**Independent Cron Jobs:**
+- `health-monitor.sh` - Runs every 5 minutes to check service health and restart failed services
+- `performance-tracker.sh` - Runs hourly to collect performance metrics (response times, memory, CPU, disk)
+
+**Integrated Daily Report:**
+The `daily-report.sh` script (runs at 5 AM UTC) consolidates multiple monitoring tasks into a single comprehensive email:
+- System status (uptime, memory, disk, services, PM2 processes)
+- Database metrics (size, growth, activity)
+- Website activity (submissions, votes)
+- Performance metrics (from hourly collection)
+- Murphy's Law of the Day
+- Traffic & bandwidth analysis
+- Security summary (failed SSH, fail2ban)
+- **SSL certificate monitoring** (expiration check, validation)
+- **Log analysis & attack detection** (suspicious patterns, security issues)
+- **Vulnerability scanning** (Sundays only - CVEs, outdated packages)
+- **Cost optimization report** (1st of month only - resource usage recommendations)
+
+This consolidated approach reduces email noise while providing comprehensive daily insights.
 
 ## Prerequisites
 
@@ -119,30 +143,26 @@ sudo crontab -e
 ```
 
 ```cron
-# Daily status report (8 AM UTC)
-0 5 * * * /usr/local/bin/daily-report.sh
+# Law of the Day selection (daily at midnight UTC)
+0 0 * * * cd /root/murphys-laws && /usr/bin/node scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
 
-# Health monitoring (every 5 minutes)
-*/5 * * * * /usr/local/bin/health-monitor.sh
+# Regenerate index.html (daily at midnight UTC)
+0 0 * * * /usr/local/bin/regenerate-index-html.sh >> /var/log/regenerate-index-html.log 2>&1
+
+# Backup (daily at 4 AM UTC)
+0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1
+
+# Daily status report (5 AM UTC) - includes SSL monitoring, log analysis, vulnerability scan, and cost report
+0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1
+
+# Health monitoring (every 5 minutes) - proactive service restart and real-time alerts
+*/5 * * * * /usr/local/bin/health-monitor.sh >> /var/log/health-monitor.log 2>&1
 
 # Performance tracking (hourly)
-0 * * * * /usr/local/bin/performance-tracker.sh
-
-# SSL monitoring (daily at 9 AM)
-0 9 * * * /usr/local/bin/ssl-monitor.sh
-
-# Vulnerability scanning (weekly, Sunday at 3 AM)
-0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh
-
-# Log analysis (daily at 11 PM)
-0 23 * * * /usr/local/bin/log-analyzer.sh
-
-# Cost optimization report (monthly, 1st day at 10 AM)
-0 10 1 * * /usr/local/bin/cost-optimization-report.sh
-
-# Backup (daily at 2 AM) - should already exist
-0 2 * * * /usr/local/bin/backup-murphys.sh
+0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
 ```
+
+**Note:** SSL monitoring, log analysis, vulnerability scanning (Sundays), and cost optimization (1st of month) are all integrated into the daily-report.sh script and run as part of the daily status report at 5 AM UTC.
 
 #### 6. Update Nginx Configuration (Rate Limiting & Security Headers)
 
@@ -339,49 +359,49 @@ sudo crontab -e
 After deployment, check these log files daily for the first week:
 
 ```bash
-# Health monitoring
+# Health monitoring (every 5 minutes)
 tail -f /var/log/health-monitor.log
 
-# Performance tracking
+# Performance tracking (hourly)
 tail -f /var/log/performance-tracker.log
 
-# SSL monitoring
-tail -f /var/log/ssl-monitor.log
+# Daily reports (includes SSL, log analysis, vulnerability scan, cost report)
+tail -f /var/log/daily-report.log
 
-# Vulnerability scanning
-tail -f /var/log/vulnerability-scanner.log
-
-# Log analysis
-tail -f /var/log/log-analyzer.log
-
-# Daily reports
-tail -f /var/log/daily-status-report.log
+# Individual script logs (if run manually or as part of daily report)
+tail -f /var/log/consolidated-daily-report.log
 ```
 
 ---
 
 ## Expected First-Week Schedule
 
-**Daily (8 AM UTC)**:
-- Enhanced status report email
-
-**Daily (9 AM UTC)**:
-- SSL certificate monitoring email (if issues)
-
-**Daily (11 PM UTC)**:
-- Log analysis report email
-
 **Every 5 Minutes**:
-- Health check (alerts only on failures)
+- Health monitoring runs (alerts only on failures)
 
 **Hourly**:
 - Performance metrics collected (silent, check logs)
 
-**Weekly (Sunday 3 AM)**:
-- Vulnerability scan email
+**Daily at Midnight UTC**:
+- Law of the Day selection
+- Index.html regeneration
 
-**Monthly (1st, 10 AM)**:
-- Cost optimization report email
+**Daily at 4 AM UTC**:
+- Database and application backup
+
+**Daily at 5 AM UTC**:
+- Comprehensive status report email including:
+  - System status
+  - Database metrics
+  - Website activity
+  - Performance metrics (from hourly collection)
+  - Murphy's Law of the Day
+  - Traffic & bandwidth
+  - Security summary
+  - SSL certificate status
+  - Log analysis & attack detection
+  - Vulnerability scan (Sundays only)
+  - Cost optimization report (1st of month only)
 
 ---
 
