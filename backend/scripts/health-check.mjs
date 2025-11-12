@@ -1,6 +1,14 @@
 #!/usr/bin/env node
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import nodemailer from 'nodemailer';
+
+// Load .env from backend directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const backendDir = join(__dirname, '..');
+config({ path: join(backendDir, '.env') });
 
 // Configuration
 const FRONTEND_URL = process.env.HEALTH_CHECK_FRONTEND_URL || 'https://murphys-laws.com';
