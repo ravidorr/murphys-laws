@@ -68,9 +68,9 @@ COMMAND_INJECTION_PATTERNS=(
     "\$\(cat"
 )
 
-# Logging
+# Logging - only to log file, not stdout (stdout goes to email)
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
 # Generate report
@@ -82,8 +82,9 @@ log "=========================================="
 
 # 1. Nginx Access Log Analysis
 log "Analyzing nginx access logs..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="NGINX ACCESS LOG ANALYSIS\n"
-REPORT+="=========================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$NGINX_ACCESS_LOG" ]; then
     # Get today's date in nginx log format
@@ -142,8 +143,9 @@ fi
 
 # 2. SQL Injection Attempts
 log "Checking for SQL injection attempts..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="SQL INJECTION ATTEMPTS\n"
-REPORT+="======================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 SQL_ATTEMPTS=0
 for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do
@@ -181,8 +183,9 @@ fi
 
 # 3. XSS Attempts
 log "Checking for XSS attempts..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="CROSS-SITE SCRIPTING (XSS) ATTEMPTS\n"
-REPORT+="====================================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 XSS_ATTEMPTS=0
 for pattern in "${XSS_PATTERNS[@]}"; do
@@ -211,8 +214,9 @@ fi
 
 # 4. Path Traversal Attempts
 log "Checking for path traversal attempts..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="PATH TRAVERSAL ATTEMPTS\n"
-REPORT+="=======================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 TRAVERSAL_ATTEMPTS=0
 for pattern in "${PATH_TRAVERSAL_PATTERNS[@]}"; do
@@ -241,8 +245,9 @@ fi
 
 # 5. Command Injection Attempts
 log "Checking for command injection attempts..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="COMMAND INJECTION ATTEMPTS\n"
-REPORT+="==========================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 CMD_ATTEMPTS=0
 for pattern in "${COMMAND_INJECTION_PATTERNS[@]}"; do
@@ -271,8 +276,9 @@ fi
 
 # 6. Brute Force Detection
 log "Checking for brute force attempts..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="BRUTE FORCE ATTEMPTS\n"
-REPORT+="====================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$AUTH_LOG" ]; then
     # SSH brute force
@@ -296,8 +302,9 @@ fi
 
 # 7. Rate Limiting Hits
 log "Checking rate limit hits..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="RATE LIMITING\n"
-REPORT+="=============\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$NGINX_ERROR_LOG" ]; then
     RATE_LIMIT_HITS=$(grep "limiting requests" "$NGINX_ERROR_LOG" | grep "$(date +%Y/%m/%d)" | wc -l)
@@ -319,8 +326,9 @@ fi
 
 # 8. Application Errors
 log "Checking application errors..."
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
 REPORT+="APPLICATION ERRORS\n"
-REPORT+="==================\n\n"
+REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "/root/murphys-laws/logs/api-error.log" ]; then
     API_ERRORS=$(grep -E "(Error|Exception|Failed)" "/root/murphys-laws/logs/api-error.log" | tail -10 | wc -l)
@@ -334,13 +342,16 @@ if [ -f "/root/murphys-laws/logs/api-error.log" ]; then
     else
         REPORT+="No recent API errors\n\n"
     fi
+else
+    REPORT+="No API error log found\n\n"
 fi
 
 # Generate summary
 TOTAL_ISSUES=$((SQL_ATTEMPTS + XSS_ATTEMPTS + TRAVERSAL_ATTEMPTS + CMD_ATTEMPTS))
 
-SUMMARY="Log Analysis Summary - $(date +%Y-%m-%d)\n"
-SUMMARY+="=======================================\n\n"
+SUMMARY="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+SUMMARY+="Log Analysis Summary - $(date +%Y-%m-%d)\n"
+SUMMARY+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ "$TOTAL_ISSUES" -gt 0 ]; then
     SUMMARY+="SECURITY ISSUES DETECTED:\n"
@@ -355,8 +366,7 @@ fi
 
 SUMMARY+="Total requests today: $TOTAL_REQUESTS\n"
 SUMMARY+="4xx errors: $ERROR_4XX\n"
-SUMMARY+="5xx errors: $ERROR_5XX\n"
-SUMMARY+="\n=======================================\n\n"
+SUMMARY+="5xx errors: $ERROR_5XX\n\n"
 
 # Add summary to beginning of report
 FULL_REPORT="$SUMMARY$REPORT"
