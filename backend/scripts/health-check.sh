@@ -9,7 +9,7 @@
 # Configuration
 FRONTEND_URL="${HEALTH_CHECK_FRONTEND_URL:-https://murphys-laws.com}"
 API_URL="${HEALTH_CHECK_API_URL:-https://murphys-laws.com/api/health}"
-DB_PATH="/root/murphys-laws/murphys.db"
+DB_PATH="/root/murphys-laws/backend/murphys.db"
 ALERT_EMAIL="ravidor@gmail.com"
 ALERT_THRESHOLD_MS=5000  # Alert if response time > 5 seconds
 LOG_FILE="/var/log/health-check.log"
