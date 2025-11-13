@@ -89,7 +89,7 @@ if [ -n "$LATEST_DB_BACKUP" ]; then
     fi
 
     # Compare with production
-    PROD_COUNT=$(sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;" 2>&1)
+    PROD_COUNT=$(sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;" 2>&1)
     DIFF=$((PROD_COUNT - ROW_COUNT))
     log "  Production: $PROD_COUNT laws"
     log "  Backup: $ROW_COUNT laws"
