@@ -98,7 +98,7 @@ log "Disk: ${DISK_USED}GB used / ${DISK_AVAILABLE}GB available (${DISK_PERCENT}%
 
 # 5. Database size
 log "Checking database size..."
-DB_PATH="/root/murphys-laws/murphys.db"
+DB_PATH="/root/murphys-laws/backend/murphys.db"
 if [ -f "$DB_PATH" ]; then
     DB_SIZE_BYTES=$(stat -f%z "$DB_PATH" 2>/dev/null || stat -c%s "$DB_PATH" 2>/dev/null)
     DB_SIZE_MB=$(echo "scale=2; $DB_SIZE_BYTES / 1024 / 1024" | bc)
