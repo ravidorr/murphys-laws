@@ -94,7 +94,7 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="DATABASE METRICS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-DB_PATH="/root/murphys-laws/murphys.db"
+DB_PATH="/root/murphys-laws/backend/murphys.db"
 if [ -f "$DB_PATH" ]; then
     DB_SIZE=$(du -h "$DB_PATH" | cut -f1)
     DB_ROWS=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM laws;" 2>/dev/null || echo "N/A")
