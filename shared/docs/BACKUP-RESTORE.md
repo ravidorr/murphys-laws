@@ -18,7 +18,7 @@ Complete guide for backing up and restoring the Murphy's Laws application and in
 ### What Gets Backed Up
 
 **Main Application (167.99.53.90)**:
-- Database (`murphys.db`) - Contains all laws, submissions, votes
+- Database (`backend/murphys.db`) - Contains all laws, submissions, votes
 - Environment configuration (`.env`) - SMTP credentials, API keys
 - Application code (excluding `node_modules`, logs, `.git`)
 
@@ -54,7 +54,7 @@ ssh ravidor@167.99.53.90
 
 # Create timestamped backup
 TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
-sqlite3 /root/murphys-laws/murphys.db ".backup /root/backups/murphys-manual-$TIMESTAMP.db"
+sqlite3 /root/murphys-laws/backend/murphys.db ".backup /root/backups/murphys-manual-$TIMESTAMP.db"
 
 # Verify backup
 sqlite3 /root/backups/murphys-manual-$TIMESTAMP.db "PRAGMA integrity_check;"
@@ -144,14 +144,14 @@ sqlite3 $BACKUP_FILE "PRAGMA integrity_check;"
 # Must output: ok
 
 # 6. Backup current (potentially corrupted) database
-cp /root/murphys-laws/murphys.db /root/murphys-laws/murphys.db.backup-before-restore
+cp /root/murphys-laws/backend/murphys.db /root/murphys-laws/backend/murphys.db.backup-before-restore
 
 # 7. Restore the backup
-cp $BACKUP_FILE /root/murphys-laws/murphys.db
+cp $BACKUP_FILE /root/murphys-laws/backend/murphys.db
 
 # 8. Verify restored database
-sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
-sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
+sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
+sqlite3 /root/murphys-laws/backend/murphys.db "PRAGMA integrity_check;"
 
 # 9. Restart application
 pm2 restart all
@@ -189,7 +189,7 @@ cd /root
 tar -xzf /root/backups/murphys-laws-2025-01-26-020000.tar.gz
 
 # 6. Restore database separately (it's not in the tarball)
-cp /root/backups/murphys-2025-01-26-020000.db /root/murphys-laws/murphys.db
+cp /root/backups/murphys-2025-01-26-020000.db /root/murphys-laws/backend/murphys.db
 
 # 7. Restore environment file
 cp /root/backups/.env-2025-01-26-020000 /root/murphys-laws/.env
@@ -233,7 +233,7 @@ scp ~/local-backups/.env-2025-01-26-020000 \
 ssh ravidor@<NEW_SERVER_IP>
 
 # 4. Move backups to proper location
-sudo cp /tmp/murphys-2025-01-26-020000.db /root/murphys-laws/murphys.db
+sudo cp /tmp/murphys-2025-01-26-020000.db /root/murphys-laws/backend/murphys.db
 sudo cp /tmp/.env-2025-01-26-020000 /root/murphys-laws/.env
 
 # 5. Continue with application setup (see [DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md))
@@ -319,7 +319,7 @@ cp $LATEST_BACKUP $TEST_RESTORE
 sqlite3 $TEST_RESTORE "SELECT COUNT(*) FROM laws;"
 
 # 8. Compare with production
-PROD_COUNT=$(sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;")
+PROD_COUNT=$(sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;")
 BACKUP_COUNT=$(sqlite3 $LATEST_BACKUP "SELECT COUNT(*) FROM laws;")
 
 echo "Production laws: $PROD_COUNT"
@@ -520,7 +520,7 @@ sqlite3 /root/backups/murphys-YYYY-MM-DD-HHMMSS.db "SELECT COUNT(*) FROM laws;"
 scp ravidor@167.99.53.90:/root/backups/murphys-YYYY-MM-DD-HHMMSS.db ~/
 
 # Restore backup
-cp /root/backups/murphys-YYYY-MM-DD-HHMMSS.db /root/murphys-laws/murphys.db
+cp /root/backups/murphys-YYYY-MM-DD-HHMMSS.db /root/murphys-laws/backend/murphys.db
 ```
 
 ---

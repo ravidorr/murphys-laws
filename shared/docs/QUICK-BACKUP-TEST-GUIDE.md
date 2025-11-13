@@ -62,7 +62,7 @@ sqlite3 "$LATEST_BACKUP" "SELECT COUNT(*) FROM laws;"
 # Should show number of laws
 
 # Compare with production
-sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
+sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
 # Should be close to backup count (difference < 10)
 ```
 
@@ -204,7 +204,7 @@ sudo /usr/local/bin/backup-murphys.sh
 ls -lh /root/backups/murphys-*.db | head -1
 
 # Check recent database activity
-sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*), MAX(created_at) FROM laws;"
+sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*), MAX(created_at) FROM laws;"
 ```
 
 ---

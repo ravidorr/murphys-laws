@@ -72,7 +72,7 @@ ALTER TABLE laws DROP COLUMN my_column;
 ### Local database out of sync?
 Download fresh copy from production:
 ```bash
-scp -i ~/.ssh/murphys_deploy root@45.55.124.212:~/murphys-laws/murphys.db ./murphys.db
+scp -i ~/.ssh/murphys_deploy root@45.55.124.212:~/murphys-laws/backend/murphys.db ./backend/murphys.db
 ```
 
 ## Production Database Backup
@@ -82,6 +82,6 @@ The deployment workflow automatically backs up the database before each deploy t
 To manually backup:
 ```bash
 # On server
-cd ~/murphys-laws
+cd ~/murphys-laws/backend
 cp murphys.db "murphys.db.backup.$(date +%Y%m%d_%H%M%S)"
 ```
