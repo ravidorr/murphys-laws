@@ -87,7 +87,7 @@ sqlite3 /root/backups/murphys-2025-01-15-020000.db "PRAGMA integrity_check;"
 
 2. **Verify database is corrupted**:
  ```bash
- sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
+ sqlite3 /root/murphys-laws/backend/murphys.db "PRAGMA integrity_check;"
  ```
 
 3. **Find latest backup**:
@@ -97,13 +97,13 @@ sqlite3 /root/backups/murphys-2025-01-15-020000.db "PRAGMA integrity_check;"
 
 4. **Restore database**:
  ```bash
- cp /root/backups/murphys-YYYY-MM-DD-HHMMSS.db /root/murphys-laws/murphys.db
+ cp /root/backups/murphys-YYYY-MM-DD-HHMMSS.db /root/murphys-laws/backend/murphys.db
  ```
 
 5. **Verify restored database**:
  ```bash
- sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
- sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
+ sqlite3 /root/murphys-laws/backend/murphys.db "PRAGMA integrity_check;"
+ sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
  ```
 
 6. **Restart services**:
@@ -211,7 +211,7 @@ EOF
 
  If you have access to old droplet:
  ```bash
- scp ravidor@167.99.53.90:/root/backups/murphys-*.db /root/murphys-laws/murphys.db
+ scp ravidor@167.99.53.90:/root/backups/murphys-*.db /root/murphys-laws/backend/murphys.db
  ```
 
  If old droplet is gone, you'll need to rebuild from source:

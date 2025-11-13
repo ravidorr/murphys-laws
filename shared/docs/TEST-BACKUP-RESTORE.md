@@ -97,7 +97,7 @@ sqlite3 "$TEST_DIR/test.db" "SELECT COUNT(*) FROM laws;"
 # Should show number of laws
 
 # Compare with production
-sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
+sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
 # Should be close to backup count
 
 # Cleanup
@@ -216,7 +216,7 @@ ssh ravidor@167.99.53.90
 sudo pm2 stop all
 
 # Optional: Rename database to simulate corruption
-sudo mv /root/murphys-laws/murphys.db /root/murphys-laws/murphys.db.FAILED
+sudo mv /root/murphys-laws/backend/murphys.db /root/murphys-laws/backend/murphys.db.FAILED
 ```
 
 #### Phase 2: Execute Recovery
@@ -232,11 +232,11 @@ echo "Restoring from: $LATEST_BACKUP"
 sqlite3 "$LATEST_BACKUP" "PRAGMA integrity_check;"
 
 # 3. Restore database
-sudo cp "$LATEST_BACKUP" /root/murphys-laws/murphys.db
+sudo cp "$LATEST_BACKUP" /root/murphys-laws/backend/murphys.db
 
 # 4. Verify restored database
-sqlite3 /root/murphys-laws/murphys.db "PRAGMA integrity_check;"
-sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
+sqlite3 /root/murphys-laws/backend/murphys.db "PRAGMA integrity_check;"
+sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
 
 # 5. Restart services
 sudo pm2 restart all
@@ -266,7 +266,7 @@ curl https://murphys-laws.com/api/health
 # Should return {"ok":true,"dbQueryTime":...}
 
 # Check database
-sqlite3 /root/murphys-laws/murphys.db "SELECT COUNT(*) FROM laws;"
+sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
 # Should return correct count
 
 # Compare before/after
@@ -440,9 +440,9 @@ sudo /usr/local/bin/backup-murphys.sh
 **Issue**: Cannot query restored database
 ```bash
 # Solution: Check permissions
-ls -l /root/murphys-laws/murphys.db
-sudo chown root:root /root/murphys-laws/murphys.db
-sudo chmod 644 /root/murphys-laws/murphys.db
+ls -l /root/murphys-laws/backend/murphys.db
+sudo chown root:root /root/murphys-laws/backend/murphys.db
+sudo chmod 644 /root/murphys-laws/backend/murphys.db
 ```
 
 **Issue**: Services don't start after restore
