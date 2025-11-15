@@ -31,8 +31,6 @@ struct MurphysLawsApp: App {
     
     /// Setup mock data and configurations for UI testing
     private func setupUITestEnvironment() {
-        print("🧪 Running in UI Test mode - using mock data")
-        
         // Disable animations for faster, more reliable tests
         UIView.setAnimationsEnabled(false)
         

@@ -163,18 +163,10 @@ struct LawDetailView: View {
             }
         }
         .task {
-            print("🔍 LawDetailView task started for lawID: \(lawID)")
-            print("🔍 viewModel.law is nil: \(viewModel.law == nil)")
-            
             // Only fetch if we don't already have the law data
             if viewModel.law == nil {
                 await viewModel.loadLaw()
-                print("🔍 After loadLaw - viewModel.law is nil: \(viewModel.law == nil)")
-                if let error = viewModel.error {
-                    print("❌ Error: \(error)")
-                }
             } else {
-                print("✅ Already have law data, skipping fetch")
                 // Optionally refresh in the background to get latest vote counts
                 // Uncomment if you want to always fetch fresh data:
                 // await viewModel.refresh()

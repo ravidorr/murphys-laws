@@ -103,3 +103,4 @@ func logWarning(_ message: String, file: String = #file, function: String = #fun
 func logError(_ message: String, file: String = #file, function: String = #function, line: Int = #line) {
     Logger.shared.error(message, file: file, function: function, line: line)
 }
+

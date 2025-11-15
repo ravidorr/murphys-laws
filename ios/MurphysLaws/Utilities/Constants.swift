@@ -11,7 +11,6 @@ enum Constants {
     // MARK: - Configuration Loader
     private static let config: NSDictionary? = {
         guard let path = Bundle.main.path(forResource: "Config", ofType: "plist") else {
-            print("⚠️ Config.plist not found. Using default values.")
             return nil
         }
         return NSDictionary(contentsOfFile: path)
@@ -55,7 +54,6 @@ enum Constants {
             guard let config = Constants.config,
                   let url = config["APIBaseURL"] as? String else {
                 // Fallback to default if plist not found
-                print("⚠️ Using default API URL")
                 return "https://murphys-laws.com/api/v1"
             }
             return url

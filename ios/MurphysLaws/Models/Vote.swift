@@ -53,7 +53,7 @@ struct VoteRequest: Codable {
 
 struct VoteResponse: Codable {
     let lawID: Int
-    let voteType: String
+    let voteType: String?  // Optional - not present in remove vote responses
     let upvotes: Int
     let downvotes: Int
     

@@ -141,8 +141,6 @@ class APIService: ObservableObject {
                 let decoded = try decoder.decode(T.self, from: data)
                 return decoded
             } catch {
-                print("Decoding error: \(error)")
-                print("Response data: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
                 throw APIError.decodingError(error)
             }
         } catch let error as APIError {
@@ -230,11 +228,9 @@ class APIService: ObservableObject {
 
     // MARK: - Categories Endpoints
     func fetchCategories() async throws -> [Category] {
-        print("🌐 APIService.fetchCategories: Making API request to \(Constants.API.categories)")
         let response: CategoriesResponse = try await request(
             endpoint: Constants.API.categories
         )
-        print("✅ APIService.fetchCategories: Received response with \(response.data.count) categories")
         return response.data
     }
 

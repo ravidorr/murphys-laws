@@ -71,11 +71,6 @@ struct CategoryCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: Constants.UI.spacingM) {
-                // Icon
-                Image(systemName: category.iconName)
-                    .font(.system(size: 48))
-                    .foregroundColor(category.iconColor)
-
                 // Title
                 Text(category.title)
                     .font(.headline)
@@ -131,7 +126,7 @@ struct CategoryDetailView: View {
                     List {
                         ForEach(viewModel.laws) { law in
                             NavigationLink {
-                                LawDetailView(lawID: law.id)
+                                LawDetailView(lawID: law.id, law: law)
                             } label: {
                                 LawRowView(law: law)
                             }
@@ -153,6 +148,9 @@ struct CategoryDetailView: View {
                         }
                     }
                     .listStyle(.plain)
+                    .refreshable {
+                        await viewModel.loadLaws(refresh: true)
+                    }
                 }
             }
             .navigationTitle(category.title)
@@ -172,6 +170,14 @@ struct CategoryDetailView: View {
                     await viewModel.loadLaws()
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .lawVotesDidChange)) { notification in
+                // Update vote counts when a law is voted on
+                if let lawID = notification.userInfo?["lawID"] as? Int,
+                   let upvotes = notification.userInfo?["upvotes"] as? Int,
+                   let downvotes = notification.userInfo?["downvotes"] as? Int {
+                    viewModel.updateLawVotes(lawID: lawID, upvotes: upvotes, downvotes: downvotes)
+                }
+            }
         }
     }
 }
@@ -179,6 +185,11 @@ struct CategoryDetailView: View {
 // MARK: - Law Row View
 struct LawRowView: View {
     let law: Law
+    @EnvironmentObject var votingService: VotingService
+
+    var currentVote: VoteType? {
+        votingService.getVote(for: law.id)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
@@ -193,13 +204,13 @@ struct LawRowView: View {
                 .lineLimit(3)
 
             HStack {
-                Label("\(law.upvotes)", systemImage: "arrow.up.circle.fill")
+                Label("\(law.upvotes)", systemImage: currentVote == .up ? "hand.thumbsup.fill" : "hand.thumbsup")
+                    .foregroundColor(currentVote == .up ? .green : .gray)
                     .font(.caption)
-                    .foregroundColor(.green)
 
-                Label("\(law.downvotes)", systemImage: "arrow.down.circle.fill")
+                Label("\(law.downvotes)", systemImage: currentVote == .down ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                    .foregroundColor(currentVote == .down ? .red : .gray)
                     .font(.caption)
-                    .foregroundColor(.red)
 
                 Spacer()
 
