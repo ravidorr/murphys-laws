@@ -59,9 +59,6 @@ extension XCUIApplication {
     @discardableResult
     func waitForLaws(timeout: TimeInterval = 5) -> Bool {
         let lawExists = anyLawRow().waitForExistence(timeout: timeout)
-        if !lawExists {
-            print("⚠️ No laws found after \(timeout) seconds")
-        }
         return lawExists
     }
     

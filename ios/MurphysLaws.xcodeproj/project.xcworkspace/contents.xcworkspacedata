@@ -5,6 +5,18 @@
       location = "self:">
    </FileRef>
    <FileRef
-      location = "group:TEST_TARGET_VERIFICATION.md">
+      location = "group:VOTE_SYNC_NOTIFICATION_FIX.md">
+   </FileRef>
+   <FileRef
+      location = "group:VOTE_SYNC_COMPILATION_FIX.md">
+   </FileRef>
+   <FileRef
+      location = "group:VoteSynchronizationTests.swift">
+   </FileRef>
+   <FileRef
+      location = "group:VoteSyncTests.swift">
+   </FileRef>
+   <FileRef
+      location = "group:VOTE_SYNC_FINAL_FIX.md">
    </FileRef>
 </Workspace>
