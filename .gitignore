@@ -56,6 +56,9 @@ android/*.aab
 android/app/release/
 android/.cxx/
 android/.externalNativeBuild/
+android/build/
+android/app/build/
+android/.DS_Store
 
 # Platform-specific node_modules
 backend/node_modules/

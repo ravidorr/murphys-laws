@@ -1,0 +1,28 @@
+package com.murphyslaws.di
+
+import com.murphyslaws.data.repository.CategoryRepositoryImpl
+import com.murphyslaws.data.repository.LawRepositoryImpl
+import com.murphyslaws.domain.repository.CategoryRepository
+import com.murphyslaws.domain.repository.LawRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindLawRepository(
+        lawRepositoryImpl: LawRepositoryImpl
+    ): LawRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCategoryRepository(
+        categoryRepositoryImpl: CategoryRepositoryImpl
+    ): CategoryRepository
+}
