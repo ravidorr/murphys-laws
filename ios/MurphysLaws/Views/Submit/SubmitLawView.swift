@@ -44,8 +44,6 @@ struct SubmitLawView: View {
                                 viewModel.selectedCategoryID = category.id
                             } label: {
                                 HStack {
-                                    Image(systemName: category.iconName)
-                                        .foregroundColor(category.iconColor)
                                     Text(category.title)
                                         .foregroundColor(.primary)
                                     Spacer()

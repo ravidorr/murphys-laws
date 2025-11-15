@@ -7,6 +7,11 @@
 
 import Foundation
 
+// MARK: - Notification Names
+extension Notification.Name {
+    static let lawVotesDidChange = Notification.Name("lawVotesDidChange")
+}
+
 class VotingService: ObservableObject {
     static let shared = VotingService()
 
@@ -39,35 +44,38 @@ class VotingService: ObservableObject {
 
     // MARK: - Vote Actions
     func vote(lawID: Int, voteType: VoteType) async throws {
-        print("📥 VotingService.vote - lawID: \(lawID), type: \(voteType.displayName)")
-        
         // Optimistic update on main thread
         let previousVote = await MainActor.run { votes[lawID] }
         await MainActor.run {
             votes[lawID] = voteType
             saveVotes()
         }
-        
-        print("💾 Local vote saved")
 
         do {
             // Sync with backend
-            print("🌐 Syncing vote with backend...")
             let response = try await apiService.voteLaw(id: lawID, voteType: voteType)
-            print("✅ Backend sync successful - upvotes: \(response.upvotes), downvotes: \(response.downvotes)")
-        } catch {
-            print("❌ Backend sync failed: \(error.localizedDescription)")
             
+            // Post notification with updated vote counts
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: .lawVotesDidChange,
+                    object: nil,
+                    userInfo: [
+                        "lawID": lawID,
+                        "upvotes": response.upvotes,
+                        "downvotes": response.downvotes
+                    ]
+                )
+            }
+        } catch {
             // Check if it's a network error vs a real error
             if error is URLError {
                 // Network errors - keep the vote locally, will sync later
-                print("🌐 Network error - keeping vote locally for future sync")
                 // Don't rollback for network issues
                 return
             }
             
             // For other errors (like 401, 403, etc), rollback
-            print("⏪ Rolling back due to non-network error")
             // Rollback on error on main thread
             await MainActor.run {
                 if let previous = previousVote {
@@ -77,41 +85,43 @@ class VotingService: ObservableObject {
                 }
                 saveVotes()
             }
-            print("⏪ Vote rolled back")
             throw error
         }
     }
 
     func removeVote(lawID: Int) async throws {
-        print("🗑️ VotingService.removeVote - lawID: \(lawID)")
-        
         // Optimistic update on main thread
         let previousVote = await MainActor.run { votes[lawID] }
         await MainActor.run {
             votes.removeValue(forKey: lawID)
             saveVotes()
         }
-        
-        print("💾 Local vote removed")
 
         do {
             // Sync with backend
-            print("🌐 Syncing vote removal with backend...")
-            _ = try await apiService.removeVote(lawID: lawID)
-            print("✅ Backend sync successful")
-        } catch {
-            print("❌ Backend sync failed: \(error.localizedDescription)")
+            let response = try await apiService.removeVote(lawID: lawID)
             
+            // Post notification with updated vote counts
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: .lawVotesDidChange,
+                    object: nil,
+                    userInfo: [
+                        "lawID": lawID,
+                        "upvotes": response.upvotes,
+                        "downvotes": response.downvotes
+                    ]
+                )
+            }
+        } catch {
             // Check if it's a network error vs a real error
             if error is URLError {
                 // Network errors - keep the removal locally, will sync later
-                print("🌐 Network error - keeping removal locally for future sync")
                 // Don't rollback for network issues
                 return
             }
             
             // For other errors (like 401, 403, etc), rollback
-            print("⏪ Rolling back due to non-network error")
             // Rollback on error on main thread
             await MainActor.run {
                 if let previous = previousVote {
@@ -119,32 +129,25 @@ class VotingService: ObservableObject {
                 }
                 saveVotes()
             }
-            print("⏪ Vote removal rolled back")
             throw error
         }
     }
 
     func toggleVote(lawID: Int, voteType: VoteType) async throws {
         let currentVote = await MainActor.run { votes[lawID] }
-        print("🗳️ VotingService.toggleVote - lawID: \(lawID), requested: \(voteType.displayName), current: \(currentVote?.displayName ?? "none")")
         
         if let currentVote = currentVote {
             if currentVote == voteType {
                 // Remove vote if clicking same button
-                print("🗳️ Removing vote (clicking same button)")
                 try await removeVote(lawID: lawID)
             } else {
                 // Change vote type
-                print("🗳️ Changing vote from \(currentVote.displayName) to \(voteType.displayName)")
                 try await vote(lawID: lawID, voteType: voteType)
             }
         } else {
             // Add new vote
-            print("🗳️ Adding new vote: \(voteType.displayName)")
             try await vote(lawID: lawID, voteType: voteType)
         }
-        
-        print("✅ VotingService.toggleVote completed")
     }
 
     // MARK: - Bulk Operations

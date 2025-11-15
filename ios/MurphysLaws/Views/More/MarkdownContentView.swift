@@ -445,12 +445,18 @@ struct FlowTextWithLinks: View {
             // Check if fullMatch contains data-nav attribute
             if link.fullMatch.contains("data-nav") {
                 // Extract the data-nav value from the original HTML
-                if let navMatch = link.fullMatch.range(of: #"data-nav="([^"]+)""#, options: .regularExpression) {
-                    let navString = String(link.fullMatch[navMatch])
-                    if let valueMatch = navString.range(of: #"="([^"]+)""#, options: .regularExpression) {
-                        let value = navString[valueMatch].replacingOccurrences(of: "=\"", with: "").replacingOccurrences(of: "\"", with: "")
-                        onNavigate(value)
-                        return
+                let pattern = #"data-nav="([^"]+)""#
+                if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                    let nsString = link.fullMatch as NSString
+                    if let match = regex.firstMatch(in: link.fullMatch, options: [], range: NSRange(location: 0, length: nsString.length)) {
+                        if match.numberOfRanges >= 2 {
+                            let valueRange = match.range(at: 1)
+                            if valueRange.location != NSNotFound {
+                                let value = nsString.substring(with: valueRange)
+                                onNavigate(value)
+                                return
+                            }
+                        }
                     }
                 }
             } else if link.href.hasPrefix("#") {

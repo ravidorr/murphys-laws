@@ -23,45 +23,52 @@ class CategoryRepository: ObservableObject {
 
     // MARK: - Fetch Categories
     func fetchCategories(forceRefresh: Bool = false) async throws -> [Category] {
-        print("📂 CategoryRepository: fetchCategories called (forceRefresh: \(forceRefresh))")
-        
         // Return cached if available and not forcing refresh
         if !forceRefresh, !categories.isEmpty {
             if isCacheValid() {
-                print("✅ CategoryRepository: Returning \(categories.count) cached categories")
                 return categories
-            } else {
-                print("⚠️ CategoryRepository: Cache expired")
             }
-        } else if categories.isEmpty {
-            print("📭 CategoryRepository: No cached categories")
         }
 
         // Fetch from API
-        print("🌐 CategoryRepository: Fetching from API...")
         do {
             let fetchedCategories = try await apiService.fetchCategories()
-            print("✅ CategoryRepository: Received \(fetchedCategories.count) categories from API")
+            
+            // Deduplicate by title (keep the one with the lower ID)
+            var seenTitles: [String: Category] = [:]
+            var uniqueCategories: [Category] = []
+            
+            for category in fetchedCategories {
+                if let existing = seenTitles[category.title] {
+                    // Keep the category with the lower ID
+                    if category.id < existing.id {
+                        seenTitles[category.title] = category
+                        // Remove old one and add new one
+                        uniqueCategories.removeAll { $0.id == existing.id }
+                        uniqueCategories.append(category)
+                    }
+                } else {
+                    seenTitles[category.title] = category
+                    uniqueCategories.append(category)
+                }
+            }
             
 #if DEBUG
             // In DEBUG mode, if API returns empty array, use mock data
-            if fetchedCategories.isEmpty {
-                print("⚠️ CategoryRepository: API returned empty array, using mock data in DEBUG mode")
+            if uniqueCategories.isEmpty {
                 categories = mockCategories
                 saveToCache(mockCategories)
                 return mockCategories
             }
 #endif
             
-            categories = fetchedCategories
+            categories = uniqueCategories
             // Save to cache
-            saveToCache(fetchedCategories)
-            return fetchedCategories
+            saveToCache(uniqueCategories)
+            return uniqueCategories
         } catch {
-            print("❌ CategoryRepository: API error: \(error)")
 #if DEBUG
             // Fallback to mock categories for UI tests
-            print("🧪 CategoryRepository: Falling back to \(mockCategories.count) mock categories")
             categories = mockCategories
             saveToCache(mockCategories)
             return mockCategories
@@ -73,25 +80,17 @@ class CategoryRepository: ObservableObject {
 
     // MARK: - Cache Management
     private func loadFromCache() {
-        print("💾 CategoryRepository: Loading from cache...")
         if let data = UserDefaults.standard.data(forKey: cacheKey),
            let cached = try? JSONDecoder().decode([Category].self, from: data),
            isCacheValid() {
-            print("✅ CategoryRepository: Loaded \(cached.count) categories from cache")
             categories = cached
-        } else {
-            print("📭 CategoryRepository: No valid cache found")
         }
     }
 
     private func saveToCache(_ categories: [Category]) {
-        print("💾 CategoryRepository: Saving \(categories.count) categories to cache")
         if let encoded = try? JSONEncoder().encode(categories) {
             UserDefaults.standard.set(encoded, forKey: cacheKey)
             UserDefaults.standard.set(Date(), forKey: "\(cacheKey)_timestamp")
-            print("✅ CategoryRepository: Cache saved successfully")
-        } else {
-            print("❌ CategoryRepository: Failed to encode categories for cache")
         }
     }
 

@@ -83,11 +83,6 @@ final class CalculatorUITests: XCTestCase {
             if probabilityPattern.element.exists {
                 XCTAssertTrue(true, "Found probability percentage")
             } else {
-                // If still not found, print what's available for debugging
-                print("Available static texts:")
-                app.staticTexts.allElementsBoundByIndex.prefix(10).forEach { text in
-                    print("  - \(text.label)")
-                }
                 XCTFail("Could not find probability percentage display")
             }
         }

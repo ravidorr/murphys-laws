@@ -24,43 +24,29 @@ class LawDetailViewModel: ObservableObject {
         self.lawID = lawID
         self.law = initialLaw  // Use the law we already have
         self.currentVote = votingService.getVote(for: lawID)
-        
-        if let initialLaw = initialLaw {
-            print("✅ LawDetailViewModel initialized with initial law: \(initialLaw.title ?? initialLaw.text)")
-        } else {
-            print("⚠️ LawDetailViewModel initialized without initial law, will fetch ID: \(lawID)")
-        }
     }
 
     // MARK: - Load Law Detail
     func loadLaw() async {
-        print("📥 LawDetailViewModel.loadLaw() starting for lawID: \(lawID)")
         isLoading = true
         error = nil
 
         do {
-            print("🌐 Fetching law detail from repository...")
             law = try await lawRepository.fetchLawDetail(id: lawID)
-            print("✅ Law loaded successfully: \(law?.title ?? law?.text ?? "unknown")")
             currentVote = votingService.getVote(for: lawID)
         } catch {
             self.error = error
-            print("❌ Error loading law detail: \(error)")
-            print("❌ Error localizedDescription: \(error.localizedDescription)")
         }
 
         isLoading = false
-        print("📥 LawDetailViewModel.loadLaw() completed. isLoading=\(isLoading), law is nil: \(law == nil), error: \(error?.localizedDescription ?? "none")")
     }
 
     // MARK: - Voting
     func toggleVote(_ voteType: VoteType) async {
         guard !isVoting, let law = law else {
-            print("⚠️ Cannot vote: isVoting=\(isVoting), law is nil=\(law == nil)")
             return
         }
 
-        print("🗳️ Voting \(voteType.displayName) on law \(law.id)")
         isVoting = true
         
         let previousVote = currentVote
@@ -68,8 +54,6 @@ class LawDetailViewModel: ObservableObject {
         do {
             try await votingService.toggleVote(lawID: law.id, voteType: voteType)
             currentVote = votingService.getVote(for: law.id)
-            
-            print("✅ Vote successful! New vote state: \(currentVote?.displayName ?? "none")")
             
             // Update vote counts optimistically
             self.law = updateVoteCounts(law: law, previousVote: previousVote, newVote: currentVote, clickedVote: voteType)
@@ -80,15 +64,12 @@ class LawDetailViewModel: ObservableObject {
             let finalVote = votingService.getVote(for: law.id)
             if finalVote != nil && finalVote != previousVote {
                 // Vote succeeded locally even though backend failed
-                print("⚠️ Vote saved locally but backend sync failed: \(error)")
                 currentVote = finalVote
                 self.law = updateVoteCounts(law: law, previousVote: previousVote, newVote: currentVote, clickedVote: voteType)
                 // Don't set error - the vote worked from user's perspective
             } else {
                 // Vote completely failed
                 self.error = error
-                print("❌ Error voting: \(error)")
-                print("❌ Error details: \(error.localizedDescription)")
             }
         }
 
@@ -116,8 +97,6 @@ class LawDetailViewModel: ObservableObject {
                 newDownvotes += 1
             }
         }
-        
-        print("📊 Vote counts updated: \(law.upvotes)→\(newUpvotes) up, \(law.downvotes)→\(newDownvotes) down")
         
         // Create updated law with new vote counts
         return Law(
