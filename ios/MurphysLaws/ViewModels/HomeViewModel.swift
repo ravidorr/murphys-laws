@@ -64,7 +64,6 @@ class HomeViewModel: ObservableObject {
             } else {
                 errorMessage = error.localizedDescription
             }
-            print("Error loading law of the day: \(error)")
         }
         
         // Ensure minimum loading duration
@@ -90,7 +89,6 @@ class HomeViewModel: ObservableObject {
             topVotedLaws = response.data
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading top voted laws: \(error)")
         }
     }
 
@@ -106,7 +104,6 @@ class HomeViewModel: ObservableObject {
             trendingLaws = response.data
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading trending laws: \(error)")
         }
     }
 
@@ -122,7 +119,6 @@ class HomeViewModel: ObservableObject {
             recentlyAdded = response.data
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading recently added laws: \(error)")
         }
     }
 

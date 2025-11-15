@@ -71,7 +71,6 @@ class LawListViewModel: ObservableObject {
 
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading laws: \(error)")
         }
 
         isLoading = false
@@ -103,7 +102,6 @@ class LawListViewModel: ObservableObject {
 
         } catch {
             errorMessage = error.localizedDescription
-            print("Error loading more laws: \(error)")
         }
 
         isLoadingMore = false
@@ -159,6 +157,38 @@ class LawListViewModel: ObservableObject {
         searchQuery = ""
         selectedCategoryID = nil
         await loadLaws(refresh: true)
+    }
+    
+    // MARK: - Update Vote Counts
+    @MainActor
+    func updateLawVotes(lawID: Int, upvotes: Int, downvotes: Int) {
+        // Find and update the specific law in the list
+        guard let index = laws.firstIndex(where: { $0.id == lawID }) else {
+            return
+        }
+        
+        // Create updated law with new vote counts
+        let oldLaw = laws[index]
+        let updatedLaw = Law(
+            id: oldLaw.id,
+            text: oldLaw.text,
+            title: oldLaw.title,
+            slug: oldLaw.slug,
+            rawMarkdown: oldLaw.rawMarkdown,
+            originNote: oldLaw.originNote,
+            upvotes: upvotes,
+            downvotes: downvotes,
+            createdAt: oldLaw.createdAt,
+            updatedAt: oldLaw.updatedAt,
+            attributions: oldLaw.attributions,
+            categories: oldLaw.categories
+        )
+        
+        // Replace in array - SwiftUI will automatically update the UI
+        laws[index] = updatedLaw
+        
+        // Explicitly trigger objectWillChange to ensure UI updates
+        objectWillChange.send()
     }
 }
 

@@ -49,10 +49,14 @@ struct Law: Codable, Identifiable, Hashable {
     // MARK: - Hashable
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(upvotes)
+        hasher.combine(downvotes)
     }
 
     static func == (lhs: Law, rhs: Law) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && 
+        lhs.upvotes == rhs.upvotes && 
+        lhs.downvotes == rhs.downvotes
     }
 }
 

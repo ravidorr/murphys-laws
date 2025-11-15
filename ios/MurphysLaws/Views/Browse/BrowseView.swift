@@ -17,67 +17,82 @@ struct BrowseView: View {
 
     var body: some View {
         NavigationStack {
-            lawListContent
-                .navigationTitle("Browse Laws")
-                .searchable(text: $searchText, prompt: "Search")
-                .onChange(of: searchText) { newValue in
-                    Task {
-                        await viewModel.applyFilters(
-                            query: newValue.isEmpty ? nil : newValue,
-                            categoryID: selectedCategoryID
-                        )
-                    }
+            VStack(spacing: 0) {
+                // Active filters display
+                if selectedCategoryID != nil || sortOrder != .newest {
+                    activeFiltersBar
                 }
-                .onChange(of: selectedCategoryID) { newValue in
-                    Task {
-                        await viewModel.applyFilters(
-                            query: searchText.isEmpty ? nil : searchText,
-                            categoryID: newValue
-                        )
-                    }
-                }
-                .onChange(of: sortOrder) { newValue in
-                    Task {
-                        switch newValue {
-                        case .newest:
-                            await viewModel.applySort(by: "created_at", order: "desc")
-                        case .oldest:
-                            await viewModel.applySort(by: "created_at", order: "asc")
-                        case .topVoted:
-                            await viewModel.applySort(by: "score", order: "desc")
-                        case .controversial:
-                            await viewModel.applySort(by: "controversy", order: "desc")
-                        }
-                    }
-                }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        filterButton
-                    }
-                }
-                .refreshable {
-                    await viewModel.refresh()
-                }
-                .task {
-                    if viewModel.laws.isEmpty {
-                        await viewModel.loadLaws()
-                    }
-                }
-                .sheet(item: $selectedLaw) { law in
-                    NavigationStack {
-                        LawDetailView(lawID: law.id, law: law)
-                            .id(law.id)  // Force view recreation for each law
-                    }
-                }
-                .sheet(isPresented: $showingFilters) {
-                    FilterView(
-                        selectedCategoryID: $selectedCategoryID,
-                        sortOrder: $sortOrder
+                
+                lawListContent
+            }
+            .navigationTitle("Browse Laws")
+            .searchable(text: $searchText, prompt: "Search")
+            .onChange(of: searchText) { newValue in
+                Task {
+                    await viewModel.applyFilters(
+                        query: newValue.isEmpty ? nil : newValue,
+                        categoryID: selectedCategoryID
                     )
                 }
-                .overlay {
-                    contentOverlay
+            }
+            .onChange(of: selectedCategoryID) { newValue in
+                Task {
+                    await viewModel.applyFilters(
+                        query: searchText.isEmpty ? nil : searchText,
+                        categoryID: newValue
+                    )
                 }
+            }
+            .onChange(of: sortOrder) { newValue in
+                Task {
+                    switch newValue {
+                    case .newest:
+                        await viewModel.applySort(by: "created_at", order: "desc")
+                    case .oldest:
+                        await viewModel.applySort(by: "created_at", order: "asc")
+                    case .topVoted:
+                        await viewModel.applySort(by: "score", order: "desc")
+                    case .controversial:
+                        await viewModel.applySort(by: "controversy", order: "desc")
+                    }
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    filterButton
+                }
+            }
+            .refreshable {
+                await viewModel.refresh()
+            }
+            .task {
+                if viewModel.laws.isEmpty {
+                    await viewModel.loadLaws()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .lawVotesDidChange)) { notification in
+                // Update vote counts when a law is voted on
+                if let lawID = notification.userInfo?["lawID"] as? Int,
+                   let upvotes = notification.userInfo?["upvotes"] as? Int,
+                   let downvotes = notification.userInfo?["downvotes"] as? Int {
+                    viewModel.updateLawVotes(lawID: lawID, upvotes: upvotes, downvotes: downvotes)
+                }
+            }
+            .sheet(item: $selectedLaw) { law in
+                NavigationStack {
+                    LawDetailView(lawID: law.id, law: law)
+                        .id(law.id)  // Force view recreation for each law
+                }
+            }
+            .sheet(isPresented: $showingFilters) {
+                FilterView(
+                    selectedCategoryID: $selectedCategoryID,
+                    sortOrder: $sortOrder
+                )
+            }
+            .overlay {
+                contentOverlay
+            }
         }
     }
 
@@ -117,8 +132,78 @@ struct BrowseView: View {
         Button {
             showingFilters.toggle()
         } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle")
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                
+                // Badge indicator when filters are active
+                if selectedCategoryID != nil || sortOrder != .newest {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 8, height: 8)
+                        .offset(x: 6, y: -6)
+                }
+            }
         }
+    }
+    
+    @StateObject private var categoryViewModel = CategoryListViewModel()
+    
+    private var activeFiltersBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Constants.UI.spacingS) {
+                // Category filter chip
+                if let categoryID = selectedCategoryID {
+                    FilterChip(
+                        title: categoryTitle(for: categoryID),
+                        systemImage: "tag",
+                        color: categoryColor(for: categoryID)
+                    ) {
+                        selectedCategoryID = nil
+                    }
+                }
+                
+                // Sort order chip (only if not default)
+                if sortOrder != .newest {
+                    FilterChip(
+                        title: sortOrder.rawValue,
+                        systemImage: "arrow.up.arrow.down",
+                        color: .blue
+                    ) {
+                        sortOrder = .newest
+                    }
+                }
+                
+                // Clear all button (if multiple filters)
+                if selectedCategoryID != nil && sortOrder != .newest {
+                    Button {
+                        selectedCategoryID = nil
+                        sortOrder = .newest
+                    } label: {
+                        Text("Clear All")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.red)
+                    }
+                    .padding(.leading, Constants.UI.spacingS)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, Constants.UI.spacingS)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .task {
+            if categoryViewModel.categories.isEmpty {
+                await categoryViewModel.loadCategories()
+            }
+        }
+    }
+    
+    private func categoryTitle(for id: Int) -> String {
+        categoryViewModel.categories.first { $0.id == id }?.title ?? "Category"
+    }
+    
+    private func categoryColor(for id: Int) -> Color {
+        categoryViewModel.categories.first { $0.id == id }?.iconColor ?? .gray
     }
 
     @ViewBuilder
@@ -194,6 +279,45 @@ struct LawListRow: View {
         .accessibilityIdentifier("LawListRow-\(law.id)")
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(law.title ?? "Law"): \(law.text)")
+    }
+}
+
+// MARK: - Filter Chip Component
+struct FilterChip: View {
+    let title: String
+    let systemImage: String
+    let color: Color
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.caption2)
+                .foregroundColor(color)
+            
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .lineLimit(1)
+            
+            Button {
+                onRemove()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(color.opacity(0.15))
+        )
+        .overlay(
+            Capsule()
+                .strokeBorder(color.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
