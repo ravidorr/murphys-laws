@@ -33,7 +33,6 @@
 		298ED0212EBF7CF40008BE54 /* VOTING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0202EBF7CF40008BE54 /* VOTING_FIX.md */; };
 		298ED0232EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0222EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md */; };
 		298ED0272EBFFE080008BE54 /* CODE_SIGNING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0262EBFFE080008BE54 /* CODE_SIGNING_FIX.md */; };
-		29F7F7B62EC887D3003CC948 /* MarkdownContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7F7B52EC887D3003CC948 /* MarkdownContentTests.swift */; };
 		29F7F7B82EC88811003CC948 /* TEST_COVERAGE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 29F7F7B72EC88811003CC948 /* TEST_COVERAGE_SUMMARY.md */; };
 		29F7F7BA2EC88840003CC948 /* CHANGES_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 29F7F7B92EC88840003CC948 /* CHANGES_SUMMARY.md */; };
 		29F7F7BC2EC8893A003CC948 /* FILTER_UX_IMPROVEMENT.md in Resources */ = {isa = PBXBuildFile; fileRef = 29F7F7BB2EC8893A003CC948 /* FILTER_UX_IMPROVEMENT.md */; };
@@ -594,7 +593,6 @@
 				F8BEFE8D710B14865363242D /* SearchAndFilterUITests.swift in Sources */,
 				B0805AEBB64518613A1A3470 /* VotingUITests.swift in Sources */,
 				29F7F7BE2EC8DB11003CC948 /* BrowseViewTests.swift in Sources */,
-				29F7F7B62EC887D3003CC948 /* MarkdownContentTests.swift in Sources */,
 				801CF7787973AAD889A012DC /* XCUIElementQuery+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
