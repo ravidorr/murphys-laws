@@ -49,7 +49,12 @@ class BrowseViewModel @Inject constructor(
 
     fun voteLaw(lawId: Int, voteType: VoteType) {
         viewModelScope.launch {
-            voteLawUseCase(lawId, voteType)
+            voteLawUseCase(lawId, voteType).onSuccess {
+                // Vote successful - UI will update on next page refresh
+            }.onFailure { error ->
+                // Handle vote error
+                // TODO: Show error message to user
+            }
         }
     }
 }
