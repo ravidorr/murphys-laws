@@ -108,6 +108,9 @@ dependencies {
     // DataStore (Key-Value Storage)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
+    // Security (Encrypted SharedPreferences)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Paging 3
     implementation("androidx.paging:paging-runtime-ktx:3.2.1")
     implementation("androidx.paging:paging-compose:3.2.1")
