@@ -12,7 +12,7 @@ data class LawEntity(
     val title: String?,
     val upvotes: Int,
     val downvotes: Int,
-    val createdAt: String,
+    val createdAt: String? = null,
     val cachedAt: Long = System.currentTimeMillis()
 )
 

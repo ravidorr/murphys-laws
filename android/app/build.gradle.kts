@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.murphyslaws"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.murphyslaws"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
 
@@ -53,7 +53,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.4"
+        kotlinCompilerExtensionVersion = "1.5.11"
     }
 
     packaging {
@@ -107,6 +107,9 @@ dependencies {
 
     // DataStore (Key-Value Storage)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Security (Encrypted SharedPreferences)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Paging 3
     implementation("androidx.paging:paging-runtime-ktx:3.2.1")
