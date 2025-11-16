@@ -15,7 +15,7 @@ data class LawDto(
     @SerializedName("downvotes")
     val downvotes: Int,
     @SerializedName("created_at")
-    val createdAt: String,
+    val createdAt: String? = null,
     @SerializedName("attributions")
     val attributions: List<AttributionDto>?,
     @SerializedName("categories")
