@@ -53,11 +53,9 @@
 		576857C0BDB97789E126318D /* VotingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B769A933753CDE8E606F18 /* VotingService.swift */; };
 		58AF40343C809A85903A9B14 /* LawOfDayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6CB77C95FF85B4ABE3488D9 /* LawOfDayCard.swift */; };
 		5C54EF13C0862FE20402ABD3 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC433B4623925DE473337FF /* APIService.swift */; };
-		5C6AA634EAF4932FAF9375FF /* ContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD3DDE19235B83992ACD0F2C /* ContentPage.swift */; };
 		5EC30FCA8E474C1BA9E91ACE /* MockLawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */; };
 		6681CD7B027F573E5DD50A50 /* Vote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265273D4ACC856695FD2CF50 /* Vote.swift */; };
 		68F89301754F774C83368547 /* SkeletonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6976190389183045AEF94B77 /* SkeletonViews.swift */; };
-		7037DAAB12DB3321919685BA /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63604559CDF030DAA4E19857 /* SharedContentLoader.swift */; };
 		7709942B73800C1A0AC8A746 /* terms.md in Resources */ = {isa = PBXBuildFile; fileRef = 6FCD941B4AF3689D44F1BB23 /* terms.md */; };
 		785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */; };
 		790EE3B979BE88B35925407D /* SubmitLawViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */; };
@@ -625,7 +623,6 @@
 				7AF98FDDDB1C5BC4CEE3708D /* CategoryListViewModel.swift in Sources */,
 				DCF27A24341C260A48F1FD00 /* CategoryRepository.swift in Sources */,
 				441EC254A6EC2BD33FFE37AA /* Constants.swift in Sources */,
-				5C6AA634EAF4932FAF9375FF /* ContentPage.swift in Sources */,
 				D90D2F00B3CCC17C64A8E325 /* ContentView.swift in Sources */,
 				34F065D0F50A69B0C27C6D45 /* DeviceID.swift in Sources */,
 				34F2B212CC93A76669E59B20 /* EmptyStateView.swift in Sources */,
@@ -645,7 +642,6 @@
 				9962FA39F054E552E4A53EC5 /* MarkdownContentView.swift in Sources */,
 				1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */,
 				BB9ABE4CA8E1673DD55C3100 /* MurphysLawsApp.swift in Sources */,
-				7037DAAB12DB3321919685BA /* SharedContentLoader.swift in Sources */,
 				68F89301754F774C83368547 /* SkeletonViews.swift in Sources */,
 				2B7AA225646E10CC7312586F /* SubmitLawView.swift in Sources */,
 				790EE3B979BE88B35925407D /* SubmitLawViewModel.swift in Sources */,
