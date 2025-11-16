@@ -1,12 +1,11 @@
 package com.murphyslaws.presentation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -32,10 +31,8 @@ data class BottomNavItem(
 
 val bottomNavItems = listOf(
     BottomNavItem(Routes.Home.route, Icons.Default.Home, "Home"),
-    BottomNavItem(Routes.Browse.route, Icons.Default.List, "Browse"),
-    BottomNavItem(Routes.Categories.route, Icons.Default.Category, "Categories"),
-    BottomNavItem(Routes.Calculators.route, Icons.Default.Calculate, "Calculators"),
-    BottomNavItem(Routes.More.route, Icons.Default.MoreVert, "More")
+    BottomNavItem(Routes.Browse.route, Icons.Default.MenuBook, "Laws"),
+    BottomNavItem(Routes.More.route, Icons.Default.Info, "About")
 )
 
 @Composable
@@ -47,11 +44,13 @@ fun MainScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f)
+            ) {
                 bottomNavItems.forEach { item ->
                     NavigationBarItem(
                         icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
+                        label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
                         selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
                         onClick = {
                             navController.navigate(item.route) {
@@ -74,7 +73,7 @@ fun MainScreen(
     ) { innerPadding ->
         NavGraph(
             navController = navController,
-            startDestination = Routes.Home.route
+            startDestination = Routes.Browse.route
         )
     }
 }
