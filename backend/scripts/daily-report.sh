@@ -413,14 +413,20 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 
     # Extract summary
     if [ -f "$TEMP_DIR/vuln-scan.txt" ]; then
-        sed -n '/^Vulnerability Scan Summary/,/^=========/p' "$TEMP_DIR/vuln-scan.txt" | head -30 > "$TEMP_DIR/vuln-summary.txt"
+        # Extract just the summary content (skip the redundant header)
+        sed -n '/^Vulnerability Scan Summary/,/^=========/p' "$TEMP_DIR/vuln-scan.txt" | tail -n +3 | head -30 > "$TEMP_DIR/vuln-summary.txt"
         REPORT+="$(cat $TEMP_DIR/vuln-summary.txt)\n\n"
 
         # Add key findings
         REPORT+="Key Findings:\n"
-        grep -E "(VULNERABILITIES FOUND|security update|critical|high)" "$TEMP_DIR/vuln-scan.txt" | head -20 | while read line; do
-            REPORT+="  $line\n"
-        done
+        FINDINGS=$(grep -E "(VULNERABILITIES FOUND|security update|critical|high)" "$TEMP_DIR/vuln-scan.txt" | head -20)
+        if [ -n "$FINDINGS" ]; then
+            echo "$FINDINGS" | while read line; do
+                REPORT+="  $line\n"
+            done
+        else
+            REPORT+="  No critical vulnerabilities or security updates found\n"
+        fi
         REPORT+="\n"
     else
         REPORT+="Vulnerability scan failed\n\n"
