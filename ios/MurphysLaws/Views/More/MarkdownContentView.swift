@@ -5,10 +5,11 @@
 //  Renders shared markdown content with native SwiftUI
 //
 
+import Foundation
 import SwiftUI
 
-public struct MarkdownContentView: View {
-    public let page: ContentPage
+struct MarkdownContentView: View {
+    let page: ContentPage
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var tabCoordinator: TabNavigationCoordinator
 
@@ -16,11 +17,11 @@ public struct MarkdownContentView: View {
     @State private var isLoading = true
     @State private var error: String?
 
-    public init(page: ContentPage) {
+    init(page: ContentPage) {
         self.page = page
     }
 
-    public var body: some View {
+    var body: some View {
         NavigationStack {
             Group {
                 if isLoading {
@@ -508,21 +509,21 @@ struct FlowTextWithLinks: View {
 }
 
 #Preview("About") {
-    MarkdownContentView(page: .about)
+    MarkdownContentView(page: ContentPage.about)
         .environmentObject(TabNavigationCoordinator.shared)
 }
 
 #Preview("Privacy") {
-    MarkdownContentView(page: .privacy)
+    MarkdownContentView(page: ContentPage.privacy)
         .environmentObject(TabNavigationCoordinator.shared)
 }
 
 #Preview("Terms") {
-    MarkdownContentView(page: .terms)
+    MarkdownContentView(page: ContentPage.terms)
         .environmentObject(TabNavigationCoordinator.shared)
 }
 
 #Preview("Contact") {
-    MarkdownContentView(page: .contact)
+    MarkdownContentView(page: ContentPage.contact)
         .environmentObject(TabNavigationCoordinator.shared)
 }

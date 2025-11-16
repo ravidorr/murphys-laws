@@ -33,7 +33,6 @@
 		298ED0212EBF7CF40008BE54 /* VOTING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0202EBF7CF40008BE54 /* VOTING_FIX.md */; };
 		298ED0232EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0222EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md */; };
 		298ED0272EBFFE080008BE54 /* CODE_SIGNING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 298ED0262EBFFE080008BE54 /* CODE_SIGNING_FIX.md */; };
-		29F7F7B12EC887B3003CC948 /* CategoryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7F7B02EC887B3003CC948 /* CategoryRepositoryTests.swift */; };
 		29F7F7B62EC887D3003CC948 /* MarkdownContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F7F7B52EC887D3003CC948 /* MarkdownContentTests.swift */; };
 		29F7F7B82EC88811003CC948 /* TEST_COVERAGE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 29F7F7B72EC88811003CC948 /* TEST_COVERAGE_SUMMARY.md */; };
 		29F7F7BA2EC88840003CC948 /* CHANGES_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 29F7F7B92EC88840003CC948 /* CHANGES_SUMMARY.md */; };
@@ -54,11 +53,9 @@
 		576857C0BDB97789E126318D /* VotingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B769A933753CDE8E606F18 /* VotingService.swift */; };
 		58AF40343C809A85903A9B14 /* LawOfDayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6CB77C95FF85B4ABE3488D9 /* LawOfDayCard.swift */; };
 		5C54EF13C0862FE20402ABD3 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC433B4623925DE473337FF /* APIService.swift */; };
-		5C6AA634EAF4932FAF9375FF /* ContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD3DDE19235B83992ACD0F2C /* ContentPage.swift */; };
 		5EC30FCA8E474C1BA9E91ACE /* MockLawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */; };
 		6681CD7B027F573E5DD50A50 /* Vote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265273D4ACC856695FD2CF50 /* Vote.swift */; };
 		68F89301754F774C83368547 /* SkeletonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6976190389183045AEF94B77 /* SkeletonViews.swift */; };
-		7037DAAB12DB3321919685BA /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63604559CDF030DAA4E19857 /* SharedContentLoader.swift */; };
 		7709942B73800C1A0AC8A746 /* terms.md in Resources */ = {isa = PBXBuildFile; fileRef = 6FCD941B4AF3689D44F1BB23 /* terms.md */; };
 		785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */; };
 		790EE3B979BE88B35925407D /* SubmitLawViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */; };
@@ -128,7 +125,6 @@
 		298ED0222EBF7DCB0008BE54 /* API_RESPONSE_MISMATCH_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = API_RESPONSE_MISMATCH_FIX.md; sourceTree = "<group>"; };
 		298ED0242EBFFDE90008BE54 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		298ED0262EBFFE080008BE54 /* CODE_SIGNING_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CODE_SIGNING_FIX.md; sourceTree = "<group>"; };
-		29F7F7B02EC887B3003CC948 /* CategoryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepositoryTests.swift; sourceTree = "<group>"; };
 		29F7F7B52EC887D3003CC948 /* MarkdownContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentTests.swift; sourceTree = "<group>"; };
 		29F7F7B72EC88811003CC948 /* TEST_COVERAGE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TEST_COVERAGE_SUMMARY.md; sourceTree = "<group>"; };
 		29F7F7B92EC88840003CC948 /* CHANGES_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGES_SUMMARY.md; sourceTree = "<group>"; };
@@ -181,7 +177,7 @@
 		D5B769A933753CDE8E606F18 /* VotingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VotingService.swift; sourceTree = "<group>"; };
 		D62C955AD19A9AF5E90C5C7B /* CategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesView.swift; sourceTree = "<group>"; };
 		DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawViewModel.swift; sourceTree = "<group>"; };
-		E3E26F45D2C953790DF82253 /* MurphysLawsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MurphysLawsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E3E26F45D2C953790DF82253 /* MurphysLawsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MurphysLawsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E486AD4C8B7C12A517DABD10 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		E590CE9B0966A46756CFD59E /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		E721EC9623E2602B825284F3 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
@@ -219,7 +215,6 @@
 				4FE74A80952C37827296F759 /* TEST_FIXES_SUMMARY.md */,
 				CEEBFEEA1E10C10DBD69E4D9 /* VotingUITests.swift */,
 				5FACFCAAC48FC0343BDBBC0B /* XCUIElementQuery+Extensions.swift */,
-				29F7F7B02EC887B3003CC948 /* CategoryRepositoryTests.swift */,
 				29F7F7B52EC887D3003CC948 /* MarkdownContentTests.swift */,
 				29F7F7B72EC88811003CC948 /* TEST_COVERAGE_SUMMARY.md */,
 				29F7F7B92EC88840003CC948 /* CHANGES_SUMMARY.md */,
@@ -591,7 +586,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				29F7F7B12EC887B3003CC948 /* CategoryRepositoryTests.swift in Sources */,
 				425CF7AF7AE6FC7DB0C0B1C6 /* CalculatorUITests.swift in Sources */,
 				34CBDDAD4BF3F4EDA20FE518 /* ImprovedTestExample.swift in Sources */,
 				00803AFD5319150572230A8D /* NavigationUITests.swift in Sources */,
@@ -629,7 +623,6 @@
 				7AF98FDDDB1C5BC4CEE3708D /* CategoryListViewModel.swift in Sources */,
 				DCF27A24341C260A48F1FD00 /* CategoryRepository.swift in Sources */,
 				441EC254A6EC2BD33FFE37AA /* Constants.swift in Sources */,
-				5C6AA634EAF4932FAF9375FF /* ContentPage.swift in Sources */,
 				D90D2F00B3CCC17C64A8E325 /* ContentView.swift in Sources */,
 				34F065D0F50A69B0C27C6D45 /* DeviceID.swift in Sources */,
 				34F2B212CC93A76669E59B20 /* EmptyStateView.swift in Sources */,
@@ -649,7 +642,6 @@
 				9962FA39F054E552E4A53EC5 /* MarkdownContentView.swift in Sources */,
 				1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */,
 				BB9ABE4CA8E1673DD55C3100 /* MurphysLawsApp.swift in Sources */,
-				7037DAAB12DB3321919685BA /* SharedContentLoader.swift in Sources */,
 				68F89301754F774C83368547 /* SkeletonViews.swift in Sources */,
 				2B7AA225646E10CC7312586F /* SubmitLawView.swift in Sources */,
 				790EE3B979BE88B35925407D /* SubmitLawViewModel.swift in Sources */,
@@ -677,7 +669,7 @@
 		4C5B82C1DE62EBBFCEF122B5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/MurphysLaws.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MurphysLaws";
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -797,7 +789,7 @@
 		816878D961FC8F1A5682C839 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/MurphysLaws.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MurphysLaws";
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
