@@ -13,7 +13,7 @@ public enum ContentPage: String, CaseIterable {
     case terms
     case contact
 
-    var title: String {
+    public var title: String {
         switch self {
         case .about:
             return "About"
@@ -26,7 +26,7 @@ public enum ContentPage: String, CaseIterable {
         }
     }
 
-    var filename: String {
+    public var filename: String {
         return "\(self.rawValue).md"
     }
 }

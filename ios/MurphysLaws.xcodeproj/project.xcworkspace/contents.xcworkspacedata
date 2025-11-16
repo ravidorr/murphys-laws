@@ -5,18 +5,42 @@
       location = "self:">
    </FileRef>
    <FileRef
-      location = "group:VOTE_SYNC_NOTIFICATION_FIX.md">
+      location = "group:fix_test_targets.sh">
    </FileRef>
    <FileRef
-      location = "group:VOTE_SYNC_COMPILATION_FIX.md">
+      location = "group:FIX_UI_TESTS_INSTRUCTIONS.md">
    </FileRef>
    <FileRef
-      location = "group:VoteSynchronizationTests.swift">
+      location = "group:auto_fix_project.py">
    </FileRef>
    <FileRef
-      location = "group:VoteSyncTests.swift">
+      location = "group:SOLUTION_SUMMARY.md">
    </FileRef>
    <FileRef
-      location = "group:VOTE_SYNC_FINAL_FIX.md">
+      location = "group:FIX_NOW.sh">
+   </FileRef>
+   <FileRef
+      location = "group:aggressive_fix.rb">
+   </FileRef>
+   <FileRef
+      location = "group:JUST_FIX_IT.sh">
+   </FileRef>
+   <FileRef
+      location = "group:READ_ME_FIRST.md">
+   </FileRef>
+   <FileRef
+      location = "group:START_HERE.txt">
+   </FileRef>
+   <FileRef
+      location = "group:FIX_MENU.sh">
+   </FileRef>
+   <FileRef
+      location = "group:FINAL_SOLUTION.md">
+   </FileRef>
+   <FileRef
+      location = "group:diagnose.sh">
+   </FileRef>
+   <FileRef
+      location = "group:fix_project.sh">
    </FileRef>
 </Workspace>

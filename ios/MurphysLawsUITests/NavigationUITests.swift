@@ -278,7 +278,7 @@ final class NavigationUITests: XCTestCase {
         
         // Get the first law's text from the list
         let firstLawInList = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Murphy' OR label CONTAINS 'Law'")).element(boundBy: 0)
-        let lawTextInList = firstLawInList.label
+        _ = firstLawInList.label  // Store for potential future use
         
         // Tap on the first law
         let firstLawRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawListRow-'")).firstMatch

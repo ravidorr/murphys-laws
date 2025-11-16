@@ -85,15 +85,15 @@ android/app/src/main/
 
 ## Architecture
 
-See [Mobile Architecture](../shared/docs/MOBILE-ARCHITECTURE.md#android-architecture).
+<!-- See [Mobile Architecture](../shared/docs/MOBILE-ARCHITECTURE.md#android-architecture). -->
 
 ## Documentation
 
-- [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md)
-- [API Documentation](../shared/docs/API.md)
+<!-- - [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md) -->
+<!-- - [API Documentation](../shared/docs/API.md) -->
 
 ## Status
 
  **Coming Soon** - Android app is not yet implemented.
 
-See [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md) for planned features and timeline.
+<!-- See [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md) for planned features and timeline. -->

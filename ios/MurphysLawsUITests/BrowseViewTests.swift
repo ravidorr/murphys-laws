@@ -148,7 +148,7 @@ final class BrowseViewTests: XCTestCase {
         sleep(2)
 
         // Verify empty state or no results message
-        let emptyState = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'No laws found' OR label CONTAINS[c] 'No results'")).firstMatch
+        let _ = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'No laws found' OR label CONTAINS[c] 'No results'")).firstMatch
         // Empty state might appear or list might just be empty
         // This is acceptable for now
     }
