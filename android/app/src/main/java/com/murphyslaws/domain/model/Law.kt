@@ -6,7 +6,7 @@ data class Law(
     val title: String?,
     val upvotes: Int,
     val downvotes: Int,
-    val createdAt: String,
+    val createdAt: String? = null,
     val attributions: List<Attribution>?,
     val categories: List<Category>?
 ) {
