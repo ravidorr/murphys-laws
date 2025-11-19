@@ -350,11 +350,10 @@ fi
 TOTAL_ISSUES=$((SQL_ATTEMPTS + XSS_ATTEMPTS + TRAVERSAL_ATTEMPTS + CMD_ATTEMPTS))
 
 SUMMARY="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-SUMMARY+="Log Analysis Summary - $(date +%Y-%m-%d)\n"
+SUMMARY+="LOG ANALYSIS & ATTACK DETECTION\n"
 SUMMARY+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ "$TOTAL_ISSUES" -gt 0 ]; then
-    SUMMARY+="SECURITY ISSUES DETECTED:\n"
     [ "$SQL_ATTEMPTS" -gt 0 ] && SUMMARY+="  • SQL Injection: $SQL_ATTEMPTS attempts\n"
     [ "$XSS_ATTEMPTS" -gt 0 ] && SUMMARY+="  • XSS: $XSS_ATTEMPTS attempts\n"
     [ "$TRAVERSAL_ATTEMPTS" -gt 0 ] && SUMMARY+="  • Path Traversal: $TRAVERSAL_ATTEMPTS attempts\n"

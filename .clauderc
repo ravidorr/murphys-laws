@@ -1,0 +1,13 @@
+# Claude Code Configuration for Murphy's Laws Project
+
+## SSH Usage
+- Available SSH hosts:
+  - murphys-main or murphys: Main server (murphys-laws.com)
+  - murphys-n8n: n8n automation server (45.55.74.28)
+- Both use the id_ed25519_digitalocean key
+
+## Project-Specific Guidelines
+- Backend scripts are in backend/scripts/
+- Database is at backend/murphys.db on the server
+- Log analyzer runs daily via cron
+- Never overwrite the production database
