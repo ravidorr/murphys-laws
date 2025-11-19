@@ -1,10 +1,16 @@
 # Claude Code Configuration for Murphy's Laws Project
 
 ## SSH Usage
+- ALWAYS read ~/.ssh/config before using SSH commands
 - Available SSH hosts:
   - murphys-main or murphys: Main server (murphys-laws.com)
   - murphys-n8n: n8n automation server (45.55.74.28)
 - Both use the id_ed25519_digitalocean key
+
+## Deployment
+- Deployment is automatic via GitHub Actions
+- Simply push to main branch - no need to run `npm run deploy`
+- GitHub Actions handle the deployment to production
 
 ## Project-Specific Guidelines
 - Backend scripts are in backend/scripts/
