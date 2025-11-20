@@ -63,11 +63,54 @@ Environment variables (`.env`):
 - `SMTP_USER` - Email username
 - `SMTP_PASS` - Email password
 
+## Architecture
+
+The backend follows a **modular layered architecture**:
+
+```
+backend/
+├── src/
+│   ├── controllers/     # Request handlers (5 controllers)
+│   ├── services/        # Business logic (6 services)
+│   ├── middleware/      # Express middleware (CORS, rate limiting)
+│   ├── routes/          # Route definitions
+│   └── utils/           # Helper functions
+├── tests/
+│   ├── controllers/     # Controller unit tests
+│   ├── services/        # Service unit tests
+│   ├── middleware/      # Middleware unit tests
+│   └── utils/           # Utility unit tests
+└── scripts/
+    └── api-server.mjs   # Main server entry point
+```
+
+**Key Components:**
+- **Controllers**: Handle HTTP requests/responses
+- **Services**: Business logic and database operations
+- **Middleware**: CORS, rate limiting, error handling
+- **Routes**: API endpoint definitions
+
 ## Testing
 
+The backend has **comprehensive unit test coverage** using Vitest:
+
 ```bash
+# Run all tests
 npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage report
+npm run test:coverage
 ```
+
+**Test Structure:**
+- 13 test files covering all layers
+- Services: `laws`, `categories`, `votes`, `attributions`
+- Controllers: `laws`, `categories`, `votes`, `health`, `attributions`
+- Middleware: `cors`, `rate-limit`
+- Utils: `helpers`, `http-helpers`
 
 ## Deployment
 

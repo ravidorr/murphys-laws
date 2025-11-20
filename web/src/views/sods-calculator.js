@@ -1,4 +1,4 @@
- 
+
 // Sod's Law Calculator view integrated with site styles (no inline CSS in HTML)
 // Reuses the original formula and interaction, scoped under .calc- classes
 
@@ -13,7 +13,7 @@ export function Calculator() {
   el.className = 'container page calculator';
 
   el.innerHTML = templateHtml;
-  
+
   // Hydrate icons
   hydrateIcons(el);
 
@@ -80,51 +80,60 @@ export function Calculator() {
 
     if (formulaDisplay) {
       formulaDisplay.textContent = formula;
-      // Tell MathJax to re-render this element
+      // Tell MathJax to re-render this element after the browser updates the DOM
       if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        window.MathJax.typesetPromise([formulaDisplay]).then(() => {
-          // Add title attributes to variables after MathJax renders
-          const titles = {
-            'U': 'Urgency (1-9)',
-            'C': 'Complexity (1-9)',
-            'I': 'Importance (1-9)',
-            'S': 'Skill (1-9)',
-            'F': 'Frequency (1-9)',
-            'A': 'Activity constant (0.7)',
-            'P': 'Probability'
-          };
+        // Capture MathJax reference to avoid race conditions in test environments
+        const mathJax = window.MathJax;
+        requestAnimationFrame(() => {
+          // Defensive check: MathJax might become undefined in test environments
+          if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
+            return;
+          }
 
-          const variables = formulaDisplay.querySelectorAll('mjx-mi');
-
-          variables.forEach((mi) => {
-            // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
-            // Map Unicode Math Italic characters to regular letters
-            const unicodeMap = {
-              '1D443': 'P', // 𝑃
-              '1D448': 'U', // 𝑈
-              '1D436': 'C', // 𝐶
-              '1D43C': 'I', // 𝐼
-              '1D446': 'S', // 𝑆
-              '1D439': 'F', // 𝐹
-              '1D434': 'A'  // 𝐴
+          mathJax.typesetPromise([formulaDisplay]).then(() => {
+            // Add title attributes to variables after MathJax renders
+            const titles = {
+              'U': 'Urgency (1-9)',
+              'C': 'Complexity (1-9)',
+              'I': 'Importance (1-9)',
+              'S': 'Skill (1-9)',
+              'F': 'Frequency (1-9)',
+              'A': 'Activity constant (0.7)',
+              'P': 'Probability'
             };
 
-            // Get the first mjx-c child to identify the variable
-            const mjxC = mi.querySelector('mjx-c');
-            if (mjxC) {
-              const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
-              if (classMatch) {
-                const unicodeHex = classMatch[1];
-                const letter = unicodeMap[unicodeHex];
+            const variables = formulaDisplay.querySelectorAll('mjx-mi');
 
-                if (letter && titles[letter]) {
-                  mi.setAttribute('data-tooltip', titles[letter]);
+            variables.forEach((mi) => {
+              // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
+              // Map Unicode Math Italic characters to regular letters
+              const unicodeMap = {
+                '1D443': 'P', // 𝑃
+                '1D448': 'U', // 𝑈
+                '1D436': 'C', // 𝐶
+                '1D43C': 'I', // 𝐼
+                '1D446': 'S', // 𝑆
+                '1D439': 'F', // 𝐹
+                '1D434': 'A'  // 𝐴
+              };
+
+              // Get the first mjx-c child to identify the variable
+              const mjxC = mi.querySelector('mjx-c');
+              if (mjxC) {
+                const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
+                if (classMatch) {
+                  const unicodeHex = classMatch[1];
+                  const letter = unicodeMap[unicodeHex];
+
+                  if (letter && titles[letter]) {
+                    mi.setAttribute('data-tooltip', titles[letter]);
+                  }
                 }
               }
-            }
+            });
+          }).catch(() => {
+            // Silently handle MathJax errors
           });
-        }).catch(() => {
-          // Silently handle MathJax errors
         });
       }
     }
@@ -157,15 +166,14 @@ export function Calculator() {
     });
   });
 
-  // Initialize formula and score on load
-  updateCalculation();
-
+  // Initialize formula and score after MathJax is loaded
   ensureMathJax()
     .then(() => {
       updateCalculation();
     })
     .catch(() => {
-      // Silently ignore MathJax load failures
+      // MathJax load failed, show formula without rendering
+      updateCalculation();
     });
 
   function updateResultInterpretation(score) {
@@ -191,7 +199,7 @@ export function Calculator() {
 
     if (scoreInterpretationDisplay) scoreInterpretationDisplay.textContent = interpretation;
     if (resultDisplay) {
-      resultDisplay.classList.remove('calc-ok','calc-warn','calc-orange','calc-danger','calc-dark');
+      resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
       resultDisplay.classList.add(cls);
     }
   }

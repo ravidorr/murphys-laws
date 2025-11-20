@@ -117,6 +117,47 @@
 
 ## Backend API Architecture
 
+### Backend Structure
+
+The backend follows a **modular layered architecture** for maintainability and testability:
+
+```
+backend/
+├── src/
+│   ├── controllers/     # HTTP request handlers (5 files)
+│   │   ├── laws.controller.mjs
+│   │   ├── votes.controller.mjs
+│   │   ├── categories.controller.mjs
+│   │   ├── attributions.controller.mjs
+│   │   └── health.controller.mjs
+│   ├── services/        # Business logic (6 files)
+│   │   ├── laws.service.mjs
+│   │   ├── votes.service.mjs
+│   │   ├── categories.service.mjs
+│   │   ├── attributions.service.mjs
+│   │   ├── database.service.mjs
+│   │   └── email.service.mjs
+│   ├── middleware/      # Cross-cutting concerns (2 files)
+│   │   ├── cors.mjs
+│   │   └── rate-limit.mjs
+│   ├── routes/          # Route definitions (1 file)
+│   │   └── router.mjs
+│   └── utils/           # Helper functions (4 files)
+├── tests/               # Comprehensive test coverage (13 test files)
+│   ├── controllers/     # Controller unit tests
+│   ├── services/        # Service unit tests
+│   ├── middleware/      # Middleware unit tests
+│   └── utils/           # Utility unit tests
+└── scripts/
+    └── api-server.mjs   # Main server entry point
+```
+
+**Architecture Benefits:**
+- **Separation of Concerns**: Controllers handle HTTP, Services handle business logic
+- **Testability**: Each layer tested independently with Vitest
+- **Maintainability**: ~1000 lines refactored into 18 modular files
+- **Scalability**: Easy to add new endpoints and features
+
 ### API Versioning
 
 ```

@@ -306,6 +306,9 @@ describe('ButteredToastCalculator view', () => {
     // Trigger formula update
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
+    // Wait for requestAnimationFrame to execute
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
     // Wait for async MathJax call
     await vi.waitFor(() => {
       expect(mockTypesetPromise).toHaveBeenCalled();
