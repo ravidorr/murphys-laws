@@ -14,6 +14,16 @@
 
 ## Project-Specific Guidelines
 - Backend scripts are in backend/scripts/
-- Database is at backend/murphys.db on the server
+- Production database location: /root/murphys-laws/backend/murphys.db
+- Production API runs as root user from /root/murphys-laws/backend/
 - Log analyzer runs daily via cron
 - Never overwrite the production database
+
+## Reviewing Law Submissions
+- The production database is only accessible as root
+- To review submissions interactively:
+  1. SSH into server: ssh murphys-main
+  2. Switch to root: sudo -i
+  3. Navigate to scripts: cd /root/murphys-laws/backend/scripts
+  4. Run review CLI: node review-laws.mjs
+- Cannot review submissions via non-interactive SSH (requires terminal input)
