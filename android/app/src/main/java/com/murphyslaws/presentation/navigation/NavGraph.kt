@@ -39,11 +39,21 @@ fun NavGraph(
         }
 
         composable(Routes.Calculators.route) {
-            // Placeholder for Calculators screen
+            androidx.compose.foundation.layout.Box(
+                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                androidx.compose.material3.Text("Calculators Coming Soon")
+            }
         }
 
         composable(Routes.More.route) {
-            // Placeholder for More screen
+            androidx.compose.foundation.layout.Box(
+                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                androidx.compose.material3.Text("More / Settings Coming Soon")
+            }
         }
 
         composable(
