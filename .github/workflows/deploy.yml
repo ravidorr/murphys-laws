@@ -25,17 +25,17 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to server
+      - name: Upload build artifacts
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/,scripts/,ecosystem.config.cjs,nginx.conf"
-          target: "/root/murphys-laws/"
+          source: "dist/,scripts/,db/,src/,package*.json,ecosystem.config.cjs,nginx.conf,vite.config.js"
+          target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
-      - name: Update server and restart services
+      - name: Deploy and restart services
         uses: appleboy/ssh-action@v1.0.0
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -46,24 +46,45 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GITHUB_SHA,GITHUB_ACTOR
           script: |
+            STAGING_DIR="$HOME/deploy/murphys-laws"
+            TARGET_DIR="/root/murphys-laws"
+
+            sudo install -d -m 755 "$STAGING_DIR"
+            sudo install -d -m 755 "$TARGET_DIR"
+
+            sudo install -d -m 755 "$TARGET_DIR/dist"
+            sudo install -d -m 755 "$TARGET_DIR/scripts"
+            sudo install -d -m 755 "$TARGET_DIR/db"
+            sudo install -d -m 755 "$TARGET_DIR/src"
+            sudo install -d -m 755 "$TARGET_DIR/logs"
+
+            sudo rsync -a --delete "$STAGING_DIR/dist/" "$TARGET_DIR/dist/"
+            sudo rsync -a --delete "$STAGING_DIR/scripts/" "$TARGET_DIR/scripts/"
+            sudo rsync -a --delete "$STAGING_DIR/db/" "$TARGET_DIR/db/"
+            sudo rsync -a --delete "$STAGING_DIR/src/" "$TARGET_DIR/src/"
+
+            sudo install -m 644 "$STAGING_DIR/ecosystem.config.cjs" "$TARGET_DIR/ecosystem.config.cjs"
+            sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
+            sudo install -m 644 "$STAGING_DIR/package.json" "$TARGET_DIR/package.json"
+            sudo install -m 644 "$STAGING_DIR/package-lock.json" "$TARGET_DIR/package-lock.json"
+            sudo install -m 644 "$STAGING_DIR/vite.config.js" "$TARGET_DIR/vite.config.js"
+
+            sudo chown -R root:root "$TARGET_DIR"
+
+            sudo --preserve-env=GITHUB_SHA,GITHUB_ACTOR bash <<'INNER'
+            set -e
+
+            TARGET_DIR="/root/murphys-laws"
+
             # Load nvm and use Node v22
-            export NVM_DIR="$HOME/.nvm"
+            export NVM_DIR="/root/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use 22
 
-            cd ~/murphys-laws
+            cd "$TARGET_DIR"
 
-            # Backup production database before pulling
+            # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
-
-            # Stash any local changes (like modified scripts)
-            git stash --include-untracked || true
-
-            # Pull latest code (for migrations, package.json, etc)
-            git pull origin main
-
-            # Restore production database (prevent overwriting)
-            cp murphys.db.backup murphys.db 2>/dev/null || true
 
             # Create .env file with secrets
             cat > .env << EOF
@@ -76,25 +97,19 @@ jobs:
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
             EOF
 
-            # Install all dependencies (including vite for preview server)
-            npm install
+            echo "📄 Contents of $TARGET_DIR:" 
+            ls -la
 
-            # Run database migrations with safety checks
-            echo "🔍 Running pre-migration safety checks..."
-            npm run migrate:safe
-
-            # Verify migration success
-            if [ $? -eq 0 ]; then
-              echo "✅ Migrations completed successfully"
-              echo ""
-              echo "📋 Applied migrations:"
-              sqlite3 murphys.db "SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC LIMIT 5;"
-            else
-              echo "❌ Migration failed! Restoring backup..."
-              cp murphys.db.pre-migrate-backup murphys.db 2>/dev/null || true
+            if [ ! -f package.json ]; then
+              echo "❌ package.json missing in $TARGET_DIR" >&2
               exit 1
             fi
 
-            # Restart services (they now serve pre-built dist/)
+            # Run migrations using staged migrations
+            npm install
+            npm run migrate:safe
+
+            # Restart services
             pm2 restart ecosystem.config.cjs || pm2 start ecosystem.config.cjs
             pm2 save
+            INNER
