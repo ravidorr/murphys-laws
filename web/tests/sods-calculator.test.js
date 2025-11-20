@@ -156,7 +156,7 @@ describe("Calculator view", () => {
     expect(el.querySelector('#formula-display')).toBeTruthy();
   });
 
-  it('polls for MathJax when not initially available', () => {
+  it('polls for MathJax when not initially available', async () => {
     vi.useFakeTimers();
     mountCalculator({ mathJaxStub: null });
 
@@ -168,6 +168,7 @@ describe("Calculator view", () => {
     mountCalculator({ mathJaxStub: mathJaxMock });
 
     vi.advanceTimersByTime(100);
+    await vi.runOnlyPendingTimersAsync(); // Allow requestAnimationFrame to execute
 
     const formulaDisplay = el.querySelector('#formula-display');
     expect(mathJaxMock.typesetPromise).toHaveBeenCalledWith([formulaDisplay]);

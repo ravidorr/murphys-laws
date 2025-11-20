@@ -43,6 +43,58 @@ E2E tests are temporarily disabled because the Vite dev server's API proxy doesn
 
 ---
 
+## Recently Fixed (Nov 2025)
+
+### Backend Refactoring to Modular Architecture
+**Status:** Complete
+**Files:** `backend/src/*`, `backend/tests/*`, `backend/scripts/api-server.mjs`, `backend/package.json`
+
+**Problem:** The backend API server was a monolithic file (~1000 lines) with all logic in `api-server.mjs`, making it difficult to test, maintain, and extend.
+
+**Solution:** Refactored to a **modular layered architecture** following best practices:
+
+**New Structure:**
+- **Controllers** (5 files): Handle HTTP requests/responses
+  - `laws.controller.mjs`, `votes.controller.mjs`, `categories.controller.mjs`, `attributions.controller.mjs`, `health.controller.mjs`
+- **Services** (6 files): Business logic and database operations
+  - `laws.service.mjs`, `votes.service.mjs`, `categories.service.mjs`, `attributions.service.mjs`, `database.service.mjs`, `email.service.mjs`
+- **Middleware** (2 files): Cross-cutting concerns
+  - `cors.mjs`, `rate-limit.mjs`
+- **Routes** (1 file): Centralized routing
+  - `router.mjs`
+- **Utils** (4 files): Helper functions
+  - `constants.js`, `helpers.js`, `http-helpers.js`, `facebook-signed-request.js`
+
+**Testing:**
+- Added **Vitest** as test framework
+- Created **13 comprehensive unit tests** covering:
+  - All 5 controllers
+  - All 4 main services (laws, categories, votes, attributions)
+  - Both middleware components (CORS, rate limiting)
+  - Utility functions
+- Test command: `npm test` (previously returned placeholder message)
+- Coverage tracking enabled
+
+**Benefits:**
+- **Maintainability**: Clear separation of concerns
+- **Testability**: Each component can be tested in isolation
+- **Scalability**: Easy to add new features/endpoints
+- **Code Quality**: Reduced from ~1000 lines to ~18 modular files
+
+### MathJax Formula Rendering
+**Status:** Fixed
+**Files:** `web/src/views/sods-calculator.js`, `web/src/views/buttered-toast-calculator.js`
+
+**Problem:** Mathematical formulas were displaying as raw LaTeX code instead of rendered math notation.
+
+**Root Cause:** Timing issue - formulas were set before MathJax loaded, and MathJax rendering was called before DOM updates completed.
+
+**Solution:**
+- Deferred initial formula rendering until `ensureMathJax()` resolves
+- Wrapped `MathJax.typesetPromise()` in `requestAnimationFrame()` to ensure DOM is updated before processing
+
+---
+
 ## Recently Completed
 
 ### iOS App MVP

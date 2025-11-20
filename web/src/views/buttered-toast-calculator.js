@@ -66,52 +66,61 @@ export function ButteredToastCalculator() {
 
     if (formulaDisplay) {
       formulaDisplay.textContent = formula;
-      // Tell MathJax to re-render this element
+      // Tell MathJax to re-render this element after the browser updates the DOM
       if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        window.MathJax.typesetPromise([formulaDisplay]).then(() => {
-          // Add title attributes to variables after MathJax renders
-          const titles = {
-            'H': 'Height of Fall (30-200 cm)',
-            'g': 'Gravity (162-2479 cm/s²)',
-            'O': 'Initial Overhang / Push (1-20 cm)',
-            'B': 'Butter Factor (1.0-2.0)',
-            'F': 'Air Friction / Drag (0-100)',
-            'T': 'Toast Inertia (250-500)',
-            'P': 'Probability of Butter-Side Down'
-          };
+        // Capture MathJax reference to avoid race conditions in test environments
+        const mathJax = window.MathJax;
+        requestAnimationFrame(() => {
+          // Defensive check: MathJax might become undefined in test environments
+          if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
+            return;
+          }
 
-          const variables = formulaDisplay.querySelectorAll('mjx-mi');
-
-          variables.forEach((mi) => {
-            // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
-            // Map Unicode Math Italic characters to regular letters
-            const unicodeMap = {
-              '1D443': 'P', // 𝑃
-              '1D43B': 'H', // 𝐻
-              '1D434': 'A', // 𝐴 (not used but included)
-              '1D435': 'B', // 𝐵
-              '1D43F': 'F', // 𝐹
-              '1D447': 'T', // 𝑇
-              '1D442': 'O', // 𝑂
-              '1D454': 'g'  // 𝑔
+          mathJax.typesetPromise([formulaDisplay]).then(() => {
+            // Add title attributes to variables after MathJax renders
+            const titles = {
+              'H': 'Height of Fall (30-200 cm)',
+              'g': 'Gravity (162-2479 cm/s²)',
+              'O': 'Initial Overhang / Push (1-20 cm)',
+              'B': 'Butter Factor (1.0-2.0)',
+              'F': 'Air Friction / Drag (0-100)',
+              'T': 'Toast Inertia (250-500)',
+              'P': 'Probability of Butter-Side Down'
             };
 
-            // Get the first mjx-c child to identify the variable
-            const mjxC = mi.querySelector('mjx-c');
-            if (mjxC) {
-              const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
-              if (classMatch) {
-                const unicodeHex = classMatch[1];
-                const letter = unicodeMap[unicodeHex];
+            const variables = formulaDisplay.querySelectorAll('mjx-mi');
 
-                if (letter && titles[letter]) {
-                  mi.setAttribute('data-tooltip', titles[letter]);
+            variables.forEach((mi) => {
+              // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
+              // Map Unicode Math Italic characters to regular letters
+              const unicodeMap = {
+                '1D443': 'P', // 𝑃
+                '1D43B': 'H', // 𝐸
+                '1D434': 'A', // 𝐴 (not used but included)
+                '1D435': 'B', // 𝐵
+                '1D43F': 'F', // 𝐹
+                '1D447': 'T', // 𝑇
+                '1D442': 'O', // 𝑂
+                '1D454': 'g'  // 𝑔
+              };
+
+              // Get the first mjx-c child to identify the variable
+              const mjxC = mi.querySelector('mjx-c');
+              if (mjxC) {
+                const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
+                if (classMatch) {
+                  const unicodeHex = classMatch[1];
+                  const letter = unicodeMap[unicodeHex];
+
+                  if (letter && titles[letter]) {
+                    mi.setAttribute('data-tooltip', titles[letter]);
+                  }
                 }
               }
-            }
+            });
+          }).catch(() => {
+            // Silently handle MathJax errors
           });
-        }).catch(() => {
-          // Silently handle MathJax errors
         });
       }
     }
@@ -195,16 +204,17 @@ export function ButteredToastCalculator() {
     });
   });
 
-  // Initialize formula and calculation on load
-  updateFormula();
+  // Initialize calculation on load
   calculateLanding();
 
+  // Initialize formula after MathJax is loaded
   ensureMathJax()
     .then(() => {
       updateFormula();
     })
     .catch(() => {
-      // Silently ignore MathJax load failures
+      // MathJax load failed, show formula without rendering
+      updateFormula();
     });
 
   return el;
