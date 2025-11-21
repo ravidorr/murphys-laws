@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.murphyslaws.presentation.MainScreen
-import com.murphyslaws.presentation.theme.MurphysLawsTheme
+import com.murphyslaws.ui.theme.MurphysLawsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
