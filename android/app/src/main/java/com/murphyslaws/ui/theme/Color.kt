@@ -2,17 +2,27 @@ package com.murphyslaws.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val DarkBlue = Color(0xFF1A2138)
-val GreenAccent = Color(0xFF00C896)
-val LightGray = Color(0xFFF5F5F5)
-val TextGray = Color(0xFF888888)
+// Premium Brand Colors
+val Navy900 = Color(0xFF0F172A) // Deep Background / Primary Text
+val Navy800 = Color(0xFF1E293B) // Surface / Card Background
+val Navy700 = Color(0xFF334155) // Secondary Text
+val Navy50 = Color(0xFFF8FAFC)  // Light Background
 
-// Keep these for reference or remove if unused
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Emerald500 = Color(0xFF10B981) // Primary Accent
+val Emerald600 = Color(0xFF059669) // Darker Accent
+val Emerald100 = Color(0xFFD1FAE5) // Light Accent Container
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Slate500 = Color(0xFF64748B) // Muted Text
+val Slate200 = Color(0xFFE2E8F0) // Borders / Dividers
 
+val White = Color(0xFFFFFFFF)
+val Black = Color(0xFF000000)
+
+// Semantic Aliases
+val BrandPrimary = Navy900
+val BrandSecondary = Emerald500
+val BrandBackground = Navy50
+val BrandSurface = White
+val BrandOnPrimary = White
+val BrandOnBackground = Navy900
+val BrandOnSurface = Navy900
