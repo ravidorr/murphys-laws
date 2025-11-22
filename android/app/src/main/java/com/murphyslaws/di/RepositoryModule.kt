@@ -1,8 +1,6 @@
 package com.murphyslaws.di
 
-import com.murphyslaws.data.repository.CategoryRepositoryImpl
 import com.murphyslaws.data.repository.LawRepositoryImpl
-import com.murphyslaws.domain.repository.CategoryRepository
 import com.murphyslaws.domain.repository.LawRepository
 import dagger.Binds
 import dagger.Module
@@ -19,10 +17,4 @@ abstract class RepositoryModule {
     abstract fun bindLawRepository(
         lawRepositoryImpl: LawRepositoryImpl
     ): LawRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindCategoryRepository(
-        categoryRepositoryImpl: CategoryRepositoryImpl
-    ): CategoryRepository
 }

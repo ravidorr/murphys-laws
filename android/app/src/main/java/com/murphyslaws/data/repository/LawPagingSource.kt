@@ -3,61 +3,52 @@ package com.murphyslaws.data.repository
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.murphyslaws.data.remote.ApiService
-import com.murphyslaws.data.remote.dto.toDomain
 import com.murphyslaws.domain.model.Law
-import com.murphyslaws.util.Constants
-import retrofit2.HttpException
-import java.io.IOException
 
 class LawPagingSource(
     private val apiService: ApiService,
-    private val query: String?,
-    private val categoryId: Int?,
-    private val attribution: String?,
-    private val sort: String,
-    private val order: String
+    private val query: String? = null,
+    private val categoryId: Int? = null
 ) : PagingSource<Int, Law>() {
 
+    override fun getRefreshKey(state: PagingState<Int, Law>): Int? {
+        return state.anchorPosition?.let { anchorPosition ->
+            state.closestPageToPosition(anchorPosition)?.prevKey?.plus(1)
+                ?: state.closestPageToPosition(anchorPosition)?.nextKey?.minus(1)
+        }
+    }
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Law> {
-        val offset = params.key ?: 0
+        val page = params.key ?: 0
+        val limit = params.loadSize
 
         return try {
-            val response = apiService.getLaws(
-                limit = params.loadSize,
+            val offset = page * limit
+            val dtos = apiService.getLaws(
+                limit = limit,
                 offset = offset,
-                sort = sort,
-                order = order,
                 query = query,
-                categoryId = categoryId,
-                attribution = attribution
+                categoryId = categoryId
             )
 
-            val laws = response.data.map { it.toDomain() }
-            val nextOffset = if (laws.isEmpty() || offset + laws.size >= response.total) {
-                null
-            } else {
-                offset + laws.size
+            val laws = dtos.map { dto ->
+                Law(
+                    id = dto.id,
+                    text = dto.text,
+                    title = dto.title,
+                    upvotes = dto.upvotes,
+                    downvotes = dto.downvotes,
+                    createdAt = dto.createdAt
+                )
             }
 
             LoadResult.Page(
                 data = laws,
-                prevKey = if (offset == 0) null else (offset - params.loadSize).coerceAtLeast(0),
-                nextKey = nextOffset
+                prevKey = if (page == 0) null else page - 1,
+                nextKey = if (laws.isEmpty()) null else page + 1
             )
-        } catch (e: IOException) {
-            LoadResult.Error(e)
-        } catch (e: HttpException) {
-            LoadResult.Error(e)
         } catch (e: Exception) {
             LoadResult.Error(e)
-        }
-    }
-
-    override fun getRefreshKey(state: PagingState<Int, Law>): Int? {
-        return state.anchorPosition?.let { anchorPosition ->
-            val anchorPage = state.closestPageToPosition(anchorPosition)
-            anchorPage?.prevKey?.plus(Constants.DEFAULT_PAGE_SIZE)
-                ?: anchorPage?.nextKey?.minus(Constants.DEFAULT_PAGE_SIZE)
         }
     }
 }
