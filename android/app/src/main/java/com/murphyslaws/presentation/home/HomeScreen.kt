@@ -98,7 +98,7 @@ fun HomeScreen(
                         )
                         if (uiState.lawOfDay?.date != null) {
                             Text(
-                                text = formatDate(uiState.lawOfDay!!.date),
+                                text = com.murphyslaws.util.DateUtils.formatDate(uiState.lawOfDay!!.date),
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
@@ -239,16 +239,5 @@ fun HomeScreen(
                 }
             }
         }
-    }
-}
-
-private fun formatDate(dateString: String): String {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val outputFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.US)
-        val date = inputFormat.parse(dateString)
-        date?.let { outputFormat.format(it) } ?: dateString
-    } catch (e: Exception) {
-        dateString
     }
 }

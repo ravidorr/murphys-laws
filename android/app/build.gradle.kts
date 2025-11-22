@@ -24,6 +24,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -51,56 +55,6 @@ android {
     }
 }
 
-// Test Coverage Configuration
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest")
-    
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-    }
-    
-    val fileFilter = listOf(
-        "**/R.class",
-        "**/R$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/*Test*.*",
-        "android/**/*.*",
-        "**/*_Hilt*.class",
-        "**/Hilt_*.class",
-        "**/*_Factory.class",
-        "**/*Module.class",
-        "**/*Dagger*.class",
-        "**/*MembersInjector*.class",
-        "**/*ComposableSingletons$*",
-        "**/*Screen*.*",
-        "**/*Activity*.*",
-        "**/*App*.*",
-        "**/ui/theme/*",
-        "**/*JsonAdapter.*"
-    )
-    
-    val debugTree = fileTree("${buildDir}/tmp/kotlin-classes/debug") {
-        exclude(fileFilter)
-    }
-    
-    val mainSrc = "${project.projectDir}/src/main/java"
-    
-    sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree(buildDir) {
-        include("jacoco/testDebugUnitTest.exec")
-    })
-}
-
-tasks.register("jacocoCoverageVerification") {
-    dependsOn("jacocoTestReport")
-    
-    doLast {
-        println("Coverage report generated. Check build/reports/jacoco/jacocoTestReport/html/index.html")
-    }
-}
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
@@ -152,4 +106,59 @@ dependencies {
     kspTest("com.google.dagger:hilt-android-compiler:2.50")
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.50")
     kspAndroidTest("com.google.dagger:hilt-android-compiler:2.50")
+}
+
+// JaCoCo Configuration
+tasks.withType<Test> {
+    configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+    
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        // Hilt generated
+        "**/*_HiltModules*",
+        "**/*_Factory*",
+        "**/*_MembersInjector*",
+        "**/*Module_Provide*Factory*",
+        // Moshi generated
+        "**/*JsonAdapter*",
+        // Android components (Activities, Screens)
+        "**/presentation/**/MainActivity*",
+        "**/presentation/**/*Screen*",
+        "**/MurphysLawsApp*",
+        // Navigation
+        "**/presentation/navigation/*",
+        // Android integration methods in util (require Context, tested via instrumented tests)
+        "**/util/SocialShareHelper\$shareToSocial*",
+        "**/util/SocialShareHelper\$openUrl*"
+    )
+    
+    val debugTree = fileTree("${project.buildDir}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+    
+    val mainSrc = "${project.projectDir}/src/main/java"
+    
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(fileTree(project.buildDir) {
+        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+    })
 }
