@@ -18,15 +18,3 @@ data class LawOfDayResponse(
     val law: LawDto,
     @Json(name = "featured_date") val date: String
 )
-
-@JsonClass(generateAdapter = true)
-data class CategoriesResponse(
-    val data: List<CategoryDto>
-)
-
-@JsonClass(generateAdapter = true)
-data class CategoryDto(
-    val id: Int,
-    val title: String,
-    val slug: String
-)

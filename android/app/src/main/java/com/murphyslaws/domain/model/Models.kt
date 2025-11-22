@@ -9,12 +9,6 @@ data class Law(
     val createdAt: String? = null
 )
 
-data class Category(
-    val id: Int,
-    val name: String,
-    val slug: String
-)
-
 data class LawOfDay(
     val law: Law,
     val date: String
