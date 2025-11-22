@@ -15,122 +15,131 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.compose.ui.graphics.Color
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") } // Keep this from original, as it's used in OutlinedTextField
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Header
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Murphy's Law",
-                style = MaterialTheme.typography.headlineLarge,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "If it can go wrong, it will, and you'll find it here.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Murphy's Laws",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = "Anything that can go wrong will go wrong",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             )
         }
-
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search laws...") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            singleLine = true,
-            shape = MaterialTheme.shapes.large
-        )
-
-        // Law of the Day Card
-        if (uiState.isLoading) {
-            Box(
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery, // Use the state variable
+                onValueChange = { searchQuery = it }, // Update the state variable
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                placeholder = { Text("Search laws...") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true, // Added from original for consistency
+                shape = MaterialTheme.shapes.medium
+            )
+
+            // Law of the Day Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            uiState.lawOfDay?.let { lawOfDay ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Card Header
-                        Column {
+                        Text(
+                            text = "Law of the Day",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (uiState.lawOfDay?.date != null) {
                             Text(
-                                text = "Murphy's Law of the Day",
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Text(
-                                text = formatDate(lawOfDay.date),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = formatDate(uiState.lawOfDay!!.date),
+                                style = MaterialTheme.typography.labelMedium
                             )
                         }
+                    }
 
-                        HorizontalDivider()
-
-                        // Card Body
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (uiState.error != null) {
+                        Text(
+                            text = uiState.error!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else if (uiState.lawOfDay != null) {
+                        val lawOfDay = uiState.lawOfDay!!
+                        Text(
+                            text = lawOfDay.law.title,
+                            style = MaterialTheme.typography.titleMedium
+                        )
                         Text(
                             text = lawOfDay.law.text,
                             style = MaterialTheme.typography.bodyLarge
                         )
 
-                        HorizontalDivider()
-
-                        // Card Footer - Voting and Sharing
+                        // Voting Buttons
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Voting Buttons
+                            // Upvote
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Upvote
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    IconButton(onClick = { /* TODO: Implement upvote */ }) {
-                                        Icon(
-                                            Icons.Filled.ThumbUp,
-                                            contentDescription = "Upvote",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    Text(
-                                        text = lawOfDay.law.upvotes.toString(),
-                                        style = MaterialTheme.typography.bodyMedium
+                                IconButton(onClick = { /* TODO: Implement upvote */ }) {
+                                    Icon(
+                                        Icons.Filled.ThumbUp,
+                                        contentDescription = "Upvote",
+                                        tint = Color.Green
                                     )
                                 }
+                                Text(
+                                    text = lawOfDay.law.upvotes.toString(),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
 
-                                // Downvote
+                            // Downvote
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically
