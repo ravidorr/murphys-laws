@@ -27,6 +27,20 @@ export class LawController {
     }, req);
   }
 
+  async get(req, res, id) {
+    const lawId = Number(id);
+    if (!Number.isInteger(lawId) || lawId <= 0) {
+      return badRequest(res, 'Invalid law ID', req);
+    }
+
+    const law = await this.lawService.getLaw(lawId);
+    if (!law) {
+      return notFound(res, req);
+    }
+
+    return sendJson(res, 200, law, req);
+  }
+
   async getLawOfTheDay(req, res) {
     const result = await this.lawService.getLawOfTheDay();
     if (!result) {
