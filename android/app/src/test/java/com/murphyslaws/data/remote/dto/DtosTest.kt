@@ -36,4 +36,38 @@ class DtosTest {
         val res4 = res1.copy(date = "2024-01-03")
         assertEquals("2024-01-03", res4.date)
     }
+
+    @Test
+    fun `LawDto handles null values correctly`() {
+        val dtoWithNulls = LawDto(1, "text", null, 10, 2, null)
+        
+        assertEquals(null, dtoWithNulls.title)
+        assertEquals(null, dtoWithNulls.createdAt)
+        assertEquals("text", dtoWithNulls.text)
+    }
+
+    @Test
+    fun `LawDto component functions work correctly`() {
+        val dto = LawDto(1, "text", "title", 10, 2, "date")
+        
+        val (id, text, title, upvotes, downvotes, createdAt) = dto
+        
+        assertEquals(1, id)
+        assertEquals("text", text)
+        assertEquals("title", title)
+        assertEquals(10, upvotes)
+        assertEquals(2, downvotes)
+        assertEquals("date", createdAt)
+    }
+
+    @Test
+    fun `LawOfDayResponse component functions work correctly`() {
+        val dto = LawDto(1, "text", "title", 10, 2, "date")
+        val response = LawOfDayResponse(dto, "2024-01-01")
+        
+        val (law, date) = response
+        
+        assertEquals(dto, law)
+        assertEquals("2024-01-01", date)
+    }
 }

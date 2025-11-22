@@ -1,12 +1,13 @@
 package com.murphyslaws.presentation
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.murphyslaws.ui.theme.MurphysLawsTheme
+import com.murphyslaws.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
@@ -17,18 +18,16 @@ class MainAppNavigationTest {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
-    val composeTestRule = createComposeRule()
+    val composeTestRule = createAndroidComposeRule<MainActivity>()
+
+    @Before
+    fun setup() {
+        hiltRule.inject()
+    }
 
     @Test
     fun mainApp_displaysBottomNavigation() {
-        // When
-        composeTestRule.setContent {
-            MurphysLawsTheme {
-                MainApp()
-            }
-        }
-
-        // Then
+        // Then (MainActivity already sets content with MainApp)
         composeTestRule
             .onNodeWithText("All Laws")
             .assertIsDisplayed()
@@ -48,14 +47,7 @@ class MainAppNavigationTest {
 
     @Test
     fun mainApp_navigatesToCalculatorsScreen() {
-        // Given
-        composeTestRule.setContent {
-            MurphysLawsTheme {
-                MainApp()
-            }
-        }
-
-        // When
+        // When - MainActivity already has content set
         composeTestRule
             .onNodeWithText("Calculators")
             .performClick()
@@ -68,14 +60,7 @@ class MainAppNavigationTest {
 
     @Test
     fun mainApp_navigatesToSubmitScreen() {
-        // Given
-        composeTestRule.setContent {
-            MurphysLawsTheme {
-                MainApp()
-            }
-        }
-
-        // When
+        // When - MainActivity already has content set
         composeTestRule
             .onNodeWithText("Submit a Law")
             .performClick()
@@ -88,14 +73,7 @@ class MainAppNavigationTest {
 
     @Test
     fun mainApp_navigatesToMoreScreen() {
-        // Given
-        composeTestRule.setContent {
-            MurphysLawsTheme {
-                MainApp()
-            }
-        }
-
-        // When
+        // When - MainActivity already has content set
         composeTestRule
             .onNodeWithText("More")
             .performClick()
