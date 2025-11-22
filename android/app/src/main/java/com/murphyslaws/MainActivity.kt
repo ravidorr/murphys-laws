@@ -20,8 +20,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = androidx.navigation.compose.rememberNavController()
-                    com.murphyslaws.presentation.navigation.NavGraph(navController = navController)
+                    com.murphyslaws.presentation.MainApp()
                 }
             }
         }
