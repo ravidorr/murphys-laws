@@ -2,6 +2,7 @@ package com.murphyslaws.presentation.home
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.domain.model.LawOfDay
@@ -9,8 +10,7 @@ import com.murphyslaws.domain.usecase.GetLawOfTheDayUseCase
 import com.murphyslaws.ui.theme.MurphysLawsTheme
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import io.mockk.coEvery
-import io.mockk.mockk
+
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -31,18 +31,18 @@ class HomeScreenTest {
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createMockViewModel(isLoading = false, hasData = false)
+                    viewModel = createViewModel(isLoading = false, hasData = false).first
                 )
             }
         }
 
         // Then
         composeTestRule
-            .onNodeWithText("Murphy's Law")
+            .onNodeWithText("Murphy's Laws")
             .assertIsDisplayed()
         
         composeTestRule
-            .onNodeWithText("If it can go wrong, it will, and you'll find it here.")
+            .onNodeWithText("Anything that can go wrong will go wrong")
             .assertIsDisplayed()
     }
 
@@ -52,7 +52,7 @@ class HomeScreenTest {
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createMockViewModel(isLoading = false, hasData = false)
+                    viewModel = createViewModel(isLoading = false, hasData = false).first
                 )
             }
         }
@@ -79,18 +79,18 @@ class HomeScreenTest {
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createMockViewModel(
+                    viewModel = createViewModel(
                         isLoading = false,
                         hasData = true,
                         law = law
-                    )
+                    ).first
                 )
             }
         }
 
         // Then
         composeTestRule
-            .onNodeWithText("Murphy's Law of the Day")
+            .onNodeWithText("Murphy's Law of the Day", substring = true)
             .assertIsDisplayed()
         
         composeTestRule
@@ -104,41 +104,101 @@ class HomeScreenTest {
 
     @Test
     fun homeScreen_displaysLoadingIndicator() {
+        // Given
+        val (viewModel, repository) = createViewModel(isLoading = true, hasData = false)
+        repository.delayMs = 5000 // Long delay to ensure loading state is visible
+
+        // When
+        composeTestRule.setContent {
+            MurphysLawsTheme {
+                HomeScreen(viewModel = viewModel)
+            }
+        }
+
+        // Then
+        // The header "Murphy's Law of the Day" is always visible
+        composeTestRule
+            .onNodeWithText("Murphy's Law of the Day", substring = true)
+            .assertIsDisplayed()
+            
+        // The law title "Murphy's Law" should NOT be displayed yet as we are loading
+        composeTestRule
+            .onNodeWithText("Murphy's Law")
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun homeScreen_displaysSocialButtons() {
         // When
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createMockViewModel(isLoading = true, hasData = false)
+                    viewModel = createViewModel(isLoading = false, hasData = true).first
                 )
             }
         }
 
-        // Then - loading indicator should be present
-        // Note: CircularProgressIndicator doesn't have text, so we check other elements are NOT displayed
+        // Then
+        val socialDescriptions = listOf(
+            "Share on X",
+            "Share on Facebook",
+            "Share on LinkedIn",
+            "Share on Reddit",
+            "Share via Email"
+        )
+
+        socialDescriptions.forEach { description ->
+            composeTestRule
+                .onNodeWithContentDescription(description)
+                .assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun homeScreen_handlesNullTitle() {
+        // Given
+        val law = Law(
+            id = 1,
+            text = "Test Law",
+            title = null,
+            upvotes = 0,
+            downvotes = 0
+        )
+
+        // When
+        composeTestRule.setContent {
+            MurphysLawsTheme {
+                HomeScreen(
+                    viewModel = createViewModel(
+                        isLoading = false,
+                        hasData = true,
+                        law = law
+                    ).first
+                )
+            }
+        }
+
+        // Then
         composeTestRule
-            .onNodeWithText("Murphy's Law")
+            .onNodeWithText("Murphy's Law") // Default title
             .assertIsDisplayed()
     }
 
-    private fun createMockViewModel(
+    private fun createViewModel(
         isLoading: Boolean,
         hasData: Boolean,
         law: Law = Law(1, "Test", null, 0, 0)
-    ): HomeViewModel {
-        val useCase: GetLawOfTheDayUseCase = mockk()
+    ): Pair<HomeViewModel, FakeLawRepository> {
+        val fakeRepository = FakeLawRepository()
         
-        val lawOfDay = if (hasData) {
-            LawOfDay(law = law, date = "2024-01-15")
-        } else null
-
-        coEvery { useCase() } returns if (hasData) {
-            Result.success(LawOfDay(law, "2024-01-15"))
+        if (hasData) {
+            fakeRepository.lawOfDayResult = Result.success(LawOfDay(law, "2024-01-15"))
         } else {
-            Result.failure(Exception("No data"))
+            fakeRepository.lawOfDayResult = Result.failure(Exception("No data"))
         }
 
-        return HomeViewModel(useCase).apply {
-            // We can't easily set the state directly, so we rely on the useCase mock
-        }
+        val useCase = GetLawOfTheDayUseCase(fakeRepository)
+        
+        return Pair(HomeViewModel(useCase), fakeRepository)
     }
 }

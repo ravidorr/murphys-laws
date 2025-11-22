@@ -16,6 +16,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,9 +83,18 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Law of the Day",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
+                            text = buildAnnotatedString {
+                                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                    append("Murphy's")
+                                }
+                                append(" ")
+                                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
+                                    append("Law of the Day")
+                                }
+                            },
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontSize = 16.sp
+                            )
                         )
                         if (uiState.lawOfDay?.date != null) {
                             Text(
@@ -108,47 +121,65 @@ fun HomeScreen(
                     } else if (uiState.lawOfDay != null) {
                         val lawOfDay = uiState.lawOfDay!!
                         Text(
-                            text = lawOfDay.law.title,
+                            text = lawOfDay.law.title ?: "Murphy's Law",
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
                             text = lawOfDay.law.text,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontSize = 20.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
+                            ),
+                            modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        // Voting Buttons
+                        // Voting and Share Buttons (combined in one row)
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Upvote
+                            // Voting Buttons
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                IconButton(onClick = { /* TODO: Implement upvote */ }) {
-                                    Icon(
-                                        Icons.Filled.ThumbUp,
-                                        contentDescription = "Upvote",
-                                        tint = Color.Green
-                                    )
-                                }
-                                Text(
-                                    text = lawOfDay.law.upvotes.toString(),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-
-                            // Downvote
+                                // Upvote
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(onClick = { /* TODO: Implement downvote */ }) {
+                                    IconButton(
+                                        onClick = { /* TODO: Implement upvote */ },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.ThumbUp,
+                                            contentDescription = "Upvote",
+                                            tint = Color(0xFF10b981),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = lawOfDay.law.upvotes.toString(),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
+                                // Downvote
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = { /* TODO: Implement downvote */ },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
                                         Icon(
                                             Icons.Filled.ThumbDown,
                                             contentDescription = "Downvote",
-                                            tint = MaterialTheme.colorScheme.error
+                                            tint = Color(0xFFef4444),
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                     Text(
@@ -160,15 +191,47 @@ fun HomeScreen(
 
                             // Share Buttons
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                // Share generically (will show as generic share)
-                                IconButton(onClick = { /* TODO: Share to Facebook */ }) {
-                                    Icon(
-                                        Icons.Filled.Share,
-                                        contentDescription = "Share",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                val socialButtons = listOf(
+                                    Triple(SocialIcons.X, Color(0xFF1DA1F2), com.murphyslaws.util.SocialPlatform.X),
+                                    Triple(SocialIcons.Facebook, Color(0xFF1877F2), com.murphyslaws.util.SocialPlatform.FACEBOOK),
+                                    Triple(SocialIcons.LinkedIn, Color(0xFF0A66C2), com.murphyslaws.util.SocialPlatform.LINKEDIN),
+                                    Triple(SocialIcons.Reddit, Color(0xFFFF4500), com.murphyslaws.util.SocialPlatform.REDDIT),
+                                    Triple(SocialIcons.Email, Color(0xFF777777), com.murphyslaws.util.SocialPlatform.EMAIL)
+                                )
+
+                                socialButtons.forEach { (icon, color, platform) ->
+                                    Surface(
+                                        onClick = {
+                                            val law = uiState.lawOfDay?.law
+                                            if (law != null) {
+                                                val url = "https://murphys-laws.com/law/${law.id}"
+                                                val title = law.title ?: "Murphy's Law"
+                                                val description = law.text
+                                                com.murphyslaws.util.SocialShareHelper.shareToSocial(
+                                                    context = context,
+                                                    platform = platform,
+                                                    url = url,
+                                                    title = title,
+                                                    description = description
+                                                )
+                                            }
+                                        },
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                        color = color,
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = platform.contentDescription,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
