@@ -1,74 +1,48 @@
 package com.murphyslaws.presentation.navigation
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
-import com.murphyslaws.presentation.browse.BrowseScreen
 import com.murphyslaws.presentation.home.HomeScreen
 
+sealed class Screen(val route: String) {
+    object Home : Screen("home")
+    object Browse : Screen("browse")
+    object LawDetail : Screen("law/{lawId}") {
+        fun createRoute(lawId: Int) = "law/$lawId"
+    }
+}
+
 @Composable
-fun NavGraph(
-    navController: NavHostController,
-    startDestination: String = Routes.Home.route
-) {
+fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = Screen.Home.route
     ) {
-        composable(Routes.Home.route) {
+        composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToLaw = { lawId ->
-                    navController.navigate(Routes.LawDetail.createRoute(lawId))
+                onCategoryClick = { categoryId ->
+                    navController.navigate(Screen.Browse.route)
+                },
+                onLawClick = { lawId ->
+                    navController.navigate(Screen.LawDetail.createRoute(lawId))
                 }
             )
         }
-
-        composable(Routes.Browse.route) {
-            BrowseScreen(
-                onNavigateToLaw = { lawId ->
-                    navController.navigate(Routes.LawDetail.createRoute(lawId))
+        
+        composable(Screen.Browse.route) {
+            com.murphyslaws.presentation.browse.BrowseScreen(
+                onLawClick = { lawId ->
+                    navController.navigate(Screen.LawDetail.createRoute(lawId))
                 }
             )
         }
-
-        composable(Routes.Categories.route) {
-            // Placeholder for Categories screen
-        }
-
-        composable(Routes.Calculators.route) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                androidx.compose.material3.Text("Calculators Coming Soon")
-            }
-        }
-
-        composable(Routes.More.route) {
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                androidx.compose.material3.Text("More / Settings Coming Soon")
-            }
-        }
-
-        composable(
-            route = Routes.LawDetail.route,
-            arguments = listOf(
-                navArgument("lawId") { type = NavType.IntType }
+        
+        composable(Screen.LawDetail.route) {
+            com.murphyslaws.presentation.detail.LawDetailScreen(
+                onBackClick = { navController.popBackStack() }
             )
-        ) { backStackEntry ->
-            val lawId = backStackEntry.arguments?.getInt("lawId") ?: return@composable
-            // Placeholder for Law Detail screen
-        }
-
-        composable(Routes.SubmitLaw.route) {
-            // Placeholder for Submit Law screen
         }
     }
 }

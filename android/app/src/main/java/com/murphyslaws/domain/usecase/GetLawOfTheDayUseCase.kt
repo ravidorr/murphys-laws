@@ -1,16 +1,16 @@
 package com.murphyslaws.domain.usecase
 
-import com.murphyslaws.domain.model.Law
+import com.murphyslaws.domain.model.LawOfDay
 import com.murphyslaws.domain.repository.LawRepository
 import javax.inject.Inject
 
-class GetLawsUseCase @Inject constructor(
+class GetLawOfTheDayUseCase @Inject constructor(
     private val repository: LawRepository
 ) {
-    suspend operator fun invoke(limit: Int = 25, offset: Int = 0): Result<List<Law>> {
+    suspend operator fun invoke(): Result<LawOfDay> {
         return try {
-            val laws = repository.getLaws(limit, offset)
-            Result.success(laws)
+            val lawOfDay = repository.getLawOfTheDay()
+            Result.success(lawOfDay)
         } catch (e: Exception) {
             Result.failure(e)
         }

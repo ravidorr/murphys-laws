@@ -2,10 +2,8 @@ package com.murphyslaws.di
 
 import android.content.Context
 import androidx.room.Room
-import com.murphyslaws.data.local.MurphysLawsDatabase
-import com.murphyslaws.data.local.dao.CategoryDao
+import com.murphyslaws.data.local.LawDatabase
 import com.murphyslaws.data.local.dao.LawDao
-import com.murphyslaws.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,27 +17,19 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(
+    fun provideLawDatabase(
         @ApplicationContext context: Context
-    ): MurphysLawsDatabase {
+    ): LawDatabase {
         return Room.databaseBuilder(
             context,
-            MurphysLawsDatabase::class.java,
-            Constants.DATABASE_NAME
-        )
-            .fallbackToDestructiveMigration()
-            .build()
+            LawDatabase::class.java,
+            "murphys_laws_db"
+        ).build()
     }
 
     @Provides
     @Singleton
-    fun provideLawDao(database: MurphysLawsDatabase): LawDao {
+    fun provideLawDao(database: LawDatabase): LawDao {
         return database.lawDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideCategoryDao(database: MurphysLawsDatabase): CategoryDao {
-        return database.categoryDao()
     }
 }

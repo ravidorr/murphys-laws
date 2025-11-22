@@ -16,44 +16,36 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = BrandPrimary,
-    onPrimary = BrandOnPrimary,
-    primaryContainer = Navy800,
-    onPrimaryContainer = White,
-    secondary = BrandSecondary,
-    onSecondary = White,
-    secondaryContainer = Emerald100,
-    onSecondaryContainer = Navy900,
-    background = BrandBackground,
-    onBackground = BrandOnBackground,
-    surface = BrandSurface,
-    onSurface = BrandOnSurface,
-    surfaceVariant = Slate200, // For card borders or subtle fills
-    onSurfaceVariant = Navy700,
-    outline = Slate200
+    primary = LightPrimary,
+    onPrimary = LightOnPrimary,
+    primaryContainer = LightContainer,
+    onPrimaryContainer = LightOnContainer,
+    secondary = WebLightSecondary,
+    background = WebLightBg,
+    surface = WebLightBg,
+    onBackground = WebLightFg,
+    onSurface = WebLightFg,
+    surfaceVariant = WebLightSurface,
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = White,
-    onPrimary = Navy900,
-    primaryContainer = Navy700,
-    onPrimaryContainer = White,
-    secondary = Emerald500,
-    onSecondary = Navy900,
-    background = Navy900,
-    onBackground = White,
-    surface = Navy800,
-    onSurface = White,
-    surfaceVariant = Navy700,
-    onSurfaceVariant = Slate200,
-    outline = Navy700
+    primary = DarkPrimary,
+    onPrimary = DarkOnPrimary,
+    primaryContainer = DarkContainer,
+    onPrimaryContainer = DarkOnContainer,
+    secondary = WebDarkSecondary,
+    background = WebDarkBg,
+    surface = WebDarkBg, // Material 3 often uses same as background or slightly lighter
+    onBackground = WebDarkFg,
+    onSurface = WebDarkFg,
+    surfaceVariant = WebDarkSurface,
 )
 
 @Composable
 fun MurphysLawsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Disabled to enforce brand colors
+    dynamicColor: Boolean = false, // Disabled to enforce Web App brand
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -68,7 +60,7 @@ fun MurphysLawsTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb() // Match background for clean look
+            window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

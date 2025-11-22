@@ -2,27 +2,30 @@ package com.murphyslaws.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Premium Brand Colors
-val Navy900 = Color(0xFF0F172A) // Deep Background / Primary Text
-val Navy800 = Color(0xFF1E293B) // Surface / Card Background
-val Navy700 = Color(0xFF334155) // Secondary Text
-val Navy50 = Color(0xFFF8FAFC)  // Light Background
+// Web App Colors
+val WebLightBg = Color(0xFFFFFFFF)
+val WebLightFg = Color(0xFF111827)
+val WebLightPrimary = Color(0xFF1173D4) // Blue from buttons
+val WebLightSecondary = Color(0xFF030213) // Dark primary from variables
+val WebLightSurface = Color(0xFFF3F4F6) // Light gray for cards (inferred)
 
-val Emerald500 = Color(0xFF10B981) // Primary Accent
-val Emerald600 = Color(0xFF059669) // Darker Accent
-val Emerald100 = Color(0xFFD1FAE5) // Light Accent Container
+val WebDarkBg = Color(0xFF0B0B11)
+val WebDarkFg = Color(0xFFE9EAEE)
+val WebDarkPrimary = Color(0xFF4F46E5) // Indigo
+val WebDarkSecondary = Color(0xFF9ECBFF) // Link color
+val WebDarkSurface = Color(0xFF1A1A22) // Skeleton bg
 
-val Slate500 = Color(0xFF64748B) // Muted Text
-val Slate200 = Color(0xFFE2E8F0) // Borders / Dividers
+val WebSuccess = Color(0xFF16A34A)
+val WebError = Color(0xFFDC2626)
+val WebWarning = Color(0xFFF59E0B) // Standard warning
 
-val White = Color(0xFFFFFFFF)
-val Black = Color(0xFF000000)
+// Material 3 Roles
+val LightPrimary = WebLightPrimary
+val LightOnPrimary = Color.White
+val LightContainer = Color(0xFFDBEAFE) // Light blue
+val LightOnContainer = Color(0xFF1E3A8A)
 
-// Semantic Aliases
-val BrandPrimary = Navy900
-val BrandSecondary = Emerald500
-val BrandBackground = Navy50
-val BrandSurface = White
-val BrandOnPrimary = White
-val BrandOnBackground = Navy900
-val BrandOnSurface = Navy900
+val DarkPrimary = WebDarkPrimary
+val DarkOnPrimary = Color.White
+val DarkContainer = Color(0xFF312E81) // Dark indigo
+val DarkOnContainer = Color(0xFFE0E7FF)

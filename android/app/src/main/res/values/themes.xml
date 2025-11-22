@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <style name="Theme.MurphysLaws" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-    </style>
+    <!-- Empty theme that will be populated by Compose -->
+    <style name="Theme.MurphysLaws" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

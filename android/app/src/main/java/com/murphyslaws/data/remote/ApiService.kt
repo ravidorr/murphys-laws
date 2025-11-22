@@ -1,20 +1,11 @@
 package com.murphyslaws.data.remote
 
-import com.murphyslaws.data.remote.dto.CategoriesResponse
 import com.murphyslaws.data.remote.dto.LawDto
 import com.murphyslaws.data.remote.dto.LawOfDayResponse
-import com.murphyslaws.data.remote.dto.LawsResponse
-import com.murphyslaws.data.remote.dto.SubmitLawRequestDto
-import com.murphyslaws.data.remote.dto.SubmitLawResponseDto
-import com.murphyslaws.data.remote.dto.VoteRequest
-import com.murphyslaws.data.remote.dto.VoteResponseDto
-import retrofit2.http.Body
-import retrofit2.http.DELETE
+import com.murphyslaws.data.remote.dto.CategoriesResponse
 import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.POST
-import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Path
 
 interface ApiService {
     @GET("laws")
@@ -24,36 +15,15 @@ interface ApiService {
         @Query("sort") sort: String = "score",
         @Query("order") order: String = "desc",
         @Query("q") query: String? = null,
-        @Query("category_id") categoryId: Int? = null,
-        @Query("attribution") attribution: String? = null
-    ): LawsResponse
-
-    @GET("laws/{id}")
-    suspend fun getLaw(
-        @Path("id") id: Int
-    ): LawDto
-
-    @POST("laws/{id}/vote")
-    suspend fun voteLaw(
-        @Path("id") id: Int,
-        @Body voteRequest: VoteRequest,
-        @Header("X-Device-ID") deviceId: String
-    ): VoteResponseDto
-
-    @DELETE("laws/{id}/vote")
-    suspend fun unvoteLaw(
-        @Path("id") id: Int,
-        @Header("X-Device-ID") deviceId: String
-    ): VoteResponseDto
+        @Query("category_id") categoryId: Int? = null
+    ): List<LawDto> // Assuming the API returns a list directly or a wrapper. Checking web code might be needed if unsure.
 
     @GET("law-of-day")
-    suspend fun getLawOfDay(): LawOfDayResponse
+    suspend fun getLawOfTheDay(): LawOfDayResponse
 
     @GET("categories")
     suspend fun getCategories(): CategoriesResponse
 
-    @POST("laws")
-    suspend fun submitLaw(
-        @Body request: SubmitLawRequestDto
-    ): SubmitLawResponseDto
+    @GET("laws/{id}")
+    suspend fun getLaw(@Path("id") id: Int): LawDto
 }
