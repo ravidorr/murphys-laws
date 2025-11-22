@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("jacoco")
 }
 
 android {
@@ -48,6 +49,51 @@ android {
     }
 }
 
+// Test Coverage Configuration
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/*_Hilt*.class",
+        "**/Hilt_*.class",
+        "**/*_Factory.class",
+        "**/*Module.class",
+        "**/*Dagger*.class",
+        "**/*MembersInjector*.class"
+    )
+    
+    val debugTree = fileTree("${buildDir}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+    
+    val mainSrc = "${project.projectDir}/src/main/java"
+    
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(fileTree(buildDir) {
+        include("jacoco/testDebugUnitTest.exec")
+    })
+}
+
+tasks.register("jacocoCoverageVerification") {
+    dependsOn("jacocoTestReport")
+    
+    doLast {
+        println("Coverage report generated. Check build/reports/jacoco/jacocoTestReport/html/index.html")
+    }
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
@@ -74,22 +120,6 @@ dependencies {
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Room
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    implementation("androidx.room:room-paging:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
-
-    // Paging
-    implementation("androidx.paging:paging-runtime-ktx:3.2.1")
-    implementation("androidx.paging:paging-compose:3.2.1")
-
-    // Coil
-    implementation("io.coil-kt:coil-compose:2.5.0")
-
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.13.8")
@@ -110,8 +140,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     
     // Testing - Hilt
-    testImplementation("com.google.dagger:hilt-android-testing:2.48.1")
-    kspTest("com.google.dagger:hilt-android-compiler:2.48.1")
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.48.1")
-    kspAndroidTest("com.google.dagger:hilt-android-compiler:2.48.1")
+    testImplementation("com.google.dagger:hilt-android-testing:2.50")
+    kspTest("com.google.dagger:hilt-android-compiler:2.50")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.50")
+    kspAndroidTest("com.google.dagger:hilt-android-compiler:2.50")
 }
