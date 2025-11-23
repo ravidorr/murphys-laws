@@ -29,10 +29,15 @@ class FakeLawRepository : LawRepository {
     }
     
     override suspend fun getLawOfTheDay(): LawOfDay {
-        if (shouldReturnError) {
+        return if (shouldReturnError) {
             throw Exception("Test error")
+        } else {
+            lawOfDay ?: throw Exception("No law of day set")
         }
-        return lawOfDay
+    }
+    
+    override suspend fun searchLaws(query: String): Result<List<Law>> {
+        return Result.success(emptyList()) // Return empty list for tests
     }
     
     override suspend fun voteLaw(lawId: Int, voteType: String): Result<VoteResponse> {
