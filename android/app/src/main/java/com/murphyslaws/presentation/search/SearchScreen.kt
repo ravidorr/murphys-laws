@@ -26,7 +26,7 @@ import com.murphyslaws.domain.model.Law
 fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
-    onLawClick: (Int) -> Unit = {}
+    onLawClick: (Law) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -109,7 +109,7 @@ fun SearchScreen(
 @Composable
 private fun SearchResults(
     laws: List<Law>,
-    onLawClick: (Int) -> Unit
+    onLawClick: (Law) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -117,7 +117,7 @@ private fun SearchResults(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(laws) { law ->
-            LawSearchResultCard(law = law, onClick = { onLawClick(law.id) })
+            LawSearchResultCard(law = law, onClick = { onLawClick(law) })
         }
     }
 }

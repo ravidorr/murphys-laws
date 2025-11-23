@@ -255,6 +255,16 @@ fun HomeScreen(
                                 }
                             }
                         }
+                        
+                        // Vote Error Display
+                        if (uiState.voteError != null) {
+                            Text(
+                                text = uiState.voteError!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
                 }
             }
