@@ -150,7 +150,8 @@ fun HomeScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(
-                                        onClick = { /* TODO: Implement upvote */ },
+                                        onClick = { viewModel.onUpvoteClicked() },
+                                        enabled = !uiState.isVoting,
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(
@@ -172,7 +173,8 @@ fun HomeScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(
-                                        onClick = { /* TODO: Implement downvote */ },
+                                        onClick = { viewModel.onDownvoteClicked() },
+                                        enabled = !uiState.isVoting,
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(

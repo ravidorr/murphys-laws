@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.domain.model.LawOfDay
 import com.murphyslaws.domain.usecase.GetLawOfTheDayUseCase
+import com.murphyslaws.domain.usecase.VoteUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ import org.junit.Test
 class HomeViewModelTest {
 
     private lateinit var getLawOfTheDayUseCase: GetLawOfTheDayUseCase
+    private lateinit var voteUseCase: VoteUseCase
     private lateinit var viewModel: HomeViewModel
 
     private val testDispatcher = StandardTestDispatcher()
@@ -33,6 +35,7 @@ class HomeViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         getLawOfTheDayUseCase = mockk()
+        voteUseCase = mockk(relaxed = true)
     }
 
     @After
@@ -55,7 +58,7 @@ class HomeViewModelTest {
         coEvery { getLawOfTheDayUseCase() } returns Result.success(lawOfDay)
 
         // When
-        viewModel = HomeViewModel(getLawOfTheDayUseCase)
+        viewModel = HomeViewModel(getLawOfTheDayUseCase, voteUseCase)
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
@@ -75,7 +78,7 @@ class HomeViewModelTest {
         coEvery { getLawOfTheDayUseCase() } returns Result.failure(Exception(errorMessage))
 
         // When
-        viewModel = HomeViewModel(getLawOfTheDayUseCase)
+        viewModel = HomeViewModel(getLawOfTheDayUseCase, voteUseCase)
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
@@ -95,7 +98,7 @@ class HomeViewModelTest {
         coEvery { getLawOfTheDayUseCase() } returns Result.success(lawOfDay)
 
         // When
-        viewModel = HomeViewModel(getLawOfTheDayUseCase)
+        viewModel = HomeViewModel(getLawOfTheDayUseCase, voteUseCase)
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Then - data should be loaded

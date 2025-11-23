@@ -1,6 +1,8 @@
 package com.murphyslaws.data.repository
 
 import com.murphyslaws.data.remote.ApiService
+import com.murphyslaws.data.remote.dto.VoteRequest
+import com.murphyslaws.data.remote.dto.VoteResponse
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.domain.model.LawOfDay
 import com.murphyslaws.domain.repository.LawRepository
@@ -23,5 +25,23 @@ class LawRepositoryImpl @Inject constructor(
             ),
             date = response.date
         )
+    }
+    
+    override suspend fun voteLaw(lawId: Int, voteType: String): Result<VoteResponse> {
+        return try {
+            val response = apiService.voteLaw(lawId, VoteRequest(voteType))
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun unvoteLaw(lawId: Int): Result<VoteResponse> {
+        return try {
+            val response = apiService.unvoteLaw(lawId)
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
