@@ -2,6 +2,8 @@ package com.murphyslaws.data.remote
 
 import com.murphyslaws.data.remote.dto.LawOfDayResponse
 import com.murphyslaws.data.remote.dto.LawsResponse
+import com.murphyslaws.data.remote.dto.SubmitLawRequest
+import com.murphyslaws.data.remote.dto.SubmitLawResponse
 import com.murphyslaws.data.remote.dto.VoteRequest
 import com.murphyslaws.data.remote.dto.VoteResponse
 import retrofit2.http.Body
@@ -34,4 +36,9 @@ interface ApiService {
     suspend fun unvoteLaw(
         @Path("id") lawId: Int
     ): VoteResponse
+
+    @POST("laws")
+    suspend fun submitLaw(
+        @Body request: SubmitLawRequest
+    ): SubmitLawResponse
 }

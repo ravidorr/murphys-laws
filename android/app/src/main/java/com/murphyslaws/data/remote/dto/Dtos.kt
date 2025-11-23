@@ -37,3 +37,17 @@ data class LawsResponse(
     val limit: Int,
     val offset: Int
 )
+
+@JsonClass(generateAdapter = true)
+data class SubmitLawRequest(
+    val text: String,
+    val title: String? = null,
+    @Json(name = "author_name") val authorName: String? = null,
+    @Json(name = "author_email") val authorEmail: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class SubmitLawResponse(
+    val id: Int,
+    val message: String
+)

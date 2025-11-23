@@ -10,4 +10,5 @@ interface LawRepository {
     suspend fun searchLaws(query: String): Result<List<Law>>
     suspend fun voteLaw(lawId: Int, voteType: String): Result<VoteResponse>
     suspend fun unvoteLaw(lawId: Int): Result<VoteResponse>
+    suspend fun submitLaw(text: String, title: String?, name: String?, email: String?): Result<Unit>
 }
