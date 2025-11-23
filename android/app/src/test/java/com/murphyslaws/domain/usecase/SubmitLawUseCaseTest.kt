@@ -67,9 +67,23 @@ class SubmitLawUseCaseTest {
     }
 
     @Test
+    fun `invoke returns failure when text is too short`() = runTest {
+        // Given
+        val text = "Short" // < 10 chars
+        
+        // When
+        val result = submitLawUseCase(text)
+
+        // Then
+        assertTrue(result.isFailure)
+        assertEquals("Law text must be at least 10 characters", result.exceptionOrNull()?.message)
+        coVerify(exactly = 0) { repository.submitLaw(any(), any() as String?, any() as String?, any() as String?) }
+    }
+
+    @Test
     fun `invoke passes null for empty optional fields`() = runTest {
         // Given
-        val text = "My Law"
+        val text = "My Law Text Content"
         val title = ""
         val name = "   "
         val email = null
@@ -82,7 +96,7 @@ class SubmitLawUseCaseTest {
         assertTrue(result.isSuccess)
         coVerify { 
             repository.submitLaw(
-                text = "My Law",
+                text = "My Law Text Content",
                 title = null,
                 name = null,
                 email = null
@@ -93,7 +107,7 @@ class SubmitLawUseCaseTest {
     @Test
     fun `invoke returns failure when repository fails`() = runTest {
         // Given
-        val text = "My Law"
+        val text = "My Law Text Content"
         val error = Exception("Network error")
         coEvery { repository.submitLaw(any(), any() as String?, any() as String?, any() as String?) } returns Result.failure(error)
 

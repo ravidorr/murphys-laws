@@ -27,6 +27,9 @@ class SubmitLawUseCase @Inject constructor(
         if (text.isBlank()) {
             return Result.failure(IllegalArgumentException("Law text cannot be empty"))
         }
+        if (text.length < 10) {
+            return Result.failure(IllegalArgumentException("Law text must be at least 10 characters"))
+        }
         
         return repository.submitLaw(
             text = text.trim(),
