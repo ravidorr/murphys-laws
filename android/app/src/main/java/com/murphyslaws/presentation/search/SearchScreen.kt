@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -161,10 +163,11 @@ private fun LawSearchResultCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "↑",
-                        color = Color(0xFF10b981),
-                        style = MaterialTheme.typography.bodyMedium
+                    Icon(
+                        Icons.Default.ThumbUp,
+                        contentDescription = null,
+                        tint = Color(0xFF10b981),
+                        modifier = Modifier.size(16.dp)
                     )
                     Text(
                         law.upvotes.toString(),
@@ -176,10 +179,11 @@ private fun LawSearchResultCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "↓",
-                        color = Color(0xFFef4444),
-                        style = MaterialTheme.typography.bodyMedium
+                    Icon(
+                        Icons.Default.ThumbDown,
+                        contentDescription = null,
+                        tint = Color(0xFFef4444),
+                        modifier = Modifier.size(16.dp)
                     )
                     Text(
                         law.downvotes.toString(),
