@@ -67,4 +67,20 @@ class LawRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun submitLaw(text: String, title: String?, name: String?, email: String?): Result<Unit> {
+        return try {
+            apiService.submitLaw(
+                com.murphyslaws.data.remote.dto.SubmitLawRequest(
+                    text = text,
+                    title = title,
+                    authorName = name,
+                    authorEmail = email
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
