@@ -18,6 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.murphyslaws.presentation.calculators.CalculatorsScreen
 import com.murphyslaws.presentation.home.HomeScreen
+import com.murphyslaws.presentation.lawdetail.LawDetailScreen
 import com.murphyslaws.presentation.more.MoreScreen
 import com.murphyslaws.presentation.search.SearchScreen
 import com.murphyslaws.presentation.submit.SubmitLawScreen
@@ -32,6 +33,7 @@ sealed class BottomNavScreen(val route: String, val title: String, val icon: Ima
 // Additional routes (not in bottom nav)
 object AdditionalRoutes {
     const val SEARCH = "search"
+    const val LAW_DETAIL = "law_detail"
 }
 
 @Composable
@@ -95,10 +97,27 @@ fun MainApp() {
                     onNavigateBack = {
                         navController.popBackStack()
                     },
-                    onLawClick = { lawId ->
-                        // TODO: Navigate to law detail
+                    onLawClick = { law ->
+                        // Pass law via SavedStateHandle
+                        navController.currentBackStackEntry?.savedStateHandle?.set("law", law)
+                        navController.navigate(AdditionalRoutes.LAW_DETAIL)
                     }
                 )
+            }
+            composable(AdditionalRoutes.LAW_DETAIL) {
+                // Retrieve law from previous back stack entry
+                val law = navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<com.murphyslaws.domain.model.Law>("law")
+
+                if (law != null) {
+                    LawDetailScreen(
+                        law = law,
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
             }
         }
     }

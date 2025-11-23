@@ -46,28 +46,29 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isVoting = true, voteError = null) }
             
-            voteUseCase.toggleVote(law.id, "up")
-                .onSuccess { response ->
-                    _uiState.update { state ->
-                        state.copy(
-                            lawOfDay = state.lawOfDay?.copy(
-                                law = law.copy(
-                                    upvotes = response.upvotes,
-                                    downvotes = response.downvotes
-                                )
-                            ),
-                            isVoting = false
-                        )
-                    }
+            val result = voteUseCase.toggleVote(law.id, "up")
+            
+            if (result.isSuccess) {
+                val response = result.getOrNull()!!
+                _uiState.update { state ->
+                    state.copy(
+                        lawOfDay = state.lawOfDay?.copy(
+                            law = law.copy(
+                                upvotes = response.upvotes,
+                                downvotes = response.downvotes
+                            )
+                        ),
+                        isVoting = false
+                    )
                 }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isVoting = false,
-                            voteError = error.message
-                        )
-                    }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isVoting = false,
+                        voteError = result.exceptionOrNull()?.message
+                    )
                 }
+            }
         }
     }
     
@@ -77,28 +78,29 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isVoting = true, voteError = null) }
             
-            voteUseCase.toggleVote(law.id, "down")
-                .onSuccess { response ->
-                    _uiState.update { state ->
-                        state.copy(
-                            lawOfDay = state.lawOfDay?.copy(
-                                law = law.copy(
-                                    upvotes = response.upvotes,
-                                    downvotes = response.downvotes
-                                )
-                            ),
-                            isVoting = false
-                        )
-                    }
+            val result = voteUseCase.toggleVote(law.id, "down")
+            
+            if (result.isSuccess) {
+                val response = result.getOrNull()!!
+                _uiState.update { state ->
+                    state.copy(
+                        lawOfDay = state.lawOfDay?.copy(
+                            law = law.copy(
+                                upvotes = response.upvotes,
+                                downvotes = response.downvotes
+                            )
+                        ),
+                        isVoting = false
+                    )
                 }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            isVoting = false,
-                            voteError = error.message
-                        )
-                    }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isVoting = false,
+                        voteError = result.exceptionOrNull()?.message
+                    )
                 }
+            }
         }
     }
 }
