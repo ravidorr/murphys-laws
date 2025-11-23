@@ -15,7 +15,7 @@ class GetLawsUseCase @Inject constructor(
      * Fetch all laws
      * @return Result with list of laws
      */
-    suspend operator fun invoke(): Result<List<Law>> {
-        return repository.getLaws()
+    suspend operator fun invoke(limit: Int = 50, offset: Int = 0): Result<List<Law>> {
+        return repository.getLaws(limit, offset)
     }
 }
