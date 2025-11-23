@@ -29,3 +29,11 @@ data class VoteResponse(
     val upvotes: Int,
     val downvotes: Int
 )
+
+@JsonClass(generateAdapter = true)
+data class LawsResponse(
+    val data: List<LawDto>,
+    val total: Int,
+    val limit: Int,
+    val offset: Int
+)
