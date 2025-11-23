@@ -27,6 +27,25 @@ class LawRepositoryImpl @Inject constructor(
         )
     }
     
+    override suspend fun searchLaws(query: String): Result<List<Law>> {
+        return try {
+            val response = apiService.searchLaws(query)
+            val laws = response.data.map { lawDto ->
+                Law(
+                    id = lawDto.id,
+                    text = lawDto.text,
+                    title = lawDto.title,
+                    upvotes = lawDto.upvotes,
+                    downvotes = lawDto.downvotes,
+                    createdAt = lawDto.createdAt
+                )
+            }
+            Result.success(laws)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override suspend fun voteLaw(lawId: Int, voteType: String): Result<VoteResponse> {
         return try {
             val response = apiService.voteLaw(lawId, VoteRequest(voteType))

@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.murphyslaws.presentation.calculators.CalculatorsScreen
 import com.murphyslaws.presentation.home.HomeScreen
 import com.murphyslaws.presentation.more.MoreScreen
+import com.murphyslaws.presentation.search.SearchScreen
 import com.murphyslaws.presentation.submit.SubmitLawScreen
 
 sealed class BottomNavScreen(val route: String, val title: String, val icon: ImageVector) {
@@ -26,6 +27,11 @@ sealed class BottomNavScreen(val route: String, val title: String, val icon: Ima
     object Calculators : BottomNavScreen("calculators", "Calculators", Icons.Filled.Calculate)
     object Submit : BottomNavScreen("submit", "Submit a Law", Icons.Filled.Add)
     object More : BottomNavScreen("more", "More", Icons.Filled.MoreVert)
+}
+
+// Additional routes (not in bottom nav)
+object AdditionalRoutes {
+    const val SEARCH = "search"
 }
 
 @Composable
@@ -69,7 +75,11 @@ fun MainApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(BottomNavScreen.Home.route) {
-                HomeScreen()
+                HomeScreen(
+                    onNavigateToSearch = {
+                        navController.navigate(AdditionalRoutes.SEARCH)
+                    }
+                )
             }
             composable(BottomNavScreen.Calculators.route) {
                 CalculatorsScreen()
@@ -79,6 +89,16 @@ fun MainApp() {
             }
             composable(BottomNavScreen.More.route) {
                 MoreScreen()
+            }
+            composable(AdditionalRoutes.SEARCH) {
+                SearchScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onLawClick = { lawId ->
+                        // TODO: Navigate to law detail
+                    }
+                )
             }
         }
     }

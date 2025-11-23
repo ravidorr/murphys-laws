@@ -24,7 +24,8 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    onNavigateToSearch: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") } // Keep this from original, as it's used in OutlinedTextField
@@ -33,16 +34,10 @@ fun HomeScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Murphy's Laws",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(
-                            text = "Anything that can go wrong will go wrong",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    Text(
+                        "Murphy's Laws",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
                 }
             )
         }
@@ -55,7 +50,7 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Search Bar
+            // Search Bar (clickable, navigates to search screen)
             OutlinedTextField(
                 value = searchQuery, // Use the state variable
                 onValueChange = { searchQuery = it }, // Update the state variable
@@ -63,7 +58,18 @@ fun HomeScreen(
                 placeholder = { Text("Search laws...") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true, // Added from original for consistency
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
+                enabled = false, // Disable editing
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                    .also { interactionSource ->
+                        LaunchedEffect(interactionSource) {
+                            interactionSource.interactions.collect { interaction ->
+                                if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                                    onNavigateToSearch()
+                                }
+                            }
+                        }
+                    }
             )
 
             // Law of the Day Card
