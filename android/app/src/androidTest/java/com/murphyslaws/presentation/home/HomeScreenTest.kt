@@ -4,10 +4,13 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.test.core.app.ApplicationProvider
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.domain.model.LawOfDay
 import com.murphyslaws.domain.usecase.GetLawOfTheDayUseCase
+import com.murphyslaws.domain.usecase.VoteUseCase
 import com.murphyslaws.ui.theme.MurphysLawsTheme
+import com.murphyslaws.util.VoteManager
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 
@@ -106,7 +109,6 @@ class HomeScreenTest {
     fun homeScreen_displaysLoadingIndicator() {
         // Given
         val (viewModel, repository) = createViewModel(isLoading = true, hasData = false)
-        repository.delayMs = 5000 // Long delay to ensure loading state is visible
 
         // When
         composeTestRule.setContent {
@@ -192,13 +194,17 @@ class HomeScreenTest {
         val fakeRepository = FakeLawRepository()
         
         if (hasData) {
-            fakeRepository.lawOfDayResult = Result.success(LawOfDay(law, "2024-01-15"))
+            fakeRepository.setLawOfDay(LawOfDay(law, "2024-01-15"))
         } else {
-            fakeRepository.lawOfDayResult = Result.failure(Exception("No data"))
+            fakeRepository.setShouldReturnError(true)
         }
 
-        val useCase = GetLawOfTheDayUseCase(fakeRepository)
+        val getLawUseCase = GetLawOfTheDayUseCase(fakeRepository)
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val sharedPrefs = context.getSharedPreferences("test_votes", android.content.Context.MODE_PRIVATE)
+        val voteManager = VoteManager(sharedPrefs)
+        val voteUseCase = VoteUseCase(fakeRepository, voteManager)
         
-        return Pair(HomeViewModel(useCase), fakeRepository)
+        return Pair(HomeViewModel(getLawUseCase, voteUseCase), fakeRepository)
     }
 }

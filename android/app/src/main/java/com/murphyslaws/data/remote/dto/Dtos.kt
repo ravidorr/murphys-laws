@@ -18,3 +18,14 @@ data class LawOfDayResponse(
     val law: LawDto,
     @Json(name = "featured_date") val date: String
 )
+
+@JsonClass(generateAdapter = true)
+data class VoteRequest(
+    @Json(name = "vote_type") val voteType: String  // "up" or "down"
+)
+
+@JsonClass(generateAdapter = true)
+data class VoteResponse(
+    val upvotes: Int,
+    val downvotes: Int
+)
