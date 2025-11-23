@@ -29,7 +29,7 @@ class HomeScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun homeScreen_displaysHeaderAndSubtitle() {
+    fun homeScreen_displaysHeader() {
         // When
         composeTestRule.setContent {
             MurphysLawsTheme {
@@ -42,10 +42,6 @@ class HomeScreenTest {
         // Then
         composeTestRule
             .onNodeWithText("Murphy's Laws")
-            .assertIsDisplayed()
-        
-        composeTestRule
-            .onNodeWithText("Anything that can go wrong will go wrong")
             .assertIsDisplayed()
     }
 
