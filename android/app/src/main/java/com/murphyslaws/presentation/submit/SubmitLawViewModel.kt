@@ -39,6 +39,11 @@ class SubmitLawViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState.text.isBlank()) return
 
+        if (currentState.text.length < 10) {
+            _uiState.update { it.copy(error = "Law text must be at least 10 characters") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, success = false) }
 

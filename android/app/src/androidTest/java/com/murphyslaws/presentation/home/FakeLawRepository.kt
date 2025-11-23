@@ -49,4 +49,12 @@ class FakeLawRepository : LawRepository {
         // For tests, just return a success response
         return Result.success(VoteResponse(upvotes = 42, downvotes = 7))
     }
+
+    override suspend fun getLaws(): Result<List<Law>> {
+        return searchLaws("")
+    }
+
+    override suspend fun submitLaw(text: String, title: String?, name: String?, email: String?): Result<Unit> {
+        return Result.success(Unit)
+    }
 }

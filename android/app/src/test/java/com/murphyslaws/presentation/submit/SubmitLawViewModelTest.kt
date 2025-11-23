@@ -92,9 +92,25 @@ class SubmitLawViewModelTest {
     }
 
     @Test
+    fun `submitLaw sets error if text is too short`() = runTest(testDispatcher) {
+        // Given
+        viewModel.onTextChange("Short") // < 10 chars
+
+        // When
+        viewModel.submitLaw()
+        testDispatcher.scheduler.runCurrent()
+
+        // Then
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertEquals("Law text must be at least 10 characters", state.error)
+        coVerify { submitLawUseCase wasNot Called }
+    }
+
+    @Test
     fun `submitLaw handles success`() = runTest(testDispatcher) {
         // Given
-        viewModel.onTextChange("My Law")
+        viewModel.onTextChange("My Law Text Content")
         viewModel.onTitleChange("Title")
         coEvery { submitLawUseCase(any(), any(), any(), any()) } returns Result.success(Unit)
 
@@ -105,7 +121,7 @@ class SubmitLawViewModelTest {
         viewModel.uiState.test {
             // 1. Initial state (with text set)
             val initialState = awaitItem()
-            assertEquals("My Law", initialState.text)
+            assertEquals("My Law Text Content", initialState.text)
 
             // 2. Loading state
             testDispatcher.scheduler.runCurrent()
@@ -127,7 +143,7 @@ class SubmitLawViewModelTest {
     @Test
     fun `submitLaw handles failure`() = runTest(testDispatcher) {
         // Given
-        viewModel.onTextChange("My Law")
+        viewModel.onTextChange("My Law Text Content")
         val errorMessage = "Network error"
         coEvery { submitLawUseCase(any(), any(), any(), any()) } returns Result.failure(Exception(errorMessage))
 
@@ -138,7 +154,7 @@ class SubmitLawViewModelTest {
         viewModel.uiState.test {
             // 1. Initial state
             val initialState = awaitItem()
-            assertEquals("My Law", initialState.text)
+            assertEquals("My Law Text Content", initialState.text)
 
             // 2. Loading state
             testDispatcher.scheduler.runCurrent()
@@ -151,14 +167,14 @@ class SubmitLawViewModelTest {
             assertFalse(errorState.isLoading)
             assertFalse(errorState.success)
             assertEquals(errorMessage, errorState.error)
-            assertEquals("My Law", errorState.text) // Text preserved
+            assertEquals("My Law Text Content", errorState.text) // Text preserved
         }
     }
 
     @Test
     fun `resetState clears success and error`() = runTest(testDispatcher) {
         // Given - set up error state
-        viewModel.onTextChange("My Law")
+        viewModel.onTextChange("My Law Text Content")
         coEvery { submitLawUseCase(any(), any(), any(), any()) } returns Result.failure(Exception("Error"))
         viewModel.submitLaw()
         testDispatcher.scheduler.runCurrent()
@@ -173,6 +189,6 @@ class SubmitLawViewModelTest {
         assertNull(state.error)
         assertFalse(state.success)
         assertFalse(state.isLoading)
-        assertEquals("My Law", state.text) // Text preserved
+        assertEquals("My Law Text Content", state.text) // Text preserved
     }
 }

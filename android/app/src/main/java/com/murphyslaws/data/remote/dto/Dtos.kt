@@ -42,8 +42,8 @@ data class LawsResponse(
 data class SubmitLawRequest(
     val text: String,
     val title: String? = null,
-    @Json(name = "author_name") val authorName: String? = null,
-    @Json(name = "author_email") val authorEmail: String? = null
+    @Json(name = "author") val authorName: String? = null,
+    @Json(name = "email") val authorEmail: String? = null
 )
 
 @JsonClass(generateAdapter = true)
