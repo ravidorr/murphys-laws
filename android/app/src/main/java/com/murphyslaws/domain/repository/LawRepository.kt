@@ -6,6 +6,7 @@ import com.murphyslaws.domain.model.LawOfDay
 
 interface LawRepository {
     suspend fun getLawOfTheDay(): LawOfDay
+    suspend fun getLaws(): Result<List<Law>>
     suspend fun searchLaws(query: String): Result<List<Law>>
     suspend fun voteLaw(lawId: Int, voteType: String): Result<VoteResponse>
     suspend fun unvoteLaw(lawId: Int): Result<VoteResponse>
