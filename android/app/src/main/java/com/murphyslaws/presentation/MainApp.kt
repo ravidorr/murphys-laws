@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.murphyslaws.presentation.browse.BrowseScreen
 import com.murphyslaws.presentation.calculators.CalculatorsScreen
 import com.murphyslaws.presentation.home.HomeScreen
 import com.murphyslaws.presentation.lawdetail.LawDetailScreen
@@ -24,7 +26,8 @@ import com.murphyslaws.presentation.search.SearchScreen
 import com.murphyslaws.presentation.submit.SubmitLawScreen
 
 sealed class BottomNavScreen(val route: String, val title: String, val icon: ImageVector) {
-    object Home : BottomNavScreen("home", "All Laws", Icons.Filled.Home)
+    object Home : BottomNavScreen("home", "Home", Icons.Filled.Home)
+    object Browse : BottomNavScreen("browse", "All Laws", Icons.Filled.List)
     object Calculators : BottomNavScreen("calculators", "Calculators", Icons.Filled.Calculate)
     object Submit : BottomNavScreen("submit", "Submit a Law", Icons.Filled.Add)
     object More : BottomNavScreen("more", "More", Icons.Filled.MoreVert)
@@ -41,6 +44,7 @@ fun MainApp() {
     val navController = rememberNavController()
     val items = listOf(
         BottomNavScreen.Home,
+        BottomNavScreen.Browse,
         BottomNavScreen.Calculators,
         BottomNavScreen.Submit,
         BottomNavScreen.More
@@ -80,6 +84,14 @@ fun MainApp() {
                 HomeScreen(
                     onNavigateToSearch = {
                         navController.navigate(AdditionalRoutes.SEARCH)
+                    }
+                )
+            }
+            composable(BottomNavScreen.Browse.route) {
+                BrowseScreen(
+                    onLawClick = { law ->
+                        navController.currentBackStackEntry?.savedStateHandle?.set("law", law)
+                        navController.navigate(AdditionalRoutes.LAW_DETAIL)
                     }
                 )
             }

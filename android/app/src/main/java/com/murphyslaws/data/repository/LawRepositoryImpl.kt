@@ -26,6 +26,10 @@ class LawRepositoryImpl @Inject constructor(
             date = response.date
         )
     }
+
+    override suspend fun getLaws(): Result<List<Law>> {
+        return searchLaws("")
+    }
     
     override suspend fun searchLaws(query: String): Result<List<Law>> {
         return try {
