@@ -16,11 +16,11 @@ class SearchLawsUseCase @Inject constructor(
      * @param query Search term
      * @return Result with list of matching laws (empty if query is blank)
      */
-    suspend operator fun invoke(query: String): Result<List<Law>> {
+    suspend operator fun invoke(query: String, limit: Int = 50, offset: Int = 0): Result<List<Law>> {
         return if (query.isBlank()) {
             Result.success(emptyList())
         } else {
-            repository.searchLaws(query.trim())
+            repository.searchLaws(query.trim(), limit, offset)
         }
     }
 }
