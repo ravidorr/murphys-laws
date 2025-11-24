@@ -5,6 +5,7 @@ plugins {
     id("com.google.devtools.ksp")
     id("jacoco")
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -56,6 +57,19 @@ android {
     }
 }
 
+// Task to copy shared content into assets
+tasks.register<Copy>("copySharedContent") {
+    from("${project.rootDir}/../shared/content") {
+        include("*.md", "*.json")
+    }
+    into("${project.projectDir}/src/main/assets/content")
+}
+
+// Run before processing resources
+tasks.named("preBuild") {
+    dependsOn("copySharedContent")
+}
+
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
@@ -82,6 +96,9 @@ dependencies {
     implementation("com.squareup.moshi:moshi:1.15.0")
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")
