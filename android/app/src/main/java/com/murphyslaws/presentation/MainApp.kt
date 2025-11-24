@@ -21,9 +21,11 @@ import com.murphyslaws.presentation.browse.BrowseScreen
 import com.murphyslaws.presentation.calculators.CalculatorsScreen
 import com.murphyslaws.presentation.home.HomeScreen
 import com.murphyslaws.presentation.lawdetail.LawDetailScreen
+import com.murphyslaws.presentation.more.MarkdownContentScreen
 import com.murphyslaws.presentation.more.MoreScreen
 import com.murphyslaws.presentation.search.SearchScreen
 import com.murphyslaws.presentation.submit.SubmitLawScreen
+import com.murphyslaws.domain.model.ContentPage
 
 sealed class BottomNavScreen(val route: String, val title: String, val icon: ImageVector) {
     object Home : BottomNavScreen("home", "Home", Icons.Filled.Home)
@@ -37,6 +39,7 @@ sealed class BottomNavScreen(val route: String, val title: String, val icon: Ima
 object AdditionalRoutes {
     const val SEARCH = "search"
     const val LAW_DETAIL = "law_detail"
+    const val CONTENT_PAGE = "content_page"
 }
 
 @Composable
@@ -102,7 +105,12 @@ fun MainApp() {
                 SubmitLawScreen()
             }
             composable(BottomNavScreen.More.route) {
-                MoreScreen()
+                MoreScreen(
+                    onNavigateToContent = { page ->
+                        navController.currentBackStackEntry?.savedStateHandle?.set("contentPage", page)
+                        navController.navigate(AdditionalRoutes.CONTENT_PAGE)
+                    }
+                )
             }
             composable(AdditionalRoutes.SEARCH) {
                 SearchScreen(
@@ -127,6 +135,25 @@ fun MainApp() {
                         law = law,
                         onNavigateBack = {
                             navController.popBackStack()
+                        }
+                    )
+                }
+            }
+            composable(AdditionalRoutes.CONTENT_PAGE) {
+                // Retrieve content page from previous back stack entry
+                val page = navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<ContentPage>("contentPage")
+
+                if (page != null) {
+                    MarkdownContentScreen(
+                        page = page,
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        },
+                        onNavigateToContent = { targetPage ->
+                            navController.currentBackStackEntry?.savedStateHandle?.set("contentPage", targetPage)
+                            navController.navigate(AdditionalRoutes.CONTENT_PAGE)
                         }
                     )
                 }

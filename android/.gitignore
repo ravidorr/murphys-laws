@@ -16,6 +16,9 @@ gen/
 out/
 release/
 
+# Shared content (auto-copied from shared/content during build)
+app/src/main/assets/content/
+
 # Gradle files
 .gradle/
 build/
