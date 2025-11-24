@@ -2,9 +2,7 @@ package com.murphyslaws.domain.usecase
 
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.domain.repository.LawRepository
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.mockk
+import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Before

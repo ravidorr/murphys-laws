@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -11,8 +12,11 @@ import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -84,7 +88,10 @@ fun SearchScreen(
                 uiState.results.isNotEmpty() -> {
                     SearchResults(
                         laws = uiState.results,
-                        onLawClick = onLawClick
+                        onLawClick = onLawClick,
+                        onLoadMore = { viewModel.loadNextPage() },
+                        isLoading = uiState.isLoading,
+                        endReached = uiState.endReached
                     )
                 }
 
@@ -109,15 +116,51 @@ fun SearchScreen(
 @Composable
 private fun SearchResults(
     laws: List<Law>,
-    onLawClick: (Law) -> Unit
+    onLawClick: (Law) -> Unit,
+    onLoadMore: () -> Unit,
+    isLoading: Boolean,
+    endReached: Boolean
 ) {
+    val listState = rememberLazyListState()
+    
+    // Trigger pagination when scrolling to the end
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            
+            lastVisibleItemIndex >= totalItems - 5 && !endReached && !isLoading
+        }
+    }
+    
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value) {
+            onLoadMore()
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(laws) { law ->
             LawSearchResultCard(law = law, onClick = { onLawClick(law) })
+        }
+        
+        if (isLoading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
     }
 }
