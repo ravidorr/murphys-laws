@@ -27,13 +27,13 @@ class LawRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getLaws(): Result<List<Law>> {
-        return searchLaws("")
+    override suspend fun getLaws(limit: Int, offset: Int): Result<List<Law>> {
+        return searchLaws("", limit, offset)
     }
     
-    override suspend fun searchLaws(query: String): Result<List<Law>> {
+    override suspend fun searchLaws(query: String, limit: Int, offset: Int): Result<List<Law>> {
         return try {
-            val response = apiService.searchLaws(query)
+            val response = apiService.searchLaws(query, limit, offset)
             val laws = response.data.map { lawDto ->
                 Law(
                     id = lawDto.id,
