@@ -20,20 +20,38 @@ class BrowseViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(BrowseUiState())
     val uiState: StateFlow<BrowseUiState> = _uiState.asStateFlow()
 
+    private val pageSize = 20
+
     init {
-        loadLaws()
+        loadLaws(reset = true)
     }
 
-    fun loadLaws() {
+    fun loadLaws(reset: Boolean = false) {
+        if (uiState.value.isLoading) return
+        if (!reset && uiState.value.endReached) return
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { 
+                it.copy(
+                    isLoading = true, 
+                    error = null,
+                    laws = if (reset) emptyList() else it.laws,
+                    offset = if (reset) 0 else it.offset,
+                    endReached = if (reset) false else it.endReached
+                ) 
+            }
             
-            getLawsUseCase()
-                .onSuccess { laws ->
-                    _uiState.update { 
-                        it.copy(
+            val currentOffset = if (reset) 0 else uiState.value.offset
+            
+            getLawsUseCase(limit = pageSize, offset = currentOffset)
+                .onSuccess { newLaws ->
+                    _uiState.update { currentState ->
+                        val updatedLaws = if (reset) newLaws else currentState.laws + newLaws
+                        currentState.copy(
                             isLoading = false,
-                            laws = laws
+                            laws = updatedLaws,
+                            offset = currentOffset + newLaws.size,
+                            endReached = newLaws.size < pageSize
                         )
                     }
                 }
@@ -47,10 +65,16 @@ class BrowseViewModel @Inject constructor(
                 }
         }
     }
+    
+    fun loadNextPage() {
+        loadLaws(reset = false)
+    }
 }
 
 data class BrowseUiState(
     val isLoading: Boolean = false,
     val laws: List<Law> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val offset: Int = 0,
+    val endReached: Boolean = false
 )

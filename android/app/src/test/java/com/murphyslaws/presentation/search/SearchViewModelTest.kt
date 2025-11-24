@@ -3,8 +3,7 @@ package com.murphyslaws.presentation.search
 import app.cash.turbine.test
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.domain.usecase.SearchLawsUseCase
-import io.mockk.coEvery
-import io.mockk.mockk
+import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -55,7 +54,7 @@ class SearchViewModelTest {
     fun `onQueryChange updates query in state`() = runTest(testDispatcher) {
         // Given
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("test") } returns Result.success(emptyList())
+        coEvery { searchLawsUseCase("test", limit = any<Int>(), offset = any<Int>()) } returns Result.success(emptyList())
 
         // When
         viewModel.onQueryChange("test")
@@ -72,7 +71,7 @@ class SearchViewModelTest {
         // Given
         val laws = listOf(Law(1, "Test law", null, 10, 2))
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("test") } returns Result.success(laws)
+        coEvery { searchLawsUseCase("test", any(), any()) } returns Result.success(laws)
 
         // When
         viewModel.onQueryChange("test")
@@ -102,8 +101,8 @@ class SearchViewModelTest {
     fun `onQueryChange cancels previous search when typing quickly`() = runTest(testDispatcher) {
         // Given
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("te") } returns Result.success(emptyList())
-        coEvery { searchLawsUseCase("test") } returns Result.success(listOf(Law(1, "Test", null, 10, 2)))
+        coEvery { searchLawsUseCase("te", limit = any<Int>(), offset = any<Int>()) } returns Result.success(emptyList())
+        coEvery { searchLawsUseCase("test", limit = any<Int>(), offset = any<Int>()) } returns Result.success(listOf(Law(1, "Test", null, 10, 2)))
 
         // When - user types quickly
         viewModel.onQueryChange("te")
@@ -127,7 +126,7 @@ class SearchViewModelTest {
         // Given
         val laws = listOf(Law(1, "Test", null, 10, 2))
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("test") } returns Result.success(laws)
+        coEvery { searchLawsUseCase("test", any(), any()) } returns Result.success(laws)
 
         // When
         viewModel.onQueryChange("test")
@@ -150,7 +149,7 @@ class SearchViewModelTest {
             Law(2, "Another law", null, 5, 1)
         )
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("murphy") } returns Result.success(laws)
+        coEvery { searchLawsUseCase("murphy", limit = any<Int>(), offset = any<Int>()) } returns Result.success(laws)
 
         // When
         viewModel.onQueryChange("murphy")
@@ -172,7 +171,7 @@ class SearchViewModelTest {
         // Given
         val errorMessage = "Network error"
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("test") } returns Result.failure(Exception(errorMessage))
+        coEvery { searchLawsUseCase("test", limit = any<Int>(), offset = any<Int>()) } returns Result.failure(Exception(errorMessage))
 
         // When
         viewModel.onQueryChange("test")
@@ -193,7 +192,7 @@ class SearchViewModelTest {
         // Given
         val laws = listOf(Law(1, "Test", null, 10, 2))
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("test") } returns Result.success(laws)
+        coEvery { searchLawsUseCase("test", any(), any()) } returns Result.success(laws)
 
         // First search
         viewModel.onQueryChange("test")
@@ -220,8 +219,8 @@ class SearchViewModelTest {
     fun `search clears error on new search attempt`() = runTest(testDispatcher) {
         // Given
         viewModel = SearchViewModel(searchLawsUseCase)
-        coEvery { searchLawsUseCase("fail") } returns Result.failure(Exception("Error"))
-        coEvery { searchLawsUseCase("success") } returns Result.success(listOf(Law(1, "Test", null, 10, 2)))
+        coEvery { searchLawsUseCase("fail", limit = any<Int>(), offset = any<Int>()) } returns Result.failure(Exception("Error"))
+        coEvery { searchLawsUseCase("success", limit = any<Int>(), offset = any<Int>()) } returns Result.success(listOf(Law(1, "Test", null, 10, 2)))
 
         // First search fails
         viewModel.onQueryChange("fail")
@@ -242,5 +241,66 @@ class SearchViewModelTest {
             assertNull(state.error)
             assertEquals(1, state.results.size)
         }
+    }
+
+    @Test
+    fun `loadNextPage appends results`() = runTest(testDispatcher) {
+        // Given
+        val initialLaws = List(20) { Law(it, "Test $it", null, 10, 2) }
+        val nextLaws = listOf(Law(20, "Law 20", null, 0, 0))
+        viewModel = SearchViewModel(searchLawsUseCase)
+        
+        // Use returnsMany to return different values on sequential calls
+        coEvery { searchLawsUseCase("test", limit = any<Int>(), offset = any<Int>()) } returnsMany listOf(
+            Result.success(initialLaws),
+            Result.success(nextLaws)
+        )
+
+        // Initial search
+        viewModel.onQueryChange("test")
+        advanceTimeBy(301)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // When
+        viewModel.loadNextPage()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertEquals(21, state.results.size)
+        assertEquals(21, state.offset)
+    }
+
+    @Test
+    fun `performSearch resets pagination`() = runTest(testDispatcher) {
+        // Given
+        val initialLaws = List(20) { Law(it, "Test $it", null, 10, 2) }
+        val newSearchLaws = listOf(Law(20, "Law 20", null, 0, 0))
+        viewModel = SearchViewModel(searchLawsUseCase)
+        
+        coEvery { searchLawsUseCase("first", limit = any<Int>(), offset = any<Int>()) } returns Result.success(initialLaws)
+        coEvery { searchLawsUseCase("second", limit = any<Int>(), offset = any<Int>()) } returns Result.success(newSearchLaws)
+
+        // Initial search
+        viewModel.onQueryChange("first")
+        advanceTimeBy(301)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Load next page
+        viewModel.loadNextPage()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // When - new search
+        viewModel.onQueryChange("second")
+        advanceTimeBy(301)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertEquals(1, state.results.size)
+        assertEquals(1, state.offset) // Should be reset + new results size
+        assertEquals(newSearchLaws, state.results)
     }
 }

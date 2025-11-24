@@ -349,9 +349,7 @@ fi
 # Generate summary
 TOTAL_ISSUES=$((SQL_ATTEMPTS + XSS_ATTEMPTS + TRAVERSAL_ATTEMPTS + CMD_ATTEMPTS))
 
-SUMMARY="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-SUMMARY+="LOG ANALYSIS & ATTACK DETECTION\n"
-SUMMARY+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+SUMMARY=""
 
 if [ "$TOTAL_ISSUES" -gt 0 ]; then
     [ "$SQL_ATTEMPTS" -gt 0 ] && SUMMARY+="  • SQL Injection: $SQL_ATTEMPTS attempts\n"

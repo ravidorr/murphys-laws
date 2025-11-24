@@ -24,6 +24,8 @@ class SearchViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
+    private val pageSize = 20
+
     fun onQueryChange(query: String) {
         _uiState.update { it.copy(query = query) }
 
@@ -33,24 +35,40 @@ class SearchViewModel @Inject constructor(
         // Debounced search - wait 300ms after user stops typing
         searchJob = viewModelScope.launch {
             delay(300)
-            performSearch(query)
+            performSearch(query, reset = true)
         }
     }
 
-    private suspend fun performSearch(query: String) {
+    private suspend fun performSearch(query: String, reset: Boolean = false) {
         if (query.isBlank()) {
             _uiState.update { it.copy(results = emptyList(), isLoading = false, error = null) }
             return
         }
 
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        if (!reset && uiState.value.endReached) return
+        if (uiState.value.isLoading) return
 
-        searchLawsUseCase(query)
-            .onSuccess { laws ->
-                _uiState.update {
-                    it.copy(
-                        results = laws,
-                        isLoading = false
+        _uiState.update { 
+            it.copy(
+                isLoading = true, 
+                error = null,
+                results = if (reset) emptyList() else it.results,
+                offset = if (reset) 0 else it.offset,
+                endReached = if (reset) false else it.endReached
+            ) 
+        }
+
+        val currentOffset = if (reset) 0 else uiState.value.offset
+
+        searchLawsUseCase(query, limit = pageSize, offset = currentOffset)
+            .onSuccess { newLaws ->
+                _uiState.update { currentState ->
+                    val updatedResults = if (reset) newLaws else currentState.results + newLaws
+                    currentState.copy(
+                        results = updatedResults,
+                        isLoading = false,
+                        offset = currentOffset + newLaws.size,
+                        endReached = newLaws.size < pageSize
                     )
                 }
             }
@@ -63,11 +81,22 @@ class SearchViewModel @Inject constructor(
                 }
             }
     }
+    
+    fun loadNextPage() {
+        val query = uiState.value.query
+        if (query.isNotBlank()) {
+            viewModelScope.launch {
+                performSearch(query, reset = false)
+            }
+        }
+    }
 }
 
 data class SearchUiState(
     val query: String = "",
     val results: List<Law> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val offset: Int = 0,
+    val endReached: Boolean = false
 )
