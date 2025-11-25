@@ -55,12 +55,12 @@ async function deploy() {
   // Step 3: Sync backend files
   log('\nSyncing backend files...', 'blue');
   exec(
-    `rsync -avz --delete scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
-    'Syncing backend scripts'
+    `rsync -avz --delete src/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/src/`,
+    'Syncing backend src'
   );
   exec(
-    `rsync -avz --delete modules/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/modules/`,
-    'Syncing backend modules'
+    `rsync -avz --delete scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
+    'Syncing backend scripts'
   );
   exec(
     `rsync -avz --delete utils/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/utils/`,
@@ -69,6 +69,10 @@ async function deploy() {
   exec(
     `rsync -avz --delete db/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/db/`,
     'Syncing backend db'
+  );
+  exec(
+    `rsync -avz --delete config/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/config/`,
+    'Syncing backend config'
   );
   exec(
     `rsync -avz ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
