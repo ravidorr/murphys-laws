@@ -373,10 +373,6 @@ REPORT+="Reboot Required: $([ -f /var/run/reboot-required ] && echo 'YES' || ech
 PENDING_UPDATES=$(apt list --upgradable 2>/dev/null | grep -c upgradable || echo "0")
 REPORT+="Pending Updates: $PENDING_UPDATES\n\n"
 
-if [ "$PENDING_UPDATES" -gt 10 ]; then
-    REPORT+="More than 10 updates pending\n\n"
-fi
-
 #############################################################################
 # LOG ANALYSIS & ATTACK DETECTION
 #############################################################################
