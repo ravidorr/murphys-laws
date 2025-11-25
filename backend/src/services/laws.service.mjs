@@ -1,5 +1,5 @@
 import { safeParseJsonArray } from '../utils/helpers.js';
-import { MAX_LAWS_PER_REQUEST, DEFAULT_LAWS_PER_REQUEST } from '../utils/constants.js';
+
 
 export class LawService {
   constructor(db) {
@@ -105,11 +105,11 @@ export class LawService {
     `;
     const stmt = this.db.prepare(sql);
     const law = stmt.get(id);
-    
+
     if (law) {
       law.attributions = safeParseJsonArray(law.attributions);
     }
-    
+
     return law;
   }
 
@@ -181,7 +181,7 @@ export class LawService {
       VALUES (?, ?, 'in_review', 'web-submission')
       RETURNING id;
     `;
-    
+
     const insertLawStmt = this.db.prepare(insertLawSql);
     const lawResult = insertLawStmt.get(title, text);
 

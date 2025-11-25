@@ -52,7 +52,7 @@ try {
 
   // Check thresholds
   const failures = [];
-  
+
   if (totals.lines.pct < THRESHOLDS.lines) {
     failures.push(`Lines: ${totals.lines.pct.toFixed(2)}% < ${THRESHOLDS.lines}%`);
   }
@@ -96,7 +96,7 @@ try {
   console.log(`  Statements: ${totals.statements.pct.toFixed(2)}%`);
   console.log('');
 
-} catch (error) {
+} catch {
   // If test:coverage fails, the error was already shown
   // Just exit with error code
   console.error('');
