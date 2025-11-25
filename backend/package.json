@@ -9,9 +9,13 @@
   },
   "scripts": {
     "start": "node scripts/api-server.mjs",
+    "predev": "node scripts/cleanup-ports.mjs --kill",
     "dev": "node --watch scripts/api-server.mjs",
     "build:db": "node scripts/build-sqlite.mjs",
     "migrate": "node scripts/migrate.mjs",
+    "cleanup-ports": "node scripts/cleanup-ports.mjs",
+    "validate:node": "node scripts/validate-node-version.mjs",
+    "validate:node-server": "node scripts/validate-node-version.mjs --server",
     "test": "vitest run",
     "test:watch": "vitest"
   },

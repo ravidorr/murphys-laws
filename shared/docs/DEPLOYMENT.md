@@ -271,6 +271,57 @@ cd /root/murphys-laws && sudo /usr/bin/node backend/scripts/select-law-of-day.mj
 
 ---
 
+## Node.js Version Management
+
+### Critical: System Node Must Match NVM Node
+
+**The Problem:**
+PM2 may use `/usr/bin/node` (system Node.js) instead of the NVM version specified in `ecosystem.config.cjs`. This causes `better-sqlite3` and other native modules to fail with MODULE_VERSION mismatch errors, resulting in 502 Bad Gateway.
+
+**The Solution:**
+System Node.js (`/usr/bin/node`) must be a symlink to the NVM Node.js version:
+
+```bash
+# Check current versions
+/usr/bin/node --version           # System Node
+~/.nvm/versions/node/v22.20.0/bin/node --version  # NVM Node
+
+# If they differ, create symlink (one-time setup)
+sudo mv /usr/bin/node /usr/bin/node.bak
+sudo ln -s ~/.nvm/versions/node/v22.20.0/bin/node /usr/bin/node
+
+# Verify
+/usr/bin/node --version           # Should match NVM version
+```
+
+### Validating Node.js Versions
+
+Before deploying, validate that Node.js versions are correctly configured:
+
+```bash
+# Local validation
+npm run validate:node
+
+# Server validation (checks PM2 processes)
+npm run validate:node-server
+```
+
+The validation checks:
+- Local Node.js meets `package.json` requirements
+- System Node.js matches NVM Node.js
+- PM2 processes are using the correct Node.js version
+- better-sqlite3 is compiled
+
+### Deployment Script Enhancements
+
+The `npm run deploy` script now automatically:
+1. Validates Node.js versions on the server
+2. Installs dependencies with `npm ci`
+3. Rebuilds native modules with `npm rebuild better-sqlite3`
+4. Restarts PM2 with NVM environment
+
+This prevents MODULE_VERSION mismatch errors during deployments.
+
 ## System Updates & Native Modules
 
 ### After Kernel or Python Updates
@@ -279,24 +330,26 @@ When system packages are updated (especially kernel or Python versions), native 
 
 ```bash
 # SSH to the droplet
-ssh root@45.55.124.212
+ssh root@167.99.53.90
 
 # Rebuild native modules (e.g., better-sqlite3)
-cd /root/murphys-laws/backend && npm rebuild
+sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd /root/murphys-laws/backend && npm rebuild'
 
 # Restart API to use rebuilt modules
-pm2 restart murphys-api
+sudo -u root bash -c 'source ~/.nvm/nvm.sh && pm2 restart murphys-api'
 ```
 
 **Why this is necessary:**
-- Native modules like `better-sqlite3` are compiled against specific kernel/library versions
-- System updates can break these compiled binaries
-- Symptoms: API crashes with module loading errors, 502 Bad Gateway
+- Native modules like `better-sqlite3` are compiled against specific Node.js versions and kernel/library versions
+- System updates or Node.js version changes can break these compiled binaries
+- Symptoms: API crashes with module loading errors, 502 Bad Gateway, MODULE_VERSION mismatch
 
 **When to rebuild:**
 - After kernel updates (e.g., `6.8.0-87` → `6.8.0-88`)
 - After Python/system library updates
+- After Node.js version changes
 - After `apt-get upgrade` or `apt-get dist-upgrade`
+- After `npm ci` or `npm install` on the server
 
 ### System Update Checklist
 
@@ -311,16 +364,26 @@ pm2 restart murphys-api
    sudo reboot
    ```
 
-3. After reboot, rebuild native modules:
+3. After reboot, validate Node.js configuration:
    ```bash
-   cd /root/murphys-laws/backend && npm rebuild
-   pm2 restart murphys-api
+   npm run validate:node-server
    ```
 
-4. Verify services are running:
+4. Rebuild native modules:
+   ```bash
+   ssh root@167.99.53.90 "sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd /root/murphys-laws/backend && npm rebuild'"
+   ```
+
+5. Restart PM2 services:
+   ```bash
+   ssh root@167.99.53.90 "sudo -u root bash -c 'source ~/.nvm/nvm.sh && pm2 restart all'"
+   ```
+
+6. Verify services are running:
    ```bash
    pm2 list
-   curl https://murphys-laws.com/api/health
+   curl https://murphys-laws.com/api/v1/health
+   curl https://murphys-laws.com/api/v1/law-of-day
    ```
 
 ---

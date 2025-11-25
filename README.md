@@ -108,6 +108,25 @@ npm run dev:backend
 npm run dev:web
 ```
 
+**Note**: The `predev` script automatically cleans up any orphaned processes using ports 8787 and 5175 before starting.
+
+### Troubleshooting Port Issues
+
+If you encounter `EADDRINUSE` errors (port already in use):
+
+```bash
+# Check which processes are using development ports
+npm run cleanup-ports
+
+# Automatically kill processes using development ports
+npm run cleanup-ports --kill
+
+# Or manually check and kill
+lsof -i :8787  # Check API port
+lsof -i :5175  # Check frontend port
+kill <PID>     # Kill the process
+```
+
 ## Building
 
 ```bash

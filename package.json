@@ -8,6 +8,7 @@
     "web"
   ],
   "scripts": {
+    "predev": "node backend/scripts/cleanup-ports.mjs --kill",
     "dev:backend": "cd backend && npm run dev",
     "dev:web": "cd web && npm run dev",
     "dev": "npm run dev:backend & npm run dev:web",
@@ -21,7 +22,10 @@
     "lint:web": "cd web && npm run lint && npm run lint:css",
     "lint": "npm run lint:web",
     "deploy": "node backend/scripts/deploy.mjs",
+    "validate:node": "cd backend && npm run validate:node",
+    "validate:node-server": "cd backend && npm run validate:node-server",
     "validate-ports": "node backend/scripts/validate-ports.mjs",
+    "cleanup-ports": "node backend/scripts/cleanup-ports.mjs",
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install"
   },
   "keywords": ["murphys-law", "monorepo"],

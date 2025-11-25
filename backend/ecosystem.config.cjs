@@ -1,8 +1,21 @@
+/**
+ * PM2 Ecosystem Configuration
+ *
+ * CRITICAL: The interpreter path must match the Node.js version used to
+ * compile native modules (better-sqlite3). Mismatches cause MODULE_VERSION
+ * errors and 502 Bad Gateway responses.
+ *
+ * IMPORTANT: The system Node.js (/usr/bin/node) must be a symlink to this
+ * version, as PM2 may ignore the interpreter setting in some cases.
+ *
+ * See: shared/docs/PREVENTING-502-ERRORS.md
+ */
 module.exports = {
   apps: [
     {
       name: 'murphys-api',
       script: './scripts/api-server.mjs',
+      // CRITICAL: Must match system Node.js version
       interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
       cwd: '/root/murphys-laws/backend',
       instances: 1,
