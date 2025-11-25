@@ -59,7 +59,7 @@ class BrowseViewModel @Inject constructor(
                     _uiState.update { 
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: "Unknown error occurred"
+                            error = com.murphyslaws.util.ErrorMessageMapper.map(error)
                         )
                     }
                 }
