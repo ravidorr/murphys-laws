@@ -271,6 +271,60 @@ cd /root/murphys-laws && sudo /usr/bin/node backend/scripts/select-law-of-day.mj
 
 ---
 
+## System Updates & Native Modules
+
+### After Kernel or Python Updates
+
+When system packages are updated (especially kernel or Python versions), native Node.js modules must be rebuilt:
+
+```bash
+# SSH to the droplet
+ssh root@45.55.124.212
+
+# Rebuild native modules (e.g., better-sqlite3)
+cd /root/murphys-laws/backend && npm rebuild
+
+# Restart API to use rebuilt modules
+pm2 restart murphys-api
+```
+
+**Why this is necessary:**
+- Native modules like `better-sqlite3` are compiled against specific kernel/library versions
+- System updates can break these compiled binaries
+- Symptoms: API crashes with module loading errors, 502 Bad Gateway
+
+**When to rebuild:**
+- After kernel updates (e.g., `6.8.0-87` → `6.8.0-88`)
+- After Python/system library updates
+- After `apt-get upgrade` or `apt-get dist-upgrade`
+
+### System Update Checklist
+
+1. Apply system updates:
+   ```bash
+   sudo apt-get update && sudo apt-get upgrade -y
+   sudo apt-get dist-upgrade -y  # For kernel updates
+   ```
+
+2. Reboot if kernel was updated:
+   ```bash
+   sudo reboot
+   ```
+
+3. After reboot, rebuild native modules:
+   ```bash
+   cd /root/murphys-laws/backend && npm rebuild
+   pm2 restart murphys-api
+   ```
+
+4. Verify services are running:
+   ```bash
+   pm2 list
+   curl https://murphys-laws.com/api/health
+   ```
+
+---
+
 ## Architecture
 
 ```
