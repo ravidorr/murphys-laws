@@ -22,7 +22,7 @@ marked.setOptions({
  * @param {string} options.lastUpdated - Last updated date to display
  * @returns {string} - Formatted HTML with card styling
  */
-function markdownToHtml(markdownContent, options = {}) {
+export function markdownToHtml(markdownContent, options = {}) {
   const html = marked.parse(markdownContent);
 
   // Wrap in card structure consistent with existing templates
@@ -57,19 +57,19 @@ function markdownToHtml(markdownContent, options = {}) {
 function wrapFirstWordWithAccent(headingText) {
   // Extract text content (remove any existing HTML tags)
   const textOnly = headingText.replace(/<[^>]*>/g, '').trim();
-  
+
   if (!textOnly) {
     return headingText;
   }
-  
+
   // Find the first word - match word characters, hyphens, and apostrophes
   // Stop at spaces, ampersands, or other punctuation
   const firstWordMatch = textOnly.match(/^([\w'-]+)/);
-  
+
   if (firstWordMatch) {
     const firstWord = firstWordMatch[1];
     const rest = textOnly.substring(firstWord.length); // Don't trim - preserve spacing
-    
+
     // If there's rest (after trimming for check), wrap first word and add rest with preserved spacing
     if (rest.trim()) {
       return `<span class="accent-text">${firstWord}</span>${rest}`;
@@ -78,7 +78,7 @@ function wrapFirstWordWithAccent(headingText) {
       return `<span class="accent-text">${firstWord}</span>`;
     }
   }
-  
+
   // Fallback: wrap entire text if no word match
   return `<span class="accent-text">${textOnly}</span>`;
 }
@@ -127,13 +127,13 @@ function enhanceMarkdownHtml(html) {
       const sectionContent = sections[i];
       // Find where this section should end (before next section or at end)
       const nextSectionIndex = sectionContent.indexOf('<section class="content-section">');
-      
+
       if (nextSectionIndex !== -1) {
         // Next section starts within this content - close before it
-        html += '<section class="content-section">' + 
-                sectionContent.substring(0, nextSectionIndex) + 
-                '\n    </section>\n    ' +
-                sectionContent.substring(nextSectionIndex);
+        html += '<section class="content-section">' +
+          sectionContent.substring(0, nextSectionIndex) +
+          '\n    </section>\n    ' +
+          sectionContent.substring(nextSectionIndex);
       } else {
         // This is the last section - close at the end
         html += '<section class="content-section">' + sectionContent + '\n    </section>';
@@ -176,41 +176,41 @@ export function getPageContent(page) {
     const h1Content = h1Match[0];
     const h1Index = html.indexOf(h1Content);
     const afterH1 = h1Index + h1Content.length;
-    
+
     // Find the first paragraph after h1
     const firstPMatch = html.substring(afterH1).match(/<p>([\s\S]*?)<\/p>/);
-    
+
     if (firstPMatch) {
       const firstPContent = firstPMatch[0];
       const firstPText = firstPMatch[1];
       const headerEnd = afterH1 + html.substring(afterH1).indexOf(firstPContent) + firstPContent.length;
-      
+
       // Build header section
       let headerHtml = '    <header class="content-header">\n';
-      
+
       // Add last updated for privacy and terms only
       if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
         headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
       }
-      
+
       headerHtml += `      ${h1Content}\n`;
       headerHtml += `      <p class="lead">${firstPText}</p>\n`;
       headerHtml += '    </header>';
-      
+
       // Replace h1 and first paragraph with header section
       html = html.substring(0, h1Index) + headerHtml + html.substring(headerEnd);
     } else {
       // No paragraph after h1, just wrap h1 in header
       let headerHtml = '    <header class="content-header">\n';
-      
+
       // Add last updated for privacy and terms only
       if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
         headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
       }
-      
+
       headerHtml += `      ${h1Content}\n`;
       headerHtml += '    </header>';
-      
+
       html = html.substring(0, h1Index) + headerHtml + html.substring(afterH1);
     }
   }

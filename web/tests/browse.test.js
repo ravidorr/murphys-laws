@@ -17,8 +17,6 @@ describe('Browse view', () => {
   let fetchLawsSpy;
   let getUserVoteSpy;
   let toggleVoteSpy;
-  let deferUntilIdleSpy;
-
   beforeEach(() => {
     // Mock API responses
     fetchLawsSpy = vi.spyOn(api, 'fetchLaws').mockResolvedValue({
@@ -35,7 +33,7 @@ describe('Browse view', () => {
     vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
 
     // Mock deferUntilIdle to execute immediately for testing
-    deferUntilIdleSpy = vi.spyOn(cacheUtils, 'deferUntilIdle').mockImplementation((callback) => {
+    vi.spyOn(cacheUtils, 'deferUntilIdle').mockImplementation((callback) => {
       callback();
     });
 
@@ -55,23 +53,23 @@ describe('Browse view', () => {
   });
 
   it('shows search query when provided', () => {
-    const el = Browse({ searchQuery: 'gravity', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ searchQuery: 'gravity', onNavigate: () => { }, _onVote: () => { } });
     expect(el.textContent).toMatch(/gravity/);
   });
 
   it('renders Browse title', () => {
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
     expect(el.textContent).toMatch(/Browse/);
     expect(el.textContent).toMatch(/All Laws/);
   });
 
   it('renders loading state initially', () => {
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
     expect(el.textContent).toMatch(/Loading/);
   });
 
   it('fetches and displays laws', async () => {
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     // Wait for async loading
     await vi.waitFor(() => {
@@ -85,7 +83,7 @@ describe('Browse view', () => {
   it('displays empty state when no laws found', async () => {
     fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/No laws found/);
@@ -96,7 +94,7 @@ describe('Browse view', () => {
     fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
     const onNavigate = vi.fn();
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/No laws found/);
@@ -118,7 +116,7 @@ describe('Browse view', () => {
     fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
     const onNavigate = vi.fn();
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/No laws found/);
@@ -140,7 +138,7 @@ describe('Browse view', () => {
   it('displays error state on fetch failure', async () => {
     fetchLawsSpy.mockRejectedValue(new Error('Network error'));
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Of course something went wrong/);
@@ -159,7 +157,7 @@ describe('Browse view', () => {
       total: 50
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -181,7 +179,7 @@ describe('Browse view', () => {
       total: 50
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
@@ -203,7 +201,7 @@ describe('Browse view', () => {
   });
 
   it('handles voting on laws', async () => {
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     // Wait for laws to load
     await vi.waitFor(() => {
@@ -233,7 +231,7 @@ describe('Browse view', () => {
     // Mock successful voting response
     toggleVoteSpy.mockResolvedValue({ upvotes: 11, downvotes: 2 });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     // Wait for laws to load
     await vi.waitFor(() => {
@@ -256,7 +254,7 @@ describe('Browse view', () => {
 
   it('handles law card click navigation', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
@@ -274,7 +272,7 @@ describe('Browse view', () => {
       total: 1
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'wrong', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'wrong', onNavigate: () => { }, _onVote: () => { } });
 
     // Check that search query is displayed
     expect(el.textContent).toMatch(/Search results for/);
@@ -290,7 +288,7 @@ describe('Browse view', () => {
   it('shows vote button with voted class when user has voted', async () => {
     getUserVoteSpy.mockReturnValue('up');
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const cardText = el.querySelector('#browse-laws-list');
@@ -302,7 +300,7 @@ describe('Browse view', () => {
   it('handles voting errors gracefully', async () => {
     toggleVoteSpy.mockRejectedValue(new Error('Vote failed'));
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const cardText = el.querySelector('#browse-laws-list');
@@ -324,7 +322,7 @@ describe('Browse view', () => {
       total: 1
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Law without title/);
@@ -338,7 +336,7 @@ describe('Browse view', () => {
 
     fetchLawsSpy.mockImplementation(() => firstFetchPromise);
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     // Resolve initial load
     resolveFirstFetch({
@@ -385,7 +383,7 @@ describe('Browse view', () => {
       total: 100
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -412,7 +410,7 @@ describe('Browse view', () => {
       total: 100
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
@@ -449,7 +447,7 @@ describe('Browse view', () => {
       total: 100
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -467,7 +465,7 @@ describe('Browse view', () => {
       total: 30
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -490,7 +488,7 @@ describe('Browse view', () => {
 
   it('handles data-nav attribute clicks', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
@@ -514,7 +512,7 @@ describe('Browse view', () => {
       total: 1
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const searchContainer = el.querySelector('#advanced-search-container');
@@ -554,7 +552,7 @@ describe('Browse view', () => {
       total: 250
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => {}, _onVote: () => {} });
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -602,7 +600,7 @@ describe('Browse view', () => {
   });
 
   it('hides widgets when search query is active', async () => {
-    const el = Browse({ searchQuery: 'test', onNavigate: () => {} });
+    const el = Browse({ searchQuery: 'test', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const widgetsContainer = el.querySelector('[data-widgets]');
@@ -613,7 +611,7 @@ describe('Browse view', () => {
   });
 
   it('shows widgets when no search filters are active', async () => {
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const widgetsContainer = el.querySelector('[data-widgets]');
@@ -624,7 +622,7 @@ describe('Browse view', () => {
   });
 
   it('hides widgets after performing a search', async () => {
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for initial render - widgets should be visible
     await vi.waitFor(() => {
@@ -650,7 +648,7 @@ describe('Browse view', () => {
   });
 
   it('shows widgets again after clearing search', async () => {
-    const el = Browse({ searchQuery: 'test', onNavigate: () => {} });
+    const el = Browse({ searchQuery: 'test', onNavigate: () => { } });
 
     // Wait for initial render - widgets should be hidden due to search
     await vi.waitFor(() => {
@@ -686,7 +684,7 @@ describe('Browse view', () => {
       return Promise.resolve({ data: [] });
     });
 
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for categories dropdown to be populated
     await vi.waitFor(() => {
@@ -725,7 +723,7 @@ describe('Browse view', () => {
       return Promise.resolve({ data: [] });
     });
 
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for attributions dropdown to be populated
     await vi.waitFor(() => {
@@ -764,7 +762,7 @@ describe('Browse view', () => {
       return Promise.resolve({ data: [] });
     });
 
-    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for dropdowns to be populated
     await vi.waitFor(() => {

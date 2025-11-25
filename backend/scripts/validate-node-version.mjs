@@ -55,23 +55,12 @@ function getBetterSqliteModuleVersion() {
     // Use 'file' command to check the module
     const output = execSync(`file "${modulePath}"`, { encoding: 'utf-8' });
     return output;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
-function getNodeModuleVersion(nodeVersion) {
-  // Mapping of Node.js versions to NODE_MODULE_VERSION
-  // https://nodejs.org/api/process.html#processversions
-  const versionMap = {
-    '18': 108,
-    '20': 115,
-    '22': 127
-  };
 
-  const major = nodeVersion.split('.')[0].replace('v', '');
-  return versionMap[major] || 'unknown';
-}
 
 function validateOnServer(host) {
   log('\n=== Validating Node.js on Production Server ===\n', 'blue');

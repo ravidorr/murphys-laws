@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { resolve } from 'node:path';
+
 
 export class DatabaseService {
   constructor(dbPath) {

@@ -209,7 +209,7 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
+    Footer({
       onNavigate: () => { }
     });
 
@@ -249,7 +249,7 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
+    Footer({
       onNavigate: () => { }
     });
 

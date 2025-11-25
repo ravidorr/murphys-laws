@@ -1,4 +1,4 @@
-import { sendJson, notFound } from '../utils/http-helpers.js';
+import { sendJson } from '../utils/http-helpers.js';
 
 export class CategoryController {
   constructor(categoryService) {

@@ -53,7 +53,7 @@ describe('Category cache utilities', () => {
 
     it('returns null when cache is expired', () => {
       const categories = [{ id: 1, title: 'General' }];
-      
+
       // Set cache with old timestamp (more than 1 hour ago)
       const oldCache = {
         data: categories,
@@ -116,7 +116,7 @@ describe('Category cache utilities', () => {
 
     it('returns null when cache is expired', () => {
       const attributions = [{ name: 'Alice' }];
-      
+
       // Set cache with old timestamp (more than 1 hour ago)
       const oldCache = {
         data: attributions,
@@ -191,7 +191,7 @@ describe('Category cache utilities', () => {
 
     it('respects timeout parameter', () => {
       const callback = vi.fn();
-      const mockIdleCallback = vi.fn((cb, options) => {
+      const mockIdleCallback = vi.fn((cb) => {
         setTimeout(() => cb({ timeRemaining: () => 5 }), 0);
         return 1;
       });

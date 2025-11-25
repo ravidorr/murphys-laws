@@ -1,20 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, API_FALLBACK_URL, LOADING_MESSAGES } from '../src/utils/constants.js';
 
-function createLocalThis() {
-  const context = {};
 
-  beforeEach(() => {
-    Object.keys(context).forEach((key) => {
-      delete context[key];
-    });
-  });
-
-  return () => context;
-}
 
 describe('Constants', () => {
-  const local = createLocalThis();
   describe('getRandomLoadingMessage', () => {
     it('returns a string', () => {
       const message = getRandomLoadingMessage();
@@ -53,9 +42,8 @@ describe('Constants', () => {
 
     it('uses Vite env var when available', () => {
       // Mock import.meta.env to have VITE_SITE_URL
-      const originalEnv = import.meta.env;
-      const mockEnv = { ...originalEnv, VITE_SITE_URL: 'https://test.example.com' };
-      
+
+
       // Since we can't directly modify import.meta.env, we test the behavior
       // by verifying the constant uses the default when env var is not set
       // The actual Vite env var would be set at build time
@@ -81,7 +69,7 @@ describe('Constants', () => {
       // Try to mock import.meta.env by temporarily replacing it
       const originalMeta = globalThis.import?.meta;
       const mockEnv = { ...import.meta.env, VITE_TEST_KEY: 'vite-value' };
-      
+
       // Use Object.defineProperty to temporarily override import.meta.env
       // Note: This may not work in all environments, but we try
       try {
@@ -90,10 +78,10 @@ describe('Constants', () => {
           writable: true,
           configurable: true
         });
-        
+
         const result = getEnvVar('VITE_TEST_KEY', 'TEST_KEY', 'default-value');
         expect(result).toBe('vite-value');
-        
+
         // Restore original
         if (originalMeta) {
           Object.defineProperty(import.meta, 'env', {
@@ -114,7 +102,7 @@ describe('Constants', () => {
       // Try to mock process.env
       const originalProcess = globalThis.process;
       const originalEnv = originalProcess?.env;
-      
+
       try {
         // Create a mock process.env with our test value
         const mockProcess = {
@@ -124,7 +112,7 @@ describe('Constants', () => {
             TEST_NODE_KEY: 'node-value'
           }
         };
-        
+
         // Temporarily replace global process
         if (typeof globalThis.process === 'undefined') {
           globalThis.process = mockProcess;
@@ -135,10 +123,10 @@ describe('Constants', () => {
             configurable: true
           });
         }
-        
+
         const result = getEnvVar('VITE_NONEXISTENT', 'TEST_NODE_KEY', 'default-value');
         expect(result).toBe('node-value');
-        
+
         // Restore original process
         if (originalProcess) {
           Object.defineProperty(globalThis, 'process', {

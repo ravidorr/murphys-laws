@@ -114,7 +114,7 @@ describe('LawService', () => {
     const categoryId = catInfo.lastInsertRowid;
 
     const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Law', 'published')").run();
-    const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Other Law', 'published')").run();
+    db.prepare("INSERT INTO laws (text, status) VALUES ('Other Law', 'published')").run();
 
     db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
 

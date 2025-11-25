@@ -34,7 +34,7 @@ function findProcessOnPort(port) {
   try {
     const output = execSync(`lsof -ti :${port}`, { encoding: 'utf-8' });
     return output.trim().split('\n').filter(Boolean);
-  } catch (error) {
+  } catch {
     // lsof returns exit code 1 if no processes found
     return [];
   }
@@ -44,7 +44,7 @@ function getProcessInfo(pid) {
   try {
     const cmd = execSync(`ps -p ${pid} -o command=`, { encoding: 'utf-8' });
     return cmd.trim();
-  } catch (error) {
+  } catch {
     return 'Unknown process';
   }
 }
