@@ -9,7 +9,7 @@ describe('Footer component', () => {
 
   it('renders footer element', () => {
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     expect(el.tagName).toBe('FOOTER');
@@ -18,7 +18,7 @@ describe('Footer component', () => {
 
   it('shows navigation links', () => {
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     expect(el.querySelector('[data-nav="about"]')).toBeTruthy();
@@ -73,7 +73,7 @@ describe('Footer component', () => {
 
   it('contains ad slot placeholder', () => {
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     const adSlot = el.querySelector('[data-ad-slot]');
@@ -85,7 +85,7 @@ describe('Footer component', () => {
     window.adsbygoogle = [];
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     el.dispatchEvent(new Event('adslot:init'));
@@ -103,7 +103,7 @@ describe('Footer component', () => {
       }
     };
 
-    const el = Footer({ onNavigate: () => {} });
+    const el = Footer({ onNavigate: () => { } });
 
     expect(() => {
       el.dispatchEvent(new Event('adslot:init'));
@@ -112,7 +112,7 @@ describe('Footer component', () => {
 
   it('shows CC0 license information', () => {
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     expect(el.textContent).toMatch(/CC0 1.0 Universal/);
@@ -120,7 +120,7 @@ describe('Footer component', () => {
 
   it('has external link to Creative Commons', () => {
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     const ccLink = el.querySelector('a[href*="creativecommons.org"]');
@@ -131,7 +131,7 @@ describe('Footer component', () => {
 
   it('prevents default behavior when clicking nav links', () => {
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     const aboutLink = el.querySelector('[data-nav="about"]');
@@ -161,7 +161,7 @@ describe('Footer component', () => {
     window.adsbygoogle = [];
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     const adSlot = el.querySelector('[data-ad-slot]');
@@ -183,7 +183,7 @@ describe('Footer component', () => {
     });
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     // Ad should be primed (ready to load on interaction)
@@ -210,7 +210,7 @@ describe('Footer component', () => {
     });
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     // Should have added load event listener
@@ -250,7 +250,7 @@ describe('Footer component', () => {
     });
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     // IntersectionObserver should have been created
@@ -288,7 +288,7 @@ describe('Footer component', () => {
     });
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     // Trigger intersection
@@ -329,8 +329,8 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
-      onNavigate: () => {}
+    Footer({
+      onNavigate: () => { }
     });
 
     // Should use setTimeout instead of requestIdleCallback
@@ -360,7 +360,7 @@ describe('Footer component', () => {
     delete global.IntersectionObserver;
 
     // Ensure requestIdleCallback is available
-    const requestIdleCallbackSpy = vi.fn((cb) => {
+    const requestIdleCallbackSpy = vi.fn(() => {
       // Don't actually call the callback to avoid side effects
       return 1;
     });
@@ -372,8 +372,8 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
-      onNavigate: () => {}
+    Footer({
+      onNavigate: () => { }
     });
 
     // Should use requestIdleCallback
@@ -401,7 +401,7 @@ describe('Footer component', () => {
     });
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     // Simulate pointerdown event
@@ -430,7 +430,7 @@ describe('Footer component', () => {
     });
 
     const el = Footer({
-      onNavigate: () => {}
+      onNavigate: () => { }
     });
 
     const adSlot = el.querySelector('[data-ad-slot]');
