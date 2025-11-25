@@ -133,14 +133,8 @@ jobs:
 
             # Run migrations using staged migrations
             # Use npm install (monorepo doesn't have individual lock files)
+            # Native modules like better-sqlite3 are automatically built during npm install
             npm install
-
-            # Rebuild native modules for production Node version
-            # This ensures modules like better-sqlite3 work with the production Node version
-            # CRITICAL: This prevents MODULE_VERSION mismatch errors that cause 502 errors
-            echo "Rebuilding native modules for Node $ACTUAL_NODE_VERSION..."
-            npm rebuild better-sqlite3 --build-from-source
-            echo "✓ Native modules rebuilt successfully"
 
             npm run migrate
 
