@@ -37,18 +37,16 @@ module.exports = {
  apps: [
  {
  name: 'murphys-api',
- script: 'scripts/api-server.mjs',
- // ... config ...
- },
- {
- name: 'murphys-frontend',
- script: 'npx',
- args: 'vite preview --host 0.0.0.0 --port 5175', // No build!
+ script: './scripts/api-server.mjs',
+ interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
+ cwd: '/root/murphys-laws/backend',
  // ... config ...
  }
  ]
 };
 ```
+
+**Note:** Frontend is served directly by Nginx from `/root/murphys-laws/web/dist/`. No Vite preview server or PM2 process is needed for the frontend.
 
 3. **Enable PM2 auto-start**:
 ```bash
@@ -72,15 +70,20 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-**IMPORTANT:** Ensure nginx ports match your vite.config.js:
-- Frontend proxy should point to port **5175** (not 5173)
-- API proxy should point to port **8787**
+**IMPORTANT:** Nginx configuration details:
+- Frontend is served as static files from `/root/murphys-laws/web/dist/`
+- API proxy points to port **8787** (Node.js API server)
+- No Vite preview server is used in production
 
 ---
 
 ## Port Configuration
 
-All ports must be consistent across configuration files to avoid 502 errors.
+### API Port
+
+The API server runs on port **8787**. This is configured in:
+- `backend/scripts/api-server.mjs` (default port)
+- `nginx.conf` (proxy_pass to API)
 
 ### Port Validation
 
@@ -90,33 +93,7 @@ Before deploying, validate port consistency:
 npm run validate-ports
 ```
 
-This checks:
-- `vite.config.js` (preview port)
-- `ecosystem.config.cjs` (PM2 args)
-- `nginx.conf` (proxy_pass ports)
-- `scripts/api-server.mjs` (API default port)
-
-The validation runs automatically before `npm run deploy`.
-
-### Current Ports
-
-- **Frontend**: 5175
-- **API**: 8787
-
-### Fixing Port Mismatches
-
-If you get a 502 Bad Gateway error:
-
-```bash
-# On droplet - check which port Vite is using
-ssh root@45.55.124.212 "ss -tlnp | grep -E '5175|5173'"
-
-# Check nginx config
-ssh root@45.55.124.212 "grep proxy_pass /etc/nginx/sites-available/murphys-laws"
-
-# If mismatch, update nginx to use port 5175
-ssh root@45.55.124.212 "sed -i 's|proxy_pass http://127.0.0.1:5173;|proxy_pass http://127.0.0.1:5175;|' /etc/nginx/sites-available/murphys-laws && nginx -t && systemctl reload nginx"
-```
+This ensures the API port is consistent across all configuration files.
 
 ---
 
@@ -167,13 +144,16 @@ ssh root@45.55.124.212 "pm2 list"
 
 ```bash
 # PM2 logs
-ssh root@45.55.124.212 "pm2 logs"
+ssh root@167.99.53.90 "pm2 logs"
 
 # API logs
-ssh root@45.55.124.212 "tail -f /root/murphys-laws/logs/api-out.log"
+ssh root@167.99.53.90 "tail -f /root/murphys-laws/backend/logs/api-out.log"
 
-# Frontend logs
-ssh root@45.55.124.212 "tail -f /root/murphys-laws/logs/frontend-out.log"
+# Nginx access logs
+ssh root@167.99.53.90 "tail -f /var/log/nginx/access.log"
+
+# Nginx error logs
+ssh root@167.99.53.90 "tail -f /var/log/nginx/error.log"
 ```
 
 ### Check System Resources
@@ -190,53 +170,54 @@ ssh root@45.55.124.212 "free -h && top -b -n 1 | head -15"
 
 ```bash
 # Check PM2 logs
-ssh root@45.55.124.212 "pm2 logs --err --lines 50"
+ssh root@167.99.53.90 "pm2 logs --err --lines 50"
 
-# Check if ports are in use
-ssh root@45.55.124.212 "lsof -i :5175 && lsof -i :8787"
+# Check if API port is in use
+ssh root@167.99.53.90 "lsof -i :8787"
 
 # Restart services
-ssh root@45.55.124.212 "cd /root/murphys-laws && pm2 restart all"
+ssh root@167.99.53.90 "cd /root/murphys-laws/backend && pm2 restart all"
 ```
 
 ### High CPU/Memory Usage
 
 ```bash
 # Check what's running
-ssh root@45.55.124.212 "ps aux | grep -E 'node|vite|npm' | grep -v grep"
+ssh root@167.99.53.90 "ps aux | grep -E 'node|npm' | grep -v grep"
 
-# If you see 'vite build' processes, kill them:
-ssh root@45.55.124.212 "pkill -9 -f 'vite build'"
+# Check PM2 process memory
+ssh root@167.99.53.90 "pm2 list"
 
 # Restart PM2 properly
-ssh root@45.55.124.212 "pm2 restart ecosystem.config.cjs"
+ssh root@167.99.53.90 "cd /root/murphys-laws/backend && pm2 restart ecosystem.config.cjs"
 ```
 
-### Need to Rebuild Everything on Droplet
+### Frontend Not Loading (404 or 502 errors)
 
 ```bash
-ssh root@45.55.124.212
-cd /root/murphys-laws
+# Check Nginx is serving the correct directory
+ssh root@167.99.53.90 "ls -la /root/murphys-laws/web/dist/"
 
-# Stop services
-pm2 stop all
+# Check Nginx configuration
+ssh root@167.99.53.90 "grep 'root /root' /etc/nginx/sites-available/murphys-laws"
 
-# Build (only if necessary!)
-npm run build
+# Check Nginx error logs
+ssh root@167.99.53.90 "tail -50 /var/log/nginx/error.log"
 
-# Restart
-pm2 restart all
+# Verify permissions
+ssh root@167.99.53.90 "namei -l /root/murphys-laws/web/dist/index.html"
 ```
 
 ---
 
 ## Important Notes
 
-- **DO** build locally and deploy `dist/`
+- **DO** build locally and deploy `web/dist/` folder
 - **DO** use `npm run deploy` for deployments
-- **DON'T** run `npm run preview:build` on the droplet (it rebuilds)
-- **DON'T** run `vite build` on the droplet unless absolutely necessary
+- **DO** ensure Nginx has proper permissions to read `/root/murphys-laws/web/dist/`
+- **DON'T** run `vite build` on the droplet (build locally)
 - **DON'T** disable swap space
+- **DON'T** run a Vite preview server in production (Nginx serves static files directly)
 
 ---
 
@@ -392,21 +373,27 @@ sudo -u root bash -c 'source ~/.nvm/nvm.sh && pm2 restart murphys-api'
 
 ```
 Local Dev Machine
- └─> npm run build (builds dist/)
+ └─> npm run build (builds web/dist/)
  └─> npm run deploy
- └─> rsync dist/ to droplet
- └─> pm2 restart
+     ├─> rsync web/dist/ to droplet
+     ├─> rsync backend/ files to droplet
+     └─> pm2 restart
 
-Droplet (45.55.124.212)
- ├─> murphys-api (Node.js on :8787)
- └─> murphys-frontend (vite preview on :5175, serves pre-built dist/)
+Droplet (167.99.53.90)
+ ├─> Nginx (serves static files from /root/murphys-laws/web/dist/)
+ └─> murphys-api (Node.js API on :8787 via PM2)
 ```
+
+**Production Request Flow:**
+1. User requests `https://murphys-laws.com/` → Nginx serves `/root/murphys-laws/web/dist/index.html`
+2. User requests `https://murphys-laws.com/assets/style.css` → Nginx serves static file with 1-year cache
+3. User requests `https://murphys-laws.com/api/v1/laws` → Nginx proxies to Node.js API on `127.0.0.1:8787`
 
 ---
 
 ## Future Improvements
 
-- Set up GitHub Actions for automated deployments
-- Add health check endpoints
+- ✅ GitHub Actions automated deployments (implemented)
+- ✅ Health check endpoints (implemented)
 - Implement zero-downtime deployments
 - Consider upgrading to 2GB droplet or using CDN for static assets
