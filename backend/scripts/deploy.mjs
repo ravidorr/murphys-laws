@@ -89,7 +89,20 @@ async function deploy() {
     'Syncing web vite config'
   );
 
-  // Step 3.6: Update server maintenance scripts in /usr/local/bin/
+  // Step 3.6: Sync nginx config
+  exec(
+    `rsync -avz ../nginx.conf ${DROPLET_HOST}:${DROPLET_PATH}/`,
+    'Syncing nginx config'
+  );
+
+  // Step 3.7: Update nginx configuration on server
+  log('\nUpdating nginx configuration...', 'blue');
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/nginx.conf /etc/nginx/sites-available/murphys-laws && sudo nginx -t && sudo systemctl reload nginx"`,
+    'Updating and reloading nginx'
+  );
+
+  // Step 3.8: Update server maintenance scripts in /usr/local/bin/
   log('\nUpdating server maintenance scripts...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
