@@ -5,8 +5,11 @@
   "web/styles/**/*.css": [
     "cd web && stylelint --fix"
   ],
+  "web/**/*.html": [
+    "cd web && npx html-validate"
+  ],
   "backend/**/*.{js,mjs}": [
-    "cd backend && eslint --fix || echo 'Linting skipped: backend eslint not configured yet'"
+    "cd backend && eslint --fix"
   ],
   "shared/**/*.{js,mjs}": [
     "eslint --fix || echo 'Linting skipped: shared eslint not configured yet'"
