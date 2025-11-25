@@ -83,7 +83,7 @@ class BrowseViewModelTest {
             val errorState = awaitItem()
             assertFalse(errorState.isLoading)
             assertTrue(errorState.laws.isEmpty())
-            assertEquals(errorMessage, errorState.error)
+            assertEquals("An unexpected error occurred. Please try again.", errorState.error)
         }
     }
 
@@ -106,7 +106,7 @@ class BrowseViewModelTest {
         viewModel.uiState.test {
             // 1. Current state (from init failure)
             val currentState = awaitItem()
-            assertEquals(errorMessage, currentState.error)
+            assertEquals("An unexpected error occurred. Please try again.", currentState.error)
 
             // 2. Run loadLaws coroutine -> Loading state
             testDispatcher.scheduler.runCurrent()

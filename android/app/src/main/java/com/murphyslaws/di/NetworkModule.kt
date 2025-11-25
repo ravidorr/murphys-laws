@@ -39,6 +39,7 @@ object NetworkModule {
     fun provideRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://murphys-laws.com/api/v1/") // Production API
+            //.baseUrl("http://10.0.2.2:8787/api/v1/") // Local Backend (Emulator)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()

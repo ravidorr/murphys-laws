@@ -183,7 +183,7 @@ class SearchViewModelTest {
             val state = awaitItem()
             assertTrue(state.results.isEmpty())
             assertFalse(state.isLoading)
-            assertEquals(errorMessage, state.error)
+            assertEquals("An unexpected error occurred. Please try again.", state.error)
         }
     }
 

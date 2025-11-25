@@ -35,7 +35,7 @@ class HomeViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 lawOfDay = lawResult.getOrNull(),
-                error = lawResult.exceptionOrNull()?.message
+                error = if (lawResult.isFailure) com.murphyslaws.util.ErrorMessageMapper.map(lawResult.exceptionOrNull()) else null
             )
         }
     }
@@ -65,7 +65,7 @@ class HomeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isVoting = false,
-                        voteError = result.exceptionOrNull()?.message
+                        voteError = com.murphyslaws.util.ErrorMessageMapper.map(result.exceptionOrNull())
                     )
                 }
             }
@@ -97,7 +97,7 @@ class HomeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isVoting = false,
-                        voteError = result.exceptionOrNull()?.message
+                        voteError = com.murphyslaws.util.ErrorMessageMapper.map(result.exceptionOrNull())
                     )
                 }
             }

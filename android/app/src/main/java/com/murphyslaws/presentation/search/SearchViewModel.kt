@@ -76,7 +76,7 @@ class SearchViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = error.message
+                        error = com.murphyslaws.util.ErrorMessageMapper.map(error)
                     )
                 }
             }

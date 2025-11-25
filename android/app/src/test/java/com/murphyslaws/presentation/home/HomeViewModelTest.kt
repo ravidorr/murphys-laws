@@ -87,7 +87,7 @@ class HomeViewModelTest {
             val state = awaitItem()
             assertFalse(state.isLoading)
             assertNull(state.lawOfDay)
-            assertEquals(errorMessage, state.error)
+            assertEquals("An unexpected error occurred. Please try again.", state.error)
         }
     }
 
@@ -184,7 +184,7 @@ class HomeViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertFalse(state.isVoting)
-            assertEquals(errorMessage, state.voteError)
+            assertEquals("An unexpected error occurred. Please try again.", state.voteError)
             // Vote counts should remain unchanged
             assertEquals(10, state.lawOfDay?.law?.upvotes)
             assertEquals(5, state.lawOfDay?.law?.downvotes)
@@ -211,7 +211,7 @@ class HomeViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertFalse(state.isVoting)
-            assertEquals(errorMessage, state.voteError)
+            assertEquals("An unexpected error occurred. Please try again.", state.voteError)
         }
     }
 
