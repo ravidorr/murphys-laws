@@ -120,6 +120,13 @@ async function deploy() {
     'Service status check'
   );
 
+  // Step 8: Final validation - verify Node.js configuration after deployment
+  log('\nRunning post-deployment validation...', 'blue');
+  exec(
+    `node scripts/validate-node-version.mjs --server`,
+    'Post-deployment validation'
+  );
+
   log('\nDeployment complete!\n', 'green');
   log(`Visit: https://murphys-laws.com\n`, 'blue');
 }
