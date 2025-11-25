@@ -139,8 +139,10 @@ jobs:
 
             # Rebuild native modules for production Node version
             # This ensures modules like better-sqlite3 work with the production Node version
-            # Use --build-from-source to avoid prebuilt binary issues
+            # CRITICAL: This prevents MODULE_VERSION mismatch errors that cause 502 errors
+            echo "Rebuilding native modules for Node $ACTUAL_NODE_VERSION..."
             npm rebuild better-sqlite3 --build-from-source
+            echo "✓ Native modules rebuilt successfully"
 
             npm run migrate
 
@@ -181,12 +183,34 @@ jobs:
             # Wait for services to start
             sleep 5
 
+            # Verify PM2 processes are healthy
+            echo "Checking PM2 process status..."
+            pm2 list
+
+            # Check for any error logs
+            echo "Checking for errors in PM2 logs..."
+            if pm2 logs murphys-api --lines 20 --nostream | grep -i "error\|module.*version"; then
+              echo "⚠️  WARNING: Errors detected in logs"
+            fi
+
             # Health check - verify API is responding
+            echo "Testing API endpoints..."
             if ! curl -f http://127.0.0.1:8787/api/v1/law-of-day > /dev/null 2>&1; then
               echo "ERROR: API health check failed after deployment!"
+              echo "PM2 Status:"
+              pm2 list
+              echo "Recent logs:"
+              pm2 logs --lines 50 --nostream
+              exit 1
+            fi
+
+            # Test additional endpoints
+            if ! curl -f http://127.0.0.1:8787/api/v1/laws?limit=1 > /dev/null 2>&1; then
+              echo "ERROR: Laws endpoint health check failed!"
               pm2 logs --lines 50 --nostream
               exit 1
             fi
 
             echo "✅ Deployment successful - API is healthy"
+            echo "✅ All health checks passed"
             INNER

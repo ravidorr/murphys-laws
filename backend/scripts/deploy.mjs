@@ -92,17 +92,31 @@ async function deploy() {
     'Updating daily report script'
   );
 
-  // Step 4: Install dependencies and restart PM2 services
-  log('\nRestarting services on droplet...', 'blue');
+  // Step 4: Validate Node.js version on server
+  log('\nValidating Node.js version on server...', 'blue');
   exec(
-    `ssh ${DROPLET_HOST} "cd ${DROPLET_PATH}/backend && npm ci && pm2 restart ecosystem.config.cjs"`,
-    'Installing dependencies and restarting PM2 services'
+    `node scripts/validate-node-version.mjs --server`,
+    'Validating Node.js version'
   );
 
-  // Step 5: Check status
+  // Step 5: Install dependencies and rebuild native modules
+  log('\nInstalling dependencies and rebuilding native modules...', 'blue');
+  exec(
+    `ssh ${DROPLET_HOST} "sudo -u root bash -c 'cd ${DROPLET_PATH}/backend && source ~/.nvm/nvm.sh && npm ci && npm rebuild better-sqlite3'"`,
+    'Installing dependencies and rebuilding native modules'
+  );
+
+  // Step 6: Restart PM2 services
+  log('\nRestarting PM2 services...', 'blue');
+  exec(
+    `ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && pm2 restart ecosystem.config.cjs'"`,
+    'Restarting PM2 services'
+  );
+
+  // Step 7: Check status
   log('\nChecking service status...', 'blue');
   exec(
-    `ssh ${DROPLET_HOST} "pm2 list"`,
+    `ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && pm2 list'"`,
     'Service status check'
   );
 
