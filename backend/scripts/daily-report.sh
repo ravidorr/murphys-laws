@@ -507,7 +507,22 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
     SUBJECT="$SUBJECT (+ Cost Report + Backup Test Reminder)"
 fi
 
-cat "$REPORT_FILE" | mail -s "$SUBJECT" -a "From: $FROM_EMAIL" "$ALERT_EMAIL"
+# Create preview text for email clients
+PREVIEW_TEXT="System Status | Database Metrics | Website Activity | Performance | Security | SSL Status | Backups"
+
+# Create email with preview text
+# The preview text is added as a hidden span at the top of the HTML email
+{
+    echo "Content-Type: text/html; charset=utf-8"
+    echo "Subject: $SUBJECT"
+    echo "From: $FROM_EMAIL"
+    echo ""
+    echo "<html><head><meta charset='utf-8'></head><body>"
+    echo "<div style='display:none;max-height:0px;overflow:hidden;'>$PREVIEW_TEXT</div>"
+    echo "<pre style='font-family:monospace;font-size:13px;'>"
+    cat "$REPORT_FILE"
+    echo "</pre></body></html>"
+} | sendmail -t "$ALERT_EMAIL"
 
 log "Report sent to $ALERT_EMAIL"
 log "Report saved to $REPORT_FILE"
