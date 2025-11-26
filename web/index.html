@@ -1,88 +1,109 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Murphy's Law - Archive of Laws, Corollaries & Calculators</title>
-    <meta name="description" content="Explore the comprehensive archive of Murphy's Law, its corollaries, and variations. Experiment with interactive calculators that quantify life's inevitable mishaps, from technology to everyday situations." />
-    <meta name="keywords" content="Murphy's Law, corollaries, laws, calculators, probability calculators, humor, life lessons, technology laws, office laws, funny observations" />
-    <meta name="author" content="Raanan Avidor" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://murphys-laws.com/" />
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Murphy's Law - Archive of Laws, Corollaries & Calculators</title>
+  <meta name="description"
+    content="Explore the comprehensive archive of Murphy's Law, its corollaries, and variations. Experiment with interactive calculators that quantify life's inevitable mishaps, from technology to everyday situations." />
+  <meta name="keywords"
+    content="Murphy's Law, corollaries, laws, calculators, probability calculators, humor, life lessons, technology laws, office laws, funny observations" />
+  <meta name="author" content="Raanan Avidor" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://murphys-laws.com/" />
 
 
-    <!-- Preconnect to API origin for faster LCP -->
-    <link rel="preconnect" href="https://murphys-laws.com">
+  <!-- Preconnect to API origin for faster LCP -->
+  <link rel="preconnect" href="https://murphys-laws.com">
 
-    <!-- Preload critical API request for LCP -->
-    <link rel="preload" href="/api/v1/law-of-day" as="fetch" crossorigin="anonymous">
+  <!-- Preload critical API request for LCP -->
+  <link rel="preload" href="/api/v1/law-of-day" as="fetch" crossorigin="anonymous">
 
-    <!-- DNS prefetch for analytics and less critical origins -->
-    <link rel="dns-prefetch" href="https://www.google-analytics.com">
-    <link rel="dns-prefetch" href="https://mirrors.creativecommons.org">
-    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+  <!-- DNS prefetch for analytics and less critical origins -->
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <link rel="dns-prefetch" href="https://mirrors.creativecommons.org">
+  <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
 
-    <!-- Google AdSense verification code -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3615614508734124"
-     crossorigin="anonymous"></script>
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://murphys-laws.com/" />
+  <meta property="og:title" content="Murphy's Law - Archive of Laws, Corollaries & Calculators" />
+  <meta property="og:description"
+    content="Browse the Murphy's Law archive and try interactive calculators that illustrate how mishaps multiply across everyday scenarios." />
+  <meta property="og:site_name" content="Murphy's Law Archive" />
+  <meta property="og:image" content="https://murphys-laws.com/social/home.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Illustration of Murphy's Law calculators and quotes" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://murphys-laws.com/" />
+  <meta property="twitter:title" content="Murphy's Law - Archive & Calculators" />
+  <meta property="twitter:description"
+    content="Explore Murphy's Law corollaries and experiment with interactive calculators that quantify inevitable mishaps." />
+  <meta property="twitter:image" content="https://murphys-laws.com/social/home.png" />
 
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://murphys-laws.com/" />
-    <meta property="og:title" content="Murphy's Law - Archive of Laws, Corollaries & Calculators" />
-    <meta property="og:description" content="Browse the Murphy's Law archive and try interactive calculators that illustrate how mishaps multiply across everyday scenarios." />
-    <meta property="og:site_name" content="Murphy's Law Archive" />
-    <meta property="og:image" content="https://murphys-laws.com/social/home.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Illustration of Murphy's Law calculators and quotes" />
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://murphys-laws.com/" />
-    <meta property="twitter:title" content="Murphy's Law - Archive & Calculators" />
-    <meta property="twitter:description" content="Explore Murphy's Law corollaries and experiment with interactive calculators that quantify inevitable mishaps." />
-    <meta property="twitter:image" content="https://murphys-laws.com/social/home.png" />
+  <link rel="preload" href="styles/site.css" as="style">
+  <link rel="stylesheet" href="styles/site.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="styles/site.css">
+  </noscript>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function gtag() {
+      window.dataLayer.push(arguments);
+    };
+  </script>
+  <!-- Critical CSS: Prevents FOUC while main stylesheet loads asynchronously -->
+  <style>
+    /* CSS Variables - must match variables.css exactly */
+    :root {
+      --bg: #fff;
+      --fg: #111827;
+      --muted-fg: #6b7280;
+      --primary: #030213;
+      --btn-primary-bg: #1173d4;
+      --btn-primary-fg: #fff;
+    }
 
-    <link rel="preload" href="styles/site.css" as="style">
-    <link rel="stylesheet" href="styles/site.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="styles/site.css"></noscript>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = window.gtag || function gtag() {
-        window.dataLayer.push(arguments);
-      };
-    </script>
-    <!-- Critical CSS: Prevents FOUC while main stylesheet loads asynchronously -->
-    <style>
-      /* CSS Variables - must match variables.css exactly */
+    @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #fff;
-        --fg: #111827;
-        --muted-fg: #6b7280;
-        --primary: #030213;
-        --btn-primary-bg: #1173d4;
-        --btn-primary-fg: #fff;
+        --bg: #0b0b11;
+        --fg: #e9eaee;
+        --muted-fg: #b3b7c4;
+        --primary: #4f46e5;
       }
+    }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0b0b11;
-          --fg: #e9eaee;
-          --muted-fg: #b3b7c4;
-          --primary: #4f46e5;
-        }
-      }
+    /* Base styles - must match base.css exactly */
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
+    }
+  </style>
+</head>
 
-      /* Base styles - must match base.css exactly */
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: var(--bg);
-        color: var(--fg);
-        font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
-      }
-    </style>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="src/main.js"></script>
-  </body>
+<body>
+  <div id="app">
+    <!-- Static shell for SEO and to prevent "No Content" AdSense flags before JS loads -->
+    <div class="min-h-screen flex flex-col">
+      <header class="site-header">
+        <div class="container header-content">
+          <a href="/" class="logo">
+            <span class="logo-text">Murphy's Laws</span>
+          </a>
+        </div>
+      </header>
+      <main class="flex-1 container page">
+        <p class="text-center" style="margin-top: 2rem; color: var(--muted-fg);">Loading the archive of inevitable
+          mishaps...</p>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+
 </html>

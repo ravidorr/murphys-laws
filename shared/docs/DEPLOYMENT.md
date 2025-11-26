@@ -74,6 +74,8 @@ sudo systemctl reload nginx
 - Frontend is served as static files from `/root/murphys-laws/web/dist/`
 - API proxy points to port **8787** (Node.js API server)
 - No Vite preview server is used in production
+- **Custom 404 Page:** Configured via `error_page 404 /404.html;` to serve the styled `404.html` while returning the correct 404 status code (critical for AdSense).
+- **AdSense:** The build includes deferred AdSense loading to prevent "No Content" violations.
 
 ---
 

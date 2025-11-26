@@ -59,7 +59,7 @@ function layout(node) {
   const header = Header({
     onSearch,
     onNavigate,
-    currentPage: location.hash.replace('#/','') || 'home',
+    currentPage: location.hash.replace('#/', '') || 'home',
   });
 
   const main = document.createElement('main');
@@ -71,7 +71,7 @@ function layout(node) {
   wrap.appendChild(header);
   wrap.appendChild(main);
   wrap.appendChild(footer);
-  
+
   // Ask MathJax (if present) to typeset this freshly rendered view.
   // We wait until MathJax is loaded and the node is attached to the DOM.
   const typesetWhenReady = (element) => {
@@ -164,3 +164,14 @@ const notFoundRoute = () => {
 
 startRouter(app, notFoundRoute);
 initAnalyticsBootstrap();
+
+// Defer AdSense loading to ensure content is present first
+import { initAdSense } from './utils/ads.js';
+// Wait a moment for the initial route to render content
+setTimeout(() => {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    requestIdleCallback(() => initAdSense());
+  } else {
+    setTimeout(() => initAdSense(), 1000);
+  }
+}, 500);
