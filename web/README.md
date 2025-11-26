@@ -77,7 +77,16 @@ VITE_API_URL=https://murphys-laws.com
 VITE_API_FALLBACK_URL=http://127.0.0.1:8787
 ```
 
-## Project Structure
+## AdSense
+ 
+ To prevent "Google-served ads on screens without publisher-content" violations (common in SPAs), AdSense loading is deferred:
+ 
+ 1.  **Script Removal:** The AdSense script is NOT in `index.html` head.
+ 2.  **Deferred Loading:** `src/utils/ads.js` injects the script dynamically.
+ 3.  **Initialization:** `main.js` calls `initAdSense()` after the app mounts and content is rendered.
+ 4.  **Static Shell:** `index.html` contains a static HTML shell to ensure crawlers never see an empty page.
+ 
+ ## Project Structure
 
 ```
 web/
