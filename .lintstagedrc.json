@@ -1,15 +1,15 @@
 {
   "web/**/*.{js,mjs}": [
-    "cd web && eslint --fix"
+    "eslint --config web/eslint.config.js --fix"
   ],
   "web/styles/**/*.css": [
-    "cd web && stylelint --fix"
+    "stylelint --config web/.stylelintrc.json --fix"
   ],
   "web/**/*.html": [
-    "cd web && npx html-validate"
+    "npx html-validate --config web/.htmlvalidate.json"
   ],
   "backend/**/*.{js,mjs}": [
-    "cd backend && eslint --fix"
+    "eslint --config backend/eslint.config.js --fix"
   ],
   "shared/**/*.{js,mjs}": [
     "eslint --fix || echo 'Linting skipped: shared eslint not configured yet'"
