@@ -166,12 +166,7 @@ startRouter(app, notFoundRoute);
 initAnalyticsBootstrap();
 
 // Defer AdSense loading to ensure content is present first
-import { initAdSense } from './utils/ads.js';
-// Wait a moment for the initial route to render content
-setTimeout(() => {
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    requestIdleCallback(() => initAdSense());
-  } else {
-    setTimeout(() => initAdSense(), 1000);
-  }
-}, 500);
+import { setupAdSense } from './utils/ads.js';
+
+// Initialize the listener. Ads will only load when a view triggers 'murphys-laws-content-ready'
+setupAdSense();

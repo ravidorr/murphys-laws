@@ -7,6 +7,7 @@ import { SubmitLawSection } from '@components/submit-law.js';
 import { fetchLawOfTheDay } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
+import { triggerAdSense } from '../utils/ads.js';
 
 // Exported for testing
 export function renderHome(el, lawOfTheDay, onNavigate) {
@@ -46,6 +47,8 @@ export function Home({ onNavigate }) {
       .then(json => {
         const lawOfTheDay = json && json.data && json.data[0] ? json.data[0] : null;
         renderHome(el, lawOfTheDay, onNavigate);
+        // Signal that meaningful content is ready for ads
+        triggerAdSense();
       })
       .catch(() => {
         el.innerHTML = '';

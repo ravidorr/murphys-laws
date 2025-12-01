@@ -7,6 +7,7 @@ import { SOCIAL_IMAGE_SOD } from '@utils/constants.js';
 import { initShareCalculation } from '@modules/sods-share.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { triggerAdSense } from '../utils/ads.js';
 
 export function Calculator() {
   const el = document.createElement('div');
@@ -233,6 +234,8 @@ export function Calculator() {
   });
 
   el._teardownShare = teardownShare;
+
+  triggerAdSense();
 
   return el;
 }

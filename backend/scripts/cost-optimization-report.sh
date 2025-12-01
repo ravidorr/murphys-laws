@@ -4,10 +4,17 @@
 # Cost Optimization Report
 # Analyzes resource utilization and provides cost-saving recommendations
 # Run monthly to identify optimization opportunities
+# Use --no-email flag to suppress email sending (for inclusion in daily report)
 #############################################################################
 
 REPORT_FILE="/tmp/cost-optimization-report-$(date +%Y-%m).txt"
 ALERT_EMAIL="ravidor@gmail.com"
+SEND_EMAIL=true
+
+# Check for --no-email flag
+if [ "$1" = "--no-email" ]; then
+    SEND_EMAIL=false
+fi
 
 # Generate report
 REPORT=""
@@ -311,15 +318,20 @@ REPORT+="\nNext Review: $(date -d '+1 month' +%Y-%m-%d)\n"
 
 # Save report
 echo -e "$REPORT" > "$REPORT_FILE"
-echo "Cost optimization report saved to $REPORT_FILE"
 
-# Email report
-cat "$REPORT_FILE" | mail -s "[Murphy's Laws] Monthly Cost Optimization Report" "$ALERT_EMAIL"
-echo "Report emailed to $ALERT_EMAIL"
+# Output to stdout for inclusion in daily report
+echo -e "$REPORT"
 
-# Display summary
-echo -e "\n=== SUMMARY ==="
-echo "Current Monthly Cost: \$13"
-echo "Potential Savings: \$${SAVINGS_TOTAL}/month"
-echo "Optimization Opportunity: $(echo "scale=0; ($SAVINGS_TOTAL / 13) * 100" | bc)%"
-echo "Full report: $REPORT_FILE"
+# Email report only if --no-email flag was not set
+if [ "$SEND_EMAIL" = true ]; then
+    cat "$REPORT_FILE" | mail -s "[Murphy's Laws] Monthly Cost Optimization Report" "$ALERT_EMAIL"
+    echo "Cost optimization report saved to $REPORT_FILE" >&2
+    echo "Report emailed to $ALERT_EMAIL" >&2
+
+    # Display summary
+    echo -e "\n=== SUMMARY ===" >&2
+    echo "Current Monthly Cost: \$13" >&2
+    echo "Potential Savings: \$${SAVINGS_TOTAL}/month" >&2
+    echo "Optimization Opportunity: $(echo "scale=0; ($SAVINGS_TOTAL / 13) * 100" | bc)%" >&2
+    echo "Full report: $REPORT_FILE" >&2
+fi

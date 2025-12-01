@@ -3,6 +3,7 @@
 import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
 import { SOCIAL_IMAGE_TOAST } from '@utils/constants.js';
 import { ensureMathJax } from '@utils/mathjax.js';
+import { triggerAdSense } from '../utils/ads.js';
 
 export function ButteredToastCalculator() {
   const el = document.createElement('div');
@@ -216,6 +217,8 @@ export function ButteredToastCalculator() {
       // MathJax load failed, show formula without rendering
       updateFormula();
     });
+
+  triggerAdSense();
 
   return el;
 }
