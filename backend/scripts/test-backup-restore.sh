@@ -164,23 +164,23 @@ if [ -n "$LATEST_APP_BACKUP" ]; then
         if [ $? -eq 0 ]; then
             test_pass "Successfully extracted application archive"
 
-            # Verify key files exist
-            if [ -f "$TEST_DIR/murphys-laws/package.json" ]; then
-                test_pass "package.json found in extracted archive"
+            # Verify key files exist (monorepo structure)
+            if [ -f "$TEST_DIR/murphys-laws/backend/package.json" ]; then
+                test_pass "backend/package.json found in extracted archive"
             else
-                test_fail "package.json not found in extracted archive"
+                test_fail "backend/package.json not found in extracted archive"
             fi
 
-            if [ -d "$TEST_DIR/murphys-laws/src" ]; then
-                test_pass "src/ directory found in extracted archive"
+            if [ -d "$TEST_DIR/murphys-laws/backend/src" ]; then
+                test_pass "backend/src/ directory found in extracted archive"
             else
-                test_fail "src/ directory not found in extracted archive"
+                test_fail "backend/src/ directory not found in extracted archive"
             fi
 
-            if [ -d "$TEST_DIR/murphys-laws/scripts" ]; then
-                test_pass "scripts/ directory found in extracted archive"
+            if [ -d "$TEST_DIR/murphys-laws/backend/scripts" ]; then
+                test_pass "backend/scripts/ directory found in extracted archive"
             else
-                test_fail "scripts/ directory not found in extracted archive"
+                test_fail "backend/scripts/ directory not found in extracted archive"
             fi
         else
             test_fail "Failed to extract application archive"

@@ -14,6 +14,7 @@ import { AdvancedSearch } from '../components/advanced-search.js';
 import { TopVoted } from '../components/top-voted.js';
 import { Trending } from '../components/trending.js';
 import { RecentlyAdded } from '../components/recently-added.js';
+import { triggerAdSense } from '../utils/ads.js';
 
 export function Browse({ searchQuery, onNavigate }) {
   const el = document.createElement('div');
@@ -99,6 +100,11 @@ export function Browse({ searchQuery, onNavigate }) {
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       await updateDisplay();
+      
+      // Only trigger ads if we actually have content
+      if (laws.length > 0) {
+        triggerAdSense();
+      }
     } catch {
       if (cardText) {
         cardText.setAttribute('aria-busy', 'false');

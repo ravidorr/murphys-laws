@@ -7,6 +7,7 @@ import { getRandomLoadingMessage } from '../utils/constants.js';
 import { SocialShare } from '../components/social-share.js';
 import { updateSocialMetaTags } from '../utils/dom.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { triggerAdSense } from '../utils/ads.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -179,6 +180,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
 
           footer.appendChild(socialShare);
         }
+        
+        // Signal content is ready
+        triggerAdSense();
       }
     }
   }

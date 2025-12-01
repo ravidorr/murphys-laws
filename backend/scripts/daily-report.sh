@@ -441,23 +441,14 @@ if [ "$DAY_OF_MONTH" = "01" ]; then
     REPORT+="MONTHLY COST OPTIMIZATION REPORT\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    # Run cost optimization report
-    /usr/local/bin/cost-optimization-report.sh > "$TEMP_DIR/cost-report.txt" 2>&1
+    # Run cost optimization report (output only, don't send separate email)
+    /usr/local/bin/cost-optimization-report.sh --no-email > "$TEMP_DIR/cost-report.txt" 2>&1
 
-    # Extract summary and recommendations
-    if [ -f "$TEMP_DIR/cost-report.txt" ]; then
-        # Get key sections
-        sed -n '/^COST OPTIMIZATION REPORT/,/^1\. CURRENT INFRASTRUCTURE COSTS/p' "$TEMP_DIR/cost-report.txt" > "$TEMP_DIR/cost-header.txt"
-        sed -n '/^1\. CURRENT INFRASTRUCTURE COSTS/,/^2\. RESOURCE UTILIZATION/p' "$TEMP_DIR/cost-report.txt" > "$TEMP_DIR/cost-current.txt"
-        sed -n '/^2\. RESOURCE UTILIZATION/,/^3\. TRAFFIC ANALYSIS/p' "$TEMP_DIR/cost-report.txt" > "$TEMP_DIR/cost-resources.txt"
-        sed -n '/^4\. COST OPTIMIZATION RECOMMENDATIONS/,/^5\. LONG-TERM/p' "$TEMP_DIR/cost-report.txt" | head -50 > "$TEMP_DIR/cost-recommendations.txt"
-
-        REPORT+="$(cat $TEMP_DIR/cost-header.txt)\n"
-        REPORT+="$(cat $TEMP_DIR/cost-current.txt)\n"
-        REPORT+="$(cat $TEMP_DIR/cost-resources.txt)\n"
-        REPORT+="$(cat $TEMP_DIR/cost-recommendations.txt)\n\n"
+    # Include the full report content
+    if [ -f "$TEMP_DIR/cost-report.txt" ] && [ -s "$TEMP_DIR/cost-report.txt" ]; then
+        REPORT+="$(cat $TEMP_DIR/cost-report.txt)\n\n"
     else
-        REPORT+="Cost optimization report failed\n\n"
+        REPORT+="Cost optimization report not available\n\n"
     fi
 fi
 
@@ -467,7 +458,7 @@ fi
 
 if [ "$DAY_OF_MONTH" = "01" ]; then
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    REPORT+="14. MONTHLY BACKUP TEST REMINDER\n"
+    REPORT+="MONTHLY BACKUP TEST REMINDER\n"
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
     REPORT+="Monthly Action Required: Test Backup Restore Process\n\n"
     REPORT+="It's time to run the monthly non-disruptive backup tests on both droplets.\n"

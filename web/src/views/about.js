@@ -1,4 +1,5 @@
 import { getPageContent } from '@utils/markdown-content.js';
+import { triggerAdSense } from '../utils/ads.js';
 
 export function About({ onNavigate }) {
   const el = document.createElement('div');
@@ -6,6 +7,7 @@ export function About({ onNavigate }) {
   el.setAttribute('role', 'main');
 
   el.innerHTML = getPageContent('about');
+  triggerAdSense();
 
   el.addEventListener('click', (e) => {
     const target = e.target;
