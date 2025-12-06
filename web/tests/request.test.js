@@ -206,6 +206,54 @@ describe('request utilities', () => {
       await expect(apiRequest('/api/test', { skipFallback: true }))
         .rejects.toThrow('Server error');
     });
+
+    it('handles 429 rate limit error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Rate limit exceeded');
+    });
+
+    it('handles 401 unauthorized error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('do not have permission');
+    });
+
+    it('handles 403 forbidden error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('do not have permission');
+    });
+
+    it('handles 400 bad request error', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => { throw new Error('Not JSON'); }
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Invalid request');
+    });
   });
 
   describe('apiGet', () => {

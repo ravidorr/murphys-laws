@@ -315,6 +315,99 @@ describe('third-party utilities', () => {
       clearIntervalSpy.mockRestore();
       vi.useRealTimers();
     });
+
+    it('only initializes once even if called multiple times', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+
+      const addEventSpy = vi.spyOn(window, 'addEventListener');
+
+      // Call multiple times
+      freshInit();
+      const firstCallCount = addEventSpy.mock.calls.length;
+      
+      freshInit();
+      freshInit();
+
+      // Should not add more listeners after first call
+      expect(addEventSpy.mock.calls.length).toBe(firstCallCount);
+
+      addEventSpy.mockRestore();
+    });
+
+    it('gtag function pushes to dataLayer', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+
+      freshInit();
+
+      // Simulate user interaction to trigger third-party loads
+      window.dispatchEvent(new Event('scroll'));
+
+      // Check that gtag is defined and functional
+      expect(window.gtag).toBeDefined();
+      expect(window.dataLayer).toBeDefined();
+
+      // Call gtag and verify it pushes to dataLayer
+      const initialLength = window.dataLayer.length;
+      window.gtag('event', 'test_event', { test_param: 'value' });
+      
+      expect(window.dataLayer.length).toBeGreaterThan(initialLength);
+    });
+
+    it('removes interaction listeners after first interaction', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+
+      const removeEventSpy = vi.spyOn(window, 'removeEventListener');
+
+      freshInit();
+
+      // First interaction
+      window.dispatchEvent(new Event('pointerdown'));
+
+      // Listeners should be removed
+      expect(removeEventSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function));
+      expect(removeEventSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
+      expect(removeEventSpy).toHaveBeenCalledWith('scroll', expect.any(Function));
+
+      removeEventSpy.mockRestore();
+    });
+
+    it('does not reinitialize gtag if already exists', async () => {
+      vi.resetModules();
+      
+      // Pre-set gtag
+      const existingGtag = vi.fn();
+      window.gtag = existingGtag;
+      window.dataLayer = [];
+
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+      freshInit();
+
+      // Trigger interaction
+      window.dispatchEvent(new Event('pointerdown'));
+
+      // gtag should still be the original function
+      expect(window.gtag).toBe(existingGtag);
+    });
+
+    it('does not trigger loads again if already triggered', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.js');
+
+      freshInit();
+
+      // First trigger via scroll
+      window.dispatchEvent(new Event('scroll'));
+      const firstDataLayerRef = window.dataLayer;
+
+      // Try to trigger again via keydown (should be no-op since already triggered)
+      window.dispatchEvent(new Event('keydown'));
+
+      // dataLayer should be the same reference
+      expect(window.dataLayer).toBe(firstDataLayerRef);
+    });
   });
 });
 

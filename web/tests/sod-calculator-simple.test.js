@@ -89,4 +89,91 @@ describe('SodCalculatorSimple component', () => {
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation.length).toBeGreaterThan(0);
   });
+
+  it('shows safe interpretation for low score (score < 2)', () => {
+    const el = mountCalculator({ append: true });
+
+    // Set all values to minimize score: low urgency, low complexity, low importance, high skill, low frequency
+    el.querySelector('#urgency').value = '1';
+    el.querySelector('#complexity').value = '1';
+    el.querySelector('#importance').value = '1';
+    el.querySelector('#skill').value = '9';
+    el.querySelector('#frequency').value = '1';
+
+    // Trigger update
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#interpretation').textContent;
+    const scoreDisplay = el.querySelector('#score-display').textContent;
+
+    // Score should be very low
+    expect(parseFloat(scoreDisplay)).toBeLessThan(2);
+    expect(interpretation).toContain('probably safe');
+  });
+
+  it('shows risky interpretation for score 2-4', () => {
+    const el = mountCalculator({ append: true });
+
+    // Set values to produce score between 2-4
+    // Formula: ((U + C + I) * (10 - S)) / 20 * 0.7 * (1 / (1 - Math.sin(F / 10)))
+    el.querySelector('#urgency').value = '6';
+    el.querySelector('#complexity').value = '6';
+    el.querySelector('#importance').value = '6';
+    el.querySelector('#skill').value = '7';
+    el.querySelector('#frequency').value = '4';
+
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#interpretation').textContent;
+    expect(interpretation).toContain('risky');
+  });
+
+  it('shows worrying interpretation for score 4-6', () => {
+    const el = mountCalculator({ append: true });
+
+    // Default values produce ~5.04 which is in 4-6 range
+    el.querySelector('#urgency').value = '5';
+    el.querySelector('#complexity').value = '5';
+    el.querySelector('#importance').value = '5';
+    el.querySelector('#skill').value = '5';
+    el.querySelector('#frequency').value = '5';
+
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#interpretation').textContent;
+    expect(interpretation).toContain('worrying');
+  });
+
+  it('shows looming disaster interpretation for score 6-8', () => {
+    const el = mountCalculator({ append: true });
+
+    // Set values for disaster score (6-8)
+    // Need lower values to keep score under 8
+    el.querySelector('#urgency').value = '7';
+    el.querySelector('#complexity').value = '7';
+    el.querySelector('#importance').value = '7';
+    el.querySelector('#skill').value = '4';
+    el.querySelector('#frequency').value = '4';
+
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#interpretation').textContent;
+    expect(interpretation).toContain('looming');
+  });
+
+  it('shows catastrophe interpretation for very high score (score >= 8)', () => {
+    const el = mountCalculator({ append: true });
+
+    // Set values for maximum score
+    el.querySelector('#urgency').value = '9';
+    el.querySelector('#complexity').value = '9';
+    el.querySelector('#importance').value = '9';
+    el.querySelector('#skill').value = '1';
+    el.querySelector('#frequency').value = '9';
+
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    const interpretation = el.querySelector('#interpretation').textContent;
+    expect(interpretation).toContain('Catastrophe');
+  });
 });

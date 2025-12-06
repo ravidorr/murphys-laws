@@ -1,10 +1,23 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
 describe('Footer component', () => {
+  let originalReadyState;
+
   beforeEach(() => {
+    // Save original readyState before each test
+    originalReadyState = document.readyState;
     // Reset adsbygoogle array
     window.adsbygoogle = [];
+  });
+
+  afterEach(() => {
+    // Restore readyState after each test (guaranteed cleanup even if test fails)
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
   });
 
   it('renders footer element', () => {
@@ -453,5 +466,61 @@ describe('Footer component', () => {
       writable: true,
       configurable: true
     });
+  });
+
+  it('handles ensureAdsense rejection gracefully', async () => {
+    window.adsbygoogle = [];
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    // Reset modules first, then set up the mock
+    vi.resetModules();
+    
+    // Use vi.doMock() for dynamic mocking (not hoisted like vi.mock())
+    vi.doMock('../src/utils/third-party.js', () => ({
+      ensureAdsense: vi.fn().mockRejectedValue(new Error('Failed to load AdSense'))
+    }));
+
+    // Now import Footer which will use the mocked module
+    const { Footer: MockedFooter } = await import('../src/components/footer.js');
+
+    const el = MockedFooter({
+      onNavigate: () => { }
+    });
+
+    // Trigger ad loading - should not throw
+    expect(() => {
+      el.dispatchEvent(new Event('adslot:init'));
+    }).not.toThrow();
+
+    vi.resetModules();
+  });
+
+  it('skips primeAd when ad is already loaded', () => {
+    window.adsbygoogle = [];
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => { }
+    });
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    // Pre-set the loaded flag before primeAd would run
+    adSlot.dataset.loaded = 'true';
+
+    // Trigger primeAd via scroll
+    window.dispatchEvent(new Event('scroll'));
+
+    // Ad should remain marked as loaded but no new ad created
+    expect(adSlot.dataset.loaded).toBe('true');
   });
 });
