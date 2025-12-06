@@ -2,6 +2,7 @@ import { marked } from 'marked';
 
 // Import markdown files from shared content
 import aboutMd from '../../../shared/content/about.md?raw';
+import originStoryMd from '../../../shared/content/origin-story.md?raw';
 import privacyMd from '../../../shared/content/privacy.md?raw';
 import termsMd from '../../../shared/content/terms.md?raw';
 import contactMd from '../../../shared/content/contact.md?raw';
@@ -146,12 +147,13 @@ function enhanceMarkdownHtml(html) {
 
 /**
  * Get content for a specific page
- * @param {'about'|'privacy'|'terms'|'contact'} page - Page identifier
+ * @param {'about'|'origin-story'|'privacy'|'terms'|'contact'} page - Page identifier
  * @returns {string} - Formatted HTML content
  */
 export function getPageContent(page) {
   const contentMap = {
     about: { markdown: aboutMd, meta: metadata.about },
+    'origin-story': { markdown: originStoryMd, meta: metadata['origin-story'] },
     privacy: { markdown: privacyMd, meta: metadata.privacy },
     terms: { markdown: termsMd, meta: metadata.terms },
     contact: { markdown: contactMd, meta: metadata.contact }
@@ -223,7 +225,7 @@ export function getPageContent(page) {
 
 /**
  * Get metadata for a specific page
- * @param {'about'|'privacy'|'terms'|'contact'} page - Page identifier
+ * @param {'about'|'origin-story'|'privacy'|'terms'|'contact'} page - Page identifier
  * @returns {Object} - Page metadata
  */
 export function getPageMetadata(page) {
