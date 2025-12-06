@@ -19,6 +19,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for git operations
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -37,6 +44,8 @@ jobs:
       - name: Run tests
         run: npm test
         working-directory: backend
+        env:
+          HUSKY: 0  # Disable husky hooks in CI
 
       - name: Check database exists
         run: test -f backend/murphys.db
