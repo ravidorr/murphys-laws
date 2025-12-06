@@ -63,24 +63,28 @@ function wrapFirstWordWithAccent(headingText) {
     return headingText;
   }
 
-  // Find the first word - match word characters, hyphens, and apostrophes
-  // Stop at spaces, ampersands, or other punctuation
-  const firstWordMatch = textOnly.match(/^([\w'-]+)/);
+  // Find leading punctuation/entities, first word, and rest
+  // Leading punctuation: quotes, brackets, HTML entities (like &quot;), etc.
+  // First word: word characters, hyphens, and apostrophes
+  // IMPORTANT: Check HTML entities BEFORE single non-word chars to match &quot; as one unit
+  // Supports named entities (&quot;), decimal (&#34;), and hexadecimal (&#x22;) numeric entities
+  const match = textOnly.match(/^((?:&[a-z]+;|&#x[\da-f]+;|&#\d+;|[^\w])*)?([\w'-]+)(.*)/i);
 
-  if (firstWordMatch) {
-    const firstWord = firstWordMatch[1];
-    const rest = textOnly.substring(firstWord.length); // Don't trim - preserve spacing
+  if (match) {
+    const leadingPunctuation = match[1] || '';
+    const firstWord = match[2];
+    const rest = match[3] || '';
 
     // If there's rest (after trimming for check), wrap first word and add rest with preserved spacing
-    if (rest.trim()) {
-      return `<span class="accent-text">${firstWord}</span>${rest}`;
+    if (rest.trim() || leadingPunctuation) {
+      return `${leadingPunctuation}<span class="accent-text">${firstWord}</span>${rest}`;
     } else {
       // Only one word, wrap it
       return `<span class="accent-text">${firstWord}</span>`;
     }
   }
 
-  // Fallback: wrap entire text if no word match
+  // Fallback: wrap entire text if no word match (e.g., only punctuation)
   return `<span class="accent-text">${textOnly}</span>`;
 }
 
