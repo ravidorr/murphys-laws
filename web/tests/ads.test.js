@@ -68,4 +68,54 @@ describe('AdSense Integration', () => {
 
     expect(document.head.querySelectorAll('script').length).toBe(0);
   });
+
+  it('handles script load error gracefully', () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn');
+    
+    setupAdSense();
+    triggerAdSense();
+    vi.runAllTimers();
+
+    const script = document.head.querySelector('script[src*="adsbygoogle"]');
+    expect(script).toBeTruthy();
+
+    // Simulate script load error
+    script.dispatchEvent(new Event('error'));
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith('AdSense failed to load');
+  });
+
+  it('uses requestIdleCallback when available', () => {
+    const originalRequestIdleCallback = window.requestIdleCallback;
+    const mockIdleCallback = vi.fn((callback) => {
+      callback();
+      return 1;
+    });
+    window.requestIdleCallback = mockIdleCallback;
+
+    setupAdSense();
+    triggerAdSense();
+
+    expect(mockIdleCallback).toHaveBeenCalled();
+
+    // Restore
+    window.requestIdleCallback = originalRequestIdleCallback;
+  });
+
+  it('uses setTimeout fallback when requestIdleCallback is not available', () => {
+    const originalRequestIdleCallback = window.requestIdleCallback;
+    delete window.requestIdleCallback;
+    
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+
+    setupAdSense();
+    triggerAdSense();
+
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 500);
+
+    // Restore
+    if (originalRequestIdleCallback) {
+      window.requestIdleCallback = originalRequestIdleCallback;
+    }
+  });
 });

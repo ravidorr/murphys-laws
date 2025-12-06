@@ -487,4 +487,51 @@ describe('AdvancedSearch component', () => {
       expect(attributionSelect).toBeTruthy();
     });
   });
+
+  it('uses cached attributions when fetch fails', async () => {
+    // Pre-populate cache with attributions (as objects with name property)
+    const cachedAttributions = [{ name: 'Author A' }, { name: 'Author B' }];
+    vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue(cachedAttributions);
+
+    // First fetch succeeds for categories, second fetch fails for attributions
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockRejectedValueOnce(new Error('Network error'));
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      // Should use cached attributions
+      expect(attributionSelect.innerHTML).toContain('Author A');
+      expect(attributionSelect.innerHTML).toContain('Author B');
+    });
+  });
+
+  it('loads attributions on focus when empty', async () => {
+    // First load with empty attributions
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] }) // categories
+      .mockResolvedValueOnce({ data: [] }); // empty attributions
+
+    const el = mountSearch({ append: true });
+
+    await vi.waitFor(() => {
+      expect(fetchAPISpy).toHaveBeenCalledTimes(2);
+    });
+
+    // Reset mocks for the focus-triggered fetch
+    fetchAPISpy.mockClear();
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: ['New Author'] });
+
+    // Focus on attribution select should trigger reload
+    const attributionSelect = el.querySelector('#search-attribution');
+    attributionSelect.dispatchEvent(new FocusEvent('focus'));
+
+    await vi.waitFor(() => {
+      expect(fetchAPISpy).toHaveBeenCalled();
+    });
+  });
 });

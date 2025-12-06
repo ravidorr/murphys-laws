@@ -493,6 +493,14 @@ describe('markdown-content.js', () => {
         vi.restoreAllMocks();
       }
     });
+
+    it('returns origin-story content', () => {
+      const html = getPageContent('origin-story');
+
+      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('Murphy');
+      expect(html).toContain('</article>');
+    });
   });
 });
 

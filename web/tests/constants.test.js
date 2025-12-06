@@ -66,36 +66,15 @@ describe('Constants', () => {
 
   describe('getEnvVar function', () => {
     it('returns Vite env var when available', () => {
-      // Try to mock import.meta.env by temporarily replacing it
-      const originalMeta = globalThis.import?.meta;
-      const mockEnv = { ...import.meta.env, VITE_TEST_KEY: 'vite-value' };
+      // In Vitest, import.meta.env can be extended
+      // Set a test value directly
+      import.meta.env.VITE_TEST_COVERAGE_KEY = 'vite-test-value';
 
-      // Use Object.defineProperty to temporarily override import.meta.env
-      // Note: This may not work in all environments, but we try
-      try {
-        Object.defineProperty(import.meta, 'env', {
-          value: mockEnv,
-          writable: true,
-          configurable: true
-        });
+      const result = getEnvVar('VITE_TEST_COVERAGE_KEY', 'TEST_KEY', 'default-value');
+      expect(result).toBe('vite-test-value');
 
-        const result = getEnvVar('VITE_TEST_KEY', 'TEST_KEY', 'default-value');
-        expect(result).toBe('vite-value');
-
-        // Restore original
-        if (originalMeta) {
-          Object.defineProperty(import.meta, 'env', {
-            value: originalMeta.env,
-            writable: true,
-            configurable: true
-          });
-        }
-      } catch {
-        // If we can't mock import.meta.env (which is common), skip this test
-        // The branch is still tested in production when env vars are set
-        const result = getEnvVar('VITE_TEST_KEY', 'TEST_KEY', 'default-value');
-        expect(typeof result).toBe('string');
-      }
+      // Cleanup
+      delete import.meta.env.VITE_TEST_COVERAGE_KEY;
     });
 
     it('returns process.env var when available', () => {
