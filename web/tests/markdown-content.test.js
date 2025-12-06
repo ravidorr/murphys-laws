@@ -501,6 +501,38 @@ describe('markdown-content.js', () => {
       expect(html).toContain('Murphy');
       expect(html).toContain('</article>');
     });
+
+    it('handles headings starting with HTML entities correctly', () => {
+      // The origin-story page has a heading starting with a quote character
+      // which becomes &quot; in HTML. The accent-text should wrap the first
+      // actual word ("If"), not the entity characters.
+      const html = getPageContent('origin-story');
+
+      // Should NOT have broken entity like &amp;<span>quot</span>;
+      expect(html).not.toContain('&amp;<span class="accent-text">quot</span>');
+
+      // Should have the quote followed by accent-text wrapping "If"
+      expect(html).toContain('&quot;<span class="accent-text">If</span>');
+    });
+
+    it('handles headings starting with hexadecimal HTML entities correctly', () => {
+      // Mock marked.parse to return HTML with hexadecimal entity (&#x22; = quote)
+      vi.spyOn(marked, 'parse').mockReturnValueOnce(
+        '<h1>&#x22;Hello World&#x22;</h1><p>Content</p>'
+      );
+
+      try {
+        const html = getPageContent('about');
+
+        // Should NOT break the hex entity by wrapping part of it
+        expect(html).not.toContain('<span class="accent-text">x22</span>');
+
+        // Should have the hex entity preserved followed by accent-text wrapping "Hello"
+        expect(html).toContain('&#x22;<span class="accent-text">Hello</span>');
+      } finally {
+        vi.restoreAllMocks();
+      }
+    });
   });
 });
 

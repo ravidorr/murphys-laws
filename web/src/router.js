@@ -18,7 +18,7 @@ export function navigate(name, param) {
 
 // Exported for testing
 export function currentRoute() {
-  const m = location.hash.match(/^#\/(\w+)(?::(.+))?$/);
+  const m = location.hash.match(/^#\/([\w-]+)(?::(.+))?$/);
   return m ? { name: m[1], param: m[2] || null } : { name: 'home', param: null };
 }
 

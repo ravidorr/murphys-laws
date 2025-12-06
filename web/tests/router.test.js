@@ -59,6 +59,18 @@ describe('Router', () => {
     expect(route.param).toBeNull();
   });
 
+  it('parses hyphenated route names correctly', () => {
+    location.hash = '#/origin-story';
+    const route = currentRoute();
+    expect(route.name).toBe('origin-story');
+    expect(route.param).toBeNull();
+  });
+
+  it('navigates to hyphenated routes', () => {
+    navigate('origin-story');
+    expect(location.hash).toBe('#/origin-story');
+  });
+
   it('starts router and renders initial route', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);
