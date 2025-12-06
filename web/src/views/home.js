@@ -40,7 +40,10 @@ export function Home({ onNavigate }) {
   // Reserve space to prevent layout shift (min-height matches typical Law of the Day card height)
   el.style.minHeight = '400px';
 
-  el.innerHTML = `<p class="small">${getRandomLoadingMessage()}</p>`;
+  el.innerHTML = `
+    <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">The Ultimate Murphy's Law Archive</h1>
+    <p class="small">${getRandomLoadingMessage()}</p>
+  `;
 
   function fetchAndRender() {
     fetchLawOfTheDay()

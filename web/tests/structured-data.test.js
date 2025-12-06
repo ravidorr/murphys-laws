@@ -320,7 +320,7 @@ describe('Structured Data module', () => {
       expect(el).toBeTruthy();
 
       const data = JSON.parse(el.textContent);
-      expect(data['@type']).toBe('Article');
+      expect(data['@type']).toEqual(['Article', 'Quotation']);
       expect(data.headline).toBe('Murphy\'s Law');
       expect(data.description).toBe('Anything that can go wrong, will.');
     });

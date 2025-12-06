@@ -3,11 +3,14 @@ import { Header } from './components/header.js';
 import { Footer } from './components/footer.js';
 import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS } from './utils/constants.js';
 import { Home } from './views/home.js';
+import { Categories } from './views/categories.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
+import { CategoryDetail } from './views/category-detail.js';
 import { SubmitLawSection } from './components/submit-law.js';
 import { Calculator } from './views/sods-calculator.js';
 import { ButteredToastCalculator } from './views/buttered-toast-calculator.js';
+import { OriginStory } from './views/origin-story.js';
 import { About } from './views/about.js';
 import { Privacy } from './views/privacy.js';
 import { Terms } from './views/terms.js';
@@ -34,14 +37,25 @@ const state = {
 function onNavigate(page, lawId) {
   navigate(page, lawId);
 }
-function onSearch(q) {
-  state.searchQuery = q;
-  const current = location.hash.replace('#/', '').split(':')[0] || 'home';
-  if (current === 'browse') {
-    // Already on browse, just force a re-render with new search query
-    forceRender();
+function onSearch(filters) {
+  state.searchQuery = filters.q || '';
+  if (filters.category_id) {
+    onNavigate('category', filters.category_id);
+  } else if (filters.q || filters.attribution) {
+    const current = location.hash.replace('#/', '').split(':')[0] || 'home';
+    if (current === 'browse') {
+      forceRender();
+    } else {
+      navigate('browse');
+    }
   } else {
-    navigate('browse');
+    // If no filters, navigate to home or browse depending on current
+    const current = location.hash.replace('#/', '').split(':')[0] || 'home';
+    if (current === 'browse') {
+      forceRender();
+    } else {
+      navigate('home'); // Or maybe just navigate('browse') without filters?
+    }
   }
 }
 
@@ -113,6 +127,14 @@ const routesMap = {
     setHomeStructuredData();
     return layout(Home({ onNavigate }));
   },
+  categories: () => {
+    clearPageStructuredData(); // Clear previous page's structured data
+    return layout(Categories({ onNavigate }));
+  },
+  category: ({ param }) => {
+    clearPageStructuredData();
+    return layout(CategoryDetail({ categoryId: param, onNavigate }));
+  },
   browse: () => {
     setBrowseStructuredData();
     return layout(Browse({ searchQuery: state.searchQuery, onNavigate }));
@@ -134,6 +156,10 @@ const routesMap = {
   toastcalculator: () => {
     setToastCalculatorStructuredData();
     return layout(ButteredToastCalculator());
+  },
+  'origin-story': () => {
+    clearPageStructuredData();
+    return layout(OriginStory());
   },
   about: () => {
     clearPageStructuredData();
