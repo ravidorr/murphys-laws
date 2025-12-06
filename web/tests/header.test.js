@@ -290,4 +290,23 @@ describe('Header component', () => {
     expect(searchQuery).toEqual({ q: '' });
     document.body.removeChild(el);
   });
+
+  it('ignores click on non-HTMLElement target', () => {
+    let navigated = '';
+    const el = Header({
+      onSearch: () => {},
+      onNavigate: (page) => { navigated = page; },
+      currentPage: 'home',
+      isLoggedIn: false,
+      currentUser: null
+    });
+
+    // Dispatch click event with non-HTMLElement target
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null });
+    el.dispatchEvent(event);
+
+    // Should not navigate
+    expect(navigated).toBe('');
+  });
 });

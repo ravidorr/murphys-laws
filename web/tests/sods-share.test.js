@@ -120,6 +120,66 @@ describe('Sod\'s share module', () => {
     expect(shareStatus.textContent).toMatch(/email address/i);
   });
 
+  it('shows error for missing task description only', () => {
+    const { root } = local();
+    const shareCta = root.querySelector('#share-cta');
+    const previewBtn = root.querySelector('#preview-email');
+    const shareStatus = root.querySelector('#share-status');
+
+    shareCta.click();
+    fillAllRequiredFields(root, { taskDescription: '' });
+
+    previewBtn.click();
+
+    expect(shareStatus.classList.contains('error')).toBe(true);
+    expect(shareStatus.textContent).toMatch(/task description/i);
+  });
+
+  it('shows error for missing sender email only', () => {
+    const { root } = local();
+    const shareCta = root.querySelector('#share-cta');
+    const previewBtn = root.querySelector('#preview-email');
+    const shareStatus = root.querySelector('#share-status');
+
+    shareCta.click();
+    fillAllRequiredFields(root, { senderEmail: '' });
+
+    previewBtn.click();
+
+    expect(shareStatus.classList.contains('error')).toBe(true);
+    expect(shareStatus.textContent).toMatch(/email address/i);
+  });
+
+  it('shows error for missing recipient email only', () => {
+    const { root } = local();
+    const shareCta = root.querySelector('#share-cta');
+    const previewBtn = root.querySelector('#preview-email');
+    const shareStatus = root.querySelector('#share-status');
+
+    shareCta.click();
+    fillAllRequiredFields(root, { recipientEmail: '' });
+
+    previewBtn.click();
+
+    expect(shareStatus.classList.contains('error')).toBe(true);
+    expect(shareStatus.textContent).toMatch(/recipient email/i);
+  });
+
+  it('shows error for invalid sender email format', () => {
+    const { root } = local();
+    const shareCta = root.querySelector('#share-cta');
+    const previewBtn = root.querySelector('#preview-email');
+    const shareStatus = root.querySelector('#share-status');
+
+    shareCta.click();
+    fillAllRequiredFields(root, { senderEmail: 'invalid-email' });
+
+    previewBtn.click();
+
+    expect(shareStatus.classList.contains('error')).toBe(true);
+    expect(shareStatus.textContent).toMatch(/valid.*email.*address.*for.*sender/i);
+  });
+
   it('validates email format before previewing', () => {
     const { root } = local();
     const shareCta = root.querySelector('#share-cta');
