@@ -263,4 +263,62 @@ describe('LawOfTheDay component', () => {
     });
 
   });
+
+  it('renders law with title and combines title with text', () => {
+    const law = {
+      id: '1',
+      title: "Murphy's Law",
+      text: 'Anything that can go wrong will go wrong',
+      upvotes: 10,
+      downvotes: 2
+    };
+
+    const el = mountLaw(law);
+
+    // Should display "title: text" format
+    expect(el.textContent).toMatch(/Murphy's Law/);
+    expect(el.textContent).toMatch(/Anything that can go wrong will go wrong/);
+  });
+
+  it('renders law without title showing only text', () => {
+    const law = {
+      id: '1',
+      title: null,
+      text: 'Just the law text',
+      upvotes: 5,
+      downvotes: 1
+    };
+
+    const el = mountLaw(law);
+
+    expect(el.textContent).toMatch(/Just the law text/);
+  });
+
+  it('handles law with empty text gracefully', () => {
+    const law = {
+      id: '1',
+      text: '',
+      upvotes: 5,
+      downvotes: 1
+    };
+
+    const el = mountLaw(law);
+
+    // Should still render without errors
+    expect(el.querySelector('.share-buttons')).toBeTruthy();
+  });
+
+  it('handles law with undefined text gracefully', () => {
+    const law = {
+      id: '1',
+      text: undefined,
+      upvotes: 5,
+      downvotes: 1
+    };
+
+    const el = mountLaw(law);
+
+    // Should still render without errors
+    expect(el.querySelector('.share-buttons')).toBeTruthy();
+  });
 });

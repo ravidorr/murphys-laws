@@ -20,6 +20,12 @@ describe('Router', () => {
     expect(location.hash).toBe('#/browse');
   });
 
+  it('navigates to home route by clearing hash', () => {
+    location.hash = '#/browse';
+    navigate('home');
+    expect(location.hash).toBe('');
+  });
+
   it('navigates to a route with parameter', () => {
     navigate('law', '123');
     expect(location.hash).toBe('#/law:123');

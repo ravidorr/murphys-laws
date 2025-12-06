@@ -86,4 +86,64 @@ describe('Categories view', () => {
 
     expect(onNavigate).toHaveBeenCalledWith('category', '1');
   });
+
+  it('renders category without description', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, title: 'No Description Category', law_count: 3 }
+      ]
+    });
+    const el = Categories({ onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(el.textContent).toContain('No Description Category');
+    expect(el.textContent).toContain('3 laws');
+  });
+
+  it('handles non-category navigation', async () => {
+    const el = Categories({ onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Create a non-category nav button
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', 'about');
+    el.appendChild(navBtn);
+    
+    navBtn.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('about');
+  });
+
+  it('handles null API response data', async () => {
+    api.fetchCategories.mockResolvedValue({ data: null });
+    const el = Categories({ onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(el.textContent).toContain('No categories found');
+  });
+
+  it('ignores click on element without data-nav', async () => {
+    const el = Categories({ onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const regularBtn = document.createElement('button');
+    el.appendChild(regularBtn);
+    
+    regularBtn.click();
+
+    // onNavigate should only be called for elements with data-nav
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('ignores click with non-Element target', async () => {
+    const el = Categories({ onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Simulate click event with non-Element target
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null });
+    el.dispatchEvent(event);
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
 });

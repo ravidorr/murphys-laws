@@ -111,20 +111,6 @@ describe('CategoryDetail view', () => {
     const nextBtn = document.createElement('button');
     nextBtn.dataset.page = '2';
     
-    // But checking the listener logic:
-    // This variable is no longer needed after refactoring event simulation
-    // const clickEvent = {
-    //   target: nextBtn,
-    //   preventDefault: vi.fn(),
-    //   stopPropagation: vi.fn(),
-    //   bubbles: true
-    // };
-    
-    // Trigger the listener directly since simulating real events is flaky in this environment setup
-    // Find the listener... simplified approach: check if we can trigger it via dispatchEvent on a child
-    // But since we don't have the full DOM structure rendered by renderPagination (it's mocked or complex),
-    // let's simulate the event bubbling to the container 'el'
-    
     // We need to append the button to 'el' so 'closest' works
     el.appendChild(nextBtn);
     
@@ -133,5 +119,109 @@ describe('CategoryDetail view', () => {
     expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
       offset: 10 // Page 2 offset
     }));
+  });
+
+  it('handles law card click navigation', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Create a law card element
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    lawCard.dataset.lawId = '123';
+    el.appendChild(lawCard);
+    
+    lawCard.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('law', '123');
+  });
+
+  it('handles navigation button click', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', 'submit');
+    el.appendChild(navBtn);
+    
+    navBtn.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
+  it('ignores disabled pagination button', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    api.fetchLaws.mockClear();
+
+    const disabledBtn = document.createElement('button');
+    disabledBtn.dataset.page = '2';
+    disabledBtn.setAttribute('disabled', 'true');
+    el.appendChild(disabledBtn);
+    
+    disabledBtn.click();
+
+    // Should not trigger a new fetch since button is disabled
+    expect(api.fetchLaws).not.toHaveBeenCalled();
+  });
+
+  it('ignores invalid page number', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    api.fetchLaws.mockClear();
+
+    const invalidBtn = document.createElement('button');
+    invalidBtn.dataset.page = '0'; // Invalid page
+    el.appendChild(invalidBtn);
+    
+    invalidBtn.click();
+
+    expect(api.fetchLaws).not.toHaveBeenCalled();
+  });
+
+  it('handles non-Element click target', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null });
+    el.dispatchEvent(event);
+
+    // Should not throw and onNavigate not called
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('handles category not found in categories list', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 999, title: 'Other Category' }
+      ]
+    });
+    const el = CategoryDetail({ categoryId: 1, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should still render with default "Category" title
+    expect(el.querySelector('#category-detail-title')).toBeTruthy();
+  });
+
+  it('handles fetchCategories error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    api.fetchCategories.mockRejectedValue(new Error('Network error'));
+    
+    CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch category details:', expect.any(Error));
+    consoleSpy.mockRestore();
+  });
+
+  it('handles null data in fetchLaws response', async () => {
+    api.fetchLaws.mockResolvedValue({ data: null, total: null });
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(el.textContent).toContain('No laws found');
   });
 });

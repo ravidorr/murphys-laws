@@ -283,6 +283,26 @@ describe('LawDetail view', () => {
     expect(getUserVoteSpy).toHaveBeenCalledWith('7');
   });
 
+  it('displays downvote voted state when user has downvoted', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('down');
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const downvoteBtn = el.querySelector('[data-vote="down"]');
+
+    expect(upvoteBtn?.classList.contains('voted')).toBe(false);
+    expect(downvoteBtn?.classList.contains('voted')).toBe(true);
+    expect(getUserVoteSpy).toHaveBeenCalledWith('7');
+  });
+
   it('handles clicking on icon inside vote button', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 

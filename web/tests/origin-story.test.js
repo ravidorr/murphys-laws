@@ -26,4 +26,58 @@ describe('OriginStory view', () => {
       'headline': "The True Origin of Murphy's Law"
     }));
   });
+
+  it('renders without onNavigate provided', () => {
+    const el = OriginStory();
+    expect(el.innerHTML).toContain('True Origin of Murphy');
+  });
+
+  it('handles navigation click with data-nav attribute', () => {
+    const onNavigate = vi.fn();
+    const el = OriginStory({ onNavigate });
+    
+    // Create and append a navigation button
+    const navBtn = document.createElement('a');
+    navBtn.setAttribute('data-nav', 'about');
+    el.appendChild(navBtn);
+    
+    navBtn.click();
+    
+    expect(onNavigate).toHaveBeenCalledWith('about');
+  });
+
+  it('ignores click when target has no data-nav', () => {
+    const onNavigate = vi.fn();
+    const el = OriginStory({ onNavigate });
+    
+    const regularBtn = document.createElement('button');
+    el.appendChild(regularBtn);
+    
+    regularBtn.click();
+    
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('ignores click when onNavigate not provided', () => {
+    const el = OriginStory();
+    
+    const navBtn = document.createElement('a');
+    navBtn.setAttribute('data-nav', 'about');
+    el.appendChild(navBtn);
+    
+    // Should not throw
+    expect(() => navBtn.click()).not.toThrow();
+  });
+
+  it('ignores click on non-HTMLElement target', () => {
+    const onNavigate = vi.fn();
+    const el = OriginStory({ onNavigate });
+    
+    // Simulate click event with non-HTMLElement target
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null });
+    el.dispatchEvent(event);
+    
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
 });
