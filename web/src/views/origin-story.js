@@ -1,15 +1,17 @@
 // Origin Story view - displays a high-quality article about the origin of Murphy's Law
 
-import templateHtml from '@views/templates/origin-story.html?raw';
+import { getPageContent } from '@utils/markdown-content.js';
 import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL } from '@utils/constants.js';
+import { triggerAdSense } from '../utils/ads.js';
 
-export function OriginStory({ _onNavigate }) {
+export function OriginStory({ onNavigate } = {}) {
   const el = document.createElement('div');
-  el.className = 'container page';
+  el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
-  el.innerHTML = templateHtml;
+  el.innerHTML = getPageContent('origin-story');
+  triggerAdSense();
 
   // Set structured data for the article
   setJsonLd('origin-story-article', {
@@ -17,8 +19,8 @@ export function OriginStory({ _onNavigate }) {
     '@type': 'Article',
     'headline': 'The True Origin of Murphy\'s Law',
     'description': 'Delve into the fascinating history and real-world events that gave birth to the universally recognized Murphy\'s Law.',
-    'image': `${SITE_URL}/social/home.png`, // Placeholder image
-    'datePublished': '2023-01-01T00:00:00Z', // Placeholder date
+    'image': `${SITE_URL}/social/home.png`,
+    'datePublished': '2023-01-01T00:00:00Z',
     'dateModified': new Date().toISOString(),
     'author': {
       '@type': 'Person',
@@ -35,6 +37,21 @@ export function OriginStory({ _onNavigate }) {
     'mainEntityOfPage': {
       '@type': 'WebPage',
       '@id': `${SITE_URL}/#/origin-story`
+    }
+  });
+
+  // Handle navigation clicks
+  el.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const navBtn = target.closest('[data-nav]');
+    if (navBtn && onNavigate) {
+      e.preventDefault();
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
+      }
     }
   });
 

@@ -7,11 +7,15 @@ vi.mock('../src/modules/structured-data.js');
 vi.mock('../src/utils/constants.js', () => ({
   SITE_URL: 'https://murphys-laws.com'
 }));
+vi.mock('../src/utils/ads.js', () => ({
+  triggerAdSense: vi.fn()
+}));
 
 describe('OriginStory view', () => {
   it('renders the origin story content', () => {
     const el = OriginStory({ onNavigate: vi.fn() });
-    expect(el.innerHTML).toContain("The True Origin of Murphy's Law");
+    // Content is now rendered via markdown with accent styling on first word
+    expect(el.innerHTML).toContain('True Origin of Murphy');
     expect(el.innerHTML).toContain('Edward A. Murphy Jr.');
   });
 
