@@ -65,7 +65,7 @@ export function Header({ onSearch, onNavigate }) {
       e.preventDefault();
       const input = form.querySelector('input[aria-label="Search"]') || form.querySelector('input');
       const q = input && 'value' in input ? input.value.trim() : '';
-      onSearch(q);
+      onSearch({ q: q });
     });
   }
 

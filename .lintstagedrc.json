@@ -1,6 +1,9 @@
 {
-  "web/**/*.{js,mjs}": [
+  "web/**/!(*.test).{js,mjs}": [
     "eslint --config web/eslint.config.js --fix"
+  ],
+  "web/**/*.test.js": [
+    "eslint --config web/eslint.config.test.js --fix"
   ],
   "web/styles/**/*.css": [
     "stylelint --config web/.stylelintrc.json --fix"

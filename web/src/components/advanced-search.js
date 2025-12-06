@@ -139,7 +139,10 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     // Only include non-empty filters
     const cleanFilters = {};
     if (filters.q) cleanFilters.q = filters.q;
-    if (filters.category_id) cleanFilters.category_id = filters.category_id;
+    // Keep category_id even if it's 0 or 'null' as it signifies "All Categories" or a specific category.
+    // The previous logic was removing category_id if it was null, which would prevent
+    // clearing a category filter explicitly.
+    if (filters.category_id !== null) cleanFilters.category_id = filters.category_id;
     if (filters.attribution) cleanFilters.attribution = filters.attribution;
 
     onSearch(cleanFilters);

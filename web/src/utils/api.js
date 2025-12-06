@@ -133,3 +133,12 @@ export async function fetchTrending(limit = 3) {
 export async function fetchRecentlyAdded(limit = 3) {
   return await fetchLaws({ limit, offset: 0, sort: 'created_at', order: 'desc' });
 }
+
+/**
+ * Fetches all categories
+ * @returns {Promise<Object>} Response with category data
+ */
+export async function fetchCategories() {
+  return await fetchAPI('/api/v1/categories');
+}
+

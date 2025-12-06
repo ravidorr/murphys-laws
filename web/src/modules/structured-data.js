@@ -6,7 +6,12 @@ const PAGE_IDS = new Set([
   'browse-page',
   'law-article',
   'calculator-sod',
-  'calculator-toast'
+  'calculator-toast',
+  'browse-page-breadcrumbs',
+  'categories-page',
+  'category-detail-page',
+  'category-detail-breadcrumbs',
+  'origin-story-article'
 ]);
 
 function ensureJsonLdElement(id) {
@@ -134,6 +139,26 @@ export function setBrowseStructuredData() {
       '@id': `${SITE_URL}`
     }
   });
+
+  // Add BreadcrumbList Schema for the browse page
+  setJsonLd('browse-page-breadcrumbs', {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': [
+      {
+        '@type': 'ListItem',
+        'position': 1,
+        'name': 'Home',
+        'item': SITE_URL
+      },
+      {
+        '@type': 'ListItem',
+        'position': 2,
+        'name': 'Browse Murphy\'s Laws',
+        'item': `${SITE_URL}/#/browse`
+      }
+    ]
+  });
 }
 
 export function setLawStructuredData(law) {
@@ -142,9 +167,11 @@ export function setLawStructuredData(law) {
   const lawUrl = `${SITE_URL}/#/law:${law.id}`;
   setJsonLd('law-article', {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': ['Article', 'Quotation'],
     'headline': law.title || law.text.slice(0, 120),
     'description': law.text,
+    'text': law.text, // For Quotation schema
+    'speechToText': law.text, // For Quotation schema
     'datePublished': law.created_at || undefined,
     'dateModified': law.updated_at || law.created_at || undefined,
     'author': law.author ? {

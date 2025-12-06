@@ -60,7 +60,7 @@ describe('Header component', () => {
     searchInput.value = 'gravity';
     searchForm.dispatchEvent(new Event('submit'));
 
-    expect(searchQuery).toBe('gravity');
+    expect(searchQuery).toEqual({ q: 'gravity' });
     document.body.removeChild(el);
   });
 
@@ -219,7 +219,7 @@ describe('Header component', () => {
     searchInput.value = '  test query  ';
     searchForm.dispatchEvent(new Event('submit'));
 
-    expect(searchQuery).toBe('test query');
+    expect(searchQuery).toEqual({ q: 'test query' });
     document.body.removeChild(el);
   });
 
@@ -240,7 +240,7 @@ describe('Header component', () => {
     searchInput.value = '   ';
     searchForm.dispatchEvent(new Event('submit'));
 
-    expect(searchQuery).toBe('');
+    expect(searchQuery).toEqual({ q: '' });
     document.body.removeChild(el);
   });
 
@@ -264,7 +264,7 @@ describe('Header component', () => {
     searchInput.value = 'test';
     searchForm.dispatchEvent(new Event('submit'));
 
-    expect(searchQuery).toBe('test');
+    expect(searchQuery).toEqual({ q: 'test' });
     document.body.removeChild(el);
   });
 
@@ -287,7 +287,7 @@ describe('Header component', () => {
 
     searchForm.dispatchEvent(new Event('submit'));
 
-    expect(searchQuery).toBe('');
+    expect(searchQuery).toEqual({ q: '' });
     document.body.removeChild(el);
   });
 });
