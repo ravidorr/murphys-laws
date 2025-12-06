@@ -19,8 +19,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1  # Shallow clone is fine, but ensure git is available
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -39,9 +37,6 @@ jobs:
       - name: Run tests
         run: npm test
         working-directory: backend
-        env:
-          CI: true
-          HUSKY: 0
 
       - name: Check database exists
         run: test -f backend/murphys.db
