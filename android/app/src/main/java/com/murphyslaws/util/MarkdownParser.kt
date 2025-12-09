@@ -235,8 +235,8 @@ object MarkdownParser {
 @Composable
 fun MarkdownElement(
     element: MarkdownParser.MarkdownElement,
-    onNavigate: ((String) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigate: ((String) -> Unit)? = null
 ) {
     when (element) {
         is MarkdownParser.MarkdownElement.Header1 -> {
@@ -326,9 +326,9 @@ fun ClickableMarkdownText(
     text: String,
     links: List<ExtractedLink>,
     style: TextStyle,
+    modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
-    onNavigate: ((String) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onNavigate: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
