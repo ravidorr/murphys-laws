@@ -46,6 +46,7 @@ class SearchViewModelTest {
             assertEquals("", state.query)
             assertTrue(state.results.isEmpty())
             assertFalse(state.isLoading)
+            assertFalse(state.isLoadingMore)
             assertNull(state.error)
         }
     }
@@ -249,7 +250,7 @@ class SearchViewModelTest {
         val initialLaws = List(20) { Law(it, "Test $it", null, 10, 2) }
         val nextLaws = listOf(Law(20, "Law 20", null, 0, 0))
         viewModel = SearchViewModel(searchLawsUseCase)
-        
+
         // Use returnsMany to return different values on sequential calls
         coEvery { searchLawsUseCase("test", limit = any<Int>(), offset = any<Int>()) } returnsMany listOf(
             Result.success(initialLaws),
@@ -268,8 +269,46 @@ class SearchViewModelTest {
         // Then
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
+        assertFalse(state.isLoadingMore)
         assertEquals(21, state.results.size)
         assertEquals(21, state.offset)
+    }
+
+    @Test
+    fun `loadNextPage uses isLoadingMore instead of isLoading`() = runTest(testDispatcher) {
+        // Given
+        val initialLaws = List(20) { Law(it, "Test $it", null, 10, 2) }
+        val nextLaws = listOf(Law(20, "Law 20", null, 0, 0))
+        viewModel = SearchViewModel(searchLawsUseCase)
+
+        coEvery { searchLawsUseCase("test", limit = any<Int>(), offset = any<Int>()) } returnsMany listOf(
+            Result.success(initialLaws),
+            Result.success(nextLaws)
+        )
+
+        // Initial search
+        viewModel.onQueryChange("test")
+        advanceTimeBy(301)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Verify initial state - isLoading was used, not isLoadingMore
+        viewModel.uiState.value.let { state ->
+            assertFalse(state.isLoading)
+            assertFalse(state.isLoadingMore)
+            assertEquals(20, state.results.size)
+        }
+
+        // When - load next page
+        viewModel.loadNextPage()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then - final state should show isLoadingMore was used (now complete)
+        // The key difference is: pagination doesn't clear existing results
+        viewModel.uiState.value.let { state ->
+            assertFalse(state.isLoading) // Was not used for pagination
+            assertFalse(state.isLoadingMore) // Was used, now complete
+            assertEquals(21, state.results.size) // Results appended, not replaced
+        }
     }
 
     @Test
