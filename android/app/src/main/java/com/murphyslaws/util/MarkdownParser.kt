@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 
 /**
  * Data class for extracted links (both HTML and Markdown)
@@ -356,7 +357,7 @@ fun ClickableMarkdownText(
                         url.startsWith("mailto:") -> {
                             // Handle mailto links
                             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse(url)
+                                data = url.toUri()
                             }
                             context.startActivity(intent)
                         }

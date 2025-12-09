@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.murphyslaws.domain.model.ContentPage
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +76,7 @@ fun MoreScreen(
                         )
                     },
                     modifier = Modifier.clickableListItem {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://murphys-laws.com"))
+                        val intent = Intent(Intent.ACTION_VIEW, "https://murphys-laws.com".toUri())
                         context.startActivity(intent)
                     }
                 )
@@ -207,7 +208,7 @@ fun MoreScreen(
                     },
                     modifier = Modifier.clickableListItem {
                         val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:contact@murphys-laws.com")
+                            data = "mailto:contact@murphys-laws.com".toUri()
                         }
                         context.startActivity(emailIntent)
                     }

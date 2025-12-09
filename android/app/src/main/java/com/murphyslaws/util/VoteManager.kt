@@ -1,6 +1,7 @@
 package com.murphyslaws.util
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 /**
  * Manages vote state in SharedPreferences
@@ -30,9 +31,9 @@ class VoteManager(private val sharedPreferences: SharedPreferences) {
         require(voteType == "up" || voteType == "down") {
             "voteType must be 'up' or 'down'"
         }
-        sharedPreferences.edit()
-            .putString("$VOTES_KEY_PREFIX$lawId", voteType)
-            .apply()
+        sharedPreferences.edit {
+            putString("$VOTES_KEY_PREFIX$lawId", voteType)
+        }
     }
     
     /**
@@ -40,8 +41,8 @@ class VoteManager(private val sharedPreferences: SharedPreferences) {
      * @param lawId The law ID
      */
     fun removeVote(lawId: Int) {
-        sharedPreferences.edit()
-            .remove("$VOTES_KEY_PREFIX$lawId")
-            .apply()
+        sharedPreferences.edit {
+            remove("$VOTES_KEY_PREFIX$lawId")
+        }
     }
 }
