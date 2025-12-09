@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
+
 package com.murphyslaws.util
 
 import android.content.Context
@@ -61,7 +63,7 @@ object ContentLoader {
             val metadata = json.decodeFromString<ContentMetadataRoot>(jsonString)
             metadataCache = metadata
             metadata
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -82,6 +84,7 @@ object ContentLoader {
     /**
      * Clear all caches
      */
+    @Suppress("unused")
     fun clearCache() {
         contentCache.clear()
         metadataCache = null
