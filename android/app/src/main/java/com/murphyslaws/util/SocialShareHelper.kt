@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import androidx.core.net.toUri
 
 enum class SocialPlatform(val contentDescription: String) {
     X("Share on X"),
@@ -60,7 +61,7 @@ object SocialShareHelper {
         when (platform) {
             SocialPlatform.EMAIL -> {
                 val emailUrl = buildShareUrl(platform, url, title, description)
-                val intent = Intent(Intent.ACTION_SENDTO, Uri.parse(emailUrl))
+                val intent = Intent(Intent.ACTION_SENDTO, emailUrl.toUri())
                 try {
                     context.startActivity(intent)
                 } catch (e: Exception) {
@@ -75,7 +76,7 @@ object SocialShareHelper {
     }
 
     private fun openUrl(context: Context, url: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         try {
             context.startActivity(intent)
         } catch (e: Exception) {
