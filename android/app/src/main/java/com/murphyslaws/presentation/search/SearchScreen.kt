@@ -90,7 +90,7 @@ fun SearchScreen(
                         laws = uiState.results,
                         onLawClick = onLawClick,
                         onLoadMore = { viewModel.loadNextPage() },
-                        isLoading = uiState.isLoading,
+                        isLoading = uiState.isLoadingMore,
                         endReached = uiState.endReached
                     )
                 }

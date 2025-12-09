@@ -41,21 +41,23 @@ class SearchViewModel @Inject constructor(
 
     private suspend fun performSearch(query: String, reset: Boolean = false) {
         if (query.isBlank()) {
-            _uiState.update { it.copy(results = emptyList(), isLoading = false, error = null) }
+            _uiState.update { it.copy(results = emptyList(), isLoading = false, isLoadingMore = false, error = null) }
             return
         }
 
         if (!reset && uiState.value.endReached) return
-        if (uiState.value.isLoading) return
+        if (reset && uiState.value.isLoading) return
+        if (!reset && uiState.value.isLoadingMore) return
 
-        _uiState.update { 
+        _uiState.update {
             it.copy(
-                isLoading = true, 
+                isLoading = if (reset) true else false,
+                isLoadingMore = if (reset) false else true,
                 error = null,
                 results = if (reset) emptyList() else it.results,
                 offset = if (reset) 0 else it.offset,
                 endReached = if (reset) false else it.endReached
-            ) 
+            )
         }
 
         val currentOffset = if (reset) 0 else uiState.value.offset
@@ -67,6 +69,7 @@ class SearchViewModel @Inject constructor(
                     currentState.copy(
                         results = updatedResults,
                         isLoading = false,
+                        isLoadingMore = false,
                         offset = currentOffset + newLaws.size,
                         endReached = newLaws.size < pageSize
                     )
@@ -76,6 +79,7 @@ class SearchViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
+                        isLoadingMore = false,
                         error = com.murphyslaws.util.ErrorMessageMapper.map(error)
                     )
                 }
@@ -96,6 +100,7 @@ data class SearchUiState(
     val query: String = "",
     val results: List<Law> = emptyList(),
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val error: String? = null,
     val offset: Int = 0,
     val endReached: Boolean = false
