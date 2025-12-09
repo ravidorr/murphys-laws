@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.murphyslaws.domain.model.RiskLevel
+import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
@@ -103,7 +104,7 @@ class CalculatorViewModel : ViewModel() {
     
     val shareText: String
         get() = """
-            My task has a ${String.format("%.1f", probability)}% chance of going wrong! ${riskLevel.emoji}
+            My task has a ${String.format(Locale.US, "%.1f", probability)}% chance of going wrong! ${riskLevel.emoji}
 
             Sod's Law Calculator
             Urgency: ${urgency.toInt()}
