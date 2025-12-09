@@ -67,7 +67,7 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `onQueryChange debounces search for 300ms`() = runTest(testDispatcher) {
+    fun `onQueryChange debouncing search for 300ms`() = runTest(testDispatcher) {
         // Given
         val laws = listOf(Law(1, "Test law", null, 10, 2))
         viewModel = SearchViewModel(searchLawsUseCase)
