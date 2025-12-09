@@ -10,18 +10,18 @@ data class LawDto(
     val title: String?,
     val upvotes: Int,
     val downvotes: Int,
-    @Json(name = "created_at") val createdAt: String? = null
+    @param:Json(name = "created_at") val createdAt: String? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class LawOfDayResponse(
     val law: LawDto,
-    @Json(name = "featured_date") val date: String
+    @param:Json(name = "featured_date") val date: String
 )
 
 @JsonClass(generateAdapter = true)
 data class VoteRequest(
-    @Json(name = "vote_type") val voteType: String  // "up" or "down"
+    @param:Json(name = "vote_type") val voteType: String  // "up" or "down"
 )
 
 @JsonClass(generateAdapter = true)
@@ -42,8 +42,8 @@ data class LawsResponse(
 data class SubmitLawRequest(
     val text: String,
     val title: String? = null,
-    @Json(name = "author") val authorName: String? = null,
-    @Json(name = "email") val authorEmail: String? = null
+    @param:Json(name = "author") val authorName: String? = null,
+    @param:Json(name = "email") val authorEmail: String? = null
 )
 
 @JsonClass(generateAdapter = true)

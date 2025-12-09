@@ -2,10 +2,9 @@ package com.murphyslaws.util
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import androidx.core.net.toUri
 
 enum class SocialPlatform(val contentDescription: String) {
     X("Share on X"),

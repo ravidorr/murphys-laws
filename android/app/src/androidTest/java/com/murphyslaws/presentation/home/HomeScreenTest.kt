@@ -13,11 +13,8 @@ import com.murphyslaws.ui.theme.MurphysLawsTheme
 import com.murphyslaws.util.VoteManager
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import javax.inject.Inject
 
 @HiltAndroidTest
 class HomeScreenTest {
