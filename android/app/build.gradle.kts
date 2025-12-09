@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "com.murphyslaws"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.murphyslaws"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -99,6 +99,11 @@ dependencies {
 
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // Pendo SDK
+    implementation("sdk.pendo.io:pendoIO:3.9.+") {
+        isChanging = true
+    }
 
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")

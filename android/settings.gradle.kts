@@ -10,6 +10,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url = uri("https://software.mobile.pendo.io/artifactory/androidx-release")
+        }
     }
 }
 

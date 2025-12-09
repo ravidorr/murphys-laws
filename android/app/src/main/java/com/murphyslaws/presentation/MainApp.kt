@@ -1,22 +1,27 @@
 package com.murphyslaws.presentation
 
+import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import sdk.pendo.io.Pendo
 import com.murphyslaws.presentation.browse.BrowseScreen
 import com.murphyslaws.presentation.calculators.CalculatorsScreen
 import com.murphyslaws.presentation.home.HomeScreen
@@ -29,7 +34,7 @@ import com.murphyslaws.domain.model.ContentPage
 
 sealed class BottomNavScreen(val route: String, val title: String, val icon: ImageVector) {
     object Home : BottomNavScreen("home", "Home", Icons.Filled.Home)
-    object Browse : BottomNavScreen("browse", "All Laws", Icons.Filled.List)
+    object Browse : BottomNavScreen("browse", "All Laws", Icons.AutoMirrored.Filled.List)
     object Calculators : BottomNavScreen("calculators", "Calculators", Icons.Filled.Calculate)
     object Submit : BottomNavScreen("submit", "Submit a Law", Icons.Filled.Add)
     object More : BottomNavScreen("more", "More", Icons.Filled.MoreVert)
@@ -45,6 +50,47 @@ object AdditionalRoutes {
 @Composable
 fun MainApp() {
     val navController = rememberNavController()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Register NavController with Pendo for Compose navigation tracking
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                Log.d("MainApp", "ON_RESUME: Setting Pendo navigation controller")
+                Pendo.setComposeNavigationController(navController)
+
+                // Start Pendo session after navigation controller is set
+                val visitorId = "ravidor@gmail.com"
+                val accountId = "ACME"
+                val visitorData = mapOf<String, Any>()
+                val accountData = mapOf<String, Any>()
+
+                Log.d("MainApp", "Starting Pendo session with visitor: $visitorId, account: $accountId")
+                try {
+                    Pendo.startSession(
+                        visitorId,
+                        accountId,
+                        visitorData,
+                        accountData
+                    )
+                    Log.d("MainApp", "Pendo session started successfully")
+                } catch (e: Exception) {
+                    Log.e("MainApp", "Error starting Pendo session", e)
+                }
+            } else if (event == Lifecycle.Event.ON_PAUSE) {
+                Log.d("MainApp", "ON_PAUSE: Clearing Pendo navigation controller")
+                Pendo.setComposeNavigationController(null)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            Log.d("MainApp", "onDispose: Clearing Pendo navigation controller")
+            Pendo.setComposeNavigationController(null)
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val items = listOf(
         BottomNavScreen.Home,
         BottomNavScreen.Browse,
