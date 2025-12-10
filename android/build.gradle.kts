@@ -1,4 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+// Note: AGP 8.13.1 produces warnings about deprecated multi-string dependency notation
+// (com.android.tools.lint:lint-gradle and com.android.tools.build:aapt2).
+// These warnings are from AGP's internal dependencies, not our code, and will be fixed
+// by Google in a future AGP release before Gradle 10. Safe to ignore.
+
 plugins {
     id("com.android.application") version "8.13.1" apply false
     id("org.jetbrains.kotlin.android") version "2.2.21" apply false
