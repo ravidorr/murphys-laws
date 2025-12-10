@@ -1,5 +1,6 @@
 package com.murphyslaws.presentation.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.murphyslaws.domain.model.LawOfDay
@@ -27,16 +28,27 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadData() {
+        Log.d("HomeViewModel", "loadData() called")
         viewModelScope.launch {
+            Log.d("HomeViewModel", "Setting isLoading = true")
             _uiState.value = _uiState.value.copy(isLoading = true)
-            
+
+            Log.d("HomeViewModel", "Calling getLawOfTheDayUseCase()")
             val lawResult = getLawOfTheDayUseCase()
+            Log.d("HomeViewModel", "getLawOfTheDayUseCase() returned: success=${lawResult.isSuccess}, failure=${lawResult.isFailure}")
+
+            if (lawResult.isFailure) {
+                Log.e("HomeViewModel", "Error loading law of the day", lawResult.exceptionOrNull())
+            } else {
+                Log.d("HomeViewModel", "Law of the day: ${lawResult.getOrNull()}")
+            }
 
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 lawOfDay = lawResult.getOrNull(),
                 error = if (lawResult.isFailure) com.murphyslaws.util.ErrorMessageMapper.map(lawResult.exceptionOrNull()) else null
             )
+            Log.d("HomeViewModel", "UI state updated: lawOfDay=${_uiState.value.lawOfDay != null}, error=${_uiState.value.error}")
         }
     }
     
