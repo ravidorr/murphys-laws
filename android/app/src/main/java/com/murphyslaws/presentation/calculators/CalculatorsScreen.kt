@@ -101,7 +101,7 @@ fun CalculatorsScreen(
                     fontSize = 72.sp
                 )
                 Text(
-                    text = "${String.format("%.1f", viewModel.probability)}%",
+                    text = "${String.format(java.util.Locale.US, "%.1f", viewModel.probability)}%",
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     color = viewModel.riskLevel.color
