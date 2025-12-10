@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -18,12 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 
@@ -176,62 +178,75 @@ object MarkdownParser {
     }
 
     /**
-     * Build annotated string with clickable links
+     * Build annotated string with clickable links using LinkAnnotation
      */
     fun buildAnnotatedString(
         text: String,
-        links: List<ExtractedLink>
+        links: List<ExtractedLink>,
+        onNavigate: ((String) -> Unit)? = null,
+        onUrlClick: (String) -> Unit
     ): AnnotatedString {
         // Remove all link syntax and get clean text
         var cleanText = text
-        
+
         // Remove HTML links
         cleanText = cleanText.replace(Regex("""<a\s+(?:[^>]*?\s+)?href=["'][^"']*["'][^>]*>([^<]*)</a>""")) { it.groupValues[1] }
-        
+
         // Remove Markdown links but keep text
         cleanText = cleanText.replace(Regex("""\[([^\]]+)]\([^)]+\)""")) { it.groupValues[1] }
-        
+
         // Parse inline formatting (bold, italic)
         cleanText = cleanText.replace(Regex("""\*\*([^*]+)\*\*""")) { it.groupValues[1] }
         cleanText = cleanText.replace(Regex("""\*([^*]+)\*""")) { it.groupValues[1] }
-        
+
+        val linkStyle = TextLinkStyles(
+            style = SpanStyle(
+                color = Color(0xFF1976D2),
+                textDecoration = TextDecoration.Underline
+            )
+        )
+
         return buildAnnotatedString {
-            append(cleanText)
-            
-            // Add link annotations based on positions in clean text
-            links.forEach { link ->
-                val linkStart = cleanText.indexOf(link.text)
-                if (linkStart >= 0) {
+            var currentIndex = 0
+
+            // Group links by start position to handle overlaps
+            val sortedLinks = links.sortedBy { cleanText.indexOf(it.text) }
+
+            sortedLinks.forEach { link ->
+                val linkStart = cleanText.indexOf(link.text, currentIndex)
+                if (linkStart >= 0 && linkStart >= currentIndex) {
                     val linkEnd = linkStart + link.text.length
-                    
-                    // Add visual styling
-                    addStyle(
-                        SpanStyle(
-                            color = Color(0xFF1976D2),
-                            textDecoration = TextDecoration.Underline
-                        ),
-                        linkStart,
-                        linkEnd
-                    )
-                    
-                    // Add URL annotation for click handling
-                    addStringAnnotation(
-                        tag = "URL",
-                        annotation = link.url,
-                        start = linkStart,
-                        end = linkEnd
-                    )
-                    
-                    // Add navigation annotation if internal link
-                    if (link.isInternal && link.navTarget != null) {
-                        addStringAnnotation(
-                            tag = "NAV",
-                            annotation = link.navTarget,
-                            start = linkStart,
-                            end = linkEnd
-                        )
+
+                    // Append text before the link
+                    if (linkStart > currentIndex) {
+                        append(cleanText.substring(currentIndex, linkStart))
                     }
+
+                    // Add the clickable link
+                    if (link.isInternal && link.navTarget != null && onNavigate != null) {
+                        // Internal navigation link
+                        val navTarget = link.navTarget
+                        withLink(LinkAnnotation.Clickable("nav_$navTarget", linkStyle) {
+                            onNavigate(navTarget)
+                        }) {
+                            append(link.text)
+                        }
+                    } else {
+                        // External URL link
+                        withLink(LinkAnnotation.Clickable("url_${link.url}", linkStyle) {
+                            onUrlClick(link.url)
+                        }) {
+                            append(link.text)
+                        }
+                    }
+
+                    currentIndex = linkEnd
                 }
+            }
+
+            // Append remaining text
+            if (currentIndex < cleanText.length) {
+                append(cleanText.substring(currentIndex))
             }
         }
     }
@@ -337,40 +352,33 @@ fun ClickableMarkdownText(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val annotatedString = remember(text, links) {
-        MarkdownParser.buildAnnotatedString(text, links)
-    }
 
-    ClickableText(
-        text = annotatedString,
-        style = style.copy(color = color),
-        modifier = modifier,
-        onClick = { offset ->
-            // Check for internal navigation annotations
-            annotatedString.getStringAnnotations(tag = "NAV", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                    onNavigate?.invoke(annotation.item)
-                    return@ClickableText
-                }
-
-            // Check for URL annotations
-            annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                    val url = annotation.item
-                    when {
-                        url.startsWith("mailto:") -> {
-                            // Handle mailto links
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = url.toUri()
-                            }
-                            context.startActivity(intent)
+    val annotatedString = remember(text, links, onNavigate) {
+        MarkdownParser.buildAnnotatedString(
+            text = text,
+            links = links,
+            onNavigate = onNavigate,
+            onUrlClick = { url ->
+                when {
+                    url.startsWith("mailto:") -> {
+                        // Handle mailto links
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = url.toUri()
                         }
-                        url.startsWith("http://") || url.startsWith("https://") -> {
-                            // Handle external links
-                            uriHandler.openUri(url)
-                        }
+                        context.startActivity(intent)
+                    }
+                    url.startsWith("http://") || url.startsWith("https://") -> {
+                        // Handle external links
+                        uriHandler.openUri(url)
                     }
                 }
-        }
+            }
+        )
+    }
+
+    Text(
+        text = annotatedString,
+        style = style.copy(color = color),
+        modifier = modifier
     )
 }
