@@ -185,7 +185,7 @@ fun CalculatorsScreen(
                         // Try to start email intent, fallback to chooser if no specific email app found
                         try {
                             context.startActivity(intent)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             // Fallback to plain text share if no email client
                             val shareIntent = Intent.createChooser(intent, "Send email...")
                             context.startActivity(shareIntent)
