@@ -31,7 +31,7 @@ class HomeScreenTest {
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createViewModel(isLoading = false, hasData = false).first
+                    viewModel = createViewModel(hasData = false).first
                 )
             }
         }
@@ -48,7 +48,7 @@ class HomeScreenTest {
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createViewModel(isLoading = false, hasData = false).first
+                    viewModel = createViewModel(hasData = false).first
                 )
             }
         }
@@ -76,7 +76,6 @@ class HomeScreenTest {
             MurphysLawsTheme {
                 HomeScreen(
                     viewModel = createViewModel(
-                        isLoading = false,
                         hasData = true,
                         law = law
                     ).first
@@ -101,7 +100,7 @@ class HomeScreenTest {
     @Test
     fun homeScreen_displaysLoadingIndicator() {
         // Given
-        val (viewModel, repository) = createViewModel(isLoading = true, hasData = false)
+        val (viewModel, _) = createViewModel(hasData = false)
 
         // When
         composeTestRule.setContent {
@@ -128,7 +127,7 @@ class HomeScreenTest {
         composeTestRule.setContent {
             MurphysLawsTheme {
                 HomeScreen(
-                    viewModel = createViewModel(isLoading = false, hasData = true).first
+                    viewModel = createViewModel(hasData = true).first
                 )
             }
         }
@@ -165,7 +164,6 @@ class HomeScreenTest {
             MurphysLawsTheme {
                 HomeScreen(
                     viewModel = createViewModel(
-                        isLoading = false,
                         hasData = true,
                         law = law
                     ).first
@@ -180,7 +178,6 @@ class HomeScreenTest {
     }
 
     private fun createViewModel(
-        isLoading: Boolean,
         hasData: Boolean,
         law: Law = Law(1, "Test", null, 0, 0)
     ): Pair<HomeViewModel, FakeLawRepository> {

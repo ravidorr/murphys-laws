@@ -51,8 +51,8 @@ class SearchViewModel @Inject constructor(
 
         _uiState.update {
             it.copy(
-                isLoading = if (reset) true else false,
-                isLoadingMore = if (reset) false else true,
+                isLoading = reset,
+                isLoadingMore = !reset,
                 error = null,
                 results = if (reset) emptyList() else it.results,
                 offset = if (reset) 0 else it.offset,
