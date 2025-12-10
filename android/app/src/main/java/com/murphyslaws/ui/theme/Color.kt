@@ -15,10 +15,6 @@ val WebDarkPrimary = Color(0xFF4F46E5) // Indigo
 val WebDarkSecondary = Color(0xFF9ECBFF) // Link color
 val WebDarkSurface = Color(0xFF1A1A22) // Skeleton bg
 
-val WebSuccess = Color(0xFF16A34A)
-val WebError = Color(0xFFDC2626)
-val WebWarning = Color(0xFFF59E0B) // Standard warning
-
 // Material 3 Roles
 val LightPrimary = WebLightPrimary
 val LightOnPrimary = Color.White
