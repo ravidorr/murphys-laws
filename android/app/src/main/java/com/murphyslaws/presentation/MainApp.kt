@@ -56,7 +56,6 @@ fun MainApp() {
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                Log.d("MainApp", "ON_RESUME: Setting Pendo navigation controller")
                 Pendo.setComposeNavigationController(navController)
 
                 // Start Pendo session after navigation controller is set
@@ -64,8 +63,6 @@ fun MainApp() {
                 val accountId = "ACME"
                 val visitorData = mapOf<String, Any>()
                 val accountData = mapOf<String, Any>()
-
-                Log.d("MainApp", "Starting Pendo session with visitor: $visitorId, account: $accountId")
                 try {
                     Pendo.startSession(
                         visitorId,
@@ -73,19 +70,16 @@ fun MainApp() {
                         visitorData,
                         accountData
                     )
-                    Log.d("MainApp", "Pendo session started successfully")
                 } catch (e: Exception) {
                     Log.e("MainApp", "Error starting Pendo session", e)
                 }
             } else if (event == Lifecycle.Event.ON_PAUSE) {
-                Log.d("MainApp", "ON_PAUSE: Clearing Pendo navigation controller")
                 Pendo.setComposeNavigationController(null)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose {
-            Log.d("MainApp", "onDispose: Clearing Pendo navigation controller")
             Pendo.setComposeNavigationController(null)
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
