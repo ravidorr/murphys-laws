@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { setupAdSense, triggerAdSense, resetAdSenseForTesting } from '../src/utils/ads.js';
+import { setupAdSense, triggerAdSense, resetAdSenseForTesting, hasMinimumContent } from '../src/utils/ads.js';
 
 describe('AdSense Integration', () => {
   beforeEach(() => {
@@ -105,7 +105,7 @@ describe('AdSense Integration', () => {
   it('uses setTimeout fallback when requestIdleCallback is not available', () => {
     const originalRequestIdleCallback = window.requestIdleCallback;
     delete window.requestIdleCallback;
-    
+
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
 
     setupAdSense();
@@ -117,5 +117,116 @@ describe('AdSense Integration', () => {
     if (originalRequestIdleCallback) {
       window.requestIdleCallback = originalRequestIdleCallback;
     }
+  });
+});
+
+describe('hasMinimumContent', () => {
+  it('returns true when element has sufficient content (500+ characters)', () => {
+    const el = document.createElement('div');
+    // 560 characters (500+ required)
+    el.textContent = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(10);
+
+    expect(hasMinimumContent(el)).toBe(true);
+  });
+
+  it('returns false when element has insufficient content (< 500 characters)', () => {
+    const el = document.createElement('div');
+    el.textContent = 'Short content';
+
+    expect(hasMinimumContent(el)).toBe(false);
+  });
+
+  it('returns false when element is null or undefined', () => {
+    expect(hasMinimumContent(null)).toBe(false);
+    expect(hasMinimumContent(undefined)).toBe(false);
+  });
+
+  it('returns false when element is empty', () => {
+    const el = document.createElement('div');
+    expect(hasMinimumContent(el)).toBe(false);
+  });
+
+  it('trims excessive whitespace before counting characters', () => {
+    const el = document.createElement('div');
+    // Multiple spaces should be counted as one
+    el.textContent = 'Word   '.repeat(200); // Would be 1200 chars, but spaces collapsed
+
+    // After trimming and collapsing whitespace, this should be ~800 characters
+    expect(hasMinimumContent(el)).toBe(true);
+  });
+
+  it('respects custom minimum character count', () => {
+    const el = document.createElement('div');
+    el.textContent = 'This is exactly 100 characters long. '.repeat(3); // ~114 chars
+
+    expect(hasMinimumContent(el, 100)).toBe(true);
+    expect(hasMinimumContent(el, 500)).toBe(false);
+  });
+
+  it('counts only text content, ignoring HTML tags', () => {
+    const el = document.createElement('div');
+    el.innerHTML = '<p>Text</p><div><span>More text</span></div>'.repeat(50);
+
+    // Should count only "Text" and "More text" repeated, not the HTML tags
+    const textLength = el.textContent.replace(/\s+/g, ' ').trim().length;
+    expect(hasMinimumContent(el)).toBe(textLength >= 500);
+  });
+});
+
+describe('triggerAdSense with content validation', () => {
+  beforeEach(() => {
+    document.head.innerHTML = '';
+    resetAdSenseForTesting();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    delete window.adsbygoogle;
+  });
+
+  it('triggers AdSense when no element is provided (backward compatibility)', () => {
+    setupAdSense();
+    triggerAdSense(); // No element argument
+    vi.runAllTimers();
+
+    const script = document.head.querySelector('script[src*="adsbygoogle"]');
+    expect(script).toBeTruthy();
+  });
+
+  it('triggers AdSense when element has sufficient content', () => {
+    const el = document.createElement('div');
+    el.textContent = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(10);
+
+    setupAdSense();
+    triggerAdSense(el);
+    vi.runAllTimers();
+
+    const script = document.head.querySelector('script[src*="adsbygoogle"]');
+    expect(script).toBeTruthy();
+  });
+
+  it('does not trigger AdSense when element has insufficient content', () => {
+    const el = document.createElement('div');
+    el.textContent = 'Not enough content';
+
+    setupAdSense();
+    triggerAdSense(el);
+    vi.runAllTimers();
+
+    const script = document.head.querySelector('script[src*="adsbygoogle"]');
+    expect(script).toBeFalsy();
+  });
+
+  it('does not trigger AdSense when element is empty', () => {
+    const el = document.createElement('div');
+
+    setupAdSense();
+    triggerAdSense(el);
+    vi.runAllTimers();
+
+    const script = document.head.querySelector('script[src*="adsbygoogle"]');
+    expect(script).toBeFalsy();
   });
 });
