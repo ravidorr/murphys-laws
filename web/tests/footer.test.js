@@ -3,12 +3,19 @@ import { Footer } from '../src/components/footer.js';
 
 describe('Footer component', () => {
   let originalReadyState;
+  let mainElement;
 
   beforeEach(() => {
     // Save original readyState before each test
     originalReadyState = document.readyState;
     // Reset adsbygoogle array
     window.adsbygoogle = [];
+
+    // Create a main element with sufficient content for ad loading tests
+    mainElement = document.createElement('main');
+    // Add 500+ characters of content to meet minimum content requirement
+    mainElement.textContent = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(10);
+    document.body.appendChild(mainElement);
   });
 
   afterEach(() => {
@@ -18,6 +25,11 @@ describe('Footer component', () => {
       writable: true,
       configurable: true
     });
+
+    // Remove main element
+    if (mainElement && mainElement.parentNode) {
+      mainElement.parentNode.removeChild(mainElement);
+    }
   });
 
   it('renders footer element', () => {

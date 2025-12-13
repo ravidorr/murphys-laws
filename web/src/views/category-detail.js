@@ -11,6 +11,7 @@ import { renderPagination } from '../utils/pagination.js';
 import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL } from '@utils/constants.js';
 import { fetchCategories } from '../utils/api.js'; // To get category title for structured data
+import { triggerAdSense } from '../utils/ads.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
   const el = document.createElement('div');
@@ -69,6 +70,11 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
       hydrateIcons(cardText);
+
+      // Only trigger ads if we have laws with content
+      if (laws.length > 0) {
+        triggerAdSense(el);
+      }
     }
     // Update breadcrumbs and structured data after category title is loaded
     updateStructuredData();

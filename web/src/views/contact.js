@@ -7,7 +7,8 @@ export function Contact({ onNavigate }) {
   el.setAttribute('role', 'main');
 
   el.innerHTML = getPageContent('contact');
-  triggerAdSense();
+  // Only trigger ads if content meets minimum requirements
+  triggerAdSense(el);
 
   el.addEventListener('click', (e) => {
     const target = e.target;

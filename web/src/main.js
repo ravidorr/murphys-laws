@@ -66,7 +66,7 @@ const app = document.getElementById('app');
 setSiteStructuredData();
 
 // Layout wrapper: header + page + footer
-function layout(node) {
+function layout(node, { hideAds = false } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'min-h-screen flex flex-col';
 
@@ -80,7 +80,7 @@ function layout(node) {
   main.className = 'flex-1';
   main.appendChild(node);
 
-  const footer = Footer({ onNavigate });
+  const footer = Footer({ onNavigate, hideAds });
 
   wrap.appendChild(header);
   wrap.appendChild(main);
@@ -185,7 +185,7 @@ Object.entries(routesMap).forEach(([name, render]) => {
 
 const notFoundRoute = () => {
   clearPageStructuredData();
-  return layout(NotFound({ onNavigate }));
+  return layout(NotFound({ onNavigate }), { hideAds: true });
 };
 
 startRouter(app, notFoundRoute);
