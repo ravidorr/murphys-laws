@@ -11,7 +11,8 @@ export function OriginStory({ onNavigate } = {}) {
   el.setAttribute('role', 'main');
 
   el.innerHTML = getPageContent('origin-story');
-  triggerAdSense();
+  // Only trigger ads if content meets minimum requirements
+  triggerAdSense(el);
 
   // Set structured data for the article
   setJsonLd('origin-story-article', {

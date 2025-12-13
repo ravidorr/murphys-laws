@@ -42,10 +42,30 @@ export function setupAdSense() {
 }
 
 /**
+ * Checks if the element has sufficient text content for AdSense compliance.
+ * Google requires substantial content on pages showing ads.
+ * @param {HTMLElement} element - The element to check for content
+ * @param {number} minChars - Minimum character count (default: 500)
+ * @returns {boolean} True if content meets minimum requirements
+ */
+export function hasMinimumContent(element, minChars = 500) {
+  if (!element) return false;
+  const textContent = element.textContent || '';
+  // Remove excessive whitespace and count meaningful characters
+  const contentLength = textContent.replace(/\s+/g, ' ').trim().length;
+  return contentLength >= minChars;
+}
+
+/**
  * Triggers the ad loading process.
  * Should be called by views when they have rendered meaningful content.
+ * @param {HTMLElement} [contentElement] - Optional element to validate for minimum content
  */
-export function triggerAdSense() {
+export function triggerAdSense(contentElement) {
+  // If a content element is provided, validate it has sufficient content
+  if (contentElement && !hasMinimumContent(contentElement)) {
+    return; // Don't trigger ads if content is insufficient
+  }
   document.dispatchEvent(new CustomEvent('murphys-laws-content-ready'));
 }
 

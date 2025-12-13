@@ -7,7 +7,8 @@ export function Terms({ onNavigate }) {
   el.setAttribute('role', 'main');
 
   el.innerHTML = getPageContent('terms');
-  triggerAdSense();
+  // Only trigger ads if content meets minimum requirements
+  triggerAdSense(el);
 
   el.addEventListener('click', (e) => {
     const target = event.target;

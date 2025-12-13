@@ -1,7 +1,8 @@
 import templateHtml from '@components/templates/footer.html?raw';
 import { ensureAdsense } from '@utils/third-party.js';
+import { hasMinimumContent } from '@utils/ads.js';
 
-export function Footer({ onNavigate }) {
+export function Footer({ onNavigate, hideAds = false }) {
   const footer = document.createElement('footer');
   footer.className = 'footer';
 
@@ -9,7 +10,8 @@ export function Footer({ onNavigate }) {
 
   const adHost = footer.querySelector('[data-ad-slot]');
 
-  if (adHost) {
+  // Don't load ads if explicitly disabled (e.g., 404 pages, insufficient content)
+  if (adHost && !hideAds) {
     let observer;
 
     const loadAd = () => {
@@ -80,9 +82,20 @@ export function Footer({ onNavigate }) {
         return;
       }
 
+      // Check if page has sufficient content before loading ads
+      // This prevents ads on empty states, 404 pages, etc.
+      const mainContent = document.querySelector('main');
+      if (!hasMinimumContent(mainContent)) {
+        return; // Don't load ads if content is insufficient
+      }
+
       scheduleAd();
 
       const triggerOnce = () => {
+        // Re-check content at trigger time in case page changed
+        if (!hasMinimumContent(document.querySelector('main'))) {
+          return;
+        }
         loadAd();
       };
 
