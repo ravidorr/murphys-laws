@@ -50,8 +50,8 @@ export function Home({ onNavigate }) {
       .then(json => {
         const lawOfTheDay = json && json.data && json.data[0] ? json.data[0] : null;
         renderHome(el, lawOfTheDay, onNavigate);
-        // Signal that meaningful content is ready for ads
-        triggerAdSense();
+        // Signal that meaningful content is ready for ads - pass element for validation
+        triggerAdSense(el);
       })
       .catch(() => {
         el.innerHTML = '';
