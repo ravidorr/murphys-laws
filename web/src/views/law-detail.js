@@ -180,9 +180,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
 
           footer.appendChild(socialShare);
         }
-        
-        // Signal content is ready
-        triggerAdSense();
+
+        // Signal content is ready - validate content before triggering ads
+        triggerAdSense(lawCardContainer);
       }
     }
   }

@@ -100,10 +100,10 @@ export function Browse({ searchQuery, onNavigate }) {
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       await updateDisplay();
-      
-      // Only trigger ads if we actually have content
-      if (laws.length > 0) {
-        triggerAdSense();
+
+      // Only trigger ads if we actually have content - validate before triggering
+      if (laws.length > 0 && cardText) {
+        triggerAdSense(cardText);
       }
     } catch {
       if (cardText) {
