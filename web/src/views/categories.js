@@ -7,7 +7,6 @@ import { getRandomLoadingMessage } from '../utils/constants.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL } from '@utils/constants.js';
-import { triggerAdSense } from '../utils/ads.js';
 
 export function Categories({ onNavigate }) {
   const el = document.createElement('div');
@@ -76,11 +75,6 @@ export function Categories({ onNavigate }) {
           'description': category.description || `Laws related to ${category.title}`,
         }))
       });
-
-      // Only trigger ads if we have categories with content
-      if (categories.length > 0) {
-        triggerAdSense(el);
-      }
     }
   }
 
