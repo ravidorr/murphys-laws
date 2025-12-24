@@ -129,7 +129,7 @@ const routesMap = {
   },
   categories: () => {
     clearPageStructuredData(); // Clear previous page's structured data
-    return layout(Categories({ onNavigate }));
+    return layout(Categories({ onNavigate }), { hideAds: true });
   },
   category: ({ param }) => {
     clearPageStructuredData();
@@ -147,7 +147,7 @@ const routesMap = {
     const submitSection = SubmitLawSection({ onNavigate });
     container.appendChild(submitSection);
     clearPageStructuredData();
-    return layout(container);
+    return layout(container, { hideAds: true });
   },
   calculator: () => {
     setSodCalculatorStructuredData();
@@ -175,7 +175,7 @@ const routesMap = {
   },
   contact: () => {
     clearPageStructuredData();
-    return layout(Contact({ onNavigate }));
+    return layout(Contact({ onNavigate }), { hideAds: true });
   },
 };
 

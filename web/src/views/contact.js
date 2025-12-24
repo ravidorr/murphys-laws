@@ -1,5 +1,4 @@
 import { getPageContent } from '@utils/markdown-content.js';
-import { triggerAdSense } from '../utils/ads.js';
 
 export function Contact({ onNavigate }) {
   const el = document.createElement('div');
@@ -7,8 +6,6 @@ export function Contact({ onNavigate }) {
   el.setAttribute('role', 'main');
 
   el.innerHTML = getPageContent('contact');
-  // Only trigger ads if content meets minimum requirements
-  triggerAdSense(el);
 
   el.addEventListener('click', (e) => {
     const target = e.target;
