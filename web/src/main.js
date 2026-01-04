@@ -137,7 +137,7 @@ const routesMap = {
   },
   browse: () => {
     setBrowseStructuredData();
-    return layout(Browse({ searchQuery: state.searchQuery, onNavigate }));
+    return layout(Browse({ searchQuery: state.searchQuery, onNavigate }), { hideAds: true });
   },
   law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData })),
   submit: () => {
@@ -151,11 +151,11 @@ const routesMap = {
   },
   calculator: () => {
     setSodCalculatorStructuredData();
-    return layout(Calculator());
+    return layout(Calculator(), { hideAds: true });
   },
   toastcalculator: () => {
     setToastCalculatorStructuredData();
-    return layout(ButteredToastCalculator());
+    return layout(ButteredToastCalculator(), { hideAds: true });
   },
   'origin-story': () => {
     clearPageStructuredData();
