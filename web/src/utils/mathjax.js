@@ -87,6 +87,14 @@ export async function ensureMathJax() {
   return loaderPromise;
 }
 
+/**
+ * Resets the MathJax loader state.
+ * ONLY FOR TESTING PURPOSES.
+ */
+export function resetMathJaxStateForTesting() {
+  loaderPromise = undefined;
+}
+
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     loaderPromise = undefined;
@@ -106,4 +114,3 @@ if (import.meta.hot) {
     }
   });
 }
-

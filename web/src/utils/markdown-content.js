@@ -56,8 +56,13 @@ export function markdownToHtml(markdownContent, options = {}) {
  * @returns {string} - HTML with first word wrapped in accent-text
  */
 function wrapFirstWordWithAccent(headingText) {
-  // Extract text content (remove any existing HTML tags)
-  const textOnly = headingText.replace(/<[^>]*>/g, '').trim();
+  // If the heading contains nested HTML tags (like <code>, <em>, etc.),
+  // return it unchanged to preserve the formatting
+  if (/<[^>]+>/.test(headingText)) {
+    return headingText;
+  }
+
+  const textOnly = headingText.trim();
 
   if (!textOnly) {
     return headingText;
@@ -95,32 +100,34 @@ function wrapFirstWordWithAccent(headingText) {
  */
 function enhanceMarkdownHtml(html) {
   // Process h1 tags - wrap first word with accent-text
-  html = html.replace(/<h1>([^<]+)<\/h1>/g, (match, content) => {
-    return `<h1>${wrapFirstWordWithAccent(content)}</h1>`;
+  html = html.replace(/(<h1[^>]*>)([\s\S]*?)(<\/h1>)/g, (match, open, content, close) => {
+    return `${open}${wrapFirstWordWithAccent(content)}${close}`;
   });
 
   // Process h3 tags first (before h2 processing) - wrap first word with accent-text
-  html = html.replace(/<h3>([^<]+)<\/h3>/g, (match, content) => {
-    return `<h3>${wrapFirstWordWithAccent(content)}</h3>`;
+  html = html.replace(/(<h3[^>]*>)([\s\S]*?)(<\/h3>)/g, (match, open, content, close) => {
+    return `${open}${wrapFirstWordWithAccent(content)}${close}`;
   });
 
   // Process h2 tags - wrap first word with accent-text and add section wrapper
   // We need to process from end to start to avoid index issues
   const h2Matches = [];
-  let h2Regex = /<h2>([^<]+)<\/h2>/g;
+  let h2Regex = /(<h2[^>]*>)([\s\S]*?)(<\/h2>)/g;
   let match;
   while ((match = h2Regex.exec(html)) !== null) {
     h2Matches.push({
       index: match.index,
       fullMatch: match[0],
-      content: match[1]
+      open: match[1],
+      content: match[2],
+      close: match[3]
     });
   }
 
   // Replace h2 tags from end to start to preserve indices
   for (let i = h2Matches.length - 1; i >= 0; i--) {
     const h2Match = h2Matches[i];
-    const replacement = `<section class="content-section">\n      <h2>${wrapFirstWordWithAccent(h2Match.content)}</h2>`;
+    const replacement = `<section class="content-section">\n      ${h2Match.open}${wrapFirstWordWithAccent(h2Match.content)}${h2Match.close}`;
     html = html.substring(0, h2Match.index) + replacement + html.substring(h2Match.index + h2Match.fullMatch.length);
   }
 
