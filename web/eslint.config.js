@@ -11,7 +11,6 @@ export default [
       'dist/**',
       'backup/**',
       'sods-law-calculator/**',
-      'tests/**', // Ignore test files, they have their own config
     ],
   },
   js.configs.recommended,
@@ -41,5 +40,27 @@ export default [
       reportUnusedDisableDirectives: true,
     },
   },
-
+  // Test files configuration
+  {
+    files: ['tests/**/*.js', 'tests/**/*.test.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        describe: true,
+        it: true,
+        expect: true,
+        beforeEach: true,
+        afterEach: true,
+        vi: true,
+        ...globals.browser,
+      },
+    },
+    rules: {
+      // Turn off no-undef as Vitest provides globals
+      'no-undef': 'off',
+      // Allow unused variables in tests
+      'no-unused-vars': 'off',
+    },
+  },
 ];
