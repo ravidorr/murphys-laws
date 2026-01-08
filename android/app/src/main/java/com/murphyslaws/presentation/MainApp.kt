@@ -36,7 +36,7 @@ sealed class BottomNavScreen(val route: String, val title: String, val icon: Ima
     object Home : BottomNavScreen("home", "Home", Icons.Filled.Home)
     object Browse : BottomNavScreen("browse", "All Laws", Icons.AutoMirrored.Filled.List)
     object Calculators : BottomNavScreen("calculators", "Calculators", Icons.Filled.Calculate)
-    object Submit : BottomNavScreen("submit", "Submit a Law", Icons.Filled.Add)
+    object Submit : BottomNavScreen("submit", "Submit Law", Icons.Filled.Add)
     object More : BottomNavScreen("more", "More", Icons.Filled.MoreVert)
 }
 

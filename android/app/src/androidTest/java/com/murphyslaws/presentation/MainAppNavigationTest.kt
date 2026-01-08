@@ -37,7 +37,7 @@ class MainAppNavigationTest {
             .assertIsDisplayed()
         
         composeTestRule
-            .onNodeWithText("Submit a Law")
+            .onNodeWithText("Submit Law")
             .assertIsDisplayed()
         
         composeTestRule
@@ -62,12 +62,12 @@ class MainAppNavigationTest {
     fun mainApp_navigatesToSubmitScreen() {
         // When - MainActivity already has content set
         composeTestRule
-            .onNodeWithText("Submit a Law")
+            .onNodeWithText("Submit Law")
             .performClick()
 
         // Then
         composeTestRule
-            .onNodeWithText("Submit a Law feature coming soon")
+            .onNodeWithText("Submit Law feature coming soon")
             .assertIsDisplayed()
     }
 
