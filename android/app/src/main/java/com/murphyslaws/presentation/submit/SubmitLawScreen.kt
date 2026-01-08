@@ -66,7 +66,7 @@ fun SubmitLawScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Submit a Law") }
+                title = { Text("Submit Law") }
             )
         }
     ) { padding ->
