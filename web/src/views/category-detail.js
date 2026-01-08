@@ -98,13 +98,21 @@ export function CategoryDetail({ categoryId, onNavigate }) {
 
     try {
       const offset = (page - 1) * LAWS_PER_PAGE;
-      const data = await fetchLaws({
+      const params = {
         limit: LAWS_PER_PAGE,
         offset,
         sort: 'score',
-        order: 'desc',
-        category_id: categoryId // Filter by specific category ID
-      });
+        order: 'desc'
+      };
+
+      const numericId = parseInt(categoryId, 10);
+      if (!isNaN(numericId) && numericId > 0) {
+        params.category_id = numericId;
+      } else {
+        params.category_slug = categoryId;
+      }
+
+      const data = await fetchLaws(params);
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
@@ -128,7 +136,15 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   async function fetchCategoryDetails() {
     try {
       const data = await fetchCategories();
-      const category = data.data.find(cat => String(cat.id) === String(categoryId));
+      let category;
+      const numericId = parseInt(categoryId, 10);
+      
+      if (!isNaN(numericId) && numericId > 0) {
+        category = data.data.find(cat => String(cat.id) === String(categoryId));
+      } else {
+        category = data.data.find(cat => cat.slug === categoryId);
+      }
+
       if (category) {
         categoryTitle = category.title;
         const titleEl = el.querySelector('#category-detail-title');

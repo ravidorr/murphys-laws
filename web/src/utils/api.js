@@ -70,7 +70,7 @@ export async function fetchLaw(lawId) {
  * @param {string} options.attribution - Attribution name to filter by
  * @returns {Promise<Object>} Response with data and total
  */
-export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order = 'desc', q = '', category_id, attribution } = {}) {
+export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order = 'desc', q = '', category_id, category_slug, attribution } = {}) {
   const params = {
     limit: String(limit),
     offset: String(offset),
@@ -84,6 +84,10 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
 
   if (category_id) {
     params.category_id = String(category_id);
+  }
+
+  if (category_slug) {
+    params.category_slug = String(category_slug);
   }
 
   if (attribution && attribution.trim()) {
