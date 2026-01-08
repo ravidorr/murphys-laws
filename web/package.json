@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run ssg",
+    "ssg": "node scripts/ssg.mjs",
     "preview": "vite preview",
     "preview:build": "npm run build && npm run preview",
     "test": "vitest run",

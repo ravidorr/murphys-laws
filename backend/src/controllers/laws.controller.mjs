@@ -12,9 +12,10 @@ export class LawController {
     const offset = Math.max(0, Number(parsed.query.offset || 0));
     const q = (parsed.query.q || '').toString().trim();
     const categoryId = parsed.query.category_id ? Number(parsed.query.category_id) : null;
+    const categorySlug = parsed.query.category_slug ? parsed.query.category_slug.toString().trim() : null;
     const attribution = (parsed.query.attribution || '').toString().trim();
 
-    const result = await this.lawService.listLaws({ limit, offset, q, categoryId, attribution });
+    const result = await this.lawService.listLaws({ limit, offset, q, categoryId, categorySlug, attribution });
     
     return sendJson(res, 200, { 
       data: result.data, 
@@ -22,7 +23,8 @@ export class LawController {
       offset, 
       total: result.total, 
       q, 
-      category_id: categoryId, 
+      category_id: categoryId,
+      category_slug: categorySlug,
       attribution 
     }, req);
   }

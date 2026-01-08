@@ -6,7 +6,7 @@ export class LawService {
     this.db = db;
   }
 
-  async listLaws({ limit, offset, q, categoryId, attribution }) {
+  async listLaws({ limit, offset, q, categoryId, categorySlug, attribution }) {
     const baseSelect = `
       SELECT
         l.id,
@@ -29,6 +29,7 @@ export class LawService {
 
     const hasQ = q && q.length > 0;
     const hasCategory = categoryId !== null && !isNaN(categoryId);
+    const hasCategorySlug = categorySlug && categorySlug.length > 0;
     const hasAttribution = attribution && attribution.length > 0;
 
     const like = `%${q}%`;
@@ -53,6 +54,14 @@ export class LawService {
       countWhere += " AND EXISTS (SELECT 1 FROM law_categories lc WHERE lc.law_id = l.id AND lc.category_id = ?)";
       countParams.push(categoryId);
       listParams.push(categoryId);
+    }
+
+    if (hasCategorySlug) {
+      const slugCondition = " AND EXISTS (SELECT 1 FROM law_categories lc JOIN categories c ON lc.category_id = c.id WHERE lc.law_id = l.id AND c.slug = ?)";
+      where += slugCondition;
+      countWhere += slugCondition;
+      countParams.push(categorySlug);
+      listParams.push(categorySlug);
     }
 
     if (hasAttribution) {

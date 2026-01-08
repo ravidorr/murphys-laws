@@ -1,4 +1,4 @@
-import { defineRoute, navigate, startRouter, forceRender } from './router.js';
+import { defineRoute, navigate, startRouter, forceRender, currentRoute } from './router.js';
 import { Header } from './components/header.js';
 import { Footer } from './components/footer.js';
 import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS } from './utils/constants.js';
@@ -42,16 +42,16 @@ function onSearch(filters) {
   if (filters.category_id) {
     onNavigate('category', filters.category_id);
   } else if (filters.q || filters.attribution) {
-    const current = location.hash.replace('#/', '').split(':')[0] || 'home';
-    if (current === 'browse') {
+    const { name } = currentRoute();
+    if (name === 'browse') {
       forceRender();
     } else {
       navigate('browse');
     }
   } else {
     // If no filters, navigate to home or browse depending on current
-    const current = location.hash.replace('#/', '').split(':')[0] || 'home';
-    if (current === 'browse') {
+    const { name } = currentRoute();
+    if (name === 'browse') {
       forceRender();
     } else {
       navigate('home'); // Or maybe just navigate('browse') without filters?
@@ -73,7 +73,7 @@ function layout(node, { hideAds = false } = {}) {
   const header = Header({
     onSearch,
     onNavigate,
-    currentPage: location.hash.replace('#/', '') || 'home',
+    currentPage: currentRoute().name || 'home',
   });
 
   const main = document.createElement('main');

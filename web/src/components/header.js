@@ -52,6 +52,7 @@ export function Header({ onSearch, onNavigate }) {
 
     const navBtn = t.closest('[data-nav]');
     if (navBtn) {
+      e.preventDefault();
       const navTarget = navBtn.getAttribute('data-nav');
       if (navTarget) {
         onNavigate(navTarget);

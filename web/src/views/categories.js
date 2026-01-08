@@ -35,7 +35,7 @@ export function Categories({ onNavigate }) {
             <h2 class="category-title">${category.title}</h2>
             ${category.description ? `<p class="category-description">${category.description}</p>` : ''}
             <p class="category-count">${category.law_count} laws</p>
-            <button class="btn btn-small" data-nav="category:${category.id}">View Laws</button>
+            <button class="btn btn-small" data-nav="category:${category.slug || category.id}">View Laws</button>
           </div>
         `).join('')}
       </div>

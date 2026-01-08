@@ -1,10 +1,10 @@
 <div class="container">
   <div class="flex h-16 items-center justify-between gap-4">
     <div class="brand-wrapper">
-      <a class="brand" href="#/home">
-        <button class="brand-badge" id="nav-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
-          M
-        </button>
+      <button class="brand-badge" id="nav-menu-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+        M
+      </button>
+      <a class="brand" href="/" data-nav="home">
         <div class="brand-content">
           <h2 class="brand-name"><span class="accent-text">Murphy's</span> Law</h2>
           <span class="brand-subtitle">If it can go wrong, it will, and you'll find it here.</span>
@@ -13,27 +13,27 @@
       <nav class="nav-dropdown" id="nav-dropdown" aria-label="Main navigation">
         <ul>
           <li>
-            <a href="#/home" class="nav-dropdown-item" data-nav="home">
+            <a href="/" class="nav-dropdown-item" data-nav="home">
               Home
             </a>
           </li>
           <li>
-            <a href="#/browse" class="nav-dropdown-item" data-nav="browse">
+            <a href="/browse" class="nav-dropdown-item" data-nav="browse">
               All of Murphy's Laws
             </a>
           </li>
           <li>
-            <a href="#/calculator" class="nav-dropdown-item" data-nav="calculator">
+            <a href="/calculator" class="nav-dropdown-item" data-nav="calculator">
               Sod's Law Calculator
             </a>
           </li>
           <li>
-            <a href="#/toastcalculator" class="nav-dropdown-item" data-nav="toastcalculator">
+            <a href="/toastcalculator" class="nav-dropdown-item" data-nav="toastcalculator">
               Buttered Toast Landing Calculator
             </a>
           </li>
           <li>
-            <a href="#/submit" class="nav-dropdown-item" data-nav="submit">
+            <a href="/submit" class="nav-dropdown-item" data-nav="submit">
               Submit your Murphy's Law
             </a>
           </li>
@@ -42,7 +42,7 @@
     </div>
 
     <form role="search" class="flex items-center gap-2" aria-label="Site Search">
-      <input type="text" id="header-search" name="search" aria-label="Search" placeholder="Search" class="input" />
+      <input type="text" id="header-search" name="search" aria-label="Search" placeholder="Search" class="input">
       <button type="submit" class="btn">
         <span class="btn-text">Search</span>
         <span class="icon" data-icon="search" aria-hidden="true"></span>
@@ -50,4 +50,3 @@
     </form>
   </div>
 </div>
-

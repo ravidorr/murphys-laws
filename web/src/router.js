@@ -1,25 +1,65 @@
-// Simple hash-based router
-// Routes map hash -> render function - exported for testing
+// Simple History API router
+// Routes map path -> render function
 export const routes = {};
 
 export function defineRoute(name, renderFn) {
   routes[name] = renderFn;
 }
 
+const BASE_PATH = ''; // Change this if deploying to a subdirectory
+
 export function navigate(name, param) {
-  // Navigate to root for home page
+  let path = BASE_PATH || '/';
+  
   if (name === 'home') {
-    location.hash = '';
-    return;
+    path = '/';
+  } else if (name === 'law' && param) {
+    path = `/law/${param}`;
+  } else if (name === 'category' && param) {
+    path = `/category/${param}`;
+  } else {
+    // Generic fallback for other routes: /name or /name/param
+    path = `/${name}${param ? '/' + param : ''}`;
   }
-  const suffix = param ? `:${param}` : '';
-  location.hash = `#/${name}${suffix}`;
+
+  // Avoid pushing the same state twice
+  if (location.pathname !== path) {
+    history.pushState({ name, param }, '', path);
+  }
+  
+  // Manually trigger render
+  if (renderFn) renderFn();
 }
 
 // Exported for testing
 export function currentRoute() {
-  const m = location.hash.match(/^#\/([\w-]+)(?::(.+))?$/);
-  return m ? { name: m[1], param: m[2] || null } : { name: 'home', param: null };
+  const path = location.pathname;
+  
+  // Home
+  if (path === '/' || path === '/index.html') {
+    return { name: 'home', param: null };
+  }
+
+  // Specific routes
+  // Match /law/murphys-computers-laws
+  const lawMatch = path.match(/^\/law\/([^/]+)/);
+  if (lawMatch) {
+    return { name: 'law', param: lawMatch[1] };
+  }
+
+  // Match /category/some-category
+  const catMatch = path.match(/^\/category\/([^/]+)/);
+  if (catMatch) {
+    return { name: 'category', param: catMatch[1] };
+  }
+
+  // Generic match for top-level routes like /browse, /about, /submit
+  const genericMatch = path.match(/^\/([^/]+)/);
+  if (genericMatch) {
+    return { name: genericMatch[1], param: null };
+  }
+
+  return { name: 'home', param: null };
 }
 
 let renderFn = null;
@@ -41,6 +81,10 @@ export function startRouter(rootEl, notFoundRender = null) {
 
     const { name, param } = currentRoute();
     const fn = routes[name] || notFoundRender || routes['home'];
+    
+    // Safety check: if route not found and we are not home, maybe 404?
+    // But for now, if fn is null, we fallback to home or notFound as above.
+    
     rootEl.innerHTML = '';
     const newContent = fn({ param });
     rootEl.appendChild(newContent);
@@ -60,8 +104,13 @@ export function startRouter(rootEl, notFoundRender = null) {
 
     window.scrollTo(0, 0);
   }
+  
   renderFn = render;
-  window.addEventListener('hashchange', render);
+  
+  // Handle browser back/forward buttons
+  window.addEventListener('popstate', render);
+  
+  // Initial render
   render();
 }
 

@@ -2,9 +2,9 @@ import { defineRoute, navigate, currentRoute, routes, startRouter, forceRender }
 
 describe('Router', () => {
   beforeEach(() => {
-    // Clear routes and reset hash
+    // Clear routes and reset path
     Object.keys(routes).forEach(key => delete routes[key]);
-    location.hash = '';
+    history.replaceState(null, '', '/');
     // Mock window.scrollTo for jsdom
     window.scrollTo = () => {};
   });
@@ -17,50 +17,43 @@ describe('Router', () => {
 
   it('navigates to a route', () => {
     navigate('browse');
-    expect(location.hash).toBe('#/browse');
+    expect(location.pathname).toBe('/browse');
   });
 
-  it('navigates to home route by clearing hash', () => {
-    location.hash = '#/browse';
+  it('navigates to home route by clearing path', () => {
+    history.replaceState(null, '', '/browse');
     navigate('home');
-    expect(location.hash).toBe('');
+    expect(location.pathname).toBe('/');
   });
 
   it('navigates to a route with parameter', () => {
     navigate('law', '123');
-    expect(location.hash).toBe('#/law:123');
+    expect(location.pathname).toBe('/law/123');
   });
 
-  it('parses current route from hash', () => {
-    location.hash = '#/browse';
+  it('parses current route from path', () => {
+    history.replaceState(null, '', '/browse');
     const route = currentRoute();
     expect(route.name).toBe('browse');
     expect(route.param).toBeNull();
   });
 
   it('parses route with parameter', () => {
-    location.hash = '#/law:123';
+    history.replaceState(null, '', '/law/123');
     const route = currentRoute();
     expect(route.name).toBe('law');
     expect(route.param).toBe('123');
   });
 
-  it('defaults to home route when hash is empty', () => {
-    location.hash = '';
-    const route = currentRoute();
-    expect(route.name).toBe('home');
-    expect(route.param).toBeNull();
-  });
-
-  it('defaults to home route when hash is invalid', () => {
-    location.hash = '#invalid';
+  it('defaults to home route when path is root', () => {
+    history.replaceState(null, '', '/');
     const route = currentRoute();
     expect(route.name).toBe('home');
     expect(route.param).toBeNull();
   });
 
   it('parses hyphenated route names correctly', () => {
-    location.hash = '#/origin-story';
+    history.replaceState(null, '', '/origin-story');
     const route = currentRoute();
     expect(route.name).toBe('origin-story');
     expect(route.param).toBeNull();
@@ -68,7 +61,7 @@ describe('Router', () => {
 
   it('navigates to hyphenated routes', () => {
     navigate('origin-story');
-    expect(location.hash).toBe('#/origin-story');
+    expect(location.pathname).toBe('/origin-story');
   });
 
   it('starts router and renders initial route', () => {
@@ -109,12 +102,11 @@ describe('Router', () => {
       return el;
     });
 
-    location.hash = '#/home';
+    history.replaceState(null, '', '/');
     startRouter(rootEl);
 
-    await new Promise(r => setTimeout(r, 50));
-    location.hash = '#/browse';
-    await new Promise(r => setTimeout(r, 50));
+    // Simulate navigation
+    navigate('browse');
 
     expect(cleanupCalled).toBe(true);
     expect(rootEl.textContent).toBe('Browse');
@@ -133,7 +125,7 @@ describe('Router', () => {
       return el;
     });
 
-    location.hash = '#/home';
+    history.replaceState(null, '', '/');
     startRouter(rootEl);
 
     expect(renderCount).toBe(1);
@@ -165,12 +157,10 @@ describe('Router', () => {
     // Set scroll position
     window.scrollTo(0, 100);
 
-    location.hash = '#/home';
+    history.replaceState(null, '', '/');
     startRouter(rootEl);
 
-    await new Promise(r => setTimeout(r, 50));
-    location.hash = '#/browse';
-    await new Promise(r => setTimeout(r, 50));
+    navigate('browse');
 
     expect(window.scrollY).toBe(0);
     document.body.removeChild(rootEl);
@@ -194,11 +184,10 @@ describe('Router', () => {
       return el;
     });
 
-    location.hash = '#/home';
+    history.replaceState(null, '', '/');
     startRouter(rootEl);
 
-    location.hash = '#/browse';
-    await new Promise(r => setTimeout(r, 50));
+    navigate('browse');
 
     // Should still navigate despite cleanup error
     expect(rootEl.textContent).toBe('Browse');
@@ -227,11 +216,10 @@ describe('Router', () => {
       return el;
     });
 
-    location.hash = '#/home';
+    history.replaceState(null, '', '/');
     startRouter(rootEl);
 
-    location.hash = '#/browse';
-    await new Promise(r => setTimeout(r, 50));
+    navigate('browse');
 
     expect(childCleanupCalled).toBe(true);
     document.body.removeChild(rootEl);
@@ -254,11 +242,10 @@ describe('Router', () => {
       return el;
     });
 
-    location.hash = '#/home';
+    history.replaceState(null, '', '/');
     startRouter(rootEl);
 
-    location.hash = '#/browse';
-    await new Promise(r => setTimeout(r, 50));
+    navigate('browse');
 
     // Should still navigate successfully
     expect(rootEl.textContent).toBe('Browse');
@@ -282,8 +269,8 @@ describe('Router', () => {
     };
 
     // Navigate to a valid route name that doesn't exist in routes
-    // Use a route name that matches the \w+ pattern but isn't defined
-    location.hash = '#/undefinedroute';
+    // But we are using Paths now. So /undefined-route
+    history.replaceState(null, '', '/undefined-route');
     startRouter(rootEl, notFound);
 
     // Should render notFound route
