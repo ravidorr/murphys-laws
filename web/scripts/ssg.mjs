@@ -138,10 +138,47 @@ async function main() {
     await fs.mkdir(routeDir, { recursive: true });
     
     // Just copy the main index.html for now (SPA fallback)
-    // Ideally we would inject specific content for these too.
-    // For 'calculator', it's interactive JS anyway, so static content is less critical (though "Loading calculator..." would be good).
     await fs.copyFile(path.join(DIST_DIR, 'index.html'), path.join(routeDir, 'index.html'));
   }
+
+  // 4. Update Home Page (dist/index.html)
+  // Crucial for AdSense and SEO: Replace the empty shell with a list of categories
+  console.log('Updating Home Page (index.html)...');
+  
+  let homeHtml = template;
+  
+  const homeContent = `
+    <div class="container page pt-0" role="main">
+      <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
+        The Ultimate <span class="accent-text">Murphy's Law</span> Archive
+      </h1>
+      <p class="text-center mb-12 text-lg text-muted-fg max-w-2xl mx-auto">
+        "If anything can go wrong, it will." Explore the complete collection of laws, corollaries, and observations about the perversity of the universe.
+      </p>
+      
+      <div class="static-home-categories">
+        <h2 class="text-2xl font-bold mb-6 text-center">Browse by Category</h2>
+        <div class="category-grid">
+          ${categories.map(cat => `
+            <div class="category-card">
+              <h2 class="category-title">
+                <a href="/category/${cat.slug}">${cat.title}</a>
+              </h2>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Inject into main
+  homeHtml = homeHtml.replace(
+    /<main class="flex-1 container page">[\s\S]*?<\/main>/, 
+    `<main class="flex-1 container page">${homeContent}</main>`
+  );
+
+  await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
+  console.log('Updated index.html with static content.');
   
   console.log('SSG Complete!');
 }
