@@ -74,6 +74,11 @@ jobs:
 
             sudo install -m 644 "$STAGING_DIR/backend/ecosystem.config.cjs" "$TARGET_DIR/backend/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
+            
+            # Update Nginx config and reload
+            sudo cp "$TARGET_DIR/nginx.conf" /etc/nginx/sites-available/murphys-laws
+            sudo nginx -t && sudo systemctl reload nginx
+            
             sudo install -m 644 "$STAGING_DIR/backend/package.json" "$TARGET_DIR/backend/package.json"
             sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"
 
