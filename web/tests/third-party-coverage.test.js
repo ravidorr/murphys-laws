@@ -172,42 +172,125 @@ describe('third-party utils coverage', () => {
     delete global.window.adsbygoogle;
   });
 
-  // Additional coverage for utility functions
-  it('toAbsoluteUrl handles missing document', async () => {
-    // We can't easily export toAbsoluteUrl but we can reach it via loadScript
+  // Direct tests for exported utilities
+  it('toAbsoluteUrl handles invalid URLs gracefully', async () => {
+    const { toAbsoluteUrl } = await import('../src/utils/third-party.js');
+    
+    const originalURL = global.URL;
+    global.URL = function() { throw new Error('Invalid URL'); };
+    
+    try {
+      expect(toAbsoluteUrl('invalid')).toBe('invalid');
+    } finally {
+      global.URL = originalURL;
+    }
+  });
+
+  it('toAbsoluteUrl returns src when document is undefined', async () => {
     const originalDoc = global.document;
     delete global.document;
     
     try {
-      const { initAnalyticsBootstrap } = await import('../src/utils/third-party.js');
-      // Indirectly test branch by ensuring it doesn't crash
-      expect(() => initAnalyticsBootstrap()).not.toThrow();
+      const { toAbsoluteUrl } = await import('../src/utils/third-party.js');
+      expect(toAbsoluteUrl('/script.js')).toBe('/script.js');
     } finally {
       global.document = originalDoc;
     }
   });
 
-  it('loadScript handles props with null/undefined values', async () => {
-    // This requires exposing loadScript or using a feature that uses it with props
-    // Currently loadScript is internal. We can't test it directly unless exported.
-    // However, we can test initAnalyticsBootstrap which calls loadScript but with fixed args.
-    // So this branch in loadScript (props loop) might be hard to reach without export.
-    // Skip for now unless we export it.
-  });
-
-  it('handles window undefined in initialization functions', async () => {
-    const originalWin = global.window;
-    delete global.window;
+  it('loadScript returns resolved promise when document is undefined', async () => {
+    const originalDoc = global.document;
+    delete global.document;
     
     try {
-      // Re-import to bypass module-level caching of window check? 
-      // No, module scope runs once. But functions check window inside.
-      const { initAnalyticsBootstrap, ensureAdsense } = await import('../src/utils/third-party.js');
-      
-      expect(initAnalyticsBootstrap()).toBeUndefined();
-      await expect(ensureAdsense()).resolves.toBeUndefined();
+      const { loadScript } = await import('../src/utils/third-party.js');
+      await expect(loadScript('src')).resolves.toBeUndefined();
     } finally {
-      global.window = originalWin;
+      global.document = originalDoc;
     }
+  });
+
+  it('loadScript handles null/undefined props', async () => {
+    const { loadScript } = await import('../src/utils/third-party.js');
+    
+    // Should skip null/undefined props
+    const promise = loadScript('https://example.com/script.js', {
+      'data-test': 'value',
+      'data-null': null,
+      'data-undefined': undefined
+    });
+    
+    // Simulate load
+    const script = document.head.querySelector('script[src="https://example.com/script.js"]');
+    expect(script).toBeTruthy();
+    expect(script.getAttribute('data-test')).toBe('value');
+    expect(script.hasAttribute('data-null')).toBe(false);
+    expect(script.hasAttribute('data-undefined')).toBe(false);
+    
+    script.dispatchEvent(new Event('load'));
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('loadScript returns early if script is already loaded', async () => {
+    const { loadScript } = await import('../src/utils/third-party.js');
+    const src = 'https://example.com/cached.js';
+    
+    // First load
+    const p1 = loadScript(src);
+    document.head.querySelector(`script[src="${src}"]`).dispatchEvent(new Event('load'));
+    await p1;
+    
+    // Second load - should be immediate
+    const p2 = loadScript(src);
+    await expect(p2).resolves.toBeUndefined();
+    
+    // Should have only one script tag
+    expect(document.head.querySelectorAll(`script[src="${src}"]`).length).toBe(1);
+  });
+
+  it('loadScript handles existing DOM script not yet loaded', async () => {
+    const { loadScript } = await import('../src/utils/third-party.js');
+    const src = 'https://example.com/existing.js';
+    
+    // Manually add script to DOM
+    const script = document.createElement('script');
+    script.src = src;
+    document.head.appendChild(script);
+    
+    // Call loadScript
+    const promise = loadScript(src);
+    
+    // Should attach listener to EXISTING script, not create new one
+    expect(document.head.querySelectorAll(`script[src="${src}"]`).length).toBe(1);
+    
+    // Simulate load on existing script
+    script.dispatchEvent(new Event('load'));
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('loadScript handles error event', async () => {
+    const { loadScript } = await import('../src/utils/third-party.js');
+    const src = 'https://example.com/error.js';
+    
+    const promise = loadScript(src);
+    const script = document.head.querySelector(`script[src="${src}"]`);
+    
+    script.dispatchEvent(new Event('error'));
+    
+    await expect(promise).rejects.toThrow('Failed to load script');
+  });
+  
+  it('loadScript handles error on existing DOM script', async () => {
+    const { loadScript } = await import('../src/utils/third-party.js');
+    const src = 'https://example.com/existing-error.js';
+    
+    const script = document.createElement('script');
+    script.src = src;
+    document.head.appendChild(script);
+    
+    const promise = loadScript(src);
+    script.dispatchEvent(new Event('error'));
+    
+    await expect(promise).rejects.toThrow('Failed to load script');
   });
 });

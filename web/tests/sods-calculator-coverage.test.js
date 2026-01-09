@@ -25,6 +25,9 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   });
 
   it('handles MathJax being undefined during formula update', async () => {
+    const originalRAF = window.requestAnimationFrame;
+    window.requestAnimationFrame = (cb) => cb();
+
     delete global.window.MathJax;
     
     const el = Calculator();
@@ -36,6 +39,8 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     
     // Should not throw even if MathJax is missing
     expect(true).toBe(true);
+
+    window.requestAnimationFrame = originalRAF;
   });
 
   it('handles MathJax.typesetPromise being missing', async () => {
@@ -292,5 +297,28 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     expect(getInterp(7, 7, 7, 5, 5)).toMatch(/looming/i);
     // Threshold > 8: Catastrophe
     expect(getInterp(9, 9, 9, 1, 9)).toMatch(/catastrophe/i);
+  });
+
+  it('handles ensureMathJax failure gracefully', async () => {
+    // We need to mock the module BEFORE import
+    vi.mock('../src/utils/mathjax.js', () => ({
+      ensureMathJax: vi.fn(() => Promise.reject(new Error('Load failed')))
+    }));
+
+    // Re-import Calculator to use the mock
+    vi.resetModules();
+    const { Calculator } = await import('../src/views/sods-calculator.js');
+    
+    const el = Calculator();
+    container.appendChild(el);
+    
+    // Wait for promises
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
+    // Formula display should still have content (updateCalculation called)
+    const formulaDisplay = el.querySelector('#formula-display');
+    expect(formulaDisplay.textContent).toBeTruthy();
+    
+    vi.clearAllMocks();
   });
 });
