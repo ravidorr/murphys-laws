@@ -3,6 +3,62 @@
   Section-based layouts including Law of the Day widget, section cards, simplified Sod calculator, and submit form sections
    ========================== */
 
+/* Section base spacing */
+.section {
+  margin-bottom: 4rem;
+}
+
+/* Category Grid (Directory) */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.category-card {
+  padding: 1.25rem;
+  background: color-mix(in oklab, var(--bg) 96%, var(--fg) 4%);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.category-card:hover {
+  background: color-mix(in oklab, var(--bg) 94%, var(--primary) 6%);
+  transform: translateY(-3px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 16px var(--shadow-light);
+}
+
+.category-card .category-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.3;
+}
+
+.category-card .category-count {
+  font-size: 0.8rem;
+  color: var(--muted-fg);
+  margin-top: 0.5rem;
+}
+
+.category-card .category-description {
+  font-size: 0.875rem;
+  color: var(--muted-fg);
+  margin: 0.5rem 0 1rem;
+  line-height: 1.4;
+}
+
 /* Law of the Day widget (scoped) */
 .section-card {
   border: 2px solid var(--border);
