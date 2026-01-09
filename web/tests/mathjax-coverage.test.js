@@ -2,54 +2,59 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ensureMathJax, resetMathJaxStateForTesting } from '../src/utils/mathjax.js';
 
 describe('MathJax utility - Coverage', () => {
+  let originalWindow;
+
   beforeEach(() => {
     resetMathJaxStateForTesting();
-    // Clean window
+    originalWindow = global.window;
     delete global.window.MathJax;
-    const script = document.querySelector('script[src*="mathjax"]');
-    if (script) script.remove();
+    // Mock import if possible, or just rely on failure in test env not crashing
   });
 
   afterEach(() => {
+    global.window = originalWindow;
     resetMathJaxStateForTesting();
     vi.restoreAllMocks();
   });
 
-  it('polls for MathJax and resolves when it appears', async () => {
-    vi.useFakeTimers();
+  it('handles SSR (missing window) gracefully', async () => {
+    delete global.window;
+    const result = await ensureMathJax();
+    expect(result).toBeUndefined();
+  });
+
+  it('returns existing MathJax instance if already loaded', async () => {
+    global.window.MathJax = { typesetPromise: () => Promise.resolve() };
+    const result = await ensureMathJax();
+    expect(result).toBe(global.window.MathJax);
+  });
+
+  it('configures MathJax correctly before load', async () => {
+    // Trigger load
+    const promise = ensureMathJax().catch(() => {}); // Catch import error
     
-    const promise = ensureMathJax();
+    // Wait for async execution to start (microtask)
+    await new Promise(resolve => setTimeout(resolve, 0));
     
-    // Simulate MathJax appearing after some time
-    setTimeout(() => {
-      global.window.MathJax = { typesetPromise: () => Promise.resolve() };
-    }, 100);
-    
-    vi.advanceTimersByTime(150);
-    
-    await promise;
+    // Check config
     expect(global.window.MathJax).toBeDefined();
-    vi.useRealTimers();
+    expect(global.window.MathJax.tex).toBeDefined();
+    expect(global.window.MathJax.options.renderActions.addMathTitles).toBeDefined();
+    
+    await promise; 
   });
 
-  it('resolves after max attempts even if MathJax never appears', async () => {
-    vi.useFakeTimers();
+  it('correctly applies math titles in renderActions callback', async () => {
+    // Manually run the configuration
+    const promise = ensureMathJax().catch(() => {});
     
-    const promise = ensureMathJax();
+    // Wait for config to be applied
+    await new Promise(resolve => setTimeout(resolve, 0));
     
-    // Fast forward past max attempts (50 * 100ms = 5000ms)
-    vi.advanceTimersByTime(6000);
-    
+    // We expect import to fail in test environment, but config should be applied
     await promise;
-    // Should resolve anyway to not block
-    expect(true).toBe(true);
-    vi.useRealTimers();
-  });
-
-  it('correctly applies math titles in renderActions', async () => {
-    // We need to trigger the callback in window.MathJax.options.renderActions.addMathTitles[1]
-    await ensureMathJax();
-    const callback = window.MathJax.options.renderActions.addMathTitles[1];
+    
+    const callback = global.window.MathJax.options.renderActions.addMathTitles[1];
     
     const mockMi = document.createElement('mjx-mi');
     mockMi.textContent = 'U';
@@ -65,8 +70,14 @@ describe('MathJax utility - Coverage', () => {
   });
 
   it('handles empty mi elements in math titles callback', async () => {
-    await ensureMathJax();
-    const callback = window.MathJax.options.renderActions.addMathTitles[1];
+    const promise = ensureMathJax().catch(() => {});
+    
+    // Wait for config
+    await new Promise(resolve => setTimeout(resolve, 0));
+    
+    await promise;
+    
+    const callback = global.window.MathJax.options.renderActions.addMathTitles[1];
     
     const mockMi = document.createElement('mjx-mi');
     mockMi.textContent = ''; // Empty
