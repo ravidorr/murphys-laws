@@ -28,7 +28,7 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
       <div class="category-grid">
         ${categories.map(cat => `
           <div class="category-card" data-nav="category:${cat.slug || cat.id}">
-            <h3 class="category-title" style="font-size: 1.1rem; justify-content: center;">${cat.title}</h3>
+            <h3 class="category-title">${cat.title}</h3>
           </div>
         `).join('')}
       </div>
