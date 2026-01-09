@@ -15,9 +15,48 @@ describe('Router', () => {
     expect(routes['test']).toBe(mockRender);
   });
 
-  it('navigates to a route', () => {
+  it('navigates to a category route', () => {
+    navigate('category', 'computers');
+    expect(location.pathname).toBe('/category/computers');
+  });
+
+  it('navigates to a generic route', () => {
+    navigate('about');
+    expect(location.pathname).toBe('/about');
+  });
+
+  it('navigates to a generic route with param', () => {
+    navigate('search', 'query');
+    expect(location.pathname).toBe('/search/query');
+  });
+
+  it('does not push state when navigating to current path', () => {
     navigate('browse');
-    expect(location.pathname).toBe('/browse');
+    const spy = vi.spyOn(history, 'pushState');
+    navigate('browse');
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('parses category route', () => {
+    history.replaceState(null, '', '/category/computers');
+    const route = currentRoute();
+    expect(route.name).toBe('category');
+    expect(route.param).toBe('computers');
+  });
+
+  it('parses generic route', () => {
+    history.replaceState(null, '', '/about');
+    const route = currentRoute();
+    expect(route.name).toBe('about');
+    expect(route.param).toBeNull();
+  });
+
+  it('parses index.html as home', () => {
+    history.replaceState(null, '', '/index.html');
+    const route = currentRoute();
+    expect(route.name).toBe('home');
+    expect(route.param).toBeNull();
   });
 
   it('navigates to home route by clearing path', () => {

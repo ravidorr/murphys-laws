@@ -52,34 +52,74 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   });
 
   it('maps MathJax Unicode characters to tooltips', async () => {
-    // This is complex to test because it relies on MathJax DOM output
-    // But we can simulate the DOM structure MathJax creates
-    
+    // Mock requestAnimationFrame to run immediately
+    const originalRAF = window.requestAnimationFrame;
+    window.requestAnimationFrame = (cb) => cb();
+
     const el = Calculator();
     container.appendChild(el);
     
-    const formulaDisplay = el.querySelector('#formula-display');
+    // Override MathJax mock to simulate rendering
+    window.MathJax.typesetPromise = vi.fn((elements) => {
+      // Simulate MathJax rendering by injecting DOM structure
+      const display = elements[0];
+      display.innerHTML = ''; // Clear text
+      
+      // Simulate MathJax output for 'P' (Probability) and 'U' (Urgency)
+      const miP = document.createElement('mjx-mi');
+      const cP = document.createElement('mjx-c');
+      cP.className = 'mjx-c1D443'; // Italic P
+      miP.appendChild(cP);
+
+      const miU = document.createElement('mjx-mi');
+      const cU = document.createElement('mjx-c');
+      cU.className = 'mjx-c1D448'; // Italic U
+      miU.appendChild(cU);
+
+      display.appendChild(miP);
+      display.appendChild(miU);
+      
+      return Promise.resolve();
+    });
     
-    // Simulate MathJax output for 'P' (Probability)
-    // mjx-mi -> mjx-c with class mjx-c1D443
-    formulaDisplay.innerHTML = `
-      <mjx-mi><mjx-c class="mjx-c1D443"></mjx-c></mjx-mi>
-      <mjx-mi><mjx-c class="mjx-c1D448"></mjx-c></mjx-mi>
-    `;
-    
-    // Trigger updateCalculation (which calls typesetPromise.then)
+    // Trigger updateCalculation
     const slider = el.querySelector('#urgency');
     slider.dispatchEvent(new Event('input'));
     
     // Wait for microtasks (promise chain)
     await new Promise(resolve => setTimeout(resolve, 0));
     
-    // In the actual code, the then() block runs after typesetPromise resolves.
-    // Our mock resolves immediately.
-    
     // Check if tooltips were added
-    const miElements = formulaDisplay.querySelectorAll('mjx-mi');
-    // Note: The actual code runs inside requestAnimationFrame
+    const formulaDisplay = el.querySelector('#formula-display');
+    const miP = formulaDisplay.querySelector('mjx-mi:first-child');
+    const miU = formulaDisplay.querySelector('mjx-mi:last-child');
+    
+    expect(miP.getAttribute('data-tooltip')).toBe('Probability');
+    expect(miU.getAttribute('data-tooltip')).toBe('Urgency (1-9)');
+
+    window.requestAnimationFrame = originalRAF;
+  });
+
+  it('handles MathJax typesetPromise rejection gracefully', async () => {
+    // Mock requestAnimationFrame
+    const originalRAF = window.requestAnimationFrame;
+    window.requestAnimationFrame = (cb) => cb();
+
+    const el = Calculator();
+    container.appendChild(el);
+    
+    // Mock rejection
+    window.MathJax.typesetPromise = vi.fn(() => Promise.reject(new Error('MathJax error')));
+    
+    const slider = el.querySelector('#urgency');
+    
+    // Should not throw
+    await expect(async () => {
+      slider.dispatchEvent(new Event('input'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }).not.toThrow();
+
+    window.requestAnimationFrame = originalRAF;
   });
 
   it('handles calculation interpretation for risky scores (2-4)', () => {
