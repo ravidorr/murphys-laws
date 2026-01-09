@@ -58,14 +58,14 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
-  it('shows error message on fetch failure', async () => {
+  it('shows graceful degradation on fetch failure', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
-    expect(el.textContent).toMatch(/Ironically, something went wrong/);
-
+    // Should render widgets even if fetch fails
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
   it('navigates using data-nav attribute', async () => {
@@ -168,8 +168,8 @@ describe('Home view', () => {
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
-    expect(el.textContent).toMatch(/Ironically, something went wrong/);
-
+    // Graceful degradation
+    expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
   it('renders with calculator section', async () => {
@@ -248,7 +248,9 @@ describe('Home view', () => {
     await new Promise(r => setTimeout(r, 0));
 
     // Should render the widgets (calculator, submit) even with invalid data
+    // It should NOT render error message now
     expect(el.textContent).toMatch(/Calculator|Submit/i);
+    expect(el.textContent).not.toMatch(/Connection Error/i);
   });
 
   it('handles response where data is missing', async () => {
@@ -312,7 +314,7 @@ describe('renderHome function', () => {
     const el = document.createElement('div');
     const onNavigate = vi.fn();
 
-    renderHome(el, null, onNavigate);
+    renderHome(el, null, [], onNavigate);
 
     // Should render calculator and submit sections without Law of the Day
     expect(el.textContent).toMatch(/Calculator|Submit/i);
@@ -324,12 +326,23 @@ describe('renderHome function', () => {
     const onNavigate = vi.fn();
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 5, downvotes: 1 };
 
-    renderHome(el, lawOfTheDay, onNavigate);
+    renderHome(el, lawOfTheDay, [], onNavigate);
 
     // Should render Law of the Day plus calculator and submit sections
     expect(el.textContent).toMatch(/Law of the Day/);
     expect(el.textContent).toMatch(/Test law/);
     expect(el.textContent).toMatch(/Calculator|Submit/i);
+  });
+
+  it('renders categories when provided', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn();
+    const categories = [{ id: 1, title: 'Computers', slug: 'computers' }];
+
+    renderHome(el, null, categories, onNavigate);
+
+    expect(el.textContent).toMatch(/Browse by Category/);
+    expect(el.textContent).toMatch(/Computers/);
   });
 });
 
