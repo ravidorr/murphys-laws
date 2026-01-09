@@ -4,6 +4,6 @@
 echo ""
 echo "Code pushed to GitHub!"
 echo ""
-echo "Remember to deploy to production:"
-echo "   npm run deploy"
+echo "If you pushed to 'main', deployment to production will start automatically."
+echo "Check progress at: https://github.com/ravidorr/murphys-laws/actions"
 echo ""
