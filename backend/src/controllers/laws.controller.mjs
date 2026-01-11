@@ -70,7 +70,14 @@ export class LawController {
     const title = body.title && typeof body.title === 'string' ? body.title.trim() : null;
     const author = body.author && typeof body.author === 'string' ? body.author.trim() : null;
     const email = body.email && typeof body.email === 'string' ? body.email.trim() : null;
-    const categoryId = body.category_id && typeof body.category_id === 'string' ? parseInt(body.category_id) : null;
+    
+    let categoryId = null;
+    if (body.category_id) {
+      categoryId = parseInt(body.category_id);
+      if (Number.isNaN(categoryId) || categoryId <= 0) {
+        return badRequest(res, 'Invalid category ID', req);
+      }
+    }
 
     // Validate text length
     if (text.length < 10) {
@@ -79,11 +86,6 @@ export class LawController {
 
     if (text.length > 1000) {
       return badRequest(res, 'Law text must be less than 1000 characters', req);
-    }
-
-    // Validate category_id if provided
-    if (categoryId && (!Number.isInteger(categoryId) || categoryId <= 0)) {
-      return badRequest(res, 'Invalid category ID', req);
     }
 
     try {
