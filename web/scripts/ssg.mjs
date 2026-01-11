@@ -184,7 +184,7 @@ async function main() {
       </div>
       <div class="section-footer">
         <span></span>
-        <a href="/browse" class="btn" style="display: inline-flex; text-decoration: none;">
+        <a href="/categories" class="btn" style="display: inline-flex; text-decoration: none;">
           <span class="btn-text">Browse all ${categories.length} Categories</span>
         </a>
       </div>
