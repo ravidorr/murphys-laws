@@ -8,6 +8,7 @@ import { fetchLawOfTheDay, fetchCategories } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { triggerAdSense } from '../utils/ads.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 // Exported for testing
 export function renderHome(el, lawOfTheDay, categories, onNavigate) {
@@ -34,7 +35,7 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
   // Render Categories Grid (Directory) - Limit to top 12 to save space
   if (categories && Array.isArray(categories) && categories.length > 0) {
     const categoriesSection = document.createElement('section');
-    categoriesSection.className = 'section';
+    categoriesSection.className = 'section section-card';
     
     // Sort by law count desc, then take top 12
     const topCategories = [...categories]
@@ -42,23 +43,31 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
       .slice(0, 12);
 
     categoriesSection.innerHTML = `
-      <h2 class="text-2xl font-bold mb-6 text-center">Popular Categories</h2>
-      <div class="category-grid">
-        ${topCategories.map(cat => `
-          <div class="category-card" data-nav="category:${cat.slug || cat.id}">
-            <h3 class="category-title" style="font-size: 1.1rem; justify-content: center;">${cat.title}</h3>
-            <span class="small text-muted-fg">${cat.law_count || 0} laws</span>
-          </div>
-        `).join('')}
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="icon" data-icon="list" aria-hidden="true"></span>
+          Popular Categories
+        </h2>
       </div>
-      <div class="text-center mt-8">
-        <button class="btn outline" data-nav="browse">
-          <span class="btn-text">Browse all ${categories.length} Categories</span>
-          <span class="icon" data-icon="arrowRight" aria-hidden="true"></span>
-        </button>
+      <div class="section-body">
+        <div class="category-grid">
+          ${topCategories.map(cat => `
+            <div class="category-card" data-nav="category:${cat.slug || cat.id}">
+              <h3 class="category-title" style="font-size: 1.1rem; justify-content: center;">${cat.title}</h3>
+              <span class="small text-muted-fg">${cat.law_count || 0} laws</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="text-center mt-8">
+          <button class="btn outline" data-nav="browse">
+            <span class="btn-text">Browse all ${categories.length} Categories</span>
+            <span class="icon" data-icon="arrowForward" aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
     `;
     el.appendChild(categoriesSection);
+    hydrateIcons(categoriesSection);
   }
 }
 
