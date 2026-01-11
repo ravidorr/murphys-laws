@@ -43,6 +43,18 @@ describe('mathjax utility', () => {
       expect(result).toBe(mockMathJax);
     });
 
+    it('returns undefined when window is undefined (SSR)', async () => {
+      const originalWindow = global.window;
+      delete global.window;
+      
+      try {
+        const result = await ensureMathJax();
+        expect(result).toBeUndefined();
+      } finally {
+        global.window = originalWindow;
+      }
+    });
+
     it('returns undefined if MathJax exists but without typesetPromise', async () => {
       window.MathJax = { someOtherProp: true };
       
