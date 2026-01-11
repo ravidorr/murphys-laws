@@ -17,6 +17,7 @@
     "validate:node": "node scripts/validate-node-version.mjs",
     "validate:node-server": "node scripts/validate-node-version.mjs --server",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
