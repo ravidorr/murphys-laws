@@ -44,10 +44,7 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
 
     categoriesSection.innerHTML = `
       <div class="section-header">
-        <h2 class="section-title">
-          <span class="icon" data-icon="list" aria-hidden="true"></span>
-          Popular Categories
-        </h2>
+        <h2 class="section-title">Popular Categories</h2>
       </div>
       <div class="section-body">
         <div class="category-grid">
