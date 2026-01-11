@@ -56,14 +56,13 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
           `).join('')}
                 </div>
               </div>
-              <div class="section-footer">
-                <span></span>
-                <button class="btn" data-nav="browse">
-                  <span class="btn-text">Browse all ${categories.length} Categories</span>
-                  <span class="icon" data-icon="arrowForward" aria-hidden="true"></span>
-                </button>
-              </div>
-            `;
+                    <div class="section-footer">
+                      <span></span>
+                      <button class="btn" data-nav="categories">
+                        <span class="btn-text">Browse all ${categories.length} Categories</span>
+                        <span class="icon" data-icon="arrowForward" aria-hidden="true"></span>
+                      </button>
+                    </div>            `;
     el.appendChild(categoriesSection);
     hydrateIcons(categoriesSection);
   }
