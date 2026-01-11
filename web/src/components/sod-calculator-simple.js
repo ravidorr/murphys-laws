@@ -41,7 +41,9 @@ export function SodCalculatorSimple({ onNavigate }) {
     const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
     const displayScore = Math.min(score, 8.6);
 
-    if (scoreDisplay) scoreDisplay.textContent = displayScore.toFixed(2);
+    if (scoreDisplay) {
+      scoreDisplay.textContent = displayScore.toFixed(2);
+    }
     updateInterpretation(displayScore);
   }
 
@@ -66,7 +68,9 @@ export function SodCalculatorSimple({ onNavigate }) {
       cls = 'calc-dark';
     }
 
-    if (interpretationDisplay) interpretationDisplay.textContent = interpretation;
+    if (interpretationDisplay) {
+      interpretationDisplay.textContent = interpretation;
+    }
 
     const scoreSection = el.querySelector('.sod-simple-score');
     if (scoreSection) {
@@ -76,8 +80,15 @@ export function SodCalculatorSimple({ onNavigate }) {
   }
 
   Object.keys(sliders).forEach((k) => {
-    sliders[k]?.addEventListener('input', () => {
+    if (!sliders[k]) return;
+    
+    // Initial value setup
+    sliders[k].setAttribute('aria-valuenow', sliders[k].value);
+    sliders[k].setAttribute('aria-describedby', `${k}-value`);
+
+    sliders[k].addEventListener('input', () => {
       if (sliderValues[k]) sliderValues[k].textContent = sliders[k].value;
+      sliders[k].setAttribute('aria-valuenow', sliders[k].value);
       calculateScore();
     });
   });
