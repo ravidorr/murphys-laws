@@ -48,8 +48,11 @@ async function main() {
     // Convert to HTML
     const htmlContent = marked.parser(tokens);
 
+    // Count laws (list items)
+    const lawCount = (content.match(/^\s*\*/gm) || []).length;
+
     // Collect category info for the Browse page
-    categories.push({ slug, title });
+    categories.push({ slug, title, lawCount });
 
     // Output directory: dist/category/[slug]/
     const outDir = path.join(DIST_DIR, 'category', slug);
@@ -115,6 +118,7 @@ async function main() {
             <h2 class="category-title">
               <a href="/category/${cat.slug}">${cat.title}</a>
             </h2>
+            <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.lawCount} laws</span>
           </div>
         `).join('')}
       </div>
@@ -147,6 +151,11 @@ async function main() {
   
   let homeHtml = template;
   
+  // Sort by law count and take top 12
+  const topCategories = [...categories]
+    .sort((a, b) => b.lawCount - a.lawCount)
+    .slice(0, 12);
+  
   const homeContent = `
     <div class="container page pt-0" role="main">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
@@ -157,15 +166,21 @@ async function main() {
       </p>
       
       <div class="static-home-categories">
-        <h2 class="text-2xl font-bold mb-6 text-center">Browse by Category</h2>
+        <h2 class="text-2xl font-bold mb-6 text-center">Popular Categories</h2>
         <div class="category-grid">
-          ${categories.map(cat => `
+          ${topCategories.map(cat => `
             <div class="category-card">
               <h2 class="category-title">
                 <a href="/category/${cat.slug}">${cat.title}</a>
               </h2>
+              <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.lawCount} laws</span>
             </div>
           `).join('')}
+        </div>
+        <div class="text-center mt-8">
+          <a href="/browse" class="btn outline" style="display: inline-flex; text-decoration: none;">
+            <span class="btn-text">Browse all ${categories.length} Categories</span>
+          </a>
         </div>
       </div>
     </div>

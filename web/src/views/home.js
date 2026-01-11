@@ -19,23 +19,6 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
     el.appendChild(widget);
   }
 
-  // Render Categories Grid (Directory)
-  if (categories && Array.isArray(categories) && categories.length > 0) {
-    const categoriesSection = document.createElement('section');
-    categoriesSection.className = 'section';
-    categoriesSection.innerHTML = `
-      <h2 class="text-2xl font-bold mb-6 text-center">Browse by Category</h2>
-      <div class="category-grid">
-        ${categories.map(cat => `
-          <div class="category-card" data-nav="category:${cat.slug || cat.id}">
-            <h3 class="category-title">${cat.title}</h3>
-          </div>
-        `).join('')}
-      </div>
-    `;
-    el.appendChild(categoriesSection);
-  }
-
   // Add Sod's Law Calculator widget
   const calcWidget = SodCalculatorSimple({ onNavigate });
   el.appendChild(calcWidget);
@@ -47,6 +30,36 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
   // Add Submit Law section
   const submitWidget = SubmitLawSection({ onNavigate });
   el.appendChild(submitWidget);
+
+  // Render Categories Grid (Directory) - Limit to top 12 to save space
+  if (categories && Array.isArray(categories) && categories.length > 0) {
+    const categoriesSection = document.createElement('section');
+    categoriesSection.className = 'section';
+    
+    // Sort by law count desc, then take top 12
+    const topCategories = [...categories]
+      .sort((a, b) => (b.law_count || 0) - (a.law_count || 0))
+      .slice(0, 12);
+
+    categoriesSection.innerHTML = `
+      <h2 class="text-2xl font-bold mb-6 text-center">Popular Categories</h2>
+      <div class="category-grid">
+        ${topCategories.map(cat => `
+          <div class="category-card" data-nav="category:${cat.slug || cat.id}">
+            <h3 class="category-title" style="font-size: 1.1rem; justify-content: center;">${cat.title}</h3>
+            <span class="small text-muted-fg">${cat.law_count || 0} laws</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="text-center mt-8">
+        <button class="btn outline" data-nav="browse">
+          <span class="btn-text">Browse all ${categories.length} Categories</span>
+          <span class="icon" data-icon="arrowRight" aria-hidden="true"></span>
+        </button>
+      </div>
+    `;
+    el.appendChild(categoriesSection);
+  }
 }
 
 export function Home({ onNavigate }) {

@@ -341,8 +341,59 @@ describe('renderHome function', () => {
 
     renderHome(el, null, categories, onNavigate);
 
-    expect(el.textContent).toMatch(/Browse by Category/);
+    expect(el.textContent).toMatch(/Popular Categories/);
     expect(el.textContent).toMatch(/Computers/);
+  });
+
+  it('navigates to category when category card is clicked', () => {
+    const el = document.createElement('div');
+    let navName, navParam;
+    const onNavigate = (name, param) => { navName = name; navParam = param; };
+    const categories = [{ id: 1, title: 'Computers', slug: 'computers' }];
+
+    // Render with categories
+    const homeEl = Home({ onNavigate });
+    // Manually trigger render since we can't easily mock fetch here without full setup
+    // But we can use renderHome directly to setup DOM, then attach listener logic by creating Home?
+    // Home attaches listener to `el`.
+    // So let's use Home and mock fetch to return categories.
+  });
+});
+
+describe('Home interactions', () => {
+  it('navigates to category when category card is clicked', async () => {
+    const categories = [{ id: 1, title: 'Computers', slug: 'computers' }];
+    const lawOfTheDay = { id: 1, text: 'Law' };
+    
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/law-of-day')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ law: lawOfTheDay, featured_date: '2025' })
+        });
+      }
+      if (url.includes('/categories')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ data: categories })
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    let navName, navParam;
+    const el = Home({ onNavigate: (name, param) => { navName = name; navParam = param; } });
+    
+    await new Promise(r => setTimeout(r, 0)); // Wait for render
+    
+    // Find category card
+    const catCard = el.querySelector('[data-nav="category:computers"]');
+    expect(catCard).toBeTruthy();
+    
+    catCard.click();
+    
+    expect(navName).toBe('category');
+    expect(navParam).toBe('computers');
   });
 });
 
