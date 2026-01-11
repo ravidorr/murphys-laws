@@ -202,11 +202,11 @@ describe('markdown-content.js', () => {
     });
     
     it('handles content without paragraph after h1', () => {
-        vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Title</h1><h2>Section</h2>');
-        const html = getPageContent('about');
-        expect(html).toContain('<header class="content-header">');
-        expect(html).not.toContain('<p class="lead">');
-        vi.restoreAllMocks();
+      vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Title</h1><h2>Section</h2>');
+      const html = getPageContent('about');
+      expect(html).toContain('<header class="content-header">');
+      expect(html).not.toContain('<p class="lead">');
+      vi.restoreAllMocks();
     });
   });
 });
