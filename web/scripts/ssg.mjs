@@ -49,10 +49,10 @@ async function main() {
     const htmlContent = marked.parser(tokens);
 
     // Count laws (list items)
-    const lawCount = (content.match(/^\s*\*/gm) || []).length;
+    const law_count = (content.match(/^\s*\*/gm) || []).length;
 
     // Collect category info for the Browse page
-    categories.push({ slug, title, lawCount });
+    categories.push({ slug, title, law_count });
 
     // Output directory: dist/category/[slug]/
     const outDir = path.join(DIST_DIR, 'category', slug);
@@ -118,7 +118,7 @@ async function main() {
             <h2 class="category-title">
               <a href="/category/${cat.slug}">${cat.title}</a>
             </h2>
-            <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.lawCount} laws</span>
+            <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.law_count} laws</span>
           </div>
         `).join('')}
       </div>
@@ -153,7 +153,7 @@ async function main() {
   
   // Sort by law count and take top 12
   const topCategories = [...categories]
-    .sort((a, b) => b.lawCount - a.lawCount)
+    .sort((a, b) => b.law_count - a.law_count)
     .slice(0, 12);
   
   const homeContent = `
@@ -166,14 +166,14 @@ async function main() {
       </p>
       
       <div class="static-home-categories">
-        <h2 class="text-2xl font-bold mb-6 text-center">Popular Categories</h2>
+        <h2 class="text-2xl font-bold mb-6 text-center"><span class="accent-text">Popular</span> Categories</h2>
         <div class="category-grid">
           ${topCategories.map(cat => `
             <div class="category-card">
               <h2 class="category-title">
                 <a href="/category/${cat.slug}">${cat.title}</a>
               </h2>
-              <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.lawCount} laws</span>
+              <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.law_count} laws</span>
             </div>
           `).join('')}
         </div>
