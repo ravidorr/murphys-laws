@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
+import { generateCategoryDescription } from '../src/utils/content-generator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,11 +76,14 @@ async function main() {
 
     // Inject Content
     // We replace the loading content in <main>
+    const descriptionText = generateCategoryDescription(title, law_count);
+    
     const staticContent = `
       <div class="container page pt-0" role="main">
-        <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
+        <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
           <span class="accent-text">${title.split(' ')[0]}</span> ${title.split(' ').slice(1).join(' ')}
         </h1>
+        <p class="lead text-center mb-8 text-muted-fg max-w-2xl mx-auto">${descriptionText}</p>
         <div class="static-content prose mx-auto">
           ${htmlContent}
         </div>
@@ -195,6 +199,53 @@ async function main() {
 
   await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
   console.log('Updated index.html with static content.');
+
+  // 5. Generate Sitemap
+  console.log('Generating sitemap.xml...');
+  const baseUrl = 'https://murphys-laws.com';
+  const today = new Date().toISOString().split('T')[0];
+
+  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/browse</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+
+  // Add static routes
+  for (const route of staticRoutes) {
+    sitemap += `
+  <url>
+    <loc>${baseUrl}/${route}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>`;
+  }
+
+  // Add category routes
+  for (const cat of categories) {
+    sitemap += `
+  <url>
+    <loc>${baseUrl}/category/${cat.slug}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+  }
+
+  sitemap += '\n</urlset>';
+
+  await fs.writeFile(path.join(DIST_DIR, 'sitemap.xml'), sitemap);
+  console.log('Generated sitemap.xml');
   
   console.log('SSG Complete!');
 }

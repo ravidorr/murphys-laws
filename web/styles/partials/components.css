@@ -70,12 +70,19 @@ button.outline:focus-visible {
   border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
 }
 
-/* Focus ring for accessibility (light mode) */
+/* Focus ring for accessibility */
+:focus-visible {
+  outline: 3px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
+/* Specific button focus */
 .btn:focus-visible,
 button:focus-visible,
-a.btn:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--btn-primary-bg) 75%, black 25%);
-  outline-offset: 2px;
+a.btn:focus-visible,
+.category-card:focus-visible {
+  outline: 3px solid var(--btn-primary-bg);
+  outline-offset: 3px;
 }
 
 input[type='text'],

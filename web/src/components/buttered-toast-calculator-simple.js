@@ -82,8 +82,16 @@ export function ButteredToastCalculatorSimple({ onNavigate }) {
   }
 
   Object.keys(sliders).forEach((k) => {
-    sliders[k]?.addEventListener('input', () => {
+    if (!sliders[k]) return;
+
+    // Initial setup
+    sliders[k].setAttribute('aria-valuenow', sliders[k].value);
+    const descId = k === 'height' ? 'toast-height-simple-value' : 'toast-overhang-simple-value';
+    sliders[k].setAttribute('aria-describedby', descId);
+
+    sliders[k].addEventListener('input', () => {
       updateDisplayValues();
+      sliders[k].setAttribute('aria-valuenow', sliders[k].value);
       calculateLanding();
     });
   });

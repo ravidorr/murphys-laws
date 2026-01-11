@@ -6,22 +6,22 @@
   /* Core colors */
   --bg: #fff;
   --fg: #111827;
-  --muted-fg: #6b7280;
+  --muted-fg: #4b5563; /* Darker grey for better contrast (was #6b7280) */
   --primary: #030213;
   --text-high-contrast: #000; /* For text requiring high contrast (WCAG AA) */
-  --border: rgb(0 0 0 / 10%);
-  --btn-primary-bg: #1173d4;
+  --border: rgb(0 0 0 / 25%); /* Increased opacity for visibility */
+  --btn-primary-bg: #0d5ea1; /* Darker blue for better contrast (was #1173d4) */
   --btn-primary-fg: #fff;
   
   /* Semantic colors - Success */
-  --success: #16a34a;
+  --success: #15803d; /* Darkened for accessibility */
   --success-bg: #dcfce7;
   --success-border: #86efac;
   --success-text: #166534;
   --success-dark: #0b3d22;
 
   /* Semantic colors - Error */
-  --error: #dc2626;
+  --error: #b91c1c; /* Darkened for accessibility */
   --error-bg: #fee2e2;
   --error-border: #fca5a5;
   --error-text: #991b1b;
@@ -40,32 +40,32 @@
   --dark-text: #2b0000;
 
   /* Semantic colors - Important */
-  --important: #dc2626;
+  --important: #b91c1c;
 
   /* UI colors */
   --white: #fff;
   --highlight: #fef08a;
 
   /* Gradient colors */
-  --gradient-blue: #3b82f6;
+  --gradient-blue: #2563eb; /* Darkened */
   --gradient-dark-1: #2d2d2d;
   --gradient-dark-2: #1a1a1a;
   
   /* Shadow colors */
-  --shadow-light: rgb(0 0 0 / 10%);
-  --shadow-medium: rgb(0 0 0 / 15%);
-  --shadow-dark: rgb(0 0 0 / 25%);
-  --shadow-blue: rgb(17 115 212 / 25%);
-  --shadow-blue-dark: rgb(17 115 212 / 35%);
+  --shadow-light: rgb(0 0 0 / 15%);
+  --shadow-medium: rgb(0 0 0 / 20%);
+  --shadow-dark: rgb(0 0 0 / 30%);
+  --shadow-blue: rgb(13 94 161 / 30%);
+  --shadow-blue-dark: rgb(13 94 161 / 40%);
   --shadow-white-inset: rgb(255 255 255 / 10%);
   
   /* Dark mode specific colors */
   --dark-bg-primary: #0b0b11;
   --dark-fg-primary: #e9eaee;
-  --dark-muted-fg: #b3b7c4;
-  --dark-primary: #4f46e5;
+  --dark-muted-fg: #9ca3af; /* Lightened grey for dark mode contrast */
+  --dark-primary: #6366f1; /* Lightened primary for dark mode */
   --dark-text-high-contrast: #fff; /* For text requiring high contrast in dark mode */
-  --dark-border: rgb(255 255 255 / 18%);
+  --dark-border: rgb(255 255 255 / 25%);
   --dark-link: #9ecbff;
   --dark-link-visited: #b8a6ff;
   --dark-link-hover: #cfe5ff;

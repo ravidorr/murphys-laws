@@ -1,0 +1,22 @@
+/**
+ * Generates a rich description for a category based on its title and law count.
+ * Used for SSG and dynamic rendering to provide context.
+ * @param {string} title - Category title
+ * @param {number} lawCount - Number of laws in the category
+ * @returns {string} Generated description
+ */
+export function generateCategoryDescription(title, lawCount) {
+  const templates = [
+    `Explore ${lawCount} laws about ${title}. From specific cases to general principles, this collection covers the inevitable mishaps.`,
+    `Discover why things go wrong in ${title}. A comprehensive archive of ${lawCount} Murphy's Laws and corollaries.`,
+    `The ultimate collection of ${lawCount} laws regarding ${title}. If it can go wrong, it will, and usually at the worst time.`,
+    `Dive into the pessimism of ${title}. Here are ${lawCount} reasons why you should always have a backup plan.`,
+    `Everything you need to know about ${title} and why it fails. A curated list of ${lawCount} observations.`
+  ];
+  
+  // Deterministic selection based on title char code sum to be stable
+  const sum = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = sum % templates.length;
+  
+  return templates[index];
+}
