@@ -154,6 +154,64 @@ describe('LawService', () => {
     expect(result.law.text).toBe('Historical Law');
   });
 
+  it('should filter laws by category slug', async () => {
+    const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+    const categoryId = catInfo.lastInsertRowid;
+
+    const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Law', 'published')").run();
+    db.prepare("INSERT INTO laws (text, status) VALUES ('Other Law', 'published')").run();
+
+    db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, categorySlug: 'tech' });
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].text).toBe('Tech Law');
+  });
+
+  it('should submit law with category', async () => {
+    const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+    const categoryId = catInfo.lastInsertRowid;
+
+    const lawId = await lawService.submitLaw({
+      title: 'Categorized Law',
+      text: 'Text',
+      categoryId
+    });
+
+    const rel = db.prepare('SELECT * FROM law_categories WHERE law_id = ?').get(lawId);
+    expect(rel.category_id).toBe(categoryId);
+  });
+
+  it('should submit law without author', async () => {
+    const lawId = await lawService.submitLaw({
+      text: 'Anon Law'
+    });
+    
+    const law = db.prepare('SELECT * FROM laws WHERE id = ?').get(lawId);
+    expect(law.text).toBe('Anon Law');
+    
+    const attribution = db.prepare('SELECT * FROM attributions WHERE law_id = ?').get(lawId);
+    expect(attribution).toBeUndefined();
+  });
+
+  it('should fallback to recently featured law if no fresh laws available', async () => {
+    // 1. Insert a law
+    const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
+    
+    // 2. Mark it as featured yesterday
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(law1.lastInsertRowid, yesterday);
+    
+    // 3. Try to get law of day (candidates query will fail, fallback should run)
+    const result = await lawService.getLawOfTheDay();
+    expect(result.law.id).toBe(law1.lastInsertRowid);
+  });
+
+  it('should return null if no published laws at all', async () => {
+    const result = await lawService.getLawOfTheDay();
+    expect(result).toBeNull();
+  });
+
   it('should return null for getLaw when law not found', async () => {
     const law = await lawService.getLaw(999);
     expect(law).toBeUndefined();
