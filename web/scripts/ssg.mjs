@@ -177,11 +177,12 @@ async function main() {
             </div>
           `).join('')}
         </div>
-        <div class="text-center mt-8">
-          <a href="/browse" class="btn outline" style="display: inline-flex; text-decoration: none;">
-            <span class="btn-text">Browse all ${categories.length} Categories</span>
-          </a>
-        </div>
+      </div>
+      <div class="section-footer">
+        <span></span>
+        <a href="/browse" class="btn" style="display: inline-flex; text-decoration: none;">
+          <span class="btn-text">Browse all ${categories.length} Categories</span>
+        </a>
       </div>
     </div>
   `;
