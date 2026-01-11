@@ -11,15 +11,16 @@ export function Terms({ onNavigate }) {
   triggerAdSense(el);
 
   el.addEventListener('click', (e) => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
+    const t = e.target;
+    if (!(t instanceof Element)) return;
 
-    const navBtn = target.closest('[data-nav]');
+    const navBtn = t.closest('[data-nav]');
     if (navBtn) {
-      event.preventDefault();
+      e.preventDefault();
       const navTarget = navBtn.getAttribute('data-nav');
       if (navTarget) {
         onNavigate(navTarget);
+        return;
       }
     }
   });
