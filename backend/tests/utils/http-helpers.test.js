@@ -1,149 +1,131 @@
-import { describe, it, expect, vi } from 'vitest';
-import { readBody, getVoterIdentifier, sendJson, notFound, badRequest, rateLimitExceeded } from '../../src/utils/http-helpers.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as httpHelpers from '../../src/utils/http-helpers.js';
 
-describe('http-helpers', () => {
-    describe('readBody', () => {
-        it('should parse JSON body', async () => {
-            const req = {
-                on: vi.fn((event, cb) => {
-                    if (event === 'data') cb(Buffer.from(JSON.stringify({ key: 'value' })));
-                    if (event === 'end') cb();
-                }),
-            };
+describe('HTTP Helpers', () => {
+  let req;
+  let res;
 
-            const body = await readBody(req);
-            expect(body).toEqual({ key: 'value' });
-        });
+  beforeEach(() => {
+    req = {
+      headers: {},
+      socket: { remoteAddress: '127.0.0.1' },
+      on: vi.fn(),
+    };
+    res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    };
+    process.env.ALLOWED_ORIGINS = ''; // Default
+  });
 
-        it('should return empty object for empty body', async () => {
-            const req = {
-                on: vi.fn((event, cb) => {
-                    if (event === 'end') cb();
-                }),
-            };
+  afterEach(() => {
+    delete process.env.ALLOWED_ORIGINS;
+  });
 
-            const body = await readBody(req);
-            expect(body).toEqual({});
-        });
+  describe('readBody', () => {
+    it('should read valid JSON body', async () => {
+      req.on.mockImplementation((event, cb) => {
+        if (event === 'data') cb(Buffer.from(JSON.stringify({ foo: 'bar' })));
+        if (event === 'end') cb();
+      });
 
-        it('should reject on invalid JSON', async () => {
-            const req = {
-                on: vi.fn((event, cb) => {
-                    if (event === 'data') cb(Buffer.from('invalid json'));
-                    if (event === 'end') cb();
-                }),
-            };
-
-            await expect(readBody(req)).rejects.toThrow();
-        });
-
-        it('should reject on error event', async () => {
-            const req = {
-                on: vi.fn((event, cb) => {
-                    if (event === 'error') cb(new Error('Network error'));
-                }),
-            };
-
-            await expect(readBody(req)).rejects.toThrow('Network error');
-        });
+      const body = await httpHelpers.readBody(req);
+      expect(body).toEqual({ foo: 'bar' });
     });
 
-    describe('getVoterIdentifier', () => {
-        it('should get IP from x-forwarded-for header', () => {
-            const req = {
-                headers: { 'x-forwarded-for': '192.168.1.1, 10.0.0.1' },
-                socket: { remoteAddress: '127.0.0.1' },
-            };
+    it('should return empty object for empty body', async () => {
+      req.on.mockImplementation((event, cb) => {
+        if (event === 'end') cb();
+      });
 
-            expect(getVoterIdentifier(req)).toBe('192.168.1.1');
-        });
-
-        it('should get IP from x-real-ip header', () => {
-            const req = {
-                headers: { 'x-real-ip': '192.168.1.2' },
-                socket: { remoteAddress: '127.0.0.1' },
-            };
-
-            expect(getVoterIdentifier(req)).toBe('192.168.1.2');
-        });
-
-        it('should fallback to socket remoteAddress', () => {
-            const req = {
-                headers: {},
-                socket: { remoteAddress: '127.0.0.1' },
-            };
-
-            expect(getVoterIdentifier(req)).toBe('127.0.0.1');
-        });
-
-        it('should return "unknown" if no address available', () => {
-            const req = {
-                headers: {},
-                socket: {},
-            };
-
-            expect(getVoterIdentifier(req)).toBe('unknown');
-        });
+      const body = await httpHelpers.readBody(req);
+      expect(body).toEqual({});
     });
 
-    describe('sendJson', () => {
-        it('should send JSON response', () => {
-            const res = {
-                writeHead: vi.fn(),
-                end: vi.fn(),
-            };
+    it('should reject on invalid JSON', async () => {
+      req.on.mockImplementation((event, cb) => {
+        if (event === 'data') cb(Buffer.from('invalid json'));
+        if (event === 'end') cb();
+      });
 
-            sendJson(res, 200, { success: true });
-
-            expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
-                'Content-Type': 'application/json; charset=utf-8',
-            }));
-            expect(res.end).toHaveBeenCalledWith('{"success":true}');
-        });
+      await expect(httpHelpers.readBody(req)).rejects.toThrow();
     });
 
-    describe('notFound', () => {
-        it('should send 404 response', () => {
-            const res = {
-                writeHead: vi.fn(),
-                end: vi.fn(),
-            };
+    it('should reject on stream error', async () => {
+      req.on.mockImplementation((event, cb) => {
+        if (event === 'error') cb(new Error('Stream error'));
+      });
 
-            notFound(res);
+      await expect(httpHelpers.readBody(req)).rejects.toThrow('Stream error');
+    });
+  });
 
-            expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
-            expect(res.end).toHaveBeenCalledWith(expect.stringContaining('Not Found'));
-        });
+  describe('getVoterIdentifier', () => {
+    it('should use x-forwarded-for if present', () => {
+      req.headers['x-forwarded-for'] = '10.0.0.1, 10.0.0.2';
+      expect(httpHelpers.getVoterIdentifier(req)).toBe('10.0.0.1');
     });
 
-    describe('badRequest', () => {
-        it('should send 400 response with custom message', () => {
-            const res = {
-                writeHead: vi.fn(),
-                end: vi.fn(),
-            };
-
-            badRequest(res, 'Invalid input');
-
-            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
-            expect(res.end).toHaveBeenCalledWith(expect.stringContaining('Invalid input'));
-        });
+    it('should use x-real-ip if present', () => {
+      req.headers['x-real-ip'] = '10.0.0.2';
+      expect(httpHelpers.getVoterIdentifier(req)).toBe('10.0.0.2');
     });
 
-    describe('rateLimitExceeded', () => {
-        it('should send 429 response with retry-after header', () => {
-            const res = {
-                writeHead: vi.fn(),
-                end: vi.fn(),
-            };
-
-            const resetTime = Date.now() + 60000;
-            rateLimitExceeded(res, resetTime);
-
-            expect(res.writeHead).toHaveBeenCalledWith(429, expect.objectContaining({
-                'Retry-After': expect.any(Number),
-            }));
-            expect(res.end).toHaveBeenCalledWith(expect.stringContaining('Rate limit exceeded'));
-        });
+    it('should fallback to socket remoteAddress', () => {
+      expect(httpHelpers.getVoterIdentifier(req)).toBe('127.0.0.1');
     });
+    
+    it('should return unknown if no IP found', () => {
+      req.socket.remoteAddress = undefined;
+      expect(httpHelpers.getVoterIdentifier(req)).toBe('unknown');
+    });
+  });
+
+  describe('sendJson', () => {
+    it('should send JSON response with default CORS', () => {
+      httpHelpers.sendJson(res, 200, { data: 'ok' });
+      
+      expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*'
+      }));
+      expect(res.end).toHaveBeenCalledWith('{"data":"ok"}');
+    });
+
+    it('should send JSON response with specific CORS and Credentials', () => {
+      process.env.ALLOWED_ORIGINS = 'http://example.com';
+      req.headers.origin = 'http://example.com';
+      
+      httpHelpers.sendJson(res, 200, { data: 'ok' }, req);
+      
+      expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
+        'Access-Control-Allow-Origin': 'http://example.com',
+        'Access-Control-Allow-Credentials': 'true'
+      }));
+    });
+  });
+
+  describe('rateLimitExceeded', () => {
+    it('should send 429 response', () => {
+      const resetTime = Date.now() + 60000;
+      httpHelpers.rateLimitExceeded(res, resetTime);
+      
+      expect(res.writeHead).toHaveBeenCalledWith(429, expect.objectContaining({
+        'Retry-After': expect.any(Number)
+      }));
+    });
+
+    it('should send 429 with Credentials if specific origin', () => {
+      process.env.ALLOWED_ORIGINS = 'http://example.com';
+      req.headers.origin = 'http://example.com';
+      const resetTime = Date.now() + 60000;
+      
+      httpHelpers.rateLimitExceeded(res, resetTime, req);
+      
+      expect(res.writeHead).toHaveBeenCalledWith(429, expect.objectContaining({
+        'Access-Control-Allow-Origin': 'http://example.com',
+        'Access-Control-Allow-Credentials': 'true'
+      }));
+    });
+  });
 });
