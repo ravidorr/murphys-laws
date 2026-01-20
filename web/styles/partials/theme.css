@@ -210,4 +210,9 @@
   .skeleton {
     background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
   }
+
+  /* Search highlight - ensure dark text on light yellow background (WCAG 1.4.3) */
+  mark {
+    color: #111827;
+  }
 }

@@ -23,7 +23,7 @@ export function createLawListSection({ accentText, remainderText }) {
 
   el.innerHTML = `
     <div class="card-content">
-      <h4 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h4>
+      <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
     </div>
   `;
 
@@ -47,7 +47,7 @@ export function createLawListSection({ accentText, remainderText }) {
 
     // Use shared law card renderer (eliminates duplicate HTML generation)
     content.innerHTML = `
-      <h4 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h4>
+      <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
       <div class="card-text">
         ${renderLawCards(sliced, { rankOffset })}
       </div>
@@ -65,7 +65,7 @@ export function createLawListSection({ accentText, remainderText }) {
     if (!content) return;
 
     content.innerHTML = `
-      <h4 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h4>
+      <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
     `;
     content.appendChild(createErrorState(message));
   }

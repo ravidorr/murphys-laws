@@ -369,8 +369,12 @@ textarea.form-control,
 }
 
 .custom-tooltip:hover::after,
-.custom-tooltip:hover::before {
-  opacity: 1; /* Shows the tooltip and caret on hover */
+.custom-tooltip:hover::before,
+.custom-tooltip:focus::after,
+.custom-tooltip:focus::before,
+.custom-tooltip:focus-within::after,
+.custom-tooltip:focus-within::before {
+  opacity: 1; /* Shows the tooltip and caret on hover or focus (WCAG 1.4.13) */
   visibility: visible;
 }
 

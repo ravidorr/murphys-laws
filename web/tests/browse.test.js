@@ -266,6 +266,56 @@ describe('Browse view', () => {
     expect(onNavigate).toHaveBeenCalledWith('law', '1');
   });
 
+  it('handles law card keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
+    const onNavigate = vi.fn();
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const lawCard = el.querySelector('.law-card-mini');
+    
+    // Simulate Enter key press on the law card
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    lawCard.dispatchEvent(enterEvent);
+
+    expect(onNavigate).toHaveBeenCalledWith('law', '1');
+  });
+
+  it('handles law card keyboard navigation with Space key (WCAG 2.1.1)', async () => {
+    const onNavigate = vi.fn();
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const lawCard = el.querySelector('.law-card-mini');
+    
+    // Simulate Space key press on the law card
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+    lawCard.dispatchEvent(spaceEvent);
+
+    expect(onNavigate).toHaveBeenCalledWith('law', '1');
+  });
+
+  it('law cards have proper accessibility attributes', async () => {
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const lawCard = el.querySelector('.law-card-mini');
+    
+    // Check accessibility attributes (WCAG 2.1.1, 4.1.2)
+    expect(lawCard.tagName).toBe('ARTICLE');
+    expect(lawCard.getAttribute('tabindex')).toBe('0');
+    expect(lawCard.getAttribute('role')).toBe('article');
+    expect(lawCard.getAttribute('aria-label')).toBeTruthy();
+  });
+
   it('renders search query and laws with search results', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: [{ id: 1, title: 'Murphy\'s Law', text: 'Anything that can go wrong', upvotes: 10, downvotes: 2 }],

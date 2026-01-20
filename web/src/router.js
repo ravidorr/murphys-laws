@@ -103,6 +103,13 @@ export function startRouter(rootEl, notFoundRender = null) {
     }
 
     window.scrollTo(0, 0);
+
+    // Move focus to main content for screen readers (WCAG 2.4.3)
+    const mainContent = newContent.querySelector('main') || newContent.querySelector('[role="main"]');
+    if (mainContent) {
+      mainContent.setAttribute('tabindex', '-1');
+      mainContent.focus({ preventScroll: true });
+    }
   }
   
   renderFn = render;

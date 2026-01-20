@@ -51,8 +51,15 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     const cachedAttributions = getCachedAttributions();
     if (cachedAttributions && cachedAttributions.length > 0) {
       attributions = cachedAttributions;
+      // Filter out null/undefined and handle both string and object formats
+      const validAttributions = attributions.filter(att => att !== null && att !== undefined && att !== '');
       attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-        attributions.map(att => `<option value="${att.name}" ${att.name === selectedAttribution ? 'selected' : ''}>${att.name}</option>`).join('');
+        validAttributions.map(att => {
+          // Handle both string format (from API) and object format (legacy)
+          const name = typeof att === 'string' ? att : att.name;
+          if (!name) return '';
+          return `<option value="${name}" ${name === selectedAttribution ? 'selected' : ''}>${name}</option>`;
+        }).filter(Boolean).join('');
     }
   }
 
@@ -101,8 +108,15 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
     // Update attribution dropdown
     if (attributions.length > 0) {
+      // Filter out null/undefined and handle both string and object formats
+      const validAttributions = attributions.filter(att => att !== null && att !== undefined && att !== '');
       attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-        attributions.map(att => `<option value="${att.name}" ${att.name === selectedAttribution ? 'selected' : ''}>${att.name}</option>`).join('');
+        validAttributions.map(att => {
+          // Handle both string format (from API) and object format (legacy)
+          const name = typeof att === 'string' ? att : att.name;
+          if (!name) return '';
+          return `<option value="${name}" ${name === selectedAttribution ? 'selected' : ''}>${name}</option>`;
+        }).filter(Boolean).join('');
     }
   }
 

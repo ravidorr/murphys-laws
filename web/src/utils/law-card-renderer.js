@@ -55,9 +55,14 @@ export function renderLawCard(law, options = {}) {
     ? `<span class="rank">#${index + rankOffset}</span>`
     : '';
 
-  // Return HTML string
+  // Build accessible label (plain text without HTML)
+  const plainTitle = law.title ? escapeHtml(law.title) : '';
+  const plainText = escapeHtml(law.text || '');
+  const ariaLabel = plainTitle ? `${plainTitle}: ${plainText}` : plainText;
+
+  // Return HTML string with keyboard accessibility (WCAG 2.1.1)
   return `
-    <div class="law-card-mini" data-law-id="${safeId}">
+    <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
       <p class="law-card-text">
         ${rankMarkup}
         ${titleText}
@@ -73,7 +78,7 @@ export function renderLawCard(law, options = {}) {
           <span class="count-num">${down}</span>
         </button>
       </div>
-    </div>
+    </article>
   `;
 }
 

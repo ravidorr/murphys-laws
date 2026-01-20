@@ -320,3 +320,18 @@ footer .footer-nav a:focus-visible {
   color: var(--fg);
   text-decoration: underline;
 }
+
+/* Respect user's motion preferences (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  .brand-badge {
+    animation: none;
+  }
+
+  .brand-badge:hover {
+    animation: none;
+  }
+
+  .nav-dropdown {
+    transition: none;
+  }
+}

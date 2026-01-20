@@ -77,6 +77,7 @@ function layout(node, { hideAds = false } = {}) {
 
   const main = document.createElement('main');
   main.className = 'flex-1';
+  main.id = 'main-content';
   main.appendChild(node);
 
   const footer = Footer({ onNavigate, hideAds });

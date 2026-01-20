@@ -16,6 +16,30 @@ describe('law-card-renderer', () => {
       expect(html).toContain('data-law-id="1"');
     });
 
+    it('renders with keyboard accessibility attributes (WCAG 2.1.1)', () => {
+      const law = { id: 1, title: 'Test Law', text: 'Test text', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).toContain('tabindex="0"');
+      expect(html).toContain('role="article"');
+      expect(html).toContain('aria-label="Test Law: Test text"');
+    });
+
+    it('renders accessible label without title when none provided', () => {
+      const law = { id: 1, text: 'Just text content', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).toContain('aria-label="Just text content"');
+    });
+
+    it('uses article element for semantic structure', () => {
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).toContain('<article class="law-card-mini"');
+      expect(html).toContain('</article>');
+    });
+
     it('renders law without title', () => {
       const law = { id: 1, text: 'Just text', upvotes: 0, downvotes: 0 };
       const html = renderLawCard(law);
