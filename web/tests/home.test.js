@@ -21,7 +21,7 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Law of the Day/);
   });
 
-  it('Law of the Day is not clickable/navigable', async () => {
+  it('Law of the Day is clickable and navigable', async () => {
     const lawOfTheDay = {
       id: 42,
       text: 'Test law',
@@ -39,9 +39,10 @@ describe('Home view', () => {
 
     await new Promise(r => setTimeout(r, 0));
 
-    // Law of the Day should not have data-law-id attribute
+    // Law of the Day should have data-law-id attribute and be clickable
     const block = el.querySelector(`[data-law-id="42"]`);
-    expect(block).toBeNull();
+    expect(block).toBeTruthy();
+    expect(block.classList.contains('lod-link')).toBe(true);
   });
 
   it('shows no Law of the Day when response has no law', async () => {

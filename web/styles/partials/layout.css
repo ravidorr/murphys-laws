@@ -215,6 +215,41 @@ header.sticky {
   color: var(--primary);
 }
 
+/* Desktop Navigation - visible on larger screens */
+.desktop-nav {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (width >= 900px) {
+  .desktop-nav {
+    display: flex;
+  }
+}
+
+.desktop-nav-link {
+  padding: 0.5rem 0.875rem;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.desktop-nav-link:hover,
+.desktop-nav-link:focus-visible {
+  background: color-mix(in oklab, var(--bg) 90%, var(--primary) 10%);
+  color: var(--btn-primary-bg);
+  text-decoration: none;
+}
+
+.desktop-nav-link:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
 .search-form {
   max-width: 28rem;
   margin: 0 1rem;
@@ -319,6 +354,77 @@ footer .footer-nav a:hover,
 footer .footer-nav a:focus-visible {
   color: var(--fg);
   text-decoration: underline;
+}
+
+/* Mobile header improvements */
+@media (width <= 600px) {
+  .brand-subtitle {
+    display: none;
+  }
+
+  .brand-name {
+    font-size: 1.5rem;
+  }
+
+  .brand-badge {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 2rem;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  header.sticky .container {
+    padding: 0.25rem 0.75rem;
+  }
+
+  header.sticky .flex.h-16 {
+    gap: 0.5rem;
+  }
+
+  /* Mobile search toggle */
+  header.sticky form[role="search"] {
+    position: relative;
+  }
+
+  header.sticky form[role="search"] input {
+    width: 120px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  header.sticky form[role="search"] .btn {
+    padding: 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  header.sticky form[role="search"] .btn-text {
+    display: none;
+  }
+}
+
+@media (width <= 480px) {
+  .brand-name {
+    font-size: 1.25rem;
+  }
+
+  header.sticky form[role="search"] input {
+    width: 80px;
+  }
+}
+
+/* Ensure touch targets meet 44px minimum */
+.brand-badge,
+.vote-btn,
+.btn,
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.vote-btn {
+  padding: 0.5rem;
 }
 
 /* Respect user's motion preferences (WCAG 2.3.3) */

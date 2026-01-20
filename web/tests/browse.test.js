@@ -80,6 +80,57 @@ describe('Browse view', () => {
     expect(el.textContent).toMatch(/Parkinson's Law/);
   });
 
+  it('displays result count after loading laws', async () => {
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      const resultCount = el.querySelector('#browse-result-count');
+      expect(resultCount).toBeTruthy();
+      expect(resultCount.textContent).toMatch(/Showing 1-2 of 2 laws/);
+    }, { timeout: 1000 });
+  });
+
+  it('updates result count on pagination', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({
+        id: i + 1,
+        title: `Law ${i + 1}`,
+        text: `Text ${i + 1}`,
+        upvotes: 0,
+        downvotes: 0
+      })),
+      total: 50
+    });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      const resultCount = el.querySelector('#browse-result-count');
+      expect(resultCount.textContent).toMatch(/Showing 1-25 of 50 laws/);
+    }, { timeout: 1000 });
+
+    // Navigate to page 2
+    const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Next');
+    nextBtn.click();
+
+    await vi.waitFor(() => {
+      const resultCount = el.querySelector('#browse-result-count');
+      expect(resultCount.textContent).toMatch(/Showing 26-50 of 50 laws/);
+    }, { timeout: 1000 });
+  });
+
+  it('hides result count when no laws found', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+
+    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate: () => { }, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      const resultCount = el.querySelector('#browse-result-count');
+      expect(resultCount.style.display).toBe('none');
+    }, { timeout: 1000 });
+  });
+
   it('displays empty state when no laws found', async () => {
     fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
 

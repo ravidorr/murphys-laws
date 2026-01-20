@@ -269,6 +269,48 @@
   text-align: left;
 }
 
+/* Clickable Law of the Day link */
+.lod-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.lod-link:hover {
+  background: color-mix(in oklab, var(--bg) 94%, var(--primary) 6%);
+  text-decoration: none;
+}
+
+.lod-link:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
+.lod-link .lod-quote-large {
+  transition: color 0.15s ease;
+}
+
+.lod-link:hover .lod-quote-large {
+  color: var(--btn-primary-bg);
+}
+
+.lod-read-more {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--btn-primary-bg);
+  margin-top: 0.5rem;
+}
+
+.lod-link:hover .lod-read-more {
+  text-decoration: underline;
+}
+
 /* Footer bar inspired by Stitch */
 .section-footer {
   display: flex;
@@ -501,6 +543,69 @@
   font-size: 1rem;
 }
 
+/* Calculator Quick Share Actions */
+.quick-share-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.quick-share-actions .btn {
+  flex: 1;
+  min-width: fit-content;
+}
+
+@media (width <= 600px) {
+  .quick-share-actions {
+    flex-direction: column;
+  }
+
+  .quick-share-actions .btn {
+    width: 100%;
+  }
+}
+
+.share-btn-twitter {
+  background: #1da1f2 !important;
+  border-color: #1da1f2 !important;
+}
+
+.share-btn-twitter:hover {
+  background: #0c85d0 !important;
+}
+
+.share-btn-facebook {
+  background: #4267b2 !important;
+  border-color: #4267b2 !important;
+}
+
+.share-btn-facebook:hover {
+  background: #365899 !important;
+}
+
+.copy-feedback {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  text-align: center;
+  transition: opacity 0.2s ease;
+}
+
+.copy-feedback.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.copy-feedback.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.copy-feedback.hidden {
+  display: none;
+}
+
 /* Submit Law Section */
 .submit-char-counter {
   font-weight: 600;
@@ -560,6 +665,110 @@
   border: 1px solid var(--error-border);
 }
 
+/* Submit Requirements Display */
+.submit-requirements {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: color-mix(in oklab, var(--bg) 96%, var(--muted-fg) 4%);
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted-fg);
+  margin-top: 0.5rem;
+}
+
+.submit-requirements-label {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.submit-requirement {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: color-mix(in oklab, var(--error) 10%, transparent 90%);
+  border-radius: 0.25rem;
+  color: var(--error);
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.submit-requirement::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentcolor;
+  opacity: 0.5;
+}
+
+.submit-requirement.requirement-met {
+  background: color-mix(in oklab, var(--success) 10%, transparent 90%);
+  color: var(--success);
+}
+
+.submit-requirement.requirement-met::before {
+  opacity: 1;
+}
+
+.submit-requirements.all-requirements-met {
+  background: color-mix(in oklab, var(--success) 8%, transparent 92%);
+}
+
+/* 404 Not Found Page */
+.not-found-quote {
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--muted-fg);
+  margin: 1.5rem auto 2rem;
+  max-width: 500px;
+  line-height: 1.6;
+  border-left: 3px solid var(--btn-primary-bg);
+  padding-left: 1rem;
+  text-align: left;
+}
+
+.not-found-search {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.not-found-search-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.not-found-search-form input {
+  flex: 1;
+}
+
+.not-found-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.not-found-categories {
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.not-found-category-links {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.not-found-category-links .btn {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+}
+
 /* Empty State */
 .empty-state {
   display: flex;
@@ -615,6 +824,17 @@
 
 .law-card-mini:hover {
   background: color-mix(in oklab, var(--bg) 94%, var(--fg) 6%);
+}
+
+.law-card-mini:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: -2px;
+  background: color-mix(in oklab, var(--bg) 94%, var(--btn-primary-bg) 6%);
+}
+
+.law-card-mini:hover .law-card-text,
+.law-card-mini:focus-visible .law-card-text {
+  color: var(--btn-primary-bg);
 }
 
 .law-card-text {

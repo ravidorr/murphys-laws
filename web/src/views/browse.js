@@ -68,6 +68,21 @@ export function Browse({ searchQuery, onNavigate }) {
       `;
       hydrateIcons(cardText);
     }
+    
+    // Update result count
+    const resultCountEl = el.querySelector('#browse-result-count');
+    if (resultCountEl) {
+      if (totalLaws > 0) {
+        const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
+        const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
+        resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
+        resultCountEl.style.display = '';
+      } else {
+        resultCountEl.textContent = '';
+        resultCountEl.style.display = 'none';
+      }
+    }
+    
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
   }
 

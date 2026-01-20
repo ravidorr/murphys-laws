@@ -8,7 +8,7 @@ import { showError } from './notification.js';
 import { SocialShare } from './social-share.js';
 import { hydrateIcons } from '../utils/icons.js';
 
-export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
+export function LawOfTheDay({ law, onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
@@ -48,8 +48,11 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
   const bodyEl = el.querySelector('#lod-body');
   if (bodyEl) {
     bodyEl.innerHTML = `
-      <blockquote class="lod-quote-large">${lawDisplay}</blockquote>
-      <p class="lod-attrib">${attribution}</p>
+      <a href="/law/${law.id}" class="lod-link" data-law-id="${law.id}" aria-label="Read full law details">
+        <blockquote class="lod-quote-large">${lawDisplay}</blockquote>
+        <p class="lod-attrib">${attribution}</p>
+        <span class="lod-read-more">Read more</span>
+      </a>
     `;
   }
 
@@ -121,6 +124,28 @@ export function LawOfTheDay({ law, onNavigate: _onNavigate }) {
         downBtn?.classList.toggle('voted', newUserVote === 'down');
       } catch (error) {
         showError(error.message || 'Failed to vote. Please try again.');
+      }
+      return;
+    }
+
+    // Handle law detail navigation
+    const lawLink = t.closest('[data-law-id]');
+    if (lawLink) {
+      e.preventDefault();
+      const lawId = lawLink.getAttribute('data-law-id');
+      if (lawId && onNavigate) {
+        onNavigate('law', lawId);
+      }
+      return;
+    }
+
+    // Handle nav buttons
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn && onNavigate) {
+      e.preventDefault();
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        onNavigate(navTarget);
       }
       return;
     }

@@ -161,34 +161,77 @@ describe('LawOfTheDay component', () => {
 
   });
 
-  it('does not have clickable law card (no data-law-id)', () => {
+  it('has clickable law link with data-law-id', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
-    let navigated = false;
-    const onNavigate = () => {
-      navigated = true;
+
+    const el = mountLaw(law);
+
+    // Law of the Day should have data-law-id attribute on the link
+    const lawLink = el.querySelector('[data-law-id]');
+    expect(lawLink).toBeTruthy();
+    expect(lawLink.getAttribute('data-law-id')).toBe('1');
+  });
+
+  it('navigates to law detail when clicking law link', async () => {
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    let navigatedTo = null;
+    let navigatedParam = null;
+    const onNavigate = (page, param) => {
+      navigatedTo = page;
+      navigatedParam = param;
     };
 
     const el = mountLaw(law, { onNavigate });
 
-    // Law of the Day should not have data-law-id attribute, making it non-clickable
-    const lawBody = el.querySelector('[data-law-id]');
-    expect(lawBody).toBeNull();
-    expect(navigated).toBe(false);
+    const lawLink = el.querySelector('[data-law-id]');
+    lawLink.click();
+
+    await vi.waitFor(() => {
+      expect(navigatedTo).toBe('law');
+      expect(navigatedParam).toBe('1');
+    });
   });
 
-  it('does not navigate when law-id is missing', () => {
+  it('shows "Read more" link text', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const el = mountLaw(law);
+
+    const readMore = el.querySelector('.lod-read-more');
+    expect(readMore).toBeTruthy();
+    expect(readMore.textContent).toBe('Read more');
+  });
+
+  it('does not navigate when law-id is empty', () => {
     const law = { id: '', text: 'Test law', upvotes: 10, downvotes: 2 };
     let navigated = false;
     const onNavigate = () => { navigated = true; };
 
     const el = mountLaw(law, { onNavigate });
 
-    // Manually create an element without law-id
-    const fakeElement = document.createElement('div');
-    el.appendChild(fakeElement);
-    fakeElement.click();
+    // The link with empty law-id should not trigger navigation
+    const lawLink = el.querySelector('[data-law-id]');
+    if (lawLink) {
+      lawLink.click();
+    }
 
     expect(navigated).toBe(false);
+  });
+
+  it('navigates to browse when Browse All Laws button is clicked', async () => {
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    let navigatedTo = null;
+    const onNavigate = (page) => {
+      navigatedTo = page;
+    };
+
+    const el = mountLaw(law, { onNavigate });
+
+    const browseBtn = el.querySelector('[data-nav="browse"]');
+    browseBtn.click();
+
+    await vi.waitFor(() => {
+      expect(navigatedTo).toBe('browse');
+    });
   });
 
   it('handles non-HTMLElement click targets', () => {

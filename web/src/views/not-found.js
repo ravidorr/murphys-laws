@@ -1,9 +1,30 @@
 import templateHtml from '@views/templates/not-found.html?raw';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function NotFound({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page pt-0';
   el.innerHTML = templateHtml;
+  
+  // Hydrate icons
+  hydrateIcons(el);
+
+  // Handle search form
+  const searchForm = el.querySelector('#not-found-search-form');
+  const searchInput = el.querySelector('#not-found-search-input');
+  
+  if (searchForm && searchInput) {
+    searchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = searchInput.value.trim();
+      if (query) {
+        // Navigate to browse with search query
+        onNavigate('browse');
+        // Store query for browse page to pick up
+        sessionStorage.setItem('searchQuery', query);
+      }
+    });
+  }
 
   el.addEventListener('click', (e) => {
     const t = e.target;
@@ -12,8 +33,9 @@ export function NotFound({ onNavigate }) {
     const navBtn = t.closest('[data-nav]');
     if (navBtn) {
       const navTarget = navBtn.getAttribute('data-nav');
+      const navParam = navBtn.getAttribute('data-param');
       if (navTarget) {
-        onNavigate(navTarget);
+        onNavigate(navTarget, navParam || undefined);
       }
     }
   });

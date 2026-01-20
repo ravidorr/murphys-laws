@@ -27,6 +27,9 @@ export function SubmitLawSection() {
   const messageDiv = el.querySelector('.submit-message');
   const charCounter = el.querySelector('.submit-char-counter');
   const categorySelect = el.querySelector('#submit-category');
+  const requirementsDiv = el.querySelector('.submit-requirements');
+  const textRequirement = el.querySelector('[data-requirement="text"]');
+  const termsRequirement = el.querySelector('[data-requirement="terms"]');
   let categoriesLoaded = false;
 
   // Populate dropdown with cached categories
@@ -101,7 +104,24 @@ export function SubmitLawSection() {
       }
     }
 
-    // Validate text length
+    // Update requirements display
+    const textValid = trimmedLength >= 10;
+    const termsValid = termsChecked;
+    
+    if (textRequirement) {
+      textRequirement.classList.toggle('requirement-met', textValid);
+    }
+    if (termsRequirement) {
+      termsRequirement.classList.toggle('requirement-met', termsValid);
+    }
+    
+    // Show/hide requirements based on validity
+    if (requirementsDiv) {
+      const allValid = textValid && termsValid;
+      requirementsDiv.classList.toggle('all-requirements-met', allValid);
+    }
+
+    // Validate text length - show inline error
     if (trimmedLength > 0 && trimmedLength < 10) {
       showMessage('Law text must be at least 10 characters', true);
       if (submitBtn) submitBtn.disabled = true;
@@ -114,7 +134,7 @@ export function SubmitLawSection() {
     }
 
     // Enable button only if text is valid AND terms are checked
-    const isValid = trimmedLength >= 10 && termsChecked;
+    const isValid = textValid && termsValid;
     if (submitBtn) {
       submitBtn.disabled = !isValid;
     }
