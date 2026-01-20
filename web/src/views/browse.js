@@ -15,6 +15,7 @@ import { TopVoted } from '../components/top-voted.js';
 import { Trending } from '../components/trending.js';
 import { RecentlyAdded } from '../components/recently-added.js';
 import { triggerAdSense } from '../utils/ads.js';
+import { showSuccess } from '../components/notification.js';
 
 export function Browse({ searchQuery, onNavigate }) {
   const el = document.createElement('div');
@@ -24,6 +25,8 @@ export function Browse({ searchQuery, onNavigate }) {
   let totalLaws = 0;
   let laws = [];
   let currentFilters = { q: searchQuery || '' };
+  let currentSort = 'score';
+  let currentOrder = 'desc';
 
   // Render law cards
   function renderLaws(laws, query) {
@@ -107,8 +110,8 @@ export function Browse({ searchQuery, onNavigate }) {
       const data = await fetchLaws({
         limit: LAWS_PER_PAGE,
         offset,
-        sort: 'score',
-        order: 'desc',
+        sort: currentSort,
+        order: currentOrder,
         ...currentFilters
       });
 
@@ -140,6 +143,32 @@ export function Browse({ searchQuery, onNavigate }) {
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+
+    // Handle share link button clicks
+    const shareBtn = t.closest('[data-share-law]');
+    if (shareBtn) {
+      e.stopPropagation();
+      const lawId = shareBtn.getAttribute('data-share-law');
+      if (lawId) {
+        const lawUrl = `${window.location.origin}/law/${lawId}`;
+        try {
+          await navigator.clipboard.writeText(lawUrl);
+          showSuccess('Link copied to clipboard!');
+        } catch {
+          // Fallback: select and copy
+          const textArea = document.createElement('textarea');
+          textArea.value = lawUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showSuccess('Link copied to clipboard!');
+        }
+      }
+      return;
+    }
 
     // Handle navigation buttons (data-nav)
     const navBtn = t.closest('[data-nav]');
@@ -230,6 +259,18 @@ export function Browse({ searchQuery, onNavigate }) {
 
   // Set initial widget visibility
   updateWidgetsVisibility();
+
+  // Add sort select handler
+  const sortSelect = el.querySelector('#sort-select');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      const value = e.target.value;
+      const [sort, order] = value.split('-');
+      currentSort = sort;
+      currentOrder = order;
+      loadPage(1); // Reset to page 1 when sort changes
+    });
+  }
 
   loadPage(1);
 

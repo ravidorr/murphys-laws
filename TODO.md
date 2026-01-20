@@ -10,6 +10,7 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Search Autocomplete/Suggestions:** Add debounced search suggestions as the user types in the header search field. Requires a new backend endpoint (`/api/v1/laws/suggestions`) to return top matching laws. Include keyboard navigation (arrow keys, Enter) for the dropdown.
 - [ ] **Related Laws Section on Law Detail Page:** Show 3-5 related laws from the same category on the law detail page. Requires adding a `getRelatedLaws(lawId, categoryId)` method to `backend/src/services/laws.service.mjs` and a new API endpoint.
 - [ ] **Category Descriptions:** Add descriptions to category pages. Requires database migration to add `description` column to categories table, then populate descriptions for all 55 categories. (See also: Content-Rich Category Pages below)
+- [ ] **Site Statistics API Endpoint:** Create `/api/v1/stats` endpoint to expose aggregate statistics (total laws count, category count, total votes). This would enable displaying live stats on the About page (e.g., "Browse over X laws across Y categories").
 
 ## Content Strategy (Future Enhancements)
 - [ ] **Content-Rich Category Pages:** Enhance category landing pages with more descriptive text, unique images, and curated content beyond just a list of laws. This might require adding 'long_description' to the `categories` table.

@@ -1,5 +1,5 @@
 import templateHtml from '@views/templates/law-detail.html?raw';
-import { fetchLaw } from '../utils/api.js';
+import { fetchLaw, fetchLaws } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
@@ -8,6 +8,9 @@ import { SocialShare } from '../components/social-share.js';
 import { updateSocialMetaTags } from '../utils/dom.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { triggerAdSense } from '../utils/ads.js';
+import { showSuccess } from '../components/notification.js';
+import { renderLawCards } from '../utils/law-card-renderer.js';
+import { addVotingListeners } from '../utils/voting.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -185,6 +188,44 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         triggerAdSense(lawCardContainer);
       }
     }
+
+    // Fetch and render related laws
+    if (law.category_id) {
+      fetchRelatedLaws(law.id, law.category_id);
+    }
+  }
+
+  // Fetch related laws from the same category
+  async function fetchRelatedLaws(currentLawId, categoryId) {
+    const relatedSection = el.querySelector('[data-related-laws]');
+    const relatedList = el.querySelector('[data-related-laws-list]');
+    
+    if (!relatedSection || !relatedList) return;
+
+    try {
+      const data = await fetchLaws({
+        category_id: categoryId,
+        limit: 6, // Fetch 6 to have buffer after excluding current
+        sort: 'score',
+        order: 'desc'
+      });
+
+      if (data && Array.isArray(data.data)) {
+        // Filter out current law and limit to 5
+        const relatedLaws = data.data
+          .filter(law => String(law.id) !== String(currentLawId))
+          .slice(0, 5);
+
+        if (relatedLaws.length > 0) {
+          relatedList.innerHTML = renderLawCards(relatedLaws);
+          hydrateIcons(relatedList);
+          addVotingListeners(relatedList);
+          relatedSection.removeAttribute('hidden');
+        }
+      }
+    } catch {
+      // Silently fail - related laws are not critical
+    }
   }
 
   showLoading();
@@ -207,6 +248,65 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+
+    // Handle copy text action
+    const copyBtn = t.closest('[data-action="copy-text"]');
+    if (copyBtn) {
+      e.stopPropagation();
+      const lawTextEl = el.querySelector('[data-law-text]');
+      const textToCopy = lawTextEl?.textContent || '';
+      if (textToCopy) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          showSuccess('Law text copied to clipboard!');
+        } catch {
+          // Fallback: select and copy
+          const textArea = document.createElement('textarea');
+          textArea.value = textToCopy;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showSuccess('Law text copied to clipboard!');
+        }
+      }
+      return;
+    }
+
+    // Handle share link button clicks on related laws
+    const shareBtn = t.closest('[data-share-law]');
+    if (shareBtn) {
+      e.stopPropagation();
+      const shareLawId = shareBtn.getAttribute('data-share-law');
+      if (shareLawId) {
+        const lawUrl = `${window.location.origin}/law/${shareLawId}`;
+        try {
+          await navigator.clipboard.writeText(lawUrl);
+          showSuccess('Link copied to clipboard!');
+        } catch {
+          // Fallback
+          const textArea = document.createElement('textarea');
+          textArea.value = lawUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showSuccess('Link copied to clipboard!');
+        }
+      }
+      return;
+    }
+
+    // Handle related law card clicks
+    const lawCard = t.closest('.law-card-mini');
+    if (lawCard && lawCard.dataset.lawId) {
+      onNavigate('law', lawCard.dataset.lawId);
+      return;
+    }
 
     const navBtn = t.closest('[data-nav]');
     if (navBtn) {
