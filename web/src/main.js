@@ -3,7 +3,6 @@ import { Header } from './components/header.js';
 import { Footer } from './components/footer.js';
 import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS } from './utils/constants.js';
 import { Home } from './views/home.js';
-import { Categories } from './views/categories.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
 import { CategoryDetail } from './views/category-detail.js';
@@ -126,10 +125,6 @@ const routesMap = {
   home: () => {
     setHomeStructuredData();
     return layout(Home({ onNavigate }));
-  },
-  categories: () => {
-    clearPageStructuredData(); // Clear previous page's structured data
-    return layout(Categories({ onNavigate }), { hideAds: true });
   },
   category: ({ param }) => {
     clearPageStructuredData();
