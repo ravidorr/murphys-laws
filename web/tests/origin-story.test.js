@@ -5,7 +5,8 @@ import * as structuredData from '../src/modules/structured-data.js';
 // Mock dependencies
 vi.mock('../src/modules/structured-data.js');
 vi.mock('../src/utils/constants.js', () => ({
-  SITE_URL: 'https://murphys-laws.com'
+  SITE_URL: 'https://murphys-laws.com',
+  SITE_NAME: "Murphy's Law Archive"
 }));
 vi.mock('../src/utils/ads.js', () => ({
   triggerAdSense: vi.fn()

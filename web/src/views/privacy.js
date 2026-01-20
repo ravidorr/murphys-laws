@@ -1,10 +1,14 @@
 import { getPageContent } from '@utils/markdown-content.js';
 import { triggerAdSense } from '../utils/ads.js';
+import { SITE_NAME } from '@utils/constants.js';
 
 export function Privacy({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
+
+  // Set page title
+  document.title = `Privacy Policy | ${SITE_NAME}`;
 
   el.innerHTML = getPageContent('privacy');
   // Only trigger ads if content meets minimum requirements

@@ -37,6 +37,18 @@ export function highlightSearchTerm(text, query) {
 }
 
 /**
+ * Strips markdown footnote references from text
+ * Removes patterns like [^1], [^note], etc.
+ * @param {string} str - String to clean
+ * @returns {string} String without footnote markers
+ */
+export function stripMarkdownFootnotes(str) {
+  if (typeof str !== 'string') return '';
+  // Remove footnote references like [^1], [^note], [^123]
+  return str.replace(/\[\^[^\]]+\]/g, '').trim();
+}
+
+/**
  * Sanitizes a URL to prevent javascript: protocol attacks
  * @param {string} url - URL to sanitize
  * @returns {string} Safe URL or empty string

@@ -6,6 +6,7 @@ import { showSuccess, showError } from './notification.js';
 import { fetchAPI } from '../utils/api.js';
 import { apiPost } from '../utils/request.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 import {
   getCachedCategories,
   setCachedCategories,
@@ -39,7 +40,7 @@ export function SubmitLawSection() {
       cached.forEach(category => {
         const option = document.createElement('option');
         option.value = category.id;
-        option.textContent = category.title;
+        option.textContent = stripMarkdownFootnotes(category.title);
         categorySelect.appendChild(option);
       });
     }
@@ -62,7 +63,7 @@ export function SubmitLawSection() {
         categories.forEach(category => {
           const option = document.createElement('option');
           option.value = category.id;
-          option.textContent = category.title;
+          option.textContent = stripMarkdownFootnotes(category.title);
           categorySelect.appendChild(option);
         });
       }

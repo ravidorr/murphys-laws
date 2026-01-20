@@ -54,6 +54,50 @@ describe('API utilities', () => {
 
       await expect(fetchLaw(999)).rejects.toThrow('Failed to fetch law: 404');
     });
+
+    it('throws error for zero or negative law ID', async () => {
+      await expect(fetchLaw(0)).rejects.toThrow('Invalid law ID');
+      await expect(fetchLaw(-1)).rejects.toThrow('Invalid law ID');
+    });
+
+    it('falls back when primary fetch fails', async () => {
+      const mockLaw = { id: 1, title: 'Fallback Law', text: 'Fallback text' };
+      
+      // First call fails (primary), second call succeeds (fallback)
+      fetchSpy
+        .mockRejectedValueOnce(new Error('Primary fetch failed'))
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockLaw
+        });
+
+      const result = await fetchLaw(1);
+      expect(result).toEqual(mockLaw);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('falls back when primary returns non-ok status', async () => {
+      const mockLaw = { id: 1, title: 'Fallback Law', text: 'Fallback text' };
+      
+      fetchSpy
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockLaw
+        });
+
+      const result = await fetchLaw(1);
+      expect(result).toEqual(mockLaw);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws when both primary and fallback fail', async () => {
+      fetchSpy
+        .mockRejectedValueOnce(new Error('Primary failed'))
+        .mockResolvedValueOnce({ ok: false, status: 503 });
+
+      await expect(fetchLaw(1)).rejects.toThrow('Failed to fetch law: 503');
+    });
   });
 
   describe('fetchLaws', () => {

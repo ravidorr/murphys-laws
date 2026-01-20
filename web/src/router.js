@@ -53,6 +53,12 @@ export function currentRoute() {
     return { name: 'category', param: catMatch[1] };
   }
 
+  // Match /calculator/sods-law or /calculator/buttered-toast
+  const calcMatch = path.match(/^\/calculator\/([^/]+)/);
+  if (calcMatch) {
+    return { name: 'calculator', param: calcMatch[1] };
+  }
+
   // Generic match for top-level routes like /browse, /about, /submit
   const genericMatch = path.match(/^\/([^/]+)/);
   if (genericMatch) {

@@ -1,7 +1,7 @@
 // Buttered Toast Landing Calculator view - full version with formula display
 
 import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
-import { SOCIAL_IMAGE_TOAST } from '@utils/constants.js';
+import { SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 
 export function ButteredToastCalculator() {
@@ -11,6 +11,9 @@ export function ButteredToastCalculator() {
   el.innerHTML = templateHtml;
 
   if (typeof document !== 'undefined') {
+    // Update page title
+    document.title = `Buttered Toast Landing Calculator | ${SITE_NAME}`;
+    
     const head = document.head;
     const ogImage = head.querySelector('meta[property="og:image"]');
     const twitterImage = head.querySelector('meta[property="twitter:image"]');

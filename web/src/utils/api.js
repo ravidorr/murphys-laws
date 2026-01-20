@@ -46,16 +46,39 @@ export async function fetchAPI(endpoint, params = {}) {
  */
 export async function fetchLaw(lawId) {
   const numericId = Number(lawId);
-  if (!Number.isFinite(numericId)) {
+  if (!Number.isFinite(numericId) || numericId <= 0) {
     throw new Error('Invalid law ID');
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/laws/${numericId}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch law: ${response.status}`);
-  }
+  const endpoint = `/api/v1/laws/${numericId}`;
+  const primaryUrl = `${API_BASE_URL}${endpoint}`;
 
-  return await response.json();
+  try {
+    const response = await fetch(primaryUrl, { headers: DEFAULT_FETCH_HEADERS });
+    if (!response.ok) {
+      throw new Error(`Primary fetch not ok: ${response.status}`);
+    }
+
+    // Check content-type if headers are available (may not be in test mocks)
+    if (response.headers && typeof response.headers.get === 'function') {
+      const ct = response.headers.get('content-type') || '';
+      if (ct && !ct.includes('application/json')) {
+        throw new Error('Primary returned non-JSON');
+      }
+    }
+
+    return await response.json();
+  } catch {
+    // Try fallback URL
+    const fallbackUrl = `${API_FALLBACK_URL}${endpoint}`;
+    const response = await fetch(fallbackUrl, { headers: DEFAULT_FETCH_HEADERS });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch law: ${response.status}`);
+    }
+
+    return await response.json();
+  }
 }
 
 /**

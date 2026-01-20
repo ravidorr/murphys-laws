@@ -140,10 +140,10 @@ describe('ButteredToastCalculatorSimple component', () => {
 
     const el = ButteredToastCalculatorSimple({ onNavigate });
 
-    const navBtn = el.querySelector('[data-nav="toastcalculator"]');
+    const navBtn = el.querySelector('[data-nav="calculator/buttered-toast"]');
     navBtn.click();
 
-    expect(navigated).toBe('toastcalculator');
+    expect(navigated).toBe('calculator/buttered-toast');
   });
 
   it('navigates when clicking button text (child element)', () => {
@@ -156,7 +156,7 @@ describe('ButteredToastCalculatorSimple component', () => {
     const btnText = el.querySelector('.btn-text');
     btnText.click();
 
-    expect(navigated).toBe('toastcalculator');
+    expect(navigated).toBe('calculator/buttered-toast');
   });
 
   it('navigates when clicking button icon (child element)', () => {
@@ -166,10 +166,10 @@ describe('ButteredToastCalculatorSimple component', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate });
 
     // Click on the icon span inside the button
-    const icon = el.querySelector('[data-nav="toastcalculator"] .icon');
+    const icon = el.querySelector('[data-nav="calculator/buttered-toast"] .icon');
     icon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    expect(navigated).toBe('toastcalculator');
+    expect(navigated).toBe('calculator/buttered-toast');
   });
 
   it('applies correct CSS classes for different probability ranges', () => {
@@ -298,7 +298,7 @@ describe('ButteredToastCalculatorSimple component', () => {
   it('has proper aria-label on button', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const button = el.querySelector('[data-nav="toastcalculator"]');
+    const button = el.querySelector('[data-nav="calculator/buttered-toast"]');
     expect(button.getAttribute('aria-label')).toMatch(/View full Buttered Toast Calculator/i);
   });
 

@@ -17,6 +17,7 @@ vi.mock('../src/utils/icons.js', () => ({
 }));
 vi.mock('../src/utils/constants.js', () => ({
   SITE_URL: 'https://murphys-laws.com',
+  SITE_NAME: "Murphy's Law Archive",
   LAWS_PER_PAGE: 10,
   getRandomLoadingMessage: () => 'Loading...'
 }));

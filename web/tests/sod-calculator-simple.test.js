@@ -56,10 +56,10 @@ describe('SodCalculatorSimple component', () => {
     let navigated = null;
     const el = mountCalculator({ onNavigate: (page) => { navigated = page; } });
 
-    const button = el.querySelector('[data-nav="calculator"]');
+    const button = el.querySelector('[data-nav="calculator/sods-law"]');
     button.click();
 
-    expect(navigated).toBe('calculator');
+    expect(navigated).toBe('calculator/sods-law');
   });
 
   it('updates slider labels when inputs change', () => {

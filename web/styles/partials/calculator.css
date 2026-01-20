@@ -171,6 +171,12 @@
   margin-top: 1rem;
 }
 
+/* Hide raw LaTeX before MathJax renders */
+.formula:not(:has(mjx-container)) {
+  color: transparent;
+  min-height: 8rem; /* Prevent layout shift */
+}
+
 /* Bigger typeset for MathJax formula on calculator page */
 .formula {
   margin: 0 0 2rem;

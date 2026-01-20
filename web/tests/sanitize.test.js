@@ -1,6 +1,46 @@
-import { escapeHtml, highlightSearchTerm, sanitizeUrl } from '../src/utils/sanitize.js';
+import { escapeHtml, highlightSearchTerm, sanitizeUrl, stripMarkdownFootnotes } from '../src/utils/sanitize.js';
 
 describe('Sanitization utilities', () => {
+  describe('stripMarkdownFootnotes', () => {
+    it('removes simple numeric footnotes', () => {
+      expect(stripMarkdownFootnotes('Test[^1] text')).toBe('Test text');
+    });
+
+    it('removes multiple footnotes', () => {
+      expect(stripMarkdownFootnotes('First[^1] and second[^2]')).toBe('First and second');
+    });
+
+    it('removes named footnotes', () => {
+      expect(stripMarkdownFootnotes('Citation[^note] here')).toBe('Citation here');
+    });
+
+    it('removes footnotes with alphanumeric names', () => {
+      expect(stripMarkdownFootnotes('Reference[^ref123] text')).toBe('Reference text');
+    });
+
+    it('handles consecutive footnotes', () => {
+      expect(stripMarkdownFootnotes('Text[^1][^2][^3]')).toBe('Text');
+    });
+
+    it('returns empty string for non-string input', () => {
+      expect(stripMarkdownFootnotes(null)).toBe('');
+      expect(stripMarkdownFootnotes(undefined)).toBe('');
+      expect(stripMarkdownFootnotes(123)).toBe('');
+    });
+
+    it('trims whitespace from result', () => {
+      expect(stripMarkdownFootnotes('  text[^1]  ')).toBe('text');
+    });
+
+    it('returns original string if no footnotes', () => {
+      expect(stripMarkdownFootnotes('No footnotes here')).toBe('No footnotes here');
+    });
+
+    it('handles empty string', () => {
+      expect(stripMarkdownFootnotes('')).toBe('');
+    });
+  });
+
   describe('escapeHtml', () => {
     it('escapes HTML special characters', () => {
       const result = escapeHtml('<script>alert("xss")</script>');
