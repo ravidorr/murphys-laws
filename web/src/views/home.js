@@ -32,39 +32,20 @@ export function renderHome(el, lawOfTheDay, categories, onNavigate) {
   const submitWidget = SubmitLawSection({ onNavigate });
   el.appendChild(submitWidget);
 
-  // Render Categories Grid (Directory) - Limit to top 12 to save space
+  // Add Browse All Categories button
   if (categories && Array.isArray(categories) && categories.length > 0) {
-    const categoriesSection = document.createElement('section');
-    categoriesSection.className = 'section section-card';
-    
-    // Sort by law count desc, then take top 12
-    const topCategories = [...categories]
-      .sort((a, b) => (b.law_count || 0) - (a.law_count || 0))
-      .slice(0, 12);
-
-    categoriesSection.innerHTML = `
-      <div class="section-header">
-        <h2 class="section-title"><span class="accent-text">Popular</span> Categories</h2>
+    const browseSection = document.createElement('section');
+    browseSection.className = 'section section-card';
+    browseSection.innerHTML = `
+      <div class="section-footer" style="justify-content: center;">
+        <button class="btn" data-nav="categories">
+          <span class="btn-text">Browse all ${categories.length} Categories</span>
+          <span class="icon" data-icon="arrowForward" aria-hidden="true"></span>
+        </button>
       </div>
-      <div class="section-body">
-        <div class="category-grid">
-          ${topCategories.map(cat => `
-            <div class="category-card" data-nav="category:${cat.slug || cat.id}">
-              <h3 class="category-title" style="font-size: 1.1rem; justify-content: center;">${cat.title}</h3>
-              <span class="small text-muted-fg">${cat.law_count || 0} laws</span>
-            </div>
-          `).join('')}
-                </div>
-              </div>
-                    <div class="section-footer">
-                      <span></span>
-                      <button class="btn" data-nav="categories">
-                        <span class="btn-text">Browse all ${categories.length} Categories</span>
-                        <span class="icon" data-icon="arrowForward" aria-hidden="true"></span>
-                      </button>
-                    </div>            `;
-    el.appendChild(categoriesSection);
-    hydrateIcons(categoriesSection);
+    `;
+    el.appendChild(browseSection);
+    hydrateIcons(browseSection);
   }
 }
 

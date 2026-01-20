@@ -25,6 +25,20 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   let categoryTitle = 'Category'; // Default title
   let _currentFilters = { category_id: categoryId };
 
+  // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
+  function formatPageTitle(title) {
+    // If title already ends with "Laws", just use it as-is
+    if (title.endsWith('Laws') || title.endsWith('laws')) {
+      const words = title.split(' ');
+      if (words.length > 1) {
+        return `<span class="accent-text">${words[0]}</span> ${words.slice(1).join(' ')}`;
+      }
+      return `<span class="accent-text">${title}</span>`;
+    }
+    // Otherwise, add "'s Laws"
+    return `<span class="accent-text">${title}'s</span> Laws`;
+  }
+
   // Render law cards
   function renderLaws(laws) {
     if (!laws || laws.length === 0) {
@@ -50,7 +64,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
 
     const titleEl = el.querySelector('#category-detail-title');
     if (titleEl) {
-      titleEl.innerHTML = `<span class="accent-text">${categoryTitle}'s</span> Laws`;
+      titleEl.innerHTML = formatPageTitle(categoryTitle);
     }
 
     // Replace static loading message with random one
@@ -149,7 +163,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         categoryTitle = category.title;
         const titleEl = el.querySelector('#category-detail-title');
         if (titleEl) {
-          titleEl.innerHTML = `<span class="accent-text">${categoryTitle}'s</span> Laws`;
+          titleEl.innerHTML = formatPageTitle(categoryTitle);
         }
       }
     } catch (error) {
