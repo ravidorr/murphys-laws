@@ -137,7 +137,7 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate: () => { }, _onVote: () => { } });
 
     await vi.waitFor(() => {
-      expect(el.textContent).toMatch(/No laws found/);
+      expect(el.textContent).toMatch(/Murphy spared these results/);
     }, { timeout: 1000 });
   });
 
@@ -148,13 +148,13 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => { } });
 
     await vi.waitFor(() => {
-      expect(el.textContent).toMatch(/No laws found/);
+      expect(el.textContent).toMatch(/Murphy spared these results/);
     }, { timeout: 1000 });
 
     // Check that submit button exists
     const submitBtn = el.querySelector('[data-nav="submit"]');
     expect(submitBtn).toBeTruthy();
-    expect(submitBtn.textContent).toMatch(/Submit a Murphy's Law/);
+    expect(submitBtn.textContent).toMatch(/Submit a Law/);
 
     // Click the submit button
     submitBtn.click();
@@ -170,7 +170,7 @@ describe('Browse view', () => {
     const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => { } });
 
     await vi.waitFor(() => {
-      expect(el.textContent).toMatch(/No laws found/);
+      expect(el.textContent).toMatch(/Murphy spared these results/);
     }, { timeout: 1000 });
 
     // Find the icon inside the submit button

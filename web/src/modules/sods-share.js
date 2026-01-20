@@ -153,15 +153,15 @@ export function initShareCalculation({ root, getCalculationState }) {
     if (!senderEmail) {
       errors.push('Please enter your email address.');
     } else if (!EMAIL_REGEX.test(senderEmail)) {
-      errors.push('Please enter a valid email address for sender.');
+      errors.push('Please enter a valid email address.');
     }
 
     if (!recipientName) {
-      errors.push('Please enter recipient name.');
+      errors.push("Please enter the recipient's name.");
     }
 
     if (!recipientEmail) {
-      errors.push('Please enter recipient email address.');
+      errors.push("Please enter the recipient's email address.");
     } else if (!EMAIL_REGEX.test(recipientEmail)) {
       errors.push('Please enter a valid recipient email address.');
     }
@@ -202,15 +202,15 @@ export function initShareCalculation({ root, getCalculationState }) {
     if (!senderEmail) {
       errors.push('Please enter your email address.');
     } else if (!EMAIL_REGEX.test(senderEmail)) {
-      errors.push('Please enter a valid email address for sender.');
+      errors.push('Please enter a valid email address.');
     }
 
     if (!recipientName) {
-      errors.push('Please enter recipient name.');
+      errors.push("Please enter the recipient's name.");
     }
 
     if (!recipientEmail) {
-      errors.push('Please enter recipient email address.');
+      errors.push("Please enter the recipient's email address.");
     } else if (!EMAIL_REGEX.test(recipientEmail)) {
       errors.push('Please enter a valid recipient email address.');
     }

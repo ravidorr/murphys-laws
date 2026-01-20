@@ -7,25 +7,25 @@
 <form class="section-body submit-form form">
   <div class="form-group">
     <label for="submit-title" class="form-label">Law Title</label>
-    <input id="submit-title" type="text" placeholder="Enter law title" class="form-control">
+    <input id="submit-title" type="text" placeholder="Give your law a name (optional)" class="form-control">
   </div>
   <div class="form-group">
     <label for="submit-text" class="form-label">Law Text <span class="required custom-tooltip" data-title="required">*</span></label>
-    <textarea id="submit-text" placeholder="Enter the law text" class="form-control" rows="3" maxlength="1000"></textarea>
+    <textarea id="submit-text" placeholder="What's your Murphy's Law observation?" class="form-control" rows="3" maxlength="1000"></textarea>
     <div class="form-helper">
-      <span class="submit-helper-message">Minimum 10 characters, maximum 1000</span>
+      <span class="submit-helper-message">10-1000 characters</span>
       <span class="submit-char-counter" aria-live="polite">0 / 1000</span>
     </div>
   </div>
   <div class="form-group">
     <label for="submit-category" class="form-label">Category</label>
     <select id="submit-category" class="form-control">
-      <option value="">Select a category...</option>
+      <option value="">Choose a category (optional)</option>
     </select>
   </div>
   <div class="form-group">
-    <label for="submit-author" class="form-label">Name</label>
-    <input id="submit-author" type="text" placeholder="Name" class="form-control">
+    <label for="submit-author" class="form-label">Your Name (optional)</label>
+    <input id="submit-author" type="text" placeholder="How should we credit you?" class="form-control">
   </div>
   <div class="form-group">
     <label for="submit-email" class="form-label">Email address</label>
@@ -45,9 +45,9 @@
   </div>
   <div class="submit-message" role="alert" aria-live="polite"></div>
   <div class="submit-requirements" aria-live="polite">
-    <span class="submit-requirements-label">To submit:</span>
-    <span class="submit-requirement" data-requirement="text">Enter law text (10+ characters)</span>
-    <span class="submit-requirement" data-requirement="terms">Accept the terms</span>
+    <span class="submit-requirements-label">Requirements:</span>
+    <span class="submit-requirement" data-requirement="text">Law text (10+ characters)</span>
+    <span class="submit-requirement" data-requirement="terms">Terms accepted</span>
   </div>
   <div class="section-footer">
     <span></span>

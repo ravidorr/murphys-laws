@@ -69,7 +69,7 @@ export function ButteredToastCalculatorSimple({ onNavigate }) {
       interpretation = "It's a toss-up. May the odds be ever in your favor.";
     } else {
       cls = 'calc-ok';
-      interpretation = "Clean floors ahead! It's very likely to land safely.";
+      interpretation = "Looking good! Toast should land safely.";
     }
 
     if (interpretationDisplay) interpretationDisplay.textContent = interpretation;

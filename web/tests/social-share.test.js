@@ -58,8 +58,8 @@ describe('SocialShare component', () => {
       const button = el.querySelector('.share-twitter');
 
       expect(button.className).toBe('share-button share-twitter');
-      expect(button.getAttribute('aria-label')).toBe('Share on Twitter');
-      expect(button.getAttribute('title')).toBe('Share on Twitter');
+      expect(button.getAttribute('aria-label')).toBe('Share on X');
+      expect(button.getAttribute('title')).toBe('Share on X');
       expect(button.getAttribute('rel')).toBe('noopener noreferrer');
       expect(button.getAttribute('target')).toBe('_blank');
       expect(button.href).toContain('twitter.com/intent/tweet');

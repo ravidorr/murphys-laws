@@ -50,7 +50,7 @@ describe('Browse view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     // Check if empty state is shown
-    expect(el.innerHTML).toContain('No laws found');
+    expect(el.innerHTML).toContain('Murphy spared these results');
   });
   
   it('handles fetch errors in loadPage', async () => {

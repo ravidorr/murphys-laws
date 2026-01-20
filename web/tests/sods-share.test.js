@@ -162,7 +162,7 @@ describe('Sod\'s share module', () => {
     previewBtn.click();
 
     expect(shareStatus.classList.contains('error')).toBe(true);
-    expect(shareStatus.textContent).toMatch(/recipient email/i);
+    expect(shareStatus.textContent).toMatch(/recipient's email/i);
   });
 
   it('shows error for invalid sender email format', () => {
@@ -177,7 +177,7 @@ describe('Sod\'s share module', () => {
     previewBtn.click();
 
     expect(shareStatus.classList.contains('error')).toBe(true);
-    expect(shareStatus.textContent).toMatch(/valid.*email.*address.*for.*sender/i);
+    expect(shareStatus.textContent).toMatch(/valid email address/i);
   });
 
   it('validates email format before previewing', () => {

@@ -55,7 +55,7 @@ export const LOADING_MESSAGES = [
   'Loading... (hopefully)',
 
   // Self-aware irony
-  'Loading... (Murphy says this will take longer than expected)',
+  'Loading... (Murphy says this takes longer)',
   'Loading... (of course this is the slow part)',
   'Loading... (ironically, this is taking a while)',
 
@@ -68,8 +68,8 @@ export const LOADING_MESSAGES = [
   'Loading... (what could possibly delay this?)',
   'Loading... (Murphy is watching)',
   'Loading... (this better work)',
-  'Fetching data... (nothing ever goes smoothly)',
-  'Loading... (naturally, this takes forever)'
+  'Loading... (nothing ever goes smoothly)',
+  'Loading... (naturally, this takes a moment)'
 ];
 
 /**

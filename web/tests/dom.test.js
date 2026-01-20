@@ -8,7 +8,7 @@ describe('DOM utilities', () => {
       expect(el.className).toBe('error-state');
       expect(el.getAttribute('role')).toBe('alert');
       expect(el.getAttribute('aria-live')).toBe('assertive');
-      expect(el.textContent).toContain('An error occurred.');
+      expect(el.textContent).toContain('Something went wrong. Please try again.');
     });
 
     it('creates error element with custom message', () => {

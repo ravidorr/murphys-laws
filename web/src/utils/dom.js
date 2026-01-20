@@ -7,7 +7,7 @@ import { hydrateIcons } from './icons.js';
  * @param {string} message - Error message
  * @returns {HTMLElement} Error element
  */
-export function createErrorState(message = 'An error occurred.') {
+export function createErrorState(message = 'Something went wrong. Please try again.') {
   const el = document.createElement('div');
   el.className = 'error-state';
   el.setAttribute('role', 'alert');

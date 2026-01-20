@@ -54,7 +54,7 @@ describe('ButteredToastCalculator view', () => {
 
     const interpretation = el.querySelector('#toast-interpretation').textContent;
 
-    expect(interpretation).toMatch(/Clean floors ahead/i);
+    expect(interpretation).toMatch(/Looking good/i);
     expect(el.querySelector('#toast-result-display').classList.contains('calc-ok')).toBe(true);
 
     document.body.removeChild(el);
