@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.js';
+import { truncateTitle } from '../src/utils/seo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -139,8 +140,9 @@ async function main() {
     // Inject into template
     let pageHtml = template;
     
-    // Update Title
-    const titleTag = `<title>${title} - Murphy's Law Archive</title>`;
+    // Update Title (truncate if needed to stay under 70 chars)
+    const truncatedTitle = truncateTitle(title);
+    const titleTag = `<title>${truncatedTitle} - Murphy's Law Archive</title>`;
     pageHtml = pageHtml.replace(/<title>.*?<\/title>/, titleTag);
     
     // Update Description (first 160 chars of text)

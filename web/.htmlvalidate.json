@@ -3,7 +3,7 @@
         "html-validate:recommended"
     ],
     "rules": {
-        "no-inline-style": "off",
+        "no-inline-style": "error",
         "attr-quotes": [
             "error",
             {
