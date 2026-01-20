@@ -33,3 +33,32 @@ mark {
 .skip-link:focus {
   left: 0;
 }
+
+/* Utility: min-height for CLS prevention */
+.min-h-400 {
+  min-height: 400px;
+}
+
+.min-h-600 {
+  min-height: 600px;
+}
+
+/* Creative Commons license icons */
+.cc-icon {
+  max-width: 1em;
+  max-height: 1em;
+  margin-left: 0.2em;
+}
+
+/* Visually hidden but accessible to screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -99,6 +99,12 @@
     .skip-link:focus {
       left: 0;
     }
+
+    /* Loading state placeholder */
+    .loading-message {
+      margin-top: 2rem;
+      color: var(--muted-fg);
+    }
   </style>
 </head>
 
@@ -115,7 +121,7 @@
         </div>
       </header>
       <main id="main-content" class="flex-1 container page">
-        <p class="text-center" style="margin-top: 2rem; color: var(--muted-fg);">Loading the archive of inevitable
+        <p class="text-center loading-message">Loading the archive of inevitable
           mishaps...</p>
       </main>
     </div>

@@ -12,7 +12,7 @@
   <div class="card">
     <div class="card-content text-center">
       <h2 class="mb-4"><span class="accent-text">Law</span> Not Found</h2>
-      <button class="btn" data-nav="browse">Browse All Laws</button>
+      <button type="button" class="btn" data-nav="browse">Browse All Laws</button>
     </div>
   </div>
 </template>
@@ -20,7 +20,7 @@
 <template data-law-card-template>
   <section class="section section-card mb-12" data-law-card-root>
     <div class="section-header">
-      <h3 class="section-title" data-law-title></h3>
+      <h3 class="section-title" data-law-title><span class="visually-hidden">Loading law title...</span></h3>
     </div>
     <div class="section-body">
       <blockquote class="lod-quote-large" data-law-text></blockquote>
@@ -29,17 +29,17 @@
     </div>
     <div class="section-footer">
       <div class="left">
-        <button class="vote-btn count-up" data-vote="up" data-id="" aria-label="Upvote this law">
+        <button type="button" class="vote-btn count-up" data-vote="up" data-id="" aria-label="Upvote this law">
           <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
           <span class="count-num" data-upvote-count>0</span>
         </button>
-        <button class="vote-btn count-down" data-vote="down" data-id="" aria-label="Downvote this law">
+        <button type="button" class="vote-btn count-down" data-vote="down" data-id="" aria-label="Downvote this law">
           <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
           <span class="count-num" data-downvote-count>0</span>
         </button>
       </div>
       <div class="right">
-        <button class="btn" data-nav="browse">
+        <button type="button" class="btn" data-nav="browse">
           <span class="btn-text">Browse All Laws</span>
           <span class="icon" data-icon="list" aria-hidden="true"></span>
         </button>

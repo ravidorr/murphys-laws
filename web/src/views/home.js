@@ -35,11 +35,9 @@ export function renderHome(el, lawOfTheDay, _categories, onNavigate) {
 
 export function Home({ onNavigate }) {
   const el = document.createElement('div');
-  el.className = 'container page pt-0';
+  el.className = 'container page pt-0 min-h-400';
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
-  // Reserve space to prevent layout shift (min-height matches typical Law of the Day card height)
-  el.style.minHeight = '400px';
 
   el.innerHTML = `
     <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">The Ultimate Murphy's Law Archive</h1>
