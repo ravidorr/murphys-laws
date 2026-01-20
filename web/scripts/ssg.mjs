@@ -193,16 +193,9 @@ async function main() {
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
         Browse <span class="accent-text">Murphy's</span> Laws
       </h1>
-      <div class="category-grid">
-        ${categories.map(cat => `
-          <div class="category-card">
-            <h2 class="category-title">
-              <a href="/category/${cat.slug}">${cat.title}</a>
-            </h2>
-            <span class="small text-muted-fg" style="margin-top: 0.5rem; display: block;">${cat.law_count} laws</span>
-          </div>
-        `).join('')}
-      </div>
+      <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
+        Search and filter through our complete collection of Murphy's Laws.
+      </p>
     </div>
   `;
 
@@ -299,12 +292,6 @@ async function main() {
       <p class="text-center mb-12 text-lg text-muted-fg max-w-2xl mx-auto">
         "If anything can go wrong, it will." Explore the complete collection of laws, corollaries, and observations about the perversity of the universe.
       </p>
-      
-      <div class="text-center mb-8">
-        <a href="/categories" class="btn" style="display: inline-flex; text-decoration: none;">
-          <span class="btn-text">Browse all ${categories.length} Categories</span>
-        </a>
-      </div>
     </div>
   `;
 
