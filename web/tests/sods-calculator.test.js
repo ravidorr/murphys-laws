@@ -23,12 +23,16 @@ describe("Calculator view", () => {
   }
 
   beforeEach(() => {
+    vi.useFakeTimers();
     originalMathJax = window.MathJax;
     originalFetch = global.fetch;
     mountCalculator();
   });
 
   afterEach(() => {
+    // Run all pending timers before switching to real timers to prevent
+    // callbacks from firing after the test environment is torn down
+    vi.runAllTimers();
     el?._teardownShare?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
     el = null;
@@ -147,7 +151,6 @@ describe("Calculator view", () => {
   });
 
   it('resets formula values after timeout', () => {
-    vi.useFakeTimers();
     el.querySelector('#urgency').value = '7';
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
@@ -157,7 +160,6 @@ describe("Calculator view", () => {
   });
 
   it('polls for MathJax when not initially available', async () => {
-    vi.useFakeTimers();
     mountCalculator({ mathJaxStub: null });
 
     vi.advanceTimersByTime(500);
@@ -175,7 +177,6 @@ describe("Calculator view", () => {
   });
 
   it('stops polling for MathJax after timeout', () => {
-    vi.useFakeTimers();
     mountCalculator({ mathJaxStub: null });
 
     vi.advanceTimersByTime(11000);
@@ -184,7 +185,6 @@ describe("Calculator view", () => {
   });
 
   it('shows formula with values when sliders change and hides after timeout', () => {
-    vi.useFakeTimers();
     const urgencySlider = el.querySelector('#urgency');
     urgencySlider.value = '7';
     urgencySlider.dispatchEvent(new Event('input'));
@@ -218,7 +218,6 @@ describe("Calculator view", () => {
   });
 
   it('handles share send success and cancellation', async () => {
-    vi.useFakeTimers();
     el.querySelector('#share-cta').dispatchEvent(new Event('click'));
     el.querySelector('#task-description').value = 'Deploy app';
     el.querySelector('#sender-name').value = 'John Doe';
@@ -242,7 +241,6 @@ describe("Calculator view", () => {
 
     vi.advanceTimersByTime(2100);
     await Promise.resolve();
-    vi.useRealTimers();
     expect(el.querySelector('#share-form-container').classList.contains('hidden')).toBe(true);
   });
 

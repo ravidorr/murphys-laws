@@ -136,6 +136,40 @@ describe('CategoryDetail view', () => {
     expect(onNavigate).toHaveBeenCalledWith('law', '123');
   });
 
+  it('handles law card keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Create a law card element
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    lawCard.dataset.lawId = '123';
+    el.appendChild(lawCard);
+    
+    // Simulate Enter key press
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    lawCard.dispatchEvent(enterEvent);
+
+    expect(onNavigate).toHaveBeenCalledWith('law', '123');
+  });
+
+  it('handles law card keyboard navigation with Space key (WCAG 2.1.1)', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Create a law card element
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    lawCard.dataset.lawId = '123';
+    el.appendChild(lawCard);
+    
+    // Simulate Space key press
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+    lawCard.dispatchEvent(spaceEvent);
+
+    expect(onNavigate).toHaveBeenCalledWith('law', '123');
+  });
+
   it('handles navigation button click', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));

@@ -83,10 +83,27 @@
       color: var(--fg);
       font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
     }
+
+    /* Skip link for keyboard navigation */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
+      padding: 0.75rem 1rem;
+      z-index: 9999;
+      text-decoration: none;
+      border-radius: 0 0 0.5rem 0;
+    }
+    .skip-link:focus {
+      left: 0;
+    }
   </style>
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <div id="app">
     <!-- Static shell for SEO and to prevent "No Content" AdSense flags before JS loads -->
     <div class="min-h-screen flex flex-col">
@@ -97,7 +114,7 @@
           </a>
         </div>
       </header>
-      <main class="flex-1 container page">
+      <main id="main-content" class="flex-1 container page">
         <p class="text-center" style="margin-top: 2rem; color: var(--muted-fg);">Loading the archive of inevitable
           mishaps...</p>
       </main>

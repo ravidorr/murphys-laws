@@ -93,5 +93,39 @@ export function Home({ onNavigate }) {
     }
   });
 
+  // Keyboard navigation for law cards and category cards (WCAG 2.1.1)
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+
+    // Handle law card keyboard activation
+    const lawHost = t.closest('[data-law-id]');
+    if (lawHost) {
+      const id = lawHost.getAttribute('data-law-id');
+      if (id) {
+        e.preventDefault();
+        onNavigate('law', id);
+      }
+      return;
+    }
+
+    // Handle category card keyboard activation
+    const navBtn = t.closest('[data-nav]');
+    if (navBtn) {
+      const navTarget = navBtn.getAttribute('data-nav');
+      if (navTarget) {
+        e.preventDefault();
+        if (navTarget.startsWith('category:')) {
+          const catId = navTarget.split(':')[1];
+          onNavigate('category', catId);
+        } else {
+          onNavigate(navTarget);
+        }
+      }
+    }
+  });
+
   return el;
 }

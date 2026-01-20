@@ -89,6 +89,80 @@ describe('Home view', () => {
     expect(navTarget).toBe('browse');
   });
 
+  it('handles keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    const el = Home({ onNavigate: (target) => { navTarget = target; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a button with data-nav and add it to the element
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', 'browse');
+    el.appendChild(navBtn);
+
+    // Simulate Enter key press
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    navBtn.dispatchEvent(enterEvent);
+
+    expect(navTarget).toBe('browse');
+  });
+
+  it('handles keyboard navigation with Space key (WCAG 2.1.1)', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    const el = Home({ onNavigate: (target) => { navTarget = target; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a button with data-nav and add it to the element
+    const navBtn = document.createElement('button');
+    navBtn.setAttribute('data-nav', 'browse');
+    el.appendChild(navBtn);
+
+    // Simulate Space key press
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+    navBtn.dispatchEvent(spaceEvent);
+
+    expect(navTarget).toBe('browse');
+  });
+
+  it('handles category keyboard navigation', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    let navParam = '';
+    const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a button with category navigation
+    const catBtn = document.createElement('button');
+    catBtn.setAttribute('data-nav', 'category:computers');
+    el.appendChild(catBtn);
+
+    // Simulate Enter key press
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    catBtn.dispatchEvent(enterEvent);
+
+    expect(navTarget).toBe('category');
+    expect(navParam).toBe('computers');
+  });
+
   it('handles law card without id gracefully', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
     global.fetch = vi.fn().mockResolvedValue({

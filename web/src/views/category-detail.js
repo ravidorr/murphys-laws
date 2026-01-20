@@ -242,6 +242,21 @@ export function CategoryDetail({ categoryId, onNavigate }) {
     }
   });
 
+  // Keyboard navigation for law cards (WCAG 2.1.1)
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+
+    // Handle law card keyboard activation
+    const lawCard = t.closest('.law-card-mini');
+    if (lawCard && lawCard.dataset.lawId) {
+      e.preventDefault();
+      onNavigate('law', lawCard.dataset.lawId);
+    }
+  });
+
   // Initial render and load
   render();
   fetchCategoryDetails().then(() => {

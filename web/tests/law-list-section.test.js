@@ -23,6 +23,16 @@ describe('LawListSection component', () => {
     expect(title.textContent).toContain('Voted');
   });
 
+  it('uses h3 for proper heading hierarchy (WCAG 1.3.1)', () => {
+    const { el } = createLawListSection({
+      accentText: 'Top',
+      remainderText: ' Voted'
+    });
+
+    const title = el.querySelector('.card-title');
+    expect(title.tagName).toBe('H3');
+  });
+
   it('shows loading placeholder initially', () => {
     const { el } = createLawListSection({
       accentText: 'Top',

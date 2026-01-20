@@ -205,6 +205,61 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
+  it('sets focus on main content after navigation (WCAG 2.4.3)', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+
+    defineRoute('home', () => {
+      const el = document.createElement('div');
+      const main = document.createElement('main');
+      main.textContent = 'Home content';
+      el.appendChild(main);
+      return el;
+    });
+
+    defineRoute('browse', () => {
+      const el = document.createElement('div');
+      const main = document.createElement('main');
+      main.textContent = 'Browse content';
+      el.appendChild(main);
+      return el;
+    });
+
+    history.replaceState(null, '', '/');
+    startRouter(rootEl);
+
+    // Navigate to browse
+    navigate('browse');
+
+    // Main element should have tabindex for programmatic focus
+    const main = rootEl.querySelector('main');
+    expect(main.getAttribute('tabindex')).toBe('-1');
+
+    document.body.removeChild(rootEl);
+  });
+
+  it('sets focus on element with role="main" if main tag not found', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+
+    defineRoute('home', () => {
+      const el = document.createElement('div');
+      const mainDiv = document.createElement('div');
+      mainDiv.setAttribute('role', 'main');
+      mainDiv.textContent = 'Home content';
+      el.appendChild(mainDiv);
+      return el;
+    });
+
+    history.replaceState(null, '', '/');
+    startRouter(rootEl);
+
+    const mainDiv = rootEl.querySelector('[role="main"]');
+    expect(mainDiv.getAttribute('tabindex')).toBe('-1');
+
+    document.body.removeChild(rootEl);
+  });
+
   it('handles cleanup function errors gracefully', async () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);

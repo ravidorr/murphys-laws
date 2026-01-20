@@ -103,7 +103,7 @@ describe('AdvancedSearch component', () => {
     expect(deferUntilIdleSpy).not.toHaveBeenCalled();
   });
 
-  it('loads attributions successfully', async () => {
+  it('loads attributions successfully (object format)', async () => {
     const attributions = [
       { name: 'Alice' },
       { name: 'Bob' }
@@ -124,6 +124,43 @@ describe('AdvancedSearch component', () => {
     // When there's no cache, loadFilters() is called immediately (not deferred)
     // deferUntilIdle is only called when cache exists
     expect(deferUntilIdleSpy).not.toHaveBeenCalled();
+  });
+
+  it('loads attributions successfully (string format from API)', async () => {
+    // API returns array of strings, not objects
+    const attributions = ['Alice', 'Bob'];
+
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+    });
+  });
+
+  it('filters out null and undefined attributions', async () => {
+    const attributions = ['Alice', null, undefined, '', 'Bob'];
+
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+      // Should not contain empty options
+      const options = Array.from(attributionSelect.querySelectorAll('option'));
+      const emptyOptions = options.filter(o => o.value === 'null' || o.value === 'undefined' || o.textContent === '');
+      expect(emptyOptions.length).toBe(0);
+    });
   });
 
   it('handles filter loading errors gracefully', async () => {
