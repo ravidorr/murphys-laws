@@ -334,15 +334,14 @@ describe('renderHome function', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
-  it('renders categories when provided', () => {
+  it('renders browse all categories button when categories provided', () => {
     const el = document.createElement('div');
     const onNavigate = vi.fn();
     const categories = [{ id: 1, title: 'Computers', slug: 'computers' }];
 
     renderHome(el, null, categories, onNavigate);
 
-    expect(el.textContent).toMatch(/Popular Categories/);
-    expect(el.textContent).toMatch(/Computers/);
+    expect(el.textContent).toMatch(/Browse all 1 Categories/);
   });
 
   it('navigates to category when category card is clicked', () => {
@@ -361,7 +360,7 @@ describe('renderHome function', () => {
 });
 
 describe('Home interactions', () => {
-  it('navigates to category when category card is clicked', async () => {
+  it('navigates to categories when browse all button is clicked', async () => {
     const categories = [{ id: 1, title: 'Computers', slug: 'computers' }];
     const lawOfTheDay = { id: 1, text: 'Law' };
     
@@ -386,14 +385,13 @@ describe('Home interactions', () => {
     
     await new Promise(r => setTimeout(r, 0)); // Wait for render
     
-    // Find category card
-    const catCard = el.querySelector('[data-nav="category:computers"]');
-    expect(catCard).toBeTruthy();
+    // Find browse all categories button
+    const browseBtn = el.querySelector('[data-nav="categories"]');
+    expect(browseBtn).toBeTruthy();
     
-    catCard.click();
+    browseBtn.click();
     
-    expect(navName).toBe('category');
-    expect(navParam).toBe('computers');
+    expect(navName).toBe('categories');
   });
 });
 
