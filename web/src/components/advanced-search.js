@@ -3,6 +3,7 @@
 import templateHtml from '@components/templates/advanced-search.html?raw';
 import { fetchAPI } from '../utils/api.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 import {
   getCachedCategories,
   setCachedCategories,
@@ -44,7 +45,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     if (cachedCategories && cachedCategories.length > 0) {
       categories = cachedCategories;
       categorySelect.innerHTML = '<option value="">All Categories</option>' +
-        categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${cat.title}</option>`).join('');
+        categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${stripMarkdownFootnotes(cat.title)}</option>`).join('');
     }
 
     // Try to use cached attributions first
@@ -98,7 +99,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     // Update category dropdown
     if (categories.length > 0) {
       categorySelect.innerHTML = '<option value="">All Categories</option>' +
-        categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${cat.title}</option>`).join('');
+        categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${stripMarkdownFootnotes(cat.title)}</option>`).join('');
     }
 
     // Fetch attributions

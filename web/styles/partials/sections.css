@@ -379,15 +379,21 @@
 }
 
 .vote-btn.voted .icon {
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
 .vote-btn.voted.count-up {
-  background: color-mix(in oklab, var(--success) 15%, transparent 85%);
+  background: color-mix(in oklab, var(--success) 20%, transparent 80%);
+  color: var(--success);
+  border-color: var(--success);
+  font-weight: 600;
 }
 
 .vote-btn.voted.count-down {
-  background: color-mix(in oklab, var(--error) 15%, transparent 85%);
+  background: color-mix(in oklab, var(--error) 20%, transparent 80%);
+  color: var(--error);
+  border-color: var(--error);
+  font-weight: 600;
 }
 
 .icon {

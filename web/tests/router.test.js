@@ -45,6 +45,20 @@ describe('Router', () => {
     expect(route.param).toBe('computers');
   });
 
+  it('parses calculator route with sods-law param', () => {
+    history.replaceState(null, '', '/calculator/sods-law');
+    const route = currentRoute();
+    expect(route.name).toBe('calculator');
+    expect(route.param).toBe('sods-law');
+  });
+
+  it('parses calculator route with buttered-toast param', () => {
+    history.replaceState(null, '', '/calculator/buttered-toast');
+    const route = currentRoute();
+    expect(route.name).toBe('calculator');
+    expect(route.param).toBe('buttered-toast');
+  });
+
   it('parses generic route', () => {
     history.replaceState(null, '', '/about');
     const route = currentRoute();

@@ -25,7 +25,7 @@ describe('Header component', () => {
 
     expect(el.querySelector('[data-nav="home"]')).toBeTruthy();
     expect(el.querySelector('[data-nav="browse"]')).toBeTruthy();
-    expect(el.querySelector('[data-nav="calculator"]')).toBeTruthy();
+    expect(el.querySelector('[data-nav="calculator/sods-law"]')).toBeTruthy();
     expect(el.querySelector('[data-nav="submit"]')).toBeTruthy();
   });
 
@@ -47,7 +47,7 @@ describe('Header component', () => {
     // Check that expected links exist
     expect(desktopNav.querySelector('[data-nav="browse"]')).toBeTruthy();
     expect(desktopNav.querySelector('[data-nav="submit"]')).toBeTruthy();
-    expect(desktopNav.querySelector('[data-nav="calculator"]')).toBeTruthy();
+    expect(desktopNav.querySelector('[data-nav="calculator/sods-law"]')).toBeTruthy();
   });
 
   it('triggers onNavigate when clicking desktop nav link', () => {

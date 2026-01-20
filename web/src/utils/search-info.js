@@ -1,4 +1,4 @@
-import { escapeHtml } from './sanitize.js';
+import { escapeHtml, stripMarkdownFootnotes } from './sanitize.js';
 import { fetchAPI } from './api.js';
 
 /**
@@ -31,7 +31,7 @@ export async function updateSearchInfo(infoElement, filters) {
     try {
       const category = await fetchAPI(`/api/v1/categories/${filters.category_id}`);
       if (category && category.title) {
-        filterParts.push(`in category <strong>${escapeHtml(category.title)}</strong>`);
+        filterParts.push(`in category <strong>${escapeHtml(stripMarkdownFootnotes(category.title))}</strong>`);
       } else {
         filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
       }

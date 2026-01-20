@@ -2,13 +2,16 @@
 
 import { getPageContent } from '@utils/markdown-content.js';
 import { setJsonLd } from '@modules/structured-data.js';
-import { SITE_URL } from '@utils/constants.js';
+import { SITE_URL, SITE_NAME } from '@utils/constants.js';
 import { triggerAdSense } from '../utils/ads.js';
 
 export function OriginStory({ onNavigate } = {}) {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
+
+  // Set page title
+  document.title = `The True Origin of Murphy's Law | ${SITE_NAME}`;
 
   el.innerHTML = getPageContent('origin-story');
   // Only trigger ads if content meets minimum requirements

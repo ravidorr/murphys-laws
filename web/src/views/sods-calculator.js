@@ -3,7 +3,7 @@
 // Reuses the original formula and interaction, scoped under .calc- classes
 
 import templateHtml from '@views/templates/sods-calculator.html?raw';
-import { SOCIAL_IMAGE_SOD } from '@utils/constants.js';
+import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.js';
 import { initShareCalculation } from '@modules/sods-share.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 import { hydrateIcons } from '@utils/icons.js';
@@ -18,6 +18,9 @@ export function Calculator() {
   hydrateIcons(el);
 
   if (typeof document !== 'undefined') {
+    // Update page title
+    document.title = `Sod's Law Calculator | ${SITE_NAME}`;
+    
     const head = document.head;
     const ogImage = head.querySelector('meta[property="og:image"]');
     const twitterImage = head.querySelector('meta[property="twitter:image"]');

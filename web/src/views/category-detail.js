@@ -9,9 +9,10 @@ import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
 import { renderPagination } from '../utils/pagination.js';
 import { setJsonLd } from '@modules/structured-data.js';
-import { SITE_URL } from '@utils/constants.js';
+import { SITE_URL, SITE_NAME } from '@utils/constants.js';
 import { fetchCategories } from '../utils/api.js'; // To get category title for structured data
 import { triggerAdSense } from '../utils/ads.js';
+import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
   const el = document.createElement('div');
@@ -160,11 +161,13 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       }
 
       if (category) {
-        categoryTitle = category.title;
+        categoryTitle = stripMarkdownFootnotes(category.title);
         const titleEl = el.querySelector('#category-detail-title');
         if (titleEl) {
           titleEl.innerHTML = formatPageTitle(categoryTitle);
         }
+        // Update browser page title
+        document.title = `${categoryTitle} | ${SITE_NAME}`;
       }
     } catch (error) {
       console.error('Failed to fetch category details:', error);

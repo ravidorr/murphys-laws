@@ -33,8 +33,14 @@ const state = {
 };
 
 // Actions
-function onNavigate(page, lawId) {
-  navigate(page, lawId);
+function onNavigate(page, param) {
+  // Handle compound routes like "calculator/sods-law"
+  if (page && page.includes('/') && !param) {
+    const parts = page.split('/');
+    navigate(parts[0], parts[1]);
+  } else {
+    navigate(page, param);
+  }
 }
 function onSearch(filters) {
   state.searchQuery = filters.q || '';
@@ -145,10 +151,17 @@ const routesMap = {
     clearPageStructuredData();
     return layout(container, { hideAds: true });
   },
-  calculator: () => {
+  calculator: ({ param }) => {
+    // Handle /calculator/sods-law and /calculator/buttered-toast
+    if (param === 'buttered-toast') {
+      setToastCalculatorStructuredData();
+      return layout(ButteredToastCalculator(), { hideAds: true });
+    }
+    // Default to Sod's Law Calculator (handles /calculator/sods-law and legacy /calculator)
     setSodCalculatorStructuredData();
     return layout(Calculator(), { hideAds: true });
   },
+  // Keep legacy routes for backward compatibility
   toastcalculator: () => {
     setToastCalculatorStructuredData();
     return layout(ButteredToastCalculator(), { hideAds: true });
