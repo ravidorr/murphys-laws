@@ -274,7 +274,7 @@ describe("Calculator view", () => {
 
     sendBtn.dispatchEvent(new Event('click'));
 
-    expect(shareStatus.textContent).toMatch(/valid email address for sender/i);
+    expect(shareStatus.textContent).toMatch(/valid email address/i);
     expect(shareStatus.classList.contains('error')).toBe(true);
   });
 
@@ -291,7 +291,7 @@ describe("Calculator view", () => {
 
     sendBtn.dispatchEvent(new Event('click'));
 
-    expect(shareStatus.textContent).toMatch(/recipient name/i);
+    expect(shareStatus.textContent).toMatch(/recipient's name/i);
     expect(shareStatus.classList.contains('error')).toBe(true);
   });
 

@@ -2,35 +2,35 @@
   <div class="card-content">
     <header>
       <h1 class="m-0"><span class="accent-text">Sod's</span> Law Calculator</h1>
-      <p class="calc-description">Estimate the (P)robability of a task going wrong by balancing (U)rgency, (C)omplexity, and (I)mportance against your (S)kill and the (F)requency of the work, multiplied by the Murphy-approved (A)ctivity constant.</p>
+      <p class="calc-description">Estimate how likely your task is to go wrong based on urgency, complexity, importance, your skill, and how often you do it.</p>
       <p class="formula" id="formula-display"></p>
     </header>
     <div class="calc-input-grid">
       <div class="calc-slider-group">
-        <label for="urgency">U (Urgency of the task): <span class="calc-slider-value" id="urgency-value">5</span></label>
+        <label for="urgency">Urgency: <span class="calc-slider-value" id="urgency-value">5</span></label>
         <input type="range" id="urgency" min="1" max="9" value="5">
       </div>
       <div class="calc-slider-group">
-        <label for="complexity">C (Complexity of the task): <span class="calc-slider-value" id="complexity-value">5</span></label>
+        <label for="complexity">Complexity: <span class="calc-slider-value" id="complexity-value">5</span></label>
         <input type="range" id="complexity" min="1" max="9" value="5">
       </div>
       <div class="calc-slider-group">
-        <label for="importance">I (Importance of the task): <span class="calc-slider-value" id="importance-value">5</span></label>
+        <label for="importance">Importance: <span class="calc-slider-value" id="importance-value">5</span></label>
         <input type="range" id="importance" min="1" max="9" value="5">
       </div>
       <div class="calc-slider-group">
-        <label for="skill">S (Your skill in performing the task): <span class="calc-slider-value" id="skill-value">5</span></label>
+        <label for="skill">Your Skill: <span class="calc-slider-value" id="skill-value">5</span></label>
         <input type="range" id="skill" min="1" max="9" value="5">
       </div>
       <div class="calc-slider-group">
-        <label for="frequency">F (Frequency of the task): <span class="calc-slider-value" id="frequency-value">5</span></label>
+        <label for="frequency">Frequency: <span class="calc-slider-value" id="frequency-value">5</span></label>
         <input type="range" id="frequency" min="1" max="9" value="5">
       </div>
       <div class="calc-slider-group">
-        <p class="label-without-input">A (Aggravation factor, a constant set by researchers): <span class="calc-slider-value" id="a-value">0.7</span></p>
+        <p class="label-without-input">Aggravation Factor: <span class="calc-slider-value" id="a-value">0.7</span></p>
       </div>
     </div>
-    <h2>P (Probability of things going wrong):</h2>
+    <h2>Probability of Things Going Wrong:</h2>
     <div id="result-display" class="calc-result-display calc-ok">
       <span id="score-value" class="calc-score">0.00</span>
       <p id="score-interpretation" class="calc-interpretation">Slide the controls to reveal the likelihood of chaos.</p>
@@ -48,7 +48,7 @@
           </button>
           <button type="button" id="share-twitter" class="btn share-btn-twitter">
             <span class="icon" data-icon="twitter" aria-hidden="true"></span>
-            <span class="btn-text">Twitter</span>
+            <span class="btn-text">X</span>
           </button>
           <button type="button" id="share-facebook" class="btn share-btn-facebook">
             <span class="icon" data-icon="facebook" aria-hidden="true"></span>
@@ -68,7 +68,7 @@
           </div>
           <div class="form-group">
             <label for="sender-name" class="form-label">Your Name <span class="required custom-tooltip" data-title="required" role="img" aria-label="required">*</span></label>
-            <input type="text" id="sender-name" class="form-control" placeholder="John Doe" required>
+            <input type="text" id="sender-name" class="form-control" placeholder="Your name" required>
           </div>
           <div class="form-group">
             <label for="sender-email" class="form-label">Your Email <span class="required custom-tooltip" data-title="required" role="img" aria-label="required">*</span></label>
@@ -76,7 +76,7 @@
           </div>
           <div class="form-group">
             <label for="recipient-name" class="form-label">Recipient Name <span class="required custom-tooltip" data-title="required" role="img" aria-label="required">*</span></label>
-            <input type="text" id="recipient-name" class="form-control" placeholder="Jane Smith" required>
+            <input type="text" id="recipient-name" class="form-control" placeholder="Recipient's name" required>
           </div>
           <div class="form-group">
             <label for="recipient-email" class="form-label">Recipient Email <span class="required custom-tooltip" data-title="required" role="img" aria-label="required">*</span></label>
@@ -119,7 +119,7 @@
     </section>
 
     <section class="calc-info calc-faq">
-      <h2 class="calc-info-title"><span class="accent-text">Murphy's</span> Playbook</h2>
+      <h2 class="calc-info-title"><span class="accent-text">Understanding</span> Your Score</h2>
       <ul class="calc-info-list">
         <li><strong>Scale:</strong> Probabilities range from 0.12 (barely cursed) to 8.6 (catastrophic).</li>
         <li><strong>Pressure builds:</strong> Higher Urgency, Complexity, and Importance push the score skyward.</li>
@@ -128,10 +128,10 @@
       </ul>
       <h3 class="calc-info-subtitle"><span class="accent-text">How</span> to cheat Murphy</h3>
       <ul class="calc-info-list">
-        <li>Cut Urgency by asking does everything really need to ship today?</li>
+        <li>Cut Urgency by asking: does everything really need to ship today?</li>
         <li>Break huge projects into bite size work to cut Complexity.</li>
         <li>Importance is a matter of perspective - is this task truly critical?</li>
-        <li>Sharpen your Skill so mistakes bounce off.</li>
+        <li>Build your Skill to reduce errors.</li>
         <li>Batch low stakes tasks to shrink Frequency.</li>
       </ul>
       <p class="calc-info-summary">Use the calculator to model best and worst case scenarios before reality makes the decision for you.</p>

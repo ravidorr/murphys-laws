@@ -2,36 +2,36 @@
   <div class="card-content">
     <header>
       <h1 class="m-0"><span class="accent-text">Buttered</span> Toast Landing Calculator</h1>
-      <p class="calc-description">Predict the (P)robability of buttered toast landing butter-side down by combining (H)eight, (g)ravity, (O)verhang push, (B)utter factor, (F)riction, and (T)oast inertia.</p>
+      <p class="calc-description">Predict whether your toast will land butter-side down based on height, gravity, push force, butter amount, air friction, and toast density.</p>
       <p class="formula" id="toast-formula-display"></p>
     </header>
     <div class="calc-input-grid">
       <div class="calc-slider-group">
-        <label for="toast-height">H (Height of Fall): <span class="calc-slider-value" id="toast-height-value">75 cm</span></label>
+        <label for="toast-height">Height of Fall: <span class="calc-slider-value" id="toast-height-value">75 cm</span></label>
         <input type="range" id="toast-height" min="30" max="200" value="75">
       </div>
       <div class="calc-slider-group">
-        <label for="toast-gravity">g (Gravity): <span class="calc-slider-value" id="toast-gravity-value">980 cm/s²</span></label>
+        <label for="toast-gravity">Gravity: <span class="calc-slider-value" id="toast-gravity-value">980 cm/s²</span></label>
         <input type="range" id="toast-gravity" min="162" max="2479" value="980">
       </div>
       <div class="calc-slider-group">
-        <label for="toast-overhang">O (Initial Overhang / Push): <span class="calc-slider-value" id="toast-overhang-value">5 cm</span></label>
+        <label for="toast-overhang">Push Force: <span class="calc-slider-value" id="toast-overhang-value">5 cm</span></label>
         <input type="range" id="toast-overhang" min="1" max="20" value="5">
       </div>
       <div class="calc-slider-group">
-        <label for="toast-butter">B (Butter Factor): <span class="calc-slider-value" id="toast-butter-value">1.20</span></label>
+        <label for="toast-butter">Butter Factor: <span class="calc-slider-value" id="toast-butter-value">1.20</span></label>
         <input type="range" id="toast-butter" min="1.0" max="2.0" value="1.2" step="0.05">
       </div>
       <div class="calc-slider-group">
-        <label for="toast-friction">F (Air Friction / Drag): <span class="calc-slider-value" id="toast-friction-value">20</span></label>
+        <label for="toast-friction">Air Friction: <span class="calc-slider-value" id="toast-friction-value">20</span></label>
         <input type="range" id="toast-friction" min="0" max="100" value="20">
       </div>
       <div class="calc-slider-group">
-        <label for="toast-inertia">T (Toast Inertia): <span class="calc-slider-value" id="toast-inertia-value">350</span></label>
+        <label for="toast-inertia">Toast Density: <span class="calc-slider-value" id="toast-inertia-value">350</span></label>
         <input type="range" id="toast-inertia" min="250" max="500" value="350">
       </div>
     </div>
-    <h2>P (Probability of Butter-Side Down Landing):</h2>
+    <h2>Probability of Butter-Side Down Landing:</h2>
     <div id="toast-result-display" class="calc-result-display calc-ok">
       <span id="toast-probability-value" class="calc-score">0%</span>
       <p id="toast-interpretation" class="calc-interpretation">Adjust the parameters to see the probability.</p>
@@ -49,7 +49,7 @@
           </button>
           <button type="button" id="share-twitter" class="btn share-btn-twitter">
             <span class="icon" data-icon="twitter" aria-hidden="true"></span>
-            <span class="btn-text">Twitter</span>
+            <span class="btn-text">X</span>
           </button>
           <button type="button" id="share-facebook" class="btn share-btn-facebook">
             <span class="icon" data-icon="facebook" aria-hidden="true"></span>
@@ -72,10 +72,10 @@
       <p class="calc-info-summary">This simplified rotation model estimates the toast's orientation after a fall by balancing height, push, butter weighting, drag, and inertia.</p>
       <h3 class="calc-info-subtitle"><span class="accent-text">Tips</span> for a butter-up landing</h3>
       <ul class="calc-info-list">
-        <li>Change the drop height so the toast avoids the deadly half-turn rhythm.</li>
+        <li>Adjust drop height to avoid the half-turn landing.</li>
         <li>Ease off the push; gentle slides reduce angular velocity.</li>
         <li>Experiment with different breads or spreads to change <abbr title="Toast inertia">T</abbr>.</li>
-        <li>Consider not buttering both corners - balance matters.</li>
+        <li>Spread butter evenly - lopsided toast spins unpredictably.</li>
       </ul>
       <p class="calc-info-summary">Use it to test hypotheses before your breakfast hits the floor.</p>
     </section>

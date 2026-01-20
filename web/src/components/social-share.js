@@ -44,7 +44,7 @@ export function SocialShare({ url, title, description } = {}) {
     {
       className: 'share-button share-twitter',
       href: twitterUrl,
-      label: 'Share on Twitter',
+      label: 'Share on X',
       iconName: 'twitter',
       rel: 'noopener noreferrer',
       target: '_blank',

@@ -92,7 +92,7 @@ describe('ButteredToastCalculatorSimple component', () => {
     el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#toast-interpretation-simple');
-    expect(interpretation.textContent).toMatch(/Clean floors ahead/i);
+    expect(interpretation.textContent).toMatch(/Looking good/i);
   });
 
   it('shows toss-up interpretation for medium probability', () => {
