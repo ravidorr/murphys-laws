@@ -65,6 +65,7 @@ function enhanceMarkdownHtml(html) {
   });
 
   // Process h2 tags - wrap first word with accent-text and wrap in section
+  // Each h2 closes the previous section and starts a new one
   html = html.replace(/<h2>([^<]+)<\/h2>/g, (match, content) => {
     return `</section><section class="content-section"><h2>${wrapFirstWordWithAccent(content)}</h2>`;
   });
@@ -74,10 +75,12 @@ function enhanceMarkdownHtml(html) {
     return `<h3>${wrapFirstWordWithAccent(content)}</h3>`;
   });
 
-  // Clean up the first </section> that appears before any content
-  html = html.replace(/^(\s*)<\/section>/, '$1');
+  // Remove the first orphaned </section> that appears before the first <section>
+  // This happens because h2 replacement adds </section> before <section>, but
+  // the first h2 has no preceding section to close
+  html = html.replace(/<\/section>(<section class="content-section">)/, '$1');
   
-  // Add closing section at the end
+  // Add closing section at the end (to close the last section opened by h2)
   html = html + '</section>';
 
   return html;
