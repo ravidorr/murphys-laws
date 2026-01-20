@@ -3,12 +3,16 @@
 import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
 import { SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.js';
 import { ensureMathJax } from '@utils/mathjax.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function ButteredToastCalculator() {
   const el = document.createElement('div');
   el.className = 'container page calculator';
 
   el.innerHTML = templateHtml;
+
+  // Hydrate icons
+  hydrateIcons(el);
 
   if (typeof document !== 'undefined') {
     // Update page title
@@ -219,6 +223,108 @@ export function ButteredToastCalculator() {
       // MathJax load failed, show formula without rendering
       updateFormula();
     });
+
+  // State for sharing
+  const state = {
+    height: parseFloat(sliders.height.value),
+    gravity: parseFloat(sliders.gravity.value),
+    overhang: parseFloat(sliders.overhang.value),
+    butter: parseFloat(sliders.butter.value),
+    friction: parseFloat(sliders.friction.value),
+    inertia: parseFloat(sliders.inertia.value),
+    probability: probabilityDisplay?.textContent || '0%',
+    interpretation: interpretationDisplay?.textContent || ''
+  };
+
+  function updateState() {
+    state.height = parseFloat(sliders.height.value);
+    state.gravity = parseFloat(sliders.gravity.value);
+    state.overhang = parseFloat(sliders.overhang.value);
+    state.butter = parseFloat(sliders.butter.value);
+    state.friction = parseFloat(sliders.friction.value);
+    state.inertia = parseFloat(sliders.inertia.value);
+    state.probability = probabilityDisplay?.textContent || '0%';
+    state.interpretation = interpretationDisplay?.textContent || '';
+  }
+
+  // Generate shareable URL with parameters
+  function getShareableUrl() {
+    updateState();
+    const url = new URL(window.location.href);
+    url.searchParams.set('h', state.height);
+    url.searchParams.set('g', state.gravity);
+    url.searchParams.set('o', state.overhang);
+    url.searchParams.set('b', state.butter);
+    url.searchParams.set('f', state.friction);
+    url.searchParams.set('t', state.inertia);
+    return url.toString();
+  }
+
+  // Copy link to clipboard
+  const copyLinkBtn = el.querySelector('#copy-link');
+  const copyFeedback = el.querySelector('#copy-feedback');
+
+  copyLinkBtn?.addEventListener('click', async () => {
+    const url = getShareableUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      if (copyFeedback) {
+        copyFeedback.textContent = 'Link copied to clipboard!';
+        copyFeedback.className = 'copy-feedback success';
+        setTimeout(() => {
+          copyFeedback.className = 'copy-feedback hidden';
+        }, 2000);
+      }
+    } catch {
+      if (copyFeedback) {
+        copyFeedback.textContent = 'Failed to copy link';
+        copyFeedback.className = 'copy-feedback error';
+        setTimeout(() => {
+          copyFeedback.className = 'copy-feedback hidden';
+        }, 2000);
+      }
+    }
+  });
+
+  // Social share buttons
+  const twitterBtn = el.querySelector('#share-twitter');
+  const facebookBtn = el.querySelector('#share-facebook');
+
+  twitterBtn?.addEventListener('click', () => {
+    updateState();
+    const url = getShareableUrl();
+    const text = `My Buttered Toast has a ${state.probability} chance of landing butter-side down! ${state.interpretation}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
+  });
+
+  facebookBtn?.addEventListener('click', () => {
+    const url = getShareableUrl();
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    window.open(facebookUrl, '_blank', 'width=550,height=420');
+  });
+
+  // Load parameters from URL if present
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramKeys = { h: 'height', g: 'gravity', o: 'overhang', b: 'butter', f: 'friction', t: 'inertia' };
+  
+  Object.entries(paramKeys).forEach(([param, slider]) => {
+    const value = urlParams.get(param);
+    if (value && sliders[slider]) {
+      const numValue = parseFloat(value);
+      const min = parseFloat(sliders[slider].min);
+      const max = parseFloat(sliders[slider].max);
+      if (numValue >= min && numValue <= max) {
+        sliders[slider].value = numValue;
+      }
+    }
+  });
+
+  // Recalculate if URL params were loaded
+  if (urlParams.has('h') || urlParams.has('g') || urlParams.has('o') || urlParams.has('b') || urlParams.has('f') || urlParams.has('t')) {
+    calculateLanding();
+    updateFormula();
+  }
 
   return el;
 }

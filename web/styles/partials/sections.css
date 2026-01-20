@@ -859,8 +859,73 @@
 .law-card-footer {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   font-size: 0.75rem;
+}
+
+.law-card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Share link button on law cards */
+.share-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--muted-fg);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.share-link-btn:hover {
+  background: color-mix(in oklab, var(--btn-primary-bg) 10%, transparent 90%);
+  color: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+}
+
+.share-link-btn:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
+.share-link-btn .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Related Laws Section */
+.related-laws-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.related-laws-title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+.related-laws-list {
+  display: grid;
+  gap: 0;
+}
+
+.related-laws-list .law-card-mini {
+  border-bottom: 1px solid var(--border);
+}
+
+.related-laws-list .law-card-mini:last-child {
+  border-bottom: none;
 }
 
 /* Advanced Search */

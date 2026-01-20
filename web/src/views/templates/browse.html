@@ -8,7 +8,19 @@
       <h1 class="card-title"><span class="accent-text">Browse</span> All Laws</h1>
       <div id="browse-search-info"></div>
     </div>
-    <div class="browse-result-count" id="browse-result-count" aria-live="polite"></div>
+    <div class="browse-controls">
+      <div class="browse-result-count" id="browse-result-count" aria-live="polite"></div>
+      <div class="browse-sort">
+        <label for="sort-select" class="visually-hidden">Sort by</label>
+        <select id="sort-select" class="sort-select" aria-label="Sort laws by">
+          <option value="score-desc">Top Rated</option>
+          <option value="upvotes-desc">Most Upvotes</option>
+          <option value="created_at-desc">Newest</option>
+          <option value="created_at-asc">Oldest</option>
+          <option value="last_voted_at-desc">Recently Voted</option>
+        </select>
+      </div>
+    </div>
     <section class="card-text" id="browse-laws-list" aria-live="polite" aria-busy="true">
       <div class="loading-placeholder" role="status" aria-live="polite">
         <p class="small">Loading...</p>

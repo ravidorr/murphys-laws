@@ -69,13 +69,18 @@ export function renderLawCard(law, options = {}) {
       </p>
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       <div class="law-card-footer">
-        <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${safeId}" aria-label="Upvote this law">
-          <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
-          <span class="count-num">${up}</span>
-        </button>
-        <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${safeId}" aria-label="Downvote this law">
-          <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
-          <span class="count-num">${down}</span>
+        <div class="law-card-footer-left">
+          <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${safeId}" aria-label="Upvote this law">
+            <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
+            <span class="count-num">${up}</span>
+          </button>
+          <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${safeId}" aria-label="Downvote this law">
+            <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
+            <span class="count-num">${down}</span>
+          </button>
+        </div>
+        <button class="share-link-btn" data-share-law="${safeId}" aria-label="Copy link to this law" title="Copy link">
+          <span class="icon" data-icon="link" aria-hidden="true"></span>
         </button>
       </div>
     </article>

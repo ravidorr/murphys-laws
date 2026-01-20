@@ -12,6 +12,7 @@ import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL, SITE_NAME } from '@utils/constants.js';
 import { fetchCategories } from '../utils/api.js'; // To get category title for structured data
 import { triggerAdSense } from '../utils/ads.js';
+import { showSuccess } from '../components/notification.js';
 import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
@@ -217,6 +218,32 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+
+    // Handle share link button clicks
+    const shareBtn = t.closest('[data-share-law]');
+    if (shareBtn) {
+      e.stopPropagation();
+      const lawId = shareBtn.getAttribute('data-share-law');
+      if (lawId) {
+        const lawUrl = `${window.location.origin}/law/${lawId}`;
+        try {
+          await navigator.clipboard.writeText(lawUrl);
+          showSuccess('Link copied to clipboard!');
+        } catch {
+          // Fallback: select and copy
+          const textArea = document.createElement('textarea');
+          textArea.value = lawUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showSuccess('Link copied to clipboard!');
+        }
+      }
+      return;
+    }
 
     // Handle navigation buttons (data-nav)
     const navBtn = t.closest('[data-nav]');
