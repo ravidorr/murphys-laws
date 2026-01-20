@@ -385,6 +385,15 @@ textarea.form-control,
   margin: 1rem;
 }
 
+/* Browse result count */
+.browse-result-count {
+  font-size: 0.875rem;
+  color: var(--muted-fg);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
 /* Error State */
 .error-state {
   padding: 2rem 0;

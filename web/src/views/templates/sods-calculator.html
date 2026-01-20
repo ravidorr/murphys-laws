@@ -38,12 +38,28 @@
 
     <section class="section section-card mt-8 mb-8">
       <div class="section-header">
-        <button type="button" id="share-cta" class="btn">
-          <span class="btn-text">Share Calculation</span>
-          <span class="icon" data-icon="share" aria-hidden="true"></span>
-        </button>
+        <h3 class="section-title"><span class="accent-text">Share</span> Your Results</h3>
       </div>
       <div class="section-body">
+        <div class="quick-share-actions">
+          <button type="button" id="copy-link" class="btn">
+            <span class="icon" data-icon="link" aria-hidden="true"></span>
+            <span class="btn-text">Copy Link</span>
+          </button>
+          <button type="button" id="share-twitter" class="btn share-btn-twitter">
+            <span class="icon" data-icon="twitter" aria-hidden="true"></span>
+            <span class="btn-text">Twitter</span>
+          </button>
+          <button type="button" id="share-facebook" class="btn share-btn-facebook">
+            <span class="icon" data-icon="facebook" aria-hidden="true"></span>
+            <span class="btn-text">Facebook</span>
+          </button>
+          <button type="button" id="share-cta" class="btn outline">
+            <span class="icon" data-icon="email" aria-hidden="true"></span>
+            <span class="btn-text">Send Email</span>
+          </button>
+        </div>
+        <div id="copy-feedback" class="copy-feedback hidden" aria-live="polite"></div>
         <div id="share-form-container" class="share-form-container hidden">
           <h2 class="mt-0"><span class="accent-text">Share</span> Your Calculation</h2>
           <div class="form-group">

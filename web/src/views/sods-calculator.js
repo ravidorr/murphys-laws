@@ -224,6 +224,79 @@ export function Calculator() {
     state.interpretation = scoreInterpretationDisplay?.textContent || '';
   }
 
+  // Generate shareable URL with parameters
+  function getShareableUrl() {
+    updateState();
+    const url = new URL(window.location.href);
+    url.searchParams.set('u', state.urgency);
+    url.searchParams.set('c', state.complexity);
+    url.searchParams.set('i', state.importance);
+    url.searchParams.set('s', state.skill);
+    url.searchParams.set('f', state.frequency);
+    return url.toString();
+  }
+
+  // Copy link to clipboard
+  const copyLinkBtn = el.querySelector('#copy-link');
+  const copyFeedback = el.querySelector('#copy-feedback');
+
+  copyLinkBtn?.addEventListener('click', async () => {
+    const url = getShareableUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      if (copyFeedback) {
+        copyFeedback.textContent = 'Link copied to clipboard!';
+        copyFeedback.className = 'copy-feedback success';
+        setTimeout(() => {
+          copyFeedback.className = 'copy-feedback hidden';
+        }, 2000);
+      }
+    } catch {
+      if (copyFeedback) {
+        copyFeedback.textContent = 'Failed to copy link';
+        copyFeedback.className = 'copy-feedback error';
+        setTimeout(() => {
+          copyFeedback.className = 'copy-feedback hidden';
+        }, 2000);
+      }
+    }
+  });
+
+  // Social share buttons
+  const twitterBtn = el.querySelector('#share-twitter');
+  const facebookBtn = el.querySelector('#share-facebook');
+
+  twitterBtn?.addEventListener('click', () => {
+    updateState();
+    const url = getShareableUrl();
+    const text = `My Sod's Law score is ${state.probability}! ${state.interpretation}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
+  });
+
+  facebookBtn?.addEventListener('click', () => {
+    const url = getShareableUrl();
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    window.open(facebookUrl, '_blank', 'width=550,height=420');
+  });
+
+  // Load parameters from URL if present
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramKeys = { u: 'urgency', c: 'complexity', i: 'importance', s: 'skill', f: 'frequency' };
+  
+  Object.entries(paramKeys).forEach(([param, slider]) => {
+    const value = urlParams.get(param);
+    if (value && sliders[slider]) {
+      const numValue = parseFloat(value);
+      if (numValue >= 1 && numValue <= 9) {
+        sliders[slider].value = numValue;
+        if (sliderValues[slider]) {
+          sliderValues[slider].textContent = String(numValue);
+        }
+      }
+    }
+  });
+
   const teardownShare = initShareCalculation({
     root: el,
     getCalculationState() {

@@ -75,6 +75,69 @@ describe('SubmitLawSection component', () => {
     expect(submitBtn.disabled).toBe(true);
   });
 
+  it('renders validation requirements display', () => {
+    const el = mountSection();
+    
+    const requirementsDiv = el.querySelector('.submit-requirements');
+    const textRequirement = el.querySelector('[data-requirement="text"]');
+    const termsRequirement = el.querySelector('[data-requirement="terms"]');
+
+    expect(requirementsDiv).toBeTruthy();
+    expect(textRequirement).toBeTruthy();
+    expect(termsRequirement).toBeTruthy();
+  });
+
+  it('marks text requirement as met when text is valid', () => {
+    const el = mountSection({ append: true });
+    
+    const textarea = el.querySelector('#submit-text');
+    const textRequirement = el.querySelector('[data-requirement="text"]');
+
+    // Initially not met
+    expect(textRequirement.classList.contains('requirement-met')).toBe(false);
+
+    // Add valid text
+    textarea.value = 'This is a valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+
+    expect(textRequirement.classList.contains('requirement-met')).toBe(true);
+  });
+
+  it('marks terms requirement as met when terms are checked', () => {
+    const el = mountSection({ append: true });
+    
+    const termsCheckbox = el.querySelector('#submit-terms');
+    const termsRequirement = el.querySelector('[data-requirement="terms"]');
+
+    // Initially not met
+    expect(termsRequirement.classList.contains('requirement-met')).toBe(false);
+
+    // Check terms
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    expect(termsRequirement.classList.contains('requirement-met')).toBe(true);
+  });
+
+  it('adds all-requirements-met class when all requirements are satisfied', () => {
+    const el = mountSection({ append: true });
+    
+    const textarea = el.querySelector('#submit-text');
+    const termsCheckbox = el.querySelector('#submit-terms');
+    const requirementsDiv = el.querySelector('.submit-requirements');
+
+    // Initially not all met
+    expect(requirementsDiv.classList.contains('all-requirements-met')).toBe(false);
+
+    // Satisfy all requirements
+    textarea.value = 'This is a valid law text with enough characters';
+    textarea.dispatchEvent(new Event('input'));
+    termsCheckbox.checked = true;
+    termsCheckbox.dispatchEvent(new Event('change'));
+
+    expect(requirementsDiv.classList.contains('all-requirements-met')).toBe(true);
+  });
+
   it('updates character counter on text input', () => {
     const el = mountSection({ append: true });
 

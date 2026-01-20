@@ -51,15 +51,26 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
     const cachedAttributions = getCachedAttributions();
     if (cachedAttributions && cachedAttributions.length > 0) {
       attributions = cachedAttributions;
-      // Filter out null/undefined and handle both string and object formats
-      const validAttributions = attributions.filter(att => att !== null && att !== undefined && att !== '');
+      // Filter out null/undefined/empty and handle both string and object formats
+      const validAttributions = attributions
+        .map(att => {
+          const name = typeof att === 'string' ? att : att?.name;
+          return name;
+        })
+        .filter(name => {
+          if (!name) return false;
+          if (typeof name !== 'string') return false;
+          const trimmed = name.trim();
+          if (!trimmed) return false;
+          if (trimmed.toLowerCase() === 'undefined') return false;
+          if (trimmed.toLowerCase() === 'null') return false;
+          return true;
+        });
+      
       attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-        validAttributions.map(att => {
-          // Handle both string format (from API) and object format (legacy)
-          const name = typeof att === 'string' ? att : att.name;
-          if (!name) return '';
+        validAttributions.map(name => {
           return `<option value="${name}" ${name === selectedAttribution ? 'selected' : ''}>${name}</option>`;
-        }).filter(Boolean).join('');
+        }).join('');
     }
   }
 
@@ -108,15 +119,29 @@ export function AdvancedSearch({ onSearch, initialFilters = {} }) {
 
     // Update attribution dropdown
     if (attributions.length > 0) {
-      // Filter out null/undefined and handle both string and object formats
-      const validAttributions = attributions.filter(att => att !== null && att !== undefined && att !== '');
-      attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-        validAttributions.map(att => {
+      // Filter out null/undefined/empty and handle both string and object formats
+      const validAttributions = attributions
+        .map(att => {
           // Handle both string format (from API) and object format (legacy)
-          const name = typeof att === 'string' ? att : att.name;
-          if (!name) return '';
+          const name = typeof att === 'string' ? att : att?.name;
+          return name;
+        })
+        .filter(name => {
+          // Filter out null, undefined, empty strings, "undefined" string, and whitespace-only
+          if (!name) return false;
+          if (typeof name !== 'string') return false;
+          const trimmed = name.trim();
+          if (!trimmed) return false;
+          if (trimmed.toLowerCase() === 'undefined') return false;
+          if (trimmed.toLowerCase() === 'null') return false;
+          if (trimmed.toLowerCase() === 'anonymous') return false; // Optionally hide anonymous
+          return true;
+        });
+      
+      attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
+        validAttributions.map(name => {
           return `<option value="${name}" ${name === selectedAttribution ? 'selected' : ''}>${name}</option>`;
-        }).filter(Boolean).join('');
+        }).join('');
     }
   }
 

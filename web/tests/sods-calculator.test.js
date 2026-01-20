@@ -312,4 +312,124 @@ describe("Calculator view", () => {
     expect(shareStatus.classList.contains('error')).toBe(true);
   });
 
+  it('renders quick share buttons', () => {
+    expect(el.querySelector('#copy-link')).toBeTruthy();
+    expect(el.querySelector('#share-twitter')).toBeTruthy();
+    expect(el.querySelector('#share-facebook')).toBeTruthy();
+  });
+
+  it('copies link to clipboard when copy button is clicked', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const copyBtn = el.querySelector('#copy-link');
+    copyBtn.dispatchEvent(new Event('click'));
+
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalled();
+    const copiedUrl = writeTextMock.mock.calls[0][0];
+    expect(copiedUrl).toContain('u=');
+    expect(copiedUrl).toContain('c=');
+    expect(copiedUrl).toContain('i=');
+    expect(copiedUrl).toContain('s=');
+    expect(copiedUrl).toContain('f=');
+  });
+
+  it('shows success feedback after copying link', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const copyBtn = el.querySelector('#copy-link');
+    const copyFeedback = el.querySelector('#copy-feedback');
+
+    copyBtn.dispatchEvent(new Event('click'));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(copyFeedback.textContent).toMatch(/copied/i);
+    expect(copyFeedback.classList.contains('success')).toBe(true);
+  });
+
+  it('shows error feedback when clipboard fails', async () => {
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const copyBtn = el.querySelector('#copy-link');
+    const copyFeedback = el.querySelector('#copy-feedback');
+
+    copyBtn.dispatchEvent(new Event('click'));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(copyFeedback.textContent).toMatch(/failed/i);
+    expect(copyFeedback.classList.contains('error')).toBe(true);
+  });
+
+  it('opens Twitter share window when Twitter button is clicked', () => {
+    const windowOpenMock = vi.fn();
+    window.open = windowOpenMock;
+
+    const twitterBtn = el.querySelector('#share-twitter');
+    twitterBtn.dispatchEvent(new Event('click'));
+
+    expect(windowOpenMock).toHaveBeenCalled();
+    const twitterUrl = windowOpenMock.mock.calls[0][0];
+    expect(twitterUrl).toContain('twitter.com/intent/tweet');
+  });
+
+  it('opens Facebook share window when Facebook button is clicked', () => {
+    const windowOpenMock = vi.fn();
+    window.open = windowOpenMock;
+
+    const facebookBtn = el.querySelector('#share-facebook');
+    facebookBtn.dispatchEvent(new Event('click'));
+
+    expect(windowOpenMock).toHaveBeenCalled();
+    const facebookUrl = windowOpenMock.mock.calls[0][0];
+    expect(facebookUrl).toContain('facebook.com/sharer');
+  });
+
+  it('loads URL parameters into sliders', () => {
+    // Clean up existing element
+    el?._teardownShare?.();
+    if (el?.parentNode) el.parentNode.removeChild(el);
+
+    // Set URL params
+    const url = new URL(window.location.href);
+    url.searchParams.set('u', '7');
+    url.searchParams.set('c', '8');
+    url.searchParams.set('i', '3');
+    url.searchParams.set('s', '6');
+    url.searchParams.set('f', '4');
+    window.history.replaceState({}, '', url.toString());
+
+    // Mount new calculator
+    el = Calculator();
+    document.body.appendChild(el);
+
+    expect(el.querySelector('#urgency').value).toBe('7');
+    expect(el.querySelector('#complexity').value).toBe('8');
+    expect(el.querySelector('#importance').value).toBe('3');
+    expect(el.querySelector('#skill').value).toBe('6');
+    expect(el.querySelector('#frequency').value).toBe('4');
+
+    // Clean up URL
+    window.history.replaceState({}, '', window.location.pathname);
+  });
+
 });

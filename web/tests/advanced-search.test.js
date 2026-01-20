@@ -163,6 +163,48 @@ describe('AdvancedSearch component', () => {
     });
   });
 
+  it('filters out "undefined" and "null" string literals from attributions', async () => {
+    const attributions = ['Alice', 'undefined', 'null', 'Undefined', 'NULL', 'Bob'];
+
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+      // Should not contain "undefined" or "null" string literals
+      const options = Array.from(attributionSelect.querySelectorAll('option'));
+      const invalidOptions = options.filter(o => 
+        o.value.toLowerCase() === 'undefined' || 
+        o.value.toLowerCase() === 'null'
+      );
+      expect(invalidOptions.length).toBe(0);
+    });
+  });
+
+  it('filters out whitespace-only attributions', async () => {
+    const attributions = ['Alice', '   ', '\t', '\n', 'Bob'];
+
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+      // Should only have "All Submitters" + valid options
+      const options = Array.from(attributionSelect.querySelectorAll('option'));
+      expect(options.length).toBe(3); // All Submitters, Alice, Bob
+    });
+  });
+
   it('handles filter loading errors gracefully', async () => {
     fetchAPISpy.mockRejectedValue(new Error('Network error'));
 
