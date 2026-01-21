@@ -18,7 +18,8 @@ describe('LawService', () => {
         text TEXT NOT NULL,
         status TEXT DEFAULT 'published',
         first_seen_file_path TEXT,
-        first_seen_line_number INTEGER
+        first_seen_line_number INTEGER,
+        created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
       );
       
       CREATE TABLE attributions (
@@ -215,5 +216,81 @@ describe('LawService', () => {
   it('should return null for getLaw when law not found', async () => {
     const law = await lawService.getLaw(999);
     expect(law).toBeUndefined();
+  });
+
+  it('should sort laws by score (default)', async () => {
+    const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
+    const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 2', 'published')").run();
+    const law3 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 3', 'published')").run();
+
+    // Law 2 gets 3 upvotes, Law 1 gets 1 upvote, Law 3 gets 0
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter1')").run(law2.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter2')").run(law2.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter3')").run(law2.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter1')").run(law1.lastInsertRowid);
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, sort: 'score', order: 'desc' });
+    expect(result.data[0].text).toBe('Law 2'); // 3 upvotes
+    expect(result.data[1].text).toBe('Law 1'); // 1 upvote
+    expect(result.data[2].text).toBe('Law 3'); // 0 upvotes
+  });
+
+  it('should sort laws by upvotes descending', async () => {
+    const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
+    const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 2', 'published')").run();
+
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter1')").run(law2.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter2')").run(law2.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter1')").run(law1.lastInsertRowid);
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, sort: 'upvotes', order: 'desc' });
+    expect(result.data[0].text).toBe('Law 2'); // 2 upvotes
+    expect(result.data[1].text).toBe('Law 1'); // 1 upvote
+  });
+
+  it('should sort laws by created_at ascending (oldest first)', async () => {
+    // Insert with explicit timestamps
+    db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Oldest', 'published', '2020-01-01T00:00:00Z')").run();
+    db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Middle', 'published', '2022-01-01T00:00:00Z')").run();
+    db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Newest', 'published', '2024-01-01T00:00:00Z')").run();
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, sort: 'created_at', order: 'asc' });
+    expect(result.data[0].text).toBe('Oldest');
+    expect(result.data[1].text).toBe('Middle');
+    expect(result.data[2].text).toBe('Newest');
+  });
+
+  it('should sort laws by created_at descending (newest first)', async () => {
+    db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Oldest', 'published', '2020-01-01T00:00:00Z')").run();
+    db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Newest', 'published', '2024-01-01T00:00:00Z')").run();
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, sort: 'created_at', order: 'desc' });
+    expect(result.data[0].text).toBe('Newest');
+    expect(result.data[1].text).toBe('Oldest');
+  });
+
+  it('should sort laws by last_voted_at descending', async () => {
+    const law1 = db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Law 1', 'published', '2020-01-01T00:00:00Z')").run();
+    const law2 = db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Law 2', 'published', '2020-01-01T00:00:00Z')").run();
+
+    // Law 1 was voted on more recently
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier, created_at) VALUES (?, 'up', 'voter1', '2024-01-01T00:00:00Z')").run(law1.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier, created_at) VALUES (?, 'up', 'voter1', '2022-01-01T00:00:00Z')").run(law2.lastInsertRowid);
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, sort: 'last_voted_at', order: 'desc' });
+    expect(result.data[0].text).toBe('Law 1'); // More recent vote
+    expect(result.data[1].text).toBe('Law 2');
+  });
+
+  it('should default to score desc when no sort specified', async () => {
+    const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Low Score', 'published')").run();
+    const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('High Score', 'published')").run();
+
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter1')").run(law2.lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter2')").run(law2.lastInsertRowid);
+
+    // No sort parameter
+    const result = await lawService.listLaws({ limit: 10, offset: 0 });
+    expect(result.data[0].text).toBe('High Score');
   });
 });

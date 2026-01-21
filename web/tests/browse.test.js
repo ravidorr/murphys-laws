@@ -889,4 +889,164 @@ describe('Browse view', () => {
       }, { timeout: 1000 });
     }
   });
+
+  it('renders sort select with default value', async () => {
+    const localThis = {};
+    localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      localThis.sortSelect = localThis.el.querySelector('#sort-select');
+      expect(localThis.sortSelect).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Default value should be 'score-desc' (Top Rated)
+    expect(localThis.sortSelect.value).toBe('score-desc');
+  });
+
+  it('changes sort order when selecting different option', async () => {
+    const localThis = {};
+    localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    // Wait for initial load
+    await vi.waitFor(() => {
+      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    expect(localThis.sortSelect).toBeTruthy();
+
+    // Clear mock to track new calls
+    fetchLawsSpy.mockClear();
+
+    // Change to 'Oldest' sort
+    localThis.sortSelect.value = 'created_at-asc';
+    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // Should call fetchLaws with new sort parameters
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        sort: 'created_at',
+        order: 'asc',
+        offset: 0
+      }));
+    }, { timeout: 1000 });
+  });
+
+  it('changes to newest sort order', async () => {
+    const localThis = {};
+    localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    // Wait for initial load
+    await vi.waitFor(() => {
+      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    fetchLawsSpy.mockClear();
+
+    // Change to 'Newest' sort
+    localThis.sortSelect.value = 'created_at-desc';
+    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        sort: 'created_at',
+        order: 'desc'
+      }));
+    }, { timeout: 1000 });
+  });
+
+  it('changes to most upvotes sort order', async () => {
+    const localThis = {};
+    localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    // Wait for initial load
+    await vi.waitFor(() => {
+      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    fetchLawsSpy.mockClear();
+
+    // Change to 'Most Upvotes' sort
+    localThis.sortSelect.value = 'upvotes-desc';
+    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        sort: 'upvotes',
+        order: 'desc'
+      }));
+    }, { timeout: 1000 });
+  });
+
+  it('changes to recently voted sort order', async () => {
+    const localThis = {};
+    localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    // Wait for initial load
+    await vi.waitFor(() => {
+      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    fetchLawsSpy.mockClear();
+
+    // Change to 'Recently Voted' sort
+    localThis.sortSelect.value = 'last_voted_at-desc';
+    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        sort: 'last_voted_at',
+        order: 'desc'
+      }));
+    }, { timeout: 1000 });
+  });
+
+  it('resets to page 1 when changing sort order', async () => {
+    const localThis = {};
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({
+        id: i + 1,
+        title: `Law ${i + 1}`,
+        text: `Text ${i + 1}`,
+        upvotes: 0,
+        downvotes: 0
+      })),
+      total: 100
+    });
+
+    localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    // Wait for initial load
+    await vi.waitFor(() => {
+      expect(localThis.el.querySelector('.pagination')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Navigate to page 2
+    localThis.nextBtn = Array.from(localThis.el.querySelectorAll('.pagination button'))
+      .find(btn => btn.textContent === 'Next');
+    localThis.nextBtn.click();
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 25 }));
+    }, { timeout: 1000 });
+
+    fetchLawsSpy.mockClear();
+
+    // Change sort order
+    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    localThis.sortSelect.value = 'created_at-asc';
+    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // Should reset to page 1 (offset: 0)
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        offset: 0,
+        sort: 'created_at',
+        order: 'asc'
+      }));
+    }, { timeout: 1000 });
+  });
 });

@@ -14,8 +14,13 @@ export class LawController {
     const categoryId = parsed.query.category_id ? Number(parsed.query.category_id) : null;
     const categorySlug = parsed.query.category_slug ? parsed.query.category_slug.toString().trim() : null;
     const attribution = (parsed.query.attribution || '').toString().trim();
+    
+    // Sorting parameters with validation
+    const allowedSortFields = ['score', 'upvotes', 'created_at', 'last_voted_at'];
+    const sort = allowedSortFields.includes(parsed.query.sort) ? parsed.query.sort : 'score';
+    const order = parsed.query.order === 'asc' ? 'asc' : 'desc';
 
-    const result = await this.lawService.listLaws({ limit, offset, q, categoryId, categorySlug, attribution });
+    const result = await this.lawService.listLaws({ limit, offset, q, categoryId, categorySlug, attribution, sort, order });
     
     return sendJson(res, 200, { 
       data: result.data, 
@@ -25,7 +30,9 @@ export class LawController {
       q, 
       category_id: categoryId,
       category_slug: categorySlug,
-      attribution 
+      attribution,
+      sort,
+      order
     }, req);
   }
 
