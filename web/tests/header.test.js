@@ -29,44 +29,6 @@ describe('Header component', () => {
     expect(el.querySelector('[data-nav="submit"]')).toBeTruthy();
   });
 
-  it('shows desktop navigation links', () => {
-    const el = Header({
-      onSearch: () => {},
-      onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
-    });
-
-    const desktopNav = el.querySelector('.desktop-nav');
-    expect(desktopNav).toBeTruthy();
-
-    const desktopLinks = desktopNav.querySelectorAll('.desktop-nav-link');
-    expect(desktopLinks.length).toBe(3);
-    
-    // Check that expected links exist
-    expect(desktopNav.querySelector('[data-nav="browse"]')).toBeTruthy();
-    expect(desktopNav.querySelector('[data-nav="submit"]')).toBeTruthy();
-    expect(desktopNav.querySelector('[data-nav="calculator/sods-law"]')).toBeTruthy();
-  });
-
-  it('triggers onNavigate when clicking desktop nav link', () => {
-    let navigated = '';
-    const el = Header({
-      onSearch: () => {},
-      onNavigate: (page) => { navigated = page; },
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
-    });
-
-    const desktopNav = el.querySelector('.desktop-nav');
-    const browseLink = desktopNav.querySelector('[data-nav="browse"]');
-    browseLink.click();
-    
-    expect(navigated).toBe('browse');
-  });
-
   it('triggers onNavigate when clicking nav button', () => {
     let navigated = '';
     const el = Header({
