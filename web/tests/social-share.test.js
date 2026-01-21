@@ -39,9 +39,9 @@ describe('SocialShare component', () => {
     expect(popover).toBeTruthy();
     expect(popover.getAttribute('role')).toBe('menu');
     
-    // Should have 5 social links + 2 copy buttons = 7 items
+    // Should have 6 social links + 2 copy buttons = 8 items
     const items = popover.querySelectorAll('.share-popover-item');
-    expect(items.length).toBe(7);
+    expect(items.length).toBe(8);
   });
 
   it('uses default values when no options provided', () => {
@@ -138,6 +138,30 @@ describe('SocialShare component', () => {
     });
   });
 
+  describe('WhatsApp button', () => {
+    it('creates WhatsApp share link with correct attributes', () => {
+      const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
+      const link = el.querySelector('.share-popover-item[href*="whatsapp"]');
+
+      expect(link.getAttribute('role')).toBe('menuitem');
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(link.href).toContain('api.whatsapp.com/send');
+    });
+
+    it('includes text and URL in WhatsApp share link', () => {
+      const el = SocialShare({
+        url: 'https://murphys-laws.com/law/123',
+        title: "Murphy's Law"
+      });
+      const link = el.querySelector('.share-popover-item[href*="whatsapp"]');
+
+      expect(link.href).toContain('text=');
+      expect(link.href).toContain('Murphy');
+      expect(link.href).toContain(encodeURIComponent('https://murphys-laws.com/law/123'));
+    });
+  });
+
   describe('Email button', () => {
     it('creates Email share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
@@ -175,8 +199,8 @@ describe('SocialShare component', () => {
       const el = SocialShare();
       const iconCircles = el.querySelectorAll('.icon-circle');
       
-      // 5 social platforms + 2 copy buttons = 7 icon circles
-      expect(iconCircles.length).toBe(7);
+      // 6 social platforms + 2 copy buttons = 8 icon circles
+      expect(iconCircles.length).toBe(8);
     });
 
     it('handles missing icon gracefully', () => {
@@ -447,6 +471,18 @@ describe('SocialShare component', () => {
       expect(link.href).toContain('Law');
     });
 
+    it('creates correct WhatsApp share URL', () => {
+      const el = SocialShare({
+        url: 'https://murphys-laws.com/law/42',
+        title: 'Murphy\'s Law'
+      });
+
+      const link = el.querySelector('.share-popover-item[href*="whatsapp"]');
+      expect(link.href).toContain('https://api.whatsapp.com/send?text=');
+      expect(link.href).toContain('Murphy');
+      expect(link.href).toContain(encodeURIComponent('https://murphys-laws.com/law/42'));
+    });
+
     it('creates correct mailto URL', () => {
       const el = SocialShare({
         url: 'https://murphys-laws.com/law/42',
@@ -489,6 +525,7 @@ describe('renderShareButtonsHTML', () => {
     expect(html).toContain('facebook.com/sharer');
     expect(html).toContain('linkedin.com/shareArticle');
     expect(html).toContain('reddit.com/submit');
+    expect(html).toContain('api.whatsapp.com/send');
     expect(html).toContain('mailto:');
   });
 

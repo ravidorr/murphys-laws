@@ -1,7 +1,7 @@
 /**
  * Social Share Component
  * Renders a share button with popover menu containing sharing options for
- * Twitter, Facebook, LinkedIn, Reddit, Email, Copy Text, and Copy Link
+ * Twitter, Facebook, LinkedIn, Reddit, WhatsApp, Email, Copy Text, and Copy Link
  */
 
 import { createIcon } from '../utils/icons.js';
@@ -42,6 +42,7 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
   const linkedinUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}&summary=${encodedDescription}`;
   const redditUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`;
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
   // Create trigger button
@@ -70,6 +71,7 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
     { href: facebookUrl, label: 'Share on Facebook', iconName: 'facebook', platform: 'facebook' },
     { href: linkedinUrl, label: 'Share on LinkedIn', iconName: 'linkedin', platform: 'linkedin' },
     { href: redditUrl, label: 'Share on Reddit', iconName: 'reddit', platform: 'reddit' },
+    { href: whatsappUrl, label: 'Share on WhatsApp', iconName: 'whatsapp', platform: 'whatsapp' },
     { href: emailUrl, label: 'Share via Email', iconName: 'email', platform: 'email' },
   ];
 
@@ -223,6 +225,7 @@ export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
   const linkedinUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedText}`;
   const redditUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedText}`;
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`;
   const emailSubject = encodeURIComponent("Check out this Murphy's Law");
   const emailBody = encodeURIComponent(`I found this and thought you'd like it:\n\n${lawText || ''}\n\n${shareUrl}`);
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
@@ -249,6 +252,10 @@ export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
         <a class="share-popover-item" href="${redditUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
           <span class="icon-circle reddit"><span class="icon" data-icon="reddit" aria-hidden="true"></span></span>
           Share on Reddit
+        </a>
+        <a class="share-popover-item" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
+          <span class="icon-circle whatsapp"><span class="icon" data-icon="whatsapp" aria-hidden="true"></span></span>
+          Share on WhatsApp
         </a>
         <a class="share-popover-item" href="${emailUrl}" role="menuitem">
           <span class="icon-circle email"><span class="icon" data-icon="email" aria-hidden="true"></span></span>
