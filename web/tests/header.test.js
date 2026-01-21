@@ -492,6 +492,30 @@ describe('Header component', () => {
       document.body.removeChild(el);
     });
 
+    it('updates tooltip on themechange events', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      // Dispatch a themechange event
+      getThemeTooltip.mockReturnValue('Light mode');
+      document.dispatchEvent(new CustomEvent('themechange', {
+        detail: { theme: 'light', effectiveTheme: 'light' }
+      }));
+
+      expect(themeToggle.getAttribute('data-title')).toBe('Light mode');
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
+
     it('cleanup removes themechange listener', () => {
       const el = Header({
         onSearch: () => {},
