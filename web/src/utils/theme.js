@@ -135,6 +135,24 @@ export function getThemeLabel(theme) {
 }
 
 /**
+ * Get tooltip text for the theme toggle button
+ * @param {'light' | 'dark' | 'auto'} [theme] - Current theme (defaults to stored theme)
+ * @returns {string} Short tooltip text describing current theme mode
+ */
+export function getThemeTooltip(theme) {
+  const currentTheme = theme ?? getTheme();
+  switch (currentTheme) {
+    case 'light':
+      return 'Light mode';
+    case 'dark':
+      return 'Dark mode';
+    case 'auto':
+    default:
+      return 'Auto mode';
+  }
+}
+
+/**
  * Initialize theme system - apply stored theme and set up system preference listener
  */
 export function initTheme() {
