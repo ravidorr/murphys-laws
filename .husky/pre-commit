@@ -1,12 +1,14 @@
-# Code review reminder
-echo ""
-echo "=========================================="
-echo "  Have you run a code review?"
-echo "  In Cursor, say: 'pre-commit review'"
-echo "=========================================="
-echo ""
-echo "Press Enter to continue, or Ctrl+C to cancel and review first."
-read -r
+# Code review reminder (only in interactive terminals)
+if [ -t 0 ]; then
+  echo ""
+  echo "=========================================="
+  echo "  Have you run a code review?"
+  echo "  In Cursor, say: 'pre-commit review'"
+  echo "=========================================="
+  echo ""
+  echo "Press Enter to continue, or Ctrl+C to cancel and review first."
+  read -r
+fi
 
 # Check if database file is being committed
 if git diff --cached --name-only | grep -q "^murphys\.db$"; then
