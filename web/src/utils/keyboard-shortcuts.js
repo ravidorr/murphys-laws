@@ -103,7 +103,11 @@ function handleKeydown(event) {
       
     case '?':
       event.preventDefault();
-      openKeyboardHelpModal();
+      // Only open if not already open - prevents overwriting previousActiveElement
+      // with an element inside the modal, which would break focus restoration
+      if (!isKeyboardHelpModalOpen()) {
+        openKeyboardHelpModal();
+      }
       break;
       
     case 'j':
