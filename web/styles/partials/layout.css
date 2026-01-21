@@ -321,6 +321,16 @@ footer .footer-nav a:focus-visible {
   text-decoration: underline;
 }
 
+/* Header search form - prevent input from taking 100% width */
+header form[role="search"] {
+  flex-shrink: 0;
+}
+
+header form[role="search"] input {
+  width: auto;
+  flex: 0 0 auto;
+}
+
 /* Mobile header improvements */
 @media (width <= 600px) {
   .brand-subtitle {
