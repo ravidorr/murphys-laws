@@ -4,6 +4,7 @@
 import { firstAttributionLine } from './attribution.js';
 import { escapeHtml, highlightSearchTerm } from './sanitize.js';
 import { getUserVote } from './voting.js';
+import { renderShareButtonsHTML } from '../components/social-share.js';
 
 /**
  * Renders a law card with consistent HTML structure
@@ -60,6 +61,12 @@ export function renderLawCard(law, options = {}) {
   const plainText = escapeHtml(law.text || '');
   const ariaLabel = plainTitle ? `${plainTitle}: ${plainText}` : plainText;
 
+  // Generate share buttons HTML
+  const shareButtonsHtml = renderShareButtonsHTML({
+    lawId: safeId,
+    lawText: law.text || ''
+  });
+
   // Return HTML string with keyboard accessibility (WCAG 2.1.1)
   return `
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
@@ -79,9 +86,7 @@ export function renderLawCard(law, options = {}) {
             <span class="count-num">${down}</span>
           </button>
         </div>
-        <button class="share-link-btn" data-share-law="${safeId}" aria-label="Copy link to this law" title="Copy link">
-          <span class="icon" data-icon="link" aria-hidden="true"></span>
-        </button>
+        ${shareButtonsHtml}
       </div>
     </article>
   `;

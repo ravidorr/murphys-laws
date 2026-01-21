@@ -179,10 +179,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
           const socialShare = SocialShare({
             url: lawUrl,
             title: twitterText,
-            description: lawText
+            description: lawText,
+            lawText: lawText,
+            lawId: law.id
           });
 
           footer.appendChild(socialShare);
+          hydrateIcons(footer);
         }
 
         // Signal content is ready - validate content before triggering ads
@@ -250,12 +253,16 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     const t = e.target;
     if (!(t instanceof Element)) return;
 
-    // Handle copy text action
-    const copyBtn = t.closest('[data-action="copy-text"]');
-    if (copyBtn) {
+    // Handle copy text action (both old and new button formats)
+    const copyTextBtn = t.closest('[data-action="copy-text"]');
+    if (copyTextBtn) {
       e.stopPropagation();
-      const lawTextEl = el.querySelector('[data-law-text]');
-      const textToCopy = lawTextEl?.textContent || '';
+      // Try data-copy-value first (new button), fall back to law-text element (legacy)
+      let textToCopy = copyTextBtn.getAttribute('data-copy-value');
+      if (!textToCopy) {
+        const lawTextEl = el.querySelector('[data-law-text]');
+        textToCopy = lawTextEl?.textContent || '';
+      }
       if (textToCopy) {
         try {
           await navigator.clipboard.writeText(textToCopy);
@@ -276,28 +283,25 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       return;
     }
 
-    // Handle share link button clicks on related laws
-    const shareBtn = t.closest('[data-share-law]');
-    if (shareBtn) {
+    // Handle copy link action (new circular button)
+    const copyLinkBtn = t.closest('[data-action="copy-link"]');
+    if (copyLinkBtn) {
       e.stopPropagation();
-      const shareLawId = shareBtn.getAttribute('data-share-law');
-      if (shareLawId) {
-        const lawUrl = `${window.location.origin}/law/${shareLawId}`;
-        try {
-          await navigator.clipboard.writeText(lawUrl);
-          showSuccess('Link copied to clipboard!');
-        } catch {
-          // Fallback
-          const textArea = document.createElement('textarea');
-          textArea.value = lawUrl;
-          textArea.style.position = 'fixed';
-          textArea.style.opacity = '0';
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-          showSuccess('Link copied to clipboard!');
-        }
+      const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || window.location.href;
+      try {
+        await navigator.clipboard.writeText(linkToCopy);
+        showSuccess('Link copied to clipboard!');
+      } catch {
+        // Fallback
+        const textArea = document.createElement('textarea');
+        textArea.value = linkToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showSuccess('Link copied to clipboard!');
       }
       return;
     }

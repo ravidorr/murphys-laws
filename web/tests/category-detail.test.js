@@ -13,7 +13,12 @@ vi.mock('../src/utils/law-card-renderer.js', () => ({
 }));
 vi.mock('../src/modules/structured-data.js');
 vi.mock('../src/utils/icons.js', () => ({
-  hydrateIcons: vi.fn()
+  hydrateIcons: vi.fn(),
+  createIcon: vi.fn(() => document.createElement('span'))
+}));
+vi.mock('../src/components/notification.js', () => ({
+  showSuccess: vi.fn(),
+  showError: vi.fn()
 }));
 vi.mock('../src/utils/constants.js', () => ({
   SITE_URL: 'https://murphys-laws.com',
@@ -293,5 +298,87 @@ describe('CategoryDetail view', () => {
 
     // Should find the category by slug and use its title
     expect(el.textContent).toContain("Murphy's Computers Laws");
+  });
+
+  describe('copy actions', () => {
+    it('copies law text to clipboard when copy text button is clicked', async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      copyTextBtn.setAttribute('data-copy-value', 'Test law text');
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith('Test law text');
+    });
+
+    it('copies law link to clipboard when copy link button is clicked', async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.setAttribute('data-action', 'copy-link');
+      copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/1');
+      el.appendChild(copyLinkBtn);
+
+      copyLinkBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith('https://test.com/law/1');
+    });
+
+    it('uses fallback when clipboard API fails on copy text', async () => {
+      const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      copyTextBtn.setAttribute('data-copy-value', 'Test law text');
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      expect(writeTextMock).toHaveBeenCalled();
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+    });
+
+    it('uses fallback when clipboard API fails on copy link', async () => {
+      const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.setAttribute('data-action', 'copy-link');
+      copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/1');
+      el.appendChild(copyLinkBtn);
+
+      copyLinkBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      expect(writeTextMock).toHaveBeenCalled();
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+    });
   });
 });

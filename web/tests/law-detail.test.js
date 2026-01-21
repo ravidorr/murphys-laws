@@ -452,12 +452,13 @@ describe('LawDetail view', () => {
 
     await new Promise(r => setTimeout(r, 50));
 
-    // Create a share button for a related law
-    const shareBtn = document.createElement('button');
-    shareBtn.setAttribute('data-share-law', '99');
-    el.appendChild(shareBtn);
+    // Create a copy link button (new format with data-action)
+    const copyLinkBtn = document.createElement('button');
+    copyLinkBtn.setAttribute('data-action', 'copy-link');
+    copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/99');
+    el.appendChild(copyLinkBtn);
 
-    shareBtn.click();
+    copyLinkBtn.click();
     await new Promise(r => setTimeout(r, 10));
 
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('/law/99'));
@@ -484,17 +485,77 @@ describe('LawDetail view', () => {
 
     await new Promise(r => setTimeout(r, 50));
 
-    // Create a share button for a related law
-    const shareBtn = document.createElement('button');
-    shareBtn.setAttribute('data-share-law', '88');
-    el.appendChild(shareBtn);
+    // Create a copy link button (new format with data-action)
+    const copyLinkBtn = document.createElement('button');
+    copyLinkBtn.setAttribute('data-action', 'copy-link');
+    copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/88');
+    el.appendChild(copyLinkBtn);
 
-    shareBtn.click();
+    copyLinkBtn.click();
     await new Promise(r => setTimeout(r, 50));
 
     // Should have tried clipboard first, then fallback to execCommand
     expect(writeTextMock).toHaveBeenCalled();
     expect(execCommandMock).toHaveBeenCalledWith('copy');
+  });
+
+  it('uses window.location.href as fallback when data-copy-value is missing on copy link', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a copy link button without data-copy-value
+    const copyLinkBtn = document.createElement('button');
+    copyLinkBtn.setAttribute('data-action', 'copy-link');
+    // No data-copy-value set - should fall back to window.location.href
+    el.appendChild(copyLinkBtn);
+
+    copyLinkBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(writeTextMock).toHaveBeenCalledWith(window.location.href);
+  });
+
+  it('uses law-text element as fallback when data-copy-value is missing on copy text', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a copy text button without data-copy-value
+    const copyTextBtn = document.createElement('button');
+    copyTextBtn.setAttribute('data-action', 'copy-text');
+    // No data-copy-value set - should fall back to [data-law-text] element
+    el.appendChild(copyTextBtn);
+
+    copyTextBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // Should have copied the law text from the rendered element
+    expect(writeTextMock).toHaveBeenCalled();
   });
 
   it('navigates to related law card when clicked', async () => {
@@ -528,9 +589,11 @@ describe('LawDetail view', () => {
 
   it('fetches related laws when law has category_id', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
-    const relatedLaws = { data: [
-      { id: '8', title: 'Related Law', text: 'Related text', upvotes: 3, downvotes: 0 }
-    ]};
+    const relatedLaws = {
+      data: [
+        { id: '8', title: 'Related Law', text: 'Related text', upvotes: 3, downvotes: 0 }
+      ]
+    };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
