@@ -88,7 +88,7 @@ export function Calculator() {
         // Capture MathJax reference to avoid race conditions in test environments
         const mathJax = window.MathJax;
         requestAnimationFrame(() => {
-          // Defensive check: MathJax might become undefined in test environments
+          /* v8 ignore next 3 - MathJax defensive check for race conditions */
           if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
             return;
           }

@@ -1049,4 +1049,216 @@ describe('Browse view', () => {
       }));
     }, { timeout: 1000 });
   });
+
+  it('does not trigger loadPage when clicking a disabled pagination button', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({
+        id: i + 1,
+        title: `Law ${i + 1}`,
+        text: `Text ${i + 1}`,
+        upvotes: 0,
+        downvotes: 0
+      })),
+      total: 100
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    // Wait for initial load
+    await vi.waitFor(() => {
+      expect(el.querySelector('.pagination')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Clear mock after initial load
+    fetchLawsSpy.mockClear();
+
+    // Create a button with data-page and disabled attribute manually
+    const disabledBtn = document.createElement('button');
+    disabledBtn.dataset.page = '5';
+    disabledBtn.setAttribute('disabled', 'true');
+    el.appendChild(disabledBtn);
+
+    // Click the disabled button
+    disabledBtn.click();
+
+    // Wait a short time to ensure no async call would be triggered
+    await new Promise(r => setTimeout(r, 50));
+
+    // fetchLaws should NOT have been called since button is disabled
+    expect(fetchLawsSpy).not.toHaveBeenCalled();
+
+    el.removeChild(disabledBtn);
+  });
+
+  it('copies law link to clipboard when share button is clicked', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Create a share button and click it
+    const shareBtn = document.createElement('button');
+    shareBtn.setAttribute('data-share-law', '123');
+    el.appendChild(shareBtn);
+
+    shareBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('/law/123'));
+  });
+
+  it('uses fallback when clipboard API fails on share button', async () => {
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    // Mock execCommand for fallback
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Create a share button and click it
+    const shareBtn = document.createElement('button');
+    shareBtn.setAttribute('data-share-law', '456');
+    el.appendChild(shareBtn);
+
+    shareBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+
+    // Should have tried clipboard first, then fallback to execCommand
+    expect(writeTextMock).toHaveBeenCalled();
+    expect(execCommandMock).toHaveBeenCalledWith('copy');
+  });
+
+  it('does not copy when share button has no law id', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Create a share button without law id
+    const shareBtn = document.createElement('button');
+    shareBtn.setAttribute('data-share-law', '');
+    el.appendChild(shareBtn);
+
+    shareBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // Should not copy when no law id
+    expect(writeTextMock).not.toHaveBeenCalled();
+  });
+
+  it('handles response with non-finite total', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: [{ id: 1, title: 'Law 1', text: 'Text 1', upvotes: 0, downvotes: 0 }],
+      total: NaN
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Should use data.length as fallback when total is NaN
+    const resultCount = el.querySelector('#browse-result-count');
+    expect(resultCount.textContent).toContain('1');
+  });
+
+  it('handles non-Element click target gracefully', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Create and dispatch a click event with null target
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null, writable: false });
+
+    // Should not throw
+    expect(() => el.dispatchEvent(event)).not.toThrow();
+  });
+
+  it('handles non-Element keydown target gracefully', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // Create and dispatch a keydown event with null target
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    Object.defineProperty(event, 'target', { value: null, writable: false });
+
+    // Should not throw
+    expect(() => el.dispatchEvent(event)).not.toThrow();
+  });
+
+  it('ignores keydown events that are not Enter or Space', async () => {
+    const onNavigate = vi.fn();
+    const el = Browse({ searchQuery: '', onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const lawCard = el.querySelector('.law-card-mini');
+    
+    // Simulate Tab key press (should be ignored)
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+    lawCard.dispatchEvent(tabEvent);
+
+    // Navigation should not be triggered for Tab key
+    expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
+  });
+
+  it('handles response with non-array data', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: 'not an array',
+      total: 5
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      // Should show empty state when data is not an array
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+  });
+
+  it('handles response with null data object', async () => {
+    fetchLawsSpy.mockResolvedValue(null);
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      // Should show empty state when response is null
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+  });
 });

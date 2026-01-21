@@ -199,5 +199,43 @@ describe('Icons utility', () => {
       expect(icon.getAttribute('title')).toBe('Go home');
       expect(icon.hasAttribute('aria-hidden')).toBe(false);
     });
+
+    it('returns early when document is undefined (SSR environment)', () => {
+      const originalDocument = global.document;
+      delete global.document;
+      
+      // Should not throw
+      expect(() => hydrateIcons(null)).not.toThrow();
+      
+      global.document = originalDocument;
+    });
+
+    it('skips icon replacement when createIcon returns null for unknown icon', () => {
+      // Create a placeholder with a valid-looking but nonexistent icon
+      container.innerHTML = '<span data-icon="totally-fake-icon-xyz"></span>';
+      
+      // Capture original span
+      const originalSpan = container.querySelector('span');
+      expect(originalSpan).toBeTruthy();
+      
+      hydrateIcons(container);
+      
+      // Should still have the original span (not replaced)
+      const spanAfter = container.querySelector('span[data-icon="totally-fake-icon-xyz"]');
+      expect(spanAfter).toBeTruthy();
+      expect(container.querySelector('svg')).toBeNull();
+    });
+  });
+
+  describe('createIcon SSR handling', () => {
+    it('returns null when document is undefined', () => {
+      const originalDocument = global.document;
+      delete global.document;
+      
+      const icon = createIcon('home');
+      expect(icon).toBeNull();
+      
+      global.document = originalDocument;
+    });
   });
 });

@@ -535,4 +535,57 @@ describe('Footer component', () => {
     // Ad should remain marked as loaded but no new ad created
     expect(adSlot.dataset.loaded).toBe('true');
   });
+
+  it('does not load ads when hideAds prop is true', () => {
+    window.adsbygoogle = [];
+
+    const el = Footer({
+      onNavigate: () => { },
+      hideAds: true
+    });
+
+    // The ad slot should exist in template but ad loading logic should be skipped
+    const adSlot = el.querySelector('[data-ad-slot]');
+    expect(adSlot).toBeTruthy();
+    
+    // Trigger event that would normally load ad
+    el.dispatchEvent(new Event('adslot:init'));
+    
+    // Ad should not be loaded since hideAds is true
+    expect(adSlot.dataset.loaded).not.toBe('true');
+  });
+
+  it('skips ad loading when main content is insufficient', () => {
+    window.adsbygoogle = [];
+
+    // Remove the main element with content
+    if (mainElement && mainElement.parentNode) {
+      mainElement.parentNode.removeChild(mainElement);
+    }
+
+    // Create a main element with minimal content (below threshold)
+    const emptyMain = document.createElement('main');
+    emptyMain.textContent = 'Short content';
+    document.body.appendChild(emptyMain);
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({
+      onNavigate: () => { }
+    });
+
+    // primeAd should check content and skip loading
+    window.dispatchEvent(new Event('scroll'));
+
+    const adSlot = el.querySelector('[data-ad-slot]');
+    // Ad should not be loaded due to insufficient content
+    expect(adSlot.dataset.loaded).not.toBe('true');
+
+    // Cleanup
+    emptyMain.remove();
+  });
 });

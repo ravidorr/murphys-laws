@@ -385,4 +385,23 @@ describe('Router', () => {
     expect(rootEl.textContent).toBe('404');
     document.body.removeChild(rootEl);
   });
+
+  it('falls back to home route when no notFoundRender provided and route not defined', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+
+    defineRoute('home', () => {
+      const el = document.createElement('div');
+      el.textContent = 'Home Fallback';
+      return el;
+    });
+
+    // Navigate to an undefined route without notFoundRender
+    history.replaceState(null, '', '/nonexistent-page');
+    startRouter(rootEl); // No notFoundRender provided
+
+    // Should fall back to home route
+    expect(rootEl.textContent).toBe('Home Fallback');
+    document.body.removeChild(rootEl);
+  });
 });

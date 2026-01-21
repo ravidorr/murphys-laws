@@ -69,10 +69,10 @@ export default defineConfig({
         'src/utils/facebook-signed-request.js', // Server-side utility (uses Node.js crypto, used in scripts/api-server.mjs but not currently tested)
       ],
       thresholds: {
-        lines: 90,
-        functions: 90,
-        branches: 90,
-        statements: 90
+        lines: 95,
+        functions: 95,
+        branches: 95,
+        statements: 95
       }
     },
     exclude: [
