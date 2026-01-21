@@ -1,3 +1,13 @@
+# Code review reminder
+echo ""
+echo "=========================================="
+echo "  Have you run a code review?"
+echo "  In Cursor, say: 'pre-commit review'"
+echo "=========================================="
+echo ""
+echo "Press Enter to continue, or Ctrl+C to cancel and review first."
+read -r
+
 # Check if database file is being committed
 if git diff --cached --name-only | grep -q "^murphys\.db$"; then
   echo "ERROR: You're trying to commit murphys.db!"
