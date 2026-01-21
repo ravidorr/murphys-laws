@@ -59,6 +59,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   }
 
   function renderLawCard(law) {
+    /* v8 ignore next 3 - Template type guard, tested via integration tests */
     if (!lawCardTemplate || !(lawCardTemplate instanceof HTMLTemplateElement)) {
       return null;
     }

@@ -410,5 +410,247 @@ describe('LawDetail view', () => {
     // If we got here without throwing, the error was handled gracefully
     expect(toggleVoteSpy).toHaveBeenCalled();
   });
+
+  it('handles missing law card template gracefully', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Remove the template element to simulate missing template
+    const template = el.querySelector('[data-law-card-template]');
+    if (template) {
+      // Replace the template with a non-template element
+      const div = document.createElement('div');
+      div.setAttribute('data-law-card-template', '');
+      template.parentNode.replaceChild(div, template);
+    }
+
+    // Try to re-render - should not crash
+    // The component should handle this gracefully when renderLawCard returns null
+    expect(el.querySelector('[data-law-content]')).toBeTruthy();
+  });
+
+  it('copies related law link to clipboard when share button is clicked', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a share button for a related law
+    const shareBtn = document.createElement('button');
+    shareBtn.setAttribute('data-share-law', '99');
+    el.appendChild(shareBtn);
+
+    shareBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('/law/99'));
+  });
+
+  it('uses fallback when clipboard API fails on share button', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    // Mock execCommand for fallback
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a share button for a related law
+    const shareBtn = document.createElement('button');
+    shareBtn.setAttribute('data-share-law', '88');
+    el.appendChild(shareBtn);
+
+    shareBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+
+    // Should have tried clipboard first, then fallback to execCommand
+    expect(writeTextMock).toHaveBeenCalled();
+    expect(execCommandMock).toHaveBeenCalledWith('copy');
+  });
+
+  it('navigates to related law card when clicked', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    let navTarget = '';
+    let navParam = '';
+    const el = LawDetail({
+      lawId: law.id,
+      _isLoggedIn: false,
+      _currentUser: null,
+      onNavigate: (target, param) => { navTarget = target; navParam = param; }
+    });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a related law card
+    const relatedCard = document.createElement('div');
+    relatedCard.className = 'law-card-mini';
+    relatedCard.dataset.lawId = '42';
+    el.appendChild(relatedCard);
+
+    relatedCard.click();
+
+    expect(navTarget).toBe('law');
+    expect(navParam).toBe('42');
+  });
+
+  it('fetches related laws when law has category_id', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+    const relatedLaws = { data: [
+      { id: '8', title: 'Related Law', text: 'Related text', upvotes: 3, downvotes: 0 }
+    ]};
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValue({ ok: true, json: async () => relatedLaws });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 100));
+
+    // Should have made at least 2 fetches (law + related laws)
+    expect(global.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('handles related laws fetch failure silently', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockRejectedValueOnce(new Error('Network error'));
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 100));
+
+    // Should not throw - related laws failure is silent
+    expect(el.textContent).toContain('Test Law');
+  });
+
+  it('handles empty related laws array', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 100));
+
+    // Related section should remain hidden
+    const relatedSection = el.querySelector('[data-related-laws]');
+    if (relatedSection) {
+      expect(relatedSection.hasAttribute('hidden')).toBe(true);
+    }
+  });
+
+  it('handles related laws with null data', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: null }) });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 100));
+
+    // Should not throw
+    expect(el.textContent).toContain('Test Law');
+  });
+
+  it('handles copy text action with successful clipboard', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text content', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a copy text button and click it
+    const copyBtn = document.createElement('button');
+    copyBtn.setAttribute('data-action', 'copy-text');
+    el.appendChild(copyBtn);
+
+    copyBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(writeTextMock).toHaveBeenCalled();
+  });
+
+  it('handles copy text action with clipboard failure fallback', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text content', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    // Mock execCommand for fallback
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a copy text button and click it
+    const copyBtn = document.createElement('button');
+    copyBtn.setAttribute('data-action', 'copy-text');
+    el.appendChild(copyBtn);
+
+    copyBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(writeTextMock).toHaveBeenCalled();
+    expect(execCommandMock).toHaveBeenCalledWith('copy');
+  });
 });
 

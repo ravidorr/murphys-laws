@@ -424,4 +424,76 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  it('loads slider values from URL parameters', () => {
+    // Set URL with parameters
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = {
+      ...originalLocation,
+      search: '?h=80&g=1000&o=6&b=1.5&f=25&t=400'
+    };
+
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    // Check that sliders were set from URL params
+    expect(el.querySelector('#toast-height').value).toBe('80');
+    expect(el.querySelector('#toast-gravity').value).toBe('1000');
+    expect(el.querySelector('#toast-overhang').value).toBe('6');
+    expect(el.querySelector('#toast-butter').value).toBe('1.5');
+    expect(el.querySelector('#toast-friction').value).toBe('25');
+    expect(el.querySelector('#toast-inertia').value).toBe('400');
+
+    document.body.removeChild(el);
+    window.location = originalLocation;
+  });
+
+  it('ignores URL parameters outside valid range', () => {
+    // Set URL with out-of-range parameters
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = {
+      ...originalLocation,
+      search: '?h=999&g=-100&o=50' // Values outside valid ranges
+    };
+
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    // Values outside range should not be applied (keep defaults)
+    // Height range is typically 50-120, gravity 900-1100, overhang 1-10
+    const heightSlider = el.querySelector('#toast-height');
+    const gravitySlider = el.querySelector('#toast-gravity');
+    const overhangSlider = el.querySelector('#toast-overhang');
+
+    // Check that values stayed within valid range
+    expect(parseFloat(heightSlider.value)).toBeLessThanOrEqual(parseFloat(heightSlider.max));
+    expect(parseFloat(gravitySlider.value)).toBeGreaterThanOrEqual(parseFloat(gravitySlider.min));
+    expect(parseFloat(overhangSlider.value)).toBeLessThanOrEqual(parseFloat(overhangSlider.max));
+
+    document.body.removeChild(el);
+    window.location = originalLocation;
+  });
+
+  it('recalculates when URL parameters are loaded', () => {
+    // Set URL with some parameters
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = {
+      ...originalLocation,
+      search: '?h=90'
+    };
+
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    // The probability should be calculated (not the default)
+    const probability = el.querySelector('#toast-probability-value');
+    expect(probability).toBeTruthy();
+    expect(probability.textContent).toMatch(/\d+%/);
+
+    document.body.removeChild(el);
+    window.location = originalLocation;
+  });
+
 });

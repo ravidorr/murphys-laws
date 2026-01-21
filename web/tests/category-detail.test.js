@@ -259,4 +259,39 @@ describe('CategoryDetail view', () => {
 
     expect(el.textContent).toContain('No laws found');
   });
+
+  it('handles category slug instead of numeric id', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, slug: 'technology', title: 'Technology Laws' },
+        { id: 2, slug: 'work', title: 'Work Laws' }
+      ]
+    });
+
+    const el = CategoryDetail({ categoryId: 'technology', onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should use category_slug param instead of category_id
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+      category_slug: 'technology'
+    }));
+
+    // Should find category by slug and display its title
+    expect(el.textContent).toContain('Technology Laws');
+  });
+
+  it('finds category by slug in fetchCategoryDetails', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, slug: 'computers', title: "Murphy's Computers Laws" },
+        { id: 2, slug: 'work', title: 'Work Laws' }
+      ]
+    });
+
+    const el = CategoryDetail({ categoryId: 'computers', onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should find the category by slug and use its title
+    expect(el.textContent).toContain("Murphy's Computers Laws");
+  });
 });

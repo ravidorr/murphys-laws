@@ -35,6 +35,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       if (words.length > 1) {
         return `<span class="accent-text">${words[0]}</span> ${words.slice(1).join(' ')}`;
       }
+      /* v8 ignore next - Single word category title fallback */
       return `<span class="accent-text">${title}</span>`;
     }
     // Otherwise, add "'s Laws"

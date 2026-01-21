@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { LawService } from '../../src/services/laws.service.mjs';
 
@@ -292,5 +292,24 @@ describe('LawService', () => {
     // No sort parameter
     const result = await lawService.listLaws({ limit: 10, offset: 0 });
     expect(result.data[0].text).toBe('High Score');
+  });
+
+  it('should throw error when law insert fails', async () => {
+    // Mock db.prepare to return a statement that returns null from get()
+    const originalPrepare = db.prepare.bind(db);
+    vi.spyOn(db, 'prepare').mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO laws')) {
+        return {
+          get: () => null, // Simulate insert failure
+          run: () => ({ changes: 0 }),
+        };
+      }
+      return originalPrepare(sql);
+    });
+
+    await expect(lawService.submitLaw({
+      title: 'Test',
+      text: 'Test text'
+    })).rejects.toThrow('Failed to insert law');
   });
 });

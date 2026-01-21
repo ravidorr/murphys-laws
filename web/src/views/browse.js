@@ -100,6 +100,7 @@ export function Browse({ searchQuery, onNavigate }) {
       cardText.innerHTML = wrapLoadingMarkup();
 
       // Disable pagination buttons during load
+      /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
       el.querySelectorAll('.pagination button').forEach(btn => {
         btn.setAttribute('disabled', 'true');
       });

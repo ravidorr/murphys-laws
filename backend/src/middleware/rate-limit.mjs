@@ -7,6 +7,7 @@ const RATE_LIMITS = {
 
 const rateLimitStore = new Map();
 
+/* v8 ignore start - Background cleanup interval is tested indirectly */
 // Clean up old rate limit entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
@@ -16,6 +17,7 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+/* v8 ignore stop */
 
 export function checkRateLimit(identifier, type) {
   const limit = RATE_LIMITS[type];

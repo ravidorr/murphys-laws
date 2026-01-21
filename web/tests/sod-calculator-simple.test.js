@@ -176,4 +176,27 @@ describe('SodCalculatorSimple component', () => {
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation).toContain('Catastrophe');
   });
+
+  it('handles click event with non-Element target gracefully', () => {
+    const el = mountCalculator();
+
+    // Create and dispatch a click event with null target
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: null, writable: false });
+
+    // Should not throw
+    expect(() => el.dispatchEvent(event)).not.toThrow();
+  });
+
+  it('handles click on element without data-nav attribute', () => {
+    let navigated = null;
+    const el = mountCalculator({ onNavigate: (page) => { navigated = page; } });
+
+    // Click on a slider (which doesn't have data-nav)
+    const slider = el.querySelector('#urgency');
+    slider.click();
+
+    // Should not trigger navigation
+    expect(navigated).toBeNull();
+  });
 });

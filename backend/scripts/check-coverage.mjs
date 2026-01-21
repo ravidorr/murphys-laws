@@ -21,10 +21,10 @@ const ROOT_DIR = join(__dirname, '..');
 
 // Coverage thresholds (must match vite.config.js)
 const THRESHOLDS = {
-  lines: 90,
-  functions: 90,
-  branches: 90,
-  statements: 90
+  lines: 95,
+  functions: 95,
+  branches: 95,
+  statements: 95
 };
 
 // Emergency bypass

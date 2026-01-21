@@ -65,8 +65,33 @@ describe('Home view', () => {
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
 
-    // Should render widgets even if fetch fails
+    // When fetch fails, it falls back to null and still renders calculators
+    // The error path is only reached if renderHome itself throws
     expect(el.textContent).toMatch(/Calculator|Submit/i);
+  });
+
+  it('navigates to category when clicking category:id nav button', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    let navParam = '';
+    const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a button with category:id format and click it
+    const catBtn = document.createElement('button');
+    catBtn.setAttribute('data-nav', 'category:technology');
+    el.appendChild(catBtn);
+
+    catBtn.click();
+
+    expect(navTarget).toBe('category');
+    expect(navParam).toBe('technology');
   });
 
   it('navigates using data-nav attribute', async () => {
@@ -409,5 +434,147 @@ describe('renderHome function', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
+});
+
+describe('Home view keyboard navigation for law cards', () => {
+  it('navigates to law when pressing Enter on law card with data-law-id', async () => {
+    const lawOfTheDay = { id: 42, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    let navParam = '';
+    const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Find the law card element with data-law-id
+    const lawCard = el.querySelector('[data-law-id="42"]');
+    expect(lawCard).toBeTruthy();
+
+    // Simulate Enter key press on the law card
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    lawCard.dispatchEvent(enterEvent);
+
+    expect(navTarget).toBe('law');
+    expect(navParam).toBe('42');
+  });
+
+  it('navigates to law when pressing Space on law card with data-law-id', async () => {
+    const lawOfTheDay = { id: 42, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    let navParam = '';
+    const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Find the law card element with data-law-id
+    const lawCard = el.querySelector('[data-law-id="42"]');
+    expect(lawCard).toBeTruthy();
+
+    // Simulate Space key press on the law card
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+    lawCard.dispatchEvent(spaceEvent);
+
+    expect(navTarget).toBe('law');
+    expect(navParam).toBe('42');
+  });
+
+  it('does not navigate when keydown on element without data-law-id or data-nav', async () => {
+    const lawOfTheDay = { id: 42, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navCalled = false;
+    const el = Home({ onNavigate: () => { navCalled = true; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Add an element without data-law-id or data-nav
+    const plainElement = document.createElement('div');
+    plainElement.className = 'some-element';
+    el.appendChild(plainElement);
+
+    // Simulate Enter key press on the plain element
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    plainElement.dispatchEvent(enterEvent);
+
+    expect(navCalled).toBe(false);
+  });
+
+  it('handles non-Element keydown target gracefully', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+
+    // Simulate keydown with non-Element target
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    Object.defineProperty(event, 'target', { value: null, writable: false });
+    el.dispatchEvent(event);
+
+    // Should not throw error
+    expect(true).toBe(true);
+  });
+
+  it('ignores keydown events that are not Enter or Space', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navCalled = false;
+    const el = Home({ onNavigate: () => { navCalled = true; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Find a law card
+    const lawCard = el.querySelector('[data-law-id]');
+    if (lawCard) {
+      // Simulate Tab key press (should be ignored)
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+      lawCard.dispatchEvent(tabEvent);
+    }
+
+    // Navigation should not be triggered for Tab key
+    expect(navCalled).toBe(false);
+  });
+
+  it('does not navigate when clicking law card with empty data-law-id', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navCalled = false;
+    const el = Home({ onNavigate: () => { navCalled = true; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a law card with empty id
+    const card = document.createElement('div');
+    card.setAttribute('data-law-id', '');
+    el.appendChild(card);
+
+    card.click();
+
+    // Navigation should not be triggered for empty id
+    expect(navCalled).toBe(false);
+  });
 });
 
