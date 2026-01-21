@@ -88,14 +88,17 @@ describe('LawOfTheDay component', () => {
     expect(el.textContent).toMatch(/Browse All Laws/);
     expect(el.querySelector('[data-nav="browse"]')).toBeTruthy();
 
-    // Check for social share buttons
-    const shareButtons = el.querySelector('.share-buttons');
-    expect(shareButtons).toBeTruthy();
-    expect(shareButtons.querySelector('.share-twitter')).toBeTruthy();
-    expect(shareButtons.querySelector('.share-facebook')).toBeTruthy();
-    expect(shareButtons.querySelector('.share-linkedin')).toBeTruthy();
-    expect(shareButtons.querySelector('.share-reddit')).toBeTruthy();
-    expect(shareButtons.querySelector('.share-email')).toBeTruthy();
+    // Check for social share popover
+    const shareWrapper = el.querySelector('.share-wrapper');
+    expect(shareWrapper).toBeTruthy();
+    expect(shareWrapper.querySelector('.share-trigger')).toBeTruthy();
+    const popover = shareWrapper.querySelector('.share-popover');
+    expect(popover).toBeTruthy();
+    // Check popover has share links
+    expect(popover.querySelector('[href*="facebook"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="linkedin"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="reddit"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
   it('handles upvote button click', async () => {
@@ -354,7 +357,7 @@ describe('LawOfTheDay component', () => {
     const el = mountLaw(law);
 
     // Should still render without errors
-    expect(el.querySelector('.share-buttons')).toBeTruthy();
+    expect(el.querySelector('.share-wrapper')).toBeTruthy();
   });
 
   it('handles law with undefined text gracefully', () => {
@@ -368,7 +371,7 @@ describe('LawOfTheDay component', () => {
     const el = mountLaw(law);
 
     // Should still render without errors
-    expect(el.querySelector('.share-buttons')).toBeTruthy();
+    expect(el.querySelector('.share-wrapper')).toBeTruthy();
   });
 
   describe('copy actions', () => {

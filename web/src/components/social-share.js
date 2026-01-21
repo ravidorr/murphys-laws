@@ -1,24 +1,24 @@
 /**
  * Social Share Component
- * Renders social sharing buttons for Twitter, Facebook, LinkedIn, Reddit, Email,
- * Copy Text, and Copy Link
+ * Renders a share button with popover menu containing sharing options for
+ * Twitter, Facebook, LinkedIn, Reddit, Email, Copy Text, and Copy Link
  */
 
 import { createIcon } from '../utils/icons.js';
 
 /**
- * Create social share buttons
+ * Create social share popover component
  * @param {Object} options - Configuration options
  * @param {string} options.url - URL to share (defaults to current page URL)
  * @param {string} options.title - Title/text to share (defaults to document title)
  * @param {string} options.description - Optional description for some platforms
  * @param {string} options.lawText - The law text for copy-text functionality
  * @param {string} options.lawId - The law ID for data attributes
- * @returns {HTMLElement} - Social share buttons container
+ * @returns {HTMLElement} - Social share popover container
  */
 export function SocialShare({ url, title, description, lawText, lawId } = {}) {
-  const el = document.createElement('div');
-  el.className = 'share-buttons';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'share-wrapper';
 
   // Use provided values or defaults
   const shareUrl = url || window.location.href;
@@ -44,115 +44,164 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
   const redditUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
-  // Social link platforms (open external URLs)
+  // Create trigger button
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'share-trigger';
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.setAttribute('aria-haspopup', 'true');
+  trigger.setAttribute('aria-label', 'Share this law');
+
+  const shareIcon = createIcon('share', { classNames: [] });
+  if (shareIcon) {
+    trigger.appendChild(shareIcon);
+  }
+  trigger.appendChild(document.createTextNode('Share'));
+  wrapper.appendChild(trigger);
+
+  // Create popover
+  const popover = document.createElement('div');
+  popover.className = 'share-popover';
+  popover.setAttribute('role', 'menu');
+
+  // Social link platforms
   const linkPlatforms = [
-    {
-      className: 'share-button share-twitter',
-      href: twitterUrl,
-      label: 'Share on X',
-      iconName: 'twitter',
-      rel: 'noopener noreferrer',
-      target: '_blank',
-    },
-    {
-      className: 'share-button share-facebook',
-      href: facebookUrl,
-      label: 'Share on Facebook',
-      iconName: 'facebook',
-      rel: 'noopener noreferrer',
-      target: '_blank',
-    },
-    {
-      className: 'share-button share-linkedin',
-      href: linkedinUrl,
-      label: 'Share on LinkedIn',
-      iconName: 'linkedin',
-      rel: 'noopener noreferrer',
-      target: '_blank',
-    },
-    {
-      className: 'share-button share-reddit',
-      href: redditUrl,
-      label: 'Share on Reddit',
-      iconName: 'reddit',
-      rel: 'noopener noreferrer',
-      target: '_blank',
-    },
-    {
-      className: 'share-button share-email',
-      href: emailUrl,
-      label: 'Share via Email',
-      iconName: 'email',
-    },
+    { href: twitterUrl, label: 'Share on X', iconName: 'twitter', platform: 'twitter' },
+    { href: facebookUrl, label: 'Share on Facebook', iconName: 'facebook', platform: 'facebook' },
+    { href: linkedinUrl, label: 'Share on LinkedIn', iconName: 'linkedin', platform: 'linkedin' },
+    { href: redditUrl, label: 'Share on Reddit', iconName: 'reddit', platform: 'reddit' },
+    { href: emailUrl, label: 'Share via Email', iconName: 'email', platform: 'email' },
   ];
 
-  // Create link elements for social platforms
-  linkPlatforms.forEach(({ className, href, label, rel, target, iconName }) => {
+  // Create link items
+  linkPlatforms.forEach(({ href, label, iconName, platform }) => {
     const link = document.createElement('a');
-    link.className = className;
+    link.className = 'share-popover-item';
     link.href = href;
-    link.setAttribute('aria-label', label);
-    link.setAttribute('title', label);
-    if (rel) link.setAttribute('rel', rel);
-    if (target) link.setAttribute('target', target);
-
-    const icon = createIcon(iconName, { classNames: ['share-icon'] });
-    if (icon) {
-      link.appendChild(icon);
+    link.setAttribute('role', 'menuitem');
+    link.setAttribute('target', platform === 'email' ? '_self' : '_blank');
+    if (platform !== 'email') {
+      link.setAttribute('rel', 'noopener noreferrer');
     }
 
-    el.appendChild(link);
+    const iconCircle = document.createElement('span');
+    iconCircle.className = `icon-circle ${platform}`;
+    const icon = createIcon(iconName, { classNames: [] });
+    if (icon) {
+      iconCircle.appendChild(icon);
+    }
+    link.appendChild(iconCircle);
+    link.appendChild(document.createTextNode(label));
+    popover.appendChild(link);
   });
 
-  // Copy action buttons (trigger JavaScript)
-  const buttonPlatforms = [
-    {
-      className: 'share-button share-copy-text',
-      label: 'Copy text',
-      iconName: 'copy',
-      dataAction: 'copy-text',
-      dataCopyValue: textToCopy,
-    },
-    {
-      className: 'share-button share-copy-link',
-      label: 'Copy link',
-      iconName: 'link',
-      dataAction: 'copy-link',
-      dataCopyValue: shareUrl,
-    },
+  // Add divider
+  const divider = document.createElement('div');
+  divider.className = 'share-popover-divider';
+  popover.appendChild(divider);
+
+  // Copy action buttons
+  const copyPlatforms = [
+    { label: 'Copy text', iconName: 'copy', platform: 'copy', dataAction: 'copy-text', dataCopyValue: textToCopy },
+    { label: 'Copy link', iconName: 'link', platform: 'link', dataAction: 'copy-link', dataCopyValue: shareUrl },
   ];
 
-  // Create button elements for copy actions
-  buttonPlatforms.forEach(({ className, label, iconName, dataAction, dataCopyValue }) => {
+  copyPlatforms.forEach(({ label, iconName, platform, dataAction, dataCopyValue }) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = className;
-    button.setAttribute('aria-label', label);
-    button.setAttribute('title', label);
+    button.className = 'share-popover-item';
+    button.setAttribute('role', 'menuitem');
     button.setAttribute('data-action', dataAction);
     button.setAttribute('data-copy-value', dataCopyValue);
     if (lawId) {
       button.setAttribute('data-law-id', lawId);
     }
 
-    const icon = createIcon(iconName, { classNames: ['share-icon'] });
+    const iconCircle = document.createElement('span');
+    iconCircle.className = `icon-circle ${platform}`;
+    const icon = createIcon(iconName, { classNames: [] });
     if (icon) {
-      button.appendChild(icon);
+      iconCircle.appendChild(icon);
     }
-
-    el.appendChild(button);
+    button.appendChild(iconCircle);
+    button.appendChild(document.createTextNode(label));
+    popover.appendChild(button);
   });
 
-  return el;
+  // Add copy feedback element
+  const feedback = document.createElement('div');
+  feedback.className = 'share-copy-feedback';
+  const checkIcon = createIcon('checkCircle', { classNames: [] });
+  if (checkIcon) {
+    feedback.appendChild(checkIcon);
+  }
+  feedback.appendChild(document.createTextNode('Copied!'));
+  popover.appendChild(feedback);
+
+  wrapper.appendChild(popover);
+
+  // Toggle popover on trigger click
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = popover.classList.contains('open');
+
+    // Close all other popovers first
+    document.querySelectorAll('.share-popover.open').forEach(p => {
+      if (p !== popover) {
+        p.classList.remove('open');
+        p.classList.remove('popover-above');
+        const otherTrigger = p.previousElementSibling;
+        if (otherTrigger) {
+          otherTrigger.setAttribute('aria-expanded', 'false');
+        }
+      }
+    });
+
+    if (isOpen) {
+      popover.classList.remove('open');
+      popover.classList.remove('popover-above');
+      trigger.setAttribute('aria-expanded', 'false');
+    } else {
+      // Check if popover would overflow viewport bottom
+      const triggerRect = trigger.getBoundingClientRect();
+      const popoverHeight = 320; // Approximate height of popover
+      const spaceBelow = window.innerHeight - triggerRect.bottom;
+      
+      if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {
+        popover.classList.add('popover-above');
+      } else {
+        popover.classList.remove('popover-above');
+      }
+      
+      popover.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+  });
+
+  // Prevent clicks inside popover from closing it (except for actions)
+  popover.addEventListener('click', (e) => {
+    // Don't stop propagation for links - let them navigate
+    if (e.target.closest('a')) {
+      // Close popover after clicking a share link
+      setTimeout(() => {
+        popover.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }, 100);
+      return;
+    }
+    e.stopPropagation();
+  });
+
+  return wrapper;
 }
 
 /**
- * Generate share buttons HTML string (for use in template strings)
+ * Generate share popover HTML string (for use in template strings)
  * @param {Object} options - Configuration options
  * @param {string} options.lawId - The law ID
  * @param {string} options.lawText - The law text for copy-text functionality
  * @param {string} options.url - URL to share (optional, will be constructed from lawId if not provided)
- * @returns {string} - HTML string for share buttons
+ * @returns {string} - HTML string for share popover
  */
 export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
   const shareUrl = url || `${window.location.origin}/law/${lawId}`;
@@ -170,28 +219,143 @@ export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
   return `
-    <div class="share-buttons">
-      <a class="share-button share-twitter" href="${twitterUrl}" target="_blank" rel="noopener noreferrer" aria-label="Share on X" title="Share on X">
-        <span class="icon share-icon" data-icon="twitter" aria-hidden="true"></span>
-      </a>
-      <a class="share-button share-facebook" href="${facebookUrl}" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook" title="Share on Facebook">
-        <span class="icon share-icon" data-icon="facebook" aria-hidden="true"></span>
-      </a>
-      <a class="share-button share-linkedin" href="${linkedinUrl}" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn" title="Share on LinkedIn">
-        <span class="icon share-icon" data-icon="linkedin" aria-hidden="true"></span>
-      </a>
-      <a class="share-button share-reddit" href="${redditUrl}" target="_blank" rel="noopener noreferrer" aria-label="Share on Reddit" title="Share on Reddit">
-        <span class="icon share-icon" data-icon="reddit" aria-hidden="true"></span>
-      </a>
-      <a class="share-button share-email" href="${emailUrl}" aria-label="Share via Email" title="Share via Email">
-        <span class="icon share-icon" data-icon="email" aria-hidden="true"></span>
-      </a>
-      <button type="button" class="share-button share-copy-text" data-action="copy-text" data-copy-value="${safeText}" data-law-id="${lawId}" aria-label="Copy text" title="Copy text">
-        <span class="icon share-icon" data-icon="copy" aria-hidden="true"></span>
+    <div class="share-wrapper">
+      <button type="button" class="share-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Share this law">
+        <span class="icon" data-icon="share" aria-hidden="true"></span>
+        Share
       </button>
-      <button type="button" class="share-button share-copy-link" data-action="copy-link" data-copy-value="${shareUrl}" data-law-id="${lawId}" aria-label="Copy link" title="Copy link">
-        <span class="icon share-icon" data-icon="link" aria-hidden="true"></span>
-      </button>
+      <div class="share-popover" role="menu">
+        <a class="share-popover-item" href="${twitterUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
+          <span class="icon-circle twitter"><span class="icon" data-icon="twitter" aria-hidden="true"></span></span>
+          Share on X
+        </a>
+        <a class="share-popover-item" href="${facebookUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
+          <span class="icon-circle facebook"><span class="icon" data-icon="facebook" aria-hidden="true"></span></span>
+          Share on Facebook
+        </a>
+        <a class="share-popover-item" href="${linkedinUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
+          <span class="icon-circle linkedin"><span class="icon" data-icon="linkedin" aria-hidden="true"></span></span>
+          Share on LinkedIn
+        </a>
+        <a class="share-popover-item" href="${redditUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
+          <span class="icon-circle reddit"><span class="icon" data-icon="reddit" aria-hidden="true"></span></span>
+          Share on Reddit
+        </a>
+        <a class="share-popover-item" href="${emailUrl}" role="menuitem">
+          <span class="icon-circle email"><span class="icon" data-icon="email" aria-hidden="true"></span></span>
+          Share via Email
+        </a>
+        <div class="share-popover-divider"></div>
+        <button type="button" class="share-popover-item" role="menuitem" data-action="copy-text" data-copy-value="${safeText}" data-law-id="${lawId}">
+          <span class="icon-circle copy"><span class="icon" data-icon="copy" aria-hidden="true"></span></span>
+          Copy text
+        </button>
+        <button type="button" class="share-popover-item" role="menuitem" data-action="copy-link" data-copy-value="${shareUrl}" data-law-id="${lawId}">
+          <span class="icon-circle link"><span class="icon" data-icon="link" aria-hidden="true"></span></span>
+          Copy link
+        </button>
+        <div class="share-copy-feedback">
+          <span class="icon" data-icon="checkCircle" aria-hidden="true"></span>
+          Copied!
+        </div>
+      </div>
     </div>
   `.trim();
+}
+
+/**
+ * Initialize share popover behavior for dynamically rendered HTML
+ * Call this after inserting share popover HTML into the DOM
+ * @param {HTMLElement} container - Container element to search for share popovers
+ */
+export function initSharePopovers(container = document) {
+  const wrappers = container.querySelectorAll('.share-wrapper');
+  
+  wrappers.forEach(wrapper => {
+    const trigger = wrapper.querySelector('.share-trigger');
+    const popover = wrapper.querySelector('.share-popover');
+    
+    if (!trigger || !popover || trigger.dataset.initialized) return;
+    
+    trigger.dataset.initialized = 'true';
+    
+    // Toggle popover on trigger click
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = popover.classList.contains('open');
+
+      // Close all other popovers first
+      document.querySelectorAll('.share-popover.open').forEach(p => {
+        if (p !== popover) {
+          p.classList.remove('open');
+          p.classList.remove('popover-above');
+          const otherTrigger = p.previousElementSibling;
+          if (otherTrigger) {
+            otherTrigger.setAttribute('aria-expanded', 'false');
+          }
+        }
+      });
+
+      if (isOpen) {
+        popover.classList.remove('open');
+        popover.classList.remove('popover-above');
+        trigger.setAttribute('aria-expanded', 'false');
+      } else {
+        // Check if popover would overflow viewport bottom
+        const triggerRect = trigger.getBoundingClientRect();
+        const popoverHeight = 320; // Approximate height of popover
+        const spaceBelow = window.innerHeight - triggerRect.bottom;
+        
+        if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {
+          popover.classList.add('popover-above');
+        } else {
+          popover.classList.remove('popover-above');
+        }
+        
+        popover.classList.add('open');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    // Handle clicks inside popover
+    popover.addEventListener('click', (e) => {
+      // Let links navigate, then close
+      if (e.target.closest('a')) {
+        setTimeout(() => {
+          popover.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }, 100);
+        return;
+      }
+      e.stopPropagation();
+    });
+  });
+}
+
+// Global click handler to close popovers when clicking outside
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.share-popover.open').forEach(popover => {
+      popover.classList.remove('open');
+      popover.classList.remove('popover-above');
+      const trigger = popover.previousElementSibling;
+      if (trigger) {
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.share-popover.open').forEach(popover => {
+        popover.classList.remove('open');
+        popover.classList.remove('popover-above');
+        const trigger = popover.previousElementSibling;
+        if (trigger) {
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  });
 }

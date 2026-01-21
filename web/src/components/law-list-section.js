@@ -3,6 +3,7 @@ import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
+import { initSharePopovers } from './social-share.js';
 import { LAW_CARD_MIN_HEIGHT } from '../utils/constants.js';
 
 /**
@@ -53,6 +54,7 @@ export function createLawListSection({ accentText, remainderText }) {
       </div>
     `;
     hydrateIcons(content);
+    initSharePopovers(content);
 
     // Only add voting listeners if there are actually laws to vote on
     if (sliced.length > 0) {
