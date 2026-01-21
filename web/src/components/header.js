@@ -1,6 +1,7 @@
 // Header component in plain JS
 import templateHtml from '@components/templates/header.html?raw';
-import { hydrateIcons } from '../utils/icons.js';
+import { hydrateIcons, createIcon } from '../utils/icons.js';
+import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, initTheme } from '../utils/theme.js';
 
 export function Header({ onSearch, onNavigate }) {
   const header = document.createElement('header');
@@ -9,11 +10,15 @@ export function Header({ onSearch, onNavigate }) {
 
   header.innerHTML = templateHtml;
   
+  // Initialize theme system
+  initTheme();
+  
   // Hydrate icons
   hydrateIcons(header);
 
   const navToggle = header.querySelector('#nav-menu-toggle');
   const navDropdown = header.querySelector('#nav-dropdown');
+  const themeToggle = header.querySelector('#theme-toggle');
 
   // Toggle dropdown
   const handleToggleClick = (e) => {
@@ -35,9 +40,45 @@ export function Header({ onSearch, onNavigate }) {
 
   document.addEventListener('click', handleDocumentClick);
 
+  // Theme toggle functionality
+  const updateThemeToggle = (theme) => {
+    if (!themeToggle) return;
+    
+    const iconName = getThemeIcon(theme);
+    const label = getThemeLabel(theme);
+    
+    // Update aria-label
+    themeToggle.setAttribute('aria-label', label);
+    
+    // Replace the icon
+    const existingIcon = themeToggle.querySelector('.icon');
+    const newIcon = createIcon(iconName, { classNames: ['icon'] });
+    if (existingIcon && newIcon) {
+      existingIcon.replaceWith(newIcon);
+    }
+  };
+
+  // Set initial state
+  updateThemeToggle(getTheme());
+
+  // Handle theme toggle click
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const newTheme = cycleTheme();
+      updateThemeToggle(newTheme);
+    });
+  }
+
+  // Listen for theme changes (e.g., from system preference changes in auto mode)
+  const handleThemeChange = (e) => {
+    updateThemeToggle(e.detail.theme);
+  };
+  document.addEventListener('themechange', handleThemeChange);
+
   // Store cleanup function on the element
   header.cleanup = () => {
     document.removeEventListener('click', handleDocumentClick);
+    document.removeEventListener('themechange', handleThemeChange);
   };
 
   // Close dropdown when clicking a nav item

@@ -2,9 +2,20 @@
    Dark Mode Theme
    ========================== */
 
+/* 
+ * Theme implementation supports three modes:
+ * 1. Auto (default): Uses @media (prefers-color-scheme: dark) 
+ * 2. Manual dark: Uses [data-theme="dark"] on :root
+ * 3. Manual light: Uses [data-theme="light"] on :root (prevents dark mode)
+ * 
+ * Priority: data-theme attribute > system preference
+ */
+
+/* Mixin-like approach: define dark mode styles once, apply via both selectors */
+
+/* Auto mode: follows system preference */
 @media (prefers-color-scheme: dark) {
-  /* Dark mode variables */
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: var(--dark-bg-primary);
     --fg: var(--dark-fg-primary);
     --muted-fg: var(--dark-muted-fg);
@@ -12,207 +23,439 @@
     --primary: var(--dark-primary);
     --text-high-contrast: var(--dark-text-high-contrast);
   }
+}
 
-  /* Links */
-  a { color: var(--dark-link); }
-  a:visited { color: var(--dark-link-visited); }
-  a:hover, a:focus-visible { color: var(--dark-link-hover); }
+/* Manual dark mode override */
+:root[data-theme="dark"] {
+  --bg: var(--dark-bg-primary);
+  --fg: var(--dark-fg-primary);
+  --muted-fg: var(--dark-muted-fg);
+  --border: var(--dark-border);
+  --primary: var(--dark-primary);
+  --text-high-contrast: var(--dark-text-high-contrast);
+}
 
-  /* Header */
-  header.sticky {
+/* Dark mode component styles - apply when dark variables are active */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) a { color: var(--dark-link); }
+  :root:not([data-theme="light"]) a:visited { color: var(--dark-link-visited); }
+
+  :root:not([data-theme="light"]) a:hover,
+  :root:not([data-theme="light"]) a:focus-visible { color: var(--dark-link-hover); }
+}
+
+:root[data-theme="dark"] a { color: var(--dark-link); }
+:root[data-theme="dark"] a:visited { color: var(--dark-link-visited); }
+
+:root[data-theme="dark"] a:hover,
+:root[data-theme="dark"] a:focus-visible { color: var(--dark-link-hover); }
+
+/* Header - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header.sticky {
     background: color-mix(in oklab, var(--bg) 86%, transparent);
     border-bottom-color: var(--border);
   }
+}
 
-  /* Brand badge */
-  .brand-badge {
+:root[data-theme="dark"] header.sticky {
+  background: color-mix(in oklab, var(--bg) 86%, transparent);
+  border-bottom-color: var(--border);
+}
+
+/* Brand badge - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-badge {
     background: var(--primary);
     color: var(--white);
     box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px var(--shadow-dark);
   }
 
-  .brand-badge::before {
+  :root:not([data-theme="light"]) .brand-badge::before {
     background: var(--white);
     color: var(--primary);
     box-shadow: 0 2px 8px var(--shadow-dark);
   }
 
-  .brand-badge:hover {
+  :root:not([data-theme="light"]) .brand-badge:hover {
     box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px rgb(255 255 255 / 14%);
   }
+}
 
-  /* Cards */
-  .card {
+:root[data-theme="dark"] .brand-badge {
+  background: var(--primary);
+  color: var(--white);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .brand-badge::before {
+  background: var(--white);
+  color: var(--primary);
+  box-shadow: 0 2px 8px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .brand-badge:hover {
+  box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px rgb(255 255 255 / 14%);
+}
+
+/* Cards - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     border-color: var(--border);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
 
-  /* Section cards */
-  .section-card {
+  :root:not([data-theme="light"]) .section-card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
 
-  /* Law detail card */
-  .law-detail .card {
+  :root:not([data-theme="light"]) .law-detail .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
+}
 
-  /* Footer */
-  .footer {
+:root[data-theme="dark"] .card {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  border-color: var(--border);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .section-card {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .law-detail .card {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+}
+
+/* Footer - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .footer {
     background: color-mix(in oklab, var(--bg) 90%, white 10%);
     border-top-color: var(--border);
   }
 
-  .section-footer,
-  .law-detail .law-meta {
+  :root:not([data-theme="light"]) .section-footer,
+  :root:not([data-theme="light"]) .law-detail .law-meta {
     background: color-mix(in oklab, var(--bg) 86%, white 14%);
     border-top-color: var(--border);
   }
+}
 
-  /* Buttons - only dark mode specific overrides */
-  .btn, button {
+:root[data-theme="dark"] .footer {
+  background: color-mix(in oklab, var(--bg) 90%, white 10%);
+  border-top-color: var(--border);
+}
+
+:root[data-theme="dark"] .section-footer,
+:root[data-theme="dark"] .law-detail .law-meta {
+  background: color-mix(in oklab, var(--bg) 86%, white 14%);
+  border-top-color: var(--border);
+}
+
+/* Buttons - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn,
+  :root:not([data-theme="light"]) button {
     box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
   }
 
-  .btn.outline, button.outline {
+  :root:not([data-theme="light"]) .btn.outline,
+  :root:not([data-theme="light"]) button.outline {
     background: color-mix(in oklab, var(--bg) 86%, white 14%);
     border-color: rgb(255 255 255 / 22%);
   }
 
-  .btn.outline:hover, button.outline:hover,
-  .btn.outline:focus-visible, button.outline:focus-visible {
+  :root:not([data-theme="light"]) .btn.outline:hover,
+  :root:not([data-theme="light"]) button.outline:hover,
+  :root:not([data-theme="light"]) .btn.outline:focus-visible,
+  :root:not([data-theme="light"]) button.outline:focus-visible {
     background: color-mix(in oklab, var(--bg) 80%, white 20%);
     border-color: rgb(255 255 255 / 32%);
   }
+}
 
-  /* Inputs */
-  input[type='text'],
-  input[type='email'],
-  textarea,
-  select,
-  .form-control,
-  .share-form-container .form-group textarea,
-  .share-form-container .form-group input {
+:root[data-theme="dark"] .btn,
+:root[data-theme="dark"] button {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
+}
+
+:root[data-theme="dark"] .btn.outline,
+:root[data-theme="dark"] button.outline {
+  background: color-mix(in oklab, var(--bg) 86%, white 14%);
+  border-color: rgb(255 255 255 / 22%);
+}
+
+:root[data-theme="dark"] .btn.outline:hover,
+:root[data-theme="dark"] button.outline:hover,
+:root[data-theme="dark"] .btn.outline:focus-visible,
+:root[data-theme="dark"] button.outline:focus-visible {
+  background: color-mix(in oklab, var(--bg) 80%, white 20%);
+  border-color: rgb(255 255 255 / 32%);
+}
+
+/* Inputs - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) input[type='text'],
+  :root:not([data-theme="light"]) input[type='email'],
+  :root:not([data-theme="light"]) textarea,
+  :root:not([data-theme="light"]) select,
+  :root:not([data-theme="light"]) .form-control,
+  :root:not([data-theme="light"]) .share-form-container .form-group textarea,
+  :root:not([data-theme="light"]) .share-form-container .form-group input {
     background: color-mix(in oklab, var(--bg) 92%, white 8%);
     color: var(--fg);
     border: 1.5px solid rgb(255 255 255 / 25%);
   }
 
-  input[type='text']:hover,
-  input[type='email']:hover,
-  textarea:hover,
-  select:hover,
-  .form-control:hover,
-  .share-form-container .form-group textarea:hover,
-  .share-form-container .form-group input:hover {
+  :root:not([data-theme="light"]) input[type='text']:hover,
+  :root:not([data-theme="light"]) input[type='email']:hover,
+  :root:not([data-theme="light"]) textarea:hover,
+  :root:not([data-theme="light"]) select:hover,
+  :root:not([data-theme="light"]) .form-control:hover,
+  :root:not([data-theme="light"]) .share-form-container .form-group textarea:hover,
+  :root:not([data-theme="light"]) .share-form-container .form-group input:hover {
     border-color: rgb(255 255 255 / 35%);
   }
 
-  .submit-checkbox-group input[type="checkbox"] {
+  :root:not([data-theme="light"]) .submit-checkbox-group input[type="checkbox"] {
     background: color-mix(in oklab, var(--bg) 92%, white 8%);
     border: 1.5px solid rgb(255 255 255 / 25%);
   }
+}
 
-  /* Content cards */
-  .content-card {
+:root[data-theme="dark"] input[type='text'],
+:root[data-theme="dark"] input[type='email'],
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] .form-control,
+:root[data-theme="dark"] .share-form-container .form-group textarea,
+:root[data-theme="dark"] .share-form-container .form-group input {
+  background: color-mix(in oklab, var(--bg) 92%, white 8%);
+  color: var(--fg);
+  border: 1.5px solid rgb(255 255 255 / 25%);
+}
+
+:root[data-theme="dark"] input[type='text']:hover,
+:root[data-theme="dark"] input[type='email']:hover,
+:root[data-theme="dark"] textarea:hover,
+:root[data-theme="dark"] select:hover,
+:root[data-theme="dark"] .form-control:hover,
+:root[data-theme="dark"] .share-form-container .form-group textarea:hover,
+:root[data-theme="dark"] .share-form-container .form-group input:hover {
+  border-color: rgb(255 255 255 / 35%);
+}
+
+:root[data-theme="dark"] .submit-checkbox-group input[type="checkbox"] {
+  background: color-mix(in oklab, var(--bg) 92%, white 8%);
+  border: 1.5px solid rgb(255 255 255 / 25%);
+}
+
+/* Content cards - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .content-card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     border-color: var(--border);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
+}
 
-  /* Navigation dropdown */
-  .nav-dropdown {
+:root[data-theme="dark"] .content-card {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  border-color: var(--border);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+}
+
+/* Navigation dropdown - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nav-dropdown {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
   }
+}
 
-  /* Search field select dropdowns */
-  .search-field select {
+:root[data-theme="dark"] .nav-dropdown {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+}
+
+/* Search field select dropdowns - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .search-field select {
     background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
     box-shadow: 0 1px 3px var(--shadow-dark);
   }
 
-  .search-field select:hover {
+  :root:not([data-theme="light"]) .search-field select:hover {
     background-color: color-mix(in oklab, var(--bg) 88%, white 12%);
     box-shadow: 0 2px 6px var(--shadow-dark);
   }
 
-  .search-field select:focus {
+  :root:not([data-theme="light"]) .search-field select:focus {
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--btn-primary-bg) 30%, transparent 70%);
   }
+}
 
-  /* Modal */
-  .modal-content {
+:root[data-theme="dark"] .search-field select {
+  background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
+  box-shadow: 0 1px 3px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .search-field select:hover {
+  background-color: color-mix(in oklab, var(--bg) 88%, white 12%);
+  box-shadow: 0 2px 6px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .search-field select:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--btn-primary-bg) 30%, transparent 70%);
+}
+
+/* Modal - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .modal-content {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 20px 60px rgb(0 0 0 / 50%);
   }
+}
 
-  /* Voting buttons - no overrides needed, base styles work for dark mode */
+:root[data-theme="dark"] .modal-content {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 20px 60px rgb(0 0 0 / 50%);
+}
 
-  button[data-vote='down']:hover {
+/* Voting buttons - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) button[data-vote='down']:hover {
     filter: saturate(1.2) brightness(1.2);
   }
+}
 
-  /* Pagination */
-  .pagination .btn[aria-current='page'] {
+:root[data-theme="dark"] button[data-vote='down']:hover {
+  filter: saturate(1.2) brightness(1.2);
+}
+
+/* Pagination - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .pagination .btn[aria-current='page'] {
     background: var(--btn-primary-bg);
     border-color: var(--btn-primary-bg);
     color: var(--btn-primary-fg);
     box-shadow: 0 4px 14px var(--shadow-blue-dark);
   }
 
-  .pagination .btn:hover {
+  :root:not([data-theme="light"]) .pagination .btn:hover {
     filter: brightness(1.08);
   }
+}
 
+:root[data-theme="dark"] .pagination .btn[aria-current='page'] {
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  box-shadow: 0 4px 14px var(--shadow-blue-dark);
+}
 
-  /* Blockquote */
-  .blockquote {
+:root[data-theme="dark"] .pagination .btn:hover {
+  filter: brightness(1.08);
+}
+
+/* Blockquote - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .blockquote {
     border-left-color: color-mix(in oklab, var(--btn-primary-bg) 85%, white 15%);
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
   }
+}
 
-  /* Calculator semantic states (dark mode) */
-  .calc-ok {
+:root[data-theme="dark"] .blockquote {
+  border-left-color: color-mix(in oklab, var(--btn-primary-bg) 85%, white 15%);
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+}
+
+/* Calculator semantic states - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .calc-ok {
     background: var(--dark-success-bg);
     color: var(--dark-success-fg);
   }
 
-  .calc-warn {
+  :root:not([data-theme="light"]) .calc-warn {
     background: var(--dark-warning-bg);
     color: var(--dark-warning-fg);
   }
 
-  .calc-orange {
+  :root:not([data-theme="light"]) .calc-orange {
     background: var(--dark-orange-bg);
     color: var(--dark-orange-fg);
   }
 
-  .calc-danger {
+  :root:not([data-theme="light"]) .calc-danger {
     background: var(--dark-error-bg);
     color: var(--dark-error-fg);
   }
 
-  .calc-dark {
+  :root:not([data-theme="light"]) .calc-dark {
     background: var(--dark-dark-bg);
     color: var(--dark-dark-fg);
   }
 
-  /* Calculator simple values - ensure sufficient contrast in dark mode */
-  .sod-simple-value {
+  :root:not([data-theme="light"]) .sod-simple-value {
     color: var(--dark-link-hover);
   }
+}
 
-  /* Skeleton loading */
-  .skeleton {
+:root[data-theme="dark"] .calc-ok {
+  background: var(--dark-success-bg);
+  color: var(--dark-success-fg);
+}
+
+:root[data-theme="dark"] .calc-warn {
+  background: var(--dark-warning-bg);
+  color: var(--dark-warning-fg);
+}
+
+:root[data-theme="dark"] .calc-orange {
+  background: var(--dark-orange-bg);
+  color: var(--dark-orange-fg);
+}
+
+:root[data-theme="dark"] .calc-danger {
+  background: var(--dark-error-bg);
+  color: var(--dark-error-fg);
+}
+
+:root[data-theme="dark"] .calc-dark {
+  background: var(--dark-dark-bg);
+  color: var(--dark-dark-fg);
+}
+
+:root[data-theme="dark"] .sod-simple-value {
+  color: var(--dark-link-hover);
+}
+
+/* Skeleton loading - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .skeleton {
     background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
   }
+}
 
-  /* Search highlight - ensure dark text on light yellow background (WCAG 1.4.3) */
-  mark {
+:root[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
+}
+
+/* Search highlight - dark mode (ensure dark text on light yellow background for WCAG 1.4.3) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) mark {
     color: #111827;
   }
+}
+
+:root[data-theme="dark"] mark {
+  color: #111827;
 }

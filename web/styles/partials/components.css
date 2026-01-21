@@ -83,6 +83,43 @@ a.btn:focus-visible,
   outline-offset: 3px;
 }
 
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentcolor;
+}
+
+.theme-toggle:hover {
+  background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
 input[type='text'],
 input[type='email'],
 textarea,
@@ -631,12 +668,21 @@ textarea.form-control,
 
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
-  .share-popover {
+  :root:not([data-theme="light"]) .share-popover {
     background: var(--dark-bg-primary);
     border-color: var(--dark-border);
   }
   
-  .share-popover-item:hover {
+  :root:not([data-theme="light"]) .share-popover-item:hover {
     background: color-mix(in oklab, var(--dark-bg-primary) 85%, white 15%);
   }
+}
+
+:root[data-theme="dark"] .share-popover {
+  background: var(--dark-bg-primary);
+  border-color: var(--dark-border);
+}
+
+:root[data-theme="dark"] .share-popover-item:hover {
+  background: color-mix(in oklab, var(--dark-bg-primary) 85%, white 15%);
 }

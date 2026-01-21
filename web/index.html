@@ -66,12 +66,19 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme="light"]) {
         --bg: #0b0b11;
         --fg: #e9eaee;
         --muted-fg: #b3b7c4;
         --primary: #4f46e5;
       }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0b0b11;
+      --fg: #e9eaee;
+      --muted-fg: #b3b7c4;
+      --primary: #4f46e5;
     }
 
     /* Base styles - must match base.css exactly */
@@ -106,6 +113,19 @@
       color: var(--muted-fg);
     }
   </style>
+  <!-- Apply stored theme before render to prevent flash -->
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem('murphys_theme');
+        if (theme && theme !== 'auto') {
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      } catch (e) {
+        // localStorage may be unavailable (private mode, etc.)
+      }
+    })();
+  </script>
 </head>
 
 <body>

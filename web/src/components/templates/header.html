@@ -46,12 +46,17 @@
       </nav>
     </div>
 
-    <form role="search" class="flex items-center gap-2" aria-label="Site Search">
-      <input type="text" id="header-search" name="search" aria-label="Search" placeholder="Search laws..." class="input">
-      <button type="submit" class="btn">
-        <span class="btn-text">Search</span>
-        <span class="icon" data-icon="search" aria-hidden="true"></span>
+    <div class="flex items-center gap-2">
+      <form role="search" class="flex items-center gap-2" aria-label="Site Search">
+        <input type="text" id="header-search" name="search" aria-label="Search" placeholder="Search laws..." class="input">
+        <button type="submit" class="btn">
+          <span class="btn-text">Search</span>
+          <span class="icon" data-icon="search" aria-hidden="true"></span>
+        </button>
+      </form>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Theme: Auto. Click for light mode">
+        <span class="icon" data-icon="sunMoon" aria-hidden="true"></span>
       </button>
-    </form>
+    </div>
   </div>
 </div>

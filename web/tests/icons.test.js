@@ -44,10 +44,11 @@ describe('Icons utility', () => {
 
     it('creates all icon types successfully', () => {
       const iconNames = [
-        'arrowForward', 'checkCircle', 'close', 'email', 'error',
-        'facebook', 'home', 'linkedin', 'list', 'preview',
+        'arrowForward', 'checkCircle', 'close', 'copy', 'email', 'error',
+        'facebook', 'home', 'link', 'linkedin', 'list', 'preview',
         'reddit', 'refresh', 'search', 'searchOff', 'send',
-        'share', 'thumbDown', 'thumbUp', 'twitter', 'warning'
+        'share', 'thumbDown', 'thumbUp', 'twitter', 'warning',
+        'sun', 'moon', 'sunMoon'
       ];
 
       iconNames.forEach(name => {
@@ -56,6 +57,16 @@ describe('Icons utility', () => {
         expect(icon.tagName).toBe('svg');
         expect(icon.getAttribute('data-icon-name')).toBe(name);
       });
+    });
+
+    it('creates theme-related icons with correct viewBox', () => {
+      const sunIcon = createIcon('sun');
+      const moonIcon = createIcon('moon');
+      const sunMoonIcon = createIcon('sunMoon');
+
+      expect(sunIcon.getAttribute('viewBox')).toBe('0 0 512 512');
+      expect(moonIcon.getAttribute('viewBox')).toBe('0 0 384 512');
+      expect(sunMoonIcon.getAttribute('viewBox')).toBe('0 0 512 512');
     });
 
     it('handles empty classNames array', () => {
