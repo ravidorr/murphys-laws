@@ -440,10 +440,10 @@ describe('Header component', () => {
     });
 
     it('updates tooltip after theme cycle', () => {
-      // Mock cycleTheme to return 'dark'
-      cycleTheme.mockReturnValue('dark');
+      // Mock cycleTheme to return 'light'
+      cycleTheme.mockReturnValue('light');
       getThemeTooltip.mockImplementation((theme) => {
-        if (theme === 'dark') return 'Dark mode';
+        if (theme === 'light') return 'Light mode';
         return 'Auto mode';
       });
 
@@ -460,7 +460,7 @@ describe('Header component', () => {
 
       themeToggle.click();
 
-      expect(themeToggle.getAttribute('data-title')).toBe('Dark mode');
+      expect(themeToggle.getAttribute('data-title')).toBe('Light mode');
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);
@@ -480,11 +480,13 @@ describe('Header component', () => {
 
       // Dispatch a themechange event
       getThemeLabel.mockReturnValue('Theme: Dark. Click for system preference');
+      getThemeTooltip.mockReturnValue('Dark mode');
       document.dispatchEvent(new CustomEvent('themechange', {
         detail: { theme: 'dark', effectiveTheme: 'dark' }
       }));
 
       expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
+      expect(themeToggle.getAttribute('data-title')).toBe('Dark mode');
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);
