@@ -18,7 +18,7 @@ This document outlines additional tasks and potential improvements for the Murph
 ## UX Improvements (Frontend Only)
 - [ ] **User Favorites/Bookmarks:** Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.
 - [ ] **Keyboard Shortcuts:** Add global shortcuts like `/` for search focus, `j/k` for navigating law cards, `?` for help modal.
-- [ ] **Share to More Platforms:** Add LinkedIn, Reddit, WhatsApp sharing options and "copy as image" feature.
+- [ ] **Copy as Image:** Add "copy as image" feature to share buttons.
 
 ## User Engagement (Require Backend Work)
 - [ ] **RSS Feed:** Provide RSS/Atom feed for new laws and Law of the Day.
@@ -32,6 +32,10 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Law Tags:** Add a tagging system beyond categories for better discoverability.
 - [ ] **Law History:** Track edits/versions of laws for transparency.
 
+## Mobile Apps (iOS / Android)
+- [ ] **WhatsApp Share (Android):** Add WhatsApp share button to Android app. Requires updating `SocialShareHelper.kt`, `SocialIcons.kt`, and `LawDetailScreen.kt`.
+- [ ] **WhatsApp Share (iOS):** iOS uses native `ShareLink` which already shows WhatsApp if installed. Consider adding a dedicated WhatsApp button for consistency with other platforms.
+
 ## Technical / Performance
 - [ ] **PWA / Service Worker:** Add offline support and make the app installable.
 - [ ] **Code Splitting:** Lazy load calculator code to reduce initial bundle size.
@@ -44,6 +48,7 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ### UX Improvements
 - [x] **Dark Mode Toggle:** ~~Add manual dark mode control (currently follows system preference only).~~ Done - added three-state toggle (auto/light/dark) to header with localStorage persistence. Theme applies immediately on page load to prevent flash.
+- [x] **WhatsApp Share (Web):** ~~Add WhatsApp sharing option to share popover.~~ Done - added WhatsApp share button between Reddit and Email in the share menu.
 
 ### Technical Debt / Code Quality
 - [x] **Refactor `main.js` `onSearch`:** ~~The `onSearch` function in `web/src/main.js` currently handles both search queries and category navigation. Consider separating these concerns for better modularity and clarity.~~ Done - separated into `handleCategoryNavigation`, `handleSearchNavigation`, and `handleClearFilters` functions.

@@ -624,6 +624,7 @@ textarea.form-control,
 .share-popover-item .icon-circle.facebook { background-color: #1877F2; }
 .share-popover-item .icon-circle.linkedin { background-color: #0A66C2; }
 .share-popover-item .icon-circle.reddit { background-color: #FF4500; }
+.share-popover-item .icon-circle.whatsapp { background-color: #25D366; }
 .share-popover-item .icon-circle.email { background-color: #777; }
 .share-popover-item .icon-circle.copy { background-color: #6B7280; }
 .share-popover-item .icon-circle.link { background-color: var(--btn-primary-bg); }
