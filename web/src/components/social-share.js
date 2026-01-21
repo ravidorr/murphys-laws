@@ -189,6 +189,15 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
       }, 100);
       return;
     }
+    // Don't stop propagation for copy buttons - let them bubble to parent handlers
+    if (e.target.closest('[data-action="copy-text"]') || e.target.closest('[data-action="copy-link"]')) {
+      // Close popover after clicking a copy button
+      setTimeout(() => {
+        popover.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }, 100);
+      return;
+    }
     e.stopPropagation();
   });
 
@@ -321,6 +330,14 @@ export function initSharePopovers(container = document) {
     popover.addEventListener('click', (e) => {
       // Let links navigate, then close
       if (e.target.closest('a')) {
+        setTimeout(() => {
+          popover.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }, 100);
+        return;
+      }
+      // Let copy buttons bubble to parent handlers, then close
+      if (e.target.closest('[data-action="copy-text"]') || e.target.closest('[data-action="copy-link"]')) {
         setTimeout(() => {
           popover.classList.remove('open');
           trigger.setAttribute('aria-expanded', 'false');

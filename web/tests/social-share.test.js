@@ -268,6 +268,94 @@ describe('SocialShare component', () => {
     });
   });
 
+  describe('Event propagation for copy buttons', () => {
+    const localThis = {};
+
+    beforeEach(() => {
+      localThis.container = document.createElement('div');
+      document.body.appendChild(localThis.container);
+    });
+
+    afterEach(() => {
+      document.body.removeChild(localThis.container);
+    });
+
+    it('allows copy-text button clicks to propagate to parent handlers', () => {
+      const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
+      localThis.container.appendChild(el);
+
+      const parentClickHandler = vi.fn();
+      localThis.container.addEventListener('click', parentClickHandler);
+
+      const trigger = el.querySelector('.share-trigger');
+      trigger.click(); // Open popover
+
+      const copyTextBtn = el.querySelector('[data-action="copy-text"]');
+      copyTextBtn.click();
+
+      expect(parentClickHandler).toHaveBeenCalled();
+    });
+
+    it('allows copy-link button clicks to propagate to parent handlers', () => {
+      const el = SocialShare({ url: 'https://test.com/law/123', lawId: '123' });
+      localThis.container.appendChild(el);
+
+      const parentClickHandler = vi.fn();
+      localThis.container.addEventListener('click', parentClickHandler);
+
+      const trigger = el.querySelector('.share-trigger');
+      trigger.click(); // Open popover
+
+      const copyLinkBtn = el.querySelector('[data-action="copy-link"]');
+      copyLinkBtn.click();
+
+      expect(parentClickHandler).toHaveBeenCalled();
+    });
+
+    it('closes popover after copy button click', async () => {
+      vi.useFakeTimers();
+      const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
+      localThis.container.appendChild(el);
+
+      const trigger = el.querySelector('.share-trigger');
+      const popover = el.querySelector('.share-popover');
+
+      trigger.click(); // Open popover
+      expect(popover.classList.contains('open')).toBe(true);
+
+      const copyTextBtn = el.querySelector('[data-action="copy-text"]');
+      copyTextBtn.click();
+
+      // Wait for setTimeout to close popover
+      vi.advanceTimersByTime(150);
+      expect(popover.classList.contains('open')).toBe(false);
+      vi.useRealTimers();
+    });
+
+    it('still stops propagation for non-action clicks inside popover', () => {
+      const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
+      localThis.container.appendChild(el);
+
+      const parentClickHandler = vi.fn();
+      localThis.container.addEventListener('click', parentClickHandler);
+
+      const trigger = el.querySelector('.share-trigger');
+      trigger.click(); // Open popover
+
+      const popover = el.querySelector('.share-popover');
+      // Click on divider or feedback element (non-action areas)
+      const divider = popover.querySelector('.share-popover-divider');
+      divider.click();
+
+      // Parent handler should NOT be called because stopPropagation was used
+      // Note: The click on trigger will have already called it once
+      // Reset the mock and test the divider click specifically
+      parentClickHandler.mockClear();
+      divider.click();
+      expect(parentClickHandler).not.toHaveBeenCalled();
+    });
+  });
+
   describe('URL encoding', () => {
     it('properly encodes special characters in URL', () => {
       const el = SocialShare({
@@ -424,8 +512,12 @@ describe('renderShareButtonsHTML', () => {
 });
 
 describe('initSharePopovers', () => {
+  const localThis = {};
+
   beforeEach(() => {
     document.body.innerHTML = '';
+    localThis.container = document.createElement('div');
+    document.body.appendChild(localThis.container);
   });
 
   afterEach(() => {
@@ -434,14 +526,12 @@ describe('initSharePopovers', () => {
 
   it('initializes popover behavior for share wrappers', () => {
     const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    document.body.appendChild(container);
+    localThis.container.innerHTML = html;
 
-    initSharePopovers(container);
+    initSharePopovers(localThis.container);
 
-    const trigger = container.querySelector('.share-trigger');
-    const popover = container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
 
     expect(trigger.dataset.initialized).toBe('true');
     
@@ -452,17 +542,96 @@ describe('initSharePopovers', () => {
 
   it('does not re-initialize already initialized popovers', () => {
     const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    document.body.appendChild(container);
+    localThis.container.innerHTML = html;
 
-    initSharePopovers(container);
-    initSharePopovers(container); // Call again
+    initSharePopovers(localThis.container);
+    initSharePopovers(localThis.container); // Call again
 
-    const trigger = container.querySelector('.share-trigger');
+    const trigger = localThis.container.querySelector('.share-trigger');
     // Should still work normally, no double event listeners
     trigger.click();
-    const popover = container.querySelector('.share-popover');
+    const popover = localThis.container.querySelector('.share-popover');
     expect(popover.classList.contains('open')).toBe(true);
+  });
+
+  it('allows copy-text button clicks to propagate to parent handlers', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law text' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const parentClickHandler = vi.fn();
+    localThis.container.addEventListener('click', parentClickHandler);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    trigger.click(); // Open popover
+
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]');
+    copyTextBtn.click();
+
+    expect(parentClickHandler).toHaveBeenCalled();
+  });
+
+  it('allows copy-link button clicks to propagate to parent handlers', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const parentClickHandler = vi.fn();
+    localThis.container.addEventListener('click', parentClickHandler);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    trigger.click(); // Open popover
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    copyLinkBtn.click();
+
+    expect(parentClickHandler).toHaveBeenCalled();
+  });
+
+  it('closes popover after copy button click', async () => {
+    vi.useFakeTimers();
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    trigger.click(); // Open popover
+    expect(popover.classList.contains('open')).toBe(true);
+
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]');
+    copyTextBtn.click();
+
+    // Wait for setTimeout to close popover
+    vi.advanceTimersByTime(150);
+    expect(popover.classList.contains('open')).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('still stops propagation for non-action clicks inside popover', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const parentClickHandler = vi.fn();
+    localThis.container.addEventListener('click', parentClickHandler);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    trigger.click(); // Open popover
+
+    // Reset the mock after trigger click
+    parentClickHandler.mockClear();
+
+    const popover = localThis.container.querySelector('.share-popover');
+    const divider = popover.querySelector('.share-popover-divider');
+    divider.click();
+
+    // Parent handler should NOT be called because stopPropagation was used
+    expect(parentClickHandler).not.toHaveBeenCalled();
   });
 });
