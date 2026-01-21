@@ -6,7 +6,7 @@ export class LawService {
     this.db = db;
   }
 
-  async listLaws({ limit, offset, q, categoryId, categorySlug, attribution }) {
+  async listLaws({ limit, offset, q, categoryId, categorySlug, attribution, sort = 'score', order = 'desc' }) {
     const baseSelect = `
       SELECT
         l.id,
@@ -14,6 +14,7 @@ export class LawService {
         l.text,
         l.first_seen_file_path AS file_path,
         l.first_seen_line_number AS line_number,
+        l.created_at,
         COALESCE((
           SELECT json_group_array(json_object(
             'name', a.name,
@@ -23,7 +24,10 @@ export class LawService {
           )) FROM attributions a WHERE a.law_id = l.id
         ), '[]') AS attributions,
         COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes,
-        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes,
+        (COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) -
+         COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0)) AS score,
+        COALESCE((SELECT MAX(v.created_at) FROM votes v WHERE v.law_id = l.id), l.created_at) AS last_voted_at
       FROM laws l
       WHERE l.status = 'published'`;
 
@@ -71,8 +75,27 @@ export class LawService {
       listParams.push(attributionLike);
     }
 
+    // Build ORDER BY clause based on sort parameter
+    const orderDirection = order === 'asc' ? 'ASC' : 'DESC';
+    let orderBy;
+    switch (sort) {
+      case 'upvotes':
+        orderBy = `upvotes ${orderDirection}, l.id DESC`;
+        break;
+      case 'created_at':
+        orderBy = `l.created_at ${orderDirection}, l.id DESC`;
+        break;
+      case 'last_voted_at':
+        orderBy = `last_voted_at ${orderDirection}, l.id DESC`;
+        break;
+      case 'score':
+      default:
+        orderBy = `score ${orderDirection}, upvotes DESC, l.id DESC`;
+        break;
+    }
+
     const countSql = `SELECT COUNT(1) AS total FROM laws l ${countWhere};`;
-    const listSql = `${baseSelect}${where}\nORDER BY l.id\nLIMIT ? OFFSET ?;`;
+    const listSql = `${baseSelect}${where}\nORDER BY ${orderBy}\nLIMIT ? OFFSET ?;`;
 
     const countStmt = this.db.prepare(countSql);
     const countResult = countStmt.get(...countParams);

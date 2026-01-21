@@ -64,7 +64,9 @@ describe('LawController', () => {
                 q: '',
                 categoryId: null,
                 categorySlug: null,
-                attribution: ''
+                attribution: '',
+                sort: 'score',
+                order: 'desc'
             });
             expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
         });
@@ -87,7 +89,9 @@ describe('LawController', () => {
                 q: 'test',
                 categoryId: 5,
                 categorySlug: 'test-cat',
-                attribution: 'Murphy'
+                attribution: 'Murphy',
+                sort: 'score',
+                order: 'desc'
             });
         });
 
@@ -96,6 +100,54 @@ describe('LawController', () => {
             await lawController.list(req, res, { query: { limit: '1000' } });
 
             expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({ limit: 25 }));
+        });
+
+        it('should pass valid sort and order parameters', async () => {
+            lawService.listLaws.mockResolvedValue({ data: [], total: 0 });
+            await lawController.list(req, res, { query: { sort: 'created_at', order: 'asc' } });
+
+            expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({
+                sort: 'created_at',
+                order: 'asc'
+            }));
+        });
+
+        it('should reject invalid sort field and default to score', async () => {
+            lawService.listLaws.mockResolvedValue({ data: [], total: 0 });
+            await lawController.list(req, res, { query: { sort: 'invalid_field' } });
+
+            expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({
+                sort: 'score'
+            }));
+        });
+
+        it('should accept upvotes as sort field', async () => {
+            lawService.listLaws.mockResolvedValue({ data: [], total: 0 });
+            await lawController.list(req, res, { query: { sort: 'upvotes', order: 'desc' } });
+
+            expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({
+                sort: 'upvotes',
+                order: 'desc'
+            }));
+        });
+
+        it('should accept last_voted_at as sort field', async () => {
+            lawService.listLaws.mockResolvedValue({ data: [], total: 0 });
+            await lawController.list(req, res, { query: { sort: 'last_voted_at', order: 'desc' } });
+
+            expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({
+                sort: 'last_voted_at',
+                order: 'desc'
+            }));
+        });
+
+        it('should default invalid order to desc', async () => {
+            lawService.listLaws.mockResolvedValue({ data: [], total: 0 });
+            await lawController.list(req, res, { query: { order: 'invalid' } });
+
+            expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({
+                order: 'desc'
+            }));
         });
     });
 
