@@ -338,9 +338,10 @@ describe('LawDetail view', () => {
 
     await new Promise(r => setTimeout(r, 50));
 
-    // Check that social share buttons exist in the footer
-    const shareButtons = el.querySelector('.section-footer .share-buttons');
-    expect(shareButtons).toBeTruthy();
+    // Check that social share popover exists in the footer
+    const shareWrapper = el.querySelector('.section-footer .share-wrapper');
+    expect(shareWrapper).toBeTruthy();
+    expect(shareWrapper.querySelector('.share-trigger')).toBeTruthy();
   });
 
   it('renders all social share buttons', async () => {
@@ -353,18 +354,18 @@ describe('LawDetail view', () => {
 
     await new Promise(r => setTimeout(r, 50));
 
-    // Check that all 5 social buttons exist
-    const twitterBtn = el.querySelector('.share-twitter');
-    const facebookBtn = el.querySelector('.share-facebook');
-    const linkedinBtn = el.querySelector('.share-linkedin');
-    const redditBtn = el.querySelector('.share-reddit');
-    const emailBtn = el.querySelector('.share-email');
-
-    expect(twitterBtn).toBeTruthy();
-    expect(facebookBtn).toBeTruthy();
-    expect(linkedinBtn).toBeTruthy();
-    expect(redditBtn).toBeTruthy();
-    expect(emailBtn).toBeTruthy();
+    // Check that share popover exists with all social links
+    const shareWrapper = el.querySelector('.share-wrapper');
+    expect(shareWrapper).toBeTruthy();
+    expect(shareWrapper.querySelector('.share-trigger')).toBeTruthy();
+    
+    const popover = shareWrapper.querySelector('.share-popover');
+    expect(popover).toBeTruthy();
+    expect(popover.querySelector('[href*="twitter"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="facebook"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="linkedin"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="reddit"]')).toBeTruthy();
+    expect(popover.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
   it('calls onStructuredData callback when provided', async () => {

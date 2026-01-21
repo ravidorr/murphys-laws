@@ -4,7 +4,7 @@ import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
-import { SocialShare } from '../components/social-share.js';
+import { SocialShare, initSharePopovers } from '../components/social-share.js';
 import { updateSocialMetaTags } from '../utils/dom.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { triggerAdSense } from '../utils/ads.js';
@@ -223,6 +223,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         if (relatedLaws.length > 0) {
           relatedList.innerHTML = renderLawCards(relatedLaws);
           hydrateIcons(relatedList);
+          initSharePopovers(relatedList);
           addVotingListeners(relatedList);
           relatedSection.removeAttribute('hidden');
         }

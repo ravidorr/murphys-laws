@@ -8,6 +8,7 @@ import { getRandomLoadingMessage, LAWS_PER_PAGE } from '../utils/constants.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
+import { initSharePopovers } from '../components/social-share.js';
 import { renderPagination } from '../utils/pagination.js';
 import { updateSearchInfo, hasActiveFilters } from '../utils/search-info.js';
 import { AdvancedSearch } from '../components/advanced-search.js';
@@ -70,6 +71,7 @@ export function Browse({ searchQuery, onNavigate }) {
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
       hydrateIcons(cardText);
+      initSharePopovers(cardText);
     }
     
     // Update result count

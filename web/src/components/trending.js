@@ -6,6 +6,7 @@ import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
+import { initSharePopovers } from './social-share.js';
 import { LAW_CARD_MIN_HEIGHT, WIDGET_CARD_COUNT } from '../utils/constants.js';
 
 /**
@@ -46,6 +47,7 @@ export function Trending() {
           </div>
         `;
         hydrateIcons(contentDiv);
+        initSharePopovers(contentDiv);
 
         // Add voting event listeners only if there are laws
         if (trending.length > 0) {

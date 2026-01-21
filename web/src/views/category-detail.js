@@ -7,6 +7,7 @@ import { getRandomLoadingMessage, LAWS_PER_PAGE } from '../utils/constants.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
+import { initSharePopovers } from '../components/social-share.js';
 import { renderPagination } from '../utils/pagination.js';
 import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL, SITE_NAME } from '@utils/constants.js';
@@ -87,6 +88,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
       hydrateIcons(cardText);
+      initSharePopovers(cardText);
 
       // Only trigger ads if we have laws with content
       if (laws.length > 0) {
