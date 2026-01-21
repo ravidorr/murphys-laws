@@ -6,6 +6,7 @@ import {
   cycleTheme,
   getThemeIcon,
   getThemeLabel,
+  getThemeTooltip,
   initTheme
 } from '../src/utils/theme.js';
 
@@ -247,6 +248,29 @@ describe('Theme utilities', () => {
     it('uses stored theme when no argument', () => {
       localStorage.setItem('murphys_theme', 'light');
       expect(getThemeLabel()).toBe('Theme: Light. Click for dark mode');
+    });
+  });
+
+  describe('getThemeTooltip', () => {
+    it('returns correct tooltip for light theme', () => {
+      expect(getThemeTooltip('light')).toBe('Light mode');
+    });
+
+    it('returns correct tooltip for dark theme', () => {
+      expect(getThemeTooltip('dark')).toBe('Dark mode');
+    });
+
+    it('returns correct tooltip for auto theme', () => {
+      expect(getThemeTooltip('auto')).toBe('Auto mode');
+    });
+
+    it('uses stored theme when no argument', () => {
+      localStorage.setItem('murphys_theme', 'dark');
+      expect(getThemeTooltip()).toBe('Dark mode');
+    });
+
+    it('returns Auto mode for unknown theme values', () => {
+      expect(getThemeTooltip('unknown')).toBe('Auto mode');
     });
   });
 
