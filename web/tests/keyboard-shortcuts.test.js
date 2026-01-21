@@ -250,6 +250,24 @@ describe('keyboard-shortcuts', () => {
       expect(helpModal.openKeyboardHelpModal).toHaveBeenCalled();
     });
 
+    it('does not reopen help modal on ? key when modal is already open', () => {
+      const localThis = {};
+      // Simulate modal already being open
+      helpModal.isKeyboardHelpModalOpen.mockReturnValue(true);
+
+      localThis.event = new KeyboardEvent('keydown', { key: '?' });
+      localThis.event.preventDefault = vi.fn();
+      Object.defineProperty(localThis.event, 'target', { value: document.body });
+
+      handleKeydown(localThis.event);
+
+      // Should still prevent default (to avoid typing ? in inputs)
+      expect(localThis.event.preventDefault).toHaveBeenCalled();
+      // But should NOT call openKeyboardHelpModal - this prevents overwriting
+      // previousActiveElement with an element inside the modal
+      expect(helpModal.openKeyboardHelpModal).not.toHaveBeenCalled();
+    });
+
     it('navigates to next card on j key', () => {
       const localThis = {};
       localThis.cards = Array.from({ length: 2 }, (_, i) => {
