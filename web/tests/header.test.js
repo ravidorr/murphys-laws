@@ -14,10 +14,15 @@ vi.mock('../src/utils/theme.js', () => ({
     if (theme === 'dark') return 'Theme: Dark. Click for system preference';
     return 'Theme: Auto. Click for light mode';
   }),
+  getThemeTooltip: vi.fn((theme) => {
+    if (theme === 'light') return 'Light mode';
+    if (theme === 'dark') return 'Dark mode';
+    return 'Auto mode';
+  }),
   initTheme: vi.fn()
 }));
 
-import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, initTheme } from '../src/utils/theme.js';
+import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../src/utils/theme.js';
 
 describe('Header component', () => {
   beforeEach(() => {
@@ -372,6 +377,21 @@ describe('Header component', () => {
       expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Auto. Click for light mode');
     });
 
+    it('sets initial tooltip based on current theme', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      const themeToggle = el.querySelector('#theme-toggle');
+      expect(themeToggle.getAttribute('data-title')).toBe('Auto mode');
+      expect(themeToggle.classList.contains('custom-tooltip')).toBe(true);
+      expect(themeToggle.classList.contains('custom-tooltip-bottom')).toBe(true);
+    });
+
     it('cycles theme when toggle is clicked', () => {
       const el = Header({
         onSearch: () => {},
@@ -419,6 +439,33 @@ describe('Header component', () => {
       document.body.removeChild(el);
     });
 
+    it('updates tooltip after theme cycle', () => {
+      // Mock cycleTheme to return 'light'
+      cycleTheme.mockReturnValue('light');
+      getThemeTooltip.mockImplementation((theme) => {
+        if (theme === 'light') return 'Light mode';
+        return 'Auto mode';
+      });
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      themeToggle.click();
+
+      expect(themeToggle.getAttribute('data-title')).toBe('Light mode');
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
+
     it('listens to themechange events', () => {
       const el = Header({
         onSearch: () => {},
@@ -433,11 +480,13 @@ describe('Header component', () => {
 
       // Dispatch a themechange event
       getThemeLabel.mockReturnValue('Theme: Dark. Click for system preference');
+      getThemeTooltip.mockReturnValue('Dark mode');
       document.dispatchEvent(new CustomEvent('themechange', {
         detail: { theme: 'dark', effectiveTheme: 'dark' }
       }));
 
       expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
+      expect(themeToggle.getAttribute('data-title')).toBe('Dark mode');
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);

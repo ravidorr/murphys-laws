@@ -413,6 +413,26 @@ textarea.form-control,
   visibility: visible;
 }
 
+/* Bottom-positioned tooltip variant (for elements near top of viewport) */
+.custom-tooltip-bottom::after {
+  bottom: auto;
+  top: 100%; /* Positions the tooltip below the element */
+  margin-top: 8px;
+}
+
+.custom-tooltip-bottom::before {
+  top: auto;
+  bottom: 100%; /* Positions the caret above the tooltip */
+  margin-bottom: 2px;
+  border-top: none;
+  border-bottom: 6px solid var(--bg); /* Creates upward-pointing triangle */
+}
+
+/* Ensure button tooltips keep pointer cursor */
+button.custom-tooltip {
+  cursor: pointer;
+}
+
 /* Search info text */
 .search-info {
   font-size: .875rem;

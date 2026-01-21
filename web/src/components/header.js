@@ -1,7 +1,7 @@
 // Header component in plain JS
 import templateHtml from '@components/templates/header.html?raw';
 import { hydrateIcons, createIcon } from '../utils/icons.js';
-import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, initTheme } from '../utils/theme.js';
+import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.js';
 
 export function Header({ onSearch, onNavigate }) {
   const header = document.createElement('header');
@@ -46,9 +46,11 @@ export function Header({ onSearch, onNavigate }) {
     
     const iconName = getThemeIcon(theme);
     const label = getThemeLabel(theme);
+    const tooltip = getThemeTooltip(theme);
     
-    // Update aria-label
+    // Update aria-label and tooltip
     themeToggle.setAttribute('aria-label', label);
+    themeToggle.setAttribute('data-title', tooltip);
     
     // Replace the icon
     const existingIcon = themeToggle.querySelector('.icon');
