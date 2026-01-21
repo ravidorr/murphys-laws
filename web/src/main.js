@@ -26,6 +26,7 @@ import {
 } from '@modules/structured-data.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { initAnalyticsBootstrap } from '@utils/third-party.js';
+import { initKeyboardShortcuts } from './utils/keyboard-shortcuts.js';
 
 // App state (no framework)
 const state = {
@@ -231,6 +232,7 @@ const notFoundRoute = () => {
 
 startRouter(app, notFoundRoute);
 initAnalyticsBootstrap();
+initKeyboardShortcuts();
 
 // Defer AdSense loading to ensure content is present first
 import { setupAdSense } from './utils/ads.js';
