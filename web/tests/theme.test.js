@@ -268,6 +268,10 @@ describe('Theme utilities', () => {
       localStorage.setItem('murphys_theme', 'dark');
       expect(getThemeTooltip()).toBe('Dark mode');
     });
+
+    it('returns Auto mode for unknown theme values', () => {
+      expect(getThemeTooltip('unknown')).toBe('Auto mode');
+    });
   });
 
   describe('initTheme', () => {
