@@ -1104,12 +1104,13 @@ describe('Browse view', () => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    // Create a share button and click it
-    const shareBtn = document.createElement('button');
-    shareBtn.setAttribute('data-share-law', '123');
-    el.appendChild(shareBtn);
+    // Create a copy link button and click it (new format with data-action)
+    const copyLinkBtn = document.createElement('button');
+    copyLinkBtn.setAttribute('data-action', 'copy-link');
+    copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/123');
+    el.appendChild(copyLinkBtn);
 
-    shareBtn.click();
+    copyLinkBtn.click();
     await new Promise(r => setTimeout(r, 10));
 
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('/law/123'));
@@ -1133,12 +1134,13 @@ describe('Browse view', () => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    // Create a share button and click it
-    const shareBtn = document.createElement('button');
-    shareBtn.setAttribute('data-share-law', '456');
-    el.appendChild(shareBtn);
+    // Create a copy link button and click it (new format with data-action)
+    const copyLinkBtn = document.createElement('button');
+    copyLinkBtn.setAttribute('data-action', 'copy-link');
+    copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/456');
+    el.appendChild(copyLinkBtn);
 
-    shareBtn.click();
+    copyLinkBtn.click();
     await new Promise(r => setTimeout(r, 50));
 
     // Should have tried clipboard first, then fallback to execCommand
@@ -1146,7 +1148,7 @@ describe('Browse view', () => {
     expect(execCommandMock).toHaveBeenCalledWith('copy');
   });
 
-  it('does not copy when share button has no law id', async () => {
+  it('does not copy when copy link button has no value', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -1160,15 +1162,16 @@ describe('Browse view', () => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    // Create a share button without law id
-    const shareBtn = document.createElement('button');
-    shareBtn.setAttribute('data-share-law', '');
-    el.appendChild(shareBtn);
+    // Create a copy link button without value
+    const copyLinkBtn = document.createElement('button');
+    copyLinkBtn.setAttribute('data-action', 'copy-link');
+    copyLinkBtn.setAttribute('data-copy-value', '');
+    el.appendChild(copyLinkBtn);
 
-    shareBtn.click();
+    copyLinkBtn.click();
     await new Promise(r => setTimeout(r, 10));
 
-    // Should not copy when no law id
+    // Should not copy when no value
     expect(writeTextMock).not.toHaveBeenCalled();
   });
 

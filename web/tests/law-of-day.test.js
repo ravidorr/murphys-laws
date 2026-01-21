@@ -1,6 +1,12 @@
 import { LawOfTheDay } from '@components/law-of-day.js';
 import * as voting from '../src/utils/voting.js';
 
+// Mock notification module to avoid unhandled rejections
+vi.mock('../src/components/notification.js', () => ({
+  showSuccess: vi.fn(),
+  showError: vi.fn()
+}));
+
 function createLocalThis() {
   const context = {};
 
@@ -363,5 +369,163 @@ describe('LawOfTheDay component', () => {
 
     // Should still render without errors
     expect(el.querySelector('.share-buttons')).toBeTruthy();
+  });
+
+  describe('copy actions', () => {
+    const localThis = createLocalThis();
+
+    afterEach(() => {
+      const self = localThis();
+      if (self.appended && self.el?.parentNode) {
+        self.el.parentNode.removeChild(self.el);
+      }
+    });
+
+    function mountLawForCopy(law, options = {}) {
+      const { append = false, onNavigate = () => {} } = options;
+      const el = LawOfTheDay({ law, onNavigate });
+      const self = localThis();
+      self.el = el;
+      self.appended = append;
+      if (append) {
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    it('copies law text to clipboard when copy text button is clicked', async () => {
+      const law = { id: '1', text: 'Test law text', title: 'Test', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      copyTextBtn.setAttribute('data-copy-value', 'Test law text');
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith('Test law text');
+    });
+
+    it('copies law link to clipboard when copy link button is clicked', async () => {
+      const law = { id: '1', text: 'Test law text', title: 'Test', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.setAttribute('data-action', 'copy-link');
+      copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/1');
+      el.appendChild(copyLinkBtn);
+
+      copyLinkBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith('https://test.com/law/1');
+    });
+
+    it('uses fallback when clipboard API fails on copy text', async () => {
+      const law = { id: '1', text: 'Test law text', title: 'Test', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      copyTextBtn.setAttribute('data-copy-value', 'Test law text');
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      expect(writeTextMock).toHaveBeenCalled();
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+    });
+
+    it('uses fallback when clipboard API fails on copy link', async () => {
+      const law = { id: '1', text: 'Test law text', title: 'Test', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const execCommandMock = vi.fn().mockReturnValue(true);
+      document.execCommand = execCommandMock;
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.setAttribute('data-action', 'copy-link');
+      copyLinkBtn.setAttribute('data-copy-value', 'https://test.com/law/1');
+      el.appendChild(copyLinkBtn);
+
+      copyLinkBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      expect(writeTextMock).toHaveBeenCalled();
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+    });
+
+    it('uses law.text as fallback when data-copy-value is missing on copy text', async () => {
+      const law = { id: '1', text: 'Fallback law text', title: 'Test', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      // No data-copy-value set
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith('Fallback law text');
+    });
+
+    it('generates URL as fallback when data-copy-value is missing on copy link', async () => {
+      const law = { id: '42', text: 'Test law text', title: 'Test', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.setAttribute('data-action', 'copy-link');
+      // No data-copy-value set
+      el.appendChild(copyLinkBtn);
+
+      copyLinkBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('/law/42'));
+    });
+
+    it('does not copy when text is empty on copy text', async () => {
+      const law = { id: '1', text: '', title: '', upvotes: 10, downvotes: 2 };
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = mountLawForCopy(law, { append: true });
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      copyTextBtn.setAttribute('data-copy-value', '');
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      // Should not have called writeText since text is empty
+      expect(writeTextMock).not.toHaveBeenCalled();
+    });
   });
 });

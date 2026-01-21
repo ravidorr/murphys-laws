@@ -469,9 +469,18 @@ textarea.form-control,
   justify-content: center;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  box-sizing: border-box;
   border-radius: 50%;
+  border: none;
+  padding: 0;
+  margin: 0;
   text-decoration: none;
   color: #fff;
+  cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -486,12 +495,23 @@ textarea.form-control,
 .share-linkedin { background-color: #0A66C2; }
 .share-reddit { background-color: #FF4500; }
 .share-email { background-color: #777; }
+.share-copy-text { background-color: #6B7280; }
+.share-copy-link { background-color: var(--btn-primary-bg); }
 
-/* Icon size */
+/* Icon size - base size for social brand icons */
 .share-button .share-icon {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   color: inherit; /* Ensure icons inherit the white color from .share-button */
+}
+
+/* Utility icons need slightly larger dimensions to visually match brand icons
+   (brand icon paths fill more of their viewBox than utility icon paths) */
+.share-email .share-icon,
+.share-copy-text .share-icon,
+.share-copy-link .share-icon {
+  width: 22px;
+  height: 22px;
 }
 
 /* Ensure Font Awesome fonts are used */

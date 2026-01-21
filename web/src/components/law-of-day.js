@@ -4,7 +4,7 @@ import templateHtml from '@components/templates/law-of-day.html?raw';
 import { firstAttributionLine } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
-import { showError } from './notification.js';
+import { showError, showSuccess } from './notification.js';
 import { SocialShare } from './social-share.js';
 import { hydrateIcons } from '../utils/icons.js';
 
@@ -89,16 +89,67 @@ export function LawOfTheDay({ law, onNavigate }) {
     const socialShare = SocialShare({
       url: lawUrl,
       title: twitterText,
-      description: lawText
+      description: lawText,
+      lawText: lawText,
+      lawId: law.id
     });
 
     footer.appendChild(socialShare);
+    hydrateIcons(footer);
   }
 
-  // Handle voting, navigation, and sharing
+  // Handle voting, navigation, sharing, and copy actions
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+
+    // Handle copy text action
+    const copyTextBtn = t.closest('[data-action="copy-text"]');
+    if (copyTextBtn) {
+      e.stopPropagation();
+      const textToCopy = copyTextBtn.getAttribute('data-copy-value') || law.text || '';
+      if (textToCopy) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          showSuccess('Law text copied to clipboard!');
+        } catch {
+          // Fallback
+          const textArea = document.createElement('textarea');
+          textArea.value = textToCopy;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showSuccess('Law text copied to clipboard!');
+        }
+      }
+      return;
+    }
+
+    // Handle copy link action
+    const copyLinkBtn = t.closest('[data-action="copy-link"]');
+    if (copyLinkBtn) {
+      e.stopPropagation();
+      const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || `${window.location.origin}/law/${law.id}`;
+      try {
+        await navigator.clipboard.writeText(linkToCopy);
+        showSuccess('Link copied to clipboard!');
+      } catch {
+        // Fallback
+        const textArea = document.createElement('textarea');
+        textArea.value = linkToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showSuccess('Link copied to clipboard!');
+      }
+      return;
+    }
 
     // Handle vote buttons
     const voteBtn = t.closest('[data-vote]');

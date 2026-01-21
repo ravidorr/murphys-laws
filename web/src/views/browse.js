@@ -145,20 +145,44 @@ export function Browse({ searchQuery, onNavigate }) {
     const t = e.target;
     if (!(t instanceof Element)) return;
 
-    // Handle share link button clicks
-    const shareBtn = t.closest('[data-share-law]');
-    if (shareBtn) {
+    // Handle copy text action
+    const copyTextBtn = t.closest('[data-action="copy-text"]');
+    if (copyTextBtn) {
       e.stopPropagation();
-      const lawId = shareBtn.getAttribute('data-share-law');
-      if (lawId) {
-        const lawUrl = `${window.location.origin}/law/${lawId}`;
+      const textToCopy = copyTextBtn.getAttribute('data-copy-value') || '';
+      if (textToCopy) {
         try {
-          await navigator.clipboard.writeText(lawUrl);
+          await navigator.clipboard.writeText(textToCopy);
+          showSuccess('Law text copied to clipboard!');
+        } catch {
+          // Fallback
+          const textArea = document.createElement('textarea');
+          textArea.value = textToCopy;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showSuccess('Law text copied to clipboard!');
+        }
+      }
+      return;
+    }
+
+    // Handle copy link action
+    const copyLinkBtn = t.closest('[data-action="copy-link"]');
+    if (copyLinkBtn) {
+      e.stopPropagation();
+      const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || '';
+      if (linkToCopy) {
+        try {
+          await navigator.clipboard.writeText(linkToCopy);
           showSuccess('Link copied to clipboard!');
         } catch {
-          // Fallback: select and copy
+          // Fallback
           const textArea = document.createElement('textarea');
-          textArea.value = lawUrl;
+          textArea.value = linkToCopy;
           textArea.style.position = 'fixed';
           textArea.style.opacity = '0';
           document.body.appendChild(textArea);

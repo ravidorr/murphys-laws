@@ -15,7 +15,7 @@ describe('SocialShare component', () => {
   it('creates social share buttons container', () => {
     const el = SocialShare();
     expect(el.className).toBe('share-buttons');
-    expect(el.children.length).toBe(5); // Twitter, Facebook, LinkedIn, Reddit, Email
+    expect(el.children.length).toBe(7); // Twitter, Facebook, LinkedIn, Reddit, Email, Copy Text, Copy Link
   });
 
   it('uses default values when no options provided', () => {
@@ -153,7 +153,7 @@ describe('SocialShare component', () => {
       const el = SocialShare();
 
       const icons = el.querySelectorAll('svg');
-      expect(icons.length).toBe(5);
+      expect(icons.length).toBe(7); // 5 social + 2 copy buttons
     });
 
     it('handles missing icon gracefully', () => {
@@ -177,12 +177,58 @@ describe('SocialShare component', () => {
 
       SocialShare();
 
-      // Verify createIcon was called with correct classNames
+      // Verify createIcon was called with correct classNames for all 7 buttons
       expect(createIconSpy).toHaveBeenCalledWith('twitter', { classNames: ['share-icon'] });
       expect(createIconSpy).toHaveBeenCalledWith('facebook', { classNames: ['share-icon'] });
       expect(createIconSpy).toHaveBeenCalledWith('linkedin', { classNames: ['share-icon'] });
       expect(createIconSpy).toHaveBeenCalledWith('reddit', { classNames: ['share-icon'] });
       expect(createIconSpy).toHaveBeenCalledWith('email', { classNames: ['share-icon'] });
+      expect(createIconSpy).toHaveBeenCalledWith('copy', { classNames: ['share-icon'] });
+      expect(createIconSpy).toHaveBeenCalledWith('link', { classNames: ['share-icon'] });
+    });
+  });
+
+  describe('Copy Text button', () => {
+    it('creates Copy Text button with correct attributes', () => {
+      const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
+      const button = el.querySelector('.share-copy-text');
+
+      expect(button.className).toBe('share-button share-copy-text');
+      expect(button.getAttribute('aria-label')).toBe('Copy text');
+      expect(button.getAttribute('title')).toBe('Copy text');
+      expect(button.getAttribute('data-action')).toBe('copy-text');
+      expect(button.getAttribute('data-copy-value')).toBe('Test Law Text');
+      expect(button.getAttribute('data-law-id')).toBe('123');
+      expect(button.type).toBe('button');
+    });
+
+    it('uses title as fallback for lawText', () => {
+      const el = SocialShare({ title: 'Title as fallback' });
+      const button = el.querySelector('.share-copy-text');
+
+      expect(button.getAttribute('data-copy-value')).toBe('Title as fallback');
+    });
+  });
+
+  describe('Copy Link button', () => {
+    it('creates Copy Link button with correct attributes', () => {
+      const el = SocialShare({ url: 'https://test.com/law/123', lawId: '123' });
+      const button = el.querySelector('.share-copy-link');
+
+      expect(button.className).toBe('share-button share-copy-link');
+      expect(button.getAttribute('aria-label')).toBe('Copy link');
+      expect(button.getAttribute('title')).toBe('Copy link');
+      expect(button.getAttribute('data-action')).toBe('copy-link');
+      expect(button.getAttribute('data-copy-value')).toBe('https://test.com/law/123');
+      expect(button.getAttribute('data-law-id')).toBe('123');
+      expect(button.type).toBe('button');
+    });
+
+    it('uses window.location.href as fallback for url', () => {
+      const el = SocialShare();
+      const button = el.querySelector('.share-copy-link');
+
+      expect(button.getAttribute('data-copy-value')).toBe('https://test.com/page');
     });
   });
 
