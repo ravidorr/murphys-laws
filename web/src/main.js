@@ -123,7 +123,9 @@ function layout(node, { hideAds = false } = {}) {
   };
 
   typesetWhenReady(wrap);
+  
   hydrateIcons(wrap);
+  
   return wrap;
 }
 
