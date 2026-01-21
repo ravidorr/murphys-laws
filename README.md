@@ -147,6 +147,19 @@ See [Deployment Guide](shared/docs/DEPLOYMENT.md) for detailed instructions.
 npm run deploy
 ```
 
+## Keyboard Shortcuts (Web)
+
+Press `?` anywhere on the site to see all available shortcuts:
+
+| Shortcut | Action |
+|----------|--------|
+| `/` | Focus search |
+| `j` | Next law card |
+| `k` | Previous law card |
+| `?` | Show shortcuts help |
+| `Escape` | Close modal/popover |
+| `Enter` / `Space` | Activate focused card |
+
 ## Contributing
 
 1. Fork the repository

@@ -17,7 +17,6 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## UX Improvements (Frontend Only)
 - [ ] **User Favorites/Bookmarks:** Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.
-- [ ] **Keyboard Shortcuts:** Add global shortcuts like `/` for search focus, `j/k` for navigating law cards, `?` for help modal.
 - [ ] **Copy as Image:** Add "copy as image" feature to share buttons.
 
 ## User Engagement (Require Backend Work)
@@ -49,6 +48,7 @@ This document outlines additional tasks and potential improvements for the Murph
 ### UX Improvements
 - [x] **Dark Mode Toggle:** ~~Add manual dark mode control (currently follows system preference only).~~ Done - added three-state toggle (auto/light/dark) to header with localStorage persistence. Theme applies immediately on page load to prevent flash.
 - [x] **WhatsApp Share (Web):** ~~Add WhatsApp sharing option to share popover.~~ Done - added WhatsApp share button between Reddit and Email in the share menu.
+- [x] **Keyboard Shortcuts:** ~~Add global shortcuts like `/` for search focus, `j/k` for navigating law cards, `?` for help modal.~~ Done - added keyboard shortcuts with accessible help modal. Press `?` anywhere to see available shortcuts.
 
 ### Technical Debt / Code Quality
 - [x] **Refactor `main.js` `onSearch`:** ~~The `onSearch` function in `web/src/main.js` currently handles both search queries and category navigation. Consider separating these concerns for better modularity and clarity.~~ Done - separated into `handleCategoryNavigation`, `handleSearchNavigation`, and `handleClearFilters` functions.
