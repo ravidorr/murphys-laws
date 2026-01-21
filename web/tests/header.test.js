@@ -1,6 +1,28 @@
 import { Header } from '../src/components/header.js';
 
+// Mock theme module to avoid side effects during tests
+vi.mock('../src/utils/theme.js', () => ({
+  getTheme: vi.fn(() => 'auto'),
+  cycleTheme: vi.fn(() => 'light'),
+  getThemeIcon: vi.fn((theme) => {
+    if (theme === 'light') return 'sun';
+    if (theme === 'dark') return 'moon';
+    return 'sunMoon';
+  }),
+  getThemeLabel: vi.fn((theme) => {
+    if (theme === 'light') return 'Theme: Light. Click for dark mode';
+    if (theme === 'dark') return 'Theme: Dark. Click for system preference';
+    return 'Theme: Auto. Click for light mode';
+  }),
+  initTheme: vi.fn()
+}));
+
+import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, initTheme } from '../src/utils/theme.js';
+
 describe('Header component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   it('renders header with brand', () => {
     const el = Header({
       onSearch: () => {},
@@ -308,5 +330,204 @@ describe('Header component', () => {
 
     // Should not navigate
     expect(navigated).toBe('');
+  });
+
+  describe('Theme toggle', () => {
+    it('renders theme toggle button', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      const themeToggle = el.querySelector('#theme-toggle');
+      expect(themeToggle).toBeTruthy();
+      expect(themeToggle.classList.contains('theme-toggle')).toBe(true);
+    });
+
+    it('initializes theme on mount', () => {
+      Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      expect(initTheme).toHaveBeenCalled();
+    });
+
+    it('sets initial aria-label based on current theme', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      const themeToggle = el.querySelector('#theme-toggle');
+      expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Auto. Click for light mode');
+    });
+
+    it('cycles theme when toggle is clicked', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      themeToggle.click();
+
+      expect(cycleTheme).toHaveBeenCalled();
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
+
+    it('updates aria-label after theme cycle', () => {
+      // Mock cycleTheme to return 'light'
+      cycleTheme.mockReturnValue('light');
+      getThemeLabel.mockImplementation((theme) => {
+        if (theme === 'light') return 'Theme: Light. Click for dark mode';
+        return 'Theme: Auto. Click for light mode';
+      });
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      themeToggle.click();
+
+      expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Light. Click for dark mode');
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
+
+    it('listens to themechange events', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      // Dispatch a themechange event
+      getThemeLabel.mockReturnValue('Theme: Dark. Click for system preference');
+      document.dispatchEvent(new CustomEvent('themechange', {
+        detail: { theme: 'dark', effectiveTheme: 'dark' }
+      }));
+
+      expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
+
+    it('cleanup removes themechange listener', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      // Get initial label
+      const initialLabel = themeToggle.getAttribute('aria-label');
+
+      // Call cleanup
+      el.cleanup();
+
+      // Dispatch a themechange event
+      getThemeLabel.mockReturnValue('Theme: Dark. Click for system preference');
+      document.dispatchEvent(new CustomEvent('themechange', {
+        detail: { theme: 'dark', effectiveTheme: 'dark' }
+      }));
+
+      // Label should not have changed since listener was removed
+      expect(themeToggle.getAttribute('aria-label')).toBe(initialLabel);
+
+      document.body.removeChild(el);
+    });
+
+    it('handles icon replacement gracefully when existing icon not found', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+      const themeToggle = el.querySelector('#theme-toggle');
+
+      // Remove the icon element
+      const icon = themeToggle.querySelector('.icon');
+      if (icon) icon.remove();
+
+      // Should not throw when clicking
+      expect(() => themeToggle.click()).not.toThrow();
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
+
+    it('handles missing theme toggle element gracefully', () => {
+      // Mock querySelector to return null for #theme-toggle
+      const originalQuerySelector = Element.prototype.querySelector;
+      Element.prototype.querySelector = function(selector) {
+        if (selector === '#theme-toggle') {
+          return null;
+        }
+        return originalQuerySelector.call(this, selector);
+      };
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+        currentPage: 'home',
+        isLoggedIn: false,
+        currentUser: null
+      });
+
+      document.body.appendChild(el);
+
+      // Dispatch a themechange event - should not throw even with no toggle
+      expect(() => {
+        document.dispatchEvent(new CustomEvent('themechange', {
+          detail: { theme: 'dark', effectiveTheme: 'dark' }
+        }));
+      }).not.toThrow();
+
+      // Restore original querySelector
+      Element.prototype.querySelector = originalQuerySelector;
+
+      if (el.cleanup) el.cleanup();
+      document.body.removeChild(el);
+    });
   });
 });
