@@ -42,25 +42,55 @@ function onNavigate(page, param) {
     navigate(page, param);
   }
 }
+
+/**
+ * Handle navigation to a specific category page
+ * @param {string|number} categoryId - The category ID or slug to navigate to
+ */
+function handleCategoryNavigation(categoryId) {
+  onNavigate('category', categoryId);
+}
+
+/**
+ * Handle search query navigation - navigates to or refreshes the browse page
+ */
+function handleSearchNavigation() {
+  const { name } = currentRoute();
+  if (name === 'browse') {
+    forceRender();
+  } else {
+    navigate('browse');
+  }
+}
+
+/**
+ * Handle clearing filters - returns to home or refreshes browse if already there
+ */
+function handleClearFilters() {
+  const { name } = currentRoute();
+  if (name === 'browse') {
+    forceRender();
+  } else {
+    navigate('home');
+  }
+}
+
+/**
+ * Main search handler - dispatches to appropriate navigation handler based on filters
+ * @param {Object} filters - Search filters object
+ * @param {string} [filters.q] - Search query text
+ * @param {string|number} [filters.category_id] - Category ID for category navigation
+ * @param {string} [filters.attribution] - Attribution filter
+ */
 function onSearch(filters) {
   state.searchQuery = filters.q || '';
+
   if (filters.category_id) {
-    onNavigate('category', filters.category_id);
+    handleCategoryNavigation(filters.category_id);
   } else if (filters.q || filters.attribution) {
-    const { name } = currentRoute();
-    if (name === 'browse') {
-      forceRender();
-    } else {
-      navigate('browse');
-    }
+    handleSearchNavigation();
   } else {
-    // If no filters, navigate to home or browse depending on current
-    const { name } = currentRoute();
-    if (name === 'browse') {
-      forceRender();
-    } else {
-      navigate('home'); // Or maybe just navigate('browse') without filters?
-    }
+    handleClearFilters();
   }
 }
 

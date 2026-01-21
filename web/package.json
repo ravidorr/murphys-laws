@@ -18,7 +18,9 @@
     "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"styles/**/*.css\"",
     "lint:css:fix": "stylelint \"styles/**/*.css\" --fix",
-    "lint:html": "html-validate \"**/*.html\""
+    "lint:html": "html-validate \"**/*.html\"",
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "optimize:images:dry-run": "node scripts/optimize-images.mjs --dry-run"
   },
   "keywords": [
     "murphys-law",
@@ -41,6 +43,7 @@
     "globals": "^15.14.0",
     "html-validate": "^10.4.0",
     "jsdom": "^26.0.0",
+    "sharp": "^0.34.5",
     "stylelint": "^16.15.0",
     "stylelint-config-standard": "^36.0.1",
     "vite": "^7.1.0",
