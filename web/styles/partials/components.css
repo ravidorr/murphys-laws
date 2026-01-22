@@ -120,6 +120,19 @@ a.btn:focus-visible,
   outline-offset: 2px;
 }
 
+/* RSS link in footer */
+.rss-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rss-footer-link .icon {
+  width: 0.85em;
+  height: 0.85em;
+  fill: currentcolor;
+}
+
 input[type='text'],
 input[type='email'],
 textarea,

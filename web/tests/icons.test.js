@@ -46,9 +46,9 @@ describe('Icons utility', () => {
       const iconNames = [
         'arrowForward', 'checkCircle', 'close', 'copy', 'email', 'error',
         'facebook', 'home', 'link', 'linkedin', 'list', 'preview',
-        'reddit', 'refresh', 'search', 'searchOff', 'send',
+        'reddit', 'refresh', 'rss', 'search', 'searchOff', 'send',
         'share', 'thumbDown', 'thumbUp', 'twitter', 'warning',
-        'sun', 'moon', 'sunMoon'
+        'whatsapp', 'sun', 'moon', 'sunMoon'
       ];
 
       iconNames.forEach(name => {
