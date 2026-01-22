@@ -1,0 +1,272 @@
+/* ==========================
+  Print styles
+  Optimized layout and typography for printing law pages
+   ========================== */
+
+@media print {
+  /* =========================
+     Hide interactive/non-essential elements
+     ========================= */
+  header.sticky,
+  .nav-dropdown,
+  .skip-link,
+  form[role="search"],
+  .vote-btn,
+  .section-footer,
+  .related-laws-section,
+  .footer-ad-shell,
+  .footer-ad-reserved,
+  .social-share-popover,
+  .keyboard-help-modal,
+  [data-theme-toggle],
+  .notification-container,
+  .btn[data-nav],
+  footer .footer-nav,
+  /* Advanced search form */
+  #advanced-search-container,
+  .advanced-search-grid,
+  .search-field,
+  .search-actions,
+  /* Widget cards (Top Voted, Trending, Recently Added) */
+  [data-widgets],
+  .section-grid,
+  /* Pagination */
+  .pagination,
+  /* Browse controls (sort dropdown, result count) */
+  .browse-controls,
+  /* Empty state buttons */
+  .empty-state .btn {
+    display: none !important;
+  }
+
+  /* =========================
+     Reset backgrounds and colors for print
+     ========================= */
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* =========================
+     Typography optimizations
+     ========================= */
+  h1, h2, h3, h4, h5, h6 {
+    color: #000 !important;
+    page-break-after: avoid;
+    orphans: 3;
+    widows: 3;
+  }
+
+  .section-title {
+    font-size: 14pt;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.5rem;
+  }
+
+  .lod-quote-large {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #000 !important;
+    line-height: 1.4;
+    margin: 1rem 0;
+  }
+
+  .lod-attrib {
+    font-size: 11pt;
+    color: #333 !important;
+    font-style: italic;
+  }
+
+  /* =========================
+     Layout adjustments
+     ========================= */
+  .container {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  .section-card,
+  [data-law-card-root] {
+    border: 1px solid #ccc !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .section-header {
+    border-bottom: 1px solid #ccc !important;
+  }
+
+  .section-body {
+    padding: 1rem;
+  }
+
+  /* Section footer is hidden via the main hide rule */
+
+  /* =========================
+     Link handling - show URLs only for external http links
+     ========================= */
+
+  /* Don't show URLs by default - too noisy for law pages */
+  a[href]::after {
+    content: none;
+  }
+
+  /* Only show URLs for explicit external links if needed */
+  a[href^="http"]:not([href*="murphys-laws"], [href*="localhost"])::after {
+    content: none; /* Disabled - too cluttered in print */
+  }
+
+  /* Never show mailto links, internal links, or navigation */
+  a[href^="mailto:"]::after,
+  a[href^="#"]::after,
+  a[href^="javascript:"]::after,
+  a[data-nav]::after {
+    content: none;
+  }
+
+  /* =========================
+     Page settings
+     ========================= */
+  @page {
+    margin: 2cm;
+    size: auto;
+  }
+
+  @page :first {
+    margin-top: 3cm;
+  }
+
+  /* Prevent breaks inside important content */
+  blockquote,
+  pre,
+  img {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Start new sections on a new page if needed */
+  .content-section {
+    page-break-before: auto;
+    page-break-inside: avoid;
+  }
+
+  /* =========================
+     Footer - clean up for print
+     ========================= */
+  footer {
+    border-top: 1px solid #ccc !important;
+    padding: 1rem 0 !important;
+    margin-top: 2rem;
+    font-size: 9pt;
+    text-align: center;
+  }
+
+  /* Hide footer nav links (already hidden above, but reinforce) */
+  footer .footer-nav,
+  footer .footer-ad-shell {
+    display: none !important;
+  }
+
+  /* Show just the copyright text cleanly */
+  footer p {
+    margin: 0;
+    font-size: 9pt;
+  }
+
+  /* =========================
+     Ensure accent text is visible in print
+     ========================= */
+  .accent-text {
+    color: #000 !important;
+    font-weight: 700;
+  }
+
+  /* =========================
+     Clean up category cards for print
+     ========================= */
+  .category-grid {
+    display: block;
+  }
+
+  .category-card {
+    border: 1px solid #ccc !important;
+    margin-bottom: 0.5rem;
+    page-break-inside: avoid;
+  }
+
+  /* =========================
+     Law card mini (browse/search results)
+     ========================= */
+  .law-card-mini {
+    border-bottom: 1px solid #eee !important;
+    padding: 0.5rem 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .law-card-mini:last-child {
+    border-bottom: none !important;
+  }
+
+  .law-card-text {
+    font-size: 11pt;
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+  }
+
+  .law-card-attrib {
+    font-size: 9pt;
+    color: #555 !important;
+  }
+
+  .law-card-footer {
+    display: none !important;
+  }
+
+  /* =========================
+     Browse page specific
+     ========================= */
+  .card-title {
+    font-size: 16pt;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #000 !important;
+  }
+
+  .card-header-with-info {
+    margin-bottom: 1rem;
+  }
+
+  #browse-search-info {
+    display: none !important;
+  }
+
+  /* Main browse card */
+  #browse-all-laws-card {
+    border: none !important;
+  }
+
+  #browse-all-laws-card .card-content {
+    padding: 0 !important;
+  }
+
+  /* =========================
+     Content pages (about, privacy, etc.)
+     ========================= */
+  .content-card {
+    border: none !important;
+  }
+}
