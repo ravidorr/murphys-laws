@@ -74,7 +74,7 @@ cd android
 npm test
 
 # Test specific platform
-npm run test:backend  # 13 Vitest unit tests (controllers, services, middleware)
+npm run test:backend  # 15 Vitest unit tests (controllers, services, middleware)
 npm run test:web      # Web application tests
 ```
 

@@ -39,6 +39,8 @@ All endpoints use the `/api/v1/` prefix. See [API Documentation](../shared/docs/
 - `POST /api/v1/laws/{id}/vote` - Vote on law
 - `GET /api/v1/law-of-day` - Get law of the day
 - `GET /api/v1/categories` - List categories
+- `GET /api/v1/feed.rss` - RSS 2.0 feed (Law of the Day + recent laws)
+- `GET /api/v1/feed.atom` - Atom 1.0 feed (Law of the Day + recent laws)
 
 ## Database
 
@@ -70,8 +72,8 @@ The backend follows a **modular layered architecture**:
 ```
 backend/
 ├── src/
-│   ├── controllers/     # Request handlers (5 controllers)
-│   ├── services/        # Business logic (6 services)
+│   ├── controllers/     # Request handlers (6 controllers)
+│   ├── services/        # Business logic (7 services)
 │   ├── middleware/      # Express middleware (CORS, rate limiting)
 │   ├── routes/          # Route definitions
 │   └── utils/           # Helper functions
@@ -106,9 +108,9 @@ npm run test:coverage
 ```
 
 **Test Structure:**
-- 13 test files covering all layers
-- Services: `laws`, `categories`, `votes`, `attributions`
-- Controllers: `laws`, `categories`, `votes`, `health`, `attributions`
+- 15 test files covering all layers
+- Services: `laws`, `categories`, `votes`, `attributions`, `feed`
+- Controllers: `laws`, `categories`, `votes`, `health`, `attributions`, `feed`
 - Middleware: `cors`, `rate-limit`
 - Utils: `helpers`, `http-helpers`
 

@@ -1,12 +1,16 @@
 import templateHtml from '@components/templates/footer.html?raw';
 import { ensureAdsense } from '@utils/third-party.js';
 import { hasMinimumContent } from '@utils/ads.js';
+import { hydrateIcons } from '@utils/icons.js';
 
 export function Footer({ onNavigate, hideAds = false }) {
   const footer = document.createElement('footer');
   footer.className = 'footer';
 
   footer.innerHTML = templateHtml;
+
+  // Hydrate icons (for RSS icon)
+  hydrateIcons(footer);
 
   const adHost = footer.querySelector('[data-ad-slot]');
 
