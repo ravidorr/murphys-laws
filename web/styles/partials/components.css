@@ -568,7 +568,7 @@ button.custom-tooltip {
   border-radius: 0.5rem;
   box-shadow: 0 10px 25px var(--shadow-medium), 0 4px 10px var(--shadow-light);
   padding: 0.25rem 0;
-  min-width: 180px;
+  min-width: 200px;
   z-index: 100;
   opacity: 0;
   visibility: hidden;
@@ -600,7 +600,7 @@ button.custom-tooltip {
   align-items: center;
   gap: 0.625rem;
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 1.25rem 0.5rem 0.75rem;
   border: none;
   background: transparent;
   border-radius: 0;
