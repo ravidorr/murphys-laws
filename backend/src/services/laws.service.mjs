@@ -207,6 +207,39 @@ export class LawService {
     return { law, featured_date: today };
   }
 
+  async suggestions({ q, limit = 10 }) {
+    if (!q || q.trim().length < 2) {
+      return { data: [] };
+    }
+
+    const searchTerm = `%${q.trim()}%`;
+    const maxLimit = Math.min(limit, 20);
+
+    // Optimized query for autocomplete - only return essential fields
+    // Prioritize text matches over title matches, then sort by score
+    const sql = `
+      SELECT
+        l.id,
+        l.text,
+        l.title,
+        (COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) -
+         COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0)) AS score
+      FROM laws l
+      WHERE l.status = 'published'
+        AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)
+      ORDER BY
+        CASE WHEN l.text LIKE ? THEN 1 ELSE 2 END,
+        score DESC,
+        l.id DESC
+      LIMIT ?;
+    `;
+
+    const stmt = this.db.prepare(sql);
+    const rows = stmt.all(searchTerm, searchTerm, searchTerm, maxLimit);
+
+    return { data: rows };
+  }
+
   async submitLaw({ title, text, author, email, categoryId }) {
     const insertLawSql = `
       INSERT INTO laws (title, text, status, first_seen_file_path)

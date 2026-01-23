@@ -128,6 +128,58 @@ List laws with pagination, filtering, and sorting.
 
 ---
 
+#### GET /api/v1/laws/suggestions
+
+Get search suggestions for autocomplete. Returns top matching laws based on search query.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `q` | string | Yes | - | Search query (minimum 2 characters) |
+| `limit` | integer | No | 10 | Number of suggestions to return (max: 20) |
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "text": "Anything that can go wrong will go wrong.",
+      "title": "Murphy's Law",
+      "score": 145
+    },
+    {
+      "id": 2,
+      "text": "If anything can go wrong, it will.",
+      "title": null,
+      "score": 120
+    }
+  ]
+}
+```
+
+**Response Fields:**
+
+- `id` (integer): Law ID
+- `text` (string): Law text
+- `title` (string, nullable): Law title (if available)
+- `score` (integer): Law score (upvotes - downvotes)
+
+**Error Responses:**
+
+- `400 Bad Request` - Query parameter missing or shorter than 2 characters
+
+**Notes:**
+
+- Results are prioritized by text matches over title matches
+- Results are sorted by score (descending) after matching priority
+- Only published laws are returned
+- Optimized for fast autocomplete responses
+
+---
+
 #### GET /api/v1/laws/:id
 
 Get a single law by ID.
