@@ -331,6 +331,83 @@ header form[role="search"] input {
   flex: 0 0 auto;
 }
 
+/* Search autocomplete dropdown */
+.search-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+  max-height: 20rem;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-autocomplete[aria-hidden="true"] {
+  display: none;
+}
+
+.search-suggestion-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  color: var(--fg);
+  transition: background-color 0.15s ease;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.search-suggestion-item:hover,
+.search-suggestion-item.selected {
+  background: color-mix(in oklab, var(--bg) 90%, var(--primary) 10%);
+}
+
+.search-suggestion-item[aria-selected="true"] {
+  background: color-mix(in oklab, var(--bg) 85%, var(--primary) 15%);
+}
+
+.search-suggestion-highlight {
+  background: color-mix(in oklab, var(--primary) 20%, transparent);
+  font-weight: 600;
+  color: var(--primary);
+  padding: 0;
+}
+
+/* Ensure WCAG AA contrast in dark mode - use light background with dark text */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .search-suggestion-highlight {
+    background: var(--highlight);
+    color: #111827;
+  }
+}
+
+:root[data-theme="dark"] .search-suggestion-highlight {
+  background: var(--highlight);
+  color: #111827;
+}
+
+/* Mobile autocomplete adjustments */
+@media (width <= 600px) {
+  .search-autocomplete {
+    max-height: 15rem;
+    font-size: 0.875rem;
+  }
+
+  .search-suggestion-item {
+    padding: 0.625rem 0.75rem;
+  }
+}
+
 /* Mobile header improvements */
 @media (width <= 600px) {
   .brand-subtitle {

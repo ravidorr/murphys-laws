@@ -33,6 +33,7 @@ describe('LawController', () => {
             getLaw: vi.fn(),
             getLawOfTheDay: vi.fn(),
             submitLaw: vi.fn(),
+            suggestions: vi.fn(),
         };
         emailService = {
             sendNewLawEmail: vi.fn().mockResolvedValue(true),
@@ -252,6 +253,59 @@ describe('LawController', () => {
             await lawController.submit(req, res);
 
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+    });
+
+    describe('suggestions', () => {
+        it('should return suggestions for valid query', async () => {
+            lawService.suggestions.mockResolvedValue({ data: [{ id: 1, text: 'Test law' }] });
+            await lawController.suggestions(req, res, { query: { q: 'test', limit: '10' } });
+
+            expect(lawService.suggestions).toHaveBeenCalledWith({ q: 'test', limit: 10 });
+            expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+        });
+
+        it('should return 400 for query shorter than 2 characters', async () => {
+            await lawController.suggestions(req, res, { query: { q: 'a' } });
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should return 400 for empty query', async () => {
+            await lawController.suggestions(req, res, { query: { q: '' } });
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should return 400 for missing query parameter', async () => {
+            await lawController.suggestions(req, res, { query: {} });
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should use default limit of 10 when not provided', async () => {
+            lawService.suggestions.mockResolvedValue({ data: [] });
+            await lawController.suggestions(req, res, { query: { q: 'test' } });
+
+            expect(lawService.suggestions).toHaveBeenCalledWith({ q: 'test', limit: 10 });
+        });
+
+        it('should cap limit at 20', async () => {
+            lawService.suggestions.mockResolvedValue({ data: [] });
+            await lawController.suggestions(req, res, { query: { q: 'test', limit: '100' } });
+
+            expect(lawService.suggestions).toHaveBeenCalledWith({ q: 'test', limit: 20 });
+        });
+
+        it('should handle minimum limit of 1', async () => {
+            lawService.suggestions.mockResolvedValue({ data: [] });
+            await lawController.suggestions(req, res, { query: { q: 'test', limit: '0' } });
+
+            expect(lawService.suggestions).toHaveBeenCalledWith({ q: 'test', limit: 1 });
+        });
+
+        it('should trim query parameter', async () => {
+            lawService.suggestions.mockResolvedValue({ data: [] });
+            await lawController.suggestions(req, res, { query: { q: '  test  ', limit: '10' } });
+
+            expect(lawService.suggestions).toHaveBeenCalledWith({ q: 'test', limit: 10 });
         });
     });
 });

@@ -169,3 +169,29 @@ export async function fetchCategories() {
   return await fetchAPI('/api/v1/categories');
 }
 
+/**
+ * Fetches search suggestions for autocomplete
+ * @param {Object} options - Fetch options
+ * @param {string} options.q - Search query (min 2 characters)
+ * @param {number} options.limit - Number of suggestions to fetch (default: 10, max: 20)
+ * @returns {Promise<Object>} Response with suggestions data
+ */
+export async function fetchSuggestions({ q, limit = 10 } = {}) {
+  if (!q || q.trim().length < 2) {
+    return { data: [] };
+  }
+
+  const params = {
+    q: q.trim(),
+    limit: String(Math.min(limit, 20))
+  };
+
+  try {
+    return await fetchAPI('/api/v1/laws/suggestions', params);
+  } catch (error) {
+    // Gracefully handle errors - return empty array
+    console.error('Failed to fetch suggestions:', error);
+    return { data: [] };
+  }
+}
+

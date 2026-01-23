@@ -58,6 +58,22 @@ export class LawController {
     return sendJson(res, 200, result, req);
   }
 
+  async suggestions(req, res, parsed) {
+    const q = (parsed.query.q || '').toString().trim();
+    
+    // Validate query parameter
+    if (!q || q.length < 2) {
+      return badRequest(res, 'Query parameter "q" is required and must be at least 2 characters', req);
+    }
+
+    // Validate and limit limit parameter
+    const limit = Math.max(1, Math.min(20, Number(parsed.query.limit || 10)));
+
+    const result = await this.lawService.suggestions({ q, limit });
+    
+    return sendJson(res, 200, result, req);
+  }
+
   async submit(req, res) {
     const identifier = getVoterIdentifier(req);
     const rateLimit = checkRateLimit(identifier, 'submit');

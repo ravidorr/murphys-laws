@@ -312,4 +312,83 @@ describe('LawService', () => {
       text: 'Test text'
     })).rejects.toThrow('Failed to insert law');
   });
+
+  describe('suggestions', () => {
+    beforeEach(() => {
+      // Insert test laws
+      db.prepare("INSERT INTO laws (text, title, status) VALUES ('Test law about computers', 'Computer Law', 'published')").run();
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Another test law', 'published')").run();
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Computer programming tips', 'published')").run();
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Unrelated law', 'published')").run();
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Draft law', 'draft')").run();
+    });
+
+    it('should return suggestions for matching query', async () => {
+      const result = await lawService.suggestions({ q: 'test', limit: 10 });
+      expect(result.data).toBeDefined();
+      expect(result.data.length).toBeGreaterThan(0);
+      expect(result.data[0]).toHaveProperty('id');
+      expect(result.data[0]).toHaveProperty('text');
+    });
+
+    it('should prioritize text matches over title matches', async () => {
+      const result = await lawService.suggestions({ q: 'computer', limit: 10 });
+      expect(result.data.length).toBeGreaterThan(0);
+      // First result should be the one with "computer" in text, not just title
+      const firstLaw = result.data[0];
+      expect(firstLaw.text.toLowerCase()).toContain('computer');
+    });
+
+    it('should respect limit parameter', async () => {
+      const result = await lawService.suggestions({ q: 'law', limit: 2 });
+      expect(result.data.length).toBeLessThanOrEqual(2);
+    });
+
+    it('should cap limit at 20', async () => {
+      const result = await lawService.suggestions({ q: 'law', limit: 100 });
+      expect(result.data.length).toBeLessThanOrEqual(20);
+    });
+
+    it('should return empty array for query shorter than 2 characters', async () => {
+      const result = await lawService.suggestions({ q: 'a', limit: 10 });
+      expect(result.data).toEqual([]);
+    });
+
+    it('should return empty array for empty query', async () => {
+      const result = await lawService.suggestions({ q: '', limit: 10 });
+      expect(result.data).toEqual([]);
+    });
+
+    it('should return empty array for no matches', async () => {
+      const result = await lawService.suggestions({ q: 'nonexistentquery12345', limit: 10 });
+      expect(result.data).toEqual([]);
+    });
+
+    it('should only return published laws', async () => {
+      const result = await lawService.suggestions({ q: 'draft', limit: 10 });
+      // Should not include the draft law
+      const draftLaw = result.data.find(law => law.text.includes('Draft'));
+      expect(draftLaw).toBeUndefined();
+    });
+
+    it('should handle special characters in query', async () => {
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Law with % special chars', 'published')").run();
+      const result = await lawService.suggestions({ q: '% special', limit: 10 });
+      expect(result.data.length).toBeGreaterThan(0);
+    });
+
+    it('should sort by score when multiple matches', async () => {
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('High score law', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Low score law', 'published')").run();
+      
+      // Add votes to law1
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter1')").run(law1.lastInsertRowid);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter2')").run(law1.lastInsertRowid);
+
+      const result = await lawService.suggestions({ q: 'score', limit: 10 });
+      expect(result.data.length).toBeGreaterThan(0);
+      // Higher scored law should appear first
+      expect(result.data[0].text).toBe('High score law');
+    });
+  });
 });
