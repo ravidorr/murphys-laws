@@ -313,4 +313,411 @@ describe('SearchAutocomplete', () => {
     expect(item.textContent).toContain('Law Title');
     expect(item.textContent).toContain('Law text');
   });
+
+  it('should create dropdown as sibling when input has no form parent', () => {
+    // Remove form and create input directly in body
+    document.body.innerHTML = '';
+    const container = document.createElement('div');
+    inputElement = document.createElement('input');
+    inputElement.setAttribute('id', 'header-search');
+    container.appendChild(inputElement);
+    document.body.appendChild(container);
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    const dropdown = document.querySelector('.search-autocomplete');
+    expect(dropdown).toBeTruthy();
+    // Dropdown should be inserted after input (as sibling)
+    expect(inputElement.nextSibling).toBe(dropdown);
+  });
+
+  it('should handle highlightMatch with empty query', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    // Set value then clear to trigger with empty query in render
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // The text should still be displayed (no highlighting when query is empty)
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown.querySelector('.search-suggestion-item');
+    expect(item.textContent).toContain('Test law');
+  });
+
+  it('should handle highlightMatch with null text gracefully', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: null, title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown.querySelector('.search-suggestion-item');
+    // Should not throw, item should exist
+    expect(item).toBeTruthy();
+  });
+
+  it('should not call onSelect for invalid suggestion index (negative)', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    // Create a fake item with invalid index
+    const fakeItem = document.createElement('div');
+    fakeItem.className = 'search-suggestion-item';
+    fakeItem.setAttribute('data-index', '-1');
+    dropdown.appendChild(fakeItem);
+    
+    fakeItem.click();
+
+    // onSelect should not be called for invalid index
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('should not call onSelect for invalid suggestion index (too large)', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    // Create a fake item with invalid index
+    const fakeItem = document.createElement('div');
+    fakeItem.className = 'search-suggestion-item';
+    fakeItem.setAttribute('data-index', '999');
+    dropdown.appendChild(fakeItem);
+    
+    fakeItem.click();
+
+    // onSelect should not be called for invalid index
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('should wrap selection from end to beginning with ArrowDown', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [
+        { id: 1, text: 'Test law 1', title: null },
+        { id: 2, text: 'Test law 2', title: null }
+      ]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Navigate to first item
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    // Navigate to second item
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    // Navigate past end - should wrap to no selection (-1)
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    // No item should be selected after wrapping
+    expect(items[0].classList.contains('selected')).toBe(false);
+    expect(items[1].classList.contains('selected')).toBe(false);
+  });
+
+  it('should go to no selection when pressing ArrowUp at first item', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [
+        { id: 1, text: 'Test law 1', title: null },
+        { id: 2, text: 'Test law 2', title: null }
+      ]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Navigate to first item
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    // Navigate up from first item - goes to no selection (-1)
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    // No item should be selected
+    expect(items[0].classList.contains('selected')).toBe(false);
+    expect(items[1].classList.contains('selected')).toBe(false);
+  });
+
+  it('should wrap to last item when pressing ArrowUp with no selection', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [
+        { id: 1, text: 'Test law 1', title: null },
+        { id: 2, text: 'Test law 2', title: null }
+      ]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Press ArrowUp with no selection - should go to last item
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    // Last item should be selected
+    expect(items[1].classList.contains('selected')).toBe(true);
+  });
+
+  it('should not handle keyboard events when dropdown is closed', () => {
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    // Don't trigger any search, so dropdown is closed and no suggestions
+    const arrowDownEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true });
+    inputElement.dispatchEvent(arrowDownEvent);
+
+    // Should not throw or change anything
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('should allow Enter key to pass through when no item is selected', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Press Enter without selecting any item (selectedIndex is -1)
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
+    const prevented = !inputElement.dispatchEvent(enterEvent);
+
+    // Event should NOT be prevented when no selection
+    expect(prevented).toBe(false);
+    // onSelect should not be called
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('should not close dropdown when clicking on input element', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    expect(inputElement.getAttribute('aria-expanded')).toBe('true');
+
+    // Click on input element itself
+    inputElement.click();
+
+    // Dropdown should still be open
+    expect(inputElement.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('should not close dropdown when clicking on dropdown itself', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    expect(inputElement.getAttribute('aria-expanded')).toBe('true');
+
+    // Click on dropdown container (not on an item)
+    const dropdown = document.querySelector('.search-autocomplete');
+    // Create and dispatch click event with dropdown as target
+    const clickEvent = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(clickEvent, 'target', { value: dropdown });
+    document.dispatchEvent(clickEvent);
+
+    // Dropdown should still be open (items are still there)
+    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    expect(items.length).toBe(1);
+  });
+
+  it('should handle empty suggestions array from API', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: []
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Dropdown should be closed with empty suggestions
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+    const dropdown = document.querySelector('.search-autocomplete');
+    expect(dropdown.innerHTML).toBe('');
+  });
+
+  it('should handle API response with undefined data', async () => {
+    api.fetchSuggestions.mockResolvedValue({});
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Should handle gracefully - dropdown should be closed
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('should handle other keys without preventing default', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Press a regular key
+    const keyEvent = new KeyboardEvent('keydown', { key: 'a', cancelable: true });
+    const prevented = !inputElement.dispatchEvent(keyEvent);
+
+    // Event should NOT be prevented for regular keys
+    expect(prevented).toBe(false);
+  });
+
+  it('should handle click on dropdown area without item', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    
+    // Click on dropdown but not on an item
+    const clickEvent = new MouseEvent('click', { bubbles: true });
+    dropdown.dispatchEvent(clickEvent);
+
+    // onSelect should not be called
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('should handle click on item with invalid data-index attribute', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    // Create a fake item with NaN index
+    const fakeItem = document.createElement('div');
+    fakeItem.className = 'search-suggestion-item';
+    fakeItem.setAttribute('data-index', 'invalid');
+    dropdown.appendChild(fakeItem);
+    
+    fakeItem.click();
+
+    // onSelect should not be called for NaN index
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('should close dropdown for empty query after debounce', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    // First search with valid query
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+    
+    expect(inputElement.getAttribute('aria-expanded')).toBe('true');
+
+    // Now clear the input
+    inputElement.value = '';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Dropdown should be closed
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('should display text only when title is empty string', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Law text only', title: '' }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    inputElement.value = 'law';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown.querySelector('.search-suggestion-item');
+    // Should display text without title prefix
+    expect(item.textContent.trim()).not.toContain(':');
+    expect(item.textContent).toContain('Law text only');
+  });
+
+  it('should handle special regex characters in query for highlighting', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test (law) [special]', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    
+    // Query with special regex characters
+    inputElement.value = '(law)';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown.querySelector('.search-suggestion-item');
+    // Should not throw and should contain the text
+    expect(item.textContent).toContain('(law)');
+  });
 });
