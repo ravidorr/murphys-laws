@@ -6,7 +6,7 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Link Reclamation:** Identify broken links on high-authority sites (e.g., .edu domains) that mention 'Murphy\'s Law' and reach out to suggest our archive as a replacement reference.
 - [ ] **Calculator Outreach:** Pitch the 'Buttered Toast Landing Calculator' to physics and science education blogs as a fun, interactive teaching tool to generate fresh backlinks.
 - [ ] **Per-Law Open Graph Images:** Generate dynamic OG images for each law to improve social sharing appearance.
-- [ ] **Print Styles:** Add print-optimized CSS for law pages.
+- [x] **Print Styles:** ~~Add print-optimized CSS for law pages.~~ Done - added `web/styles/partials/print.css` with `@media print` rules. Hides interactive elements (search, widgets, pagination, vote buttons) and optimizes typography for clean paper output.
 
 ## UX Improvements (Require Backend Work)
 - [ ] **Search Autocomplete/Suggestions:** Add debounced search suggestions as the user types in the header search field. Requires a new backend endpoint (`/api/v1/laws/suggestions`) to return top matching laws. Include keyboard navigation (arrow keys, Enter) for the dropdown.
