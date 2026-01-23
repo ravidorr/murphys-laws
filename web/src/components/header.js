@@ -2,6 +2,7 @@
 import templateHtml from '@components/templates/header.html?raw';
 import { hydrateIcons, createIcon } from '../utils/icons.js';
 import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.js';
+import { SearchAutocomplete } from './search-autocomplete.js';
 
 export function Header({ onSearch, onNavigate }) {
   const header = document.createElement('header');
@@ -104,14 +105,41 @@ export function Header({ onSearch, onNavigate }) {
   });
 
   const form = header.querySelector('form[role="search"]');
+  let autocompleteCleanup = null;
+
   if (form) {
+    const input = form.querySelector('input[aria-label="Search"]') || form.querySelector('input');
+    
+    // Initialize search autocomplete
+    if (input) {
+      const autocomplete = SearchAutocomplete({
+        inputElement: input,
+        onSelect: (law) => {
+          if (onNavigate && law.id) {
+            onNavigate('law', law.id);
+          }
+        }
+      });
+      autocompleteCleanup = autocomplete.cleanup;
+    }
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const input = form.querySelector('input[aria-label="Search"]') || form.querySelector('input');
       const q = input && 'value' in input ? input.value.trim() : '';
       onSearch({ q: q });
     });
   }
+
+  // Store cleanup function on the element
+  const originalCleanup = header.cleanup;
+  header.cleanup = () => {
+    if (originalCleanup) {
+      originalCleanup();
+    }
+    if (autocompleteCleanup) {
+      autocompleteCleanup();
+    }
+  };
 
   return header;
 }
