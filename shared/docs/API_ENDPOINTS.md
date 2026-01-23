@@ -49,6 +49,33 @@ Fetch laws with pagination, sorting, and filtering.
 
 ---
 
+#### GET `/api/v1/laws/suggestions`
+Fetch search suggestions for autocomplete as user types.
+
+**Query Parameters:**
+- `q` (string, required): Search query text (minimum 2 characters)
+- `limit` (number, optional): Number of suggestions to return (default: 10, max: 20)
+
+**Response:**
+```json
+{
+ "data": [
+   {
+     "id": 1,
+     "text": "Law text...",
+     "title": "Law title (optional)",
+     "score": 5
+   }
+ ]
+}
+```
+
+**Used in:**
+- `src/utils/api.js` - `fetchSuggestions()` function
+- `src/components/search-autocomplete.js` - Header search autocomplete dropdown
+
+---
+
 #### GET `/api/v1/laws/{id}`
 Fetch a single law by ID.
 
@@ -292,18 +319,19 @@ Share SOD (Sod's Law) calculation via email.
 
 ## Summary
 
-Total API endpoints: **10** (all use `/api/v1/...` prefix)
+Total API endpoints: **11** (all use `/api/v1/...` prefix)
 
 1. `GET /api/v1/laws` - List laws with filters
-2. `GET /api/v1/laws/{id}` - Get single law
-3. `POST /api/v1/laws` - Submit new law
-4. `POST /api/v1/laws/{id}/vote` - Vote on law
-5. `DELETE /api/v1/laws/{id}/vote` - Remove vote
-6. `GET /api/v1/law-of-day` - Get law of the day
-7. `GET /api/v1/categories` - List all categories
-8. `GET /api/v1/categories/{id}` - Get single category
-9. `GET /api/v1/attributions` - List all attributions
-10. `POST /api/v1/share-calculation` - Share calculation via email
+2. `GET /api/v1/laws/suggestions` - Get search suggestions for autocomplete
+3. `GET /api/v1/laws/{id}` - Get single law
+4. `POST /api/v1/laws` - Submit new law
+5. `POST /api/v1/laws/{id}/vote` - Vote on law
+6. `DELETE /api/v1/laws/{id}/vote` - Remove vote
+7. `GET /api/v1/law-of-day` - Get law of the day
+8. `GET /api/v1/categories` - List all categories
+9. `GET /api/v1/categories/{id}` - Get single category
+10. `GET /api/v1/attributions` - List all attributions
+11. `POST /api/v1/share-calculation` - Share calculation via email
 
 ## Implementation Details
 

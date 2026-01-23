@@ -184,6 +184,15 @@ describe('SocialShare component', () => {
       expect(link.href).toContain(encodeURIComponent('Murphy\'s Original Law'));
       expect(link.href).toContain(encodeURIComponent('https://test.com/law/123'));
     });
+
+    it('uses _self target for email link', () => {
+      const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
+      const link = el.querySelector('.share-popover-item[href*="mailto"]');
+
+      expect(link.getAttribute('target')).toBe('_self');
+      // Email should not have rel="noopener noreferrer"
+      expect(link.getAttribute('rel')).toBeNull();
+    });
   });
 
   describe('Icons', () => {
@@ -287,6 +296,85 @@ describe('SocialShare component', () => {
       trigger.click();
       expect(popover.classList.contains('open')).toBe(false);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      
+      document.body.removeChild(el);
+    });
+
+    it('closes other open popovers when opening a new one', () => {
+      const el1 = SocialShare({ lawId: '1', lawText: 'Law 1' });
+      const el2 = SocialShare({ lawId: '2', lawText: 'Law 2' });
+      document.body.appendChild(el1);
+      document.body.appendChild(el2);
+      
+      const trigger1 = el1.querySelector('.share-trigger');
+      const popover1 = el1.querySelector('.share-popover');
+      const trigger2 = el2.querySelector('.share-trigger');
+      const popover2 = el2.querySelector('.share-popover');
+      
+      // Open first popover
+      trigger1.click();
+      expect(popover1.classList.contains('open')).toBe(true);
+      expect(popover2.classList.contains('open')).toBe(false);
+      
+      // Open second popover - first should close
+      trigger2.click();
+      expect(popover1.classList.contains('open')).toBe(false);
+      expect(popover2.classList.contains('open')).toBe(true);
+      expect(trigger1.getAttribute('aria-expanded')).toBe('false');
+      
+      document.body.removeChild(el1);
+      document.body.removeChild(el2);
+    });
+
+    it('adds popover-above class when space below is insufficient', () => {
+      const el = SocialShare();
+      document.body.appendChild(el);
+      
+      const trigger = el.querySelector('.share-trigger');
+      const popover = el.querySelector('.share-popover');
+      
+      // Mock getBoundingClientRect to simulate trigger near bottom of viewport
+      const originalGetBoundingClientRect = trigger.getBoundingClientRect;
+      trigger.getBoundingClientRect = () => ({
+        top: 400,
+        bottom: 420,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 20
+      });
+      
+      // Mock window.innerHeight to be small
+      const originalInnerHeight = window.innerHeight;
+      Object.defineProperty(window, 'innerHeight', { value: 450, writable: true });
+      
+      trigger.click();
+      
+      // Should add popover-above class since space below (450-420=30) < 320
+      expect(popover.classList.contains('popover-above')).toBe(true);
+      
+      // Restore mocks
+      trigger.getBoundingClientRect = originalGetBoundingClientRect;
+      Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, writable: true });
+      
+      document.body.removeChild(el);
+    });
+
+    it('removes popover-above class when closing and reopening with enough space', () => {
+      const el = SocialShare();
+      document.body.appendChild(el);
+      
+      const trigger = el.querySelector('.share-trigger');
+      const popover = el.querySelector('.share-popover');
+      
+      // First, open with limited space (manually add class)
+      trigger.click();
+      popover.classList.add('popover-above');
+      expect(popover.classList.contains('popover-above')).toBe(true);
+      
+      // Close
+      trigger.click();
+      expect(popover.classList.contains('popover-above')).toBe(false);
       
       document.body.removeChild(el);
     });
@@ -546,6 +634,24 @@ describe('renderShareButtonsHTML', () => {
     expect(html).toContain('share-copy-feedback');
     expect(html).toContain('Copied!');
   });
+
+  it('handles missing lawText gracefully', () => {
+    const html = renderShareButtonsHTML({ lawId: '123' });
+    expect(html).toContain('class="share-wrapper"');
+    expect(html).toContain('data-copy-value=""'); // Empty copy value
+  });
+
+  it('handles missing lawText and uses empty string in URLs', () => {
+    const html = renderShareButtonsHTML({ lawId: '456' });
+    expect(html).toContain('data-law-id="456"');
+    // Email body should still work with empty text
+    expect(html).toContain('mailto:');
+  });
+
+  it('uses lawId to construct URL when url is not provided', () => {
+    const html = renderShareButtonsHTML({ lawId: '789', lawText: 'Test' });
+    expect(html).toContain('/law/789');
+  });
 });
 
 describe('initSharePopovers', () => {
@@ -670,5 +776,179 @@ describe('initSharePopovers', () => {
 
     // Parent handler should NOT be called because stopPropagation was used
     expect(parentClickHandler).not.toHaveBeenCalled();
+  });
+
+  it('closes popover after link click', async () => {
+    vi.useFakeTimers();
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    trigger.click(); // Open popover
+    expect(popover.classList.contains('open')).toBe(true);
+
+    // Click a social link
+    const twitterLink = localThis.container.querySelector('.share-popover-item[href*="twitter"]');
+    twitterLink.click();
+
+    // Wait for setTimeout to close popover
+    vi.advanceTimersByTime(150);
+    expect(popover.classList.contains('open')).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('skips wrappers with missing trigger element', () => {
+    // Create HTML without trigger
+    localThis.container.innerHTML = `
+      <div class="share-wrapper">
+        <div class="share-popover" role="menu"></div>
+      </div>
+    `;
+
+    // Should not throw
+    initSharePopovers(localThis.container);
+
+    // No initialization should happen
+    const popover = localThis.container.querySelector('.share-popover');
+    expect(popover.classList.contains('open')).toBe(false);
+  });
+
+  it('skips wrappers with missing popover element', () => {
+    // Create HTML without popover
+    localThis.container.innerHTML = `
+      <div class="share-wrapper">
+        <button class="share-trigger">Share</button>
+      </div>
+    `;
+
+    // Should not throw
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    // Trigger should not be marked as initialized
+    expect(trigger.dataset.initialized).toBeUndefined();
+  });
+});
+
+describe('Global event handlers', () => {
+  const localThis = {};
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    localThis.container = document.createElement('div');
+    document.body.appendChild(localThis.container);
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('closes all open popovers on document click', async () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // Open popover
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+
+    // Click elsewhere on document (global handler should close it)
+    document.body.click();
+
+    expect(popover.classList.contains('open')).toBe(false);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes all open popovers on Escape key', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // Open popover
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+
+    // Press Escape
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(escapeEvent);
+
+    expect(popover.classList.contains('open')).toBe(false);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('does not close popovers on other key presses', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // Open popover
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+
+    // Press a different key
+    const keyEvent = new KeyboardEvent('keydown', { key: 'a', bubbles: true });
+    document.dispatchEvent(keyEvent);
+
+    // Popover should still be open
+    expect(popover.classList.contains('open')).toBe(true);
+  });
+
+  it('removes popover-above class when closing via global click', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // Manually add popover-above class to simulate positioning
+    trigger.click();
+    popover.classList.add('popover-above');
+    expect(popover.classList.contains('open')).toBe(true);
+    expect(popover.classList.contains('popover-above')).toBe(true);
+
+    // Click elsewhere
+    document.body.click();
+
+    expect(popover.classList.contains('open')).toBe(false);
+    expect(popover.classList.contains('popover-above')).toBe(false);
+  });
+
+  it('removes popover-above class when closing via Escape', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // Manually add popover-above class to simulate positioning
+    trigger.click();
+    popover.classList.add('popover-above');
+
+    // Press Escape
+    const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(escapeEvent);
+
+    expect(popover.classList.contains('open')).toBe(false);
+    expect(popover.classList.contains('popover-above')).toBe(false);
   });
 });

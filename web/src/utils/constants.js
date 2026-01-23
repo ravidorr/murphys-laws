@@ -47,6 +47,9 @@ export const DEFAULT_FETCH_HEADERS = {
   'Accept': 'application/json'
 };
 
+// Search autocomplete
+export const SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY = 240; // ms
+
 // Loading messages - randomly selected for variety
 export const LOADING_MESSAGES = [
   // Playfully pessimistic

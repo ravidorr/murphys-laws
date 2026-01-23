@@ -73,6 +73,16 @@ function navigateToPreviousCard() {
 }
 
 /**
+ * Check if search autocomplete dropdown is open
+ * @returns {boolean} True if autocomplete dropdown is open
+ */
+function isAutocompleteOpen() {
+  const searchInput = document.querySelector('#header-search');
+  if (!searchInput) return false;
+  return searchInput.getAttribute('aria-expanded') === 'true';
+}
+
+/**
  * Handle global keydown events for shortcuts
  * @param {KeyboardEvent} event
  */
@@ -86,12 +96,17 @@ function handleKeydown(event) {
       event.preventDefault();
       return;
     }
-    // Let other Escape handlers run (e.g., share popovers)
+    // Let other Escape handlers run (e.g., share popovers, autocomplete)
     return;
   }
   
   // Skip shortcuts when typing in editable elements
   if (isEditableElement(target)) {
+    return;
+  }
+  
+  // Skip shortcuts when autocomplete dropdown is open (let autocomplete handle navigation)
+  if (isAutocompleteOpen()) {
     return;
   }
   
@@ -146,6 +161,7 @@ export function destroyKeyboardShortcuts() {
 // Export for testing
 export {
   isEditableElement,
+  isAutocompleteOpen,
   focusSearch,
   navigateToNextCard,
   navigateToPreviousCard,
