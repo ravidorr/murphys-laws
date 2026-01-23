@@ -409,14 +409,13 @@ describe("Calculator view", () => {
     el?._teardownShare?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
 
-    // Set URL params
-    const url = new URL(window.location.href);
-    url.searchParams.set('u', '7');
-    url.searchParams.set('c', '8');
-    url.searchParams.set('i', '3');
-    url.searchParams.set('s', '6');
-    url.searchParams.set('f', '4');
-    window.history.replaceState({}, '', url.toString());
+    // Use vi.stubGlobal for proper location mocking
+    const originalSearch = window.location.search;
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?u=7&c=8&i=3&s=6&f=4',
+      href: 'http://localhost:3000/calculator?u=7&c=8&i=3&s=6&f=4'
+    });
 
     // Mount new calculator
     el = Calculator();
@@ -428,8 +427,196 @@ describe("Calculator view", () => {
     expect(el.querySelector('#skill').value).toBe('6');
     expect(el.querySelector('#frequency').value).toBe('4');
 
-    // Clean up URL
-    window.history.replaceState({}, '', window.location.pathname);
+    // Also verify slider value displays are updated
+    expect(el.querySelector('#urgency-value').textContent).toBe('7');
+    expect(el.querySelector('#complexity-value').textContent).toBe('8');
+    expect(el.querySelector('#importance-value').textContent).toBe('3');
+    expect(el.querySelector('#skill-value').textContent).toBe('6');
+    expect(el.querySelector('#frequency-value').textContent).toBe('4');
+
+    // Restore location
+    vi.unstubAllGlobals();
+  });
+
+  it('ignores URL parameters outside valid range 1-9', () => {
+    // Clean up existing element
+    el?._teardownShare?.();
+    if (el?.parentNode) el.parentNode.removeChild(el);
+
+    // Use vi.stubGlobal for proper location mocking
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?u=0&c=10&i=-5&s=&f=abc',
+      href: 'http://localhost:3000/calculator?u=0&c=10&i=-5&s=&f=abc'
+    });
+
+    // Mount new calculator
+    el = Calculator();
+    document.body.appendChild(el);
+
+    // All sliders should retain default value of 5
+    expect(el.querySelector('#urgency').value).toBe('5');
+    expect(el.querySelector('#complexity').value).toBe('5');
+    expect(el.querySelector('#importance').value).toBe('5');
+    expect(el.querySelector('#skill').value).toBe('5');
+    expect(el.querySelector('#frequency').value).toBe('5');
+
+    // Restore location
+    vi.unstubAllGlobals();
+  });
+
+  it('passes getCalculationState to initShareCalculation', async () => {
+    // The Calculator should have initialized initShareCalculation with getCalculationState
+    // Test by triggering the share preview which calls getCalculationState internally
+    
+    // Set specific slider values
+    el.querySelector('#urgency').value = '3';
+    el.querySelector('#complexity').value = '4';
+    el.querySelector('#importance').value = '5';
+    el.querySelector('#skill').value = '6';
+    el.querySelector('#frequency').value = '7';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Open share form and fill required fields
+    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+    el.querySelector('#task-description').value = 'Coverage test task';
+    el.querySelector('#sender-name').value = 'Test User';
+    el.querySelector('#sender-email').value = 'test@example.com';
+    el.querySelector('#recipient-name').value = 'Recipient';
+    el.querySelector('#recipient-email').value = 'recipient@example.com';
+
+    // Click preview - this calls getCalculationState internally
+    el.querySelector('#preview-email').dispatchEvent(new Event('click'));
+
+    // Modal should be visible
+    expect(el.querySelector('#email-preview-modal').classList.contains('hidden')).toBe(false);
+    
+    // Preview should contain the task description
+    expect(el.querySelector('#preview-content').innerHTML).toContain('Coverage test task');
+  });
+
+  it('loads URL parameters and updates slider value displays', () => {
+    // Clean up existing element
+    el?._teardownShare?.();
+    if (el?.parentNode) el.parentNode.removeChild(el);
+
+    // Mock window.location to have URL params
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { 
+      ...originalLocation,
+      href: 'http://localhost:3000/calculator?u=5&c=6&i=7&s=8&f=9',
+      search: '?u=5&c=6&i=7&s=8&f=9'
+    };
+
+    // Mount new calculator
+    el = Calculator();
+    document.body.appendChild(el);
+
+    // Check slider values
+    expect(el.querySelector('#urgency').value).toBe('5');
+    expect(el.querySelector('#complexity').value).toBe('6');
+    expect(el.querySelector('#importance').value).toBe('7');
+    expect(el.querySelector('#skill').value).toBe('8');
+    expect(el.querySelector('#frequency').value).toBe('9');
+
+    // Check slider value displays are also updated
+    expect(el.querySelector('#urgency-value').textContent).toBe('5');
+    expect(el.querySelector('#complexity-value').textContent).toBe('6');
+    expect(el.querySelector('#importance-value').textContent).toBe('7');
+    expect(el.querySelector('#skill-value').textContent).toBe('8');
+    expect(el.querySelector('#frequency-value').textContent).toBe('9');
+
+    // Restore location
+    window.location = originalLocation;
+  });
+
+  it('ignores invalid URL parameters (out of range)', () => {
+    // Clean up existing element
+    el?._teardownShare?.();
+    if (el?.parentNode) el.parentNode.removeChild(el);
+
+    // Mock window.location with invalid URL params
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { 
+      ...originalLocation,
+      href: 'http://localhost:3000/calculator?u=0&c=10&i=-5&s=abc&f=',
+      search: '?u=0&c=10&i=-5&s=abc&f='
+    };
+
+    // Mount new calculator
+    el = Calculator();
+    document.body.appendChild(el);
+
+    // Sliders should retain their default values (5 for all)
+    expect(el.querySelector('#urgency').value).toBe('5');
+    expect(el.querySelector('#complexity').value).toBe('5');
+    expect(el.querySelector('#importance').value).toBe('5');
+    expect(el.querySelector('#skill').value).toBe('5');
+    expect(el.querySelector('#frequency').value).toBe('5');
+
+    // Restore location
+    window.location = originalLocation;
+  });
+
+  it('invokes getCalculationState callback when previewing email', () => {
+    // Open share form
+    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+
+    // Fill in required fields
+    el.querySelector('#task-description').value = 'Test task';
+    el.querySelector('#sender-name').value = 'John Doe';
+    el.querySelector('#sender-email').value = 'john@example.com';
+    el.querySelector('#recipient-name').value = 'Jane Smith';
+    el.querySelector('#recipient-email').value = 'jane@example.com';
+
+    // Set specific slider values
+    el.querySelector('#urgency').value = '7';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Click preview button
+    const previewBtn = el.querySelector('#preview-email');
+    previewBtn.dispatchEvent(new Event('click'));
+
+    // The email preview modal should be visible
+    const modal = el.querySelector('#email-preview-modal');
+    expect(modal.classList.contains('hidden')).toBe(false);
+
+    // The preview content should include the updated state values
+    const previewContent = el.querySelector('#preview-content');
+    expect(previewContent.innerHTML).toContain('Test task');
+  });
+
+  it('uses current state values when generating shareable URL', () => {
+    // Set specific slider values
+    el.querySelector('#urgency').value = '3';
+    el.querySelector('#complexity').value = '4';
+    el.querySelector('#importance').value = '5';
+    el.querySelector('#skill').value = '6';
+    el.querySelector('#frequency').value = '7';
+
+    // Dispatch input to update state
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+
+    // Click copy link button to trigger getShareableUrl
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const copyBtn = el.querySelector('#copy-link');
+    copyBtn.dispatchEvent(new Event('click'));
+
+    // Check the URL contains updated values
+    const copiedUrl = writeTextMock.mock.calls[0]?.[0] || '';
+    expect(copiedUrl).toContain('u=3');
+    expect(copiedUrl).toContain('c=4');
+    expect(copiedUrl).toContain('i=5');
+    expect(copiedUrl).toContain('s=6');
+    expect(copiedUrl).toContain('f=7');
   });
 
 });

@@ -1,4 +1,4 @@
-import { fetchAPI, fetchLaw, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded } from '../src/utils/api.js';
+import { fetchAPI, fetchLaw, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.js';
 
 describe('API utilities', () => {
   let fetchSpy;
@@ -434,6 +434,195 @@ describe('API utilities', () => {
 
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining('sort=created_at'),
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('fetchCategories', () => {
+    it('fetches all categories', async () => {
+      const mockCategories = { data: [{ id: 1, name: 'General' }, { id: 2, name: 'Technology' }] };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockCategories
+      });
+
+      const result = await fetchCategories();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/categories'),
+        expect.any(Object)
+      );
+      expect(result).toEqual(mockCategories);
+    });
+  });
+
+  describe('fetchSuggestions', () => {
+    it('returns empty array for empty query', async () => {
+      const result = await fetchSuggestions({ q: '' });
+      expect(result).toEqual({ data: [] });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns empty array for null query', async () => {
+      const result = await fetchSuggestions({ q: null });
+      expect(result).toEqual({ data: [] });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns empty array for undefined query', async () => {
+      const result = await fetchSuggestions({});
+      expect(result).toEqual({ data: [] });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns empty array for query shorter than 2 characters', async () => {
+      const result = await fetchSuggestions({ q: 'a' });
+      expect(result).toEqual({ data: [] });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns empty array for whitespace-only query shorter than 2 chars after trim', async () => {
+      const result = await fetchSuggestions({ q: ' a ' });
+      expect(result).toEqual({ data: [] });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('fetches suggestions for valid query', async () => {
+      const mockSuggestions = { data: [{ id: 1, text: 'Test law' }] };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockSuggestions
+      });
+
+      const result = await fetchSuggestions({ q: 'test' });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/laws/suggestions'),
+        expect.any(Object)
+      );
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('q=test'),
+        expect.any(Object)
+      );
+      expect(result).toEqual(mockSuggestions);
+    });
+
+    it('trims query whitespace', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [] })
+      });
+
+      await fetchSuggestions({ q: '  test  ' });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('q=test'),
+        expect.any(Object)
+      );
+    });
+
+    it('uses default limit of 10', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [] })
+      });
+
+      await fetchSuggestions({ q: 'test' });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('limit=10'),
+        expect.any(Object)
+      );
+    });
+
+    it('respects custom limit', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [] })
+      });
+
+      await fetchSuggestions({ q: 'test', limit: 5 });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('limit=5'),
+        expect.any(Object)
+      );
+    });
+
+    it('caps limit at 20', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [] })
+      });
+
+      await fetchSuggestions({ q: 'test', limit: 100 });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('limit=20'),
+        expect.any(Object)
+      );
+    });
+
+    it('returns empty array on API error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      fetchSpy.mockRejectedValue(new Error('API Error'));
+
+      const result = await fetchSuggestions({ q: 'test' });
+
+      expect(result).toEqual({ data: [] });
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch suggestions:', expect.any(Error));
+      consoleSpy.mockRestore();
+    });
+
+    it('returns empty array when both primary and fallback fail', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
+      // Both calls fail
+      fetchSpy
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce({ ok: false, status: 503 });
+
+      const result = await fetchSuggestions({ q: 'test' });
+
+      expect(result).toEqual({ data: [] });
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('fetchLaws with category_slug', () => {
+    it('includes category_slug when provided', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [], total: 0 })
+      });
+
+      await fetchLaws({ category_slug: 'technology' });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('category_slug=technology'),
+        expect.any(Object)
+      );
+    });
+
+    it('excludes category_slug when not provided', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [], total: 0 })
+      });
+
+      await fetchLaws({});
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.not.stringContaining('category_slug='),
         expect.any(Object)
       );
     });
