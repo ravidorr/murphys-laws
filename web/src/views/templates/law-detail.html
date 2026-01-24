@@ -14,9 +14,25 @@
 
 <template data-not-found-template>
   <div class="card">
-    <div class="card-content text-center">
-      <h2 class="mb-4"><span class="accent-text">Law</span> Not Found</h2>
-      <button type="button" class="btn" data-nav="browse">Browse All Laws</button>
+    <div class="card-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <span class="icon" data-icon="searchOff" aria-hidden="true"></span>
+        </div>
+        <h2 class="empty-state-title"><span class="accent-text">Law</span> Not Found</h2>
+        <p class="empty-state-text">The law you're looking for doesn't exist or may have been removed. But don't worry, there are plenty more laws where that came from.</p>
+        <p class="not-found-quote">"If anything can go wrong, it will... including this link."</p>
+        <div class="not-found-actions">
+          <a href="/" class="btn outline" data-nav="home">
+            <span class="icon" data-icon="home" aria-hidden="true"></span>
+            <span class="btn-text">Go Home</span>
+          </a>
+          <button type="button" class="btn" data-nav="browse">
+            <span class="btn-text">Browse All Laws</span>
+            <span class="icon" data-icon="list" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
