@@ -791,6 +791,11 @@
   margin-bottom: 1rem;
 }
 
+.empty-state-icon .icon {
+  width: 4rem;
+  height: 4rem;
+}
+
 .empty-state-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -801,8 +806,16 @@
 .empty-state-text {
   font-size: 0.875rem;
   color: var(--muted-fg);
-  margin: 0;
+  margin: 0 0 1rem;
   max-width: 400px;
+}
+
+.empty-state .not-found-quote {
+  margin: 0 auto 1.5rem;
+}
+
+.empty-state .not-found-actions {
+  margin-top: 0.5rem;
 }
 
 /* Mini Law Cards (for Top Voted, Trending, Recently Added) */
