@@ -1,4 +1,4 @@
-import { fetchAPI, fetchLaw, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.js';
+import { fetchAPI, fetchLaw, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.js';
 
 describe('API utilities', () => {
   let fetchSpy;
@@ -97,6 +97,100 @@ describe('API utilities', () => {
         .mockResolvedValueOnce({ ok: false, status: 503 });
 
       await expect(fetchLaw(1)).rejects.toThrow('Failed to fetch law: 503');
+    });
+  });
+
+  describe('fetchRelatedLaws', () => {
+    it('throws error for invalid law ID (non-numeric)', async () => {
+      await expect(fetchRelatedLaws('invalid')).rejects.toThrow('Invalid law ID');
+    });
+
+    it('throws error for invalid law ID (NaN)', async () => {
+      await expect(fetchRelatedLaws(NaN)).rejects.toThrow('Invalid law ID');
+    });
+
+    it('throws error for invalid law ID (zero or negative)', async () => {
+      await expect(fetchRelatedLaws(0)).rejects.toThrow('Invalid law ID');
+      await expect(fetchRelatedLaws(-1)).rejects.toThrow('Invalid law ID');
+    });
+
+    it('fetches related laws with valid numeric ID', async () => {
+      const mockRelated = { data: [{ id: 2, text: 'Related' }], law_id: 1 };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockRelated
+      });
+
+      const result = await fetchRelatedLaws(1);
+      expect(result).toEqual(mockRelated);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/laws/1/related'),
+        expect.any(Object)
+      );
+    });
+
+    it('fetches related laws with valid string numeric ID', async () => {
+      const mockRelated = { data: [], law_id: 42 };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockRelated
+      });
+
+      const result = await fetchRelatedLaws('42');
+      expect(result).toEqual(mockRelated);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/laws/42/related'),
+        expect.any(Object)
+      );
+    });
+
+    it('uses default limit of 5 (no limit param in URL)', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [], law_id: 1 })
+      });
+
+      await fetchRelatedLaws(1);
+      
+      // Default limit of 5 should not add limit param to URL
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.not.stringContaining('limit='),
+        expect.any(Object)
+      );
+    });
+
+    it('passes custom limit parameter', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [], law_id: 1 })
+      });
+
+      await fetchRelatedLaws(1, { limit: 3 });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('limit=3'),
+        expect.any(Object)
+      );
+    });
+
+    it('uses fallback URL when primary fetch fails', async () => {
+      const mockRelated = { data: [{ id: 3, text: 'Fallback Related' }], law_id: 1 };
+      
+      // First call fails (primary), second call succeeds (fallback)
+      fetchSpy
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockRelated
+        });
+
+      const result = await fetchRelatedLaws(1);
+      expect(result).toEqual(mockRelated);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
   });
 

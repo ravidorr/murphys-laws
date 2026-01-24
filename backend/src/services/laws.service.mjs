@@ -140,9 +140,55 @@ export class LawService {
 
     if (law) {
       law.attributions = safeParseJsonArray(law.attributions);
+
+      // Add category IDs
+      const categoriesStmt = this.db.prepare(`
+        SELECT category_id FROM law_categories WHERE law_id = ?
+      `);
+      const categories = categoriesStmt.all(id);
+      law.category_ids = categories.map(c => c.category_id);
+      law.category_id = law.category_ids[0] || null; // Primary category for backward compatibility
     }
 
     return law;
+  }
+
+  async getRelatedLaws(lawId, { limit = 5 } = {}) {
+    // 1. Get category IDs for this law
+    const categoriesStmt = this.db.prepare(`
+      SELECT category_id FROM law_categories WHERE law_id = ?
+    `);
+    const categories = categoriesStmt.all(lawId);
+
+    if (categories.length === 0) {
+      return [];
+    }
+
+    const categoryIds = categories.map(c => c.category_id);
+
+    // 2. Fetch related laws from same categories, excluding current law
+    // Sort by score, limit to requested count
+    const placeholders = categoryIds.map(() => '?').join(',');
+    const sql = `
+      SELECT DISTINCT
+        l.id,
+        l.title,
+        l.text,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes,
+        (COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) -
+         COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0)) AS score
+      FROM laws l
+      JOIN law_categories lc ON lc.law_id = l.id
+      WHERE lc.category_id IN (${placeholders})
+        AND l.id != ?
+        AND l.status = 'published'
+      ORDER BY score DESC, upvotes DESC, l.id DESC
+      LIMIT ?
+    `;
+
+    const stmt = this.db.prepare(sql);
+    return stmt.all(...categoryIds, lawId, limit);
   }
 
   async getLawOfTheDay() {

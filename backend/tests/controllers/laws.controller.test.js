@@ -34,6 +34,7 @@ describe('LawController', () => {
             getLawOfTheDay: vi.fn(),
             submitLaw: vi.fn(),
             suggestions: vi.fn(),
+            getRelatedLaws: vi.fn(),
         };
         emailService = {
             sendNewLawEmail: vi.fn().mockResolvedValue(true),
@@ -175,6 +176,114 @@ describe('LawController', () => {
             lawService.getLaw.mockResolvedValue(null);
             await lawController.get(req, res, '999');
             expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+        });
+    });
+
+    describe('getRelated', () => {
+        it('should return 400 for invalid law ID', async () => {
+            req.url = '/api/v1/laws/invalid/related';
+            req.headers.host = 'localhost:8787';
+            await lawController.getRelated(req, res, 'invalid');
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should return 400 for negative law ID', async () => {
+            req.url = '/api/v1/laws/-1/related';
+            req.headers.host = 'localhost:8787';
+            await lawController.getRelated(req, res, '-1');
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should return 400 for zero law ID', async () => {
+            req.url = '/api/v1/laws/0/related';
+            req.headers.host = 'localhost:8787';
+            await lawController.getRelated(req, res, '0');
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should return related laws with default limit', async () => {
+            req.url = '/api/v1/laws/1/related';
+            req.headers.host = 'localhost:8787';
+            const relatedLaws = [
+                { id: 2, text: 'Related 1', upvotes: 5, downvotes: 1, score: 4 },
+                { id: 3, text: 'Related 2', upvotes: 3, downvotes: 0, score: 3 }
+            ];
+            lawService.getRelatedLaws.mockResolvedValue(relatedLaws);
+
+            await lawController.getRelated(req, res, '1');
+
+            expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 5 });
+            expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+        });
+
+        it('should respect limit parameter', async () => {
+            req.url = '/api/v1/laws/1/related?limit=3';
+            req.headers.host = 'localhost:8787';
+            lawService.getRelatedLaws.mockResolvedValue([]);
+
+            await lawController.getRelated(req, res, '1');
+
+            expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 3 });
+        });
+
+        it('should clamp limit to minimum of 1', async () => {
+            req.url = '/api/v1/laws/1/related?limit=0';
+            req.headers.host = 'localhost:8787';
+            lawService.getRelatedLaws.mockResolvedValue([]);
+
+            await lawController.getRelated(req, res, '1');
+
+            expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 1 });
+        });
+
+        it('should clamp limit to maximum of 10', async () => {
+            req.url = '/api/v1/laws/1/related?limit=100';
+            req.headers.host = 'localhost:8787';
+            lawService.getRelatedLaws.mockResolvedValue([]);
+
+            await lawController.getRelated(req, res, '1');
+
+            expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 10 });
+        });
+
+        it('should handle non-numeric limit gracefully', async () => {
+            req.url = '/api/v1/laws/1/related?limit=abc';
+            req.headers.host = 'localhost:8787';
+            lawService.getRelatedLaws.mockResolvedValue([]);
+
+            await lawController.getRelated(req, res, '1');
+
+            // NaN becomes 5 after Math.max(1, Math.min(10, NaN)) returns NaN, which || 5 handles
+            expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 5 });
+        });
+
+        it('should return response with data and law_id', async () => {
+            req.url = '/api/v1/laws/42/related';
+            req.headers.host = 'localhost:8787';
+            const relatedLaws = [{ id: 5, text: 'Related Law' }];
+            lawService.getRelatedLaws.mockResolvedValue(relatedLaws);
+
+            await lawController.getRelated(req, res, '42');
+
+            expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+            // Verify the response structure by checking res.end was called with correct JSON
+            const endCall = res.end.mock.calls[0][0];
+            const responseBody = JSON.parse(endCall);
+            expect(responseBody.data).toEqual(relatedLaws);
+            expect(responseBody.law_id).toBe(42);
+        });
+
+        it('should return empty array when no related laws found', async () => {
+            req.url = '/api/v1/laws/1/related';
+            req.headers.host = 'localhost:8787';
+            lawService.getRelatedLaws.mockResolvedValue([]);
+
+            await lawController.getRelated(req, res, '1');
+
+            expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+            const endCall = res.end.mock.calls[0][0];
+            const responseBody = JSON.parse(endCall);
+            expect(responseBody.data).toEqual([]);
         });
     });
 

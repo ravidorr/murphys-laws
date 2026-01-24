@@ -588,17 +588,18 @@ describe('LawDetail view', () => {
     expect(navParam).toBe('42');
   });
 
-  it('fetches related laws when law has category_id', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+  it('fetches related laws using dedicated endpoint', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
     const relatedLaws = {
       data: [
         { id: '8', title: 'Related Law', text: 'Related text', upvotes: 3, downvotes: 0 }
-      ]
+      ],
+      law_id: 7
     };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValue({ ok: true, json: async () => relatedLaws });
+      .mockResolvedValue({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => relatedLaws });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
 
@@ -606,10 +607,15 @@ describe('LawDetail view', () => {
 
     // Should have made at least 2 fetches (law + related laws)
     expect(global.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
+    
+    // Verify the related laws endpoint was called
+    const fetchCalls = global.fetch.mock.calls.map(call => call[0]);
+    const hasRelatedCall = fetchCalls.some(url => url.includes('/related'));
+    expect(hasRelatedCall).toBe(true);
   });
 
   it('handles related laws fetch failure silently', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
@@ -624,11 +630,11 @@ describe('LawDetail view', () => {
   });
 
   it('handles empty related laws array', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+      .mockResolvedValueOnce({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ data: [], law_id: 7 }) });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
 
@@ -642,11 +648,11 @@ describe('LawDetail view', () => {
   });
 
   it('handles related laws with null data', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2, category_id: 1 };
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: null }) });
+      .mockResolvedValueOnce({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ data: null, law_id: 7 }) });
 
     const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
 

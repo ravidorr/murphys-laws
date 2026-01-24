@@ -391,4 +391,199 @@ describe('LawService', () => {
       expect(result.data[0].text).toBe('High score law');
     });
   });
+
+  describe('getLaw with categories', () => {
+    it('should return category_id and category_ids for law with categories', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Law', 'published')").run();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, categoryId);
+
+      const law = await lawService.getLaw(lawInfo.lastInsertRowid);
+      expect(law.category_id).toBe(categoryId);
+      expect(law.category_ids).toEqual([categoryId]);
+    });
+
+    it('should return multiple category_ids for law with multiple categories', async () => {
+      const cat1 = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const cat2 = db.prepare("INSERT INTO categories (slug, title) VALUES ('humor', 'Humor')").run();
+
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('Multi-Category Law', 'published')").run();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, cat1.lastInsertRowid);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, cat2.lastInsertRowid);
+
+      const law = await lawService.getLaw(lawInfo.lastInsertRowid);
+      expect(law.category_id).toBe(cat1.lastInsertRowid); // First category
+      expect(law.category_ids).toHaveLength(2);
+      expect(law.category_ids).toContain(cat1.lastInsertRowid);
+      expect(law.category_ids).toContain(cat2.lastInsertRowid);
+    });
+
+    it('should return null category_id and empty category_ids for law without categories', async () => {
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('No Category Law', 'published')").run();
+
+      const law = await lawService.getLaw(lawInfo.lastInsertRowid);
+      expect(law.category_id).toBeNull();
+      expect(law.category_ids).toEqual([]);
+    });
+  });
+
+  describe('getRelatedLaws', () => {
+    it('should return empty array when law has no categories', async () => {
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('No Category Law', 'published')").run();
+
+      const related = await lawService.getRelatedLaws(lawInfo.lastInsertRowid);
+      expect(related).toEqual([]);
+    });
+
+    it('should return related laws from same category', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 2', 'published')").run();
+      const law3 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 3', 'published')").run();
+
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law2.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law3.lastInsertRowid, categoryId);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related).toHaveLength(2);
+      expect(related.map(r => r.text)).toContain('Law 2');
+      expect(related.map(r => r.text)).toContain('Law 3');
+    });
+
+    it('should exclude the current law from results', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current Law', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Related Law', 'published')").run();
+
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law2.lastInsertRowid, categoryId);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related).toHaveLength(1);
+      expect(related[0].text).toBe('Related Law');
+      expect(related.map(r => r.id)).not.toContain(law1.lastInsertRowid);
+    });
+
+    it('should respect limit parameter', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current', 'published')").run();
+      for (let i = 2; i <= 10; i++) {
+        const lawN = db.prepare(`INSERT INTO laws (text, status) VALUES ('Law ${i}', 'published')`).run();
+        db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawN.lastInsertRowid, categoryId);
+      }
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid, { limit: 3 });
+      expect(related).toHaveLength(3);
+    });
+
+    it('should sort by score descending', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Low Score', 'published')").run();
+      const law3 = db.prepare("INSERT INTO laws (text, status) VALUES ('High Score', 'published')").run();
+
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law2.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law3.lastInsertRowid, categoryId);
+
+      // High Score gets 3 upvotes, Low Score gets 1
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v1')").run(law3.lastInsertRowid);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v2')").run(law3.lastInsertRowid);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v3')").run(law3.lastInsertRowid);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v1')").run(law2.lastInsertRowid);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related[0].text).toBe('High Score');
+      expect(related[1].text).toBe('Low Score');
+    });
+
+    it('should only return published laws', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Published', 'published')").run();
+      const law3 = db.prepare("INSERT INTO laws (text, status) VALUES ('In Review', 'in_review')").run();
+
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law2.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law3.lastInsertRowid, categoryId);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related).toHaveLength(1);
+      expect(related[0].text).toBe('Published');
+    });
+
+    it('should handle laws with multiple categories', async () => {
+      const cat1 = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const cat2 = db.prepare("INSERT INTO categories (slug, title) VALUES ('humor', 'Humor')").run();
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Only', 'published')").run();
+      const law3 = db.prepare("INSERT INTO laws (text, status) VALUES ('Humor Only', 'published')").run();
+
+      // Current law is in both categories
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, cat1.lastInsertRowid);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, cat2.lastInsertRowid);
+      // Tech Only in tech category
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law2.lastInsertRowid, cat1.lastInsertRowid);
+      // Humor Only in humor category
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law3.lastInsertRowid, cat2.lastInsertRowid);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related).toHaveLength(2);
+      expect(related.map(r => r.text)).toContain('Tech Only');
+      expect(related.map(r => r.text)).toContain('Humor Only');
+    });
+
+    it('should return laws with upvotes and downvotes fields', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current', 'published')").run();
+      const law2 = db.prepare("INSERT INTO laws (title, text, status) VALUES ('Related Title', 'Related Text', 'published')").run();
+
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law2.lastInsertRowid, categoryId);
+
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v1')").run(law2.lastInsertRowid);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'down', 'v2')").run(law2.lastInsertRowid);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related).toHaveLength(1);
+      expect(related[0].id).toBe(law2.lastInsertRowid);
+      expect(related[0].title).toBe('Related Title');
+      expect(related[0].text).toBe('Related Text');
+      expect(related[0].upvotes).toBe(1);
+      expect(related[0].downvotes).toBe(1);
+      expect(related[0].score).toBe(0);
+    });
+
+    it('should use default limit of 5', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
+      const categoryId = catInfo.lastInsertRowid;
+
+      const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Current', 'published')").run();
+      for (let i = 2; i <= 10; i++) {
+        const lawN = db.prepare(`INSERT INTO laws (text, status) VALUES ('Law ${i}', 'published')`).run();
+        db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawN.lastInsertRowid, categoryId);
+      }
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(law1.lastInsertRowid, categoryId);
+
+      const related = await lawService.getRelatedLaws(law1.lastInsertRowid);
+      expect(related).toHaveLength(5);
+    });
+  });
 });
