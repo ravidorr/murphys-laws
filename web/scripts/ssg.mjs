@@ -172,8 +172,8 @@ async function main() {
     // Regex to replace inside <main>...<p>Loading...</p>...</main>
     // The template has: <main ...> ... <p ...>Loading...</p> </main>
     pageHtml = pageHtml.replace(
-      /<main class="flex-1 container page">[\s\S]*?<\/main>/, 
-      `<main class="flex-1 container page">${staticContent}</main>`
+      /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
+      `<main id="main-content" class="flex-1 container page">${staticContent}</main>`
     );
 
     await fs.writeFile(path.join(outDir, 'index.html'), pageHtml);
@@ -202,11 +202,62 @@ async function main() {
   `;
 
   browseHtml = browseHtml.replace(
-    /<main class="flex-1 container page">[\s\S]*?<\/main>/, 
-    `<main class="flex-1 container page">${browseContent}</main>`
+    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
+    `<main id="main-content" class="flex-1 container page">${browseContent}</main>`
   );
 
   await fs.writeFile(path.join(browseDir, 'index.html'), browseHtml);
+
+  // 2b. Generate Categories Page (Browse by Category)
+  console.log('Generating categories page...');
+  const categoriesDir = path.join(DIST_DIR, 'categories');
+  await fs.mkdir(categoriesDir, { recursive: true });
+
+  let categoriesHtml = template;
+  categoriesHtml = categoriesHtml.replace(/<title>.*?<\/title>/, `<title>Browse Laws by Category - Murphy's Law Archive</title>`);
+  categoriesHtml = categoriesHtml.replace(
+    /<meta name="description"[\s\S]*?content="[\s\S]*?">/,
+    `<meta name="description" content="Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.">`
+  );
+  categoriesHtml = categoriesHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/categories">`);
+
+  // Build category cards HTML for SSG
+  const categoryCardsHtml = categories
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .map(cat => {
+      const lawText = cat.law_count === 1 ? 'law' : 'laws';
+      return `
+      <article class="category-card" data-category-slug="${cat.slug}">
+        <h3 class="category-card-title">${cat.title}</h3>
+        <p class="category-card-description">Explore ${cat.law_count} ${lawText} in this category.</p>
+        <div class="category-card-footer">
+          <span class="category-card-count">${cat.law_count} ${lawText}</span>
+        </div>
+      </article>`;
+    })
+    .join('');
+
+  const categoriesContent = `
+    <div class="container page pt-0" role="main">
+      <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
+        Browse <span class="accent-text">Laws</span> by Category
+      </h1>
+      <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
+        Explore our complete collection organized into ${categories.length} categories.
+      </p>
+      <div class="categories-grid">
+        ${categoryCardsHtml}
+      </div>
+    </div>
+  `;
+
+  categoriesHtml = categoriesHtml.replace(
+    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
+    `<main id="main-content" class="flex-1 container page">${categoriesContent}</main>`
+  );
+
+  await fs.writeFile(path.join(categoriesDir, 'index.html'), categoriesHtml);
+  console.log('Generated categories page.');
 
   // 3. Generate Content Pages (About, Privacy, Terms, Origin Story, Contact)
   // Pre-render these with actual markdown content for SEO and AdSense compliance
@@ -258,8 +309,8 @@ async function main() {
       
       // Inject into main
       pageHtml = pageHtml.replace(
-        /<main class="flex-1 container page">[\s\S]*?<\/main>/,
-        `<main class="flex-1 container page">${staticContent}</main>`
+        /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
+        `<main id="main-content" class="flex-1 container page">${staticContent}</main>`
       );
       
       await fs.writeFile(path.join(routeDir, 'index.html'), pageHtml);
@@ -299,8 +350,8 @@ async function main() {
 
   // Inject into main
   homeHtml = homeHtml.replace(
-    /<main class="flex-1 container page">[\s\S]*?<\/main>/, 
-    `<main class="flex-1 container page">${homeContent}</main>`
+    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
+    `<main id="main-content" class="flex-1 container page">${homeContent}</main>`
   );
 
   await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
@@ -321,6 +372,12 @@ async function main() {
   </url>
   <url>
     <loc>${baseUrl}/browse</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/categories</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
