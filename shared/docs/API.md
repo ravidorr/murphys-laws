@@ -442,12 +442,14 @@ List all categories.
       "id": 1,
       "slug": "murphys-laws",
       "title": "Murphy's Laws",
+      "description": "The foundational laws of everything going wrong: if it can go wrong, it will.",
       "law_count": 150
     },
     {
       "id": 2,
       "slug": "murphys-technology-laws",
       "title": "Murphy's Technology Laws",
+      "description": "Tech truths: to err is human, to really foul things up requires a computer.",
       "law_count": 45
     }
   ]
@@ -473,7 +475,7 @@ Get a single category by ID.
   "id": 1,
   "slug": "murphys-laws",
   "title": "Murphy's Laws",
-  "law_count": 150
+  "description": "The foundational laws of everything going wrong: if it can go wrong, it will."
 }
 ```
 
@@ -636,6 +638,7 @@ All errors return JSON with an `error` field:
 | `id` | integer | Unique identifier |
 | `slug` | string | URL-friendly identifier |
 | `title` | string | Display name |
+| `description` | string | Category description (may be null) |
 | `law_count` | integer | Number of laws in category |
 
 ---
