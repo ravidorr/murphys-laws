@@ -233,6 +233,7 @@ footer .footer-nav {
 .footer-ad-shell {
   --footer-ad-min-height: 280px;
 
+  box-sizing: border-box;
   position: relative;
   width: 100%;
   max-width: 60rem;
@@ -258,6 +259,7 @@ footer .footer-nav {
 }
 
 .footer-ad-reserved {
+  box-sizing: border-box;
   width: 100%;
   height: var(--footer-ad-min-height);
   border-radius: 0.75rem;
