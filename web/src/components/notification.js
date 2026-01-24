@@ -1,4 +1,5 @@
 import { createIcon } from '@utils/icons.js';
+import { createButton } from '@utils/button.js';
 
 // Global notification/toast system
 
@@ -46,14 +47,13 @@ export function showNotification(message, type = 'info', duration = 5000) {
   messageSpan.textContent = message;
   content.appendChild(messageSpan);
 
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'notification-close';
-  closeBtn.setAttribute('aria-label', 'Dismiss notification');
-
-  const closeIcon = createIcon('close');
-  if (closeIcon) {
-    closeBtn.appendChild(closeIcon);
-  }
+  const closeBtn = createButton({
+    variant: 'secondary',
+    icon: 'close',
+    iconOnly: true,
+    className: 'notification-close',
+    ariaLabel: 'Dismiss notification',
+  });
 
   notification.appendChild(content);
   notification.appendChild(closeBtn);
