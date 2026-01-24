@@ -82,6 +82,27 @@ export async function fetchLaw(lawId) {
 }
 
 /**
+ * Fetches related laws for a given law ID
+ * @param {number|string} lawId - Law ID to find related laws for
+ * @param {Object} options - Fetch options
+ * @param {number} options.limit - Maximum number of related laws to return (1-10, default 5)
+ * @returns {Promise<Object>} Response with data array of related laws and law_id
+ */
+export async function fetchRelatedLaws(lawId, { limit = 5 } = {}) {
+  const numericId = Number(lawId);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error('Invalid law ID');
+  }
+
+  const params = {};
+  if (limit && limit !== 5) {
+    params.limit = String(limit);
+  }
+
+  return await fetchAPI(`/api/v1/laws/${numericId}/related`, params);
+}
+
+/**
  * Fetches laws with pagination and sorting
  * @param {Object} options - Fetch options
  * @param {number} options.limit - Number of laws to fetch

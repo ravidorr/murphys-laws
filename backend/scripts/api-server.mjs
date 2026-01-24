@@ -65,6 +65,7 @@ router.get('/api/health', (req, res) => healthController.check(req, res));
 router.get('/api/v1/laws', (req, res, parsed) => lawController.list(req, res, parsed));
 router.get('/api/v1/laws/suggestions', (req, res, parsed) => lawController.suggestions(req, res, parsed));
 router.get('/api/v1/laws/:id', (req, res, id) => lawController.get(req, res, id));
+router.get('/api/v1/laws/:id/related', (req, res, id) => lawController.getRelated(req, res, id));
 router.post('/api/v1/laws', (req, res) => lawController.submit(req, res));
 router.get('/api/v1/law-of-day', (req, res) => lawController.getLawOfTheDay(req, res));
 

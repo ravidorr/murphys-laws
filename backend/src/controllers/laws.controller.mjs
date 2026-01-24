@@ -50,6 +50,23 @@ export class LawController {
     return sendJson(res, 200, law, req);
   }
 
+  async getRelated(req, res, id) {
+    const lawId = Number(id);
+    if (!Number.isInteger(lawId) || lawId <= 0) {
+      return badRequest(res, 'Invalid law ID', req);
+    }
+
+    // Parse query parameters from URL
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const limitParam = url.searchParams.get('limit');
+    const limitNum = limitParam ? Number(limitParam) : 5;
+    const limit = Number.isNaN(limitNum) ? 5 : Math.max(1, Math.min(10, limitNum));
+
+    const relatedLaws = await this.lawService.getRelatedLaws(lawId, { limit });
+
+    return sendJson(res, 200, { data: relatedLaws, law_id: lawId }, req);
+  }
+
   async getLawOfTheDay(req, res) {
     const result = await this.lawService.getLawOfTheDay();
     if (!result) {
