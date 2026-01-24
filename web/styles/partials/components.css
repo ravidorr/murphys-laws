@@ -890,3 +890,29 @@ kbd {
   background: color-mix(in oklab, var(--dark-bg-primary) 85%, white 15%);
   border-color: var(--dark-border);
 }
+
+/* ==========================
+   Loading Placeholder
+   ========================== */
+
+.loading-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted-fg);
+}
+
+.loading-placeholder p {
+  margin: 0;
+}
+
+.loading-placeholder.size-small {
+  padding: 1rem;
+}
+
+.loading-placeholder.size-large {
+  padding: 3rem;
+  min-height: 200px;
+}

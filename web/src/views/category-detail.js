@@ -2,7 +2,7 @@
 
 import templateHtml from '@views/templates/category-detail.html?raw';
 import { fetchLaws } from '../utils/api.js';
-import { wrapLoadingMarkup } from '../utils/dom.js';
+import { renderLoadingHTML } from '../components/loading.js';
 import { getRandomLoadingMessage, LAWS_PER_PAGE } from '../utils/constants.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
@@ -108,7 +108,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
     const cardText = el.querySelector('#category-laws-list');
     if (cardText) {
       cardText.setAttribute('aria-busy', 'true');
-      cardText.innerHTML = wrapLoadingMarkup();
+      cardText.innerHTML = renderLoadingHTML();
 
       // Disable pagination buttons during load
       el.querySelectorAll('.pagination button').forEach(btn => {

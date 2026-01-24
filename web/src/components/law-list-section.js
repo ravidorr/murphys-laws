@@ -1,5 +1,6 @@
 // Refactored to use shared law card renderer
-import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
+import { createErrorState } from '../utils/dom.js';
+import { createLoading } from './loading.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
@@ -32,7 +33,7 @@ export function createLawListSection({ accentText, remainderText }) {
   let loadingEl = null;
 
   if (contentDiv) {
-    loadingEl = createLoadingPlaceholder();
+    loadingEl = createLoading();
     contentDiv.appendChild(loadingEl);
   }
 
