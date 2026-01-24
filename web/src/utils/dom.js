@@ -1,6 +1,7 @@
 // DOM utilities and event listener management
 import { getRandomLoadingMessage } from './constants.js';
 import { hydrateIcons } from './icons.js';
+import { renderLinkButtonHTML } from './button.js';
 
 /**
  * Creates an error state element with ARIA live region
@@ -27,13 +28,10 @@ export function createErrorState(message = 'Something went wrong. Please try aga
         <div class="left"></div>
         <div class="right">
           <button class="btn outline" onclick="window.location.reload()">
-            <span class="btn-text">Retry</span>
             <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+            <span class="btn-text">Retry</span>
           </button>
-          <a href="/" class="btn">
-            <span class="btn-text">Go Home</span>
-            <span class="icon" data-icon="home" aria-hidden="true"></span>
-          </a>
+          ${renderLinkButtonHTML({ href: '/', text: 'Go Home', icon: 'home' })}
         </div>
       </div>
     </section>

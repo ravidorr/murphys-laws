@@ -5,6 +5,7 @@ import { firstAttributionLine } from './attribution.js';
 import { escapeHtml, highlightSearchTerm } from './sanitize.js';
 import { getUserVote } from './voting.js';
 import { renderShareButtonsHTML } from '../components/social-share.js';
+import { renderButtonHTML } from './button.js';
 
 /**
  * Renders a law card with consistent HTML structure
@@ -77,14 +78,26 @@ export function renderLawCard(law, options = {}) {
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       <div class="law-card-footer">
         <div class="law-card-footer-left">
-          <button class="vote-btn count-up ${userVote === 'up' ? 'voted' : ''}" data-vote="up" data-law-id="${safeId}" aria-label="Upvote this law">
-            <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
-            <span class="count-num">${up}</span>
-          </button>
-          <button class="vote-btn count-down ${userVote === 'down' ? 'voted' : ''}" data-vote="down" data-law-id="${safeId}" aria-label="Downvote this law">
-            <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
-            <span class="count-num">${down}</span>
-          </button>
+          ${renderButtonHTML({
+    variant: 'vote',
+    direction: 'up',
+    icon: 'thumbUp',
+    count: up,
+    vote: 'up',
+    lawId: safeId,
+    className: userVote === 'up' ? 'voted' : null,
+    ariaLabel: 'Upvote this law',
+  })}
+          ${renderButtonHTML({
+    variant: 'vote',
+    direction: 'down',
+    icon: 'thumbDown',
+    count: down,
+    vote: 'down',
+    lawId: safeId,
+    className: userVote === 'down' ? 'voted' : null,
+    ariaLabel: 'Downvote this law',
+  })}
         </div>
         ${shareButtonsHtml}
       </div>

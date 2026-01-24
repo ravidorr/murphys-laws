@@ -5,6 +5,7 @@
  */
 
 import { createIcon } from '../utils/icons.js';
+import { createButton, renderShareLinkHTML } from '../utils/button.js';
 
 /**
  * Create social share popover component
@@ -46,18 +47,15 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
   // Create trigger button
-  const trigger = document.createElement('button');
-  trigger.type = 'button';
-  trigger.className = 'share-trigger';
-  trigger.setAttribute('aria-expanded', 'false');
-  trigger.setAttribute('aria-haspopup', 'true');
-  trigger.setAttribute('aria-label', 'Share this law');
-
-  const shareIcon = createIcon('share', { classNames: [] });
-  if (shareIcon) {
-    trigger.appendChild(shareIcon);
-  }
-  trigger.appendChild(document.createTextNode('Share'));
+  const trigger = createButton({
+    variant: 'secondary',
+    icon: 'share',
+    text: 'Share',
+    className: 'share-trigger',
+    ariaExpanded: false,
+    ariaHaspopup: true,
+    ariaLabel: 'Share this law',
+  });
   wrapper.appendChild(trigger);
 
   // Create popover
@@ -230,6 +228,16 @@ export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
   const emailBody = encodeURIComponent(`I found this and thought you'd like it:\n\n${lawText || ''}\n\n${shareUrl}`);
   const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
 
+  // Build share link HTML using renderShareLinkHTML helper
+  const shareLinkItems = [
+    renderShareLinkHTML({ href: twitterUrl, text: 'Share on X', icon: 'twitter', platform: 'twitter' }),
+    renderShareLinkHTML({ href: facebookUrl, text: 'Share on Facebook', icon: 'facebook', platform: 'facebook' }),
+    renderShareLinkHTML({ href: linkedinUrl, text: 'Share on LinkedIn', icon: 'linkedin', platform: 'linkedin' }),
+    renderShareLinkHTML({ href: redditUrl, text: 'Share on Reddit', icon: 'reddit', platform: 'reddit' }),
+    renderShareLinkHTML({ href: whatsappUrl, text: 'Share on WhatsApp', icon: 'whatsapp', platform: 'whatsapp' }),
+    renderShareLinkHTML({ href: emailUrl, text: 'Share via Email', icon: 'email', platform: 'email' }),
+  ].join('\n        ');
+
   return `
     <div class="share-wrapper">
       <button type="button" class="share-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Share this law">
@@ -237,30 +245,7 @@ export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
         Share
       </button>
       <div class="share-popover" role="menu">
-        <a class="share-popover-item" href="${twitterUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
-          <span class="icon-circle twitter"><span class="icon" data-icon="twitter" aria-hidden="true"></span></span>
-          Share on X
-        </a>
-        <a class="share-popover-item" href="${facebookUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
-          <span class="icon-circle facebook"><span class="icon" data-icon="facebook" aria-hidden="true"></span></span>
-          Share on Facebook
-        </a>
-        <a class="share-popover-item" href="${linkedinUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
-          <span class="icon-circle linkedin"><span class="icon" data-icon="linkedin" aria-hidden="true"></span></span>
-          Share on LinkedIn
-        </a>
-        <a class="share-popover-item" href="${redditUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
-          <span class="icon-circle reddit"><span class="icon" data-icon="reddit" aria-hidden="true"></span></span>
-          Share on Reddit
-        </a>
-        <a class="share-popover-item" href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" role="menuitem">
-          <span class="icon-circle whatsapp"><span class="icon" data-icon="whatsapp" aria-hidden="true"></span></span>
-          Share on WhatsApp
-        </a>
-        <a class="share-popover-item" href="${emailUrl}" role="menuitem">
-          <span class="icon-circle email"><span class="icon" data-icon="email" aria-hidden="true"></span></span>
-          Share via Email
-        </a>
+        ${shareLinkItems}
         <div class="share-popover-divider"></div>
         <button type="button" class="share-popover-item" role="menuitem" data-action="copy-text" data-copy-value="${safeText}" data-law-id="${lawId}">
           <span class="icon-circle copy"><span class="icon" data-icon="copy" aria-hidden="true"></span></span>
