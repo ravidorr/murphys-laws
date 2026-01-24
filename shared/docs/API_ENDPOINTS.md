@@ -49,6 +49,33 @@ Fetch laws with pagination, sorting, and filtering.
 
 ---
 
+#### GET `/api/v1/laws/suggestions`
+Fetch search suggestions for autocomplete as user types.
+
+**Query Parameters:**
+- `q` (string, required): Search query text (minimum 2 characters)
+- `limit` (number, optional): Number of suggestions to return (default: 10, max: 20)
+
+**Response:**
+```json
+{
+ "data": [
+   {
+     "id": 1,
+     "text": "Law text...",
+     "title": "Law title (optional)",
+     "score": 5
+   }
+ ]
+}
+```
+
+**Used in:**
+- `src/utils/api.js` - `fetchSuggestions()` function
+- `src/components/search-autocomplete.js` - Header search autocomplete dropdown
+
+---
+
 #### GET `/api/v1/laws/{id}`
 Fetch a single law by ID.
 
@@ -67,13 +94,46 @@ Fetch a single law by ID.
  "attributions": [/* array of attribution objects */],
  "submittedBy": "Submitter name",
  "created_at": "2024-01-01T00:00:00Z",
- // ... other fields
+ "category_id": 1,
+ "category_ids": [1, 5]
 }
 ```
 
 **Used in:**
 - `src/utils/api.js` - `fetchLaw()` function
 - `src/views/law-detail.js` - Law detail page
+
+---
+
+#### GET `/api/v1/laws/{id}/related`
+Fetch related laws from the same category(ies).
+
+**Path Parameters:**
+- `id` (number): Law ID
+
+**Query Parameters:**
+- `limit` (number): Number of related laws to return (1-10, default: 5)
+
+**Response:**
+```json
+{
+ "data": [
+   {
+     "id": 2,
+     "title": "Related Law Title",
+     "text": "Related law text...",
+     "upvotes": 15,
+     "downvotes": 1,
+     "score": 14
+   }
+ ],
+ "law_id": 1
+}
+```
+
+**Used in:**
+- `src/utils/api.js` - `fetchRelatedLaws()` function
+- `src/views/law-detail.js` - Law detail page related laws section
 
 ---
 
@@ -292,18 +352,20 @@ Share SOD (Sod's Law) calculation via email.
 
 ## Summary
 
-Total API endpoints: **10** (all use `/api/v1/...` prefix)
+Total API endpoints: **12** (all use `/api/v1/...` prefix)
 
 1. `GET /api/v1/laws` - List laws with filters
-2. `GET /api/v1/laws/{id}` - Get single law
-3. `POST /api/v1/laws` - Submit new law
-4. `POST /api/v1/laws/{id}/vote` - Vote on law
-5. `DELETE /api/v1/laws/{id}/vote` - Remove vote
-6. `GET /api/v1/law-of-day` - Get law of the day
-7. `GET /api/v1/categories` - List all categories
-8. `GET /api/v1/categories/{id}` - Get single category
-9. `GET /api/v1/attributions` - List all attributions
-10. `POST /api/v1/share-calculation` - Share calculation via email
+2. `GET /api/v1/laws/suggestions` - Get search suggestions for autocomplete
+3. `GET /api/v1/laws/{id}` - Get single law
+4. `GET /api/v1/laws/{id}/related` - Get related laws
+5. `POST /api/v1/laws` - Submit new law
+6. `POST /api/v1/laws/{id}/vote` - Vote on law
+7. `DELETE /api/v1/laws/{id}/vote` - Remove vote
+8. `GET /api/v1/law-of-day` - Get law of the day
+9. `GET /api/v1/categories` - List all categories
+10. `GET /api/v1/categories/{id}` - Get single category
+11. `GET /api/v1/attributions` - List all attributions
+12. `POST /api/v1/share-calculation` - Share calculation via email
 
 ## Implementation Details
 

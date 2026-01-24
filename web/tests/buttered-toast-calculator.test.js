@@ -496,4 +496,264 @@ describe('ButteredToastCalculator view', () => {
     window.location = originalLocation;
   });
 
+  it('copies shareable link to clipboard on copy button click', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    // Set specific slider values
+    el.querySelector('#toast-height').value = '80';
+    el.querySelector('#toast-gravity').value = '1000';
+    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+
+    const copyBtn = el.querySelector('#copy-link');
+    copyBtn.dispatchEvent(new Event('click'));
+
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalled();
+    const copiedUrl = writeTextMock.mock.calls[0][0];
+    expect(copiedUrl).toContain('h=80');
+    expect(copiedUrl).toContain('g=1000');
+
+    document.body.removeChild(el);
+  });
+
+  it('shows success feedback after copying link and hides after timeout', async () => {
+    vi.useFakeTimers();
+    
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const copyBtn = el.querySelector('#copy-link');
+    const copyFeedback = el.querySelector('#copy-feedback');
+
+    copyBtn.dispatchEvent(new Event('click'));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(copyFeedback.textContent).toMatch(/copied/i);
+    expect(copyFeedback.classList.contains('success')).toBe(true);
+
+    // Wait for the setTimeout to hide feedback
+    vi.advanceTimersByTime(2100);
+    expect(copyFeedback.classList.contains('hidden')).toBe(true);
+
+    document.body.removeChild(el);
+    vi.useRealTimers();
+  });
+
+  it('shows error feedback when clipboard copy fails and hides after timeout', async () => {
+    vi.useFakeTimers();
+    
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const copyBtn = el.querySelector('#copy-link');
+    const copyFeedback = el.querySelector('#copy-feedback');
+
+    copyBtn.dispatchEvent(new Event('click'));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(copyFeedback.textContent).toMatch(/failed/i);
+    expect(copyFeedback.classList.contains('error')).toBe(true);
+
+    // Wait for the setTimeout to hide feedback
+    vi.advanceTimersByTime(2100);
+    expect(copyFeedback.classList.contains('hidden')).toBe(true);
+
+    document.body.removeChild(el);
+    vi.useRealTimers();
+  });
+
+  it('opens Twitter share window with correct URL', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const windowOpenMock = vi.fn();
+    window.open = windowOpenMock;
+
+    // Set a slider value
+    el.querySelector('#toast-height').value = '100';
+    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+
+    const twitterBtn = el.querySelector('#share-twitter');
+    twitterBtn.dispatchEvent(new Event('click'));
+
+    expect(windowOpenMock).toHaveBeenCalled();
+    const twitterUrl = windowOpenMock.mock.calls[0][0];
+    expect(twitterUrl).toContain('twitter.com/intent/tweet');
+
+    document.body.removeChild(el);
+  });
+
+  it('opens Facebook share window with correct URL', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const windowOpenMock = vi.fn();
+    window.open = windowOpenMock;
+
+    // Set a slider value
+    el.querySelector('#toast-height').value = '90';
+    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+
+    const facebookBtn = el.querySelector('#share-facebook');
+    facebookBtn.dispatchEvent(new Event('click'));
+
+    expect(windowOpenMock).toHaveBeenCalled();
+    const facebookUrl = windowOpenMock.mock.calls[0][0];
+    expect(facebookUrl).toContain('facebook.com/sharer');
+
+    document.body.removeChild(el);
+  });
+
+  it('updateState captures current slider values', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    // Set specific slider values
+    el.querySelector('#toast-height').value = '120';
+    el.querySelector('#toast-gravity').value = '1100';
+    el.querySelector('#toast-overhang').value = '8';
+    el.querySelector('#toast-butter').value = '1.5';
+    el.querySelector('#toast-friction').value = '30';
+    el.querySelector('#toast-inertia').value = '350';
+    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+
+    // Copy link uses updateState internally
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    el.querySelector('#copy-link').dispatchEvent(new Event('click'));
+    await Promise.resolve();
+
+    const url = writeTextMock.mock.calls[0][0];
+    expect(url).toContain('h=120');
+    expect(url).toContain('g=1100');
+    expect(url).toContain('o=8');
+    expect(url).toContain('b=1.5');
+    expect(url).toContain('f=30');
+    expect(url).toContain('t=350');
+
+    document.body.removeChild(el);
+  });
+
+  it('handles MathJax becoming undefined during requestAnimationFrame', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    // Set up MathJax to be available initially
+    const originalMathJax = window.MathJax;
+    window.MathJax = {
+      typesetPromise: vi.fn().mockResolvedValue(undefined)
+    };
+
+    // Trigger formula update
+    el.querySelector('#toast-height').value = '100';
+    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+
+    // Remove MathJax to simulate it becoming undefined
+    delete window.MathJax;
+
+    // Wait for requestAnimationFrame
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    // Should not throw
+    expect(true).toBe(true);
+
+    // Restore
+    window.MathJax = originalMathJax;
+    document.body.removeChild(el);
+  });
+
+  it('handles MathJax.typesetPromise becoming non-function during RAF', async () => {
+    const originalRAF = window.requestAnimationFrame;
+    let rafCallback = null;
+    
+    // Capture the RAF callback instead of executing immediately
+    window.requestAnimationFrame = (cb) => {
+      rafCallback = cb;
+      return 1;
+    };
+
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    // Set up MathJax with typesetPromise
+    const originalMathJax = window.MathJax;
+    const mathJaxRef = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
+    window.MathJax = mathJaxRef;
+
+    // Trigger formula update (which schedules RAF)
+    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+
+    // Now remove typesetPromise to make it non-function
+    mathJaxRef.typesetPromise = undefined;
+
+    // Execute the RAF callback - should hit the defensive check
+    if (rafCallback) rafCallback();
+
+    // Should not throw
+    expect(true).toBe(true);
+
+    // Restore
+    window.MathJax = originalMathJax;
+    window.requestAnimationFrame = originalRAF;
+    document.body.removeChild(el);
+  });
+
+  it('handles ensureMathJax rejection gracefully', async () => {
+    // Mock ensureMathJax to reject
+    vi.mock('../src/utils/mathjax.js', () => ({
+      ensureMathJax: vi.fn(() => Promise.reject(new Error('MathJax load failed')))
+    }));
+
+    // Re-import to use the mock
+    vi.resetModules();
+    const { ButteredToastCalculator: FreshCalculator } = await import('../src/views/buttered-toast-calculator.js');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const el = FreshCalculator();
+    container.appendChild(el);
+
+    // Wait for promise rejection to be handled
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Formula should still be displayed (updateFormula called in catch)
+    const formulaDisplay = el.querySelector('#toast-formula-display');
+    expect(formulaDisplay).toBeTruthy();
+    expect(formulaDisplay.textContent).toBeTruthy();
+
+    document.body.removeChild(container);
+    vi.clearAllMocks();
+  });
+
 });

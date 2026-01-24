@@ -50,11 +50,44 @@ export class LawController {
     return sendJson(res, 200, law, req);
   }
 
+  async getRelated(req, res, id) {
+    const lawId = Number(id);
+    if (!Number.isInteger(lawId) || lawId <= 0) {
+      return badRequest(res, 'Invalid law ID', req);
+    }
+
+    // Parse query parameters from URL
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const limitParam = url.searchParams.get('limit');
+    const limitNum = limitParam ? Number(limitParam) : 5;
+    const limit = Number.isNaN(limitNum) ? 5 : Math.max(1, Math.min(10, limitNum));
+
+    const relatedLaws = await this.lawService.getRelatedLaws(lawId, { limit });
+
+    return sendJson(res, 200, { data: relatedLaws, law_id: lawId }, req);
+  }
+
   async getLawOfTheDay(req, res) {
     const result = await this.lawService.getLawOfTheDay();
     if (!result) {
       return sendJson(res, 404, { error: 'No published laws available' }, req);
     }
+    return sendJson(res, 200, result, req);
+  }
+
+  async suggestions(req, res, parsed) {
+    const q = (parsed.query.q || '').toString().trim();
+    
+    // Validate query parameter
+    if (!q || q.length < 2) {
+      return badRequest(res, 'Query parameter "q" is required and must be at least 2 characters', req);
+    }
+
+    // Validate and limit limit parameter
+    const limit = Math.max(1, Math.min(20, Number(parsed.query.limit || 10)));
+
+    const result = await this.lawService.suggestions({ q, limit });
+    
     return sendJson(res, 200, result, req);
   }
 

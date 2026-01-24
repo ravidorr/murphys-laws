@@ -2,6 +2,7 @@ import {
   initKeyboardShortcuts,
   destroyKeyboardShortcuts,
   isEditableElement,
+  isAutocompleteOpen,
   focusSearch,
   navigateToNextCard,
   navigateToPreviousCard,
@@ -76,6 +77,47 @@ describe('keyboard-shortcuts', () => {
       localThis.button = document.createElement('button');
       localThis.result = isEditableElement(localThis.button);
       expect(localThis.result).toBe(false);
+    });
+  });
+
+  describe('isAutocompleteOpen', () => {
+    it('returns false when search input does not exist', () => {
+      const localThis = {};
+      document.body.innerHTML = '';
+      localThis.result = isAutocompleteOpen();
+      expect(localThis.result).toBe(false);
+    });
+
+    it('returns false when search input aria-expanded is false', () => {
+      const localThis = {};
+      localThis.input = document.createElement('input');
+      localThis.input.id = 'header-search';
+      localThis.input.setAttribute('aria-expanded', 'false');
+      document.body.appendChild(localThis.input);
+
+      localThis.result = isAutocompleteOpen();
+      expect(localThis.result).toBe(false);
+    });
+
+    it('returns false when search input aria-expanded is not set', () => {
+      const localThis = {};
+      localThis.input = document.createElement('input');
+      localThis.input.id = 'header-search';
+      document.body.appendChild(localThis.input);
+
+      localThis.result = isAutocompleteOpen();
+      expect(localThis.result).toBe(false);
+    });
+
+    it('returns true when search input aria-expanded is true', () => {
+      const localThis = {};
+      localThis.input = document.createElement('input');
+      localThis.input.id = 'header-search';
+      localThis.input.setAttribute('aria-expanded', 'true');
+      document.body.appendChild(localThis.input);
+
+      localThis.result = isAutocompleteOpen();
+      expect(localThis.result).toBe(true);
     });
   });
 
@@ -388,6 +430,64 @@ describe('keyboard-shortcuts', () => {
       handleKeydown(localThis.event);
 
       expect(localThis.event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('ignores shortcuts when autocomplete dropdown is open', () => {
+      const localThis = {};
+      localThis.input = document.createElement('input');
+      localThis.input.id = 'header-search';
+      localThis.input.setAttribute('aria-expanded', 'true');
+      document.body.appendChild(localThis.input);
+
+      localThis.cards = Array.from({ length: 2 }, (_, i) => {
+        const card = document.createElement('article');
+        card.className = 'law-card-mini';
+        card.tabIndex = 0;
+        document.body.appendChild(card);
+        return card;
+      });
+
+      localThis.event = new KeyboardEvent('keydown', { key: 'j' });
+      Object.defineProperty(localThis.event, 'target', { value: document.body });
+
+      handleKeydown(localThis.event);
+
+      // Focus should not have moved to the card when autocomplete is open
+      expect(document.activeElement).not.toBe(localThis.cards[0]);
+    });
+
+    it('ignores / shortcut when autocomplete dropdown is open', () => {
+      const localThis = {};
+      localThis.input = document.createElement('input');
+      localThis.input.id = 'header-search';
+      localThis.input.setAttribute('aria-expanded', 'true');
+      document.body.appendChild(localThis.input);
+
+      localThis.event = new KeyboardEvent('keydown', { key: '/' });
+      localThis.event.preventDefault = vi.fn();
+      Object.defineProperty(localThis.event, 'target', { value: document.body });
+
+      handleKeydown(localThis.event);
+
+      // Should not prevent default or focus search when autocomplete is open
+      expect(localThis.event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('ignores ? shortcut when autocomplete dropdown is open', () => {
+      const localThis = {};
+      localThis.input = document.createElement('input');
+      localThis.input.id = 'header-search';
+      localThis.input.setAttribute('aria-expanded', 'true');
+      document.body.appendChild(localThis.input);
+
+      localThis.event = new KeyboardEvent('keydown', { key: '?' });
+      localThis.event.preventDefault = vi.fn();
+      Object.defineProperty(localThis.event, 'target', { value: document.body });
+
+      handleKeydown(localThis.event);
+
+      // Should not open help modal when autocomplete is open
+      expect(helpModal.openKeyboardHelpModal).not.toHaveBeenCalled();
     });
 
     it('does nothing for unrecognized keys', () => {

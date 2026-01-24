@@ -128,6 +128,58 @@ List laws with pagination, filtering, and sorting.
 
 ---
 
+#### GET /api/v1/laws/suggestions
+
+Get search suggestions for autocomplete. Returns top matching laws based on search query.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `q` | string | Yes | - | Search query (minimum 2 characters) |
+| `limit` | integer | No | 10 | Number of suggestions to return (max: 20) |
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "text": "Anything that can go wrong will go wrong.",
+      "title": "Murphy's Law",
+      "score": 145
+    },
+    {
+      "id": 2,
+      "text": "If anything can go wrong, it will.",
+      "title": null,
+      "score": 120
+    }
+  ]
+}
+```
+
+**Response Fields:**
+
+- `id` (integer): Law ID
+- `text` (string): Law text
+- `title` (string, nullable): Law title (if available)
+- `score` (integer): Law score (upvotes - downvotes)
+
+**Error Responses:**
+
+- `400 Bad Request` - Query parameter missing or shorter than 2 characters
+
+**Notes:**
+
+- Results are prioritized by text matches over title matches
+- Results are sorted by score (descending) after matching priority
+- Only published laws are returned
+- Optimized for fast autocomplete responses
+
+---
+
 #### GET /api/v1/laws/:id
 
 Get a single law by ID.
@@ -156,14 +208,76 @@ Get a single law by ID.
     }
   ],
   "upvotes": 150,
-  "downvotes": 5
+  "downvotes": 5,
+  "category_id": 1,
+  "category_ids": [1, 5]
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `category_id` | integer or null | Primary category ID (first category, for backward compatibility) |
+| `category_ids` | array | Array of all category IDs the law belongs to |
 
 **Error Responses:**
 
 - `400 Bad Request` - Invalid law ID
 - `404 Not Found` - Law not found
+
+---
+
+#### GET /api/v1/laws/:id/related
+
+Get related laws from the same category(ies) as the specified law, sorted by score.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | integer | Law ID |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 5 | Number of related laws to return (1-10) |
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": 2,
+      "title": "Murphy's Extended Law",
+      "text": "Everything that can go wrong will go wrong at the worst possible time.",
+      "upvotes": 120,
+      "downvotes": 3,
+      "score": 117
+    },
+    {
+      "id": 5,
+      "title": "O'Toole's Commentary",
+      "text": "Murphy was an optimist.",
+      "upvotes": 95,
+      "downvotes": 2,
+      "score": 93
+    }
+  ],
+  "law_id": 1
+}
+```
+
+**Notes:**
+
+- Returns laws from the same category(ies) as the specified law
+- Excludes the specified law from results
+- Only returns published laws
+- Returns empty array if the law has no categories or no related laws exist
+
+**Error Responses:**
+
+- `400 Bad Request` - Invalid law ID
 
 ---
 
@@ -504,6 +618,8 @@ All errors return JSON with an `error` field:
 | `upvotes` | integer | Number of upvotes |
 | `downvotes` | integer | Number of downvotes |
 | `score` | integer | upvotes - downvotes (in list responses) |
+| `category_id` | integer or null | Primary category ID (in single law responses) |
+| `category_ids` | array | All category IDs (in single law responses) |
 
 ### Attribution
 
@@ -554,6 +670,12 @@ curl "https://murphys-laws.com/api/v1/laws?q=computer"
 
 ```bash
 curl "https://murphys-laws.com/api/v1/laws?category_slug=murphys-technology-laws"
+```
+
+### Get related laws
+
+```bash
+curl "https://murphys-laws.com/api/v1/laws/1/related?limit=3"
 ```
 
 ### Submit a new law

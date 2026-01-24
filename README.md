@@ -154,11 +154,15 @@ Press `?` anywhere on the site to see all available shortcuts:
 | Shortcut | Action |
 |----------|--------|
 | `/` | Focus search |
+| `↑` / `↓` | Navigate search suggestions (when autocomplete is open) |
+| `Enter` | Select search suggestion (when autocomplete is open) |
+| `Escape` | Close search suggestions / modal / popover |
 | `j` | Next law card |
 | `k` | Previous law card |
 | `?` | Show shortcuts help |
-| `Escape` | Close modal/popover |
 | `Enter` / `Space` | Activate focused card |
+
+**Search Autocomplete:** When typing in the search field, suggestions appear automatically. Use arrow keys to navigate, Enter to select, or Escape to close.
 
 ## Contributing
 

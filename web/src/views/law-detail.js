@@ -1,5 +1,5 @@
 import templateHtml from '@views/templates/law-detail.html?raw';
-import { fetchLaw, fetchLaws } from '../utils/api.js';
+import { fetchLaw, fetchRelatedLaws as fetchRelatedLawsAPI } from '../utils/api.js';
 import { renderAttributionsList } from '../utils/attribution.js';
 import { escapeHtml } from '../utils/sanitize.js';
 import { toggleVote, getUserVote } from '../utils/voting.js';
@@ -194,39 +194,25 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     }
 
     // Fetch and render related laws
-    if (law.category_id) {
-      fetchRelatedLaws(law.id, law.category_id);
-    }
+    loadRelatedLaws(law.id);
   }
 
-  // Fetch related laws from the same category
-  async function fetchRelatedLaws(currentLawId, categoryId) {
+  // Fetch related laws from the same category using the dedicated API endpoint
+  async function loadRelatedLaws(currentLawId) {
     const relatedSection = el.querySelector('[data-related-laws]');
     const relatedList = el.querySelector('[data-related-laws-list]');
     
     if (!relatedSection || !relatedList) return;
 
     try {
-      const data = await fetchLaws({
-        category_id: categoryId,
-        limit: 6, // Fetch 6 to have buffer after excluding current
-        sort: 'score',
-        order: 'desc'
-      });
+      const data = await fetchRelatedLawsAPI(currentLawId, { limit: 3 });
 
-      if (data && Array.isArray(data.data)) {
-        // Filter out current law and limit to 5
-        const relatedLaws = data.data
-          .filter(law => String(law.id) !== String(currentLawId))
-          .slice(0, 5);
-
-        if (relatedLaws.length > 0) {
-          relatedList.innerHTML = renderLawCards(relatedLaws);
-          hydrateIcons(relatedList);
-          initSharePopovers(relatedList);
-          addVotingListeners(relatedList);
-          relatedSection.removeAttribute('hidden');
-        }
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        relatedList.innerHTML = renderLawCards(data.data);
+        hydrateIcons(relatedList);
+        initSharePopovers(relatedList);
+        addVotingListeners(relatedList);
+        relatedSection.removeAttribute('hidden');
       }
     } catch {
       // Silently fail - related laws are not critical
