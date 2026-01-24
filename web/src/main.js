@@ -6,6 +6,7 @@ import { Home } from './views/home.js';
 import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
 import { CategoryDetail } from './views/category-detail.js';
+import { Categories } from './views/categories.js';
 import { SubmitLawSection } from './components/submit-law.js';
 import { Calculator } from './views/sods-calculator.js';
 import { ButteredToastCalculator } from './views/buttered-toast-calculator.js';
@@ -173,6 +174,10 @@ const routesMap = {
   browse: () => {
     setBrowseStructuredData();
     return layout(Browse({ searchQuery: state.searchQuery, onNavigate }), { hideAds: true });
+  },
+  categories: () => {
+    clearPageStructuredData();
+    return layout(Categories({ onNavigate }));
   },
   law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData })),
   submit: () => {
