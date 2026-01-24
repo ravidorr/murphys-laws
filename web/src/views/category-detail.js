@@ -26,6 +26,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   let totalLaws = 0;
   let laws = [];
   let categoryTitle = 'Category'; // Default title
+  let categoryDescription = ''; // Category description
   let _currentFilters = { category_id: categoryId };
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
@@ -166,9 +167,15 @@ export function CategoryDetail({ categoryId, onNavigate }) {
 
       if (category) {
         categoryTitle = stripMarkdownFootnotes(category.title);
+        categoryDescription = category.description || '';
         const titleEl = el.querySelector('#category-detail-title');
         if (titleEl) {
           titleEl.innerHTML = formatPageTitle(categoryTitle);
+        }
+        // Update description element
+        const descEl = el.querySelector('#category-description');
+        if (descEl) {
+          descEl.textContent = categoryDescription || 'All laws within this category.';
         }
         // Update browser page title
         document.title = `${categoryTitle} | ${SITE_NAME}`;
@@ -211,7 +218,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       '@type': 'CollectionPage',
       'name': `${categoryTitle} Laws - Murphy's Law Archive`,
       'url': `${SITE_URL}/#/category:${categoryId}`,
-      'description': `Browse all Murphy's Laws related to ${categoryTitle}.`,
+      'description': categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}.`,
       'image': `${SITE_URL}/social/home.png`, // Placeholder, could be category specific
     });
   }

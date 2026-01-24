@@ -48,8 +48,8 @@ describe('CategoryDetail view', () => {
 
     api.fetchCategories.mockResolvedValue({
       data: [
-        { id: 1, title: 'Technology' },
-        { id: 2, title: 'Work' }
+        { id: 1, title: 'Technology', description: 'Tech truths: to err is human, to really foul things up requires a computer.' },
+        { id: 2, title: 'Work', description: null }
       ]
     });
   });
@@ -85,8 +85,34 @@ describe('CategoryDetail view', () => {
     }));
     expect(structuredData.setJsonLd).toHaveBeenCalledWith('category-detail-page', expect.objectContaining({
       '@type': 'CollectionPage',
-      'name': expect.stringContaining('Technology Laws')
+      'name': expect.stringContaining('Technology Laws'),
+      'description': 'Tech truths: to err is human, to really foul things up requires a computer.'
     }));
+  });
+
+  it('displays category description when available', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const descEl = el.querySelector('#category-description');
+    expect(descEl).toBeTruthy();
+    expect(descEl.textContent).toBe('Tech truths: to err is human, to really foul things up requires a computer.');
+  });
+
+  it('displays fallback description when description is null', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, title: 'Technology', description: null },
+        { id: 2, title: 'Work', description: null }
+      ]
+    });
+
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const descEl = el.querySelector('#category-description');
+    expect(descEl).toBeTruthy();
+    expect(descEl.textContent).toBe('All laws within this category.');
   });
 
   it('renders empty state when no laws found', async () => {
@@ -268,8 +294,8 @@ describe('CategoryDetail view', () => {
   it('handles category slug instead of numeric id', async () => {
     api.fetchCategories.mockResolvedValue({
       data: [
-        { id: 1, slug: 'technology', title: 'Technology Laws' },
-        { id: 2, slug: 'work', title: 'Work Laws' }
+        { id: 1, slug: 'technology', title: 'Technology Laws', description: 'Tech laws' },
+        { id: 2, slug: 'work', title: 'Work Laws', description: 'Work laws' }
       ]
     });
 
@@ -288,8 +314,8 @@ describe('CategoryDetail view', () => {
   it('finds category by slug in fetchCategoryDetails', async () => {
     api.fetchCategories.mockResolvedValue({
       data: [
-        { id: 1, slug: 'computers', title: "Murphy's Computers Laws" },
-        { id: 2, slug: 'work', title: 'Work Laws' }
+        { id: 1, slug: 'computers', title: "Murphy's Computers Laws", description: 'Computer laws description' },
+        { id: 2, slug: 'work', title: 'Work Laws', description: 'Work laws' }
       ]
     });
 
@@ -298,6 +324,21 @@ describe('CategoryDetail view', () => {
 
     // Should find the category by slug and use its title
     expect(el.textContent).toContain("Murphy's Computers Laws");
+  });
+
+  it('displays description when category found by slug', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, slug: 'computers', title: "Murphy's Computers Laws", description: 'Digital doom: programs are obsolete when running.' },
+        { id: 2, slug: 'work', title: 'Work Laws', description: 'Work laws' }
+      ]
+    });
+
+    const el = CategoryDetail({ categoryId: 'computers', onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const descEl = el.querySelector('#category-description');
+    expect(descEl.textContent).toBe('Digital doom: programs are obsolete when running.');
   });
 
   describe('copy actions', () => {
