@@ -50,9 +50,9 @@ export function LawOfTheDay({ law, onNavigate }) {
     bodyEl.innerHTML = `
       <a href="/law/${law.id}" class="lod-link" data-law-id="${law.id}" aria-label="Read full law details">
         <blockquote class="lod-quote-large">${lawDisplay}</blockquote>
-        <p class="lod-attrib">${attribution}</p>
         <span class="lod-read-more">Read more</span>
       </a>
+      <p class="lod-attrib">${attribution}</p>
     `;
   }
 
