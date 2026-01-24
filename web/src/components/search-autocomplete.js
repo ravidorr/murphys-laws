@@ -19,7 +19,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   let suggestions = [];
   let selectedIndex = -1;
   let dropdown = null;
-  let isOpen = false;
+  let dropdownOpen = false;
 
   // Create dropdown container
   function createDropdown() {
@@ -62,7 +62,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       dropdown.innerHTML = '';
       dropdown.setAttribute('aria-hidden', 'true');
       inputElement.setAttribute('aria-expanded', 'false');
-      isOpen = false;
+      dropdownOpen = false;
       return;
     }
 
@@ -88,7 +88,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
 
     dropdown.setAttribute('aria-hidden', 'false');
     inputElement.setAttribute('aria-expanded', 'true');
-    isOpen = true;
+    dropdownOpen = true;
   }
 
   // Select a suggestion by index
@@ -111,7 +111,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       dropdown.setAttribute('aria-hidden', 'true');
     }
     inputElement.setAttribute('aria-expanded', 'false');
-    isOpen = false;
+    dropdownOpen = false;
   }
 
   // Update selected index and re-render
@@ -160,7 +160,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
 
   // Handle keyboard navigation
   function handleKeydown(event) {
-    if (!isOpen && suggestions.length === 0) {
+    if (!dropdownOpen && suggestions.length === 0) {
       return; // Don't handle keys when dropdown is closed
     }
 
@@ -246,7 +246,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       document.removeEventListener('click', handleDocumentClick);
     },
     isOpen() {
-      return isOpen;
+      return dropdownOpen;
     }
   };
 }

@@ -404,4 +404,24 @@ describe('Router', () => {
     expect(rootEl.textContent).toBe('Home Fallback');
     document.body.removeChild(rootEl);
   });
+
+  it('warns when navigate is called before startRouter', async () => {
+    // Reset the module to ensure renderFn is null
+    vi.resetModules();
+    
+    // Re-import after module reset
+    const { navigate: freshNavigate } = await import('../src/router.js');
+    
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    // Call navigate without calling startRouter first
+    // This should log a warning because renderFn is null
+    freshNavigate('browse');
+    
+    expect(warnSpy).toHaveBeenCalledWith(
+      'navigate() called before startRouter() was initialized. Navigation will not render.'
+    );
+    
+    warnSpy.mockRestore();
+  });
 });

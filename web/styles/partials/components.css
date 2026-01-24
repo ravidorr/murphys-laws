@@ -310,9 +310,7 @@ button:disabled {
   color: var(--fg);
 }
 
-.form-label .required,
-.form-group label .required,
-.share-form-container .form-group label .required {
+.required {
   color: var(--error);
   font-weight: inherit;
 }
