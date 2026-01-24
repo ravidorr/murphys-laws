@@ -52,11 +52,43 @@ describe('CategoryService', () => {
         expect(tech.law_count).toBe(2);
     });
 
+    it('should list categories with descriptions', async () => {
+        db.prepare("INSERT INTO categories (title, slug, description) VALUES ('Tech', 'tech', 'Technology related laws')").run();
+        db.prepare("INSERT INTO categories (title, slug, description) VALUES ('Life', 'life', NULL)").run();
+
+        const categories = await categoryService.listCategories();
+        expect(categories).toHaveLength(2);
+        
+        const tech = categories.find(c => c.slug === 'tech');
+        const life = categories.find(c => c.slug === 'life');
+        
+        expect(tech.description).toBe('Technology related laws');
+        expect(life.description).toBeNull();
+    });
+
     it('should get category by id', async () => {
         const info = db.prepare("INSERT INTO categories (title, slug) VALUES ('Tech', 'tech')").run();
         const id = info.lastInsertRowid;
 
         const category = await categoryService.getCategory(id);
         expect(category.title).toBe('Tech');
+    });
+
+    it('should get category by id with description', async () => {
+        const info = db.prepare("INSERT INTO categories (title, slug, description) VALUES ('Tech', 'tech', 'Technology related laws')").run();
+        const id = info.lastInsertRowid;
+
+        const category = await categoryService.getCategory(id);
+        expect(category.title).toBe('Tech');
+        expect(category.description).toBe('Technology related laws');
+    });
+
+    it('should get category with null description', async () => {
+        const info = db.prepare("INSERT INTO categories (title, slug, description) VALUES ('Life', 'life', NULL)").run();
+        const id = info.lastInsertRowid;
+
+        const category = await categoryService.getCategory(id);
+        expect(category.title).toBe('Life');
+        expect(category.description).toBeNull();
     });
 });
