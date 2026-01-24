@@ -278,6 +278,7 @@ Get related laws from the same category(ies) as the specified law, sorted by sco
 **Error Responses:**
 
 - `400 Bad Request` - Invalid law ID
+- `404 Not Found` - Law not found
 
 ---
 
