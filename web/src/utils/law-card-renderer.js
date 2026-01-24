@@ -79,25 +79,25 @@ export function renderLawCard(law, options = {}) {
       <div class="law-card-footer">
         <div class="law-card-footer-left">
           ${renderButtonHTML({
-            variant: 'vote',
-            direction: 'up',
-            icon: 'thumbUp',
-            count: up,
-            vote: 'up',
-            lawId: safeId,
-            className: userVote === 'up' ? 'voted' : null,
-            ariaLabel: 'Upvote this law',
-          })}
+    variant: 'vote',
+    direction: 'up',
+    icon: 'thumbUp',
+    count: up,
+    vote: 'up',
+    lawId: safeId,
+    className: userVote === 'up' ? 'voted' : null,
+    ariaLabel: 'Upvote this law',
+  })}
           ${renderButtonHTML({
-            variant: 'vote',
-            direction: 'down',
-            icon: 'thumbDown',
-            count: down,
-            vote: 'down',
-            lawId: safeId,
-            className: userVote === 'down' ? 'voted' : null,
-            ariaLabel: 'Downvote this law',
-          })}
+    variant: 'vote',
+    direction: 'down',
+    icon: 'thumbDown',
+    count: down,
+    vote: 'down',
+    lawId: safeId,
+    className: userVote === 'down' ? 'voted' : null,
+    ariaLabel: 'Downvote this law',
+  })}
         </div>
         ${shareButtonsHtml}
       </div>
