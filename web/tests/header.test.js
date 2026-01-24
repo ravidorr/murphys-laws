@@ -62,6 +62,7 @@ describe('Header component', () => {
 
     expect(el.querySelector('[data-nav="home"]')).toBeTruthy();
     expect(el.querySelector('[data-nav="browse"]')).toBeTruthy();
+    expect(el.querySelector('[data-nav="categories"]')).toBeTruthy();
     expect(el.querySelector('[data-nav="calculator/sods-law"]')).toBeTruthy();
     expect(el.querySelector('[data-nav="submit"]')).toBeTruthy();
   });
