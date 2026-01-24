@@ -1,5 +1,4 @@
 // DOM utilities and event listener management
-import { getRandomLoadingMessage } from './constants.js';
 import { hydrateIcons } from './icons.js';
 import { renderLinkButtonHTML } from './button.js';
 
@@ -38,39 +37,6 @@ export function createErrorState(message = 'Something went wrong. Please try aga
   `;
   hydrateIcons(el);
   return el;
-}
-
-/**
- * Creates a loading placeholder element with ARIA live region
- * @param {string} message - Loading message (optional, defaults to random)
- * @returns {HTMLElement} Loading element
- */
-export function createLoadingPlaceholder(message) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'loading-placeholder';
-  wrapper.setAttribute('role', 'status');
-  wrapper.setAttribute('aria-live', 'polite');
-
-  const text = document.createElement('p');
-  text.className = 'small';
-  text.textContent = message || getRandomLoadingMessage();
-  wrapper.appendChild(text);
-
-  return wrapper;
-}
-
-/**
- * Wraps HTML content with a standard loading container
- * @param {string} innerMarkup - HTML markup to wrap (optional, defaults to random loading message)
- * @returns {string} Wrapper HTML containing the markup
- */
-export function wrapLoadingMarkup(innerMarkup) {
-  const content = innerMarkup || `<p class="small">${getRandomLoadingMessage()}</p>`;
-  return `
-    <div class="loading-placeholder" role="status" aria-live="polite">
-      ${content}
-    </div>
-  `;
 }
 
 /**

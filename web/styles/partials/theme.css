@@ -438,17 +438,6 @@
   color: var(--dark-link-hover);
 }
 
-/* Skeleton loading - dark mode */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .skeleton {
-    background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
-  }
-}
-
-:root[data-theme="dark"] .skeleton {
-  background: linear-gradient(90deg, var(--dark-skeleton-bg) 25%, var(--dark-skeleton-shimmer) 37%, var(--dark-skeleton-bg) 63%);
-}
-
 /* Search highlight - dark mode (ensure dark text on light yellow background for WCAG 1.4.3) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) mark {

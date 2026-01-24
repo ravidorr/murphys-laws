@@ -50,18 +50,19 @@ describe('LawOfTheDay component', () => {
     return el;
   }
 
-  it('renders skeleton when law is null', () => {
+  it('renders loading placeholder when law is null', () => {
     const el = mountLaw(null);
 
-    const skeleton = el.querySelector('.skeleton');
-    expect(skeleton).toBeTruthy();
-    expect(skeleton.getAttribute('role')).toBe('status');
+    const loading = el.querySelector('.loading-placeholder');
+    expect(loading).toBeTruthy();
+    expect(loading.getAttribute('role')).toBe('status');
+    expect(loading.getAttribute('aria-label')).toBe('Loading Law of the Day');
   });
 
-  it('renders skeleton when law is undefined', () => {
+  it('renders loading placeholder when law is undefined', () => {
     const el = mountLaw(undefined);
 
-    expect(el.querySelector('.skeleton')).toBeTruthy();
+    expect(el.querySelector('.loading-placeholder')).toBeTruthy();
   });
 
   it('renders law with all content', () => {

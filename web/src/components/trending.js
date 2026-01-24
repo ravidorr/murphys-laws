@@ -2,7 +2,8 @@
 // Refactored to use shared law card renderer
 
 import { fetchTrending } from '../utils/api.js';
-import { createErrorState, createLoadingPlaceholder } from '../utils/dom.js';
+import { createErrorState } from '../utils/dom.js';
+import { createLoading } from './loading.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
@@ -27,7 +28,7 @@ export function Trending() {
 
   const contentDiv = el.querySelector('.card-content');
   if (contentDiv) {
-    const loading = createLoadingPlaceholder();
+    const loading = createLoading();
     contentDiv.appendChild(loading);
   }
 

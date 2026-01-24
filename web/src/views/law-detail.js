@@ -6,6 +6,8 @@ import { toggleVote, getUserVote } from '../utils/voting.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { SocialShare, initSharePopovers } from '../components/social-share.js';
 import { updateSocialMetaTags } from '../utils/dom.js';
+// Note: law-detail uses template-based loading with getRandomLoadingMessage()
+// for text replacement, which is compatible with the unified loading approach
 import { hydrateIcons } from '@utils/icons.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { showSuccess } from '../components/notification.js';
