@@ -1,3 +1,5 @@
+import { renderButtonHTML } from './button.js';
+
 /**
  * Renders pagination controls for navigating through paginated data
  * @param {number} currentPage - The current page number (1-indexed)
@@ -40,18 +42,35 @@ export function renderPagination(currentPage, totalItems, itemsPerPage) {
       return `<span class="ellipsis">…</span>`;
     }
     const isCurrent = p === currentPage;
-    const disabled = isCurrent ? 'aria-current="page"' : '';
-    return `<button class="btn outline" data-page="${p}" ${disabled}>${p}</button>`;
+    return renderButtonHTML({
+      variant: 'secondary',
+      text: String(p),
+      page: p,
+      ariaCurrent: isCurrent ? 'page' : null,
+    });
   }).join('');
 
-  const prevDisabled = currentPage === 1 ? 'disabled aria-disabled="true"' : '';
-  const nextDisabled = currentPage === totalPages ? 'disabled aria-disabled="true"' : '';
+  const prevBtn = renderButtonHTML({
+    variant: 'secondary',
+    text: 'Previous',
+    page: currentPage - 1,
+    disabled: currentPage === 1,
+    ariaDisabled: currentPage === 1 ? true : null,
+  });
+
+  const nextBtn = renderButtonHTML({
+    variant: 'secondary',
+    text: 'Next',
+    page: currentPage + 1,
+    disabled: currentPage === totalPages,
+    ariaDisabled: currentPage === totalPages ? true : null,
+  });
 
   return `
     <div class="pagination">
-      <button class="btn outline" data-page="${currentPage - 1}" ${prevDisabled}>Previous</button>
+      ${prevBtn}
       ${pageButtons}
-      <button class="btn outline" data-page="${currentPage + 1}" ${nextDisabled}>Next</button>
+      ${nextBtn}
     </div>
   `;
 }

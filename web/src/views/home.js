@@ -29,7 +29,7 @@ export function renderHome(el, lawOfTheDay, _categories, onNavigate) {
   el.appendChild(toastWidget);
 
   // Add Submit Law section
-  const submitWidget = SubmitLawSection({ onNavigate });
+  const submitWidget = SubmitLawSection();
   el.appendChild(submitWidget);
 }
 

@@ -184,7 +184,7 @@ const routesMap = {
     const container = document.createElement('div');
     container.className = 'container page pt-0';
 
-    const submitSection = SubmitLawSection({ onNavigate });
+    const submitSection = SubmitLawSection();
     container.appendChild(submitSection);
     clearPageStructuredData();
     return layout(container, { hideAds: true });
