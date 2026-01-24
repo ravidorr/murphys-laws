@@ -3,7 +3,7 @@
 
 import templateHtml from '@views/templates/browse.html?raw';
 import { fetchLaws } from '../utils/api.js';
-import { wrapLoadingMarkup } from '../utils/dom.js';
+import { renderLoadingHTML } from '../components/loading.js';
 import { getRandomLoadingMessage, LAWS_PER_PAGE } from '../utils/constants.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { hydrateIcons } from '@utils/icons.js';
@@ -99,7 +99,7 @@ export function Browse({ searchQuery, onNavigate }) {
     const cardText = el.querySelector('#browse-laws-list');
     if (cardText) {
       cardText.setAttribute('aria-busy', 'true');
-      cardText.innerHTML = wrapLoadingMarkup();
+      cardText.innerHTML = renderLoadingHTML();
 
       // Disable pagination buttons during load
       /* v8 ignore next 3 - forEach callback coverage varies by v8 version */

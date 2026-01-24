@@ -1,4 +1,4 @@
-import { createErrorState, createLoadingPlaceholder, wrapLoadingMarkup, updateSocialMetaTags } from '../src/utils/dom.js';
+import { createErrorState, updateSocialMetaTags } from '../src/utils/dom.js';
 
 describe('DOM utilities', () => {
   describe('createErrorState', () => {
@@ -18,42 +18,8 @@ describe('DOM utilities', () => {
     });
   });
 
-  describe('createLoadingPlaceholder', () => {
-    it('creates loading placeholder with random message when no message provided', () => {
-      const el = createLoadingPlaceholder();
-
-      expect(el.className).toBe('loading-placeholder');
-      expect(el.getAttribute('role')).toBe('status');
-      expect(el.getAttribute('aria-live')).toBe('polite');
-      expect(el.querySelector('p.small')).toBeTruthy();
-      expect(el.querySelector('p.small').textContent).toBeTruthy();
-    });
-
-    it('creates loading placeholder with custom message', () => {
-      const el = createLoadingPlaceholder('Loading...');
-
-      expect(el.querySelector('p.small').textContent).toBe('Loading...');
-    });
-  });
-
-  describe('wrapLoadingMarkup', () => {
-    it('wraps custom markup', () => {
-      const result = wrapLoadingMarkup('<p>Custom content</p>');
-
-      expect(result).toContain('loading-placeholder');
-      expect(result).toContain('Custom content');
-      expect(result).toContain('role="status"');
-      expect(result).toContain('aria-live="polite"');
-    });
-
-    it('uses random message when no markup provided', () => {
-      const result = wrapLoadingMarkup();
-
-      expect(result).toContain('loading-placeholder');
-      expect(result).toContain('role="status"');
-      expect(result).toContain('aria-live="polite"');
-    });
-  });
+  // Note: Loading functionality moved to web/src/components/loading.js
+  // See web/tests/loading.test.js for loading component tests
 
   describe('updateSocialMetaTags', () => {
     beforeEach(() => {

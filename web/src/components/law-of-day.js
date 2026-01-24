@@ -7,15 +7,18 @@ import { getUserVote, toggleVote } from '../utils/voting.js';
 import { showError, showSuccess } from './notification.js';
 import { SocialShare } from './social-share.js';
 import { hydrateIcons } from '../utils/icons.js';
+import { createLoading } from './loading.js';
 
 export function LawOfTheDay({ law, onNavigate }) {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
   if (!law) {
-    el.innerHTML = `
-      <div class="skeleton" role="status" aria-label="Loading Law of the Day" style="min-height: 300px;"></div>
-    `;
+    const loading = createLoading({ 
+      size: 'large', 
+      ariaLabel: 'Loading Law of the Day' 
+    });
+    el.appendChild(loading);
     return el;
   }
 
