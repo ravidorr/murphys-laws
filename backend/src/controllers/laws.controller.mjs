@@ -56,6 +56,12 @@ export class LawController {
       return badRequest(res, 'Invalid law ID', req);
     }
 
+    // Verify the law exists before fetching related laws
+    const law = await this.lawService.getLaw(lawId);
+    if (!law) {
+      return notFound(res, req);
+    }
+
     // Parse query parameters from URL
     const url = new URL(req.url, `http://${req.headers.host}`);
     const limitParam = url.searchParams.get('limit');
