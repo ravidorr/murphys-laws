@@ -6,7 +6,7 @@ import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calcul
 import { SubmitLawSection } from '@components/submit-law.js';
 import { fetchLawOfTheDay } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
-import { getRandomLoadingMessage } from '../utils/constants.js';
+import { renderLoadingHTML } from '../components/loading.js';
 import { triggerAdSense } from '../utils/ads.js';
 
 // Exported for testing
@@ -41,9 +41,7 @@ export function Home({ onNavigate }) {
 
   el.innerHTML = `
     <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">The Ultimate Murphy's Law Archive</h1>
-    <div class="text-center py-12">
-      <p class="small text-muted-fg">${getRandomLoadingMessage()}</p>
-    </div>
+    ${renderLoadingHTML({ size: 'large' })}
   `;
 
   function fetchAndRender() {
