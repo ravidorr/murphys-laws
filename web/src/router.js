@@ -28,7 +28,11 @@ export function navigate(name, param) {
   }
   
   // Manually trigger render
-  if (renderFn) renderFn();
+  if (renderFn) {
+    renderFn();
+  } else if (typeof console !== 'undefined' && console.warn) {
+    console.warn('navigate() called before startRouter() was initialized. Navigation will not render.');
+  }
 }
 
 // Exported for testing
