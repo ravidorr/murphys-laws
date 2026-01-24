@@ -14,14 +14,13 @@
  * Requires: npm install sharp --save-dev
  */
 
-import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { join, extname, basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 // Get script directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const publicDir = join(__dirname, '..', 'public');
 
 // Configuration
 const CONFIG = {
@@ -123,7 +122,7 @@ function formatBytes(bytes) {
 async function optimizeImage(sharp, file) {
   const results = [];
   const image = sharp(file.path);
-  const metadata = await image.metadata();
+  const _metadata = await image.metadata();
   
   // Optimize original format
   let optimizedBuffer;
@@ -219,7 +218,7 @@ async function main() {
   console.log(`Found ${uniqueFiles.length} image(s) to process:\n`);
   
   let totalOriginalSize = 0;
-  let totalNewSize = 0;
+  let _totalNewSize = 0;
   let totalSavings = 0;
   
   for (const file of uniqueFiles) {
@@ -230,7 +229,7 @@ async function main() {
       
       for (const result of results) {
         totalOriginalSize += result.originalSize;
-        totalNewSize += result.newSize;
+        _totalNewSize += result.newSize;
         totalSavings += result.savings;
         
         const action = result.type === 'webp' ? 'WebP created' : 'Optimized';
