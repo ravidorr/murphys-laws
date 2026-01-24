@@ -24,6 +24,16 @@ vi.mock('../src/utils/theme.js', () => ({
 
 import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../src/utils/theme.js';
 
+// Mock SearchAutocomplete module
+vi.mock('../src/components/search-autocomplete.js', () => ({
+  SearchAutocomplete: vi.fn(() => ({
+    cleanup: vi.fn(),
+    isOpen: vi.fn(() => false)
+  }))
+}));
+
+import { SearchAutocomplete } from '../src/components/search-autocomplete.js';
+
 describe('Header component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -601,6 +611,59 @@ describe('Header component', () => {
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);
+    });
+  });
+
+  describe('search autocomplete integration', () => {
+    it('should initialize autocomplete on search input', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {}
+      });
+
+      const input = el.querySelector('#header-search');
+      expect(input).toBeTruthy();
+      // Autocomplete should be initialized (mocked function should be called)
+      expect(SearchAutocomplete).toHaveBeenCalled();
+    });
+
+    it('should cleanup autocomplete when header cleanup is called', () => {
+      const mockCleanup = vi.fn();
+      SearchAutocomplete.mockReturnValue({ cleanup: mockCleanup, isOpen: () => false });
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {}
+      });
+
+      if (el.cleanup) {
+        el.cleanup();
+      }
+
+      expect(mockCleanup).toHaveBeenCalled();
+    });
+
+    it('should call onNavigate when suggestion is selected', () => {
+      const mockOnNavigate = vi.fn();
+      const mockCleanup = vi.fn();
+      let onSelectCallback = null;
+
+      SearchAutocomplete.mockImplementation(({ onSelect }) => {
+        onSelectCallback = onSelect;
+        return { cleanup: mockCleanup, isOpen: () => false };
+      });
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: mockOnNavigate
+      });
+
+      // Simulate suggestion selection
+      if (onSelectCallback) {
+        onSelectCallback({ id: 123 });
+      }
+
+      expect(mockOnNavigate).toHaveBeenCalledWith('law', 123);
     });
   });
 });

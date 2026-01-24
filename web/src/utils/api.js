@@ -82,6 +82,27 @@ export async function fetchLaw(lawId) {
 }
 
 /**
+ * Fetches related laws for a given law ID
+ * @param {number|string} lawId - Law ID to find related laws for
+ * @param {Object} options - Fetch options
+ * @param {number} options.limit - Maximum number of related laws to return (1-10, default 5)
+ * @returns {Promise<Object>} Response with data array of related laws and law_id
+ */
+export async function fetchRelatedLaws(lawId, { limit = 5 } = {}) {
+  const numericId = Number(lawId);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error('Invalid law ID');
+  }
+
+  const params = {};
+  if (limit && limit !== 5) {
+    params.limit = String(limit);
+  }
+
+  return await fetchAPI(`/api/v1/laws/${numericId}/related`, params);
+}
+
+/**
  * Fetches laws with pagination and sorting
  * @param {Object} options - Fetch options
  * @param {number} options.limit - Number of laws to fetch
@@ -167,5 +188,31 @@ export async function fetchRecentlyAdded(limit = 3) {
  */
 export async function fetchCategories() {
   return await fetchAPI('/api/v1/categories');
+}
+
+/**
+ * Fetches search suggestions for autocomplete
+ * @param {Object} options - Fetch options
+ * @param {string} options.q - Search query (min 2 characters)
+ * @param {number} options.limit - Number of suggestions to fetch (default: 10, max: 20)
+ * @returns {Promise<Object>} Response with suggestions data
+ */
+export async function fetchSuggestions({ q, limit = 10 } = {}) {
+  if (!q || q.trim().length < 2) {
+    return { data: [] };
+  }
+
+  const params = {
+    q: q.trim(),
+    limit: String(Math.min(limit, 20))
+  };
+
+  try {
+    return await fetchAPI('/api/v1/laws/suggestions', params);
+  } catch (error) {
+    // Gracefully handle errors - return empty array
+    console.error('Failed to fetch suggestions:', error);
+    return { data: [] };
+  }
 }
 
