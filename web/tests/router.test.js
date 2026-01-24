@@ -66,6 +66,13 @@ describe('Router', () => {
     expect(route.param).toBeNull();
   });
 
+  it('parses categories route', () => {
+    history.replaceState(null, '', '/categories');
+    const route = currentRoute();
+    expect(route.name).toBe('categories');
+    expect(route.param).toBeNull();
+  });
+
   it('parses index.html as home', () => {
     history.replaceState(null, '', '/index.html');
     const route = currentRoute();
