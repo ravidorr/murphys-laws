@@ -298,18 +298,6 @@
   color: var(--btn-primary-bg);
 }
 
-.lod-read-more {
-  display: inline-block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--btn-primary-bg);
-  margin-top: 0.5rem;
-}
-
-.lod-link:hover .lod-read-more {
-  text-decoration: underline;
-}
-
 /* Footer bar inspired by Stitch */
 .section-footer {
   display: flex;

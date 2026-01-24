@@ -201,15 +201,6 @@ describe('LawOfTheDay component', () => {
     });
   });
 
-  it('shows "Read more" link text', () => {
-    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
-    const el = mountLaw(law);
-
-    const readMore = el.querySelector('.lod-read-more');
-    expect(readMore).toBeTruthy();
-    expect(readMore.textContent).toBe('Read more');
-  });
-
   it('does not navigate when law-id is empty', () => {
     const law = { id: '', text: 'Test law', upvotes: 10, downvotes: 2 };
     let navigated = false;
