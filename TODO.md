@@ -10,14 +10,14 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## UX Improvements (Require Backend Work)
 - [x] **Search Autocomplete/Suggestions:** ~~Add debounced search suggestions as the user types in the header search field. Requires a new backend endpoint (`/api/v1/laws/suggestions`) to return top matching laws. Include keyboard navigation (arrow keys, Enter) for the dropdown.~~ Done - added debounced search autocomplete (240ms delay, configurable) with keyboard navigation (ArrowDown/ArrowUp, Enter, Escape) and WCAG-compliant contrast. Backend endpoint `/api/v1/laws/suggestions` returns top matching laws optimized for autocomplete.
-- [ ] **Related Laws Section on Law Detail Page:** Show 3-5 related laws from the same category on the law detail page. Requires adding a `getRelatedLaws(lawId, categoryId)` method to `backend/src/services/laws.service.mjs` and a new API endpoint.
+- [x] **Related Laws Section on Law Detail Page:** ~~Show 3-5 related laws from the same category on the law detail page. Requires adding a `getRelatedLaws(lawId, categoryId)` method to `backend/src/services/laws.service.mjs` and a new API endpoint.~~ Done - law detail page displays related laws from the same category with voting and share functionality.
 - [x] **Category Descriptions:** ~~Add descriptions to category pages. Requires database migration to add `description` column to categories table, then populate descriptions for all 55 categories.~~ Done - added migration `010_populate_category_descriptions.sql` with witty descriptions for all 55 categories. Descriptions display on category detail pages with fallback text and are included in structured data.
 - [x] **Browse Laws by Category Page:** ~~Add a dedicated page to browse all categories with their descriptions.~~ Done - added `/categories` route with responsive grid of clickable category cards showing title, description, and law count. Accessible via hamburger menu "Browse Laws by Category" option.
-- [ ] **Site Statistics API Endpoint:** Create `/api/v1/stats` endpoint to expose aggregate statistics (total laws count, category count, total votes). This would enable displaying live stats on the About page (e.g., "Browse over X laws across Y categories").
-- [ ] **Advanced Filtering:** Add filters for date range, minimum votes, and exclude categories.
+- ~~**Site Statistics API Endpoint:** Create `/api/v1/stats` endpoint to expose aggregate statistics (total laws count, category count, total votes). This would enable displaying live stats on the About page (e.g., "Browse over X laws across Y categories").~~ (Cancelled)
+- ~~**Advanced Filtering:** Add filters for date range, minimum votes, and exclude categories.~~ (Cancelled)
 
 ## UX Improvements (Frontend Only)
-- [ ] **User Favorites/Bookmarks:** Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.
+- [x] **User Favorites/Bookmarks:** ~~Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.~~ Done - added heart button to law cards (toggles favorite state), dedicated `/favorites` page with empty state, localStorage persistence. Feature controlled by `VITE_FEATURE_FAVORITES` env var or localStorage admin override (`murphys_ff_favorites`).
 - [ ] **Copy as Image:** Add "copy as image" feature to share buttons.
 
 ## User Engagement (Require Backend Work)

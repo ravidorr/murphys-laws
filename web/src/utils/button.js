@@ -318,7 +318,7 @@ export function createButton(options = {}) {
     button.setAttribute('data-vote', vote);
   }
   if (tooltip !== null) {
-    button.setAttribute('data-title', tooltip);
+    button.setAttribute('data-tooltip', tooltip);
   }
 
   // Set ARIA attributes
@@ -430,7 +430,7 @@ export function renderButtonHTML(options = {}) {
     attrs.push(`data-vote="${vote}"`);
   }
   if (tooltip !== null) {
-    attrs.push(`data-title="${tooltip}"`);
+    attrs.push(`data-tooltip="${tooltip}"`);
   }
 
   // ARIA attributes

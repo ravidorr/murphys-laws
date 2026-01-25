@@ -83,6 +83,170 @@ a.btn:focus-visible,
   outline-offset: 3px;
 }
 
+/* ==========================
+   Tooltip Component
+   Usage: Add [data-tooltip="text"] attribute to any element
+   Positions: data-tooltip-pos="top" (default), "bottom", "left", "right"
+   ========================== */
+
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::before,
+[data-tooltip]::after {
+  position: absolute;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+/* Tooltip text - Light mode: dark bg, light text */
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+}
+
+/* Tooltip arrow - uses border trick for CSS triangle */
+[data-tooltip]::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #1f2937;
+
+  /* No border-bottom - required for downward-pointing triangle */
+}
+
+/* Show on hover and focus */
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::before,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Default position: top */
+[data-tooltip]::after,
+[data-tooltip][data-tooltip-pos="top"]::after {
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+[data-tooltip]::before,
+[data-tooltip][data-tooltip-pos="top"]::before {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Position: bottom */
+[data-tooltip][data-tooltip-pos="bottom"]::after {
+  top: calc(100% + 6px);
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+[data-tooltip][data-tooltip-pos="bottom"]::before {
+  top: 100%;
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top: none;
+  border-bottom: 6px solid #1f2937;
+}
+
+/* Position: left */
+[data-tooltip][data-tooltip-pos="left"]::after {
+  inset: 50% calc(100% + 6px) auto auto;
+  transform: translateY(-50%);
+}
+
+[data-tooltip][data-tooltip-pos="left"]::before {
+  inset: 50% 100% auto auto;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid #1f2937;
+  border-right: none;
+}
+
+/* Position: right */
+[data-tooltip][data-tooltip-pos="right"]::after {
+  inset: 50% auto auto calc(100% + 6px);
+  transform: translateY(-50%);
+}
+
+[data-tooltip][data-tooltip-pos="right"]::before {
+  inset: 50% auto auto 100%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #1f2937;
+  border-left: none;
+}
+
+/* Dark mode - White bg, dark text for contrast */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-tooltip]::after {
+    background: #fff;
+    color: #1f2937;
+  }
+
+  :root:not([data-theme="light"]) [data-tooltip]::before,
+  :root:not([data-theme="light"]) [data-tooltip][data-tooltip-pos="top"]::before {
+    border-top-color: #fff;
+  }
+
+  :root:not([data-theme="light"]) [data-tooltip][data-tooltip-pos="bottom"]::before {
+    border-bottom-color: #fff;
+  }
+
+  :root:not([data-theme="light"]) [data-tooltip][data-tooltip-pos="left"]::before {
+    border-left-color: #fff;
+  }
+
+  :root:not([data-theme="light"]) [data-tooltip][data-tooltip-pos="right"]::before {
+    border-right-color: #fff;
+  }
+}
+
+:root[data-theme="dark"] [data-tooltip]::after {
+  background: #fff;
+  color: #1f2937;
+}
+
+:root[data-theme="dark"] [data-tooltip]::before,
+:root[data-theme="dark"] [data-tooltip][data-tooltip-pos="top"]::before {
+  border-top-color: #fff;
+}
+
+:root[data-theme="dark"] [data-tooltip][data-tooltip-pos="bottom"]::before {
+  border-bottom-color: #fff;
+}
+
+:root[data-theme="dark"] [data-tooltip][data-tooltip-pos="left"]::before {
+  border-left-color: #fff;
+}
+
+:root[data-theme="dark"] [data-tooltip][data-tooltip-pos="right"]::before {
+  border-right-color: #fff;
+}
+
 /* Theme toggle button */
 .theme-toggle {
   display: inline-flex;
@@ -371,77 +535,6 @@ textarea.form-control,
 .submit-helper-text span,
 .submit-char-counter {
   line-height: 1.4;
-}
-
-.custom-tooltip {
-  position: relative; /* Required for positioning the tooltip */
-  cursor: help; /* Changes cursor to indicate interactivity */
-}
-
-.custom-tooltip::after {
-  content: attr(data-title); /* Displays the content of data-title */
-  position: absolute;
-  bottom: 100%; /* Positions the tooltip above the element */
-  left: 50%;
-  transform: translateX(-50%); /* Centers the tooltip horizontally */
-  background-color: var(--bg);
-  color: var(--fg);
-  padding: 5px 10px;
-  border-radius: 4px;
-  white-space: nowrap; /* Prevents text from wrapping */
-  opacity: 0; /* Initially hidden */
-  visibility: hidden;
-  transition: opacity 0.3s, visibility 0.3s; /* Smooth transition */
-  z-index: 10; /* Ensures tooltip appears above other content */
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 8px var(--shadow-light);
-}
-
-.custom-tooltip::before {
-  content: ""; /* Creates the caret */
-  position: absolute;
-  top: 100%; /* Positions the caret below the tooltip */
-  left: 50%;
-  transform: translateX(-50%); /* Centers the caret horizontally */
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid var(--bg); /* Creates downward-pointing triangle */
-  opacity: 0; /* Initially hidden */
-  visibility: hidden;
-  transition: opacity 0.3s, visibility 0.3s; /* Smooth transition */
-  z-index: 11; /* Ensures caret appears above tooltip */
-}
-
-.custom-tooltip:hover::after,
-.custom-tooltip:hover::before,
-.custom-tooltip:focus::after,
-.custom-tooltip:focus::before,
-.custom-tooltip:focus-within::after,
-.custom-tooltip:focus-within::before {
-  opacity: 1; /* Shows the tooltip and caret on hover or focus (WCAG 1.4.13) */
-  visibility: visible;
-}
-
-/* Bottom-positioned tooltip variant (for elements near top of viewport) */
-.custom-tooltip-bottom::after {
-  bottom: auto;
-  top: 100%; /* Positions the tooltip below the element */
-  margin-top: 8px;
-}
-
-.custom-tooltip-bottom::before {
-  top: auto;
-  bottom: 100%; /* Positions the caret above the tooltip */
-  margin-bottom: 2px;
-  border-top: none;
-  border-bottom: 6px solid var(--bg); /* Creates upward-pointing triangle */
-}
-
-/* Ensure button tooltips keep pointer cursor */
-button.custom-tooltip {
-  cursor: pointer;
 }
 
 /* Search info text */

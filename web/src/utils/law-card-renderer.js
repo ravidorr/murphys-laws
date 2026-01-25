@@ -4,6 +4,8 @@
 import { firstAttributionLine } from './attribution.js';
 import { escapeHtml, highlightSearchTerm } from './sanitize.js';
 import { getUserVote } from './voting.js';
+import { isFavorite } from './favorites.js';
+import { isFavoritesEnabled } from './feature-flags.js';
 import { renderShareButtonsHTML } from '../components/social-share.js';
 import { renderButtonHTML } from './button.js';
 
@@ -68,6 +70,23 @@ export function renderLawCard(law, options = {}) {
     lawText: law.text || ''
   });
 
+  // Generate favorite button HTML (only if feature enabled)
+  const isFav = isFavoritesEnabled() && isFavorite(law.id);
+  const favoriteTooltip = isFav ? 'Remove from favorites' : 'Add to favorites';
+  const favoriteButtonHtml = isFavoritesEnabled()
+    ? renderButtonHTML({
+      variant: 'vote',
+      direction: 'up', // Required for vote variant
+      icon: isFav ? 'heartFilled' : 'heart',
+      count: '', // No count for favorites
+      lawId: safeId,
+      action: 'favorite',
+      className: isFav ? 'favorited' : null,
+      ariaLabel: favoriteTooltip,
+      tooltip: favoriteTooltip,
+    })
+    : '';
+
   // Return HTML string with keyboard accessibility (WCAG 2.1.1)
   return `
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
@@ -98,6 +117,7 @@ export function renderLawCard(law, options = {}) {
     className: userVote === 'down' ? 'voted' : null,
     ariaLabel: 'Downvote this law',
   })}
+          ${favoriteButtonHtml}
         </div>
         ${shareButtonsHtml}
       </div>

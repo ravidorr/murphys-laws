@@ -5,6 +5,16 @@ vi.mock('../src/utils/voting.js', () => ({
   getUserVote: vi.fn(() => null)
 }));
 
+// Mock feature flags
+vi.mock('../src/utils/feature-flags.js', () => ({
+  isFavoritesEnabled: vi.fn(() => true)
+}));
+
+// Mock favorites utility
+vi.mock('../src/utils/favorites.js', () => ({
+  isFavorite: vi.fn(() => false)
+}));
+
 describe('law-card-renderer', () => {
   describe('renderLawCard', () => {
     it('renders a basic law card', () => {
@@ -106,6 +116,21 @@ describe('law-card-renderer', () => {
       expect(html).toContain('3');
       expect(html).toContain('data-vote="up"');
       expect(html).toContain('data-vote="down"');
+    });
+
+    it('renders favorite button with tooltip when feature enabled', () => {
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).toContain('data-action="favorite"');
+      expect(html).toContain('data-tooltip="Add to favorites"');
+    });
+
+    it('renders favorite button with correct aria-label', () => {
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).toContain('aria-label="Add to favorites"');
     });
   });
 

@@ -398,9 +398,8 @@ describe('Header component', () => {
       });
 
       const themeToggle = el.querySelector('#theme-toggle');
-      expect(themeToggle.getAttribute('data-title')).toBe('Auto mode');
-      expect(themeToggle.classList.contains('custom-tooltip')).toBe(true);
-      expect(themeToggle.classList.contains('custom-tooltip-bottom')).toBe(true);
+      expect(themeToggle.getAttribute('data-tooltip')).toBe('Auto mode');
+      expect(themeToggle.getAttribute('data-tooltip-pos')).toBe('bottom');
     });
 
     it('cycles theme when toggle is clicked', () => {
@@ -471,7 +470,7 @@ describe('Header component', () => {
 
       themeToggle.click();
 
-      expect(themeToggle.getAttribute('data-title')).toBe('Light mode');
+      expect(themeToggle.getAttribute('data-tooltip')).toBe('Light mode');
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);
@@ -497,7 +496,7 @@ describe('Header component', () => {
       }));
 
       expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
-      expect(themeToggle.getAttribute('data-title')).toBe('Dark mode');
+      expect(themeToggle.getAttribute('data-tooltip')).toBe('Dark mode');
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);
@@ -521,7 +520,7 @@ describe('Header component', () => {
         detail: { theme: 'light', effectiveTheme: 'light' }
       }));
 
-      expect(themeToggle.getAttribute('data-title')).toBe('Light mode');
+      expect(themeToggle.getAttribute('data-tooltip')).toBe('Light mode');
 
       if (el.cleanup) el.cleanup();
       document.body.removeChild(el);

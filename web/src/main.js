@@ -7,6 +7,7 @@ import { Browse } from './views/browse.js';
 import { LawDetail } from './views/law-detail.js';
 import { CategoryDetail } from './views/category-detail.js';
 import { Categories } from './views/categories.js';
+import { Favorites } from './views/favorites.js';
 import { SubmitLawSection } from './components/submit-law.js';
 import { Calculator } from './views/sods-calculator.js';
 import { ButteredToastCalculator } from './views/buttered-toast-calculator.js';
@@ -16,6 +17,8 @@ import { Privacy } from './views/privacy.js';
 import { Terms } from './views/terms.js';
 import { Contact } from './views/contact.js';
 import { NotFound } from './views/not-found.js';
+import { isFavoritesEnabled } from './utils/feature-flags.js';
+import { toggleFavorite } from './utils/favorites.js';
 import {
   setSiteStructuredData,
   setHomeStructuredData,
@@ -179,6 +182,14 @@ const routesMap = {
     clearPageStructuredData();
     return layout(Categories({ onNavigate }));
   },
+  favorites: () => {
+    clearPageStructuredData();
+    // If feature disabled, redirect to home
+    if (!isFavoritesEnabled()) {
+      return layout(Home({ onNavigate }));
+    }
+    return layout(Favorites({ onNavigate }));
+  },
   law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData })),
   submit: () => {
     const container = document.createElement('div');
@@ -238,6 +249,54 @@ const notFoundRoute = () => {
 startRouter(app, notFoundRoute);
 initAnalyticsBootstrap();
 initKeyboardShortcuts();
+
+// Global event delegation for favorite buttons
+if (isFavoritesEnabled()) {
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    // Handle favorite button clicks
+    const favoriteBtn = target.closest('[data-action="favorite"]');
+    if (favoriteBtn) {
+      e.stopPropagation();
+      const lawId = favoriteBtn.getAttribute('data-law-id');
+      if (!lawId) return;
+
+      // Get law data from the card
+      const lawCard = favoriteBtn.closest('.law-card-mini');
+      const lawText = lawCard?.querySelector('.law-card-text')?.textContent?.trim() || '';
+
+      // Toggle favorite state
+      const isNowFavorite = toggleFavorite({
+        id: lawId,
+        text: lawText,
+      });
+
+      // Update button visual state
+      const newTooltip = isNowFavorite ? 'Remove from favorites' : 'Add to favorites';
+      favoriteBtn.classList.toggle('favorited', isNowFavorite);
+
+      // Update icon
+      const icon = favoriteBtn.querySelector('[data-icon-name]');
+      if (icon) {
+        const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
+        icon.setAttribute('data-icon-name', newIconName);
+        // Re-render the icon by importing hydrateIcons dynamically
+        import('./utils/icons.js').then(({ createIcon }) => {
+          const newIcon = createIcon(newIconName);
+          if (newIcon && icon.parentNode) {
+            icon.parentNode.replaceChild(newIcon, icon);
+          }
+        });
+      }
+
+      // Update aria-label and tooltip
+      favoriteBtn.setAttribute('aria-label', newTooltip);
+      favoriteBtn.setAttribute('data-tooltip', newTooltip);
+    }
+  });
+}
 
 // Defer AdSense loading to ensure content is present first
 import { setupAdSense } from './utils/ads.js';

@@ -4,8 +4,10 @@
 
 <div data-law-content hidden>
   <div data-law-card-container></div>
-  <section class="related-laws-section" data-related-laws hidden>
-    <h3 class="related-laws-title"><span class="accent-text">Related</span> Laws</h3>
+  <section class="section section-card related-laws-section" data-related-laws hidden>
+    <div class="section-header">
+      <h3 class="section-title"><span class="accent-text">Related</span> Laws</h3>
+    </div>
     <div class="related-laws-list" data-related-laws-list></div>
   </section>
 </div>
@@ -56,6 +58,10 @@
         <button type="button" class="vote-btn count-down" data-vote="down" data-id="" aria-label="Downvote this law">
           <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
           <span class="count-num" data-downvote-count>0</span>
+        </button>
+        <button type="button" class="vote-btn count-up" data-action="favorite" data-id="" data-favorite-btn aria-label="Add to favorites" data-tooltip="Add to favorites" hidden>
+          <span class="icon" data-icon="heart" aria-hidden="true"></span>
+          <span class="count-num"></span>
         </button>
       </div>
       <div class="right">

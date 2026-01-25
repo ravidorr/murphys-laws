@@ -173,10 +173,10 @@ describe('Button component', () => {
         expect(localThis.btn.getAttribute('data-vote')).toBe('up');
       });
 
-      it('sets data-title (tooltip) attribute', () => {
+      it('sets data-tooltip attribute for CSS tooltip', () => {
         const localThis = {};
         localThis.btn = createButton({ text: 'Help', tooltip: 'Click for help' });
-        expect(localThis.btn.getAttribute('data-title')).toBe('Click for help');
+        expect(localThis.btn.getAttribute('data-tooltip')).toBe('Click for help');
       });
     });
 

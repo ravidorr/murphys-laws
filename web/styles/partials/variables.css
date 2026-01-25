@@ -27,6 +27,11 @@
   --error-text: #991b1b;
   --error-dark: #5e0010;
 
+  /* Semantic colors - Favorite */
+  --favorite-color: #c2185b; /* Pink/magenta for favorites */
+  --favorite-bg: #fce4ec;
+  --favorite-border: #f48fb1;
+
   /* Semantic colors - Warning */
   --warning-bg: #fff8e1;
   --warning-text: #5a4300;
@@ -81,4 +86,6 @@
   --dark-error-fg: #ffc4cc;
   --dark-dark-bg: #2a1b1b;
   --dark-dark-fg: #f0d6d6;
+  --dark-favorite-color: #f06292; /* Lighter pink for dark mode */
+  --dark-favorite-bg: #3c1525;
 }
