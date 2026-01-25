@@ -383,6 +383,43 @@
   font-weight: 600;
 }
 
+/* Favorite button styles */
+.vote-btn[data-action="favorite"] {
+  color: var(--favorite-color, #c2185b);
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vote-btn[data-action="favorite"]:hover {
+  color: var(--favorite-color, #e91e63);
+}
+
+.vote-btn[data-action="favorite"] .icon {
+  color: var(--favorite-color, #c2185b);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.vote-btn[data-action="favorite"]:hover .icon {
+  transform: scale(1.15);
+}
+
+.vote-btn.favorited[data-action="favorite"] {
+  background: color-mix(in oklab, var(--favorite-color, #e91e63) 15%, transparent 85%);
+  color: var(--favorite-color, #e91e63);
+}
+
+.vote-btn.favorited[data-action="favorite"] .icon {
+  transform: scale(1.1);
+  color: var(--favorite-color, #e91e63);
+}
+
+/* Hide count for favorite button */
+.vote-btn[data-action="favorite"] .count-num {
+  display: none;
+}
+
 .icon {
   width: 1.5rem;
   height: 1.5rem;
@@ -873,14 +910,6 @@
 /* Related Laws Section */
 .related-laws-section {
   margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
-}
-
-.related-laws-title {
-  font-size: 1.25rem;
-  margin: 0 0 1rem;
-  font-weight: 600;
 }
 
 .related-laws-list {
@@ -889,6 +918,7 @@
 }
 
 .related-laws-list .law-card-mini {
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -970,4 +1000,29 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ==========================
+   Favorites Page
+   ========================== */
+
+.favorites-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.favorites-actions.hidden {
+  display: none;
+}
+
+/* Dark mode: adjust favorite color */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --favorite-color: var(--dark-favorite-color);
+  }
+}
+
+:root[data-theme="dark"] {
+  --favorite-color: var(--dark-favorite-color);
 }

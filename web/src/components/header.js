@@ -3,6 +3,7 @@ import templateHtml from '@components/templates/header.html?raw';
 import { hydrateIcons, createIcon } from '../utils/icons.js';
 import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.js';
 import { SearchAutocomplete } from './search-autocomplete.js';
+import { isFavoritesEnabled } from '../utils/feature-flags.js';
 
 export function Header({ onSearch, onNavigate }) {
   const header = document.createElement('header');
@@ -13,6 +14,21 @@ export function Header({ onSearch, onNavigate }) {
   
   // Initialize theme system
   initTheme();
+
+  // Conditionally inject favorites nav item if feature is enabled
+  if (isFavoritesEnabled()) {
+    const navList = header.querySelector('#nav-dropdown ul');
+    const browseItem = navList?.querySelector('[data-nav="browse"]')?.closest('li');
+    if (browseItem && navList) {
+      const favoritesItem = document.createElement('li');
+      favoritesItem.innerHTML = `
+        <a href="/favorites" class="nav-dropdown-item" data-nav="favorites">
+          My Favorites
+        </a>
+      `;
+      browseItem.after(favoritesItem);
+    }
+  }
   
   // Hydrate icons
   hydrateIcons(header);
@@ -51,7 +67,7 @@ export function Header({ onSearch, onNavigate }) {
     
     // Update aria-label and tooltip
     themeToggle.setAttribute('aria-label', label);
-    themeToggle.setAttribute('data-title', tooltip);
+    themeToggle.setAttribute('data-tooltip', tooltip);
     
     // Replace the icon
     const existingIcon = themeToggle.querySelector('.icon');
