@@ -1,3 +1,12 @@
+import { vi } from 'vitest';
+
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
 import { fetchAPI, fetchLaw, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.js';
 
 describe('API utilities', () => {
@@ -665,14 +674,12 @@ describe('API utilities', () => {
     });
 
     it('returns empty array on API error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       fetchSpy.mockRejectedValue(new Error('API Error'));
 
       const result = await fetchSuggestions({ q: 'test' });
 
       expect(result).toEqual({ data: [] });
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch suggestions:', expect.any(Error));
-      consoleSpy.mockRestore();
+      expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('returns empty array when both primary and fallback fail', async () => {

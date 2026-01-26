@@ -247,6 +247,28 @@ describe('SubmitLawSection component', () => {
     });
   });
 
+  it('does not load categories twice', async () => {
+    const fetchSpy = vi.spyOn(api, 'fetchAPI').mockResolvedValue({
+      data: [{ id: 1, title: 'General' }]
+    });
+
+    const el = mountSection({ append: true });
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // First load happened
+    const firstCallCount = fetchSpy.mock.calls.length;
+
+    // Trigger focus again to try to load categories again
+    const categorySelect = el.querySelector('#submit-category');
+    categorySelect.dispatchEvent(new Event('focus', { bubbles: true }));
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should not have made additional API calls (categories already loaded)
+    expect(fetchSpy.mock.calls.length).toBe(firstCallCount);
+  });
+
   it('handles category loading error gracefully', async () => {
     vi.spyOn(api, 'fetchAPI').mockRejectedValue(new Error('API failed'));
 

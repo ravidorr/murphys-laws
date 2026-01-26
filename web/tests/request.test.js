@@ -183,6 +183,17 @@ describe('request utilities', () => {
         .rejects.toThrow('The requested resource was not found');
     });
 
+    it('throws error when response is OK but JSON parsing fails', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => { throw new Error('Invalid JSON'); }
+      });
+
+      await expect(apiRequest('/api/test', { skipFallback: true }))
+        .rejects.toThrow('Invalid response from server. Please try again.');
+    });
+
     it('handles 404 error responses', async () => {
       fetchSpy.mockResolvedValue({
         ok: false,

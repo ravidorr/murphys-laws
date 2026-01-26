@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Categories } from '../src/views/categories.js';
 import * as api from '../src/utils/api.js';
 
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
+
 // Mock dependencies
 vi.mock('../src/utils/api.js', () => ({
   fetchCategories: vi.fn()
@@ -184,6 +192,7 @@ describe('Categories view', () => {
 
     expect(el.textContent).toContain('Failed to load categories');
     expect(el.querySelector('#retry-categories')).toBeTruthy();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('retries loading on retry button click', async () => {

@@ -1,5 +1,13 @@
 import { ContentType } from '../src/utils/export-context.js';
 
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
+
 // Mock jsPDF
 const mockJsPDF = {
   text: vi.fn(),
@@ -730,6 +738,28 @@ describe('Export Utilities', () => {
         expect(mockJsPDF.addPage).toHaveBeenCalled();
         expect(mockJsPDF.save).toHaveBeenCalled();
       });
+
+      it('adds footer to all pages when document has multiple pages', () => {
+        // Mock getNumberOfPages to return 3 pages
+        mockJsPDF.getNumberOfPages.mockReturnValue(3);
+
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToPDF(content);
+
+        // Should call setPage for each page to add footer
+        expect(mockJsPDF.setPage).toHaveBeenCalledWith(1);
+        expect(mockJsPDF.setPage).toHaveBeenCalledWith(2);
+        expect(mockJsPDF.setPage).toHaveBeenCalledWith(3);
+        expect(mockJsPDF.setPage).toHaveBeenCalledTimes(3);
+
+        // Reset mock for other tests
+        mockJsPDF.getNumberOfPages.mockReturnValue(1);
+      });
     });
   });
 
@@ -783,7 +813,6 @@ describe('Export Utilities', () => {
     });
 
     it('handles unknown format gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
@@ -793,7 +822,7 @@ describe('Export Utilities', () => {
       // Should not throw
       exportContent(content, 'unknown');
 
-      expect(consoleSpy).toHaveBeenCalledWith('Unknown export format: unknown');
+      expect(Sentry.captureMessage).toHaveBeenCalledWith('Unknown export format: unknown', 'warning');
     });
   });
 

@@ -4,6 +4,8 @@
  * preventing "Google-served ads on screens without publisher-content" violations.
  */
 
+import * as Sentry from '@sentry/browser';
+
 let isAdSenseInitialized = false;
 
 function initAdSense() {
@@ -20,7 +22,7 @@ function initAdSense() {
   script.crossOrigin = 'anonymous';
 
   script.onerror = () => {
-    console.warn('AdSense failed to load');
+    Sentry.captureMessage('AdSense failed to load', 'warning');
   };
 
   document.head.appendChild(script);

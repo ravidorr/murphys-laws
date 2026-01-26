@@ -393,9 +393,27 @@ Droplet (167.99.53.90)
 
 ---
 
+## Error Monitoring (Sentry)
+
+The application uses Sentry for production error tracking. Errors from both the frontend and backend are reported to Sentry for monitoring and debugging.
+
+### GitHub Secrets Required
+
+Add these secrets to GitHub repository settings (Settings > Secrets > Actions):
+
+| Secret | Description |
+|--------|-------------|
+| `SENTRY_DSN` | Sentry Data Source Name (required for error tracking) |
+| `SENTRY_AUTH_TOKEN` | Auth token for source map uploads (optional but recommended) |
+| `SENTRY_ORG` | Sentry organization slug (required for source maps) |
+| `SENTRY_PROJECT` | Sentry project slug (required for source maps) |
+
+---
+
 ## Future Improvements
 
 - ✅ GitHub Actions automated deployments (implemented)
 - ✅ Health check endpoints (implemented)
+- ✅ Sentry error tracking (implemented)
 - Implement zero-downtime deployments
 - Consider upgrading to 2GB droplet or using CDN for static assets

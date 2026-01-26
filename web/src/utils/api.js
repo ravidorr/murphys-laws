@@ -1,4 +1,5 @@
 // Centralized API utilities
+import * as Sentry from '@sentry/browser';
 import { API_BASE_URL, API_FALLBACK_URL, DEFAULT_FETCH_HEADERS } from './constants.js';
 
 /**
@@ -211,7 +212,7 @@ export async function fetchSuggestions({ q, limit = 10 } = {}) {
     return await fetchAPI('/api/v1/laws/suggestions', params);
   } catch (error) {
     // Gracefully handle errors - return empty array
-    console.error('Failed to fetch suggestions:', error);
+    Sentry.captureException(error);
     return { data: [] };
   }
 }

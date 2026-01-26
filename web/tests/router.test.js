@@ -1,3 +1,12 @@
+import { vi } from 'vitest';
+
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
 import { defineRoute, navigate, currentRoute, routes, startRouter, forceRender } from '../src/router.js';
 
 describe('Router', () => {
@@ -416,19 +425,23 @@ describe('Router', () => {
     // Reset the module to ensure renderFn is null
     vi.resetModules();
     
+    // Re-mock Sentry after module reset
+    vi.doMock('@sentry/browser', () => ({
+      captureException: vi.fn(),
+      captureMessage: vi.fn()
+    }));
+    
     // Re-import after module reset
     const { navigate: freshNavigate } = await import('../src/router.js');
-    
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const SentryMock = await import('@sentry/browser');
     
     // Call navigate without calling startRouter first
-    // This should log a warning because renderFn is null
+    // This should report to Sentry because renderFn is null
     freshNavigate('browse');
     
-    expect(warnSpy).toHaveBeenCalledWith(
-      'navigate() called before startRouter() was initialized. Navigation will not render.'
+    expect(SentryMock.captureMessage).toHaveBeenCalledWith(
+      'navigate() called before startRouter() was initialized. Navigation will not render.',
+      'warning'
     );
-    
-    warnSpy.mockRestore();
   });
 });

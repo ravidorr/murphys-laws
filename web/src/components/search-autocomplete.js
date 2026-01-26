@@ -1,4 +1,5 @@
 // Search autocomplete component with dropdown and keyboard navigation
+import * as Sentry from '@sentry/browser';
 import { debounce } from '../utils/debounce.js';
 import { fetchSuggestions } from '../utils/api.js';
 import { SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY } from '../utils/constants.js';
@@ -147,7 +148,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       selectedIndex = -1;
       renderSuggestions();
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      Sentry.captureException(error);
       closeDropdown();
     }
   }, debounceDelay);

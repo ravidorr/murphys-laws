@@ -903,5 +903,22 @@ describe('LawDetail view', () => {
     // toggleVote should not be called when voteType is empty
     expect(toggleVoteSpy).not.toHaveBeenCalledWith('7', '');
   });
+
+  it('provides a cleanup function that clears export content', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Element should have a cleanup function
+    expect(typeof el.cleanup).toBe('function');
+
+    // Calling cleanup should not throw
+    expect(() => el.cleanup()).not.toThrow();
+  });
 });
 

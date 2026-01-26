@@ -1,3 +1,22 @@
+// Initialize Sentry first to capture all errors
+import * as Sentry from '@sentry/browser';
+
+// Initialize Sentry for production error tracking
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    release: import.meta.env.VITE_APP_VERSION,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+    ],
+    // Performance monitoring - sample 10% of transactions
+    tracesSampleRate: 0.1,
+    // Don't send errors in development
+    enabled: import.meta.env.PROD,
+  });
+}
+
 import { defineRoute, navigate, startRouter, forceRender, currentRoute } from './router.js';
 import { Header } from './components/header.js';
 import { Footer } from './components/footer.js';

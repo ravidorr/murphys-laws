@@ -1,7 +1,25 @@
 import { defineConfig } from 'vite';
 import path from 'node:path';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
+  build: {
+    sourcemap: true, // Required for Sentry source maps
+  },
+  plugins: [
+    // Sentry plugin for source map uploads (only in production builds)
+    process.env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      sourcemaps: {
+        filesToDeleteAfterUpload: ['./dist/**/*.map'], // Don't serve source maps publicly
+      },
+      release: {
+        name: process.env.VITE_APP_VERSION || `murphys-laws-web@${Date.now()}`,
+      },
+    }),
+  ].filter(Boolean),
   server: {
     host: '0.0.0.0',
     port: 5175,

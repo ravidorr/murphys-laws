@@ -3,6 +3,14 @@ import { CategoryDetail } from '../src/views/category-detail.js';
 import * as api from '../src/utils/api.js';
 import * as structuredData from '../src/modules/structured-data.js';
 
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
+
 // Mock dependencies
 vi.mock('../src/utils/api.js', () => ({
   fetchLaws: vi.fn(),
@@ -273,14 +281,12 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles fetchCategories error', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     api.fetchCategories.mockRejectedValue(new Error('Network error'));
     
     CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch category details:', expect.any(Error));
-    consoleSpy.mockRestore();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('handles null data in fetchLaws response', async () => {

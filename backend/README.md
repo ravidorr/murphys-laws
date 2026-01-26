@@ -13,8 +13,9 @@ Node.js API server serving web, iOS, and Android clients.
 cd backend
 npm install
 
-# Copy environment config
-cp ../.env.example .env
+# Environment config is in the project root (.env)
+# Copy .env.example to .env at the project root if not already done
+cp ../.env.example ../.env
 
 # Build database from markdown files
 npm run build:db
@@ -65,6 +66,7 @@ Environment variables (`.env`):
 - `SMTP_PORT` - Email SMTP port
 - `SMTP_USER` - Email username
 - `SMTP_PASS` - Email password
+- `SENTRY_DSN` - Sentry error tracking DSN (optional, for production monitoring)
 
 ## Architecture
 

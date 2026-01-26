@@ -85,7 +85,17 @@ Set via environment variables:
 ```
 VITE_API_URL=https://murphys-laws.com
 VITE_API_FALLBACK_URL=http://127.0.0.1:8787
+VITE_SENTRY_DSN=https://xxxxx@o123456.ingest.sentry.io/123456
 ```
+
+**Error Tracking (Sentry):**
+
+Sentry is used for production error monitoring. Set `VITE_SENTRY_DSN` to enable error tracking. Errors are automatically captured and reported to Sentry.
+
+For source map uploads during build (better stack traces), also set:
+- `SENTRY_AUTH_TOKEN` - Sentry auth token
+- `SENTRY_ORG` - Sentry organization slug  
+- `SENTRY_PROJECT` - Sentry project slug
 
 ## AdSense
  

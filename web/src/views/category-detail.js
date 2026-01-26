@@ -1,5 +1,6 @@
 // Category Detail view - displays laws for a specific category
 
+import * as Sentry from '@sentry/browser';
 import templateHtml from '@views/templates/category-detail.html?raw';
 import { fetchLaws } from '../utils/api.js';
 import { renderLoadingHTML } from '../components/loading.js';
@@ -194,7 +195,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         document.title = `${categoryTitle} | ${SITE_NAME}`;
       }
     } catch (error) {
-      console.error('Failed to fetch category details:', error);
+      Sentry.captureException(error);
     }
   }
 

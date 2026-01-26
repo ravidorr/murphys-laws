@@ -17,6 +17,9 @@ describe('Feature Flags', () => {
     // Restore original env (note: this may not work in all test environments)
     if (localThis.originalEnv !== undefined) {
       import.meta.env.VITE_FEATURE_FAVORITES = localThis.originalEnv;
+    } else {
+      // If it was originally undefined, delete it
+      delete import.meta.env.VITE_FEATURE_FAVORITES;
     }
   });
 
@@ -27,6 +30,23 @@ describe('Feature Flags', () => {
 
     it('returns default value when no override exists', () => {
       // FAVORITES_ENABLED has default: true
+      expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
+    });
+
+    it('respects environment variable when set to true', () => {
+      import.meta.env.VITE_FEATURE_FAVORITES = 'true';
+      expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
+    });
+
+    it('respects environment variable when set to false', () => {
+      import.meta.env.VITE_FEATURE_FAVORITES = 'false';
+      expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(false);
+    });
+
+    it('localStorage override takes priority over environment variable', () => {
+      import.meta.env.VITE_FEATURE_FAVORITES = 'false';
+      localStorage.setItem('murphys_ff_favorites', 'true');
+      // localStorage should win
       expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
     });
 
@@ -103,6 +123,19 @@ describe('Feature Flags', () => {
     it('returns default source when no override', () => {
       const state = getFeatureState('FAVORITES_ENABLED');
       expect(state).toEqual({ enabled: true, source: 'default' });
+    });
+
+    it('returns environment source when env variable is set', () => {
+      import.meta.env.VITE_FEATURE_FAVORITES = 'false';
+      const state = getFeatureState('FAVORITES_ENABLED');
+      expect(state).toEqual({ enabled: false, source: 'environment' });
+    });
+
+    it('localStorage takes priority over environment in getFeatureState', () => {
+      import.meta.env.VITE_FEATURE_FAVORITES = 'false';
+      localStorage.setItem('murphys_ff_favorites', 'true');
+      const state = getFeatureState('FAVORITES_ENABLED');
+      expect(state).toEqual({ enabled: true, source: 'localStorage' });
     });
 
     it('handles localStorage error gracefully and falls back to default', () => {

@@ -30,7 +30,7 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Content-Rich Category Pages:** Enhance category landing pages with more descriptive text, unique images, and curated content beyond just a list of laws. This might require adding 'long_description' to the `categories` table.
 - [ ] **User Generated Content Moderation Interface:** Develop an admin interface to review, approve, edit, or reject submitted laws. This would build upon the existing `status` column in the `laws` table.
 - [ ] **Law Tags:** Add a tagging system beyond categories for better discoverability.
-- [ ] **Law History:** Track edits/versions of laws for transparency.
+- ~~**Law History:** Track edits/versions of laws for transparency.~~ (Cancelled)
 
 ## Mobile Apps (iOS / Android)
 - [ ] **WhatsApp Share (Android):** Add WhatsApp share button to Android app. Requires updating `SocialShareHelper.kt`, `SocialIcons.kt`, and `LawDetailScreen.kt`.

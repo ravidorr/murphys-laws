@@ -256,6 +256,23 @@ describe('Export Menu Component', () => {
       expect(exportToText).toHaveBeenCalled();
     });
 
+    it('does not export when content is null', () => {
+      const menu = ExportMenu();
+      localThis.container.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle');
+      button.click();
+
+      // Set content to null before clicking export
+      vi.mocked(getExportContent).mockReturnValue(null);
+
+      const pdfOption = menu.querySelector('[data-format="pdf"]');
+      pdfOption.click();
+
+      // exportToPDF should NOT be called when content is null
+      expect(exportToPDF).not.toHaveBeenCalled();
+    });
+
     it('closes dropdown after selection', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
@@ -392,6 +409,25 @@ describe('Export Menu Component', () => {
 
       expect(dropdown.hidden).toBe(true);
       expect(document.activeElement).toBe(button);
+    });
+
+    it('closes dropdown on Tab key', () => {
+      const menu = ExportMenu();
+      localThis.container.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle');
+      const dropdown = menu.querySelector('#export-dropdown');
+
+      button.click();
+      expect(dropdown.hidden).toBe(false);
+
+      // Focus an item and press Tab
+      const items = dropdown.querySelectorAll('[role="menuitem"]');
+      items[0].focus();
+
+      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+
+      expect(dropdown.hidden).toBe(true);
     });
   });
 

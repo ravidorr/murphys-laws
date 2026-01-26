@@ -20,6 +20,7 @@
  * @module export
  */
 
+import * as Sentry from '@sentry/browser';
 import { jsPDF } from 'jspdf';
 import { SITE_NAME, SITE_URL } from './constants.js';
 import { ContentType } from './export-context.js';
@@ -407,6 +408,6 @@ export function exportContent(content, format, filename) {
       exportToText(content, filename);
       break;
     default:
-      console.warn(`Unknown export format: ${format}`);
+      Sentry.captureMessage(`Unknown export format: ${format}`, 'warning');
   }
 }
