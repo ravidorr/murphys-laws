@@ -338,5 +338,33 @@ describe('Lazy Loader Utilities', () => {
         localThis.intersectionCallback([{ isIntersecting: true, target: el }]);
       }).not.toThrow();
     });
+
+    it('handles onVisible errors in fallback mode (no IntersectionObserver)', () => {
+      // Remove IntersectionObserver to trigger fallback
+      const originalIO = globalThis.IntersectionObserver;
+      delete globalThis.IntersectionObserver;
+
+      const el = document.createElement('div');
+      const errorFn = vi.fn(() => {
+        throw new Error('Fallback callback error');
+      });
+      const successFn = vi.fn();
+
+      const items = [
+        { element: el, onVisible: errorFn },
+        { element: document.createElement('div'), onVisible: successFn }
+      ];
+
+      // Should not throw even when callbacks error in fallback mode
+      expect(() => batchLazyLoad(items)).not.toThrow();
+
+      // The error function was called (and threw)
+      expect(errorFn).toHaveBeenCalled();
+      // The success function should still be called (error handling per-item)
+      expect(successFn).toHaveBeenCalled();
+
+      // Restore
+      globalThis.IntersectionObserver = originalIO;
+    });
   });
 });

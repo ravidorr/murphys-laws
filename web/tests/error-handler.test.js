@@ -8,11 +8,17 @@ import {
   formatErrorMessage
 } from '../src/utils/error-handler.js';
 
+// Mock Sentry module
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn()
+}));
+
 // Mock notification module
 vi.mock('../src/components/notification.js', () => ({
   showError: vi.fn()
 }));
 
+import * as Sentry from '@sentry/browser';
 import { showError } from '../src/components/notification.js';
 
 describe('Error Handler Utilities', () => {
@@ -207,6 +213,15 @@ describe('Error Handler Utilities', () => {
       expect(error).toBe(testError);
     });
 
+    it('reports error to Sentry on failure', async () => {
+      const testError = new Error('Test error');
+      localThis.mockFn.mockRejectedValue(testError);
+
+      await safeAsync(localThis.mockFn);
+
+      expect(Sentry.captureException).toHaveBeenCalledWith(testError);
+    });
+
     it('shows notification when showNotification is true', async () => {
       localThis.mockFn.mockRejectedValue(new Error('Test error'));
 
@@ -256,6 +271,42 @@ describe('Error Handler Utilities', () => {
       await safeAsync(localThis.mockFn, { showNotification: true });
 
       expect(showError).toHaveBeenCalledWith('An unexpected error occurred. Please try again.');
+    });
+
+    it('reports error to Sentry even when retry is enabled and fails', async () => {
+      vi.useRealTimers();
+      const testError = new Error('Network error');
+      localThis.mockFn.mockRejectedValue(testError);
+
+      const { error } = await safeAsync(localThis.mockFn, {
+        retry: true,
+        retryConfig: { maxRetries: 1, baseDelay: 1, maxDelay: 1 }
+      });
+
+      expect(error).toBe(testError);
+      expect(Sentry.captureException).toHaveBeenCalledWith(testError);
+    });
+
+    it('does not call Sentry.captureException on success', async () => {
+      localThis.mockFn.mockResolvedValue('result');
+      vi.clearAllMocks();
+
+      await safeAsync(localThis.mockFn);
+
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+    });
+
+    it('passes custom retryConfig to withRetry', async () => {
+      vi.useRealTimers();
+      localThis.mockFn.mockRejectedValue(new Error('Network error'));
+
+      await safeAsync(localThis.mockFn, {
+        retry: true,
+        retryConfig: { maxRetries: 0 }
+      });
+
+      // With maxRetries: 0, it should only try once
+      expect(localThis.mockFn).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -2,6 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SearchAutocomplete } from '../src/components/search-autocomplete.js';
 import * as api from '../src/utils/api.js';
 
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
+
 // Mock the API module
 vi.mock('../src/utils/api.js', () => ({
   fetchSuggestions: vi.fn()
@@ -269,6 +277,7 @@ describe('SearchAutocomplete', () => {
 
     // Should not throw, dropdown should be closed
     expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('should cleanup event listeners', () => {

@@ -1,5 +1,6 @@
 // Categories view - displays all categories with descriptions
 
+import * as Sentry from '@sentry/browser';
 import templateHtml from '@views/templates/categories.html?raw';
 import { fetchCategories } from '../utils/api.js';
 import { hydrateIcons } from '@utils/icons.js';
@@ -108,7 +109,7 @@ export function Categories({ onNavigate }) {
         clearExportContent();
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      Sentry.captureException(error);
       const grid = el.querySelector('#categories-grid');
       if (grid) {
         grid.classList.remove('loading-placeholder');

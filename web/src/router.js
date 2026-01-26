@@ -1,5 +1,7 @@
 // Simple History API router
 // Routes map path -> render function
+import * as Sentry from '@sentry/browser';
+
 export const routes = {};
 
 export function defineRoute(name, renderFn) {
@@ -30,8 +32,8 @@ export function navigate(name, param) {
   // Manually trigger render
   if (renderFn) {
     renderFn();
-  } else if (typeof console !== 'undefined' && console.warn) {
-    console.warn('navigate() called before startRouter() was initialized. Navigation will not render.');
+  } else {
+    Sentry.captureMessage('navigate() called before startRouter() was initialized. Navigation will not render.', 'warning');
   }
 }
 

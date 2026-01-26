@@ -1,4 +1,5 @@
 import url from 'node:url';
+import * as Sentry from '@sentry/node';
 import { notFound } from '../utils/http-helpers.js';
 import { getCorsOrigin } from '../middleware/cors.mjs';
 
@@ -37,6 +38,8 @@ export class Router {
           try {
             await route.handler(req, res, ...args, parsed);
           } catch (error) {
+            // Report error to Sentry for production monitoring
+            Sentry.captureException(error);
             console.error('Route handler error:', error);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Internal Server Error' }));

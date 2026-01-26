@@ -1,6 +1,7 @@
 // Centralized error handling utilities with retry logic
 // Provides consistent error handling, notifications, and automatic retry for transient failures
 
+import * as Sentry from '@sentry/browser';
 import { showError } from '../components/notification.js';
 
 /**
@@ -87,14 +88,10 @@ export async function withRetry(fn, options = {}) {
   const config = { ...DEFAULT_RETRY_CONFIG, ...options };
   const { maxRetries, baseDelay, maxDelay, shouldRetry, onRetry } = config;
 
-  let lastError;
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
-      lastError = error;
-
       // Check if we should retry
       const isLastAttempt = attempt >= maxRetries;
       const isRetryable = shouldRetry(error);
@@ -114,8 +111,6 @@ export async function withRetry(fn, options = {}) {
       await sleep(delay);
     }
   }
-
-  throw lastError;
 }
 
 /**
@@ -143,6 +138,9 @@ export async function safeAsync(fn, options = {}) {
     const data = await executor();
     return { data, error: null };
   } catch (error) {
+    // Report error to Sentry for production monitoring
+    Sentry.captureException(error);
+
     // Call custom error handler if provided
     if (typeof onError === 'function') {
       onError(error);

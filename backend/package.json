@@ -30,6 +30,7 @@
   "author": "",
   "license": "CC0-1.0",
   "dependencies": {
+    "@sentry/node": "^9.32.0",
     "better-sqlite3": "^12.4.1",
     "canvas": "^3.2.1",
     "dotenv": "^16.4.7",

@@ -27,6 +27,11 @@ jobs:
         env:
           # Use production API during SSG to fetch all laws for pre-rendering
           API_BASE_URL: https://murphys-laws.com
+          # Sentry configuration for frontend error tracking and source map upload
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
       - name: Upload build artifacts
         uses: appleboy/scp-action@v0.1.7
@@ -122,6 +127,7 @@ jobs:
             cat > .env << EOF
             HOST=127.0.0.1
             PORT=8787
+            NODE_ENV=production
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
@@ -129,6 +135,7 @@ jobs:
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
             EMAIL_TO=${{ secrets.EMAIL_TO }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+            SENTRY_DSN=${{ secrets.SENTRY_DSN }}
             EOF
 
             echo "Contents of $TARGET_DIR/backend:"

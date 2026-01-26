@@ -1,8 +1,31 @@
 #!/usr/bin/env node
-import 'dotenv/config';
-import http from 'node:http';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+
+// Load .env from project root (works for both local dev and production)
+const __filename_env = fileURLToPath(import.meta.url);
+const __dirname_env = dirname(__filename_env);
+const rootEnvPath = resolve(__dirname_env, '..', '..', '.env');
+const backendEnvPath = resolve(__dirname_env, '..', '.env');
+
+// Try root .env first (monorepo pattern), fall back to backend/.env (production)
+dotenv.config({ path: rootEnvPath });
+dotenv.config({ path: backendEnvPath });
+
+import * as Sentry from '@sentry/node';
+
+// Initialize Sentry for production error tracking
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    // Performance monitoring - sample 10% of transactions
+    tracesSampleRate: 0.1,
+  });
+}
+
+import http from 'node:http';
 
 // Services
 import { DatabaseService } from '../src/services/database.service.mjs';
@@ -26,9 +49,7 @@ import { OgImageController } from '../src/controllers/og-image.controller.mjs';
 // Router
 import { Router } from '../src/routes/router.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const DB_PATH = resolve(__dirname, '..', 'murphys.db');
+const DB_PATH = resolve(__dirname_env, '..', 'murphys.db');
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 8787);
 

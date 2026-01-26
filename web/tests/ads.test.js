@@ -1,13 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setupAdSense, triggerAdSense, resetAdSenseForTesting, hasMinimumContent } from '../src/utils/ads.js';
 
+// Mock Sentry
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+  captureMessage: vi.fn()
+}));
+
+import * as Sentry from '@sentry/browser';
+
 describe('AdSense Integration', () => {
   beforeEach(() => {
     // Clear head before each test
     document.head.innerHTML = '';
     resetAdSenseForTesting();
-    // Mock console.warn to keep output clean
-    vi.spyOn(console, 'warn').mockImplementation(() => { });
+    vi.clearAllMocks();
     vi.useFakeTimers();
   });
 
@@ -70,8 +77,6 @@ describe('AdSense Integration', () => {
   });
 
   it('handles script load error gracefully', () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
-    
     setupAdSense();
     triggerAdSense();
     vi.runAllTimers();
@@ -82,7 +87,7 @@ describe('AdSense Integration', () => {
     // Simulate script load error
     script.dispatchEvent(new Event('error'));
 
-    expect(consoleWarnSpy).toHaveBeenCalledWith('AdSense failed to load');
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('AdSense failed to load', 'warning');
   });
 
   it('uses requestIdleCallback when available', () => {

@@ -205,6 +205,52 @@ describe('AdvancedSearch component', () => {
     });
   });
 
+  it('filters out "anonymous" attributions', async () => {
+    const attributions = ['Alice', 'anonymous', 'Anonymous', 'ANONYMOUS', 'Bob'];
+
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+      // Should not contain "anonymous" in any case
+      const options = Array.from(attributionSelect.querySelectorAll('option'));
+      const anonymousOptions = options.filter(o => o.value.toLowerCase() === 'anonymous');
+      expect(anonymousOptions.length).toBe(0);
+    });
+  });
+
+  it('filters out non-string attribution names', async () => {
+    // Test attributions with objects that have non-string name values
+    const attributions = [
+      { name: 'Alice' },
+      { name: 123 },        // number - should be filtered
+      { name: true },       // boolean - should be filtered
+      { name: {} },         // object - should be filtered
+      { name: 'Bob' }
+    ];
+
+    fetchAPISpy
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: attributions });
+
+    const el = mountSearch();
+
+    await vi.waitFor(() => {
+      const attributionSelect = el.querySelector('#search-attribution');
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+      // Should only have "All Submitters" + valid options
+      const options = Array.from(attributionSelect.querySelectorAll('option'));
+      expect(options.length).toBe(3); // All Submitters, Alice, Bob
+    });
+  });
+
   it('handles filter loading errors gracefully', async () => {
     fetchAPISpy.mockRejectedValue(new Error('Network error'));
 
