@@ -1,9 +1,10 @@
 // Origin Story view - displays a high-quality article about the origin of Murphy's Law
 
-import { getPageContent } from '@utils/markdown-content.js';
+import { getPageContent, getRawMarkdownContent } from '@utils/markdown-content.js';
 import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL, SITE_NAME } from '@utils/constants.js';
 import { triggerAdSense } from '../utils/ads.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function OriginStory({ onNavigate } = {}) {
   const el = document.createElement('div');
@@ -16,6 +17,13 @@ export function OriginStory({ onNavigate } = {}) {
   el.innerHTML = getPageContent('origin-story');
   // Only trigger ads if content meets minimum requirements
   triggerAdSense(el);
+
+  // Register export content
+  setExportContent({
+    type: ContentType.CONTENT,
+    title: 'The True Origin of Murphy\'s Law',
+    data: getRawMarkdownContent('origin-story')
+  });
 
   // Set structured data for the article
   setJsonLd('origin-story-article', {
@@ -58,6 +66,11 @@ export function OriginStory({ onNavigate } = {}) {
       }
     }
   });
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

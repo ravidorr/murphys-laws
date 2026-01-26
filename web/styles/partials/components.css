@@ -284,6 +284,129 @@ a.btn:focus-visible,
   outline-offset: 2px;
 }
 
+/* ==========================
+   Export Menu
+   Dropdown menu for page export functionality
+   ========================== */
+
+.export-menu-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.export-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.export-toggle .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentcolor;
+}
+
+.export-toggle:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--btn-primary-bg) 30%);
+}
+
+.export-toggle:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.export-toggle:focus-visible {
+  outline: 3px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
+.export-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 180px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.5rem);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.export-dropdown:not([hidden]) {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.export-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.export-dropdown-item:first-child {
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.export-dropdown-item:last-child {
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.export-dropdown-item:hover {
+  background: color-mix(in oklab, var(--bg) 90%, var(--btn-primary-bg) 10%);
+}
+
+.export-dropdown-item:focus {
+  outline: none;
+  background: color-mix(in oklab, var(--bg) 85%, var(--btn-primary-bg) 15%);
+}
+
+.export-dropdown-item:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: -2px;
+}
+
+/* Dark mode adjustments for export menu */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .export-dropdown {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  }
+}
+
+:root[data-theme="dark"] .export-dropdown {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+}
+
 /* RSS link in footer */
 .rss-footer-link {
   display: inline-flex;

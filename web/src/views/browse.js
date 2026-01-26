@@ -17,6 +17,7 @@ import { Trending } from '../components/trending.js';
 import { RecentlyAdded } from '../components/recently-added.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { showSuccess } from '../components/notification.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function Browse({ searchQuery, onNavigate }) {
   const el = document.createElement('div');
@@ -121,6 +122,18 @@ export function Browse({ searchQuery, onNavigate }) {
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       await updateDisplay();
+
+      // Register export content
+      if (laws.length > 0) {
+        setExportContent({
+          type: ContentType.LAWS,
+          title: hasActiveFilters(currentFilters) ? 'Search Results' : 'All Laws',
+          data: laws,
+          metadata: { total: totalLaws, filters: currentFilters, page: currentPage }
+        });
+      } else {
+        clearExportContent();
+      }
 
       // Only trigger ads if we actually have content - validate before triggering
       if (laws.length > 0 && cardText) {
@@ -300,6 +313,11 @@ export function Browse({ searchQuery, onNavigate }) {
   }
 
   loadPage(1);
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

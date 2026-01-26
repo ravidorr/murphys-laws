@@ -96,7 +96,42 @@ VITE_API_FALLBACK_URL=http://127.0.0.1:8787
  3.  **Initialization:** `main.js` calls `initAdSense()` after the app mounts and content is rendered.
  4.  **Static Shell:** `index.html` contains a static HTML shell to ensure crawlers never see an empty page.
  
- ## Project Structure
+## Features
+
+### Page Export
+
+The application includes a universal export feature accessible from the header (download icon next to theme toggle).
+
+**Supported Formats:**
+- **PDF** - Formatted document with header, page numbers, and site branding (uses jsPDF)
+- **CSV** - Structured data export with Full Text column (available for law lists and categories)
+- **Markdown** - Numbered list format with attribution on separate lines, clickable footer link
+- **Plain Text** - Simple text format with footer
+
+**Export by Page Type:**
+
+| Page | PDF | CSV | Markdown | Text |
+|------|-----|-----|----------|------|
+| Browse / Search Results | Yes | Yes | Yes | Yes |
+| Favorites | Yes | Yes | Yes | Yes |
+| Category Laws | Yes | Yes | Yes | Yes |
+| Single Law | Yes | Yes | Yes | Yes |
+| Categories List | Yes | Yes | Yes | Yes |
+| Content Pages (About, etc.) | Yes | No | Yes | Yes |
+| Calculators | - | - | - | - |
+| 404 Page | - | - | - | - |
+
+*Calculators and 404 page do not support export (button disabled).*
+
+**Architecture:**
+- `src/utils/export-context.js` - Page content registration system (singleton context)
+- `src/utils/export.js` - Format-specific export functions
+- `src/components/export-menu.js` - Header dropdown component
+
+**Usage:**
+Pages register their exportable content using `setExportContent()` and clear it on unmount with `clearExportContent()`. The export menu automatically updates available formats based on content type.
+
+## Project Structure
 
 ```
 web/
