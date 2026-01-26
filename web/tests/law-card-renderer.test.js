@@ -15,6 +15,9 @@ vi.mock('../src/utils/favorites.js', () => ({
   isFavorite: vi.fn(() => false)
 }));
 
+import { isFavoritesEnabled } from '../src/utils/feature-flags.js';
+import { isFavorite } from '../src/utils/favorites.js';
+
 describe('law-card-renderer', () => {
   describe('renderLawCard', () => {
     it('renders a basic law card', () => {
@@ -132,6 +135,42 @@ describe('law-card-renderer', () => {
       
       expect(html).toContain('aria-label="Add to favorites"');
     });
+
+    it('does not render favorite button when feature is disabled', () => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(false);
+      
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).not.toContain('data-action="favorite"');
+      
+      // Reset mock
+      vi.mocked(isFavoritesEnabled).mockReturnValue(true);
+    });
+
+    it('renders favorited state with filled heart icon when law is favorited', () => {
+      vi.mocked(isFavorite).mockReturnValue(true);
+      
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).toContain('favorited');
+      expect(html).toContain('heartFilled');
+      expect(html).toContain('Remove from favorites');
+      
+      // Reset mock
+      vi.mocked(isFavorite).mockReturnValue(false);
+    });
+
+    it('renders non-favorited state with outline heart icon', () => {
+      vi.mocked(isFavorite).mockReturnValue(false);
+      
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      
+      expect(html).not.toContain('favorited');
+      expect(html).toContain('Add to favorites');
+    });
   });
 
   describe('renderLawCards', () => {
@@ -153,6 +192,26 @@ describe('law-card-renderer', () => {
       const html = renderLawCards(laws, { searchQuery: 'term' });
       
       expect(html).toContain('mark');
+    });
+
+    it('returns empty string for empty array', () => {
+      const html = renderLawCards([]);
+      expect(html).toBe('');
+    });
+
+    it('returns empty string for null input', () => {
+      const html = renderLawCards(null);
+      expect(html).toBe('');
+    });
+
+    it('returns empty string for undefined input', () => {
+      const html = renderLawCards(undefined);
+      expect(html).toBe('');
+    });
+
+    it('returns empty string for non-array input', () => {
+      const html = renderLawCards('not an array');
+      expect(html).toBe('');
     });
   });
 });

@@ -235,4 +235,112 @@ describe('Categories view', () => {
     // After load, should not have loading class
     expect(grid.classList.contains('loading-placeholder')).toBe(false);
   });
+
+  it('handles category with law_count of 0', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, slug: 'empty-category', title: 'Empty Category', description: 'No laws here.', law_count: 0 }
+      ]
+    });
+
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(el.textContent).toContain('0 laws');
+  });
+
+  it('handles category with undefined law_count', async () => {
+    api.fetchCategories.mockResolvedValue({
+      data: [
+        { id: 1, slug: 'no-count', title: 'No Count Category', description: 'Missing count.' }
+      ]
+    });
+
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should default to 0
+    expect(el.textContent).toContain('0 laws');
+  });
+
+  it('handles response with undefined data', async () => {
+    api.fetchCategories.mockResolvedValue({});
+
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Should show empty state
+    expect(el.textContent).toContain('No categories found');
+  });
+
+  it('ignores click events from non-HTMLElement targets', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Create a click event with a non-HTMLElement target (e.g., text node)
+    const textNode = document.createTextNode('text');
+    el.appendChild(textNode);
+    
+    const clickEvent = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(clickEvent, 'target', { value: textNode });
+    
+    el.dispatchEvent(clickEvent);
+    
+    // onNavigate should not be called
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('ignores keydown events from non-HTMLElement targets', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const textNode = document.createTextNode('text');
+    el.appendChild(textNode);
+    
+    const keyEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    Object.defineProperty(keyEvent, 'target', { value: textNode });
+    
+    el.dispatchEvent(keyEvent);
+    
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate when clicking card without slug attribute', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Reset the mock to clear any calls from initial render
+    localThis.onNavigate.mockClear();
+
+    // Create a card manually without the data-category-slug attribute
+    const manualCard = document.createElement('div');
+    manualCard.className = 'category-card';
+    // No data-category-slug attribute set at all
+    el.appendChild(manualCard);
+
+    manualCard.click();
+    
+    // onNavigate should not have been called since card has no slug
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate on keydown when card has no slug attribute', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Reset the mock to clear any calls from initial render
+    localThis.onNavigate.mockClear();
+
+    // Create a card manually without the data-category-slug attribute
+    const manualCard = document.createElement('div');
+    manualCard.className = 'category-card';
+    // No data-category-slug attribute set at all
+    el.appendChild(manualCard);
+
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    manualCard.dispatchEvent(enterEvent);
+    
+    // onNavigate should not have been called since card has no slug
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
 });
