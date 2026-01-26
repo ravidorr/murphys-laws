@@ -5,6 +5,7 @@ import { fetchCategories } from '../utils/api.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { stripMarkdownFootnotes } from '../utils/sanitize.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function Categories({ onNavigate }) {
   const el = document.createElement('div');
@@ -90,6 +91,22 @@ export function Categories({ onNavigate }) {
       const response = await fetchCategories();
       categories = response.data || [];
       updateDisplay();
+
+      // Register export content for categories
+      if (categories.length > 0) {
+        setExportContent({
+          type: ContentType.CATEGORIES,
+          title: 'Law Categories',
+          data: categories.map(cat => ({
+            id: cat.id,
+            name: stripMarkdownFootnotes(cat.title),
+            slug: cat.slug,
+            law_count: cat.law_count || 0
+          }))
+        });
+      } else {
+        clearExportContent();
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
       const grid = el.querySelector('#categories-grid');
@@ -157,6 +174,11 @@ export function Categories({ onNavigate }) {
   // Initialize
   render();
   loadCategories();
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

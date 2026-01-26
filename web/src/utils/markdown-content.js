@@ -242,3 +242,20 @@ export function getPageContent(page) {
 export function getPageMetadata(page) {
   return metadata[page];
 }
+
+/**
+ * Get raw markdown content for a specific page (for export)
+ * @param {'about'|'origin-story'|'privacy'|'terms'|'contact'} page - Page identifier
+ * @returns {string} - Raw markdown content
+ */
+export function getRawMarkdownContent(page) {
+  const contentMap = {
+    about: aboutMd,
+    'origin-story': originStoryMd,
+    privacy: privacyMd,
+    terms: termsMd,
+    contact: contactMd
+  };
+
+  return contentMap[page] || '';
+}

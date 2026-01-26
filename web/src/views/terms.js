@@ -1,6 +1,7 @@
-import { getPageContent } from '@utils/markdown-content.js';
+import { getPageContent, getRawMarkdownContent } from '@utils/markdown-content.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { SITE_NAME } from '@utils/constants.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function Terms({ onNavigate }) {
   const el = document.createElement('div');
@@ -13,6 +14,13 @@ export function Terms({ onNavigate }) {
   el.innerHTML = getPageContent('terms');
   // Only trigger ads if content meets minimum requirements
   triggerAdSense(el);
+
+  // Register export content
+  setExportContent({
+    type: ContentType.CONTENT,
+    title: 'Terms of Service',
+    data: getRawMarkdownContent('terms')
+  });
 
   el.addEventListener('click', (e) => {
     const t = e.target;
@@ -28,6 +36,11 @@ export function Terms({ onNavigate }) {
       }
     }
   });
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

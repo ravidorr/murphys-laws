@@ -4,6 +4,7 @@ import { hydrateIcons, createIcon } from '../utils/icons.js';
 import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.js';
 import { SearchAutocomplete } from './search-autocomplete.js';
 import { isFavoritesEnabled } from '../utils/feature-flags.js';
+import { ExportMenu } from './export-menu.js';
 
 export function Header({ onSearch, onNavigate }) {
   const header = document.createElement('header');
@@ -30,6 +31,15 @@ export function Header({ onSearch, onNavigate }) {
     }
   }
   
+  // Add export menu before theme toggle
+  const exportMenuContainer = header.querySelector('#export-menu-container');
+  let exportMenuCleanup = null;
+  if (exportMenuContainer) {
+    const exportMenu = ExportMenu();
+    exportMenuContainer.replaceWith(exportMenu);
+    exportMenuCleanup = exportMenu.cleanup;
+  }
+
   // Hydrate icons
   hydrateIcons(header);
 
@@ -154,6 +164,9 @@ export function Header({ onSearch, onNavigate }) {
     }
     if (autocompleteCleanup) {
       autocompleteCleanup();
+    }
+    if (exportMenuCleanup) {
+      exportMenuCleanup();
     }
   };
 

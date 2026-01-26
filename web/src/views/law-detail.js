@@ -15,6 +15,7 @@ import { renderLawCards } from '../utils/law-card-renderer.js';
 import { addVotingListeners } from '../utils/voting.js';
 import { isFavoritesEnabled } from '../utils/feature-flags.js';
 import { isFavorite, toggleFavorite } from '../utils/favorites.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -187,6 +188,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       image: ogImageUrl
     });
 
+    // Register export content for this law
+    setExportContent({
+      type: ContentType.SINGLE_LAW,
+      title: lawTitle,
+      data: law
+    });
+
     showLaw();
 
     lawCardContainer?.replaceChildren();
@@ -254,6 +262,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
 
   if (!lawId) {
     showNotFound();
+    clearExportContent();
   } else {
     fetchLaw(lawId)
       .then(data => {
@@ -263,6 +272,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       .catch(() => {
         el.setAttribute('aria-busy', 'false');
         showNotFound();
+        clearExportContent();
       });
   }
 
@@ -435,6 +445,11 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       }
     }
   });
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

@@ -8,6 +8,7 @@ import { fetchLawOfTheDay } from '../utils/api.js';
 import { createErrorState } from '../utils/dom.js';
 import { renderLoadingHTML } from '../components/loading.js';
 import { triggerAdSense } from '../utils/ads.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
@@ -53,6 +54,17 @@ export function Home({ onNavigate }) {
         renderHome(el, lawOfTheDay, [], onNavigate);
         // Signal that meaningful content is ready for ads - pass element for validation
         triggerAdSense(el);
+
+        // Register export content for home page (law of the day if available)
+        if (lawOfTheDay) {
+          setExportContent({
+            type: ContentType.SINGLE_LAW,
+            title: 'Law of the Day',
+            data: lawOfTheDay
+          });
+        } else {
+          clearExportContent();
+        }
       })
       /* v8 ignore start - Error path only reachable if renderHome throws, tested via integration tests */
       .catch(() => {
@@ -125,6 +137,11 @@ export function Home({ onNavigate }) {
       }
     }
   });
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

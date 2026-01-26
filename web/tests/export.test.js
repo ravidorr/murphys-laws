@@ -1,0 +1,954 @@
+import { ContentType } from '../src/utils/export-context.js';
+
+// Mock jsPDF
+const mockJsPDF = {
+  text: vi.fn(),
+  setFontSize: vi.fn(),
+  setFont: vi.fn(),
+  splitTextToSize: vi.fn((text) => [text]),
+  addPage: vi.fn(),
+  setPage: vi.fn(),
+  getNumberOfPages: vi.fn().mockReturnValue(1),
+  getTextWidth: vi.fn().mockReturnValue(50),
+  save: vi.fn(),
+  internal: {
+    pageSize: { getWidth: () => 210, getHeight: () => 297 }
+  }
+};
+
+vi.mock('jspdf', () => ({
+  jsPDF: vi.fn(() => mockJsPDF)
+}));
+
+// Import after mocking
+import {
+  exportToPDF,
+  exportToCSV,
+  exportToMarkdown,
+  exportToText,
+  exportContent,
+  generateFilename
+} from '../src/utils/export.js';
+
+describe('Export Utilities', () => {
+  const localThis = {
+    mockLaws: null,
+    mockSingleLaw: null,
+    mockCategories: null,
+    mockContent: null,
+    createObjectURLSpy: null,
+    revokeObjectURLSpy: null,
+    mockAnchor: null,
+    originalCreateObjectURL: null,
+    originalRevokeObjectURL: null,
+    lastBlobContent: null,
+    originalBlob: null,
+  };
+
+  // Helper to get blob text content (captured from mock Blob)
+  function getBlobText() {
+    return localThis.lastBlobContent || '';
+  }
+
+  beforeEach(() => {
+    // Store original URL methods if they exist
+    localThis.originalCreateObjectURL = URL.createObjectURL;
+    localThis.originalRevokeObjectURL = URL.revokeObjectURL;
+    localThis.originalBlob = globalThis.Blob;
+
+    // Reset blob content
+    localThis.lastBlobContent = null;
+
+    // Mock Blob to capture content
+    globalThis.Blob = class MockBlob {
+      constructor(parts, options) {
+        this.parts = parts;
+        this.options = options;
+        // Store the string content for test inspection
+        localThis.lastBlobContent = parts.join('');
+      }
+    };
+
+    // Mock URL.createObjectURL and revokeObjectURL (jsdom doesn't have these)
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:test');
+    URL.revokeObjectURL = vi.fn();
+
+    // Mock anchor element for download
+    localThis.mockAnchor = {
+      href: '',
+      download: '',
+      click: vi.fn(),
+    };
+    
+    const originalCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag === 'a') {
+        return localThis.mockAnchor;
+      }
+      return originalCreateElement(tag);
+    });
+    vi.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => {});
+
+    // Set up test data
+    localThis.mockLaws = [
+      {
+        id: 1,
+        title: "Murphy's Law",
+        text: 'If anything can go wrong, it will.',
+        attribution: 'Edward A. Murphy Jr.',
+        category_slug: 'general',
+        upvotes: 42,
+        downvotes: 3
+      },
+      {
+        id: 2,
+        title: null,
+        text: 'Nothing is as easy as it looks.',
+        attribution: null,
+        category_slug: 'general',
+        upvotes: 10,
+        downvotes: 1
+      }
+    ];
+    // Law with escape characters in data (simulates data from database)
+    // Note: In JS strings, \\ becomes a single \, so '\\!' becomes '\!' in the actual string
+    localThis.mockLawWithEscapes = {
+      id: 3,
+      title: 'Test Law',
+      text: "Don't pick a fight \\- it won\\*t end well\\!",
+      attribution: 'Test Author',
+      category_slug: 'test',
+      upvotes: 5,
+      downvotes: 0
+    };
+    localThis.mockSingleLaw = localThis.mockLaws[0];
+    localThis.mockCategories = [
+      { id: 1, name: 'General Laws', slug: 'general-laws', law_count: 50 },
+      { id: 2, name: 'Computer Laws', slug: 'computer-laws', law_count: 30 }
+    ];
+    localThis.mockContent = '# About\n\nThis is **markdown** content with [a link](https://example.com).';
+
+    // Reset jsPDF mock
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // Restore original URL methods
+    if (localThis.originalCreateObjectURL) {
+      URL.createObjectURL = localThis.originalCreateObjectURL;
+    }
+    if (localThis.originalRevokeObjectURL) {
+      URL.revokeObjectURL = localThis.originalRevokeObjectURL;
+    }
+    // Restore original Blob
+    if (localThis.originalBlob) {
+      globalThis.Blob = localThis.originalBlob;
+    }
+    vi.restoreAllMocks();
+  });
+
+  describe('generateFilename', () => {
+    it('converts title to lowercase with hyphens', () => {
+      expect(generateFilename('My Test Title', 'pdf')).toBe('my-test-title.pdf');
+    });
+
+    it('removes special characters', () => {
+      expect(generateFilename("Murphy's Law!", 'csv')).toBe('murphys-law.csv');
+    });
+
+    it('collapses multiple hyphens', () => {
+      expect(generateFilename('Test -- Title', 'md')).toBe('test-title.md');
+    });
+
+    it('limits length to 50 characters', () => {
+      const longTitle = 'This is a very long title that exceeds fifty characters in length';
+      const result = generateFilename(longTitle, 'txt');
+      expect(result.length).toBeLessThanOrEqual(54); // 50 chars + '.txt'
+    });
+
+    it('handles empty title with fallback', () => {
+      expect(generateFilename('', 'pdf')).toBe('murphys-laws.pdf');
+    });
+
+    it('handles title with only special characters', () => {
+      expect(generateFilename('!!!@@@###', 'pdf')).toBe('murphys-laws.pdf');
+    });
+  });
+
+  describe('exportToCSV', () => {
+    describe('with LAWS content type', () => {
+      it('generates CSV with correct headers', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test Laws',
+          data: localThis.mockLaws
+        };
+
+        exportToCSV(content);
+
+        const blobCall = vi.mocked(URL.createObjectURL).mock.calls[0][0];
+        expect(blobCall).toBeInstanceOf(Blob);
+      });
+
+      it('triggers file download with .csv extension', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test Laws',
+          data: localThis.mockLaws
+        };
+
+        exportToCSV(content);
+
+        expect(localThis.mockAnchor.download).toMatch(/\.csv$/);
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('uses provided filename', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test Laws',
+          data: localThis.mockLaws
+        };
+
+        exportToCSV(content, 'custom-file.csv');
+
+        expect(localThis.mockAnchor.download).toBe('custom-file.csv');
+      });
+
+      it('handles empty laws array', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Empty',
+          data: []
+        };
+
+        // Should not throw
+        exportToCSV(content);
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with SINGLE_LAW content type', () => {
+      it('generates single-row CSV', () => {
+        const content = {
+          type: ContentType.SINGLE_LAW,
+          title: "Murphy's Law",
+          data: localThis.mockSingleLaw
+        };
+
+        exportToCSV(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CATEGORIES content type', () => {
+      it('generates CSV with category headers', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: localThis.mockCategories
+        };
+
+        exportToCSV(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('CSV value escaping', () => {
+      it('handles null values in law fields', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: null,
+            title: null,
+            text: null,
+            attribution: null,
+            category_slug: null,
+            upvotes: null,
+            downvotes: null
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Should not throw and should produce valid CSV
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(text).toContain('"Full Text"');
+      });
+
+      it('handles undefined values in law fields', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1
+            // Other fields undefined
+          }]
+        };
+
+        exportToCSV(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('escapes values containing commas', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1,
+            title: 'Law with, comma',
+            text: 'Text with, multiple, commas',
+            attribution: 'Author, Jr.'
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Values with commas should be quoted
+        expect(text).toContain('"Law with, comma"');
+        expect(text).toContain('"Text with, multiple, commas"');
+      });
+
+      it('escapes values containing newlines', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1,
+            title: 'Law Title',
+            text: 'Line 1\nLine 2\nLine 3'
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Values with newlines should be quoted
+        expect(text).toContain('"Line 1\nLine 2\nLine 3"');
+      });
+
+      it('escapes values containing double quotes', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1,
+            title: 'Law with "quotes"',
+            text: 'Text says "hello"'
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Double quotes should be escaped by doubling them
+        expect(text).toContain('"Law with ""quotes"""');
+        expect(text).toContain('"Text says ""hello"""');
+      });
+
+      it('escapes values containing carriage returns', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1,
+            title: 'Title',
+            text: 'Line 1\r\nLine 2'
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Values with carriage returns should be quoted
+        expect(text).toContain('"Line 1\r\nLine 2"');
+      });
+
+      it('handles null values in category fields', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: [{
+            id: null,
+            name: null,
+            slug: null,
+            law_count: null
+          }]
+        };
+
+        exportToCSV(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('exportToMarkdown', () => {
+    describe('with LAWS content type', () => {
+      it('includes title as H1', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Search Results',
+          data: localThis.mockLaws
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('triggers file download with .md extension', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.download).toMatch(/\.md$/);
+      });
+
+      it('uses numbered list format', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLaws[0]]
+        };
+
+        exportToMarkdown(content);
+
+        // Get the blob content
+        const blobCall = vi.mocked(URL.createObjectURL).mock.calls[0][0];
+        expect(blobCall).toBeInstanceOf(Blob);
+      });
+
+      it('strips escape characters from text', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLawWithEscapes]
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('includes footer with export date and link', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with SINGLE_LAW content type', () => {
+      it('formats single law correctly', () => {
+        const content = {
+          type: ContentType.SINGLE_LAW,
+          title: "Murphy's Law",
+          data: localThis.mockSingleLaw
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CONTENT content type', () => {
+      it('preserves original markdown', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'About',
+          data: localThis.mockContent
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CATEGORIES content type', () => {
+      it('formats as bulleted list', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: localThis.mockCategories
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('exportToText', () => {
+    describe('with LAWS content type', () => {
+      it('includes uppercase title', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Search Results',
+          data: localThis.mockLaws
+        };
+
+        exportToText(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('triggers file download with .txt extension', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToText(content);
+
+        expect(localThis.mockAnchor.download).toMatch(/\.txt$/);
+      });
+
+      it('handles laws without title', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, text: 'Law text' }]
+        };
+
+        // Should not throw
+        exportToText(content);
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('handles laws without attribution', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, title: 'Title', text: 'Law text' }]
+        };
+
+        // Should not throw
+        exportToText(content);
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CONTENT content type', () => {
+      it('strips markdown formatting', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'About',
+          data: '# Header\n\n**Bold** text with [link](url)'
+        };
+
+        exportToText(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CATEGORIES content type', () => {
+      it('formats as plain list', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: localThis.mockCategories
+        };
+
+        exportToText(content);
+
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('exportToPDF', () => {
+    describe('with LAWS content type', () => {
+      it('creates PDF document', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test Laws',
+          data: localThis.mockLaws
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+
+      it('adds site header', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.text).toHaveBeenCalled();
+        expect(mockJsPDF.setFontSize).toHaveBeenCalledWith(18);
+      });
+
+      it('calls save with filename', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test Laws',
+          data: localThis.mockLaws
+        };
+
+        exportToPDF(content, 'custom.pdf');
+
+        expect(mockJsPDF.save).toHaveBeenCalledWith('custom.pdf');
+      });
+    });
+
+    describe('with SINGLE_LAW content type', () => {
+      it('formats single law correctly', () => {
+        const content = {
+          type: ContentType.SINGLE_LAW,
+          title: "Murphy's Law",
+          data: localThis.mockSingleLaw
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CONTENT content type', () => {
+      it('formats text content', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'About',
+          data: localThis.mockContent
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+    });
+
+    describe('with CATEGORIES content type', () => {
+      it('formats categories list', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: localThis.mockCategories
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+    });
+
+    describe('page overflow handling', () => {
+      it('adds new page when laws overflow', () => {
+        // Create many laws to trigger page overflow
+        const manyLaws = Array.from({ length: 50 }, (_, i) => ({
+          id: i + 1,
+          title: `Law ${i + 1}`,
+          text: 'This is a law that takes up space on the page.',
+          attribution: 'Author'
+        }));
+
+        // Mock splitTextToSize to return multiple lines (simulates long text)
+        mockJsPDF.splitTextToSize.mockImplementation((text) => {
+          // Return array of 10 lines to simulate text wrapping
+          return Array(10).fill(text.substring(0, 50));
+        });
+
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Many Laws',
+          data: manyLaws
+        };
+
+        exportToPDF(content);
+
+        // Should have called addPage at least once due to overflow
+        expect(mockJsPDF.addPage).toHaveBeenCalled();
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+
+      it('adds new page when content text overflows', () => {
+        // Create very long content
+        const longContent = Array(100).fill('This is a paragraph of text. ').join('\n\n');
+
+        // Mock splitTextToSize to return many lines
+        mockJsPDF.splitTextToSize.mockImplementation(() => {
+          return Array(100).fill('Line of text');
+        });
+
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Long Content',
+          data: longContent
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.addPage).toHaveBeenCalled();
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+
+      it('adds new page when categories overflow', () => {
+        // Create many categories
+        const manyCategories = Array.from({ length: 100 }, (_, i) => ({
+          id: i + 1,
+          name: `Category ${i + 1}`,
+          slug: `category-${i + 1}`,
+          law_count: 10
+        }));
+
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Many Categories',
+          data: manyCategories
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.addPage).toHaveBeenCalled();
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('exportContent', () => {
+    it('routes to exportToPDF for pdf format', () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      exportContent(content, 'pdf');
+
+      expect(mockJsPDF.save).toHaveBeenCalled();
+    });
+
+    it('routes to exportToCSV for csv format', () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      exportContent(content, 'csv');
+
+      expect(localThis.mockAnchor.download).toMatch(/\.csv$/);
+    });
+
+    it('routes to exportToMarkdown for md format', () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      exportContent(content, 'md');
+
+      expect(localThis.mockAnchor.download).toMatch(/\.md$/);
+    });
+
+    it('routes to exportToText for txt format', () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      exportContent(content, 'txt');
+
+      expect(localThis.mockAnchor.download).toMatch(/\.txt$/);
+    });
+
+    it('handles unknown format gracefully', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      // Should not throw
+      exportContent(content, 'unknown');
+
+      expect(consoleSpy).toHaveBeenCalledWith('Unknown export format: unknown');
+    });
+  });
+
+  describe('downloadFile helper (via exports)', () => {
+    it('creates object URL from blob', () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      exportToCSV(content);
+
+      expect(URL.createObjectURL).toHaveBeenCalled();
+    });
+
+    it('revokes object URL after download', () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test',
+        data: localThis.mockLaws
+      };
+
+      exportToCSV(content);
+
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:test');
+    });
+  });
+
+  describe('content formatting', () => {
+    describe('escape character handling', () => {
+      it('strips markdown escape characters from law text', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLawWithEscapes]
+        };
+
+        exportToMarkdown(content);
+        const text = getBlobText();
+
+        // Should not contain escaped characters (backslash followed by special char)
+        expect(text).not.toMatch(/\\[!\-*]/);
+        // Should contain unescaped versions
+        expect(text).toContain("Don't pick a fight - it won*t end well!");
+      });
+
+      it('strips escapes in text export too', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLawWithEscapes]
+        };
+
+        exportToText(content);
+        const text = getBlobText();
+
+        // Should not contain escaped characters
+        expect(text).not.toMatch(/\\[!\-*]/);
+      });
+    });
+
+    describe('markdown format', () => {
+      it('uses numbered list format for laws', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToMarkdown(content);
+        const text = getBlobText();
+
+        // Should have numbered list items
+        expect(text).toContain('1. ');
+        expect(text).toContain('2. ');
+      });
+
+      it('puts attribution on new line with indent', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLaws[0]]
+        };
+
+        exportToMarkdown(content);
+        const text = getBlobText();
+
+        // Attribution should be on its own line, indented
+        expect(text).toContain('\n   *- Edward A. Murphy Jr.*');
+      });
+
+      it('includes footer at bottom with clickable link', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToMarkdown(content);
+        const text = getBlobText();
+
+        // Footer should be at the end with markdown link format
+        expect(text).toContain('---\n\n*Exported from');
+        expect(text).toMatch(/\[https:\/\/murphys-laws\.com\]\(https:\/\/murphys-laws\.com\)/);
+      });
+
+      it('combines title and text with colon separator', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLaws[0]]
+        };
+
+        exportToMarkdown(content);
+        const text = getBlobText();
+
+        // Title and text should be combined
+        expect(text).toContain("Murphy's Law: If anything can go wrong");
+      });
+    });
+
+    describe('text format', () => {
+      it('includes footer at bottom', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: localThis.mockLaws
+        };
+
+        exportToText(content);
+        const text = getBlobText();
+
+        // Footer should be at the end
+        expect(text).toContain('==================================================\nExported from');
+        expect(text).toContain('https://murphys-laws.com');
+      });
+    });
+
+    describe('CSV format', () => {
+      it('includes Full Text column with combined title and text', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [localThis.mockLaws[0]]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Header should have Full Text column
+        expect(text).toContain('"Full Text"');
+        // Combined text should appear
+        expect(text).toContain("Murphy's Law: If anything can go wrong");
+      });
+    });
+  });
+});

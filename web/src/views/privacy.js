@@ -1,6 +1,7 @@
-import { getPageContent } from '@utils/markdown-content.js';
+import { getPageContent, getRawMarkdownContent } from '@utils/markdown-content.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { SITE_NAME } from '@utils/constants.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function Privacy({ onNavigate }) {
   const el = document.createElement('div');
@@ -13,6 +14,13 @@ export function Privacy({ onNavigate }) {
   el.innerHTML = getPageContent('privacy');
   // Only trigger ads if content meets minimum requirements
   triggerAdSense(el);
+
+  // Register export content
+  setExportContent({
+    type: ContentType.CONTENT,
+    title: 'Privacy Policy',
+    data: getRawMarkdownContent('privacy')
+  });
 
   el.addEventListener('click', (e) => {
     const target = e.target;
@@ -27,6 +35,11 @@ export function Privacy({ onNavigate }) {
       }
     }
   });
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

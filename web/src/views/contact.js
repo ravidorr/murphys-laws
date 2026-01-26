@@ -1,5 +1,6 @@
-import { getPageContent } from '@utils/markdown-content.js';
+import { getPageContent, getRawMarkdownContent } from '@utils/markdown-content.js';
 import { SITE_NAME } from '@utils/constants.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function Contact({ onNavigate }) {
   const el = document.createElement('div');
@@ -10,6 +11,13 @@ export function Contact({ onNavigate }) {
   document.title = `Contact | ${SITE_NAME}`;
 
   el.innerHTML = getPageContent('contact');
+
+  // Register export content
+  setExportContent({
+    type: ContentType.CONTENT,
+    title: 'Contact Us',
+    data: getRawMarkdownContent('contact')
+  });
 
   el.addEventListener('click', (e) => {
     const target = e.target;
@@ -24,6 +32,11 @@ export function Contact({ onNavigate }) {
       }
     }
   });
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

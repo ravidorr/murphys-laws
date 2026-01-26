@@ -6,6 +6,7 @@ import { renderLawCards } from '@utils/law-card-renderer.js';
 import { getFavorites, clearAllFavorites, removeFavorite } from '@utils/favorites.js';
 import { isFavoritesEnabled } from '@utils/feature-flags.js';
 import { addVotingListeners } from '@utils/voting.js';
+import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.js';
 
 /**
  * Favorites page view
@@ -138,8 +139,16 @@ export function Favorites({ onNavigate }) {
 
     if (favorites.length === 0) {
       root.innerHTML = renderEmptyState();
+      clearExportContent();
     } else {
       root.innerHTML = renderPopulatedState(favorites);
+      // Register export content for favorites
+      setExportContent({
+        type: ContentType.LAWS,
+        title: 'My Favorite Laws',
+        data: favorites,
+        metadata: { total: favorites.length }
+      });
     }
 
     hydrateIcons(root);
@@ -273,6 +282,11 @@ export function Favorites({ onNavigate }) {
   render();
   setupEventListeners();
   addVotingListeners(el);
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }

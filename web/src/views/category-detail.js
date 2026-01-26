@@ -15,6 +15,7 @@ import { fetchCategories } from '../utils/api.js'; // To get category title for 
 import { triggerAdSense } from '../utils/ads.js';
 import { showSuccess } from '../components/notification.js';
 import { stripMarkdownFootnotes } from '../utils/sanitize.js';
+import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
   const el = document.createElement('div');
@@ -137,6 +138,18 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       await updateDisplay();
+
+      // Register export content for this category
+      if (laws.length > 0) {
+        setExportContent({
+          type: ContentType.LAWS,
+          title: categoryTitle,
+          data: laws,
+          metadata: { total: totalLaws, categoryId, page: currentPage }
+        });
+      } else {
+        clearExportContent();
+      }
     } catch {
       if (cardText) {
         cardText.setAttribute('aria-busy', 'false');
@@ -329,6 +342,11 @@ export function CategoryDetail({ categoryId, onNavigate }) {
 
   // Add voting listeners using shared utility
   addVotingListeners(el);
+
+  // Cleanup function to clear export content on unmount
+  el.cleanup = () => {
+    clearExportContent();
+  };
 
   return el;
 }
