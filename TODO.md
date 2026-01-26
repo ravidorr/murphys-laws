@@ -18,7 +18,7 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## UX Improvements (Frontend Only)
 - [x] **User Favorites/Bookmarks:** ~~Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.~~ Done - added heart button to law cards (toggles favorite state), dedicated `/favorites` page with empty state, localStorage persistence. Feature controlled by `VITE_FEATURE_FAVORITES` env var or localStorage admin override (`murphys_ff_favorites`).
-- [ ] ~~**Copy as Image:** Add "copy as image" feature to share buttons.~~ Won't do.
+- ~~**Copy as Image:** Add "copy as image" feature to share buttons.~~ Won't do.
 
 ## User Engagement (Require Backend Work)
 - [x] **RSS Feed:** ~~Provide RSS/Atom feed for new laws and Law of the Day.~~ Done - added `/api/v1/feed.rss` (RSS 2.0) and `/api/v1/feed.atom` (Atom 1.0) endpoints. Feeds include Law of the Day plus 10 most recent laws. Added autodiscovery links to `index.html`.
