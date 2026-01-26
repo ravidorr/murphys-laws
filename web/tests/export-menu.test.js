@@ -486,7 +486,7 @@ describe('Export Menu Component', () => {
       localThis.container.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
-      expect(button.getAttribute('aria-label')).toBe('Export page content');
+      expect(button.getAttribute('aria-label')).toBe('Download page content');
     });
 
     it('button has aria-haspopup="true"', () => {

@@ -49,9 +49,9 @@ export function ExportMenu() {
   toggleBtn.type = 'button';
   toggleBtn.id = 'export-toggle';
   toggleBtn.className = 'export-toggle';
-  toggleBtn.setAttribute('data-tooltip', 'Export page');
+  toggleBtn.setAttribute('data-tooltip', 'Download page');
   toggleBtn.setAttribute('data-tooltip-pos', 'bottom');
-  toggleBtn.setAttribute('aria-label', 'Export page content');
+  toggleBtn.setAttribute('aria-label', 'Download page content');
   toggleBtn.setAttribute('aria-haspopup', 'true');
   toggleBtn.setAttribute('aria-expanded', 'false');
   toggleBtn.disabled = true; // Disabled by default until content is registered
@@ -87,7 +87,7 @@ export function ExportMenu() {
     // Update tooltip
     toggleBtn.setAttribute(
       'data-tooltip',
-      hasContent ? 'Export page' : 'No exportable content'
+      hasContent ? 'Download page' : 'No exportable content'
     );
 
     // Clear and rebuild dropdown
