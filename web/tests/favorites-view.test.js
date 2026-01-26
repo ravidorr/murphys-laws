@@ -188,9 +188,29 @@ describe('Favorites View Component', () => {
       expect(renderLawCards).toHaveBeenCalledWith([localThis.mockLaw1, localThis.mockLaw2]);
     });
 
-    it('calls addVotingListeners', () => {
+    it('calls addVotingListeners exactly once during initialization', () => {
       Favorites({ onNavigate: localThis.mockNavigate });
-      expect(addVotingListeners).toHaveBeenCalled();
+      expect(addVotingListeners).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not add duplicate voting listeners after clear all re-render', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1, localThis.mockLaw2]);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+
+      // Clear mock call count from initialization
+      vi.mocked(addVotingListeners).mockClear();
+
+      // Simulate clearing all favorites (which triggers re-render)
+      vi.mocked(getFavorites).mockReturnValue([]);
+      const clearButton = el.querySelector('#clear-favorites-btn');
+      clearButton.click();
+
+      // addVotingListeners should NOT be called again during re-render
+      expect(addVotingListeners).not.toHaveBeenCalled();
+
+      vi.spyOn(window, 'confirm').mockRestore();
     });
   });
 

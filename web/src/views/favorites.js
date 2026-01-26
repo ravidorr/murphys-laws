@@ -146,9 +146,6 @@ export function Favorites({ onNavigate }) {
 
     // Set up search form handler for empty state
     setupSearchFormHandler();
-
-    // Add voting listeners for vote buttons
-    addVotingListeners(el);
   }
 
   /**
@@ -275,6 +272,7 @@ export function Favorites({ onNavigate }) {
   el.innerHTML = templateHtml;
   render();
   setupEventListeners();
+  addVotingListeners(el);
 
   return el;
 }

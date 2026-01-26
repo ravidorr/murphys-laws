@@ -104,6 +104,24 @@ describe('Feature Flags', () => {
       const state = getFeatureState('FAVORITES_ENABLED');
       expect(state).toEqual({ enabled: true, source: 'default' });
     });
+
+    it('handles localStorage error gracefully and falls back to default', () => {
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      const state = getFeatureState('FAVORITES_ENABLED');
+      // Should fall back to default since localStorage throws
+      expect(state).toEqual({ enabled: true, source: 'default' });
+
+      getItemSpy.mockRestore();
+    });
+
+    it('returns localStorage source with false value', () => {
+      localStorage.setItem('murphys_ff_favorites', 'false');
+      const state = getFeatureState('FAVORITES_ENABLED');
+      expect(state).toEqual({ enabled: false, source: 'localStorage' });
+    });
   });
 
   describe('isFavoritesEnabled', () => {

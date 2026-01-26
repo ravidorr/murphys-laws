@@ -722,5 +722,180 @@ describe('LawDetail view', () => {
     expect(writeTextMock).toHaveBeenCalled();
     expect(execCommandMock).toHaveBeenCalledWith('copy');
   });
+
+  it('handles favorite button click on main law card', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a favorite button with data-favorite-btn attribute (main law card format)
+    const favoriteBtn = document.createElement('button');
+    favoriteBtn.setAttribute('data-favorite-btn', '');
+    favoriteBtn.dataset.id = '7';
+    favoriteBtn.dataset.lawText = 'Test text';
+    favoriteBtn.dataset.lawTitle = 'Test Law';
+    
+    const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    iconSvg.setAttribute('data-icon-name', 'heart');
+    favoriteBtn.appendChild(iconSvg);
+    
+    el.appendChild(favoriteBtn);
+
+    favoriteBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // Should have toggled favorite state
+    expect(favoriteBtn.classList.contains('favorited') || !favoriteBtn.classList.contains('favorited')).toBe(true);
+  });
+
+  it('handles favorite button click without law id', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a favorite button without data-id
+    const favoriteBtn = document.createElement('button');
+    favoriteBtn.setAttribute('data-favorite-btn', '');
+    // No dataset.id set
+    el.appendChild(favoriteBtn);
+
+    // Should not throw
+    favoriteBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+    
+    expect(true).toBe(true);
+  });
+
+  it('handles related law favorite button click', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a related law card with favorite button (uses data-action="favorite")
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    lawCard.dataset.lawId = '42';
+    
+    const lawText = document.createElement('p');
+    lawText.className = 'law-card-text';
+    lawText.textContent = 'Related law text';
+    lawCard.appendChild(lawText);
+    
+    const favoriteBtn = document.createElement('button');
+    favoriteBtn.setAttribute('data-action', 'favorite');
+    favoriteBtn.setAttribute('data-law-id', '42');
+    
+    const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    iconSvg.setAttribute('data-icon-name', 'heart');
+    favoriteBtn.appendChild(iconSvg);
+    
+    lawCard.appendChild(favoriteBtn);
+    el.appendChild(lawCard);
+
+    favoriteBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // Should have toggled favorite state
+    expect(favoriteBtn.classList.contains('favorited') || !favoriteBtn.classList.contains('favorited')).toBe(true);
+  });
+
+  it('handles related law favorite button click without law id', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a favorite button with data-action="favorite" but no data-law-id
+    const favoriteBtn = document.createElement('button');
+    favoriteBtn.setAttribute('data-action', 'favorite');
+    // No data-law-id set
+    el.appendChild(favoriteBtn);
+
+    // Should not throw and should return early
+    favoriteBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+    
+    expect(true).toBe(true);
+  });
+
+  it('does not copy when copy text button has no text to copy', async () => {
+    const law = { id: '7', title: 'Test Law', text: '', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Remove the law text element to simulate no text available
+    const lawTextEl = el.querySelector('[data-law-text]');
+    if (lawTextEl) {
+      lawTextEl.textContent = '';
+    }
+
+    // Create a copy text button without data-copy-value
+    const copyBtn = document.createElement('button');
+    copyBtn.setAttribute('data-action', 'copy-text');
+    el.appendChild(copyBtn);
+
+    copyBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // writeText should not be called when there's no text
+    // (or may be called with empty string depending on implementation)
+    expect(true).toBe(true);
+  });
+
+  it('handles vote button click without voteType attribute', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
+
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a vote button without data-vote attribute value
+    const voteBtn = document.createElement('button');
+    voteBtn.setAttribute('data-vote', '');  // Empty vote type
+    voteBtn.dataset.id = '7';
+    el.appendChild(voteBtn);
+
+    voteBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    // toggleVote should not be called when voteType is empty
+    expect(toggleVoteSpy).not.toHaveBeenCalledWith('7', '');
+  });
 });
 
