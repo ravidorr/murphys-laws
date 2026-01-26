@@ -56,7 +56,7 @@ const CONTENT_PAGES = [
 async function fetchAllLaws() {
   const laws = [];
   let offset = 0;
-  const limit = 100;
+  const limit = 100; // Request up to 100, but API may return fewer
   
   try {
     while (true) {
@@ -68,12 +68,15 @@ async function fetchAllLaws() {
       const data = await response.json();
       laws.push(...data.data);
       
-      if (data.data.length < limit || laws.length >= data.total) {
+      // Stop if we got no data or have all items
+      // Note: API may return fewer items than limit (e.g., max 25 per request)
+      if (data.data.length === 0 || laws.length >= data.total) {
         break;
       }
-      offset += limit;
+      offset += data.data.length; // Use actual count returned, not requested limit
     }
     
+    console.log(`Fetched ${laws.length} laws from API.`);
     return laws;
   } catch (error) {
     console.warn(`Warning: Could not fetch laws from API: ${error.message}`);
