@@ -24,6 +24,9 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          # Use production API during SSG to fetch all laws for pre-rendering
+          API_BASE_URL: https://murphys-laws.com
 
       - name: Upload build artifacts
         uses: appleboy/scp-action@v0.1.7
