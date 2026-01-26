@@ -108,7 +108,7 @@ function generateLawPage(law, template) {
   
   const title = law.title || "Murphy's Law";
   const description = (law.text || '').substring(0, 160);
-  const lawUrl = `${SITE_URL}/law/${law.id}`;
+  const lawUrl = `${SITE_URL}/law/${law.id}/`;
   const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
   
   // Update page title
