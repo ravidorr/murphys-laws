@@ -746,11 +746,14 @@ describe('LawDetail view', () => {
     
     el.appendChild(favoriteBtn);
 
+    // Verify button doesn't start with favorited class
+    expect(favoriteBtn.classList.contains('favorited')).toBe(false);
+
     favoriteBtn.click();
     await new Promise(r => setTimeout(r, 10));
 
-    // Should have toggled favorite state
-    expect(favoriteBtn.classList.contains('favorited') || !favoriteBtn.classList.contains('favorited')).toBe(true);
+    // Should have added favorited class (law was not previously favorited)
+    expect(favoriteBtn.classList.contains('favorited')).toBe(true);
   });
 
   it('handles favorite button click without law id', async () => {
@@ -807,11 +810,14 @@ describe('LawDetail view', () => {
     lawCard.appendChild(favoriteBtn);
     el.appendChild(lawCard);
 
+    // Verify button doesn't start with favorited class
+    expect(favoriteBtn.classList.contains('favorited')).toBe(false);
+
     favoriteBtn.click();
     await new Promise(r => setTimeout(r, 10));
 
-    // Should have toggled favorite state
-    expect(favoriteBtn.classList.contains('favorited') || !favoriteBtn.classList.contains('favorited')).toBe(true);
+    // Should have added favorited class (law was not previously favorited)
+    expect(favoriteBtn.classList.contains('favorited')).toBe(true);
   });
 
   it('handles related law favorite button click without law id', async () => {
