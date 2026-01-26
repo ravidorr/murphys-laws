@@ -1,21 +1,30 @@
 // Category caching utility to reduce API calls and improve performance
-// Uses localStorage with TTL to cache categories
+// Uses localStorage with TTL and versioning to cache categories
 
 const CACHE_KEY = 'murphys_categories';
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 const ATTRIBUTION_CACHE_KEY = 'murphys_attributions';
+const CACHE_VERSION = 1; // Bump when schema changes
+const MIN_ACCEPTED_VERSION = 0; // For backward compatibility with old caches (bump when breaking changes needed)
 
 /**
  * Get cached categories from localStorage
- * @returns {Array|null} Cached categories or null if expired/missing
+ * @returns {Array|null} Cached categories or null if expired/missing/outdated
  */
 export function getCachedCategories() {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
 
-    const { data, timestamp } = JSON.parse(cached);
+    const { version, data, timestamp } = JSON.parse(cached);
+    const cacheVersion = version ?? 0; // Backward compatibility for old caches
     const now = Date.now();
+
+    // Invalidate if version is below minimum accepted version
+    if (cacheVersion < MIN_ACCEPTED_VERSION) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
 
     // Check if cache is expired
     if (now - timestamp > CACHE_TTL) {
@@ -36,6 +45,7 @@ export function getCachedCategories() {
 export function setCachedCategories(categories) {
   try {
     const cacheData = {
+      version: CACHE_VERSION,
       data: categories,
       timestamp: Date.now()
     };
@@ -47,15 +57,22 @@ export function setCachedCategories(categories) {
 
 /**
  * Get cached attributions from localStorage
- * @returns {Array|null} Cached attributions or null if expired/missing
+ * @returns {Array|null} Cached attributions or null if expired/missing/outdated
  */
 export function getCachedAttributions() {
   try {
     const cached = localStorage.getItem(ATTRIBUTION_CACHE_KEY);
     if (!cached) return null;
 
-    const { data, timestamp } = JSON.parse(cached);
+    const { version, data, timestamp } = JSON.parse(cached);
+    const cacheVersion = version ?? 0; // Backward compatibility for old caches
     const now = Date.now();
+
+    // Invalidate if version is below minimum accepted version
+    if (cacheVersion < MIN_ACCEPTED_VERSION) {
+      localStorage.removeItem(ATTRIBUTION_CACHE_KEY);
+      return null;
+    }
 
     // Check if cache is expired
     if (now - timestamp > CACHE_TTL) {
@@ -76,6 +93,7 @@ export function getCachedAttributions() {
 export function setCachedAttributions(attributions) {
   try {
     const cacheData = {
+      version: CACHE_VERSION,
       data: attributions,
       timestamp: Date.now()
     };

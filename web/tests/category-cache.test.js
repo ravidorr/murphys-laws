@@ -55,6 +55,8 @@ describe('Category cache utilities', () => {
       const categories = [{ id: 1, title: 'General' }];
 
       // Set cache with old timestamp (more than 1 hour ago)
+      // Note: This also exercises backward compatibility since the old format
+      // lacks a version field (version defaults to 0, which is accepted)
       const oldCache = {
         data: categories,
         timestamp: Date.now() - (2 * 60 * 60 * 1000) // 2 hours ago
@@ -118,6 +120,8 @@ describe('Category cache utilities', () => {
       const attributions = [{ name: 'Alice' }];
 
       // Set cache with old timestamp (more than 1 hour ago)
+      // Note: This also exercises backward compatibility since the old format
+      // lacks a version field (version defaults to 0, which is accepted)
       const oldCache = {
         data: attributions,
         timestamp: Date.now() - (2 * 60 * 60 * 1000) // 2 hours ago
@@ -146,6 +150,166 @@ describe('Category cache utilities', () => {
       });
 
       expect(() => setCachedAttributions(attributions)).not.toThrow();
+    });
+  });
+
+  describe('Cache versioning', () => {
+    describe('Categories', () => {
+      it('reads old cache format without version field (backward compatibility)', () => {
+        const categories = [{ id: 1, title: 'General' }];
+
+        // Old format: { data, timestamp } without version
+        const oldCache = {
+          data: categories,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_categories', JSON.stringify(oldCache));
+
+        // Should still read successfully (version defaults to 0, which is accepted)
+        const cached = getCachedCategories();
+        expect(cached).toEqual(categories);
+      });
+
+      it('writes new cache format with version field', () => {
+        const categories = [{ id: 1, title: 'General' }];
+
+        setCachedCategories(categories);
+
+        const stored = JSON.parse(localStorage.getItem('murphys_categories'));
+        expect(stored).toHaveProperty('version');
+        expect(stored.version).toBe(1);
+        expect(stored).toHaveProperty('data');
+        expect(stored).toHaveProperty('timestamp');
+      });
+
+      it('accepts cache with current version', () => {
+        const categories = [{ id: 1, title: 'General' }];
+
+        // Cache with current version (1)
+        const versionedCache = {
+          version: 1,
+          data: categories,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_categories', JSON.stringify(versionedCache));
+
+        const cached = getCachedCategories();
+        expect(cached).toEqual(categories);
+      });
+
+      it('invalidates cache with version below minimum accepted version', () => {
+        const categories = [{ id: 1, title: 'General' }];
+
+        // Cache with version below MIN_ACCEPTED_VERSION (which is 0)
+        // This exercises the version invalidation branch and simulates
+        // the behavior when MIN_ACCEPTED_VERSION is bumped in the future
+        const outdatedCache = {
+          version: -1,
+          data: categories,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_categories', JSON.stringify(outdatedCache));
+
+        const cached = getCachedCategories();
+        expect(cached).toBeNull();
+        // Verify the outdated cache was removed from localStorage
+        expect(localStorage.getItem('murphys_categories')).toBeNull();
+      });
+
+      it('documents version invalidation behavior for future schema changes', () => {
+        // This test documents the expected behavior when MIN_ACCEPTED_VERSION is bumped.
+        // Currently MIN_ACCEPTED_VERSION = 0, so all versions >= 0 are accepted.
+        //
+        // When a breaking schema change is needed:
+        // 1. Bump CACHE_VERSION to 2 (new caches will have version: 2)
+        // 2. Bump MIN_ACCEPTED_VERSION to 1 (invalidates version 0 caches)
+        //    Or bump to 2 to invalidate both version 0 and 1
+        //
+        // After bumping MIN_ACCEPTED_VERSION to 1, caches with version 0 (old format)
+        // would be invalidated and removed from localStorage.
+        //
+        // This behavior cannot be tested without mocking constants, but we verify
+        // the version check logic exists by confirming versioned caches work correctly.
+        const categories = [{ id: 1, title: 'General' }];
+
+        // Verify the version field is used in cache lookup
+        const versionedCache = {
+          version: 1,
+          data: categories,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_categories', JSON.stringify(versionedCache));
+
+        const cached = getCachedCategories();
+        expect(cached).toEqual(categories);
+
+        // Verify stored cache has version field
+        const stored = JSON.parse(localStorage.getItem('murphys_categories'));
+        expect(stored.version).toBe(1);
+      });
+    });
+
+    describe('Attributions', () => {
+      it('reads old cache format without version field (backward compatibility)', () => {
+        const attributions = [{ name: 'Alice' }];
+
+        // Old format: { data, timestamp } without version
+        const oldCache = {
+          data: attributions,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_attributions', JSON.stringify(oldCache));
+
+        // Should still read successfully (version defaults to 0, which is accepted)
+        const cached = getCachedAttributions();
+        expect(cached).toEqual(attributions);
+      });
+
+      it('writes new cache format with version field', () => {
+        const attributions = [{ name: 'Alice' }];
+
+        setCachedAttributions(attributions);
+
+        const stored = JSON.parse(localStorage.getItem('murphys_attributions'));
+        expect(stored).toHaveProperty('version');
+        expect(stored.version).toBe(1);
+        expect(stored).toHaveProperty('data');
+        expect(stored).toHaveProperty('timestamp');
+      });
+
+      it('accepts cache with current version', () => {
+        const attributions = [{ name: 'Alice' }];
+
+        // Cache with current version (1)
+        const versionedCache = {
+          version: 1,
+          data: attributions,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_attributions', JSON.stringify(versionedCache));
+
+        const cached = getCachedAttributions();
+        expect(cached).toEqual(attributions);
+      });
+
+      it('invalidates cache with version below minimum accepted version', () => {
+        const attributions = [{ name: 'Alice' }];
+
+        // Cache with version below MIN_ACCEPTED_VERSION (which is 0)
+        // This exercises the version invalidation branch and simulates
+        // the behavior when MIN_ACCEPTED_VERSION is bumped in the future
+        const outdatedCache = {
+          version: -1,
+          data: attributions,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('murphys_attributions', JSON.stringify(outdatedCache));
+
+        const cached = getCachedAttributions();
+        expect(cached).toBeNull();
+        // Verify the outdated cache was removed from localStorage
+        expect(localStorage.getItem('murphys_attributions')).toBeNull();
+      });
     });
   });
 
