@@ -15,6 +15,7 @@ REST API for the Murphy's Laws Archive. All endpoints return JSON unless otherwi
   - [Categories](#categories)
   - [Attributions](#attributions)
   - [Feeds](#feeds)
+  - [Open Graph Images](#open-graph-images)
 - [Error Responses](#error-responses)
 - [Data Models](#data-models)
 
@@ -576,6 +577,63 @@ Atom 1.0 feed containing the Law of the Day and 10 most recent laws.
   <!-- More entries... -->
 </feed>
 ```
+
+---
+
+### Open Graph Images
+
+#### GET /api/v1/og/law/:id.png
+
+Generate a dynamic Open Graph image for a specific law. Used for social media sharing previews on Twitter, Facebook, LinkedIn, etc.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | integer | Law ID |
+
+**Response:**
+
+- Content-Type: `image/png`
+- Cache-Control: `public, max-age=86400` (24 hours)
+- Image dimensions: 1200x630 pixels (standard OG size)
+
+**Image Contents:**
+
+The generated image includes:
+- Law text (word-wrapped, truncated if too long)
+- Law title (if available)
+- Attribution name (if available)
+- Murphy's Laws branding
+- Dark gradient background
+
+**Error Responses:**
+
+- `400 Bad Request` - Invalid law ID (non-integer, negative, zero, or decimal)
+- `404 Not Found` - Law not found
+- `500 Internal Server Error` - Image generation failed
+
+**Example:**
+
+```bash
+# Get OG image for law ID 42
+curl "https://murphys-laws.com/api/v1/og/law/42.png" --output law-42.png
+```
+
+**Usage in HTML:**
+
+```html
+<meta property="og:image" content="https://murphys-laws.com/api/v1/og/law/42.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="twitter:image" content="https://murphys-laws.com/api/v1/og/law/42.png">
+```
+
+**Notes:**
+
+- Images are cached in memory on the server for 24 hours
+- Only published laws are available
+- The endpoint is optimized for social media crawlers
 
 ---
 

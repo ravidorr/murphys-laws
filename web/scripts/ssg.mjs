@@ -11,6 +11,10 @@ const DIST_DIR = path.resolve(__dirname, '../dist');
 const SHARED_DATA_DIR = path.resolve(__dirname, '../../shared/data/murphys-laws');
 const SHARED_CONTENT_DIR = path.resolve(__dirname, '../../shared/content');
 
+// API configuration for fetching laws
+const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
+const SITE_URL = 'https://murphys-laws.com';
+
 // Content pages metadata for SSG
 const CONTENT_PAGES = [
   { 
@@ -44,6 +48,152 @@ const CONTENT_PAGES = [
     description: 'Get in touch with Murphy\'s Law Archive - share a law, report an issue, or just say hello.'
   }
 ];
+
+/**
+ * Fetch all published laws from the API
+ * @returns {Promise<Array>} Array of law objects
+ */
+async function fetchAllLaws() {
+  const laws = [];
+  let offset = 0;
+  const limit = 100;
+  
+  try {
+    while (true) {
+      const response = await fetch(`${API_BASE_URL}/api/v1/laws?limit=${limit}&offset=${offset}`);
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      laws.push(...data.data);
+      
+      if (data.data.length < limit || laws.length >= data.total) {
+        break;
+      }
+      offset += limit;
+    }
+    
+    return laws;
+  } catch (error) {
+    console.warn(`Warning: Could not fetch laws from API: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Escape HTML special characters for safe embedding
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Generate HTML page for a single law with correct OG meta tags
+ * @param {Object} law - Law object
+ * @param {string} template - HTML template
+ * @returns {string} Generated HTML
+ */
+function generateLawPage(law, template) {
+  let pageHtml = template;
+  
+  const title = law.title || "Murphy's Law";
+  const description = (law.text || '').substring(0, 160);
+  const lawUrl = `${SITE_URL}/law/${law.id}`;
+  const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
+  
+  // Update page title
+  const pageTitle = `${escapeHtml(title)} - Murphy's Law Archive`;
+  pageHtml = pageHtml.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
+  
+  // Update meta description
+  pageHtml = pageHtml.replace(
+    /<meta name="description" content=".*?">/,
+    `<meta name="description" content="${escapeHtml(description)}">`
+  );
+  
+  // Update canonical URL
+  pageHtml = pageHtml.replace(
+    /<link rel="canonical" href=".*?">/,
+    `<link rel="canonical" href="${lawUrl}">`
+  );
+  
+  // Update OG tags
+  pageHtml = pageHtml.replace(
+    /<meta property="og:url" content=".*?">/,
+    `<meta property="og:url" content="${lawUrl}">`
+  );
+  pageHtml = pageHtml.replace(
+    /<meta property="og:title" content=".*?">/,
+    `<meta property="og:title" content="${escapeHtml(title)} - Murphy's Laws">`
+  );
+  pageHtml = pageHtml.replace(
+    /<meta property="og:description"[\s\S]*?content="[\s\S]*?">/,
+    `<meta property="og:description" content="${escapeHtml(description)}">`
+  );
+  pageHtml = pageHtml.replace(
+    /<meta property="og:image" content=".*?">/,
+    `<meta property="og:image" content="${ogImageUrl}">`
+  );
+  
+  // Update Twitter Card tags
+  pageHtml = pageHtml.replace(
+    /<meta property="twitter:url" content=".*?">/,
+    `<meta property="twitter:url" content="${lawUrl}">`
+  );
+  pageHtml = pageHtml.replace(
+    /<meta property="twitter:title" content=".*?">/,
+    `<meta property="twitter:title" content="${escapeHtml(title)} - Murphy's Laws">`
+  );
+  pageHtml = pageHtml.replace(
+    /<meta property="twitter:description"[\s\S]*?content="[\s\S]*?">/,
+    `<meta property="twitter:description" content="${escapeHtml(description)}">`
+  );
+  pageHtml = pageHtml.replace(
+    /<meta property="twitter:image" content=".*?">/,
+    `<meta property="twitter:image" content="${ogImageUrl}">`
+  );
+  
+  // Get attribution name
+  const attributionName = law.attributions && law.attributions.length > 0 
+    ? law.attributions[0].name 
+    : null;
+  
+  // Split title for accent styling
+  const titleWords = title.split(' ');
+  const accentTitle = titleWords.length > 1
+    ? `<span class="accent-text">${escapeHtml(titleWords[0])}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
+    : `<span class="accent-text">${escapeHtml(title)}</span>`;
+  
+  // Build static content for law detail page
+  const staticContent = `
+    <div class="container page law-detail pt-0" role="main">
+      <article class="law-detail-card card">
+        <header class="card-header">
+          <h1 class="card-title">${accentTitle}</h1>
+        </header>
+        <div class="card-body">
+          <blockquote class="law-text">${escapeHtml(law.text || '')}</blockquote>
+          ${attributionName ? `<p class="attribution">- ${escapeHtml(attributionName)}</p>` : ''}
+        </div>
+      </article>
+    </div>
+  `;
+  
+  // Inject content into main
+  pageHtml = pageHtml.replace(
+    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
+    `<main id="main-content" class="flex-1 container page">${staticContent}</main>`
+  );
+  
+  return pageHtml;
+}
 
 /**
  * Wrap the first word of a heading with accent-text span
@@ -331,6 +481,27 @@ async function main() {
     await fs.copyFile(path.join(DIST_DIR, 'index.html'), path.join(routeDir, 'index.html'));
   }
 
+  // 3c. Generate Law Detail Pages
+  // Pre-render individual law pages with correct OG meta tags for social sharing
+  console.log('Generating law detail pages...');
+  const laws = await fetchAllLaws();
+  
+  if (laws.length > 0) {
+    const lawDir = path.join(DIST_DIR, 'law');
+    await fs.mkdir(lawDir, { recursive: true });
+    
+    for (const law of laws) {
+      const lawPageDir = path.join(lawDir, String(law.id));
+      await fs.mkdir(lawPageDir, { recursive: true });
+      
+      const lawPageHtml = generateLawPage(law, template);
+      await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
+    }
+    console.log(`Generated ${laws.length} law detail pages.`);
+  } else {
+    console.log('Skipping law detail pages (API not available or no laws found).');
+  }
+
   // 4. Update Home Page (dist/index.html)
   // Crucial for AdSense and SEO: Replace the empty shell with meaningful content
   console.log('Updating Home Page (index.html)...');
@@ -413,6 +584,17 @@ async function main() {
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>`;
+  }
+
+  // Add law detail routes
+  for (const law of laws) {
+    sitemap += `
+  <url>
+    <loc>${baseUrl}/law/${law.id}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>`;
   }
 
