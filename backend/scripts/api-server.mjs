@@ -12,6 +12,7 @@ import { VoteService } from '../src/services/votes.service.mjs';
 import { CategoryService } from '../src/services/categories.service.mjs';
 import { AttributionService } from '../src/services/attributions.service.mjs';
 import { FeedService } from '../src/services/feed.service.mjs';
+import { OgImageService } from '../src/services/og-image.service.mjs';
 
 // Controllers
 import { LawController } from '../src/controllers/laws.controller.mjs';
@@ -20,6 +21,7 @@ import { CategoryController } from '../src/controllers/categories.controller.mjs
 import { AttributionController } from '../src/controllers/attributions.controller.mjs';
 import { HealthController } from '../src/controllers/health.controller.mjs';
 import { FeedController } from '../src/controllers/feed.controller.mjs';
+import { OgImageController } from '../src/controllers/og-image.controller.mjs';
 
 // Router
 import { Router } from '../src/routes/router.mjs';
@@ -46,6 +48,7 @@ const voteService = new VoteService(dbService.db);
 const categoryService = new CategoryService(dbService.db);
 const attributionService = new AttributionService(dbService.db);
 const feedService = new FeedService(lawService);
+const ogImageService = new OgImageService(lawService);
 
 // Initialize Controllers
 const lawController = new LawController(lawService, emailService);
@@ -54,6 +57,7 @@ const categoryController = new CategoryController(categoryService);
 const attributionController = new AttributionController(attributionService);
 const healthController = new HealthController(dbService.db);
 const feedController = new FeedController(feedService);
+const ogImageController = new OgImageController(ogImageService);
 
 // Setup Router
 const router = new Router();
@@ -83,6 +87,9 @@ router.get('/api/v1/attributions', (req, res) => attributionController.list(req,
 // Feeds
 router.get('/api/v1/feed.rss', (req, res) => feedController.getRssFeed(req, res));
 router.get('/api/v1/feed.atom', (req, res) => feedController.getAtomFeed(req, res));
+
+// OG Images
+router.get('/api/v1/og/law/:id.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
 
 // Start Server
 const server = http.createServer((req, res) => router.handle(req, res));

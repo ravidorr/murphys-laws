@@ -175,14 +175,16 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
     }
 
     // Update meta tags for social sharing
-    const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
+    const lawUrl = `${window.location.origin}/law/${law.id}`;
     const lawTitle = law.title || 'Murphy\'s Law';
     const lawText = law.text || '';
+    const ogImageUrl = `${window.location.origin}/api/v1/og/law/${law.id}.png`;
 
     updateSocialMetaTags({
       title: `${lawTitle} - Murphy's Laws`,
       description: lawText,
-      url: lawUrl
+      url: lawUrl,
+      image: ogImageUrl
     });
 
     showLaw();
@@ -198,7 +200,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
         // Add social share buttons to the footer
         const footer = lawCard.querySelector('.section-footer .right');
         if (footer) {
-          const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
+          const lawUrl = `${window.location.origin}/law/${law.id}`;
           const lawText = law.text || '';
 
           // Create engaging Twitter text with the actual law

@@ -41,6 +41,7 @@ All endpoints use the `/api/v1/` prefix. See [API Documentation](../shared/docs/
 - `GET /api/v1/categories` - List categories
 - `GET /api/v1/feed.rss` - RSS 2.0 feed (Law of the Day + recent laws)
 - `GET /api/v1/feed.atom` - Atom 1.0 feed (Law of the Day + recent laws)
+- `GET /api/v1/og/law/{id}.png` - Dynamic Open Graph image for social sharing
 
 ## Database
 
@@ -108,9 +109,9 @@ npm run test:coverage
 ```
 
 **Test Structure:**
-- 15 test files covering all layers
-- Services: `laws`, `categories`, `votes`, `attributions`, `feed`
-- Controllers: `laws`, `categories`, `votes`, `health`, `attributions`, `feed`
+- 17 test files covering all layers (213 tests)
+- Services: `laws`, `categories`, `votes`, `attributions`, `feed`, `og-image`
+- Controllers: `laws`, `categories`, `votes`, `health`, `attributions`, `feed`, `og-image`
 - Middleware: `cors`, `rate-limit`
 - Utils: `helpers`, `http-helpers`
 

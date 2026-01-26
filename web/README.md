@@ -21,12 +21,22 @@ Open http://localhost:5173
 ## Build
 
 ```bash
-# Build for production
+# Build for production (includes SSG)
 npm run build
 
 # Preview production build
 npm run preview
 ```
+
+**Static Site Generation (SSG):**
+
+The build process runs `npm run ssg` which pre-renders pages for SEO and social sharing:
+- Category pages (`/category/{slug}`)
+- Content pages (About, Privacy, Terms, etc.)
+- Individual law pages (`/law/{id}`) with correct Open Graph meta tags
+- Sitemap.xml generation
+
+Law pages include dynamic OG image URLs (`/api/v1/og/law/{id}.png`) for rich social media previews.
 
 ## Testing
 
