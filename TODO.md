@@ -5,7 +5,7 @@ This document outlines additional tasks and potential improvements for the Murph
 ## SEO Recommendations (External / Manual)
 - [ ] **Link Reclamation:** Identify broken links on high-authority sites (e.g., .edu domains) that mention 'Murphy\'s Law' and reach out to suggest our archive as a replacement reference.
 - [ ] **Calculator Outreach:** Pitch the 'Buttered Toast Landing Calculator' to physics and science education blogs as a fun, interactive teaching tool to generate fresh backlinks.
-- [ ] **Per-Law Open Graph Images:** Generate dynamic OG images for each law to improve social sharing appearance.
+- [x] **Per-Law Open Graph Images:** ~~Generate dynamic OG images for each law to improve social sharing appearance.~~ Done - implemented `GET /api/v1/og/law/:id.png` endpoint that generates PNG images using node-canvas. Images are cached for 1 day and include law title, text, and branding. See `backend/src/services/og-image.service.mjs`.
 - [x] **Print Styles:** ~~Add print-optimized CSS for law pages.~~ Done - added `web/styles/partials/print.css` with `@media print` rules. Hides interactive elements (search, widgets, pagination, vote buttons) and optimizes typography for clean paper output.
 
 ## UX Improvements (Require Backend Work)
