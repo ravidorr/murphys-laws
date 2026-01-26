@@ -350,6 +350,29 @@ describe('OgImageService', () => {
       expect(result).toBeInstanceOf(Buffer);
       expect(result.length).toBeGreaterThan(0);
     });
+
+    it('should generate image with logo when logo loads successfully', async () => {
+      // The default service uses the real logo path
+      const localThis = {
+        law: { id: 1, text: 'Test law with logo' },
+      };
+
+      mockLawService.getLaw.mockResolvedValue(localThis.law);
+
+      // Load logo first to verify it works
+      const logo = await ogImageService.loadLogo();
+      expect(logo).not.toBeNull();
+      expect(ogImageService.logoLoaded).toBe(true);
+
+      // Generate image - should include logo
+      const result = await ogImageService.generateLawImage(1);
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+      // PNG magic bytes
+      expect(result[0]).toBe(0x89);
+      expect(result[1]).toBe(0x50);
+    });
   });
 
   describe('getAttributionName', () => {
