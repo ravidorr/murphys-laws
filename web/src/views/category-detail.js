@@ -315,6 +315,8 @@ export function CategoryDetail({ categoryId, onNavigate }) {
     // Handle law card clicks
     const lawCard = t.closest('.law-card-mini');
     if (lawCard && lawCard.dataset.lawId) {
+      // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
+      if (t.closest('button')) return;
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }

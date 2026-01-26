@@ -176,6 +176,29 @@ describe('CategoryDetail view', () => {
     expect(onNavigate).toHaveBeenCalledWith('law', '123');
   });
 
+  it('does not navigate when clicking buttons inside law card', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Create a law card element with a button inside
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    lawCard.dataset.lawId = '123';
+    const button = document.createElement('button');
+    button.setAttribute('data-action', 'favorite');
+    lawCard.appendChild(button);
+    el.appendChild(lawCard);
+    
+    // Reset the mock to clear any previous calls
+    onNavigate.mockClear();
+
+    // Click the button inside the card
+    button.click();
+
+    // Navigation should NOT be triggered when clicking buttons
+    expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
+  });
+
   it('handles law card keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));

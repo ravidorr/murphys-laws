@@ -576,5 +576,33 @@ describe('Home view keyboard navigation for law cards', () => {
     // Navigation should not be triggered for empty id
     expect(navCalled).toBe(false);
   });
+
+  it('does not navigate when clicking buttons inside law card', async () => {
+    const localThis = {};
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    localThis.onNavigate = vi.fn();
+    localThis.el = Home({ onNavigate: localThis.onNavigate });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    // Create a law card with a button inside
+    const card = document.createElement('div');
+    card.setAttribute('data-law-id', '123');
+    const button = document.createElement('button');
+    button.setAttribute('data-action', 'favorite');
+    card.appendChild(button);
+    localThis.el.appendChild(card);
+
+    // Click the button inside the card
+    button.click();
+
+    // Navigation should NOT be triggered when clicking buttons
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
 });
 

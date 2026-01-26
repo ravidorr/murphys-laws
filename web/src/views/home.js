@@ -98,6 +98,8 @@ export function Home({ onNavigate }) {
 
     const lawHost = t.closest('[data-law-id]');
     if (lawHost) {
+      // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
+      if (t.closest('button')) return;
       const id = lawHost.getAttribute('data-law-id');
       /* v8 ignore next - Truthy check for navigation, tested via integration tests */
       if (id) onNavigate('law', id);

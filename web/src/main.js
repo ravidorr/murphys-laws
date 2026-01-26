@@ -273,7 +273,8 @@ initKeyboardShortcuts();
 if (isFavoritesEnabled()) {
   document.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+    // Use Element instead of HTMLElement to support SVG elements (heart icons)
+    if (!(target instanceof Element)) return;
 
     // Handle favorite button clicks
     const favoriteBtn = target.closest('[data-action="favorite"]');
