@@ -843,6 +843,36 @@ describe('LawDetail view', () => {
     expect(true).toBe(true);
   });
 
+  it('does not navigate when clicking buttons inside related law card', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const onNavigate = vi.fn();
+    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Create a related law card with a button inside
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    lawCard.dataset.lawId = '42';
+    const button = document.createElement('button');
+    button.setAttribute('data-action', 'favorite');
+    lawCard.appendChild(button);
+    el.appendChild(lawCard);
+
+    // Reset the mock to clear any previous calls
+    onNavigate.mockClear();
+
+    // Click the button inside the card
+    button.click();
+
+    // Navigation should NOT be triggered when clicking buttons
+    expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
+  });
+
   it('does not copy when copy text button has no text to copy', async () => {
     const law = { id: '7', title: 'Test Law', text: '', upvotes: 5, downvotes: 2 };
 

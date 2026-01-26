@@ -317,6 +317,33 @@ describe('Browse view', () => {
     expect(onNavigate).toHaveBeenCalledWith('law', '1');
   });
 
+  it('does not navigate when clicking buttons inside law card', async () => {
+    const onNavigate = vi.fn();
+    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const lawCard = el.querySelector('.law-card-mini');
+    // Find or create a button inside the law card (vote/favorite buttons)
+    let button = lawCard.querySelector('button');
+    if (!button) {
+      button = document.createElement('button');
+      button.setAttribute('data-action', 'favorite');
+      lawCard.appendChild(button);
+    }
+
+    // Reset the mock to clear any previous calls
+    onNavigate.mockClear();
+
+    // Click the button inside the card
+    button.click();
+
+    // Navigation should NOT be triggered when clicking buttons
+    expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
+  });
+
   it('handles law card keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
     const onNavigate = vi.fn();
     const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
