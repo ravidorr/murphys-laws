@@ -1,12 +1,17 @@
 import { createCanvas, loadImage } from 'canvas';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Path to the logo icon
-const LOGO_PATH = resolve(__dirname, '../../../web/public/android-chrome-192x192.png');
+// Try production path first (web/dist/), then development path (web/public/)
+const LOGO_FILENAME = 'android-chrome-192x192.png';
+const PROD_LOGO_PATH = resolve(__dirname, '../../../web/dist', LOGO_FILENAME);
+const DEV_LOGO_PATH = resolve(__dirname, '../../../web/public', LOGO_FILENAME);
+const LOGO_PATH = existsSync(PROD_LOGO_PATH) ? PROD_LOGO_PATH : DEV_LOGO_PATH;
 
 // Image dimensions (standard OG image size)
 const WIDTH = 1200;
