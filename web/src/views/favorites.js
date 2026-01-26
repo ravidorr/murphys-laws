@@ -3,9 +3,8 @@
 import templateHtml from '@views/templates/favorites.html?raw';
 import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '@utils/law-card-renderer.js';
-import { getFavorites, clearAllFavorites, getFavoritesCount, removeFavorite } from '@utils/favorites.js';
+import { getFavorites, clearAllFavorites, removeFavorite } from '@utils/favorites.js';
 import { isFavoritesEnabled } from '@utils/feature-flags.js';
-import { renderLinkButtonHTML } from '@utils/button.js';
 import { addVotingListeners } from '@utils/voting.js';
 
 /**
@@ -19,102 +18,158 @@ export function Favorites({ onNavigate }) {
   el.className = 'container page';
   el.setAttribute('role', 'main');
 
+  // Set page title
+  document.title = `Browse My Favorites Laws | Murphy's Law Archive`;
+
   // If feature is disabled, show message and redirect option
   if (!isFavoritesEnabled()) {
     el.innerHTML = `
-      <div class="empty-state">
-        <span class="icon empty-state-icon" data-icon="heart" aria-hidden="true"></span>
-        <p class="empty-state-title">Feature not available</p>
-        <p class="empty-state-text">The favorites feature is currently disabled.</p>
-        <div class="empty-state-actions">
-          ${renderLinkButtonHTML({
-    href: '/',
-    text: 'Go to Home',
-    icon: 'home',
-  })}
+      <div class="card content-card">
+        <div class="card-content text-center">
+          <h1 class="mb-2"><span class="accent-text">Browse</span> My Favorites Laws</h1>
+          <p class="mb-4 text-muted-fg">The favorites feature is currently disabled.</p>
+          <div class="not-found-actions">
+            <button type="button" class="btn" data-nav="home">
+              <span class="icon" data-icon="home" aria-hidden="true"></span>
+              <span class="btn-text">Back to Home</span>
+            </button>
+          </div>
         </div>
       </div>
     `;
     hydrateIcons(el);
+    setupEventListeners();
     return el;
   }
 
   /**
-   * Render the empty state when no favorites
+   * Render the empty state when no favorites (matches 404 page layout)
    * @returns {string} HTML string
    */
   function renderEmptyState() {
     return `
-      <div class="empty-state">
-        <span class="icon empty-state-icon" data-icon="heart" aria-hidden="true"></span>
-        <p class="empty-state-title">No favorites yet</p>
-        <p class="empty-state-text">Click the heart icon on any law to save it here.</p>
-        <div class="empty-state-actions">
-          ${renderLinkButtonHTML({
-    href: '/browse',
-    text: 'Browse All Laws',
-    icon: 'list',
-  })}
+      <div class="card content-card">
+        <div class="card-content text-center">
+          <h1 class="mb-2"><span class="accent-text">Browse</span> My Favorites Laws</h1>
+          <blockquote class="not-found-quote">
+            "The law you need most will be the one you forgot to save."
+          </blockquote>
+          <p class="mb-4 text-muted-fg">Your favorites collection is empty. Save laws to access them quickly.</p>
+
+          <div class="not-found-search mb-6">
+            <form role="search" class="not-found-search-form" id="favorites-search-form" aria-label="Search the archive">
+              <input type="text" id="favorites-search-input" placeholder="Search Murphy's Laws..." class="form-control" aria-label="Search">
+              <button type="submit" class="btn">
+                <span class="icon" data-icon="search" aria-hidden="true"></span>
+                <span class="btn-text">Search</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="not-found-actions">
+            <button type="button" class="btn" data-nav="home">
+              <span class="icon" data-icon="home" aria-hidden="true"></span>
+              <span class="btn-text">Back to Home</span>
+            </button>
+            <button type="button" class="btn outline" data-nav="browse">
+              <span class="icon" data-icon="list" aria-hidden="true"></span>
+              <span class="btn-text">Browse All Laws</span>
+            </button>
+          </div>
+
+          <div class="not-found-categories mt-8">
+            <p class="small text-muted-fg mb-4">Or explore popular categories:</p>
+            <div class="not-found-category-links">
+              <button type="button" class="btn outline" data-nav="category" data-param="murphys-computer-laws">Computer Laws</button>
+              <button type="button" class="btn outline" data-nav="category" data-param="murphys-love-laws">Love Laws</button>
+              <button type="button" class="btn outline" data-nav="category" data-param="murphys-technology-laws">Technology Laws</button>
+            </div>
+          </div>
         </div>
       </div>
     `;
   }
 
   /**
-   * Update the subtitle with count
-   * @param {number} count - Number of favorites
+   * Render the populated state with favorites (matches Top Voted/Trending layout)
+   * @param {Array} favorites - Array of favorite laws
+   * @returns {string} HTML string
    */
-  function updateSubtitle(count) {
-    const subtitle = el.querySelector('#favorites-subtitle');
-    if (subtitle) {
-      if (count === 0) {
-        subtitle.textContent = 'Your saved laws collection';
-      } else if (count === 1) {
-        subtitle.textContent = '1 law saved to your collection';
-      } else {
-        subtitle.textContent = `${count} laws saved to your collection`;
-      }
-    }
+  function renderPopulatedState(favorites) {
+    const count = favorites.length;
+    const subtitle = count === 1
+      ? '1 law saved to your collection'
+      : `${count} laws saved to your collection`;
+
+    return `
+      <div class="card">
+        <div class="card-content">
+          <div class="card-title-row">
+            <h1 class="card-title">
+              <span class="accent-text">Browse</span> My Favorites Laws
+            </h1>
+            <button type="button" id="clear-favorites-btn" class="btn outline">
+              <span class="icon" data-icon="close" aria-hidden="true"></span>
+              <span class="btn-text">Clear All</span>
+            </button>
+          </div>
+          <p id="favorites-subtitle" class="text-muted-fg favorites-subtitle">${subtitle}</p>
+          <div class="card-text">
+            ${renderLawCards(favorites)}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   /**
-   * Toggle actions visibility
-   * @param {boolean} show - Whether to show actions
-   */
-  function toggleActions(show) {
-    const actions = el.querySelector('#favorites-actions');
-    if (actions) {
-      actions.classList.toggle('hidden', !show);
-    }
-  }
-
-  /**
-   * Render favorites list
+   * Render the page based on current state
    */
   function render() {
-    const container = el.querySelector('#favorites-container');
-    if (!container) return;
+    const root = el.querySelector('#favorites-root');
+    if (!root) return;
 
     const favorites = getFavorites();
-    const count = favorites.length;
-
-    // Update subtitle and actions visibility
-    updateSubtitle(count);
-    toggleActions(count > 0);
 
     // Remove loading state
-    container.classList.remove('loading-placeholder');
-    container.removeAttribute('role');
-    container.removeAttribute('aria-label');
+    root.classList.remove('loading-placeholder');
+    root.removeAttribute('role');
+    root.removeAttribute('aria-label');
 
-    if (count === 0) {
-      container.innerHTML = renderEmptyState();
+    if (favorites.length === 0) {
+      root.innerHTML = renderEmptyState();
     } else {
-      // Render law cards
-      container.innerHTML = renderLawCards(favorites);
+      root.innerHTML = renderPopulatedState(favorites);
     }
 
-    hydrateIcons(container);
+    hydrateIcons(root);
+
+    // Set up search form handler for empty state
+    setupSearchFormHandler();
+
+    // Add voting listeners for vote buttons
+    addVotingListeners(el);
+  }
+
+  /**
+   * Set up search form handler for empty state
+   */
+  function setupSearchFormHandler() {
+    const searchForm = el.querySelector('#favorites-search-form');
+    const searchInput = el.querySelector('#favorites-search-input');
+
+    if (searchForm && searchInput) {
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (query) {
+          // Navigate to browse with search query
+          onNavigate('browse');
+          // Store query for browse page to pick up
+          sessionStorage.setItem('searchQuery', query);
+        }
+      });
+    }
   }
 
   /**
@@ -150,75 +205,76 @@ export function Favorites({ onNavigate }) {
     }
   }
 
-  // Initialize
-  el.innerHTML = templateHtml;
-  render();
-
-  // Set page title
-  document.title = `My Favorites | Murphy's Law Archive`;
-
-  // Add voting listeners for vote buttons
-  addVotingListeners(el);
-
-  // Event delegation
-  el.addEventListener('click', (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-
-    // Handle clear all button
-    if (target.closest('#clear-favorites-btn')) {
-      handleClearAll();
-      return;
-    }
-
-    // Handle favorite button (unfavorite)
-    const favoriteBtn = target.closest('[data-action="favorite"]');
-    if (favoriteBtn) {
-      e.stopPropagation();
-      const lawId = favoriteBtn.getAttribute('data-law-id');
-      if (lawId) {
-        handleUnfavorite(lawId);
-      }
-      return;
-    }
-
-    // Handle law card click (navigate to law detail)
-    const lawCard = target.closest('.law-card-mini');
-    if (lawCard && !target.closest('button') && !target.closest('a')) {
-      const lawId = lawCard.getAttribute('data-law-id');
-      if (lawId) {
-        onNavigate('law', lawId);
-      }
-    }
-
-    // Handle navigation links
-    const navLink = target.closest('[data-nav]');
-    if (navLink) {
-      e.preventDefault();
-      const route = navLink.getAttribute('data-nav');
-      const param = navLink.getAttribute('data-param');
-      if (route) {
-        onNavigate(route, param);
-      }
-    }
-  });
-
-  // Keyboard navigation for law cards
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+  /**
+   * Set up event listeners
+   */
+  function setupEventListeners() {
+    // Event delegation
+    el.addEventListener('click', (e) => {
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
 
+      // Handle clear all button
+      if (target.closest('#clear-favorites-btn')) {
+        handleClearAll();
+        return;
+      }
+
+      // Handle favorite button (unfavorite)
+      const favoriteBtn = target.closest('[data-action="favorite"]');
+      if (favoriteBtn) {
+        e.stopPropagation();
+        const lawId = favoriteBtn.getAttribute('data-law-id');
+        if (lawId) {
+          handleUnfavorite(lawId);
+        }
+        return;
+      }
+
+      // Handle law card click (navigate to law detail)
       const lawCard = target.closest('.law-card-mini');
-      if (lawCard && !target.closest('button')) {
-        e.preventDefault();
+      if (lawCard && !target.closest('button') && !target.closest('a')) {
         const lawId = lawCard.getAttribute('data-law-id');
         if (lawId) {
           onNavigate('law', lawId);
         }
+        return;
       }
-    }
-  });
+
+      // Handle navigation links
+      const navLink = target.closest('[data-nav]');
+      if (navLink) {
+        e.preventDefault();
+        const route = navLink.getAttribute('data-nav');
+        const param = navLink.getAttribute('data-param');
+        if (route) {
+          onNavigate(route, param || undefined);
+        }
+      }
+    });
+
+    // Keyboard navigation for law cards
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const lawCard = target.closest('.law-card-mini');
+        if (lawCard && !target.closest('button')) {
+          e.preventDefault();
+          const lawId = lawCard.getAttribute('data-law-id');
+          if (lawId) {
+            onNavigate('law', lawId);
+          }
+        }
+      }
+    });
+  }
+
+  // Initialize
+  el.innerHTML = templateHtml;
+  render();
+  setupEventListeners();
 
   return el;
 }
