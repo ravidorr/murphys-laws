@@ -41,7 +41,7 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Code Splitting:** Lazy load calculator code to reduce initial bundle size.
 - [x] **API Response Caching:** ~~Cache categories and attributions more aggressively on the client.~~ Done - implemented localStorage caching with 1-hour TTL, cache-first strategy with background refresh, and schema versioning for forward compatibility. See `web/src/utils/category-cache.js`.
 - [ ] **Prefetching:** Prefetch related laws on hover for faster navigation.
-- [ ] **Error Tracking:** Integrate Sentry or similar service for production error monitoring.
+- [x] **Error Tracking:** ~~Integrate Sentry or similar service for production error monitoring.~~ Done - integrated Sentry for both frontend (@sentry/browser) and backend (@sentry/node). Errors are captured via Sentry.captureException/captureMessage. Source maps uploaded during build for better stack traces. See `.env.example` for configuration.
 - [x] **Export to PDF/CSV:** ~~Allow users to export search results or collections.~~ Done - added universal page export feature accessible from header. Supports PDF, CSV, Markdown, and plain text formats. Uses jsPDF for PDF generation. Export available on law pages, categories, and content pages. Calculators and 404 excluded (interactive tools don't benefit from static export). See `web/src/utils/export.js` and `web/src/utils/export-context.js`.
 
 ## Completed
