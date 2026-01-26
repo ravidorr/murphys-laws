@@ -311,6 +311,47 @@ describe('OgImageService', () => {
     });
   });
 
+  describe('loadLogo', () => {
+    it('should load logo only once (cached)', async () => {
+      // First call loads the logo
+      const logo1 = await ogImageService.loadLogo();
+      const logo2 = await ogImageService.loadLogo();
+
+      // Should return the same cached result
+      expect(logo1).toBe(logo2);
+      expect(ogImageService.logoLoaded).toBe(true);
+    });
+
+    it('should handle missing logo file gracefully', async () => {
+      const localThis = {
+        serviceWithBadPath: new OgImageService(mockLawService, {
+          logoPath: '/nonexistent/path/logo.png',
+        }),
+      };
+
+      const logo = await localThis.serviceWithBadPath.loadLogo();
+
+      expect(logo).toBeNull();
+      expect(localThis.serviceWithBadPath.logoLoaded).toBe(true);
+    });
+
+    it('should generate image without logo when logo fails to load', async () => {
+      const localThis = {
+        serviceWithBadPath: new OgImageService(mockLawService, {
+          logoPath: '/nonexistent/path/logo.png',
+        }),
+        law: { id: 1, text: 'Test law' },
+      };
+
+      mockLawService.getLaw.mockResolvedValue(localThis.law);
+
+      const result = await localThis.serviceWithBadPath.generateLawImage(1);
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('getAttributionName', () => {
     it('should return null for undefined attributions', () => {
       const law = { id: 1 };

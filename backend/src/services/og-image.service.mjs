@@ -1,4 +1,12 @@
-import { createCanvas } from 'canvas';
+import { createCanvas, loadImage } from 'canvas';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Path to the logo icon
+const LOGO_PATH = resolve(__dirname, '../../../web/public/android-chrome-192x192.png');
 
 // Image dimensions (standard OG image size)
 const WIDTH = 1200;
@@ -44,12 +52,38 @@ export class OgImageService {
     this.cacheMaxAge = options.cacheMaxAge || 24 * 60 * 60 * 1000; // 24 hours default
     this.cacheMaxSize = options.cacheMaxSize || 500; // Max 500 cached images (~500MB at ~1MB each)
     
+    // Logo image (loaded lazily)
+    this.logo = null;
+    this.logoLoaded = false;
+    this.logoPath = options.logoPath || LOGO_PATH;
+    
     // Cache statistics
     this.stats = {
       hits: 0,
       misses: 0,
       evictions: 0,
     };
+  }
+
+  /**
+   * Load the logo image (called once, cached)
+   * @returns {Promise<Image|null>} The loaded image or null if failed
+   */
+  async loadLogo() {
+    if (this.logoLoaded) {
+      return this.logo;
+    }
+    
+    try {
+      this.logo = await loadImage(this.logoPath);
+      this.logoLoaded = true;
+    } catch (error) {
+      console.warn('Could not load logo image:', error.message);
+      this.logo = null;
+      this.logoLoaded = true;
+    }
+    
+    return this.logo;
   }
 
   /**
@@ -76,8 +110,11 @@ export class OgImageService {
       return null;
     }
 
+    // Load logo if not already loaded
+    const logo = await this.loadLogo();
+
     // Generate the image
-    const buffer = this.renderLawImage(law);
+    const buffer = this.renderLawImage(law, logo);
 
     // Evict oldest entries if at capacity
     while (this.cache.size >= this.cacheMaxSize) {
@@ -114,9 +151,10 @@ export class OgImageService {
   /**
    * Render the OG image for a law
    * @param {Object} law - Law object with id, title, text, attributions
+   * @param {Image|null} logo - Logo image to draw (optional)
    * @returns {Buffer} PNG image buffer
    */
-  renderLawImage(law) {
+  renderLawImage(law, logo = null) {
     const canvas = createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext('2d');
 
@@ -129,8 +167,8 @@ export class OgImageService {
     // Draw the law content
     this.drawLawContent(ctx, law);
 
-    // Draw branding
-    this.drawBranding(ctx);
+    // Draw branding with logo
+    this.drawBranding(ctx, logo);
 
     return canvas.toBuffer('image/png');
   }
@@ -235,14 +273,25 @@ export class OgImageService {
 
   /**
    * Draw branding elements
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * @param {Image|null} logo - Logo image to draw (optional)
    */
-  drawBranding(ctx) {
+  drawBranding(ctx, logo = null) {
     const brandingY = HEIGHT - 50;
+    const logoSize = 40; // Size to draw the logo
+    let textStartX = PADDING;
 
-    // Murphy's Laws logo/text
+    // Draw logo if available
+    if (logo) {
+      const logoY = brandingY - logoSize + 10; // Align with text baseline
+      ctx.drawImage(logo, PADDING, logoY, logoSize, logoSize);
+      textStartX = PADDING + logoSize + 12; // Space after logo
+    }
+
+    // Murphy's Laws text
     ctx.font = FONTS.branding;
     ctx.fillStyle = COLORS.primaryText;
-    ctx.fillText("Murphy's Laws", PADDING, brandingY);
+    ctx.fillText("Murphy's Laws", textStartX, brandingY);
 
     // Site URL
     ctx.font = FONTS.url;
