@@ -18,15 +18,15 @@ export function Header({ onSearch, onNavigate }) {
   // Conditionally inject favorites nav item if feature is enabled
   if (isFavoritesEnabled()) {
     const navList = header.querySelector('#nav-dropdown ul');
-    const browseItem = navList?.querySelector('[data-nav="browse"]')?.closest('li');
-    if (browseItem && navList) {
+    const categoriesItem = navList?.querySelector('[data-nav="categories"]')?.closest('li');
+    if (categoriesItem && navList) {
       const favoritesItem = document.createElement('li');
       favoritesItem.innerHTML = `
         <a href="/favorites" class="nav-dropdown-item" data-nav="favorites">
-          My Favorites
+          Browse My Favorites Laws
         </a>
       `;
-      browseItem.after(favoritesItem);
+      categoriesItem.after(favoritesItem);
     }
   }
   

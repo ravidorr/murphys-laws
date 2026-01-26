@@ -1,5 +1,12 @@
 import { Header } from '../src/components/header.js';
 
+// Mock feature flags
+vi.mock('../src/utils/feature-flags.js', () => ({
+  isFavoritesEnabled: vi.fn(() => true),
+}));
+
+import { isFavoritesEnabled } from '../src/utils/feature-flags.js';
+
 // Mock theme module to avoid side effects during tests
 vi.mock('../src/utils/theme.js', () => ({
   getTheme: vi.fn(() => 'auto'),
@@ -664,6 +671,82 @@ describe('Header component', () => {
       }
 
       expect(mockOnNavigate).toHaveBeenCalledWith('law', 123);
+    });
+  });
+
+  describe('Favorites navigation link', () => {
+    beforeEach(() => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(true);
+    });
+
+    it('shows favorites link when feature is enabled', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+      });
+
+      const favoritesLink = el.querySelector('[data-nav="favorites"]');
+      expect(favoritesLink).toBeTruthy();
+    });
+
+    it('does not show favorites link when feature is disabled', () => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(false);
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+      });
+
+      const favoritesLink = el.querySelector('[data-nav="favorites"]');
+      expect(favoritesLink).toBeFalsy();
+    });
+
+    it('favorites link has text "Browse My Favorites Laws"', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+      });
+
+      const favoritesLink = el.querySelector('[data-nav="favorites"]');
+      expect(favoritesLink.textContent.trim()).toBe('Browse My Favorites Laws');
+    });
+
+    it('favorites link appears after "Browse Laws by Category"', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+      });
+
+      const navItems = el.querySelectorAll('#nav-dropdown li');
+      const navTexts = Array.from(navItems).map((li) => li.textContent.trim());
+
+      const categoriesIndex = navTexts.findIndex((text) => text === 'Browse Laws by Category');
+      const favoritesIndex = navTexts.findIndex((text) => text === 'Browse My Favorites Laws');
+
+      expect(categoriesIndex).toBeGreaterThan(-1);
+      expect(favoritesIndex).toBeGreaterThan(-1);
+      expect(favoritesIndex).toBe(categoriesIndex + 1);
+    });
+
+    it('favorites link href is "/favorites"', () => {
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+      });
+
+      const favoritesLink = el.querySelector('[data-nav="favorites"]');
+      expect(favoritesLink.getAttribute('href')).toBe('/favorites');
+    });
+
+    it('clicking favorites link triggers onNavigate with "favorites"', () => {
+      let navigated = '';
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: (page) => { navigated = page; },
+      });
+
+      el.querySelector('[data-nav="favorites"]').click();
+      expect(navigated).toBe('favorites');
     });
   });
 });
