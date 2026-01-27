@@ -108,6 +108,48 @@ For source map uploads during build (better stack traces), also set:
  
 ## Features
 
+### Progressive Web App (PWA)
+
+The application is a fully installable PWA with offline support.
+
+**Capabilities:**
+- **Installable**: Users can install the app to their home screen from any browser
+- **Offline Support**: Previously viewed content is cached for offline access
+- **Auto-updates**: Service worker automatically updates when new versions are deployed
+
+**Caching Strategies:**
+
+| Resource | Strategy | TTL |
+|----------|----------|-----|
+| Static assets (JS, CSS) | CacheFirst | Versioned |
+| Images | CacheFirst | 30 days |
+| Categories API | StaleWhileRevalidate | 1 hour |
+| Laws API | NetworkFirst | 1 hour |
+| Law of the Day | NetworkFirst | 24 hours |
+| Google Fonts | CacheFirst | 1 year |
+
+**Install Prompt:**
+- Custom install prompt appears after user engagement (3+ page views, 2+ laws viewed, 30+ seconds)
+- Calculator usage triggers immediate prompt (high-intent action)
+- iOS Safari users see step-by-step "Add to Home Screen" instructions
+- 7-day cooldown after user dismisses prompt
+
+**Configuration:**
+
+PWA is configured in `vite.config.js` using `vite-plugin-pwa`. The plugin generates:
+- `manifest.webmanifest` - App manifest with icons, theme colors, screenshots
+- `sw.js` - Service worker with Workbox caching
+- Auto-injects manifest link and registers service worker
+
+**Development:**
+
+Service worker is disabled in development mode (`devOptions.enabled: false`) to avoid caching issues. Test PWA features with production build:
+
+```bash
+npm run build
+npm run preview
+```
+
 ### Page Export
 
 The application includes a universal export feature accessible from the header (download icon next to theme toggle).
@@ -146,16 +188,22 @@ Pages register their exportable content using `setExportContent()` and clear it 
 ```
 web/
 ├── src/
-│ ├── main.js           # Entry point
-│ ├── router.js         # Client-side routing
-│ ├── views/            # Page views
-│ ├── components/       # Reusable components
-│ ├── modules/          # Shared logic
-│ └── utils/            # Helper functions
-├── styles/             # CSS stylesheets
-├── public/             # Static assets
-├── tests/              # Unit tests
-└── e2e/                # End-to-end tests
+│   ├── main.js              # Entry point (includes PWA registration)
+│   ├── router.js            # Client-side routing
+│   ├── views/               # Page views
+│   ├── components/          # Reusable components
+│   │   ├── install-prompt.js    # PWA install prompt
+│   │   ├── update-notification.js # PWA update notification
+│   │   └── ...
+│   ├── modules/             # Shared logic
+│   └── utils/               # Helper functions
+├── styles/                  # CSS stylesheets
+├── public/
+│   ├── offline.html         # Offline fallback page
+│   ├── android-chrome-*.png # PWA icons
+│   └── ...
+├── tests/                   # Unit tests
+└── e2e/                     # End-to-end tests
 ```
 
 ## Architecture

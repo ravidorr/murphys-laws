@@ -6,7 +6,7 @@ Available on **Web**, **iOS**, and **Android**.
 
 ## Platforms
 
-- **Web**: https://murphys-laws.com
+- **Web**: https://murphys-laws.com (PWA - installable, works offline)
 - **iOS**: Coming Soon
 - **Android**: Coming Soon
 
@@ -75,7 +75,7 @@ npm test
 
 # Test specific platform
 npm run test:backend  # 213 Vitest unit tests (controllers, services, middleware)
-npm run test:web      # 1677 web application tests
+npm run test:web      # 1883 web application tests
 ```
 
 ## Development

@@ -37,7 +37,7 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **WhatsApp Share (iOS):** iOS uses native `ShareLink` which already shows WhatsApp if installed. Consider adding a dedicated WhatsApp button for consistency with other platforms.
 
 ## Technical / Performance
-- [ ] **PWA / Service Worker:** Add offline support and make the app installable.
+- [x] **PWA / Service Worker:** ~~Add offline support and make the app installable.~~ Done - implemented using vite-plugin-pwa with Workbox. Features: installable app with custom install prompt, offline fallback page, smart caching strategies for API responses (StaleWhileRevalidate for categories, NetworkFirst for laws), auto-update notifications. iOS Safari users see step-by-step "Add to Home Screen" instructions. See `web/src/components/install-prompt.js` and `web/src/components/update-notification.js`.
 - [ ] **Code Splitting:** Lazy load calculator code to reduce initial bundle size.
 - [x] **API Response Caching:** ~~Cache categories and attributions more aggressively on the client.~~ Done - implemented localStorage caching with 1-hour TTL, cache-first strategy with background refresh, and schema versioning for forward compatibility. See `web/src/utils/category-cache.js`.
 - [ ] **Prefetching:** Prefetch related laws on hover for faster navigation.
