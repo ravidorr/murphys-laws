@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Offline - Murphy's Law Archive</title>
+  <meta name="description" content="You're currently offline. Some content may be unavailable.">
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    /* CSS Variables - must match variables.css exactly */
+    :root {
+      --bg: #fff;
+      --fg: #111827;
+      --muted-fg: #6b7280;
+      --primary: #030213;
+      --btn-primary-bg: #1173d4;
+      --btn-primary-fg: #fff;
+      --card-bg: #f9fafb;
+      --border: #e5e7eb;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0b11;
+        --fg: #e9eaee;
+        --muted-fg: #b3b7c4;
+        --primary: #4f46e5;
+        --card-bg: #1a1a24;
+        --border: #2d2d3a;
+      }
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .offline-icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1.5rem;
+      color: var(--muted-fg);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--fg);
+    }
+
+    .description {
+      color: var(--muted-fg);
+      margin-bottom: 2rem;
+      max-width: 400px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--fg);
+    }
+
+    .card ul {
+      list-style: none;
+      text-align: left;
+    }
+
+    .card li {
+      padding: 0.5rem 0;
+      color: var(--muted-fg);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card li::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      background: var(--btn-primary-bg);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn-primary {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .home-link {
+      margin-top: 1rem;
+      color: var(--btn-primary-bg);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .home-link:hover {
+      text-decoration: underline;
+    }
+
+    .murphy-quote {
+      margin-top: 3rem;
+      font-style: italic;
+      color: var(--muted-fg);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Offline/Cloud Icon -->
+    <svg class="offline-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+      <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+
+    <h1>You're Offline</h1>
+    <p class="description">
+      It looks like you've lost your internet connection. Don't worry, Murphy predicted this would happen.
+    </p>
+
+    <div class="card">
+      <h2>What you can still do:</h2>
+      <ul>
+        <li>View previously browsed laws (if cached)</li>
+        <li>Browse cached categories</li>
+        <li>Check your favorites</li>
+      </ul>
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="window.location.reload()">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      Try Again
+    </button>
+
+    <a href="/" class="home-link">Go to Home</a>
+
+    <p class="murphy-quote">
+      "Anything that can go wrong will go wrong... including your internet connection."
+    </p>
+  </div>
+
+  <script>
+    // Check if we're back online and reload
+    window.addEventListener('online', function() {
+      window.location.reload();
+    });
+  </script>
+</body>
+
+</html>

@@ -17,6 +17,36 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
+// Register PWA service worker for offline support
+import { registerSW } from 'virtual:pwa-register';
+import { showUpdateAvailable, showOfflineReady } from './components/update-notification.js';
+
+const updateSW = registerSW({
+  onNeedRefresh() {
+    // Show notification when new content is available
+    showUpdateAvailable(updateSW);
+  },
+  onOfflineReady() {
+    // Show notification when app is ready for offline use
+    showOfflineReady();
+  },
+  onRegisteredSW(swUrl, registration) {
+    // Check for updates periodically (every hour)
+    if (registration) {
+      setInterval(() => {
+        registration.update();
+      }, 60 * 60 * 1000);
+    }
+  },
+  onRegisterError(error) {
+    // Log service worker registration errors to Sentry
+    if (import.meta.env.PROD) {
+      Sentry.captureException(error);
+    }
+    console.error('Service worker registration failed:', error);
+  }
+});
+
 import { defineRoute, navigate, startRouter, forceRender, currentRoute } from './router.js';
 import { Header } from './components/header.js';
 import { Footer } from './components/footer.js';
@@ -50,6 +80,12 @@ import {
 import { hydrateIcons } from '@utils/icons.js';
 import { initAnalyticsBootstrap } from '@utils/third-party.js';
 import { initKeyboardShortcuts } from './utils/keyboard-shortcuts.js';
+import {
+  initInstallPrompt,
+  trackPageView,
+  trackLawView,
+  trackCalculatorUse
+} from './components/install-prompt.js';
 
 // App state (no framework)
 const state = {
@@ -186,22 +222,27 @@ function layout(node, { hideAds = false } = {}) {
 // Define routes
 const routesMap = {
   home: () => {
+    trackPageView();
     setHomeStructuredData();
     return layout(Home({ onNavigate }));
   },
   category: ({ param }) => {
+    trackPageView();
     clearPageStructuredData();
     return layout(CategoryDetail({ categoryId: param, onNavigate }));
   },
   browse: () => {
+    trackPageView();
     setBrowseStructuredData();
     return layout(Browse({ searchQuery: state.searchQuery, onNavigate }), { hideAds: true });
   },
   categories: () => {
+    trackPageView();
     clearPageStructuredData();
     return layout(Categories({ onNavigate }));
   },
   favorites: () => {
+    trackPageView();
     clearPageStructuredData();
     // If feature disabled, redirect to home
     if (!isFavoritesEnabled()) {
@@ -209,8 +250,13 @@ const routesMap = {
     }
     return layout(Favorites({ onNavigate }));
   },
-  law: ({ param }) => layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData })),
+  law: ({ param }) => {
+    trackPageView();
+    trackLawView();
+    return layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData }));
+  },
   submit: () => {
+    trackPageView();
     const container = document.createElement('div');
     container.className = 'container page pt-0';
 
@@ -220,6 +266,8 @@ const routesMap = {
     return layout(container, { hideAds: true });
   },
   calculator: ({ param }) => {
+    trackPageView();
+    trackCalculatorUse();
     // Handle /calculator/sods-law and /calculator/buttered-toast
     if (param === 'buttered-toast') {
       setToastCalculatorStructuredData();
@@ -231,26 +279,33 @@ const routesMap = {
   },
   // Keep legacy routes for backward compatibility
   toastcalculator: () => {
+    trackPageView();
+    trackCalculatorUse();
     setToastCalculatorStructuredData();
     return layout(ButteredToastCalculator(), { hideAds: true });
   },
   'origin-story': () => {
+    trackPageView();
     clearPageStructuredData();
     return layout(OriginStory());
   },
   about: () => {
+    trackPageView();
     clearPageStructuredData();
     return layout(About({ onNavigate }));
   },
   privacy: () => {
+    trackPageView();
     clearPageStructuredData();
     return layout(Privacy({ onNavigate }));
   },
   terms: () => {
+    trackPageView();
     clearPageStructuredData();
     return layout(Terms({ onNavigate }));
   },
   contact: () => {
+    trackPageView();
     clearPageStructuredData();
     return layout(Contact({ onNavigate }), { hideAds: true });
   },
@@ -268,6 +323,7 @@ const notFoundRoute = () => {
 startRouter(app, notFoundRoute);
 initAnalyticsBootstrap();
 initKeyboardShortcuts();
+initInstallPrompt();
 
 // Global event delegation for favorite buttons
 if (isFavoritesEnabled()) {
