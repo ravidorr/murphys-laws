@@ -17,6 +17,7 @@ import { triggerAdSense } from '../utils/ads.js';
 import { showSuccess } from '../components/notification.js';
 import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
+import { updateMetaDescription } from '@utils/dom.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
   const el = document.createElement('div');
@@ -191,8 +192,9 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         if (descEl) {
           descEl.textContent = categoryDescription || 'All laws within this category.';
         }
-        // Update browser page title
+        // Update browser page title and meta description
         document.title = `${categoryTitle} | ${SITE_NAME}`;
+        updateMetaDescription(categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}. Discover witty observations and corollaries in this category.`);
       }
     } catch (error) {
       Sentry.captureException(error);
@@ -215,13 +217,13 @@ export function CategoryDetail({ categoryId, onNavigate }) {
           '@type': 'ListItem',
           'position': 2,
           'name': 'Categories',
-          'item': `${SITE_URL}/#/categories`
+          'item': `${SITE_URL}/categories`
         },
         {
           '@type': 'ListItem',
           'position': 3,
           'name': `${categoryTitle} Laws`,
-          'item': `${SITE_URL}/#/category:${categoryId}`
+          'item': `${SITE_URL}/category/${categoryId}`
         }
       ]
     });
@@ -231,7 +233,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
       'name': `${categoryTitle} Laws - Murphy's Law Archive`,
-      'url': `${SITE_URL}/#/category:${categoryId}`,
+      'url': `${SITE_URL}/category/${categoryId}`,
       'description': categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}.`,
       'image': `${SITE_URL}/social/home.png`, // Placeholder, could be category specific
     });

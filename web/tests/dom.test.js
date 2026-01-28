@@ -1,4 +1,4 @@
-import { createErrorState, updateSocialMetaTags } from '../src/utils/dom.js';
+import { createErrorState, updateSocialMetaTags, updateMetaDescription } from '../src/utils/dom.js';
 
 describe('DOM utilities', () => {
   describe('createErrorState', () => {
@@ -106,6 +106,59 @@ describe('DOM utilities', () => {
       });
 
       expect(document.querySelector('meta[property="og:title"]').getAttribute('content')).toBe('Original');
+    });
+  });
+
+  describe('updateMetaDescription', () => {
+    beforeEach(() => {
+      document.head.innerHTML = '<meta name="description" content="Original description">';
+    });
+
+    afterEach(() => {
+      document.head.innerHTML = '';
+    });
+
+    it('updates the meta description content', () => {
+      updateMetaDescription('New description');
+
+      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('New description');
+    });
+
+    it('handles missing meta tag gracefully', () => {
+      document.head.innerHTML = '';
+
+      expect(() => {
+        updateMetaDescription('Test description');
+      }).not.toThrow();
+    });
+
+    it('does nothing when description is empty', () => {
+      updateMetaDescription('');
+
+      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('Original description');
+    });
+
+    it('does nothing when description is null', () => {
+      updateMetaDescription(null);
+
+      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('Original description');
+    });
+
+    it('does nothing when description is undefined', () => {
+      updateMetaDescription(undefined);
+
+      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('Original description');
+    });
+
+    it('does nothing when document is undefined (SSR)', () => {
+      const savedDocument = global.document;
+      delete global.document;
+
+      expect(() => {
+        updateMetaDescription('Test description');
+      }).not.toThrow();
+
+      global.document = savedDocument;
     });
   });
 });

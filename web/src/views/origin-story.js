@@ -5,14 +5,16 @@ import { setJsonLd } from '@modules/structured-data.js';
 import { SITE_URL, SITE_NAME } from '@utils/constants.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
+import { updateMetaDescription } from '@utils/dom.js';
 
 export function OriginStory({ onNavigate } = {}) {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
-  // Set page title
+  // Set page title and meta description
   document.title = `The True Origin of Murphy's Law | ${SITE_NAME}`;
+  updateMetaDescription("Discover the true origin of Murphy's Law - Captain Edward A. Murphy Jr. and the 1949 Air Force rocket sled experiment that gave birth to the famous maxim.");
 
   el.innerHTML = getPageContent('origin-story');
   // Only trigger ads if content meets minimum requirements
@@ -48,7 +50,7 @@ export function OriginStory({ onNavigate } = {}) {
     },
     'mainEntityOfPage': {
       '@type': 'WebPage',
-      '@id': `${SITE_URL}/#/origin-story`
+      '@id': `${SITE_URL}/origin-story`
     }
   });
 

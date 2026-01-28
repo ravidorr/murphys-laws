@@ -6,7 +6,9 @@ const PAGE_IDS = new Set([
   'browse-page',
   'law-article',
   'calculator-sod',
+  'calculator-sod-faq',
   'calculator-toast',
+  'calculator-toast-faq',
   'browse-page-breadcrumbs',
   'categories-page',
   'category-detail-page',
@@ -83,7 +85,7 @@ export function setSiteStructuredData() {
     },
     'potentialAction': {
       '@type': 'SearchAction',
-      'target': `${SITE_URL}/#/browse?q={search_term_string}`,
+      'target': `${SITE_URL}/browse?q={search_term_string}`,
       'query-input': 'required name=search_term_string'
     }
   });
@@ -115,13 +117,13 @@ export function setHomeStructuredData() {
         '@type': 'WebApplication',
         'name': "Sod's Law Calculator",
         'applicationCategory': 'CalculatorApplication',
-        'url': `${SITE_URL}/#/calculator`
+        'url': `${SITE_URL}/calculator/sods-law`
       },
       {
         '@type': 'WebApplication',
         'name': 'Buttered Toast Landing Calculator',
         'applicationCategory': 'CalculatorApplication',
-        'url': `${SITE_URL}/#/toastcalculator`
+        'url': `${SITE_URL}/calculator/buttered-toast`
       }
     ]
   });
@@ -133,7 +135,7 @@ export function setBrowseStructuredData() {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     'name': 'Browse Murphy\'s Laws',
-    'url': `${SITE_URL}/#/browse`,
+    'url': `${SITE_URL}/browse`,
     'description': 'Filter and search hundreds of Murphy\'s Laws, corollaries, and variations.',
     'isPartOf': {
       '@id': `${SITE_URL}`
@@ -155,7 +157,7 @@ export function setBrowseStructuredData() {
         '@type': 'ListItem',
         'position': 2,
         'name': 'Browse Murphy\'s Laws',
-        'item': `${SITE_URL}/#/browse`
+        'item': `${SITE_URL}/browse`
       }
     ]
   });
@@ -164,7 +166,7 @@ export function setBrowseStructuredData() {
 export function setLawStructuredData(law) {
   if (!law) return;
   clearPageStructuredData();
-  const lawUrl = `${SITE_URL}/#/law:${law.id}`;
+  const lawUrl = `${SITE_URL}/law/${law.id}`;
   setJsonLd('law-article', {
     '@context': 'https://schema.org',
     '@type': ['Article', 'Quotation'],
@@ -198,9 +200,41 @@ export function setSodCalculatorStructuredData() {
     'applicationCategory': 'CalculatorApplication',
     'operatingSystem': 'Web',
     'name': "Sod's Law Calculator",
-    'url': `${SITE_URL}/#/calculator`,
+    'url': `${SITE_URL}/calculator/sods-law`,
     'description': 'Quantify the probability of Murphy\'s Law striking by balancing urgency, complexity, skill, and frequency.',
     'image': SOCIAL_IMAGE_SOD
+  });
+
+  // FAQ Schema for Sod's Law Calculator
+  setJsonLd('calculator-sod-faq', {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': [
+      {
+        '@type': 'Question',
+        'name': "What is the Sod's Law Calculator?",
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': "The Sod's Law Calculator estimates how likely your task is to go wrong based on five factors: urgency, complexity, importance, your skill level, and task frequency. It uses a mathematical formula to quantify Murphy's Law."
+        }
+      },
+      {
+        '@type': 'Question',
+        'name': "How do I interpret my Sod's Law score?",
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': "Probabilities range from 0.12 (barely cursed) to 8.6 (catastrophic). Scores below 2 mean you're probably safe. Scores between 2-4 are a bit risky. Scores between 4-6 are definitely worrying. Scores between 6-8 mean disaster is looming. Scores above 8 indicate catastrophe is almost certain."
+        }
+      },
+      {
+        '@type': 'Question',
+        'name': "How can I reduce my Sod's Law probability?",
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': "To reduce your probability score: cut urgency by questioning if everything really needs to ship today, break huge projects into smaller tasks to reduce complexity, reconsider if the task is truly critical to lower importance, build your skill level through practice, and batch low-stakes tasks together to reduce frequency."
+        }
+      }
+    ]
   });
 }
 
@@ -212,9 +246,41 @@ export function setToastCalculatorStructuredData() {
     'applicationCategory': 'CalculatorApplication',
     'operatingSystem': 'Web',
     'name': 'Buttered Toast Landing Calculator',
-    'url': `${SITE_URL}/#/toastcalculator`,
+    'url': `${SITE_URL}/calculator/buttered-toast`,
     'description': 'Simulate how height, gravity, and butter factor influence a toast landing butter-side down.',
     'image': SOCIAL_IMAGE_TOAST
+  });
+
+  // FAQ Schema for Buttered Toast Calculator
+  setJsonLd('calculator-toast-faq', {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': [
+      {
+        '@type': 'Question',
+        'name': 'Why does toast always land butter-side down?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': "Toast tends to land butter-side down due to physics: when toast slides off a table, it typically starts butter-side up and doesn't have enough time to complete a full rotation before hitting the floor. The standard table height of about 75cm gives the toast just enough time for a half rotation, resulting in a butter-side-down landing."
+        }
+      },
+      {
+        '@type': 'Question',
+        'name': 'What factors affect how toast lands?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': "The landing orientation is affected by: height of fall (higher tables allow more rotation), gravity (affects fall speed), initial overhang or push (how far the toast extended over the edge), butter factor (heavier butter side affects rotation), air friction, and the toast's moment of inertia."
+        }
+      },
+      {
+        '@type': 'Question',
+        'name': 'How can I prevent my toast from landing butter-side down?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': "To prevent butter-side-down landings: eat at a higher table or counter (allowing a full rotation), catch the toast before it falls, or apply butter after you've safely secured your toast. The calculator shows that drop heights above 2 meters give toast time to complete a full rotation."
+        }
+      }
+    ]
   });
 }
 

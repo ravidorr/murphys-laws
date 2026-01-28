@@ -3,6 +3,18 @@ import { hydrateIcons } from './icons.js';
 import { renderLinkButtonHTML } from './button.js';
 
 /**
+ * Updates the meta description tag
+ * @param {string} description - The new description content
+ */
+export function updateMetaDescription(description) {
+  if (typeof document === 'undefined' || !description) return;
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) {
+    meta.setAttribute('content', description);
+  }
+}
+
+/**
  * Creates an error state element with ARIA live region
  * @param {string} message - Error message
  * @returns {HTMLElement} Error element
