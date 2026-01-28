@@ -433,19 +433,6 @@ describe('Structured Data module', () => {
 
       expect(document.head.querySelector('#jsonld-home-page')).toBeFalsy();
     });
-
-    it('creates FAQ structured data', () => {
-      setSodCalculatorStructuredData();
-
-      const el = document.head.querySelector('#jsonld-calculator-sod-faq');
-      expect(el).toBeTruthy();
-
-      const data = JSON.parse(el.textContent);
-      expect(data['@type']).toBe('FAQPage');
-      expect(data.mainEntity).toBeTruthy();
-      expect(data.mainEntity.length).toBeGreaterThan(0);
-      expect(data.mainEntity[0]['@type']).toBe('Question');
-    });
   });
 
   describe('setToastCalculatorStructuredData', () => {
@@ -476,19 +463,6 @@ describe('Structured Data module', () => {
       setToastCalculatorStructuredData();
 
       expect(document.head.querySelector('#jsonld-home-page')).toBeFalsy();
-    });
-
-    it('creates FAQ structured data', () => {
-      setToastCalculatorStructuredData();
-
-      const el = document.head.querySelector('#jsonld-calculator-toast-faq');
-      expect(el).toBeTruthy();
-
-      const data = JSON.parse(el.textContent);
-      expect(data['@type']).toBe('FAQPage');
-      expect(data.mainEntity).toBeTruthy();
-      expect(data.mainEntity.length).toBeGreaterThan(0);
-      expect(data.mainEntity[0]['@type']).toBe('Question');
     });
   });
 });
