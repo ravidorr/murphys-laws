@@ -2,14 +2,16 @@ import { getPageContent, getRawMarkdownContent } from '@utils/markdown-content.j
 import { triggerAdSense } from '../utils/ads.js';
 import { SITE_NAME } from '@utils/constants.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
+import { updateMetaDescription } from '@utils/dom.js';
 
 export function About({ onNavigate }) {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');
 
-  // Set page title
+  // Set page title and meta description
   document.title = `About | ${SITE_NAME}`;
+  updateMetaDescription("Learn about Murphy's Law Archive - preserving and celebrating Murphy's Laws, corollaries, and observations about inevitable mishaps since the late 1990s.");
 
   el.innerHTML = getPageContent('about');
   // Only trigger ads if content meets minimum requirements

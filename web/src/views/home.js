@@ -41,7 +41,11 @@ export function Home({ onNavigate }) {
   el.setAttribute('aria-live', 'polite');
 
   el.innerHTML = `
-    <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">The Ultimate Murphy's Law Archive</h1>
+    <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">The Ultimate Murphy's Law Archive</h1>
+    <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
+      <strong>Murphy's Law</strong> states: "Anything that can go wrong, will go wrong." 
+      First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.
+    </p>
     ${renderLoadingHTML({ size: 'large' })}
   `;
 

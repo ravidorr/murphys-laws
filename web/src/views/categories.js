@@ -7,6 +7,7 @@ import { hydrateIcons } from '@utils/icons.js';
 import { getRandomLoadingMessage } from '../utils/constants.js';
 import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
+import { updateMetaDescription } from '@utils/dom.js';
 
 export function Categories({ onNavigate }) {
   const el = document.createElement('div');
@@ -82,8 +83,9 @@ export function Categories({ onNavigate }) {
       hydrateIcons(grid);
     }
 
-    // Update page title
+    // Update page title and meta description
     document.title = `Browse Laws by Category | Murphy's Law Archive`;
+    updateMetaDescription(`Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.`);
   }
 
   // Load categories

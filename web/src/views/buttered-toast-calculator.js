@@ -4,6 +4,7 @@ import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
 import { SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { updateMetaDescription } from '@utils/dom.js';
 
 export function ButteredToastCalculator() {
   const el = document.createElement('div');
@@ -17,6 +18,9 @@ export function ButteredToastCalculator() {
   if (typeof document !== 'undefined') {
     // Update page title
     document.title = `Buttered Toast Landing Calculator | ${SITE_NAME}`;
+    
+    // Update meta description for SEO
+    updateMetaDescription("Will your toast land butter-side down? Calculate the probability based on height, gravity, overhang, butter factor, and more. Based on real physics!");
     
     const head = document.head;
     const ogImage = head.querySelector('meta[property="og:image"]');

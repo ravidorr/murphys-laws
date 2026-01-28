@@ -8,6 +8,16 @@ This document outlines additional tasks and potential improvements for the Murph
 - [x] **Per-Law Open Graph Images:** ~~Generate dynamic OG images for each law to improve social sharing appearance.~~ Done - implemented `GET /api/v1/og/law/:id.png` endpoint that generates PNG images using node-canvas. Images are cached for 1 day and include law title, text, and branding. See `backend/src/services/og-image.service.mjs`.
 - [x] **Print Styles:** ~~Add print-optimized CSS for law pages.~~ Done - added `web/styles/partials/print.css` with `@media print` rules. Hides interactive elements (search, widgets, pagination, vote buttons) and optimizes typography for clean paper output.
 
+## SEO Recommendations (Content & Technical)
+- [ ] **"Murphy's Law vs Sod's Law" Comparison Page:** Create a dedicated page explaining the differences between Murphy's Law and Sod's Law. This is a high-volume search query with no dedicated content currently.
+- [ ] **"Murphy's Law Examples" Page:** Create a curated page targeting "Murphy's Law examples" keyword cluster with real-world scenarios organized by category.
+- [ ] **Breadcrumb Schema on All Pages:** Add BreadcrumbList structured data to law detail pages, calculator pages, and content pages (currently only on browse and category pages).
+- [ ] **Internal Linking Improvements:** Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.
+- [ ] **Visual Content:** Add historical photos (Edward Murphy, Dr. John Stapp, rocket sled experiments), infographics showing Murphy's Law variations, and embedded video explaining the origin story.
+- [ ] **Glossary/Index Page:** Create a page listing all law authors/attributions with links, targeting long-tail "who said [law name]" queries.
+- [ ] **Educational Content:** Add articles like "Why does Murphy's Law feel so true?" (psychology/cognitive bias) and "How to use Murphy's Law in project management".
+- [ ] **User Stories Section:** Implement user-submitted stories with moderation for fresh user-generated content and social proof.
+
 ## UX Improvements (Require Backend Work)
 - [x] **Search Autocomplete/Suggestions:** ~~Add debounced search suggestions as the user types in the header search field. Requires a new backend endpoint (`/api/v1/laws/suggestions`) to return top matching laws. Include keyboard navigation (arrow keys, Enter) for the dropdown.~~ Done - added debounced search autocomplete (240ms delay, configurable) with keyboard navigation (ArrowDown/ArrowUp, Enter, Escape) and WCAG-compliant contrast. Backend endpoint `/api/v1/laws/suggestions` returns top matching laws optimized for autocomplete.
 - [x] **Related Laws Section on Law Detail Page:** ~~Show 3-5 related laws from the same category on the law detail page. Requires adding a `getRelatedLaws(lawId, categoryId)` method to `backend/src/services/laws.service.mjs` and a new API endpoint.~~ Done - law detail page displays related laws from the same category with voting and share functionality.

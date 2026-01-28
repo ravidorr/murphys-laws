@@ -7,6 +7,7 @@ import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.js';
 import { initShareCalculation } from '@modules/sods-share.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 import { hydrateIcons } from '@utils/icons.js';
+import { updateMetaDescription } from '@utils/dom.js';
 
 export function Calculator() {
   const el = document.createElement('div');
@@ -20,6 +21,9 @@ export function Calculator() {
   if (typeof document !== 'undefined') {
     // Update page title
     document.title = `Sod's Law Calculator | ${SITE_NAME}`;
+    
+    // Update meta description for SEO
+    updateMetaDescription("Calculate the probability of Murphy's Law striking your task. Adjust urgency, complexity, importance, skill, and frequency to see your odds of things going wrong.");
     
     const head = document.head;
     const ogImage = head.querySelector('meta[property="og:image"]');
