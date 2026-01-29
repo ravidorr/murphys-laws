@@ -409,6 +409,11 @@
   :root:not([data-theme="light"]) .sod-simple-value {
     color: var(--dark-link-hover);
   }
+
+  /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
+  :root:not([data-theme="light"]) .calc-slider-value {
+    color: #a5b4fc;
+  }
 }
 
 :root[data-theme="dark"] .calc-ok {
@@ -438,6 +443,11 @@
 
 :root[data-theme="dark"] .sod-simple-value {
   color: var(--dark-link-hover);
+}
+
+/* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
+:root[data-theme="dark"] .calc-slider-value {
+  color: #a5b4fc;
 }
 
 /* Search highlight - dark mode (ensure dark text on light yellow background for WCAG 1.4.3) */
