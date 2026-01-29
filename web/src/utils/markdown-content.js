@@ -6,6 +6,7 @@ import originStoryMd from '../../../shared/content/origin-story.md?raw';
 import privacyMd from '../../../shared/content/privacy.md?raw';
 import termsMd from '../../../shared/content/terms.md?raw';
 import contactMd from '../../../shared/content/contact.md?raw';
+import examplesMd from '../../../shared/content/examples.md?raw';
 import metadata from '../../../shared/content/metadata.json';
 
 // Configure marked for consistent rendering
@@ -167,7 +168,8 @@ export function getPageContent(page) {
     'origin-story': { markdown: originStoryMd, meta: metadata['origin-story'] },
     privacy: { markdown: privacyMd, meta: metadata.privacy },
     terms: { markdown: termsMd, meta: metadata.terms },
-    contact: { markdown: contactMd, meta: metadata.contact }
+    contact: { markdown: contactMd, meta: metadata.contact },
+    examples: { markdown: examplesMd, meta: metadata.examples || {} }
   };
 
   const { markdown, meta } = contentMap[page];
@@ -254,7 +256,8 @@ export function getRawMarkdownContent(page) {
     'origin-story': originStoryMd,
     privacy: privacyMd,
     terms: termsMd,
-    contact: contactMd
+    contact: contactMd,
+    examples: examplesMd
   };
 
   return contentMap[page] || '';

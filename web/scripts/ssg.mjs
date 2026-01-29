@@ -46,6 +46,12 @@ const CONTENT_PAGES = [
     file: 'contact.md',
     title: 'Contact Murphy\'s Law Archive',
     description: 'Get in touch with Murphy\'s Law Archive - share a law, report an issue, or just say hello.'
+  },
+  { 
+    slug: 'examples', 
+    file: 'examples.md',
+    title: 'Murphy\'s Law Examples',
+    description: 'Real-life Murphy\'s Law examples from technology, work, travel, and everyday situations. See how anything that can go wrong, will go wrong.'
   }
 ];
 
@@ -98,6 +104,58 @@ function escapeHtml(text) {
 }
 
 /**
+ * Update hreflang tags to point to the correct URL
+ * @param {string} html - HTML content
+ * @param {string} url - Target URL
+ * @returns {string} Updated HTML
+ */
+function updateHreflang(html, url) {
+  html = html.replace(
+    /<link rel="alternate" hreflang="en" href=".*?">/,
+    `<link rel="alternate" hreflang="en" href="${url}">`
+  );
+  html = html.replace(
+    /<link rel="alternate" hreflang="x-default" href=".*?">/,
+    `<link rel="alternate" hreflang="x-default" href="${url}">`
+  );
+  return html;
+}
+
+/**
+ * Escape string for JSON embedding
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeJsonString(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
+ * Generate JSON-LD script tag
+ * @param {Object} data - Structured data object
+ * @returns {string} Script tag HTML
+ */
+function generateJsonLd(data) {
+  return `<script type="application/ld+json">${JSON.stringify(data, null, 2)}</script>`;
+}
+
+/**
+ * Inject JSON-LD into HTML head
+ * @param {string} html - HTML content
+ * @param {string} jsonLd - JSON-LD script tag(s)
+ * @returns {string} Updated HTML
+ */
+function injectJsonLd(html, jsonLd) {
+  return html.replace('</head>', `${jsonLd}\n</head>`);
+}
+
+/**
  * Generate HTML page for a single law with correct OG meta tags
  * @param {Object} law - Law object
  * @param {string} template - HTML template
@@ -121,11 +179,12 @@ function generateLawPage(law, template) {
     `<meta name="description" content="${escapeHtml(description)}">`
   );
   
-  // Update canonical URL
+  // Update canonical URL and hreflang
   pageHtml = pageHtml.replace(
     /<link rel="canonical" href=".*?">/,
     `<link rel="canonical" href="${lawUrl}">`
   );
+  pageHtml = updateHreflang(pageHtml, lawUrl);
   
   // Update OG tags
   pageHtml = pageHtml.replace(
@@ -194,6 +253,38 @@ function generateLawPage(law, template) {
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
     `<main id="main-content" class="flex-1 container page">${staticContent}</main>`
   );
+  
+  // Pre-render JSON-LD structured data for law page
+  const lawJsonLd = generateJsonLd({
+    '@context': 'https://schema.org',
+    '@type': ['Article', 'Quotation'],
+    'headline': title,
+    'description': law.text || '',
+    'text': law.text || '',
+    'datePublished': law.created_at || undefined,
+    'dateModified': law.updated_at || law.created_at || undefined,
+    'author': attributionName ? {
+      '@type': 'Person',
+      'name': attributionName
+    } : undefined,
+    'mainEntityOfPage': {
+      '@type': 'WebPage',
+      '@id': lawUrl
+    },
+    'publisher': {
+      '@type': 'Organization',
+      'name': "Murphy's Law Archive",
+      'url': SITE_URL
+    },
+    'url': lawUrl,
+    'image': ogImageUrl,
+    'speakable': {
+      '@type': 'SpeakableSpecification',
+      'cssSelector': ['.law-text', '.card-title', '.attribution']
+    }
+  });
+  
+  pageHtml = injectJsonLd(pageHtml, lawJsonLd);
   
   return pageHtml;
 }
@@ -303,8 +394,9 @@ async function main() {
     const description = firstText.substring(0, 160).replace(/"/g, '&quot;') || `Read ${title} at Murphy's Law Archive.`;
     pageHtml = pageHtml.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${description}">`);
     
-    // Canonical URL
+    // Canonical URL and hreflang
     pageHtml = pageHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/category/${slug}">`);
+    pageHtml = updateHreflang(pageHtml, `https://murphys-laws.com/category/${slug}`);
 
     // Inject Content
     // We replace the loading content in <main>
@@ -329,6 +421,24 @@ async function main() {
       `<main id="main-content" class="flex-1 container page">${staticContent}</main>`
     );
 
+    // Pre-render JSON-LD for category page
+    const categoryUrl = `${SITE_URL}/category/${slug}`;
+    const categoryJsonLd = generateJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      'name': `${title} - Murphy's Law Archive`,
+      'url': categoryUrl,
+      'description': descriptionText,
+      'isPartOf': {
+        '@type': 'WebSite',
+        'name': "Murphy's Law Archive",
+        'url': SITE_URL
+      },
+      'numberOfItems': law_count
+    });
+    
+    pageHtml = injectJsonLd(pageHtml, categoryJsonLd);
+
     await fs.writeFile(path.join(outDir, 'index.html'), pageHtml);
     // console.log(`Generated category/${slug}/index.html`);
   }
@@ -340,8 +450,9 @@ async function main() {
   await fs.mkdir(browseDir, { recursive: true });
 
   let browseHtml = template;
-  browseHtml = browseHtml.replace(/<title>.*?<\/title>/, `<title>Browse All Categories - Murphy's Law Archive</title>`);
+  browseHtml = browseHtml.replace(/<title>.*?<\/title>/, `<title>Browse All Murphy's Laws - Murphy's Law Archive</title>`);
   browseHtml = browseHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/browse">`);
+  browseHtml = updateHreflang(browseHtml, 'https://murphys-laws.com/browse');
 
   const browseContent = `
     <div class="container page pt-0" role="main">
@@ -367,12 +478,13 @@ async function main() {
   await fs.mkdir(categoriesDir, { recursive: true });
 
   let categoriesHtml = template;
-  categoriesHtml = categoriesHtml.replace(/<title>.*?<\/title>/, `<title>Browse Laws by Category - Murphy's Law Archive</title>`);
+  categoriesHtml = categoriesHtml.replace(/<title>.*?<\/title>/, `<title>Browse Murphy's Laws by Category - Murphy's Law Archive</title>`);
   categoriesHtml = categoriesHtml.replace(
     /<meta name="description"[\s\S]*?content="[\s\S]*?">/,
     `<meta name="description" content="Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.">`
   );
   categoriesHtml = categoriesHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/categories">`);
+  categoriesHtml = updateHreflang(categoriesHtml, 'https://murphys-laws.com/categories');
 
   // Build category cards HTML for SSG
   const categoryCardsHtml = categories
@@ -393,7 +505,7 @@ async function main() {
   const categoriesContent = `
     <div class="container page pt-0" role="main">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
-        Browse <span class="accent-text">Laws</span> by Category
+        Browse <span class="accent-text">Murphy's</span> Laws by Category
       </h1>
       <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
         Explore our complete collection organized into ${categories.length} categories.
@@ -443,12 +555,13 @@ async function main() {
         `<meta name="description" content="${page.description}">`
       );
       
-      // Update canonical URL
+      // Update canonical URL and hreflang
       pageHtml = pageHtml.replace(
         /<link rel="canonical" href=".*?">/,
         `<link rel="canonical" href="https://murphys-laws.com/${page.slug}">`
       );
-      
+      pageHtml = updateHreflang(pageHtml, `https://murphys-laws.com/${page.slug}`);
+
       // Build the static content wrapper
       const staticContent = `
       <div class="container page content-page" role="main">
@@ -465,6 +578,36 @@ async function main() {
         /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
         `<main id="main-content" class="flex-1 container page">${staticContent}</main>`
       );
+      
+      // Pre-render JSON-LD for content page
+      const contentPageUrl = `${SITE_URL}/${page.slug}`;
+      const contentJsonLd = generateJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        'headline': page.title,
+        'description': page.description,
+        'url': contentPageUrl,
+        'dateModified': new Date().toISOString(),
+        'author': {
+          '@type': 'Person',
+          'name': 'Raanan Avidor'
+        },
+        'publisher': {
+          '@type': 'Organization',
+          'name': "Murphy's Law Archive",
+          'url': SITE_URL
+        },
+        'mainEntityOfPage': {
+          '@type': 'WebPage',
+          '@id': contentPageUrl
+        },
+        'speakable': {
+          '@type': 'SpeakableSpecification',
+          'cssSelector': ['.card-content h1', '.card-content p', '.content-section']
+        }
+      });
+      
+      pageHtml = injectJsonLd(pageHtml, contentJsonLd);
       
       await fs.writeFile(path.join(routeDir, 'index.html'), pageHtml);
     } catch (err) {
@@ -527,6 +670,27 @@ async function main() {
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
     `<main id="main-content" class="flex-1 container page">${homeContent}</main>`
   );
+
+  // Pre-render JSON-LD for homepage
+  const homeJsonLd = generateJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    'name': "Murphy's Law Archive",
+    'url': SITE_URL,
+    'description': "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.",
+    'publisher': {
+      '@type': 'Organization',
+      'name': "Murphy's Law Archive",
+      'url': SITE_URL
+    },
+    'potentialAction': {
+      '@type': 'SearchAction',
+      'target': `${SITE_URL}/browse?q={search_term_string}`,
+      'query-input': 'required name=search_term_string'
+    }
+  });
+  
+  homeHtml = injectJsonLd(homeHtml, homeJsonLd);
 
   await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
   console.log('Updated index.html with static content.');
@@ -605,6 +769,60 @@ async function main() {
 
   await fs.writeFile(path.join(DIST_DIR, 'sitemap.xml'), sitemap);
   console.log('Generated sitemap.xml');
+
+  // 6. Generate Image Sitemap
+  console.log('Generating image-sitemap.xml...');
+  
+  let imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <image:image>
+      <image:loc>${baseUrl}/social/home.png</image:loc>
+      <image:title>Murphy's Law Archive - Home</image:title>
+      <image:caption>Murphy's Law Archive featuring laws, corollaries, and interactive calculators</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>${baseUrl}/android-chrome-512x512.png</image:loc>
+      <image:title>Murphy's Law Archive Logo</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>${baseUrl}/calculator/sods-law</loc>
+    <image:image>
+      <image:loc>${baseUrl}/social/sods-calculator.png</image:loc>
+      <image:title>Sod's Law Calculator</image:title>
+      <image:caption>Calculate your probability of things going wrong with the Sod's Law Calculator</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>${baseUrl}/calculator/buttered-toast</loc>
+    <image:image>
+      <image:loc>${baseUrl}/social/buttered-toast-calculator.png</image:loc>
+      <image:title>Buttered Toast Landing Calculator</image:title>
+      <image:caption>Calculate the probability of your toast landing butter-side down</image:caption>
+    </image:image>
+  </url>`;
+
+  // Add OG images for each law
+  for (const law of laws) {
+    const lawTitle = law.title || `Murphy's Law #${law.id}`;
+    imageSitemap += `
+  <url>
+    <loc>${baseUrl}/law/${law.id}</loc>
+    <image:image>
+      <image:loc>${baseUrl}/api/v1/og/law/${law.id}.png</image:loc>
+      <image:title>${escapeHtml(lawTitle)}</image:title>
+      <image:caption>${escapeHtml((law.text || '').substring(0, 200))}</image:caption>
+    </image:image>
+  </url>`;
+  }
+
+  imageSitemap += '\n</urlset>';
+
+  await fs.writeFile(path.join(DIST_DIR, 'image-sitemap.xml'), imageSitemap);
+  console.log('Generated image-sitemap.xml');
   
   console.log('SSG Complete!');
 }

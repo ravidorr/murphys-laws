@@ -84,7 +84,7 @@ export function Categories({ onNavigate }) {
     }
 
     // Update page title and meta description
-    document.title = `Browse Laws by Category | Murphy's Law Archive`;
+    document.title = `Browse Murphy's Laws by Category | Murphy's Law Archive`;
     updateMetaDescription(`Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.`);
   }
 
