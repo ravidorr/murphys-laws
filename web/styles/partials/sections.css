@@ -573,45 +573,71 @@
   font-size: 1rem;
 }
 
-/* Calculator Quick Share Actions */
+/* Calculator Quick Share Actions - Inline style matching share popover */
 .quick-share-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex-wrap: wrap;
   margin-bottom: 0.75rem;
 }
 
-.quick-share-actions .btn {
-  flex: 1;
-  min-width: fit-content;
+.quick-share-actions .share-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--fg);
+  text-decoration: none;
+  transition: background 0.15s ease;
 }
+
+.quick-share-actions .share-action:hover {
+  background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
+}
+
+.quick-share-actions .share-action:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: -2px;
+}
+
+/* Icon circles in quick share */
+.quick-share-actions .icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.quick-share-actions .icon-circle .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Platform colors for quick share */
+.quick-share-actions .icon-circle.link { background-color: var(--btn-primary-bg); }
+.quick-share-actions .icon-circle.twitter { background-color: #000; }
+.quick-share-actions .icon-circle.facebook { background-color: #1877F2; }
+.quick-share-actions .icon-circle.email { background-color: #777; }
 
 @media (width <= 600px) {
   .quick-share-actions {
     flex-direction: column;
   }
 
-  .quick-share-actions .btn {
+  .quick-share-actions .share-action {
     width: 100%;
+    justify-content: flex-start;
   }
-}
-
-.share-btn-twitter {
-  background: #1da1f2 !important;
-  border-color: #1da1f2 !important;
-}
-
-.share-btn-twitter:hover {
-  background: #0c85d0 !important;
-}
-
-.share-btn-facebook {
-  background: #4267b2 !important;
-  border-color: #4267b2 !important;
-}
-
-.share-btn-facebook:hover {
-  background: #365899 !important;
 }
 
 .copy-feedback {
