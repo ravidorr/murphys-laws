@@ -41,77 +41,42 @@
         <h3 class="section-title"><span class="accent-text">Share</span> Your Results</h3>
       </div>
       <div class="section-body">
-        <div class="quick-share-actions">
-          <button type="button" id="copy-link" class="share-action">
-            <span class="icon-circle link"><span class="icon" data-icon="link" aria-hidden="true"></span></span>
-            <span>Copy Link</span>
+        <div class="share-wrapper calculator-share">
+          <button type="button" class="share-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Share your calculation">
+            <span class="icon" data-icon="share" aria-hidden="true"></span>
+            Share
           </button>
-          <button type="button" id="share-twitter" class="share-action">
-            <span class="icon-circle twitter"><span class="icon" data-icon="twitter" aria-hidden="true"></span></span>
-            <span>X</span>
-          </button>
-          <button type="button" id="share-facebook" class="share-action">
-            <span class="icon-circle facebook"><span class="icon" data-icon="facebook" aria-hidden="true"></span></span>
-            <span>Facebook</span>
-          </button>
-          <button type="button" id="share-cta" class="share-action">
-            <span class="icon-circle email"><span class="icon" data-icon="email" aria-hidden="true"></span></span>
-            <span>Send Email</span>
-          </button>
-        </div>
-        <div id="copy-feedback" class="copy-feedback hidden" aria-live="polite"></div>
-        <div id="share-form-container" class="share-form-container hidden">
-          <h2 class="mt-0"><span class="accent-text">Share</span> Your Calculation</h2>
-          <div class="form-group">
-            <label for="task-description" class="form-label">Task Description <span class="required" data-tooltip="required" role="img" aria-label="required">*</span></label>
-            <textarea id="task-description" rows="3" class="form-control" placeholder="Describe the task you calculated..." required></textarea>
-          </div>
-          <div class="form-group">
-            <label for="sender-name" class="form-label">Your Name <span class="required" data-tooltip="required" role="img" aria-label="required">*</span></label>
-            <input type="text" id="sender-name" class="form-control" placeholder="Your name" required>
-          </div>
-          <div class="form-group">
-            <label for="sender-email" class="form-label">Your Email <span class="required" data-tooltip="required" role="img" aria-label="required">*</span></label>
-            <input type="email" id="sender-email" class="form-control" placeholder="your.email@example.com" required>
-          </div>
-          <div class="form-group">
-            <label for="recipient-name" class="form-label">Recipient Name <span class="required" data-tooltip="required" role="img" aria-label="required">*</span></label>
-            <input type="text" id="recipient-name" class="form-control" placeholder="Recipient's name" required>
-          </div>
-          <div class="form-group">
-            <label for="recipient-email" class="form-label">Recipient Email <span class="required" data-tooltip="required" role="img" aria-label="required">*</span></label>
-            <input type="email" id="recipient-email" class="form-control" placeholder="recipient.email@example.com" required>
-          </div>
-          <div class="form-actions">
-            <button type="button" id="cancel-share" class="btn">
-              <span class="icon" data-icon="close" aria-hidden="true"></span>
-              <span class="btn-text">Cancel</span>
+          <div class="share-popover" role="menu">
+            <a class="share-popover-item" href="#" role="menuitem" target="_blank" rel="noopener noreferrer" data-share="twitter">
+              <span class="icon-circle twitter"><span class="icon" data-icon="twitter" aria-hidden="true"></span></span>Share on X
+            </a>
+            <a class="share-popover-item" href="#" role="menuitem" target="_blank" rel="noopener noreferrer" data-share="facebook">
+              <span class="icon-circle facebook"><span class="icon" data-icon="facebook" aria-hidden="true"></span></span>Share on Facebook
+            </a>
+            <a class="share-popover-item" href="#" role="menuitem" target="_blank" rel="noopener noreferrer" data-share="linkedin">
+              <span class="icon-circle linkedin"><span class="icon" data-icon="linkedin" aria-hidden="true"></span></span>Share on LinkedIn
+            </a>
+            <a class="share-popover-item" href="#" role="menuitem" target="_blank" rel="noopener noreferrer" data-share="reddit">
+              <span class="icon-circle reddit"><span class="icon" data-icon="reddit" aria-hidden="true"></span></span>Share on Reddit
+            </a>
+            <a class="share-popover-item" href="#" role="menuitem" target="_blank" rel="noopener noreferrer" data-share="whatsapp">
+              <span class="icon-circle whatsapp"><span class="icon" data-icon="whatsapp" aria-hidden="true"></span></span>Share on WhatsApp
+            </a>
+            <a class="share-popover-item" href="#" role="menuitem" target="_self" data-share="email">
+              <span class="icon-circle email"><span class="icon" data-icon="email" aria-hidden="true"></span></span>Share via Email
+            </a>
+            <div class="share-popover-divider"></div>
+            <button type="button" class="share-popover-item" role="menuitem" data-action="copy-text">
+              <span class="icon-circle copy"><span class="icon" data-icon="copy" aria-hidden="true"></span></span>
+              Copy text
             </button>
-            <button type="button" id="preview-email" class="btn">
-              <span class="icon" data-icon="preview" aria-hidden="true"></span>
-              <span class="btn-text">Preview Email</span>
+            <button type="button" class="share-popover-item" role="menuitem" data-action="copy-link">
+              <span class="icon-circle link"><span class="icon" data-icon="link" aria-hidden="true"></span></span>
+              Copy link
             </button>
-            <button type="button" id="send-email" class="btn">
-              <span class="icon" data-icon="email" aria-hidden="true"></span>
-              <span class="btn-text">Send Email</span>
-            </button>
-          </div>
-          <div id="share-status" class="share-status hidden"></div>
-        </div>
-        <div id="email-preview-modal" class="modal hidden">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h3>Email Preview</h3>
-              <button type="button" id="close-preview" class="close-button" aria-label="Close preview">
-                <span class="icon" data-icon="close" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="modal-body" id="preview-content"></div>
-            <div class="modal-footer">
-              <button type="button" id="close-preview-footer" class="btn">
-                <span class="icon" data-icon="close" aria-hidden="true"></span>
-                <span class="btn-text">Close</span>
-              </button>
+            <div class="share-copy-feedback">
+              <span class="icon" data-icon="checkCircle" aria-hidden="true"></span>
+              Copied!
             </div>
           </div>
         </div>
