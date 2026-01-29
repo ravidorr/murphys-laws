@@ -201,8 +201,8 @@ export function Favorites({ onNavigate }) {
   function handleUnfavorite(lawId) {
     removeFavorite(lawId);
 
-    // Remove the card from DOM with animation
-    const card = el.querySelector(`[data-law-id="${lawId}"]`);
+    // Find the card element specifically (not the button which also has data-law-id)
+    const card = el.querySelector(`.law-card-mini[data-law-id="${lawId}"]`);
     if (card) {
       card.style.opacity = '0';
       card.style.transform = 'translateX(-20px)';
@@ -212,6 +212,7 @@ export function Favorites({ onNavigate }) {
         render(); // Re-render to update count and potentially show empty state
       }, 200);
     } else {
+      // Card not found, render immediately
       render();
     }
   }
