@@ -208,5 +208,33 @@ describe('markdown-content.js', () => {
       expect(html).not.toContain('<p class="lead">');
       vi.restoreAllMocks();
     });
+
+    it('handles privacy page without first paragraph after h1', () => {
+      // This tests line 221-227 - privacy page with lastUpdated but no first <p> after h1
+      vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Privacy Policy</h1><h2>Section</h2>');
+      const html = getPageContent('privacy');
+      expect(html).toContain('<header class="content-header">');
+      expect(html).toContain('Last updated:');
+      expect(html).not.toContain('<p class="lead">');
+      vi.restoreAllMocks();
+    });
+
+    it('handles terms page without first paragraph after h1', () => {
+      // This also tests the alternate branch for terms page
+      vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Terms</h1><ul><li>Item</li></ul>');
+      const html = getPageContent('terms');
+      expect(html).toContain('<header class="content-header">');
+      expect(html).toContain('Last updated:');
+      expect(html).not.toContain('<p class="lead">');
+      vi.restoreAllMocks();
+    });
+
+    it('throws error for unknown page due to undefined content', () => {
+      // The code throws because contentMap[page] is undefined
+      // and destructuring undefined throws an error
+      expect(() => {
+        getPageContent('invalid-page-name');
+      }).toThrow();
+    });
   });
 });

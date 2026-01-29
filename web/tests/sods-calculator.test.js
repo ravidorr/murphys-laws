@@ -29,10 +29,12 @@ describe("Calculator view", () => {
     mountCalculator();
   });
 
-  afterEach(() => {
-    // Run all pending timers before switching to real timers to prevent
-    // callbacks from firing after the test environment is torn down
+  afterEach(async () => {
+    // Run all pending timers and flush promises before switching to real timers
+    // to prevent callbacks from firing after the test environment is torn down
     vi.runAllTimers();
+    // Flush any pending promises (e.g., from requestAnimationFrame callbacks)
+    await vi.runAllTimersAsync();
     el?._teardownShare?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
     el = null;
