@@ -4,10 +4,10 @@
 
 import templateHtml from '@views/templates/sods-calculator.html?raw';
 import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.js';
-import { initShareCalculation } from '@modules/sods-share.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { updateMetaDescription } from '@utils/dom.js';
+import { initCalculatorSharePopover } from '@modules/calculator-share.js';
 
 export function Calculator() {
   const el = document.createElement('div');
@@ -243,49 +243,11 @@ export function Calculator() {
     return url.toString();
   }
 
-  // Copy link to clipboard
-  const copyLinkBtn = el.querySelector('#copy-link');
-  const copyFeedback = el.querySelector('#copy-feedback');
-
-  copyLinkBtn?.addEventListener('click', async () => {
-    const url = getShareableUrl();
-    try {
-      await navigator.clipboard.writeText(url);
-      if (copyFeedback) {
-        copyFeedback.textContent = 'Link copied to clipboard!';
-        copyFeedback.className = 'copy-feedback success';
-        setTimeout(() => {
-          copyFeedback.className = 'copy-feedback hidden';
-        }, 2000);
-      }
-    } catch {
-      if (copyFeedback) {
-        copyFeedback.textContent = 'Failed to copy link';
-        copyFeedback.className = 'copy-feedback error';
-        setTimeout(() => {
-          copyFeedback.className = 'copy-feedback hidden';
-        }, 2000);
-      }
-    }
-  });
-
-  // Social share buttons
-  const twitterBtn = el.querySelector('#share-twitter');
-  const facebookBtn = el.querySelector('#share-facebook');
-
-  twitterBtn?.addEventListener('click', () => {
+  // Generate share text for social platforms
+  function getShareText() {
     updateState();
-    const url = getShareableUrl();
-    const text = `My Sod's Law score is ${state.probability}! ${state.interpretation}`;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(twitterUrl, '_blank', 'width=550,height=420');
-  });
-
-  facebookBtn?.addEventListener('click', () => {
-    const url = getShareableUrl();
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(facebookUrl, '_blank', 'width=550,height=420');
-  });
+    return `My Sod's Law score is ${state.probability}! ${state.interpretation}`;
+  }
 
   // Load parameters from URL if present
   const urlParams = new URLSearchParams(window.location.search);
@@ -304,12 +266,12 @@ export function Calculator() {
     }
   });
 
-  const teardownShare = initShareCalculation({
+  // Initialize share popover
+  const teardownShare = initCalculatorSharePopover({
     root: el,
-    getCalculationState() {
-      updateState();
-      return { ...state };
-    }
+    getShareableUrl,
+    getShareText,
+    emailSubject: "Check out my Sod's Law calculation"
   });
 
   el._teardownShare = teardownShare;

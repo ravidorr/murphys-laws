@@ -496,7 +496,43 @@ describe('ButteredToastCalculator view', () => {
     window.location = originalLocation;
   });
 
-  it('copies shareable link to clipboard on copy button click', async () => {
+  it('renders share popover with all social share options', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const shareWrapper = el.querySelector('.share-wrapper.calculator-share');
+    expect(shareWrapper).toBeTruthy();
+    expect(el.querySelector('.share-trigger')).toBeTruthy();
+    expect(el.querySelector('.share-popover')).toBeTruthy();
+    expect(el.querySelector('[data-share="twitter"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="facebook"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="linkedin"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="reddit"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="whatsapp"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="email"]')).toBeTruthy();
+    expect(el.querySelector('[data-action="copy-text"]')).toBeTruthy();
+    expect(el.querySelector('[data-action="copy-link"]')).toBeTruthy();
+
+    document.body.removeChild(el);
+  });
+
+  it('toggles share popover when trigger is clicked', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const trigger = el.querySelector('.share-trigger');
+    const popover = el.querySelector('.share-popover');
+
+    expect(popover.classList.contains('open')).toBe(false);
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(true);
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(false);
+
+    document.body.removeChild(el);
+  });
+
+  it('copies link to clipboard when copy-link button is clicked', async () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
@@ -512,8 +548,12 @@ describe('ButteredToastCalculator view', () => {
     el.querySelector('#toast-gravity').value = '1000';
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
-    const copyBtn = el.querySelector('#copy-link');
-    copyBtn.dispatchEvent(new Event('click'));
+    // Open popover first
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
@@ -525,9 +565,7 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('shows success feedback after copying link and hides after timeout', async () => {
-    vi.useFakeTimers();
-    
+  it('copies text to clipboard when copy-text button is clicked', async () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
@@ -538,100 +576,82 @@ describe('ButteredToastCalculator view', () => {
       }
     });
 
-    const copyBtn = el.querySelector('#copy-link');
-    const copyFeedback = el.querySelector('#copy-feedback');
+    // Open popover first
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
 
-    copyBtn.dispatchEvent(new Event('click'));
+    const copyBtn = el.querySelector('[data-action="copy-text"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
-    await Promise.resolve();
 
-    expect(copyFeedback.textContent).toMatch(/copied/i);
-    expect(copyFeedback.classList.contains('success')).toBe(true);
-
-    // Wait for the setTimeout to hide feedback
-    vi.advanceTimersByTime(2100);
-    expect(copyFeedback.classList.contains('hidden')).toBe(true);
+    expect(writeTextMock).toHaveBeenCalled();
+    const copiedText = writeTextMock.mock.calls[0][0];
+    expect(copiedText).toMatch(/Buttered Toast/i);
 
     document.body.removeChild(el);
-    vi.useRealTimers();
   });
 
-  it('shows error feedback when clipboard copy fails and hides after timeout', async () => {
-    vi.useFakeTimers();
-    
+  it('updates share links with correct URLs when popover opens', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
-
-    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: writeTextMock
-      }
-    });
-
-    const copyBtn = el.querySelector('#copy-link');
-    const copyFeedback = el.querySelector('#copy-feedback');
-
-    copyBtn.dispatchEvent(new Event('click'));
-
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(copyFeedback.textContent).toMatch(/failed/i);
-    expect(copyFeedback.classList.contains('error')).toBe(true);
-
-    // Wait for the setTimeout to hide feedback
-    vi.advanceTimersByTime(2100);
-    expect(copyFeedback.classList.contains('hidden')).toBe(true);
-
-    document.body.removeChild(el);
-    vi.useRealTimers();
-  });
-
-  it('opens Twitter share window with correct URL', () => {
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    const windowOpenMock = vi.fn();
-    window.open = windowOpenMock;
 
     // Set a slider value
     el.querySelector('#toast-height').value = '100';
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
-    const twitterBtn = el.querySelector('#share-twitter');
-    twitterBtn.dispatchEvent(new Event('click'));
+    // Open popover
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
 
-    expect(windowOpenMock).toHaveBeenCalled();
-    const twitterUrl = windowOpenMock.mock.calls[0][0];
-    expect(twitterUrl).toContain('twitter.com/intent/tweet');
+    const twitterLink = el.querySelector('[data-share="twitter"]');
+    const facebookLink = el.querySelector('[data-share="facebook"]');
+    const linkedinLink = el.querySelector('[data-share="linkedin"]');
+
+    expect(twitterLink.href).toContain('twitter.com/intent/tweet');
+    expect(facebookLink.href).toContain('facebook.com/sharer');
+    expect(linkedinLink.href).toContain('linkedin.com/shareArticle');
 
     document.body.removeChild(el);
   });
 
-  it('opens Facebook share window with correct URL', () => {
+  it('closes share popover on outside click', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    const windowOpenMock = vi.fn();
-    window.open = windowOpenMock;
+    const trigger = el.querySelector('.share-trigger');
+    const popover = el.querySelector('.share-popover');
 
-    // Set a slider value
-    el.querySelector('#toast-height').value = '90';
-    el.querySelector('#toast-height').dispatchEvent(new Event('input'));
+    // Open popover
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(true);
 
-    const facebookBtn = el.querySelector('#share-facebook');
-    facebookBtn.dispatchEvent(new Event('click'));
-
-    expect(windowOpenMock).toHaveBeenCalled();
-    const facebookUrl = windowOpenMock.mock.calls[0][0];
-    expect(facebookUrl).toContain('facebook.com/sharer');
+    // Click outside
+    document.dispatchEvent(new Event('click'));
+    expect(popover.classList.contains('open')).toBe(false);
 
     document.body.removeChild(el);
   });
 
-  it('updateState captures current slider values', async () => {
+  it('closes share popover on Escape key', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const trigger = el.querySelector('.share-trigger');
+    const popover = el.querySelector('.share-popover');
+
+    // Open popover
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(true);
+
+    // Press Escape
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(popover.classList.contains('open')).toBe(false);
+
+    document.body.removeChild(el);
+  });
+
+  it('updateState captures current slider values in share URL', async () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
@@ -650,7 +670,10 @@ describe('ButteredToastCalculator view', () => {
       clipboard: { writeText: writeTextMock }
     });
 
-    el.querySelector('#copy-link').dispatchEvent(new Event('click'));
+    // Open popover and click copy-link
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    el.querySelector('[data-action="copy-link"]').dispatchEvent(new Event('click', { bubbles: true }));
     await Promise.resolve();
 
     const url = writeTextMock.mock.calls[0][0];

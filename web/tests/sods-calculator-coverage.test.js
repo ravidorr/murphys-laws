@@ -399,39 +399,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     });
   });
 
-  it('executes getCalculationState callback when sharing', async () => {
-    const el = Calculator();
-    container.appendChild(el);
-
-    // Set specific slider values
-    const urgencySlider = el.querySelector('#urgency');
-    urgencySlider.value = '8';
-    urgencySlider.dispatchEvent(new Event('input'));
-
-    // Open share form
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-
-    // Fill in required fields
-    el.querySelector('#task-description').value = 'Test task for coverage';
-    el.querySelector('#sender-name').value = 'Coverage Test';
-    el.querySelector('#sender-email').value = 'test@example.com';
-    el.querySelector('#recipient-name').value = 'Recipient';
-    el.querySelector('#recipient-email').value = 'recipient@example.com';
-
-    // Click preview button - this calls getCalculationState
-    const previewBtn = el.querySelector('#preview-email');
-    previewBtn.dispatchEvent(new Event('click'));
-
-    // The email preview modal should be visible
-    const modal = el.querySelector('#email-preview-modal');
-    expect(modal.classList.contains('hidden')).toBe(false);
-
-    // The preview content should contain the task description
-    const previewContent = el.querySelector('#preview-content');
-    expect(previewContent.innerHTML).toContain('Test task for coverage');
-  });
-
-  it('getShareableUrl generates URL with current slider values', () => {
+  it('getShareableUrl generates URL with current slider values', async () => {
     const el = Calculator();
     container.appendChild(el);
 
@@ -451,8 +419,13 @@ describe('Sod\'s Law Calculator - Coverage', () => {
       clipboard: { writeText: writeTextMock }
     });
 
-    const copyBtn = el.querySelector('#copy-link');
-    copyBtn.dispatchEvent(new Event('click'));
+    // Open popover and click copy-link
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+
+    await Promise.resolve();
 
     // Verify URL contains the slider values
     expect(writeTextMock).toHaveBeenCalled();
@@ -464,11 +437,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     expect(url).toContain('f=6');
   });
 
-  it('updateState captures current slider and display values', () => {
+  it('updateState captures current slider and display values in share text', async () => {
     const el = Calculator();
     container.appendChild(el);
 
-    // Set slider values
+    // Set slider values for high score
     el.querySelector('#urgency').value = '9';
     el.querySelector('#complexity').value = '9';
     el.querySelector('#importance').value = '9';
@@ -478,25 +451,27 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     // Trigger input to update calculation
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    // Share form uses updateState to get current values
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
+    // Copy text calls getShareText which uses updateState
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
 
-    // Fill form
-    el.querySelector('#task-description').value = 'High risk task';
-    el.querySelector('#sender-name').value = 'Test';
-    el.querySelector('#sender-email').value = 'test@test.com';
-    el.querySelector('#recipient-name').value = 'Recipient';
-    el.querySelector('#recipient-email').value = 'recipient@test.com';
+    // Open popover and click copy-text
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    const copyBtn = el.querySelector('[data-action="copy-text"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
-    // Preview should show the high score
-    el.querySelector('#preview-email').dispatchEvent(new Event('click'));
+    await Promise.resolve();
     
-    const previewContent = el.querySelector('#preview-content');
-    // The preview should contain the probability (8.60 is max due to capping)
-    expect(previewContent.innerHTML).toContain('8.');
+    // The copied text should contain the high probability (8.60 is max due to capping)
+    expect(writeTextMock).toHaveBeenCalled();
+    const text = writeTextMock.mock.calls[0][0];
+    expect(text).toContain('8.');
   });
 
-  it('Twitter share includes probability and interpretation', () => {
+  it('Twitter share link includes probability and interpretation', () => {
     const el = Calculator();
     container.appendChild(el);
 
@@ -504,33 +479,29 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     el.querySelector('#urgency').value = '1';
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    const windowOpenMock = vi.fn();
-    window.open = windowOpenMock;
+    // Open popover to trigger URL update
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
 
-    el.querySelector('#share-twitter').dispatchEvent(new Event('click'));
-
-    expect(windowOpenMock).toHaveBeenCalled();
-    const twitterUrl = windowOpenMock.mock.calls[0][0];
-    expect(twitterUrl).toContain('twitter.com/intent/tweet');
-    expect(twitterUrl).toContain('Sod');
+    const twitterLink = el.querySelector('[data-share="twitter"]');
+    expect(twitterLink.href).toContain('twitter.com/intent/tweet');
+    expect(twitterLink.href).toContain('Sod');
   });
 
-  it('Facebook share includes shareable URL', () => {
+  it('Facebook share link includes shareable URL', () => {
     const el = Calculator();
     container.appendChild(el);
 
     el.querySelector('#urgency').value = '5';
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    const windowOpenMock = vi.fn();
-    window.open = windowOpenMock;
+    // Open popover to trigger URL update
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
 
-    el.querySelector('#share-facebook').dispatchEvent(new Event('click'));
-
-    expect(windowOpenMock).toHaveBeenCalled();
-    const facebookUrl = windowOpenMock.mock.calls[0][0];
-    expect(facebookUrl).toContain('facebook.com/sharer');
+    const facebookLink = el.querySelector('[data-share="facebook"]');
+    expect(facebookLink.href).toContain('facebook.com/sharer');
     // The shareable URL is URL-encoded within the Facebook URL
-    expect(facebookUrl).toContain(encodeURIComponent('u=5'));
+    expect(facebookLink.href).toContain(encodeURIComponent('u=5'));
   });
 });

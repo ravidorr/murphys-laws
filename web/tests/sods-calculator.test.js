@@ -201,126 +201,33 @@ describe("Calculator view", () => {
   });
 
 
-  it('validates share preview and opens modal', () => {
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    const previewBtn = el.querySelector('#preview-email');
-    const shareStatus = el.querySelector('#share-status');
-    previewBtn.dispatchEvent(new Event('click'));
-    expect(shareStatus.textContent).toMatch(/task description/i);
-
-    el.querySelector('#task-description').value = 'Deploy app';
-    el.querySelector('#sender-name').value = 'John Doe';
-    el.querySelector('#sender-email').value = 'john@example.com';
-    el.querySelector('#recipient-name').value = 'Jane Smith';
-    el.querySelector('#recipient-email').value = 'user@example.com';
-    previewBtn.dispatchEvent(new Event('click'));
-
-    expect(shareStatus.classList.contains('hidden')).toBe(true);
-    expect(el.querySelector('#email-preview-modal').classList.contains('hidden')).toBe(false);
+  it('renders share popover with all social share options', () => {
+    const shareWrapper = el.querySelector('.share-wrapper.calculator-share');
+    expect(shareWrapper).toBeTruthy();
+    expect(el.querySelector('.share-trigger')).toBeTruthy();
+    expect(el.querySelector('.share-popover')).toBeTruthy();
+    expect(el.querySelector('[data-share="twitter"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="facebook"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="linkedin"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="reddit"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="whatsapp"]')).toBeTruthy();
+    expect(el.querySelector('[data-share="email"]')).toBeTruthy();
+    expect(el.querySelector('[data-action="copy-text"]')).toBeTruthy();
+    expect(el.querySelector('[data-action="copy-link"]')).toBeTruthy();
   });
 
-  it('handles share send success and cancellation', async () => {
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    el.querySelector('#task-description').value = 'Deploy app';
-    el.querySelector('#sender-name').value = 'John Doe';
-    el.querySelector('#sender-email').value = 'john@example.com';
-    el.querySelector('#recipient-name').value = 'Jane Smith';
-    el.querySelector('#recipient-email').value = 'user@example.com';
+  it('toggles share popover when trigger is clicked', () => {
+    const trigger = el.querySelector('.share-trigger');
+    const popover = el.querySelector('.share-popover');
 
-    const sendBtn = el.querySelector('#send-email');
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true })
-    });
-    global.fetch = fetchMock;
-
-    sendBtn.dispatchEvent(new Event('click'));
-
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(fetchMock).toHaveBeenCalled();
-    expect(el.querySelector('#share-status').textContent).toMatch(/sent successfully/i);
-
-    vi.advanceTimersByTime(2100);
-    await Promise.resolve();
-    expect(el.querySelector('#share-form-container').classList.contains('hidden')).toBe(true);
+    expect(popover.classList.contains('open')).toBe(false);
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(true);
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(false);
   });
 
-  it('validates sender name is required', () => {
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    const sendBtn = el.querySelector('#send-email');
-    const shareStatus = el.querySelector('#share-status');
-
-    el.querySelector('#task-description').value = 'Deploy app';
-    // sender-name is empty
-    el.querySelector('#sender-email').value = 'john@example.com';
-    el.querySelector('#recipient-name').value = 'Jane Smith';
-    el.querySelector('#recipient-email').value = 'user@example.com';
-
-    sendBtn.dispatchEvent(new Event('click'));
-
-    expect(shareStatus.textContent).toMatch(/your name/i);
-    expect(shareStatus.classList.contains('error')).toBe(true);
-  });
-
-  it('validates sender email is required and properly formatted', () => {
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    const sendBtn = el.querySelector('#send-email');
-    const shareStatus = el.querySelector('#share-status');
-
-    el.querySelector('#task-description').value = 'Deploy app';
-    el.querySelector('#sender-name').value = 'John Doe';
-    el.querySelector('#sender-email').value = 'invalid-email';
-    el.querySelector('#recipient-name').value = 'Jane Smith';
-    el.querySelector('#recipient-email').value = 'user@example.com';
-
-    sendBtn.dispatchEvent(new Event('click'));
-
-    expect(shareStatus.textContent).toMatch(/valid email address/i);
-    expect(shareStatus.classList.contains('error')).toBe(true);
-  });
-
-  it('validates recipient name is required', () => {
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    const sendBtn = el.querySelector('#send-email');
-    const shareStatus = el.querySelector('#share-status');
-
-    el.querySelector('#task-description').value = 'Deploy app';
-    el.querySelector('#sender-name').value = 'John Doe';
-    el.querySelector('#sender-email').value = 'john@example.com';
-    // recipient-name is empty
-    el.querySelector('#recipient-email').value = 'user@example.com';
-
-    sendBtn.dispatchEvent(new Event('click'));
-
-    expect(shareStatus.textContent).toMatch(/recipient's name/i);
-    expect(shareStatus.classList.contains('error')).toBe(true);
-  });
-
-  it('validates recipient email is properly formatted', () => {
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    const sendBtn = el.querySelector('#send-email');
-    const shareStatus = el.querySelector('#share-status');
-
-    el.querySelector('#task-description').value = 'Deploy app';
-    el.querySelector('#sender-name').value = 'John Doe';
-    el.querySelector('#sender-email').value = 'john@example.com';
-    el.querySelector('#recipient-name').value = 'Jane Smith';
-    el.querySelector('#recipient-email').value = 'not-an-email';
-
-    sendBtn.dispatchEvent(new Event('click'));
-
-    expect(shareStatus.textContent).toMatch(/valid recipient email/i);
-    expect(shareStatus.classList.contains('error')).toBe(true);
-  });
-
-  it('renders quick share buttons', () => {
-    expect(el.querySelector('#copy-link')).toBeTruthy();
-    expect(el.querySelector('#share-twitter')).toBeTruthy();
-    expect(el.querySelector('#share-facebook')).toBeTruthy();
-  });
-
-  it('copies link to clipboard when copy button is clicked', async () => {
+  it('copies link to clipboard when copy-link button is clicked', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -328,8 +235,12 @@ describe("Calculator view", () => {
       }
     });
 
-    const copyBtn = el.querySelector('#copy-link');
-    copyBtn.dispatchEvent(new Event('click'));
+    // Open popover first
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
@@ -342,7 +253,7 @@ describe("Calculator view", () => {
     expect(copiedUrl).toContain('f=');
   });
 
-  it('shows success feedback after copying link', async () => {
+  it('copies text to clipboard when copy-text button is clicked', async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -350,60 +261,69 @@ describe("Calculator view", () => {
       }
     });
 
-    const copyBtn = el.querySelector('#copy-link');
-    const copyFeedback = el.querySelector('#copy-feedback');
+    // Open popover first
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
 
-    copyBtn.dispatchEvent(new Event('click'));
+    const copyBtn = el.querySelector('[data-action="copy-text"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
-    await Promise.resolve();
 
-    expect(copyFeedback.textContent).toMatch(/copied/i);
-    expect(copyFeedback.classList.contains('success')).toBe(true);
+    expect(writeTextMock).toHaveBeenCalled();
+    const copiedText = writeTextMock.mock.calls[0][0];
+    expect(copiedText).toMatch(/Sod's Law score/i);
   });
 
-  it('shows error feedback when clipboard fails', async () => {
-    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: writeTextMock
-      }
-    });
+  it('updates share links with correct URLs when popover opens', () => {
+    // Set specific slider values
+    el.querySelector('#urgency').value = '7';
+    el.querySelector('#complexity').value = '8';
+    el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    const copyBtn = el.querySelector('#copy-link');
-    const copyFeedback = el.querySelector('#copy-feedback');
+    // Open popover
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
 
-    copyBtn.dispatchEvent(new Event('click'));
+    const twitterLink = el.querySelector('[data-share="twitter"]');
+    const facebookLink = el.querySelector('[data-share="facebook"]');
+    const linkedinLink = el.querySelector('[data-share="linkedin"]');
+    const redditLink = el.querySelector('[data-share="reddit"]');
+    const whatsappLink = el.querySelector('[data-share="whatsapp"]');
+    const emailLink = el.querySelector('[data-share="email"]');
 
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(copyFeedback.textContent).toMatch(/failed/i);
-    expect(copyFeedback.classList.contains('error')).toBe(true);
+    expect(twitterLink.href).toContain('twitter.com/intent/tweet');
+    expect(facebookLink.href).toContain('facebook.com/sharer');
+    expect(linkedinLink.href).toContain('linkedin.com/shareArticle');
+    expect(redditLink.href).toContain('reddit.com/submit');
+    expect(whatsappLink.href).toContain('api.whatsapp.com/send');
+    expect(emailLink.href).toContain('mailto:');
   });
 
-  it('opens Twitter share window when Twitter button is clicked', () => {
-    const windowOpenMock = vi.fn();
-    window.open = windowOpenMock;
+  it('closes share popover on outside click', () => {
+    const trigger = el.querySelector('.share-trigger');
+    const popover = el.querySelector('.share-popover');
 
-    const twitterBtn = el.querySelector('#share-twitter');
-    twitterBtn.dispatchEvent(new Event('click'));
+    // Open popover
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(true);
 
-    expect(windowOpenMock).toHaveBeenCalled();
-    const twitterUrl = windowOpenMock.mock.calls[0][0];
-    expect(twitterUrl).toContain('twitter.com/intent/tweet');
+    // Click outside
+    document.dispatchEvent(new Event('click'));
+    expect(popover.classList.contains('open')).toBe(false);
   });
 
-  it('opens Facebook share window when Facebook button is clicked', () => {
-    const windowOpenMock = vi.fn();
-    window.open = windowOpenMock;
+  it('closes share popover on Escape key', () => {
+    const trigger = el.querySelector('.share-trigger');
+    const popover = el.querySelector('.share-popover');
 
-    const facebookBtn = el.querySelector('#share-facebook');
-    facebookBtn.dispatchEvent(new Event('click'));
+    // Open popover
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(true);
 
-    expect(windowOpenMock).toHaveBeenCalled();
-    const facebookUrl = windowOpenMock.mock.calls[0][0];
-    expect(facebookUrl).toContain('facebook.com/sharer');
+    // Press Escape
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(popover.classList.contains('open')).toBe(false);
   });
 
   it('loads URL parameters into sliders', () => {
@@ -465,36 +385,6 @@ describe("Calculator view", () => {
 
     // Restore location
     vi.unstubAllGlobals();
-  });
-
-  it('passes getCalculationState to initShareCalculation', async () => {
-    // The Calculator should have initialized initShareCalculation with getCalculationState
-    // Test by triggering the share preview which calls getCalculationState internally
-    
-    // Set specific slider values
-    el.querySelector('#urgency').value = '3';
-    el.querySelector('#complexity').value = '4';
-    el.querySelector('#importance').value = '5';
-    el.querySelector('#skill').value = '6';
-    el.querySelector('#frequency').value = '7';
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
-
-    // Open share form and fill required fields
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-    el.querySelector('#task-description').value = 'Coverage test task';
-    el.querySelector('#sender-name').value = 'Test User';
-    el.querySelector('#sender-email').value = 'test@example.com';
-    el.querySelector('#recipient-name').value = 'Recipient';
-    el.querySelector('#recipient-email').value = 'recipient@example.com';
-
-    // Click preview - this calls getCalculationState internally
-    el.querySelector('#preview-email').dispatchEvent(new Event('click'));
-
-    // Modal should be visible
-    expect(el.querySelector('#email-preview-modal').classList.contains('hidden')).toBe(false);
-    
-    // Preview should contain the task description
-    expect(el.querySelector('#preview-content').innerHTML).toContain('Coverage test task');
   });
 
   it('loads URL parameters and updates slider value displays', () => {
@@ -562,35 +452,7 @@ describe("Calculator view", () => {
     window.location = originalLocation;
   });
 
-  it('invokes getCalculationState callback when previewing email', () => {
-    // Open share form
-    el.querySelector('#share-cta').dispatchEvent(new Event('click'));
-
-    // Fill in required fields
-    el.querySelector('#task-description').value = 'Test task';
-    el.querySelector('#sender-name').value = 'John Doe';
-    el.querySelector('#sender-email').value = 'john@example.com';
-    el.querySelector('#recipient-name').value = 'Jane Smith';
-    el.querySelector('#recipient-email').value = 'jane@example.com';
-
-    // Set specific slider values
-    el.querySelector('#urgency').value = '7';
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
-
-    // Click preview button
-    const previewBtn = el.querySelector('#preview-email');
-    previewBtn.dispatchEvent(new Event('click'));
-
-    // The email preview modal should be visible
-    const modal = el.querySelector('#email-preview-modal');
-    expect(modal.classList.contains('hidden')).toBe(false);
-
-    // The preview content should include the updated state values
-    const previewContent = el.querySelector('#preview-content');
-    expect(previewContent.innerHTML).toContain('Test task');
-  });
-
-  it('uses current state values when generating shareable URL', () => {
+  it('uses current state values when generating shareable URL', async () => {
     // Set specific slider values
     el.querySelector('#urgency').value = '3';
     el.querySelector('#complexity').value = '4';
@@ -609,8 +471,13 @@ describe("Calculator view", () => {
       }
     });
 
-    const copyBtn = el.querySelector('#copy-link');
-    copyBtn.dispatchEvent(new Event('click'));
+    // Open popover and click copy-link
+    const trigger = el.querySelector('.share-trigger');
+    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+
+    await Promise.resolve();
 
     // Check the URL contains updated values
     const copiedUrl = writeTextMock.mock.calls[0]?.[0] || '';
