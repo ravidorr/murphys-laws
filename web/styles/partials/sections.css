@@ -448,9 +448,7 @@
   fill: currentcolor;
 }
 
-
 /* Simplified Sod's Law Calculator */
-
 .sod-simple-inputs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
