@@ -125,8 +125,16 @@
   background: color-mix(in oklab, var(--bg) 97%, white 3%);
 }
 
-.content-card .card-content {
+/* Content card with new card structure */
+.content-card .card-header {
   padding: 2.5rem clamp(1.5rem, 4vw, 4rem);
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.content-card .card-body {
+  padding: 2.5rem clamp(1.5rem, 4vw, 4rem);
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   gap: 3rem;
@@ -227,8 +235,14 @@
 }
 
 @media (width <= 960px) {
-  .content-card .card-content {
+  .content-card .card-header {
     padding: 2rem clamp(1.25rem, 4vw, 3rem);
+    padding-bottom: 0;
+  }
+
+  .content-card .card-body {
+    padding: 2rem clamp(1.25rem, 4vw, 3rem);
+    padding-top: 0;
     gap: 2.5rem;
   }
 
@@ -243,8 +257,14 @@
     padding-bottom: 3rem;
   }
 
-  .content-card .card-content {
+  .content-card .card-header {
     padding: 1.75rem 1.25rem;
+    padding-bottom: 0;
+  }
+
+  .content-card .card-body {
+    padding: 1.75rem 1.25rem;
+    padding-top: 0;
   }
 
   .content-header .lead {

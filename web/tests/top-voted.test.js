@@ -239,7 +239,7 @@ describe('TopVoted component', () => {
     const el = TopVoted();
 
     await vi.waitFor(() => {
-      expect(el.querySelector('.card-content')).toBeTruthy();
+      expect(el.querySelector('.card-body')).toBeTruthy();
     });
   });
 

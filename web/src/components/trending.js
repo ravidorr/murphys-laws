@@ -21,15 +21,16 @@ export function Trending() {
   el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
   el.innerHTML = `
-    <div class="card-content">
+    <header class="card-header">
       <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
-    </div>
+    </header>
+    <div class="card-body"></div>
   `;
 
-  const contentDiv = el.querySelector('.card-content');
-  if (contentDiv) {
+  const bodyDiv = el.querySelector('.card-body');
+  if (bodyDiv) {
     const loading = createLoading();
-    contentDiv.appendChild(loading);
+    bodyDiv.appendChild(loading);
   }
 
   fetchTrending(WIDGET_CARD_COUNT)
@@ -38,17 +39,16 @@ export function Trending() {
       // Ensure we only show exactly the configured number of laws
       const trending = laws.slice(0, WIDGET_CARD_COUNT);
 
-      const contentDiv = el.querySelector('.card-content');
-      if (contentDiv) {
+      const bodyDiv = el.querySelector('.card-body');
+      if (bodyDiv) {
         // Use shared law card renderer (eliminates ~30 lines of duplicate HTML generation)
-        contentDiv.innerHTML = `
-          <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
+        bodyDiv.innerHTML = `
           <div class="card-text">
             ${renderLawCards(trending)}
           </div>
         `;
-        hydrateIcons(contentDiv);
-        initSharePopovers(contentDiv);
+        hydrateIcons(bodyDiv);
+        initSharePopovers(bodyDiv);
 
         // Add voting event listeners only if there are laws
         if (trending.length > 0) {
@@ -57,14 +57,12 @@ export function Trending() {
       }
     })
     .catch(() => {
-      const contentDiv = el.querySelector('.card-content');
-      if (contentDiv) {
-        contentDiv.innerHTML = `
-          <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
-        `;
+      const bodyDiv = el.querySelector('.card-body');
+      if (bodyDiv) {
+        bodyDiv.innerHTML = '';
         const errorEl = createErrorState('Failed to load trending laws.');
-        contentDiv.appendChild(errorEl);
-        hydrateIcons(contentDiv);
+        bodyDiv.appendChild(errorEl);
+        hydrateIcons(bodyDiv);
       }
     });
 

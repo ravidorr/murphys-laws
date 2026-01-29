@@ -14,11 +14,6 @@
   overflow: visible;
 }
 
-.calculator .card .card-content {
-  padding: 1.25rem 1rem;
-  overflow: visible;
-}
-
 /* Input grid layout (responsive) */
 .calc-input-grid {
   display: grid;

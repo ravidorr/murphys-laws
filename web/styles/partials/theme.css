@@ -141,6 +141,7 @@
   }
 
   :root:not([data-theme="light"]) .section-footer,
+  :root:not([data-theme="light"]) .card-footer,
   :root:not([data-theme="light"]) .law-detail .law-meta {
     background: color-mix(in oklab, var(--bg) 86%, white 14%);
     border-top-color: var(--border);
@@ -153,6 +154,7 @@
 }
 
 :root[data-theme="dark"] .section-footer,
+:root[data-theme="dark"] .card-footer,
 :root[data-theme="dark"] .law-detail .law-meta {
   background: color-mix(in oklab, var(--bg) 86%, white 14%);
   border-top-color: var(--border);

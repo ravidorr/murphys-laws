@@ -228,7 +228,7 @@ describe('RecentlyAdded component', () => {
     const el = RecentlyAdded();
 
     await vi.waitFor(() => {
-      expect(el.querySelector('.card-content')).toBeTruthy();
+      expect(el.querySelector('.card-body')).toBeTruthy();
     });
   });
 

@@ -26,8 +26,10 @@ export function Favorites({ onNavigate }) {
   if (!isFavoritesEnabled()) {
     el.innerHTML = `
       <div class="card content-card">
-        <div class="card-content text-center">
+        <header class="card-header text-center">
           <h1 class="mb-2"><span class="accent-text">Browse</span> My Favorites Laws</h1>
+        </header>
+        <div class="card-body text-center">
           <p class="mb-4 text-muted-fg">The favorites feature is currently disabled.</p>
           <div class="not-found-actions">
             <button type="button" class="btn" data-nav="home">
@@ -50,13 +52,14 @@ export function Favorites({ onNavigate }) {
   function renderEmptyState() {
     return `
       <div class="card content-card">
-        <div class="card-content text-center">
+        <header class="card-header text-center">
           <h1 class="mb-2"><span class="accent-text">Browse</span> My Favorites Laws</h1>
           <blockquote class="not-found-quote">
             "The law you need most will be the one you forgot to save."
           </blockquote>
-          <p class="mb-4 text-muted-fg">Your favorites collection is empty. Save laws to access them quickly.</p>
-
+          <p class="text-muted-fg">Your favorites collection is empty. Save laws to access them quickly.</p>
+        </header>
+        <div class="card-body text-center">
           <div class="not-found-search mb-6">
             <form role="search" class="not-found-search-form" id="favorites-search-form" aria-label="Search the archive">
               <input type="text" id="favorites-search-input" placeholder="Search Murphy's Laws..." class="form-control" aria-label="Search">
@@ -104,7 +107,7 @@ export function Favorites({ onNavigate }) {
 
     return `
       <div class="card">
-        <div class="card-content">
+        <header class="card-header">
           <div class="card-title-row">
             <h1 class="card-title">
               <span class="accent-text">Browse</span> My Favorites Laws
@@ -115,6 +118,8 @@ export function Favorites({ onNavigate }) {
             </button>
           </div>
           <p id="favorites-subtitle" class="text-muted-fg favorites-subtitle">${subtitle}</p>
+        </header>
+        <div class="card-body">
           <div class="card-text">
             ${renderLawCards(favorites)}
           </div>

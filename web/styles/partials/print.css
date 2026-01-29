@@ -246,7 +246,7 @@
     border-bottom: 2px solid #000 !important;
   }
 
-  .card-header-with-info {
+  .card-header {
     margin-bottom: 1rem;
   }
 
@@ -257,10 +257,6 @@
   /* Main browse card */
   #browse-all-laws-card {
     border: none !important;
-  }
-
-  #browse-all-laws-card .card-content {
-    padding: 0 !important;
   }
 
   /* =========================

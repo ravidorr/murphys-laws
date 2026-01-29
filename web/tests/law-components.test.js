@@ -79,7 +79,7 @@ describe('Law components', () => {
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(el.querySelector('.card-content')).toBeTruthy();
+      expect(el.querySelector('.card-body')).toBeTruthy();
       vi.restoreAllMocks();
     });
 
@@ -128,7 +128,7 @@ describe('Law components', () => {
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(el.querySelector('.card-content')).toBeTruthy();
+      expect(el.querySelector('.card-body')).toBeTruthy();
       vi.restoreAllMocks();
     });
 
@@ -178,7 +178,7 @@ describe('Law components', () => {
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(el.querySelector('.card-content')).toBeTruthy();
+      expect(el.querySelector('.card-body')).toBeTruthy();
       vi.restoreAllMocks();
     });
 

@@ -331,6 +331,68 @@ function enhanceMarkdownHtml(html) {
   return html;
 }
 
+/**
+ * Wrap enhanced HTML in card structure with header/body separation
+ * Extracts h1 and first paragraph into card-header, rest into card-body
+ * @param {string} html - Enhanced HTML from enhanceMarkdownHtml
+ * @param {Object} options - Options
+ * @param {string} options.lastUpdated - Last updated date (for privacy/terms)
+ * @returns {string} - HTML wrapped in card structure
+ */
+function wrapInCardStructure(html, options = {}) {
+  // Extract h1 and first paragraph for header
+  const h1Match = html.match(/<h1>([\s\S]*?)<\/h1>/);
+  
+  if (!h1Match) {
+    // No h1 found, wrap everything in card-body
+    return `
+        <article class="card content-card">
+          <div class="card-body">
+            ${html}
+          </div>
+        </article>`;
+  }
+
+  const h1Content = h1Match[0];
+  const h1Index = html.indexOf(h1Content);
+  const afterH1 = h1Index + h1Content.length;
+  
+  // Find the first paragraph after h1 (for lead text)
+  const afterH1Content = html.substring(afterH1);
+  const firstPMatch = afterH1Content.match(/^[\s\n]*<p>([\s\S]*?)<\/p>/);
+  
+  let headerHtml = '          <header class="card-header content-header">\n';
+  
+  // Add last updated date if provided
+  if (options.lastUpdated) {
+    headerHtml += `            <p class="small">Last updated: ${options.lastUpdated}</p>\n`;
+  }
+  
+  headerHtml += `            ${h1Content}\n`;
+  
+  let bodyContent;
+  if (firstPMatch) {
+    const leadText = firstPMatch[1];
+    headerHtml += `            <p class="lead">${leadText}</p>\n`;
+    headerHtml += '          </header>';
+    // Body content is everything after the first paragraph
+    const headerEndIndex = afterH1 + afterH1Content.indexOf(firstPMatch[0]) + firstPMatch[0].length;
+    bodyContent = html.substring(headerEndIndex);
+  } else {
+    headerHtml += '          </header>';
+    // No lead paragraph, body is everything after h1
+    bodyContent = afterH1Content;
+  }
+  
+  return `
+        <article class="card content-card">
+${headerHtml}
+          <div class="card-body">
+            ${bodyContent.trim()}
+          </div>
+        </article>`;
+}
+
 async function main() {
   console.log('Starting Static Site Generation (SSG)...');
 
@@ -562,14 +624,25 @@ async function main() {
       );
       pageHtml = updateHreflang(pageHtml, `https://murphys-laws.com/${page.slug}`);
 
-      // Build the static content wrapper
+      // Read metadata for last updated date
+      let lastUpdated = null;
+      try {
+        const metadataPath = path.join(SHARED_CONTENT_DIR, 'metadata.json');
+        const metadataContent = await fs.readFile(metadataPath, 'utf-8');
+        const metadata = JSON.parse(metadataContent);
+        // Only show lastUpdated for privacy and terms pages
+        if ((page.slug === 'privacy' || page.slug === 'terms') && metadata[page.slug]?.lastUpdated) {
+          lastUpdated = metadata[page.slug].lastUpdated;
+        }
+      } catch {
+        // Ignore metadata errors, proceed without lastUpdated
+      }
+
+      // Build the static content wrapper using card-header/card-body structure
+      const cardHtml = wrapInCardStructure(htmlContent, { lastUpdated });
       const staticContent = `
       <div class="container page content-page" role="main">
-        <article class="card content-card">
-          <div class="card-content">
-            ${htmlContent}
-          </div>
-        </article>
+        ${cardHtml}
       </div>
       `;
       
@@ -603,7 +676,7 @@ async function main() {
         },
         'speakable': {
           '@type': 'SpeakableSpecification',
-          'cssSelector': ['.card-content h1', '.card-content p', '.content-section']
+          'cssSelector': ['.card-header h1', '.card-header .lead', '.card-body', '.content-section']
         }
       });
       
@@ -827,4 +900,11 @@ async function main() {
   console.log('SSG Complete!');
 }
 
-main().catch(console.error);
+// Only run main() when executed directly, not when imported for testing
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+  main().catch(console.error);
+}
+
+// Export functions for testing
+export { wrapFirstWordWithAccent, enhanceMarkdownHtml, wrapInCardStructure };
