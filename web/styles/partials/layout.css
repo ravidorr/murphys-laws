@@ -331,6 +331,8 @@ header form[role="search"] {
 header form[role="search"] input {
   width: auto;
   flex: 0 0 auto;
+  height: 2.75rem; /* Match button height (44px) */
+  box-sizing: border-box;
 }
 
 /* Search autocomplete dropdown */
@@ -445,6 +447,7 @@ header form[role="search"] input {
     width: 120px;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
+    height: 44px; /* Match button min-height */
   }
 
   header.sticky form[role="search"] .btn {
@@ -465,6 +468,7 @@ header form[role="search"] input {
 
   header.sticky form[role="search"] input {
     width: 80px;
+    height: 44px; /* Match button min-height */
   }
 }
 
