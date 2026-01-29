@@ -348,7 +348,7 @@ describe('Favorites View Component', () => {
   });
 
   describe('Event Handling Edge Cases', () => {
-    it('ignores click on non-HTMLElement target', () => {
+    it('ignores click on non-Element target', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
 
       const event = new Event('click', { bubbles: true });
@@ -356,6 +356,42 @@ describe('Favorites View Component', () => {
       el.dispatchEvent(event);
 
       expect(localThis.mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('handles click on SVG element inside favorite button', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      // Mock renderLawCards to include a button with SVG icon (using namespace for proper SVG)
+      vi.mocked(renderLawCards).mockReturnValue(
+        `<article class="law-card-mini" data-law-id="123">
+          <p>Test</p>
+          <button data-action="favorite" data-law-id="123">
+            <span class="icon-wrapper"></span>
+          </button>
+        </article>`
+      );
+
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+
+      // Create a proper SVG element and append it
+      const iconWrapper = el.querySelector('.icon-wrapper');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M10 20');
+      svg.appendChild(path);
+      iconWrapper.appendChild(svg);
+
+      // Append to document for proper event delegation
+      document.body.appendChild(el);
+
+      try {
+        // Click on the SVG path element (simulates clicking the heart icon)
+        path.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        // Should still call removeFavorite via event delegation
+        expect(removeFavorite).toHaveBeenCalledWith('123');
+      } finally {
+        document.body.removeChild(el);
+      }
     });
 
     it('ignores keydown on non-HTMLElement target', () => {
