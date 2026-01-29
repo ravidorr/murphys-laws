@@ -591,7 +591,7 @@ function addInstallPromptStyles() {
     }
 
     .install-prompt-btn-secondary:hover {
-      background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
+      background: color-mix(in oklab, var(--fg) 15%, var(--bg) 85%);
       color: var(--fg);
     }
 
@@ -641,8 +641,8 @@ function addInstallPromptStyles() {
       }
 
       :root:not([data-theme="light"]) .install-prompt-btn-secondary:hover {
-        background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
-        color: var(--dark-fg-primary, #e9eaee);
+        background: color-mix(in oklab, #fff 20%, var(--dark-bg-primary, #0b0b11) 80%);
+        color: #fff;
       }
     }
 
@@ -679,8 +679,8 @@ function addInstallPromptStyles() {
     }
 
     :root[data-theme="dark"] .install-prompt-btn-secondary:hover {
-      background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
-      color: var(--dark-fg-primary, #e9eaee);
+      background: color-mix(in oklab, #fff 20%, var(--dark-bg-primary, #0b0b11) 80%);
+      color: #fff;
     }
 
     /* Only show in browser mode (not when installed) */
