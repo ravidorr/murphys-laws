@@ -166,6 +166,10 @@ export function initCalculatorSharePopover({ root, getShareableUrl, getShareText
 
   // Handle popover clicks
   function handlePopoverClick(e) {
+    // Stop propagation for all clicks inside popover to prevent
+    // handleOutsideClick from immediately closing the popover
+    e.stopPropagation();
+
     // Let links navigate, then close
     if (e.target.closest('a[data-share]')) {
       setTimeout(closePopover, 100);
@@ -176,8 +180,6 @@ export function initCalculatorSharePopover({ root, getShareableUrl, getShareText
       handleCopyAction(e);
       return;
     }
-    // Prevent other clicks from closing
-    e.stopPropagation();
   }
 
   // Close on outside click
