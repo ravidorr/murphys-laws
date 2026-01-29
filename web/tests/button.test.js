@@ -251,22 +251,6 @@ describe('Button component', () => {
       });
     });
 
-    describe('social option', () => {
-      it('adds share-btn-twitter class for twitter social', () => {
-        const localThis = {};
-        localThis.btn = createButton({ text: 'Tweet', icon: 'twitter', social: 'twitter' });
-        expect(localThis.btn.classList.contains('share-btn-twitter')).toBe(true);
-        expect(localThis.btn.classList.contains('btn')).toBe(true);
-      });
-
-      it('adds share-btn-facebook class for facebook social', () => {
-        const localThis = {};
-        localThis.btn = createButton({ text: 'Share', icon: 'facebook', social: 'facebook' });
-        expect(localThis.btn.classList.contains('share-btn-facebook')).toBe(true);
-        expect(localThis.btn.classList.contains('btn')).toBe(true);
-      });
-    });
-
     describe('custom className', () => {
       it('adds custom class to button', () => {
         const localThis = {};

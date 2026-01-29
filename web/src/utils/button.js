@@ -106,7 +106,6 @@ const DEFAULT_OPTIONS = {
   variant: 'primary',
   direction: null, // 'up' | 'down' for vote variant
   count: 0, // for vote variant
-  social: null, // 'twitter' | 'facebook'
 
   // Type and state
   type: 'button',
@@ -165,7 +164,7 @@ function validateOptions(options) {
  * @returns {string} CSS class string
  */
 function buildClassString(options) {
-  const { variant, direction, social, className, loading } = options;
+  const { variant, direction, className, loading } = options;
 
   const classes = [];
 
@@ -175,11 +174,6 @@ function buildClassString(options) {
   // Vote direction class
   if (variant === 'vote' && direction) {
     classes.push(`count-${direction}`);
-  }
-
-  // Social platform class
-  if (social) {
-    classes.push(`share-btn-${social}`);
   }
 
   // Loading state class
