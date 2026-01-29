@@ -1,5 +1,7 @@
 import { LawOfTheDay } from '@components/law-of-day.js';
 import * as voting from '../src/utils/voting.js';
+import * as featureFlags from '../src/utils/feature-flags.js';
+import * as favorites from '../src/utils/favorites.js';
 
 // Mock notification module to avoid unhandled rejections
 vi.mock('../src/components/notification.js', () => ({
@@ -521,6 +523,170 @@ describe('LawOfTheDay component', () => {
 
       // Should not have called writeText since text is empty
       expect(writeTextMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('favorites functionality', () => {
+    const localThis = createLocalThis();
+    let isFavoritesEnabledSpy;
+    let isFavoriteSpy;
+    let toggleFavoriteSpy;
+
+    beforeEach(() => {
+      isFavoritesEnabledSpy = vi.spyOn(featureFlags, 'isFavoritesEnabled').mockReturnValue(true);
+      isFavoriteSpy = vi.spyOn(favorites, 'isFavorite').mockReturnValue(false);
+      toggleFavoriteSpy = vi.spyOn(favorites, 'toggleFavorite').mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      const self = localThis();
+      if (self.appended && self.el?.parentNode) {
+        self.el.parentNode.removeChild(self.el);
+      }
+      vi.restoreAllMocks();
+    });
+
+    function mountLawForFavorites(law, options = {}) {
+      const { append = false, onNavigate = () => {} } = options;
+      const el = LawOfTheDay({ law, onNavigate });
+      const self = localThis();
+      self.el = el;
+      self.appended = append;
+      if (append) {
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    it('shows favorite button when feature is enabled', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      expect(favoriteBtn).toBeTruthy();
+      expect(favoriteBtn.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('hides favorite button when feature is disabled', () => {
+      isFavoritesEnabledSpy.mockReturnValue(false);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      expect(favoriteBtn.hasAttribute('hidden')).toBe(true);
+    });
+
+    it('sets law-id attribute on favorite button', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      const law = { id: '42', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      expect(favoriteBtn.getAttribute('data-law-id')).toBe('42');
+    });
+
+    it('shows favorited state when law is already favorited', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      expect(favoriteBtn.classList.contains('favorited')).toBe(true);
+      expect(favoriteBtn.getAttribute('aria-label')).toBe('Remove from favorites');
+    });
+
+    it('shows unfavorited state when law is not favorited', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(false);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      expect(favoriteBtn.classList.contains('favorited')).toBe(false);
+      expect(favoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
+    });
+
+    it('toggles favorite when button is clicked', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(false);
+      toggleFavoriteSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', title: 'Test Title', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law, { append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      favoriteBtn.click();
+
+      await vi.waitFor(() => {
+        expect(toggleFavoriteSpy).toHaveBeenCalledWith({
+          id: '1',
+          text: 'Test law',
+          title: 'Test Title',
+        });
+      });
+    });
+
+    it('updates button state after toggling favorite on', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(false);
+      toggleFavoriteSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law, { append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      favoriteBtn.click();
+
+      await vi.waitFor(() => {
+        expect(favoriteBtn.classList.contains('favorited')).toBe(true);
+        expect(favoriteBtn.getAttribute('aria-label')).toBe('Remove from favorites');
+      });
+    });
+
+    it('updates button state after toggling favorite off', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(true);
+      toggleFavoriteSpy.mockReturnValue(false);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law, { append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      favoriteBtn.click();
+
+      await vi.waitFor(() => {
+        expect(favoriteBtn.classList.contains('favorited')).toBe(false);
+        expect(favoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
+      });
+    });
+
+    it('stops event propagation when clicking favorite button', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      let navigated = false;
+      const onNavigate = () => { navigated = true; };
+      const el = mountLawForFavorites(law, { onNavigate, append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      favoriteBtn.click();
+
+      await new Promise(r => setTimeout(r, 10));
+
+      // Should not have navigated due to stopPropagation
+      expect(navigated).toBe(false);
+    });
+
+    it('does not toggle favorite when law-id is missing', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law, { append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      favoriteBtn.removeAttribute('data-law-id');
+      favoriteBtn.click();
+
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(toggleFavoriteSpy).not.toHaveBeenCalled();
     });
   });
 });

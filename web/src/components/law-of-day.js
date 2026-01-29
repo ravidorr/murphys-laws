@@ -6,8 +6,10 @@ import { escapeHtml } from '../utils/sanitize.js';
 import { getUserVote, toggleVote } from '../utils/voting.js';
 import { showError, showSuccess } from './notification.js';
 import { SocialShare } from './social-share.js';
-import { hydrateIcons } from '../utils/icons.js';
+import { hydrateIcons, createIcon } from '../utils/icons.js';
 import { createLoading } from './loading.js';
+import { isFavoritesEnabled } from '../utils/feature-flags.js';
+import { isFavorite, toggleFavorite } from '../utils/favorites.js';
 
 export function LawOfTheDay({ law, onNavigate }) {
   const el = document.createElement('section');
@@ -71,6 +73,26 @@ export function LawOfTheDay({ law, onNavigate }) {
     downBtn.classList.toggle('voted', userVote === 'down');
     const downCount = downBtn.querySelector('.count-num');
     if (downCount) downCount.textContent = String(downvotes);
+  }
+
+  // Initialize favorite button if feature is enabled
+  const favoriteBtn = el.querySelector('[data-favorite-btn]');
+  if (favoriteBtn instanceof HTMLElement && isFavoritesEnabled()) {
+    favoriteBtn.removeAttribute('hidden');
+    favoriteBtn.setAttribute('data-law-id', String(law.id));
+    
+    const isFav = isFavorite(law.id);
+    const favoriteTooltip = isFav ? 'Remove from favorites' : 'Add to favorites';
+    if (isFav) {
+      favoriteBtn.classList.add('favorited');
+      // Replace icon with filled heart
+      const iconEl = favoriteBtn.querySelector('[data-icon]');
+      if (iconEl) {
+        iconEl.setAttribute('data-icon', 'heartFilled');
+      }
+    }
+    favoriteBtn.setAttribute('aria-label', favoriteTooltip);
+    favoriteBtn.setAttribute('data-tooltip', favoriteTooltip);
   }
 
   // Add social share buttons to the footer
@@ -149,6 +171,37 @@ export function LawOfTheDay({ law, onNavigate }) {
         document.execCommand('copy');
         document.body.removeChild(textArea);
         showSuccess('Link copied to clipboard!');
+      }
+      return;
+    }
+
+    // Handle favorite button click
+    const favoriteBtn = t.closest('[data-action="favorite"]');
+    if (favoriteBtn) {
+      e.stopPropagation();
+      const lawId = favoriteBtn.getAttribute('data-law-id');
+      if (!lawId) return;
+
+      const isNowFavorite = toggleFavorite({
+        id: lawId,
+        text: law.text || '',
+        title: law.title || '',
+      });
+
+      // Update button visual state
+      const newTooltip = isNowFavorite ? 'Remove from favorites' : 'Add to favorites';
+      favoriteBtn.classList.toggle('favorited', isNowFavorite);
+      favoriteBtn.setAttribute('aria-label', newTooltip);
+      favoriteBtn.setAttribute('data-tooltip', newTooltip);
+
+      // Update icon
+      const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
+      if (iconEl) {
+        const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
+        const newIcon = createIcon(newIconName);
+        if (newIcon) {
+          iconEl.replaceWith(newIcon);
+        }
       }
       return;
     }
