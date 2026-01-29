@@ -224,7 +224,8 @@ export function Favorites({ onNavigate }) {
     // Event delegation
     el.addEventListener('click', (e) => {
       const target = e.target;
-      if (!(target instanceof HTMLElement)) return;
+      // Use Element instead of HTMLElement to support SVG elements (heart icons)
+      if (!(target instanceof Element)) return;
 
       // Handle clear all button
       if (target.closest('#clear-favorites-btn')) {

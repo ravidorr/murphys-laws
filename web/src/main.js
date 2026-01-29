@@ -341,6 +341,11 @@ if (isFavoritesEnabled()) {
     // Handle favorite button clicks
     const favoriteBtn = target.closest('[data-action="favorite"]');
     if (favoriteBtn) {
+      // Skip global handling on the favorites page - let the favorites view handle it
+      // The favorites view needs to re-render to show empty state, which global handler doesn't do
+      if (location.pathname === '/favorites') {
+        return;
+      }
       e.stopPropagation();
       const lawId = favoriteBtn.getAttribute('data-law-id');
       if (!lawId) return;
