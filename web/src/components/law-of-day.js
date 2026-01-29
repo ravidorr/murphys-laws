@@ -86,9 +86,12 @@ export function LawOfTheDay({ law, onNavigate }) {
     if (isFav) {
       favoriteBtn.classList.add('favorited');
       // Replace icon with filled heart
-      const iconEl = favoriteBtn.querySelector('[data-icon]');
+      const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        iconEl.setAttribute('data-icon', 'heartFilled');
+        const newIcon = createIcon('heartFilled');
+        if (newIcon) {
+          iconEl.replaceWith(newIcon);
+        }
       }
     }
     favoriteBtn.setAttribute('aria-label', favoriteTooltip);
