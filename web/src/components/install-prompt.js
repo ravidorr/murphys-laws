@@ -459,8 +459,8 @@ function addInstallPromptStyles() {
       left: 50%;
       transform: translateX(-50%) translateY(100%);
       z-index: 10000;
-      background: var(--card-bg, #fff);
-      border: 1px solid var(--border, #e5e7eb);
+      background: var(--bg);
+      border: 1px solid var(--border);
       border-radius: 1rem;
       box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 10px 20px -5px rgba(0, 0, 0, 0.1);
       padding: 1.25rem;
@@ -499,19 +499,19 @@ function addInstallPromptStyles() {
     .install-prompt-title {
       font-size: 1.125rem;
       font-weight: 600;
-      color: var(--fg, #111827);
+      color: var(--fg);
       margin: 0 0 0.25rem 0;
     }
 
     .install-prompt-desc {
       font-size: 0.875rem;
-      color: var(--muted-fg, #6b7280);
+      color: var(--muted-fg);
       margin: 0;
       line-height: 1.5;
     }
 
     .install-prompt-instructions {
-      background: var(--bg, #f9fafb);
+      background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
       border-radius: 0.75rem;
       padding: 1rem;
       margin-bottom: 1rem;
@@ -525,14 +525,14 @@ function addInstallPromptStyles() {
     }
 
     .install-step:not(:last-child) {
-      border-bottom: 1px solid var(--border, #e5e7eb);
+      border-bottom: 1px solid var(--border);
     }
 
     .install-step-number {
       width: 24px;
       height: 24px;
-      background: var(--btn-primary-bg, #1173d4);
-      color: var(--btn-primary-fg, #fff);
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -544,14 +544,14 @@ function addInstallPromptStyles() {
 
     .install-step-text {
       font-size: 0.875rem;
-      color: var(--fg, #111827);
+      color: var(--fg);
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
     .install-step-icon {
-      color: var(--btn-primary-bg, #1173d4);
+      color: var(--btn-primary-bg);
       flex-shrink: 0;
     }
 
@@ -576,8 +576,8 @@ function addInstallPromptStyles() {
     }
 
     .install-prompt-btn-primary {
-      background: var(--btn-primary-bg, #1173d4);
-      color: var(--btn-primary-fg, #fff);
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
     }
 
     .install-prompt-btn-primary:hover {
@@ -586,13 +586,13 @@ function addInstallPromptStyles() {
 
     .install-prompt-btn-secondary {
       background: transparent;
-      color: var(--muted-fg, #6b7280);
-      border: 1px solid var(--border, #e5e7eb);
+      color: var(--muted-fg);
+      border: 1px solid var(--border);
     }
 
     .install-prompt-btn-secondary:hover {
-      background: var(--border, #e5e7eb);
-      color: var(--fg, #111827);
+      background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
+      color: var(--fg);
     }
 
     @media (max-width: 480px) {
@@ -605,6 +605,82 @@ function addInstallPromptStyles() {
       .install-prompt-actions {
         flex-direction: column;
       }
+    }
+
+    /* Dark mode - system preference */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .install-prompt {
+        background: var(--dark-bg-primary, #0b0b11);
+        border-color: var(--dark-border, rgb(255 255 255 / 25%));
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+      }
+
+      :root:not([data-theme="light"]) .install-prompt-title {
+        color: var(--dark-fg-primary, #e9eaee);
+      }
+
+      :root:not([data-theme="light"]) .install-prompt-desc {
+        color: var(--dark-muted-fg, #9ca3af);
+      }
+
+      :root:not([data-theme="light"]) .install-prompt-instructions {
+        background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
+      }
+
+      :root:not([data-theme="light"]) .install-step:not(:last-child) {
+        border-color: var(--dark-border, rgb(255 255 255 / 25%));
+      }
+
+      :root:not([data-theme="light"]) .install-step-text {
+        color: var(--dark-fg-primary, #e9eaee);
+      }
+
+      :root:not([data-theme="light"]) .install-prompt-btn-secondary {
+        color: var(--dark-muted-fg, #9ca3af);
+        border-color: var(--dark-border, rgb(255 255 255 / 25%));
+      }
+
+      :root:not([data-theme="light"]) .install-prompt-btn-secondary:hover {
+        background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
+        color: var(--dark-fg-primary, #e9eaee);
+      }
+    }
+
+    /* Dark mode - explicit dark theme */
+    :root[data-theme="dark"] .install-prompt {
+      background: var(--dark-bg-primary, #0b0b11);
+      border-color: var(--dark-border, rgb(255 255 255 / 25%));
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    :root[data-theme="dark"] .install-prompt-title {
+      color: var(--dark-fg-primary, #e9eaee);
+    }
+
+    :root[data-theme="dark"] .install-prompt-desc {
+      color: var(--dark-muted-fg, #9ca3af);
+    }
+
+    :root[data-theme="dark"] .install-prompt-instructions {
+      background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
+    }
+
+    :root[data-theme="dark"] .install-step:not(:last-child) {
+      border-color: var(--dark-border, rgb(255 255 255 / 25%));
+    }
+
+    :root[data-theme="dark"] .install-step-text {
+      color: var(--dark-fg-primary, #e9eaee);
+    }
+
+    :root[data-theme="dark"] .install-prompt-btn-secondary {
+      color: var(--dark-muted-fg, #9ca3af);
+      border-color: var(--dark-border, rgb(255 255 255 / 25%));
+    }
+
+    :root[data-theme="dark"] .install-prompt-btn-secondary:hover {
+      background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
+      color: var(--dark-fg-primary, #e9eaee);
     }
 
     /* Only show in browser mode (not when installed) */
