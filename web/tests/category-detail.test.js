@@ -609,6 +609,75 @@ describe('CategoryDetail view', () => {
     });
   });
 
+  describe('formatPageTitle styling', () => {
+    it('wraps only first word in accent for titles ending with Laws', async () => {
+      api.fetchCategories.mockResolvedValue({
+        data: [
+          { id: 1, slug: 'alarm-clock', title: "Murphy's Alarm Clock Laws", description: 'Alarm clock laws' }
+        ]
+      });
+
+      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const titleEl = el.querySelector('#category-detail-title');
+      // Only "Murphy's" should be in the accent span
+      expect(titleEl.innerHTML).toContain('<span class="accent-text">Murphy\'s</span>');
+      expect(titleEl.innerHTML).toContain('Alarm Clock Laws');
+      // Should NOT have the entire title wrapped
+      expect(titleEl.innerHTML).not.toContain('accent-text">Murphy\'s Alarm Clock');
+    });
+
+    it('wraps only first word in accent for titles NOT ending with Laws', async () => {
+      api.fetchCategories.mockResolvedValue({
+        data: [
+          { id: 1, slug: '4x4-car', title: "Murphy's 4X4 Car Laws Section", description: '4x4 laws' }
+        ]
+      });
+
+      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const titleEl = el.querySelector('#category-detail-title');
+      // Only "Murphy's" should be in the accent span, and "'s Laws" should be appended
+      expect(titleEl.innerHTML).toContain('<span class="accent-text">Murphy\'s</span>');
+      expect(titleEl.innerHTML).toContain("4X4 Car Laws Section's Laws");
+      // Should NOT have the entire original title wrapped in accent
+      expect(titleEl.innerHTML).not.toContain('accent-text">Murphy\'s 4X4 Car Laws Section\'s');
+    });
+
+    it('handles single word title ending with Laws', async () => {
+      api.fetchCategories.mockResolvedValue({
+        data: [
+          { id: 1, slug: 'laws', title: 'Laws', description: 'Just laws' }
+        ]
+      });
+
+      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const titleEl = el.querySelector('#category-detail-title');
+      // Single word should be wrapped entirely
+      expect(titleEl.innerHTML).toContain('<span class="accent-text">Laws</span>');
+    });
+
+    it('handles single word title NOT ending with Laws', async () => {
+      api.fetchCategories.mockResolvedValue({
+        data: [
+          { id: 1, slug: 'technology', title: 'Technology', description: 'Tech stuff' }
+        ]
+      });
+
+      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const titleEl = el.querySelector('#category-detail-title');
+      // Single word should be wrapped with "'s Laws" appended
+      expect(titleEl.innerHTML).toContain('<span class="accent-text">Technology</span>');
+      expect(titleEl.innerHTML).toContain("'s Laws");
+    });
+  });
+
   describe('copy actions', () => {
     it('does not copy when copy-text button has empty value', async () => {
       const writeTextMock = vi.fn().mockResolvedValue(undefined);

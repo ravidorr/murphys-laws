@@ -39,18 +39,28 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   let categoryNumericId = null; // Will be set after fetching category details
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
+  // Always wraps only the first word (typically "Murphy's") in accent color
   function formatPageTitle(title) {
-    // If title already ends with "Laws", just use it as-is
-    if (title.endsWith('Laws') || title.endsWith('laws')) {
-      const words = title.split(' ');
-      if (words.length > 1) {
-        return `<span class="accent-text">${words[0]}</span> ${words.slice(1).join(' ')}`;
-      }
+    const endsWithLaws = title.endsWith('Laws') || title.endsWith('laws');
+    const words = title.split(' ');
+    
+    // Wrap only the first word in accent (typically "Murphy's")
+    const accentPart = `<span class="accent-text">${words[0]}</span>`;
+    const restPart = words.slice(1).join(' ');
+    
+    if (words.length === 1) {
+      // Single word title
       /* v8 ignore next - Single word category title fallback */
-      return `<span class="accent-text">${title}</span>`;
+      return endsWithLaws ? accentPart : `${accentPart}'s Laws`;
     }
-    // Otherwise, add "'s Laws"
-    return `<span class="accent-text">${title}'s</span> Laws`;
+    
+    if (endsWithLaws) {
+      // Title already ends with "Laws", use as-is
+      return `${accentPart} ${restPart}`;
+    }
+    
+    // Add "'s Laws" to the end
+    return `${accentPart} ${restPart}'s Laws`;
   }
 
   // Render law cards
