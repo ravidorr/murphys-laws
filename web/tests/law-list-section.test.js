@@ -56,10 +56,10 @@ describe('LawListSection component', () => {
 
     renderLaws(laws);
 
-    const content = el.querySelector('.card-content');
-    expect(content).toBeTruthy();
-    expect(content.textContent).toContain('Law 1');
-    expect(content.textContent).toContain('Law 2');
+    const body = el.querySelector('.card-body');
+    expect(body).toBeTruthy();
+    expect(body.textContent).toContain('Law 1');
+    expect(body.textContent).toContain('Law 2');
   });
 
   it('handles empty laws array', () => {
@@ -104,12 +104,12 @@ describe('LawListSection component', () => {
     renderLaws(laws, { skip: 1, limit: 2 });
 
     // Check that content was rendered
-    const content = el.querySelector('.card-content');
-    expect(content).toBeTruthy();
-    expect(content.textContent).toContain('Law 2');
-    expect(content.textContent).toContain('Law 3');
-    expect(content.textContent).not.toContain('Law 1');
-    expect(content.textContent).not.toContain('Law 4');
+    const body = el.querySelector('.card-body');
+    expect(body).toBeTruthy();
+    expect(body.textContent).toContain('Law 2');
+    expect(body.textContent).toContain('Law 3');
+    expect(body.textContent).not.toContain('Law 1');
+    expect(body.textContent).not.toContain('Law 4');
   });
 
   it('renders error state', () => {
@@ -125,15 +125,15 @@ describe('LawListSection component', () => {
     expect(errorEl.textContent).toContain('Something went wrong');
   });
 
-  it('handles missing content div gracefully', () => {
+  it('handles missing body div gracefully', () => {
     const { el, renderLaws } = createLawListSection({
       accentText: 'Top',
       remainderText: ' Voted'
     });
 
-    // Remove content div
-    const contentDiv = el.querySelector('.card-content');
-    contentDiv.remove();
+    // Remove body div
+    const bodyDiv = el.querySelector('.card-body');
+    bodyDiv.remove();
 
     // Should not throw
     expect(() => {
@@ -141,15 +141,15 @@ describe('LawListSection component', () => {
     }).not.toThrow();
   });
 
-  it('handles missing content div in renderError', () => {
+  it('handles missing body div in renderError', () => {
     const { el, renderError } = createLawListSection({
       accentText: 'Top',
       remainderText: ' Voted'
     });
 
-    // Remove content div
-    const contentDiv = el.querySelector('.card-content');
-    contentDiv.remove();
+    // Remove body div
+    const bodyDiv = el.querySelector('.card-body');
+    bodyDiv.remove();
 
     // Should not throw
     expect(() => {

@@ -24,22 +24,23 @@ export function createLawListSection({ accentText, remainderText }) {
   el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
   el.innerHTML = `
-    <div class="card-content">
+    <header class="card-header">
       <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
-    </div>
+    </header>
+    <div class="card-body"></div>
   `;
 
-  const contentDiv = el.querySelector('.card-content');
+  const bodyDiv = el.querySelector('.card-body');
   let loadingEl = null;
 
-  if (contentDiv) {
+  if (bodyDiv) {
     loadingEl = createLoading();
-    contentDiv.appendChild(loadingEl);
+    bodyDiv.appendChild(loadingEl);
   }
 
   function renderLaws(laws = [], { skip = 0, limit = Infinity, rankOffset = null } = {}) {
-    const content = el.querySelector('.card-content');
-    if (!content) return;
+    const body = el.querySelector('.card-body');
+    if (!body) return;
 
     // Ensure we have a valid array and apply skip/limit
     const validLaws = Array.isArray(laws) ? laws : [];
@@ -48,14 +49,13 @@ export function createLawListSection({ accentText, remainderText }) {
     const sliced = validLaws.slice(startIndex, endIndex);
 
     // Use shared law card renderer (eliminates duplicate HTML generation)
-    content.innerHTML = `
-      <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
+    body.innerHTML = `
       <div class="card-text">
         ${renderLawCards(sliced, { rankOffset })}
       </div>
     `;
-    hydrateIcons(content);
-    initSharePopovers(content);
+    hydrateIcons(body);
+    initSharePopovers(body);
 
     // Only add voting listeners if there are actually laws to vote on
     if (sliced.length > 0) {
@@ -64,13 +64,11 @@ export function createLawListSection({ accentText, remainderText }) {
   }
 
   function renderError(message) {
-    const content = el.querySelector('.card-content');
-    if (!content) return;
+    const body = el.querySelector('.card-body');
+    if (!body) return;
 
-    content.innerHTML = `
-      <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
-    `;
-    content.appendChild(createErrorState(message));
+    body.innerHTML = '';
+    body.appendChild(createErrorState(message));
   }
 
   return {

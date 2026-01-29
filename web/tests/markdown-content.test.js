@@ -18,7 +18,7 @@ describe('markdown-content.js', () => {
       const markdown = '# Hello World\nThis is a test.';
       const html = markdownToHtml(markdown, { lastUpdated: '2023-01-01' });
       
-      expect(html).toContain('<header class="content-header">');
+      expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('Last updated: 2023-01-01');
       expect(html).toContain('<h1>Hello World</h1>');
     });
@@ -41,7 +41,7 @@ describe('markdown-content.js', () => {
       const html = getPageContent('about');
 
       expect(html).toContain('<article class="card content-card">');
-      expect(html).toContain('<div class="card-content">');
+      expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('About');
       expect(html).toContain('Murphy');
       expect(html).toContain('</article>');
@@ -204,7 +204,7 @@ describe('markdown-content.js', () => {
     it('handles content without paragraph after h1', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Title</h1><h2>Section</h2>');
       const html = getPageContent('about');
-      expect(html).toContain('<header class="content-header">');
+      expect(html).toContain('<header class="card-header content-header">');
       expect(html).not.toContain('<p class="lead">');
       vi.restoreAllMocks();
     });
@@ -213,7 +213,7 @@ describe('markdown-content.js', () => {
       // This tests line 221-227 - privacy page with lastUpdated but no first <p> after h1
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Privacy Policy</h1><h2>Section</h2>');
       const html = getPageContent('privacy');
-      expect(html).toContain('<header class="content-header">');
+      expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('Last updated:');
       expect(html).not.toContain('<p class="lead">');
       vi.restoreAllMocks();
@@ -223,7 +223,7 @@ describe('markdown-content.js', () => {
       // This also tests the alternate branch for terms page
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Terms</h1><ul><li>Item</li></ul>');
       const html = getPageContent('terms');
-      expect(html).toContain('<header class="content-header">');
+      expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('Last updated:');
       expect(html).not.toContain('<p class="lead">');
       vi.restoreAllMocks();

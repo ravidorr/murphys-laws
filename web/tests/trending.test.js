@@ -224,7 +224,7 @@ describe('Trending component', () => {
     const el = Trending();
 
     await vi.waitFor(() => {
-      expect(el.querySelector('.card-content')).toBeTruthy();
+      expect(el.querySelector('.card-body')).toBeTruthy();
     });
   });
 
