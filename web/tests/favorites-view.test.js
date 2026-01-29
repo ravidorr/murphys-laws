@@ -387,5 +387,57 @@ describe('Favorites View Component', () => {
       // Should not navigate to law detail
       expect(localThis.mockNavigate).not.toHaveBeenCalledWith('law', '123');
     });
+
+    it('calls removeFavorite when clicking favorite button', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      vi.mocked(renderLawCards).mockReturnValue(
+        `<article class="law-card-mini" data-law-id="123">
+          <p>Test</p>
+          <button data-action="favorite" data-law-id="123">Favorite</button>
+        </article>`
+      );
+
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const favoriteButton = el.querySelector('[data-action="favorite"]');
+
+      favoriteButton.click();
+
+      expect(removeFavorite).toHaveBeenCalledWith('123');
+    });
+
+    it('shows empty state after unfavoriting the last law', async () => {
+      vi.useFakeTimers();
+
+      // Start with one favorite
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      vi.mocked(renderLawCards).mockReturnValue(
+        `<article class="law-card-mini" data-law-id="123">
+          <p>Test</p>
+          <button data-action="favorite" data-law-id="123">Favorite</button>
+        </article>`
+      );
+
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+
+      // Verify we start with populated state
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+      expect(el.querySelector('.not-found-quote')).toBeFalsy();
+
+      // After unfavorite, getFavorites returns empty
+      vi.mocked(getFavorites).mockReturnValue([]);
+
+      // Click unfavorite
+      const favoriteButton = el.querySelector('[data-action="favorite"]');
+      favoriteButton.click();
+
+      // Wait for animation timeout (200ms)
+      vi.advanceTimersByTime(200);
+
+      // Should now show empty state
+      expect(el.querySelector('.law-card-mini')).toBeFalsy();
+      expect(el.querySelector('.not-found-quote')).toBeTruthy();
+
+      vi.useRealTimers();
+    });
   });
 });
