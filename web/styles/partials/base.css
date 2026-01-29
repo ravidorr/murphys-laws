@@ -8,7 +8,12 @@ html, body {
   background: var(--bg);
   color: var(--fg);
   font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
-  overflow-x: hidden; /* Prevent horizontal scroll from tooltips extending past viewport */
+}
+
+/* Prevent horizontal scroll from tooltips extending past viewport.
+   Applied to #app wrapper instead of body to preserve sticky header positioning. */
+#app {
+  overflow-x: clip;
 }
 
 mark {
