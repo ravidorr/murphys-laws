@@ -3,14 +3,14 @@
  */
 
 /**
- * Truncate title to fit within 70 character limit for SEO
+ * Truncate title to fit within 60 character limit for SEO
  * Accounts for the " - Murphy's Law Archive" suffix (24 chars)
  * @param {string} title - The title to truncate
  * @param {string} suffix - The suffix to append (default: " - Murphy's Law Archive")
  * @returns {string} - The truncated title (without suffix)
  */
 export function truncateTitle(title, suffix = " - Murphy's Law Archive") {
-  const maxLength = 70;
+  const maxLength = 60;
   const maxTitleLength = maxLength - suffix.length;
   
   if (title.length <= maxTitleLength) {

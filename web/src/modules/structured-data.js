@@ -6,12 +6,16 @@ const PAGE_IDS = new Set([
   'browse-page',
   'law-article',
   'calculator-sod',
+  'calculator-sod-howto',
   'calculator-toast',
+  'calculator-toast-howto',
   'browse-page-breadcrumbs',
   'categories-page',
   'category-detail-page',
   'category-detail-breadcrumbs',
-  'origin-story-article'
+  'category-detail-itemlist',
+  'origin-story-article',
+  'speakable'
 ]);
 
 function ensureJsonLdElement(id) {
@@ -186,7 +190,11 @@ export function setLawStructuredData(law) {
       '@type': 'Person',
       'name': 'Raanan Avidor'
     },
-    'url': lawUrl
+    'url': lawUrl,
+    'speakable': {
+      '@type': 'SpeakableSpecification',
+      'cssSelector': ['.law-text', '.card-title', '.attribution']
+    }
   });
 }
 
@@ -198,9 +206,60 @@ export function setSodCalculatorStructuredData() {
     'applicationCategory': 'CalculatorApplication',
     'operatingSystem': 'Web',
     'name': "Sod's Law Calculator",
-    'url': `${SITE_URL}/calculator`,
+    'url': `${SITE_URL}/calculator/sods-law`,
     'description': 'Quantify the probability of Murphy\'s Law striking by balancing urgency, complexity, skill, and frequency.',
-    'image': SOCIAL_IMAGE_SOD
+    'image': SOCIAL_IMAGE_SOD,
+    'speakable': {
+      '@type': 'SpeakableSpecification',
+      'cssSelector': ['.calc-description', '#score-interpretation', '.calc-info-summary']
+    }
+  });
+
+  // HowTo schema for calculator usage
+  setJsonLd('calculator-sod-howto', {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    'name': "How to Use the Sod's Law Calculator",
+    'description': "Calculate the probability of things going wrong for any task using Murphy's Law principles.",
+    'totalTime': 'PT2M',
+    'step': [
+      {
+        '@type': 'HowToStep',
+        'position': 1,
+        'name': 'Set Urgency',
+        'text': 'Adjust the Urgency slider from 1-9 based on how time-sensitive your task is. Higher urgency increases failure probability.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 2,
+        'name': 'Set Complexity',
+        'text': 'Set the Complexity slider based on how many steps or components your task involves. More complex tasks are more likely to fail.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 3,
+        'name': 'Set Importance',
+        'text': 'Adjust Importance to reflect how critical the task is. Murphy\'s Law tends to strike hardest when stakes are highest.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 4,
+        'name': 'Set Your Skill Level',
+        'text': 'Rate your skill level for this task. Higher skill reduces the probability of failure.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 5,
+        'name': 'Set Frequency',
+        'text': 'Indicate how often you perform this task. Frequent tasks have cumulative failure risk.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 6,
+        'name': 'Read Your Score',
+        'text': 'View your calculated probability score. Scores range from 0.12 (low risk) to 8.6 (catastrophic risk).'
+      }
+    ]
   });
 }
 
@@ -212,8 +271,93 @@ export function setToastCalculatorStructuredData() {
     'applicationCategory': 'CalculatorApplication',
     'operatingSystem': 'Web',
     'name': 'Buttered Toast Landing Calculator',
-    'url': `${SITE_URL}/toastcalculator`,
+    'url': `${SITE_URL}/calculator/buttered-toast`,
     'description': 'Simulate how height, gravity, and butter factor influence a toast landing butter-side down.',
-    'image': SOCIAL_IMAGE_TOAST
+    'image': SOCIAL_IMAGE_TOAST,
+    'speakable': {
+      '@type': 'SpeakableSpecification',
+      'cssSelector': ['.calc-description', '#toast-interpretation', '.calc-info-summary']
+    }
+  });
+
+  // HowTo schema for calculator usage
+  setJsonLd('calculator-toast-howto', {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    'name': 'How to Use the Buttered Toast Landing Calculator',
+    'description': 'Calculate the probability of your toast landing butter-side down based on physics.',
+    'totalTime': 'PT2M',
+    'step': [
+      {
+        '@type': 'HowToStep',
+        'position': 1,
+        'name': 'Set Drop Height',
+        'text': 'Adjust the height slider to match the height from which your toast falls (typically table height, around 75cm).'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 2,
+        'name': 'Set Gravity',
+        'text': 'Adjust gravity if simulating on other planets. Earth gravity is 980 cm/s².'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 3,
+        'name': 'Set Push Force',
+        'text': 'Set how far the toast overhangs or how hard it was pushed off the edge. This affects initial rotation.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 4,
+        'name': 'Set Butter Factor',
+        'text': 'Adjust for the amount of butter. More butter shifts the center of mass and affects rotation.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 5,
+        'name': 'Set Air Friction',
+        'text': 'Adjust air friction to simulate different conditions. Higher friction slows rotation.'
+      },
+      {
+        '@type': 'HowToStep',
+        'position': 6,
+        'name': 'Read the Result',
+        'text': 'View the probability percentage. Higher percentages mean your toast is more likely to land butter-side down.'
+      }
+    ]
+  });
+}
+
+/**
+ * Set ItemList schema for category detail pages
+ * @param {Object} options - Configuration options
+ * @param {string} options.categoryTitle - Title of the category
+ * @param {string} options.categorySlug - URL slug of the category
+ * @param {Array} options.laws - Array of law objects
+ */
+export function setCategoryItemListSchema({ categoryTitle, categorySlug, laws }) {
+  if (!laws || laws.length === 0) return;
+  
+  const categoryUrl = `${SITE_URL}/category/${categorySlug}`;
+  
+  const itemListElements = laws.slice(0, 10).map((law, index) => ({
+    '@type': 'ListItem',
+    'position': index + 1,
+    'item': {
+      '@type': 'Quotation',
+      'name': law.title || `Murphy's Law #${law.id}`,
+      'text': law.text,
+      'url': `${SITE_URL}/law/${law.id}`
+    }
+  }));
+  
+  setJsonLd('category-detail-itemlist', {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    'name': `${categoryTitle} - Murphy's Laws`,
+    'description': `Collection of Murphy's Laws related to ${categoryTitle}`,
+    'url': categoryUrl,
+    'numberOfItems': laws.length,
+    'itemListElement': itemListElements
   });
 }

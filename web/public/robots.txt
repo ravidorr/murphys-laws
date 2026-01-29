@@ -3,8 +3,9 @@
 User-agent: *
 Allow: /
 
-# Sitemap location
+# Sitemap locations
 Sitemap: https://murphys-laws.com/sitemap.xml
+Sitemap: https://murphys-laws.com/image-sitemap.xml
 
 # Allow Google AdSense and Google bots
 User-agent: Mediapartners-Google

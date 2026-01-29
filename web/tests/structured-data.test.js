@@ -402,6 +402,25 @@ describe('Structured Data module', () => {
 
       expect(data.dateModified).toBe('2024-01-01');
     });
+
+    it('includes speakable specification for voice search', () => {
+      const law = {
+        id: '123',
+        title: 'Murphy\'s Law',
+        text: 'Anything that can go wrong, will.',
+        created_at: '2024-01-01'
+      };
+
+      setLawStructuredData(law);
+
+      const el = document.head.querySelector('#jsonld-law-article');
+      const data = JSON.parse(el.textContent);
+
+      expect(data.speakable).toBeTruthy();
+      expect(data.speakable['@type']).toBe('SpeakableSpecification');
+      expect(data.speakable.cssSelector).toBeInstanceOf(Array);
+      expect(data.speakable.cssSelector).toContain('.law-text');
+    });
   });
 
   describe('setSodCalculatorStructuredData', () => {
@@ -433,6 +452,32 @@ describe('Structured Data module', () => {
 
       expect(document.head.querySelector('#jsonld-home-page')).toBeFalsy();
     });
+
+    it('includes speakable specification for voice search', () => {
+      setSodCalculatorStructuredData();
+
+      const el = document.head.querySelector('#jsonld-calculator-sod');
+      const data = JSON.parse(el.textContent);
+
+      expect(data.speakable).toBeTruthy();
+      expect(data.speakable['@type']).toBe('SpeakableSpecification');
+      expect(data.speakable.cssSelector).toBeInstanceOf(Array);
+    });
+
+    it('creates HowTo schema with steps', () => {
+      setSodCalculatorStructuredData();
+
+      const el = document.head.querySelector('#jsonld-calculator-sod-howto');
+      expect(el).toBeTruthy();
+
+      const data = JSON.parse(el.textContent);
+      expect(data['@type']).toBe('HowTo');
+      expect(data.name).toMatch(/Sod's Law Calculator/);
+      expect(data.step).toBeInstanceOf(Array);
+      expect(data.step.length).toBeGreaterThan(0);
+      expect(data.step[0]['@type']).toBe('HowToStep');
+      expect(data.step[0].position).toBe(1);
+    });
   });
 
   describe('setToastCalculatorStructuredData', () => {
@@ -463,6 +508,32 @@ describe('Structured Data module', () => {
       setToastCalculatorStructuredData();
 
       expect(document.head.querySelector('#jsonld-home-page')).toBeFalsy();
+    });
+
+    it('includes speakable specification for voice search', () => {
+      setToastCalculatorStructuredData();
+
+      const el = document.head.querySelector('#jsonld-calculator-toast');
+      const data = JSON.parse(el.textContent);
+
+      expect(data.speakable).toBeTruthy();
+      expect(data.speakable['@type']).toBe('SpeakableSpecification');
+      expect(data.speakable.cssSelector).toBeInstanceOf(Array);
+    });
+
+    it('creates HowTo schema with steps', () => {
+      setToastCalculatorStructuredData();
+
+      const el = document.head.querySelector('#jsonld-calculator-toast-howto');
+      expect(el).toBeTruthy();
+
+      const data = JSON.parse(el.textContent);
+      expect(data['@type']).toBe('HowTo');
+      expect(data.name).toMatch(/Buttered Toast/);
+      expect(data.step).toBeInstanceOf(Array);
+      expect(data.step.length).toBeGreaterThan(0);
+      expect(data.step[0]['@type']).toBe('HowToStep');
+      expect(data.step[0].position).toBe(1);
     });
   });
 });

@@ -222,13 +222,13 @@ describe('Categories view', () => {
     Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    expect(document.title).toContain('Browse Laws by Category');
+    expect(document.title).toContain("Browse Murphy's Laws by Category");
   });
 
   it('renders page header and subtitle', () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     
-    expect(el.textContent).toContain('Browse Laws by Category');
+    expect(el.textContent).toContain("Browse Murphy's Laws by Category");
     expect(el.textContent).toContain('Explore Murphy\'s Laws organized by topic');
   });
 

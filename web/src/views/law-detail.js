@@ -16,6 +16,7 @@ import { addVotingListeners } from '../utils/voting.js';
 import { isFavoritesEnabled } from '../utils/feature-flags.js';
 import { isFavorite, toggleFavorite } from '../utils/favorites.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
+import { Breadcrumb } from '../components/breadcrumb.js';
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }) {
   const el = document.createElement('div');
@@ -194,6 +195,19 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }) {
       title: lawTitle,
       data: law
     });
+
+    // Render breadcrumb navigation
+    const breadcrumbContainer = el.querySelector('#law-breadcrumb');
+    if (breadcrumbContainer) {
+      const breadcrumb = Breadcrumb({
+        items: [
+          { label: 'Browse', nav: 'browse', href: '/browse' },
+          { label: lawTitle }
+        ],
+        onNavigate
+      });
+      breadcrumbContainer.replaceChildren(breadcrumb);
+    }
 
     showLaw();
 

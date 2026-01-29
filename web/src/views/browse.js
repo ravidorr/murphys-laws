@@ -18,6 +18,7 @@ import { RecentlyAdded } from '../components/recently-added.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { showSuccess } from '../components/notification.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
+import { Breadcrumb } from '../components/breadcrumb.js';
 
 export function Browse({ searchQuery, onNavigate }) {
   const el = document.createElement('div');
@@ -54,6 +55,18 @@ export function Browse({ searchQuery, onNavigate }) {
   async function render() {
     el.innerHTML = templateHtml;
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
+
+    // Render breadcrumb navigation
+    const breadcrumbContainer = el.querySelector('#browse-breadcrumb');
+    if (breadcrumbContainer) {
+      const breadcrumb = Breadcrumb({
+        items: [
+          { label: 'Browse All Murphy\'s Laws' }
+        ],
+        onNavigate
+      });
+      breadcrumbContainer.replaceChildren(breadcrumb);
+    }
 
     // Replace static loading message with random one
     const loadingPlaceholder = el.querySelector('.loading-placeholder p');

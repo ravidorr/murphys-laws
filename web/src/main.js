@@ -65,6 +65,7 @@ import { About } from './views/about.js';
 import { Privacy } from './views/privacy.js';
 import { Terms } from './views/terms.js';
 import { Contact } from './views/contact.js';
+import { Examples } from './views/examples.js';
 import { NotFound } from './views/not-found.js';
 import { isFavoritesEnabled } from './utils/feature-flags.js';
 import { toggleFavorite } from './utils/favorites.js';
@@ -308,6 +309,11 @@ const routesMap = {
     trackPageView();
     clearPageStructuredData();
     return layout(Contact({ onNavigate }), { hideAds: true });
+  },
+  examples: () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(Examples({ onNavigate }));
   },
 };
 

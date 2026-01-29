@@ -10,7 +10,7 @@ import { hydrateIcons } from '@utils/icons.js';
 import { renderLawCards } from '../utils/law-card-renderer.js';
 import { initSharePopovers } from '../components/social-share.js';
 import { renderPagination } from '../utils/pagination.js';
-import { setJsonLd } from '@modules/structured-data.js';
+import { setJsonLd, setCategoryItemListSchema } from '@modules/structured-data.js';
 import { SITE_URL, SITE_NAME } from '@utils/constants.js';
 import { fetchCategories } from '../utils/api.js'; // To get category title for structured data
 import { triggerAdSense } from '../utils/ads.js';
@@ -18,6 +18,7 @@ import { showSuccess } from '../components/notification.js';
 import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 import { updateMetaDescription } from '@utils/dom.js';
+import { Breadcrumb } from '../components/breadcrumb.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
   const el = document.createElement('div');
@@ -195,6 +196,19 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         // Update browser page title and meta description
         document.title = `${categoryTitle} | ${SITE_NAME}`;
         updateMetaDescription(categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}. Discover witty observations and corollaries in this category.`);
+        
+        // Render breadcrumb navigation
+        const breadcrumbContainer = el.querySelector('#category-breadcrumb');
+        if (breadcrumbContainer) {
+          const breadcrumb = Breadcrumb({
+            items: [
+              { label: 'Categories', nav: 'categories', href: '/categories' },
+              { label: categoryTitle }
+            ],
+            onNavigate
+          });
+          breadcrumbContainer.replaceChildren(breadcrumb);
+        }
       }
     } catch (error) {
       Sentry.captureException(error);
@@ -237,6 +251,15 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       'description': categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}.`,
       'image': `${SITE_URL}/social/home.png`, // Placeholder, could be category specific
     });
+    
+    // ItemList Schema for SEO - lists laws in this category
+    if (laws && laws.length > 0) {
+      setCategoryItemListSchema({
+        categoryTitle,
+        categorySlug: categoryId,
+        laws
+      });
+    }
   }
 
 

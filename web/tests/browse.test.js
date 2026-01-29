@@ -60,7 +60,7 @@ describe('Browse view', () => {
   it('renders Browse title', () => {
     const el = Browse({ searchQuery: '', onNavigate: () => { } });
     expect(el.textContent).toMatch(/Browse/);
-    expect(el.textContent).toMatch(/All Laws/);
+    expect(el.textContent).toMatch(/All Murphy's Laws/);
   });
 
   it('renders loading state initially', () => {
