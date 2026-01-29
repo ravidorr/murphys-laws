@@ -1,7 +1,31 @@
 <div id="category-breadcrumb"></div>
-<h1 class="text-center" id="category-detail-title">Category Laws</h1>
-<p class="text-center text-muted-fg mb-8" id="category-description">All laws within this category.</p>
 
-<div id="category-laws-list" class="loading-placeholder" role="status" aria-live="polite" aria-label="Loading laws for category">
-  <p class="small"></p>
+<div id="advanced-search-container"></div>
+
+<div class="card min-h-600" id="category-laws-card">
+  <div class="card-content">
+    <div class="card-header-with-info">
+      <h1 class="card-title" id="category-detail-title">Category Laws</h1>
+      <div id="category-search-info"></div>
+    </div>
+    <p class="text-muted-fg mb-4" id="category-description">All laws within this category.</p>
+    <div class="browse-controls">
+      <div class="browse-result-count" id="category-result-count" aria-live="polite"></div>
+      <div class="browse-sort">
+        <label for="sort-select" class="visually-hidden">Sort by</label>
+        <select id="sort-select" class="sort-select" aria-label="Sort laws by">
+          <option value="score-desc">Top Rated</option>
+          <option value="upvotes-desc">Most Upvotes</option>
+          <option value="created_at-desc">Newest</option>
+          <option value="created_at-asc">Oldest</option>
+          <option value="last_voted_at-desc">Recently Voted</option>
+        </select>
+      </div>
+    </div>
+    <section class="card-text" id="category-laws-list" aria-live="polite" aria-busy="true">
+      <div class="loading-placeholder" role="status" aria-live="polite">
+        <p class="small">Loading...</p>
+      </div>
+    </section>
+  </div>
 </div>

@@ -171,6 +171,7 @@ describe('Structured Data module', () => {
       setJsonLd('law-article', { name: 'Law' });
       setJsonLd('calculator-sod', { name: 'Sod' });
       setJsonLd('calculator-toast', { name: 'Toast' });
+      setJsonLd('examples-article', { name: 'Examples' });
 
       clearPageStructuredData();
 
@@ -179,6 +180,7 @@ describe('Structured Data module', () => {
       expect(document.head.querySelector('#jsonld-law-article')).toBeFalsy();
       expect(document.head.querySelector('#jsonld-calculator-sod')).toBeFalsy();
       expect(document.head.querySelector('#jsonld-calculator-toast')).toBeFalsy();
+      expect(document.head.querySelector('#jsonld-examples-article')).toBeFalsy();
     });
 
     it('does not remove site-wide elements', () => {

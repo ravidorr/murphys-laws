@@ -15,6 +15,7 @@ const PAGE_IDS = new Set([
   'category-detail-breadcrumbs',
   'category-detail-itemlist',
   'origin-story-article',
+  'examples-article',
   'speakable'
 ]);
 
