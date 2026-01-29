@@ -995,6 +995,8 @@
 .search-field .input,
 .search-field select {
   width: 100%;
+  height: 2.75rem; /* Match button height (44px) */
+  box-sizing: border-box;
 }
 
 /* Enhanced dropdown/select styling */
