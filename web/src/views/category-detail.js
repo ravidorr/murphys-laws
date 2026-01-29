@@ -19,6 +19,8 @@ import { stripMarkdownFootnotes } from '../utils/sanitize.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 import { updateMetaDescription } from '@utils/dom.js';
 import { Breadcrumb } from '../components/breadcrumb.js';
+import { AdvancedSearch } from '../components/advanced-search.js';
+import { updateSearchInfo } from '../utils/search-info.js';
 
 export function CategoryDetail({ categoryId, onNavigate }) {
   const el = document.createElement('div');
@@ -31,7 +33,10 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   let laws = [];
   let categoryTitle = 'Category'; // Default title
   let categoryDescription = ''; // Category description
-  let _currentFilters = { category_id: categoryId };
+  let currentFilters = { category_id: categoryId };
+  let currentSort = 'score';
+  let currentOrder = 'desc';
+  let categoryNumericId = null; // Will be set after fetching category details
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
   function formatPageTitle(title) {
@@ -49,13 +54,13 @@ export function CategoryDetail({ categoryId, onNavigate }) {
   }
 
   // Render law cards
-  function renderLaws(laws) {
+  function renderLaws(laws, query) {
     if (!laws || laws.length === 0) {
       return `
         <div class="empty-state">
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">No laws found</p>
-          <p class="empty-state-text">No laws have been submitted for this category yet.</p>
+          <p class="empty-state-text">No laws have been submitted for this category yet. Try adjusting your search filters.</p>
           <button class="btn" data-nav="submit" style="margin-top: 1rem;">
             <span class="btn-text">Submit a Murphy's Law</span>
             <span class="icon" data-icon="send" aria-hidden="true"></span>
@@ -64,12 +69,14 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       `;
     }
 
-    return renderLawCards(laws);
+    // Use shared law card renderer with search highlighting
+    return renderLawCards(laws, { searchQuery: query });
   }
 
   // Render the page structure
   async function render() {
     el.innerHTML = templateHtml;
+    await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
 
     const titleEl = el.querySelector('#category-detail-title');
     if (titleEl) {
@@ -89,7 +96,7 @@ export function CategoryDetail({ categoryId, onNavigate }) {
     if (cardText) {
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
-        ${renderLaws(laws)}
+        ${renderLaws(laws, currentFilters.q)}
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
       hydrateIcons(cardText);
@@ -100,6 +107,22 @@ export function CategoryDetail({ categoryId, onNavigate }) {
         triggerAdSense(el);
       }
     }
+    
+    // Update result count
+    const resultCountEl = el.querySelector('#category-result-count');
+    if (resultCountEl) {
+      if (totalLaws > 0) {
+        const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
+        const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
+        resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
+        resultCountEl.style.display = '';
+      } else {
+        resultCountEl.textContent = '';
+        resultCountEl.style.display = 'none';
+      }
+    }
+    
+    await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
     // Update breadcrumbs and structured data after category title is loaded
     updateStructuredData();
   }
@@ -125,15 +148,21 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       const params = {
         limit: LAWS_PER_PAGE,
         offset,
-        sort: 'score',
-        order: 'desc'
+        sort: currentSort,
+        order: currentOrder,
+        ...currentFilters
       };
 
-      const numericId = parseInt(categoryId, 10);
-      if (!isNaN(numericId) && numericId > 0) {
-        params.category_id = numericId;
+      // If we have the numeric ID, use it; otherwise use slug
+      if (categoryNumericId) {
+        params.category_id = categoryNumericId;
       } else {
-        params.category_slug = categoryId;
+        const numericId = parseInt(categoryId, 10);
+        if (!isNaN(numericId) && numericId > 0) {
+          params.category_id = numericId;
+        } else {
+          params.category_slug = categoryId;
+        }
       }
 
       const data = await fetchLaws(params);
@@ -184,6 +213,11 @@ export function CategoryDetail({ categoryId, onNavigate }) {
       if (category) {
         categoryTitle = stripMarkdownFootnotes(category.title);
         categoryDescription = category.description || '';
+        categoryNumericId = category.id; // Store the numeric ID for API calls
+        
+        // Update filters with the numeric ID
+        currentFilters.category_id = category.id;
+        
         const titleEl = el.querySelector('#category-detail-title');
         if (titleEl) {
           titleEl.innerHTML = formatPageTitle(categoryTitle);
@@ -208,6 +242,21 @@ export function CategoryDetail({ categoryId, onNavigate }) {
             onNavigate
           });
           breadcrumbContainer.replaceChildren(breadcrumb);
+        }
+        
+        // Create and insert advanced search component with category pre-selected
+        const searchComponent = AdvancedSearch({
+          initialFilters: { category_id: category.id },
+          onSearch: (filters) => {
+            // Always keep the category_id in filters for this page
+            currentFilters = { ...filters, category_id: category.id };
+            loadPage(1); // Reset to page 1 when filters change
+          }
+        });
+
+        const searchContainer = el.querySelector('#advanced-search-container');
+        if (searchContainer) {
+          searchContainer.appendChild(searchComponent);
         }
       }
     } catch (error) {
@@ -370,6 +419,18 @@ export function CategoryDetail({ categoryId, onNavigate }) {
 
   // Add voting listeners using shared utility
   addVotingListeners(el);
+
+  // Add sort select handler
+  const sortSelect = el.querySelector('#sort-select');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      const value = e.target.value;
+      const [sort, order] = value.split('-');
+      currentSort = sort;
+      currentOrder = order;
+      loadPage(1); // Reset to page 1 when sort changes
+    });
+  }
 
   // Cleanup function to clear export content on unmount
   el.cleanup = () => {

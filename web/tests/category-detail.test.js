@@ -14,7 +14,8 @@ import * as Sentry from '@sentry/browser';
 // Mock dependencies
 vi.mock('../src/utils/api.js', () => ({
   fetchLaws: vi.fn(),
-  fetchCategories: vi.fn()
+  fetchCategories: vi.fn(),
+  fetchAPI: vi.fn()
 }));
 vi.mock('../src/utils/law-card-renderer.js', () => ({
   renderLawCards: vi.fn((laws) => laws.map(l => `<div>${l.title}</div>`).join(''))
@@ -36,6 +37,30 @@ vi.mock('../src/utils/constants.js', () => ({
 }));
 vi.mock('../src/utils/voting.js', () => ({
   addVotingListeners: vi.fn()
+}));
+vi.mock('../src/utils/search-info.js', () => ({
+  updateSearchInfo: vi.fn()
+}));
+vi.mock('../src/components/advanced-search.js', () => {
+  const localThis = {};
+  return {
+    AdvancedSearch: vi.fn(({ initialFilters, onSearch }) => {
+      localThis.onSearch = onSearch;
+      localThis.initialFilters = initialFilters;
+      const el = document.createElement('section');
+      el.className = 'section section-card mb-12';
+      el.innerHTML = '<div class="test-advanced-search">Advanced Search Mock</div>';
+      el.onSearch = onSearch;
+      el.initialFilters = initialFilters;
+      return el;
+    }),
+    getLocalThis: () => localThis
+  };
+});
+vi.mock('../src/utils/export-context.js', () => ({
+  setExportContent: vi.fn(),
+  clearExportContent: vi.fn(),
+  ContentType: { LAWS: 'laws' }
 }));
 
 describe('CategoryDetail view', () => {
@@ -331,9 +356,9 @@ describe('CategoryDetail view', () => {
     const el = CategoryDetail({ categoryId: 'technology', onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    // Should use category_slug param instead of category_id
+    // After fetching category details, the numeric ID is used for API calls
     expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
-      category_slug: 'technology'
+      category_id: 1
     }));
 
     // Should find category by slug and display its title
@@ -370,7 +395,257 @@ describe('CategoryDetail view', () => {
     expect(descEl.textContent).toBe('Digital doom: programs are obsolete when running.');
   });
 
+  describe('sort controls', () => {
+    it('renders sort select dropdown', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const sortSelect = el.querySelector('#sort-select');
+      expect(sortSelect).toBeTruthy();
+      expect(sortSelect.options.length).toBeGreaterThan(0);
+    });
+
+    it('changes sort order when select changes', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      api.fetchLaws.mockClear();
+
+      const sortSelect = el.querySelector('#sort-select');
+      sortSelect.value = 'created_at-desc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+        sort: 'created_at',
+        order: 'desc'
+      }));
+    });
+
+    it('resets to page 1 when sort changes', async () => {
+      api.fetchLaws.mockResolvedValue({
+        data: Array(10).fill({ id: 1, title: 'Law', text: 'Text' }),
+        total: 25
+      });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Navigate to page 2
+      const pageBtn = document.createElement('button');
+      pageBtn.dataset.page = '2';
+      el.appendChild(pageBtn);
+      pageBtn.click();
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      api.fetchLaws.mockClear();
+
+      // Change sort
+      const sortSelect = el.querySelector('#sort-select');
+      sortSelect.value = 'upvotes-desc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+        offset: 0 // Page 1
+      }));
+    });
+  });
+
+  describe('result count', () => {
+    it('displays result count when laws are loaded', async () => {
+      api.fetchLaws.mockResolvedValue({
+        data: [
+          { id: 101, title: 'Law 1', text: 'Text 1' },
+          { id: 102, title: 'Law 2', text: 'Text 2' }
+        ],
+        total: 2
+      });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const resultCount = el.querySelector('#category-result-count');
+      expect(resultCount).toBeTruthy();
+      expect(resultCount.textContent).toContain('1-2 of 2');
+    });
+
+    it('hides result count when no laws', async () => {
+      api.fetchLaws.mockResolvedValue({ data: [], total: 0 });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const resultCount = el.querySelector('#category-result-count');
+      expect(resultCount.style.display).toBe('none');
+    });
+  });
+
+  describe('advanced search integration', () => {
+    it('renders advanced search component', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const searchContainer = el.querySelector('#advanced-search-container');
+      expect(searchContainer).toBeTruthy();
+      expect(searchContainer.querySelector('.test-advanced-search')).toBeTruthy();
+    });
+
+    it('initializes search with category pre-selected', async () => {
+      const { AdvancedSearch } = await import('../src/components/advanced-search.js');
+      
+      CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(AdvancedSearch).toHaveBeenCalledWith(expect.objectContaining({
+        initialFilters: expect.objectContaining({
+          category_id: 1
+        })
+      }));
+    });
+
+    it('reloads laws when search filters change', async () => {
+      const { getLocalThis } = await import('../src/components/advanced-search.js');
+      
+      CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      api.fetchLaws.mockClear();
+
+      // Simulate search with keyword
+      const localThis = getLocalThis();
+      localThis.onSearch({ q: 'test', category_id: 1 });
+
+      expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+        q: 'test',
+        category_id: 1
+      }));
+    });
+
+    it('keeps category_id when search is cleared', async () => {
+      const { getLocalThis } = await import('../src/components/advanced-search.js');
+      
+      CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      api.fetchLaws.mockClear();
+
+      // Simulate clearing search
+      const localThis = getLocalThis();
+      localThis.onSearch({});
+
+      // Should still include the category_id
+      expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+        category_id: 1
+      }));
+    });
+  });
+
+  describe('cleanup', () => {
+    it('clears export content on cleanup', async () => {
+      const { clearExportContent } = await import('../src/utils/export-context.js');
+      
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Call cleanup
+      el.cleanup();
+
+      expect(clearExportContent).toHaveBeenCalled();
+    });
+  });
+
+  describe('search highlighting', () => {
+    it('passes search query to law card renderer', async () => {
+      const { renderLawCards } = await import('../src/utils/law-card-renderer.js');
+      const { getLocalThis } = await import('../src/components/advanced-search.js');
+      
+      CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      renderLawCards.mockClear();
+
+      // Simulate search with keyword
+      const localThis = getLocalThis();
+      localThis.onSearch({ q: 'test keyword', category_id: 1 });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(renderLawCards).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.objectContaining({ searchQuery: 'test keyword' })
+      );
+    });
+  });
+
+  describe('keyboard navigation edge cases', () => {
+    it('handles non-Element keydown target', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      onNavigate.mockClear();
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+      Object.defineProperty(event, 'target', { value: null });
+      el.dispatchEvent(event);
+
+      // Should not throw and onNavigate not called
+      expect(onNavigate).not.toHaveBeenCalled();
+    });
+
+    it('ignores non-activation keys', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const lawCard = document.createElement('div');
+      lawCard.className = 'law-card-mini';
+      lawCard.dataset.lawId = '123';
+      el.appendChild(lawCard);
+
+      onNavigate.mockClear();
+
+      // Simulate Tab key press (should be ignored)
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+      lawCard.dispatchEvent(tabEvent);
+
+      expect(onNavigate).not.toHaveBeenCalled();
+    });
+  });
+
   describe('copy actions', () => {
+    it('does not copy when copy-text button has empty value', async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const copyTextBtn = document.createElement('button');
+      copyTextBtn.setAttribute('data-action', 'copy-text');
+      copyTextBtn.setAttribute('data-copy-value', '');
+      el.appendChild(copyTextBtn);
+
+      copyTextBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).not.toHaveBeenCalled();
+    });
+
+    it('does not copy when copy-link button has empty value', async () => {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const copyLinkBtn = document.createElement('button');
+      copyLinkBtn.setAttribute('data-action', 'copy-link');
+      copyLinkBtn.setAttribute('data-copy-value', '');
+      el.appendChild(copyLinkBtn);
+
+      copyLinkBtn.click();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(writeTextMock).not.toHaveBeenCalled();
+    });
+
     it('copies law text to clipboard when copy text button is clicked', async () => {
       const writeTextMock = vi.fn().mockResolvedValue(undefined);
       Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
