@@ -860,4 +860,34 @@ describe('SubmitLawSection component', () => {
     document.body.removeChild(el);
     vi.restoreAllMocks();
   });
+
+  it('does not reload categories on second focus', async () => {
+    const fetchAPISpy = vi.spyOn(api, 'fetchAPI');
+    fetchAPISpy.mockResolvedValue({ data: [{ id: 1, title: 'Test Category', slug: 'test' }] });
+
+    const el = mountSection({ append: true });
+    const categorySelect = el.querySelector('#submit-category');
+
+    // First focus should trigger category loading
+    categorySelect.dispatchEvent(new FocusEvent('focus'));
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const callsAfterFirstFocus = fetchAPISpy.mock.calls.filter(
+      call => call[0] === '/api/v1/categories'
+    ).length;
+
+    // Second focus should NOT reload categories (early return)
+    categorySelect.dispatchEvent(new FocusEvent('focus'));
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const callsAfterSecondFocus = fetchAPISpy.mock.calls.filter(
+      call => call[0] === '/api/v1/categories'
+    ).length;
+
+    // Should be the same number of calls
+    expect(callsAfterSecondFocus).toBe(callsAfterFirstFocus);
+
+    document.body.removeChild(el);
+    vi.restoreAllMocks();
+  });
 });

@@ -20,4 +20,4 @@ Concerned about content? Let us know which law or story needs attention and why.
 
 ## When You'll Hear Back
 
-We usually reply within two business days. During major launches or when Murphy strikes in bulk, it might take a little longer - but we read every message.
+We read every message. We usually reply within a day, but when Murphy strikes in bulk, it might take a little longer.

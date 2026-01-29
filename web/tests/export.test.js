@@ -395,6 +395,46 @@ describe('Export Utilities', () => {
 
         expect(localThis.mockAnchor.click).toHaveBeenCalled();
       });
+
+      it('converts null values to empty strings in CSV', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1,
+            title: null,
+            text: 'Some text',
+            attribution: null
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Null values should become empty strings, not "null"
+        expect(text).not.toContain('"null"');
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
+
+      it('converts undefined values to empty strings in CSV', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{
+            id: 1,
+            title: undefined,
+            text: 'Some text',
+            attribution: undefined
+          }]
+        };
+
+        exportToCSV(content);
+        const text = getBlobText();
+
+        // Undefined values should become empty strings, not "undefined"
+        expect(text).not.toContain('"undefined"');
+        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+      });
     });
   });
 

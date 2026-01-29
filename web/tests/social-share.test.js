@@ -951,4 +951,59 @@ describe('Global event handlers', () => {
     expect(popover.classList.contains('open')).toBe(false);
     expect(popover.classList.contains('popover-above')).toBe(false);
   });
+
+  it('toggles popover closed when clicking trigger while open', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // First click opens
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+    // Add popover-above class to verify it gets removed
+    popover.classList.add('popover-above');
+
+    // Second click on same trigger closes
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(false);
+    expect(popover.classList.contains('popover-above')).toBe(false);
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('positions popover above when not enough space below', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger');
+    const popover = localThis.container.querySelector('.share-popover');
+
+    // Mock getBoundingClientRect to simulate trigger near bottom of viewport
+    const originalGetBoundingClientRect = trigger.getBoundingClientRect;
+    trigger.getBoundingClientRect = () => ({
+      top: 500,
+      bottom: window.innerHeight - 50, // Only 50px below trigger
+      left: 100,
+      right: 200,
+      width: 100,
+      height: 30
+    });
+
+    // Click to open
+    trigger.click();
+
+    // Should have popover-above class because not enough space below
+    expect(popover.classList.contains('open')).toBe(true);
+    expect(popover.classList.contains('popover-above')).toBe(true);
+
+    // Restore
+    trigger.getBoundingClientRect = originalGetBoundingClientRect;
+  });
 });

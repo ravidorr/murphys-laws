@@ -62,7 +62,7 @@ describe('Contact page', () => {
     });
 
     expect(el.textContent).toMatch(/When You'll Hear Back/);
-    expect(el.textContent).toMatch(/two business days/);
+    expect(el.textContent).toMatch(/within a day/);
   });
 
   it('triggers onNavigate when clicking submit link', () => {
