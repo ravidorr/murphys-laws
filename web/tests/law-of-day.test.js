@@ -597,6 +597,18 @@ describe('LawOfTheDay component', () => {
       expect(favoriteBtn.getAttribute('aria-label')).toBe('Remove from favorites');
     });
 
+    it('shows filled heart icon when law is already favorited on init', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      const icon = favoriteBtn.querySelector('svg[data-icon-name]');
+      expect(icon).toBeTruthy();
+      expect(icon.getAttribute('data-icon-name')).toBe('heartFilled');
+    });
+
     it('shows unfavorited state when law is not favorited', () => {
       isFavoritesEnabledSpy.mockReturnValue(true);
       isFavoriteSpy.mockReturnValue(false);
