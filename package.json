@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -28,7 +28,10 @@
     "cleanup-ports": "node backend/scripts/cleanup-ports.mjs",
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install"
   },
-  "keywords": ["murphys-law", "monorepo"],
+  "keywords": [
+    "murphys-law",
+    "monorepo"
+  ],
   "author": "",
   "license": "CC0-1.0",
   "engines": {
