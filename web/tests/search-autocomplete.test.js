@@ -729,4 +729,27 @@ describe('SearchAutocomplete', () => {
     // Should not throw and should contain the text
     expect(item.textContent).toContain('(law)');
   });
+
+  it('should return correct isOpen state', async () => {
+    api.fetchSuggestions.mockResolvedValue({
+      data: [{ id: 1, text: 'Test law', title: null }]
+    });
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+
+    // Initially closed
+    expect(autocomplete.isOpen()).toBe(false);
+
+    // Open dropdown
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    // Now open
+    expect(autocomplete.isOpen()).toBe(true);
+
+    // Close via escape key
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(autocomplete.isOpen()).toBe(false);
+  });
 });

@@ -659,4 +659,149 @@ describe('AdvancedSearch component', () => {
       expect(fetchAPISpy).toHaveBeenCalled();
     });
   });
+
+  describe('attribution filtering edge cases', () => {
+    it('filters out null attributions', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        { name: 'Valid Author' },
+        null,
+        { name: 'Another Author' }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch();
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        expect(attributionSelect.innerHTML).toContain('Valid Author');
+        expect(attributionSelect.innerHTML).toContain('Another Author');
+        expect(attributionSelect.innerHTML).not.toContain('null');
+      });
+    });
+
+    it('filters out attributions with name "undefined" string', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        { name: 'Valid Author' },
+        { name: 'undefined' },
+        { name: 'UNDEFINED' }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch();
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        expect(attributionSelect.innerHTML).toContain('Valid Author');
+        expect(attributionSelect.innerHTML).not.toContain('>undefined<');
+        expect(attributionSelect.innerHTML).not.toContain('>UNDEFINED<');
+      });
+    });
+
+    it('filters out attributions with name "null" string', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        { name: 'Valid Author' },
+        { name: 'null' },
+        { name: 'NULL' }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch();
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        expect(attributionSelect.innerHTML).toContain('Valid Author');
+        expect(attributionSelect.innerHTML).not.toContain('>null<');
+        expect(attributionSelect.innerHTML).not.toContain('>NULL<');
+      });
+    });
+
+    it('filters out empty string attributions', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        { name: 'Valid Author' },
+        { name: '' },
+        { name: '   ' }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch();
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        expect(attributionSelect.innerHTML).toContain('Valid Author');
+        // Empty options would show as empty option text
+        const options = attributionSelect.querySelectorAll('option');
+        const optionTexts = Array.from(options).map(o => o.textContent.trim());
+        expect(optionTexts.filter(t => t === '').length).toBe(0);
+      });
+    });
+
+    it('handles string format attributions', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        'String Author',
+        'Another String Author'
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch();
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        expect(attributionSelect.innerHTML).toContain('String Author');
+        expect(attributionSelect.innerHTML).toContain('Another String Author');
+      });
+    });
+
+    it('marks selected category from initial filters', async () => {
+      vi.spyOn(cacheUtils, 'getCachedCategories').mockReturnValue([
+        { id: 1, title: 'Category One' },
+        { id: 2, title: 'Category Two' }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch({ initialFilters: { category_id: '2' } });
+
+      await vi.waitFor(() => {
+        const categorySelect = el.querySelector('#search-category');
+        const selectedOption = categorySelect.querySelector('option[selected]');
+        expect(selectedOption).toBeTruthy();
+        expect(selectedOption.textContent).toBe('Category Two');
+      });
+    });
+
+    it('marks selected attribution from initial filters', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        { name: 'Author A' },
+        { name: 'Author B' }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch({ initialFilters: { attribution: 'Author B' } });
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        const selectedOption = attributionSelect.querySelector('option[selected]');
+        expect(selectedOption).toBeTruthy();
+        expect(selectedOption.textContent).toBe('Author B');
+      });
+    });
+
+    it('handles non-string name values in attributions', async () => {
+      vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([
+        { name: 'Valid Author' },
+        { name: 123 },
+        { name: { nested: 'object' } }
+      ]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      const el = mountSearch();
+
+      await vi.waitFor(() => {
+        const attributionSelect = el.querySelector('#search-attribution');
+        expect(attributionSelect.innerHTML).toContain('Valid Author');
+        // Non-string names should be filtered out
+        const options = attributionSelect.querySelectorAll('option');
+        expect(options.length).toBe(2); // "All Submitters" + "Valid Author"
+      });
+    });
+  });
 });
