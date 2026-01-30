@@ -8,6 +8,55 @@ import { createIcon } from '../utils/icons.js';
 import { createButton, renderShareLinkHTML } from '../utils/button.js';
 
 /**
+ * Share platforms configuration - Single source of truth for all share options
+ * Used by both dropdown popover and inline share buttons
+ */
+export const SHARE_PLATFORMS = {
+  social: [
+    { id: 'twitter', label: 'Share on X', shortLabel: 'X', icon: 'twitter' },
+    { id: 'facebook', label: 'Share on Facebook', shortLabel: 'Facebook', icon: 'facebook' },
+    { id: 'linkedin', label: 'Share on LinkedIn', shortLabel: 'LinkedIn', icon: 'linkedin' },
+    { id: 'reddit', label: 'Share on Reddit', shortLabel: 'Reddit', icon: 'reddit' },
+    { id: 'whatsapp', label: 'Share on WhatsApp', shortLabel: 'WhatsApp', icon: 'whatsapp' },
+    { id: 'email', label: 'Share via Email', shortLabel: 'Email', icon: 'email' },
+  ],
+  copy: [
+    { id: 'copy-text', label: 'Copy text', shortLabel: 'Copy', icon: 'copy', action: 'copy-text' },
+    { id: 'copy-link', label: 'Copy link', shortLabel: 'Link', icon: 'link', action: 'copy-link' },
+  ],
+};
+
+/**
+ * Build share URLs for each platform
+ * @param {Object} options - Configuration options
+ * @param {string} options.url - URL to share
+ * @param {string} options.title - Title/text to share
+ * @param {string} options.description - Optional description for some platforms
+ * @param {string} options.lawText - The law text for email body
+ * @param {string} options.emailSubject - Custom email subject (optional)
+ * @returns {Object} - Object with URL for each platform
+ */
+export function buildShareUrls({ url, title, description = '', lawText, emailSubject } = {}) {
+  const encodedUrl = encodeURIComponent(url);
+  const encodedTitle = encodeURIComponent(title);
+  const encodedDescription = encodeURIComponent(description);
+  
+  const subject = encodeURIComponent(emailSubject || "Check out this Murphy's Law");
+  const emailBody = encodeURIComponent(
+    `I found this and thought you'd like it:\n\n${lawText || title}\n\n${url}`
+  );
+
+  return {
+    twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}&summary=${encodedDescription}`,
+    reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`,
+    whatsapp: `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`,
+    email: `mailto:?subject=${subject}&body=${emailBody}`,
+  };
+}
+
+/**
  * Create social share popover component
  * @param {Object} options - Configuration options
  * @param {string} options.url - URL to share (defaults to current page URL)
@@ -27,24 +76,13 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
   const shareDescription = description || '';
   const textToCopy = lawText || shareTitle;
 
-  // Encode for URLs
-  const encodedUrl = encodeURIComponent(shareUrl);
-  const encodedTitle = encodeURIComponent(shareTitle);
-  const encodedDescription = encodeURIComponent(shareDescription);
-
-  // Email specifics
-  const emailSubject = encodeURIComponent("Check out this Murphy's Law");
-  const emailBody = encodeURIComponent(
-    `I found this and thought you'd like it:\n\n${shareTitle}\n\n${shareUrl}`
-  );
-
-  // Build share URLs for each platform
-  const twitterUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
-  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-  const linkedinUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}&summary=${encodedDescription}`;
-  const redditUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`;
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}`;
-  const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+  // Build share URLs using the centralized function
+  const shareUrls = buildShareUrls({
+    url: shareUrl,
+    title: shareTitle,
+    description: shareDescription,
+    lawText: textToCopy,
+  });
 
   // Create trigger button
   const trigger = createButton({
@@ -63,29 +101,19 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
   popover.className = 'share-popover';
   popover.setAttribute('role', 'menu');
 
-  // Social link platforms
-  const linkPlatforms = [
-    { href: twitterUrl, label: 'Share on X', iconName: 'twitter', platform: 'twitter' },
-    { href: facebookUrl, label: 'Share on Facebook', iconName: 'facebook', platform: 'facebook' },
-    { href: linkedinUrl, label: 'Share on LinkedIn', iconName: 'linkedin', platform: 'linkedin' },
-    { href: redditUrl, label: 'Share on Reddit', iconName: 'reddit', platform: 'reddit' },
-    { href: whatsappUrl, label: 'Share on WhatsApp', iconName: 'whatsapp', platform: 'whatsapp' },
-    { href: emailUrl, label: 'Share via Email', iconName: 'email', platform: 'email' },
-  ];
-
-  // Create link items
-  linkPlatforms.forEach(({ href, label, iconName, platform }) => {
+  // Create social link items using SHARE_PLATFORMS config
+  SHARE_PLATFORMS.social.forEach(({ id, label, icon: iconName }) => {
     const link = document.createElement('a');
     link.className = 'share-popover-item';
-    link.href = href;
+    link.href = shareUrls[id];
     link.setAttribute('role', 'menuitem');
-    link.setAttribute('target', platform === 'email' ? '_self' : '_blank');
-    if (platform !== 'email') {
+    link.setAttribute('target', id === 'email' ? '_self' : '_blank');
+    if (id !== 'email') {
       link.setAttribute('rel', 'noopener noreferrer');
     }
 
     const iconCircle = document.createElement('span');
-    iconCircle.className = `icon-circle ${platform}`;
+    iconCircle.className = `icon-circle ${id}`;
     const icon = createIcon(iconName, { classNames: [] });
     if (icon) {
       iconCircle.appendChild(icon);
@@ -100,25 +128,27 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
   divider.className = 'share-popover-divider';
   popover.appendChild(divider);
 
-  // Copy action buttons
-  const copyPlatforms = [
-    { label: 'Copy text', iconName: 'copy', platform: 'copy', dataAction: 'copy-text', dataCopyValue: textToCopy },
-    { label: 'Copy link', iconName: 'link', platform: 'link', dataAction: 'copy-link', dataCopyValue: shareUrl },
-  ];
+  // Create copy action buttons using SHARE_PLATFORMS config
+  const copyValues = {
+    'copy-text': textToCopy,
+    'copy-link': shareUrl,
+  };
 
-  copyPlatforms.forEach(({ label, iconName, platform, dataAction, dataCopyValue }) => {
+  SHARE_PLATFORMS.copy.forEach(({ id, label, icon: iconName, action }) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'share-popover-item';
     button.setAttribute('role', 'menuitem');
-    button.setAttribute('data-action', dataAction);
-    button.setAttribute('data-copy-value', dataCopyValue);
+    button.setAttribute('data-action', action);
+    button.setAttribute('data-copy-value', copyValues[action]);
     if (lawId) {
       button.setAttribute('data-law-id', lawId);
     }
 
+    // Use 'copy' or 'link' class for icon circle styling
+    const iconCircleClass = id === 'copy-text' ? 'copy' : 'link';
     const iconCircle = document.createElement('span');
-    iconCircle.className = `icon-circle ${platform}`;
+    iconCircle.className = `icon-circle ${iconCircleClass}`;
     const icon = createIcon(iconName, { classNames: [] });
     if (icon) {
       iconCircle.appendChild(icon);
@@ -215,28 +245,31 @@ export function SocialShare({ url, title, description, lawText, lawId } = {}) {
 export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
   const shareUrl = url || `${window.location.origin}/law/${lawId}`;
   const safeText = lawText ? lawText.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
-  const encodedUrl = encodeURIComponent(shareUrl);
-  const encodedText = encodeURIComponent(lawText || '');
 
-  // Build share URLs
-  const twitterUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
-  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-  const linkedinUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedText}`;
-  const redditUrl = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedText}`;
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}%20${encodedUrl}`;
-  const emailSubject = encodeURIComponent("Check out this Murphy's Law");
-  const emailBody = encodeURIComponent(`I found this and thought you'd like it:\n\n${lawText || ''}\n\n${shareUrl}`);
-  const emailUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+  // Build share URLs using centralized function
+  const shareUrls = buildShareUrls({
+    url: shareUrl,
+    title: lawText || '',
+    lawText: lawText || '',
+  });
 
-  // Build share link HTML using renderShareLinkHTML helper
-  const shareLinkItems = [
-    renderShareLinkHTML({ href: twitterUrl, text: 'Share on X', icon: 'twitter', platform: 'twitter' }),
-    renderShareLinkHTML({ href: facebookUrl, text: 'Share on Facebook', icon: 'facebook', platform: 'facebook' }),
-    renderShareLinkHTML({ href: linkedinUrl, text: 'Share on LinkedIn', icon: 'linkedin', platform: 'linkedin' }),
-    renderShareLinkHTML({ href: redditUrl, text: 'Share on Reddit', icon: 'reddit', platform: 'reddit' }),
-    renderShareLinkHTML({ href: whatsappUrl, text: 'Share on WhatsApp', icon: 'whatsapp', platform: 'whatsapp' }),
-    renderShareLinkHTML({ href: emailUrl, text: 'Share via Email', icon: 'email', platform: 'email' }),
-  ].join('\n        ');
+  // Build share link HTML using SHARE_PLATFORMS config
+  const shareLinkItems = SHARE_PLATFORMS.social.map(({ id, label, icon }) =>
+    renderShareLinkHTML({ href: shareUrls[id], text: label, icon, platform: id })
+  ).join('\n        ');
+
+  // Build copy buttons HTML using SHARE_PLATFORMS config
+  const copyValues = {
+    'copy-text': safeText,
+    'copy-link': shareUrl,
+  };
+  const copyButtonsHTML = SHARE_PLATFORMS.copy.map(({ id, label, icon, action }) => {
+    const iconCircleClass = id === 'copy-text' ? 'copy' : 'link';
+    return `<button type="button" class="share-popover-item" role="menuitem" data-action="${action}" data-copy-value="${copyValues[action]}" data-law-id="${lawId}">
+          <span class="icon-circle ${iconCircleClass}"><span class="icon" data-icon="${icon}" aria-hidden="true"></span></span>
+          ${label}
+        </button>`;
+  }).join('\n        ');
 
   return `
     <div class="share-wrapper">
@@ -247,14 +280,7 @@ export function renderShareButtonsHTML({ lawId, lawText, url } = {}) {
       <div class="share-popover" role="menu">
         ${shareLinkItems}
         <div class="share-popover-divider"></div>
-        <button type="button" class="share-popover-item" role="menuitem" data-action="copy-text" data-copy-value="${safeText}" data-law-id="${lawId}">
-          <span class="icon-circle copy"><span class="icon" data-icon="copy" aria-hidden="true"></span></span>
-          Copy text
-        </button>
-        <button type="button" class="share-popover-item" role="menuitem" data-action="copy-link" data-copy-value="${shareUrl}" data-law-id="${lawId}">
-          <span class="icon-circle link"><span class="icon" data-icon="link" aria-hidden="true"></span></span>
-          Copy link
-        </button>
+        ${copyButtonsHTML}
         <div class="share-copy-feedback">
           <span class="icon" data-icon="checkCircle" aria-hidden="true"></span>
           Copied!
@@ -339,6 +365,156 @@ export function initSharePopovers(container = document) {
       e.stopPropagation();
     });
   });
+}
+
+/**
+ * Generate inline share buttons HTML (horizontal layout for calculators)
+ * @param {Object} options - Configuration options
+ * @param {string} options.url - URL to share (optional, defaults to current page)
+ * @param {string} options.title - Title/text to share (optional, defaults to document title)
+ * @param {string} options.lawText - Text for copy-text functionality
+ * @returns {string} - HTML string for inline share buttons
+ */
+export function renderInlineShareButtonsHTML({ url: _url, title: _title, lawText: _lawText } = {}) {
+  // Generate buttons HTML using SHARE_PLATFORMS config
+  // Note: URLs will be updated dynamically by initInlineShareButtons
+  const socialButtonsHTML = SHARE_PLATFORMS.social.map(({ id, shortLabel, icon }) => {
+    return `<a class="share-btn-inline" href="#" data-share="${id}" target="${id === 'email' ? '_self' : '_blank'}" ${id !== 'email' ? 'rel="noopener noreferrer"' : ''} aria-label="Share on ${shortLabel}">
+        <span class="icon-circle ${id}"><span class="icon" data-icon="${icon}" aria-hidden="true"></span></span>
+        <span class="btn-text">${shortLabel}</span>
+      </a>`;
+  }).join('\n      ');
+
+  const copyButtonsHTML = SHARE_PLATFORMS.copy.map(({ id, shortLabel, icon, action }) => {
+    const iconCircleClass = id === 'copy-text' ? 'copy' : 'link';
+    return `<button type="button" class="share-btn-inline" data-action="${action}" aria-label="${shortLabel}">
+        <span class="icon-circle ${iconCircleClass}"><span class="icon" data-icon="${icon}" aria-hidden="true"></span></span>
+        <span class="btn-text">${shortLabel}</span>
+      </button>`;
+  }).join('\n      ');
+
+  return `
+    <div class="share-buttons-inline">
+      ${socialButtonsHTML}
+      ${copyButtonsHTML}
+      <div class="share-copy-feedback">
+        <span class="icon" data-icon="checkCircle" aria-hidden="true"></span>
+        Copied!
+      </div>
+    </div>
+  `.trim();
+}
+
+/**
+ * Initialize inline share buttons behavior
+ * Call this after inserting inline share buttons HTML into the DOM
+ * @param {HTMLElement} container - Container element with inline share buttons
+ * @param {Object} options - Configuration options
+ * @param {Function} options.getShareableUrl - Function that returns the shareable URL
+ * @param {Function} options.getShareText - Function that returns the share text
+ * @param {string} options.emailSubject - Custom email subject (optional)
+ * @returns {Function} Teardown function to remove event listeners
+ */
+export function initInlineShareButtons(container, { getShareableUrl, getShareText, emailSubject } = {}) {
+  const wrapper = container.querySelector('.share-buttons-inline');
+  if (!wrapper) {
+    return () => {};
+  }
+
+  const feedback = wrapper.querySelector('.share-copy-feedback');
+  const listeners = [];
+
+  function addListener(target, event, handler) {
+    if (!target) return;
+    target.addEventListener(event, handler);
+    listeners.push(() => target.removeEventListener(event, handler));
+  }
+
+  // Show copy feedback
+  function showCopyFeedback() {
+    if (!feedback) return;
+    feedback.classList.add('visible');
+    setTimeout(() => {
+      feedback.classList.remove('visible');
+    }, 1500);
+  }
+
+  // Update share link URLs
+  function updateShareLinks() {
+    const url = getShareableUrl();
+    const text = getShareText();
+    const shareUrls = buildShareUrls({
+      url,
+      title: text,
+      lawText: text,
+      emailSubject,
+    });
+
+    // Update all social share links
+    SHARE_PLATFORMS.social.forEach(({ id }) => {
+      const link = wrapper.querySelector(`[data-share="${id}"]`);
+      if (link && shareUrls[id]) {
+        link.href = shareUrls[id];
+      }
+    });
+  }
+
+  // Handle copy actions
+  async function handleCopyAction(e) {
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+
+    const action = button.dataset.action;
+    let textToCopy = '';
+
+    if (action === 'copy-text') {
+      textToCopy = getShareText();
+    } else if (action === 'copy-link') {
+      textToCopy = getShareableUrl();
+    } else {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      showCopyFeedback();
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showCopyFeedback();
+    }
+  }
+
+  // Handle clicks on the wrapper
+  function handleClick(e) {
+    // Update URLs before navigation for share links
+    if (e.target.closest('[data-share]')) {
+      updateShareLinks();
+      return; // Let the link navigate
+    }
+    // Handle copy buttons
+    if (e.target.closest('[data-action]')) {
+      handleCopyAction(e);
+    }
+  }
+
+  // Set up event listeners
+  addListener(wrapper, 'click', handleClick);
+
+  // Initialize share links
+  updateShareLinks();
+
+  // Return teardown function
+  return () => {
+    listeners.forEach(unsubscribe => unsubscribe());
+  };
 }
 
 // Global click handler to close popovers when clicking outside

@@ -1,4 +1,12 @@
-import { SocialShare, renderShareButtonsHTML, initSharePopovers } from '../src/components/social-share.js';
+import {
+  SocialShare,
+  renderShareButtonsHTML,
+  initSharePopovers,
+  SHARE_PLATFORMS,
+  buildShareUrls,
+  renderInlineShareButtonsHTML,
+  initInlineShareButtons
+} from '../src/components/social-share.js';
 import * as icons from '../src/utils/icons.js';
 
 describe('SocialShare component', () => {
@@ -1005,5 +1013,480 @@ describe('Global event handlers', () => {
 
     // Restore
     trigger.getBoundingClientRect = originalGetBoundingClientRect;
+  });
+});
+
+describe('SHARE_PLATFORMS configuration', () => {
+  it('exports SHARE_PLATFORMS constant', () => {
+    expect(SHARE_PLATFORMS).toBeDefined();
+    expect(SHARE_PLATFORMS.social).toBeDefined();
+    expect(SHARE_PLATFORMS.copy).toBeDefined();
+  });
+
+  it('contains all 6 social platforms', () => {
+    expect(SHARE_PLATFORMS.social).toHaveLength(6);
+    const platformIds = SHARE_PLATFORMS.social.map(p => p.id);
+    expect(platformIds).toContain('twitter');
+    expect(platformIds).toContain('facebook');
+    expect(platformIds).toContain('linkedin');
+    expect(platformIds).toContain('reddit');
+    expect(platformIds).toContain('whatsapp');
+    expect(platformIds).toContain('email');
+  });
+
+  it('contains 2 copy actions', () => {
+    expect(SHARE_PLATFORMS.copy).toHaveLength(2);
+    const copyIds = SHARE_PLATFORMS.copy.map(p => p.id);
+    expect(copyIds).toContain('copy-text');
+    expect(copyIds).toContain('copy-link');
+  });
+
+  it('social platforms have required properties', () => {
+    SHARE_PLATFORMS.social.forEach(platform => {
+      expect(platform.id).toBeDefined();
+      expect(platform.label).toBeDefined();
+      expect(platform.shortLabel).toBeDefined();
+      expect(platform.icon).toBeDefined();
+    });
+  });
+
+  it('copy platforms have required properties', () => {
+    SHARE_PLATFORMS.copy.forEach(platform => {
+      expect(platform.id).toBeDefined();
+      expect(platform.label).toBeDefined();
+      expect(platform.shortLabel).toBeDefined();
+      expect(platform.icon).toBeDefined();
+      expect(platform.action).toBeDefined();
+    });
+  });
+});
+
+describe('buildShareUrls', () => {
+  it('builds URLs for all social platforms', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com/page',
+      title: 'Test Title',
+      description: 'Test description',
+      lawText: 'Test law text'
+    });
+
+    expect(urls.twitter).toContain('twitter.com/intent/tweet');
+    expect(urls.facebook).toContain('facebook.com/sharer');
+    expect(urls.linkedin).toContain('linkedin.com/shareArticle');
+    expect(urls.reddit).toContain('reddit.com/submit');
+    expect(urls.whatsapp).toContain('api.whatsapp.com/send');
+    expect(urls.email).toContain('mailto:');
+  });
+
+  it('encodes URL parameter correctly', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com/page?id=123',
+      title: 'Test'
+    });
+
+    expect(urls.twitter).toContain(encodeURIComponent('https://test.com/page?id=123'));
+  });
+
+  it('encodes title parameter correctly', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com',
+      title: "Murphy's Law"
+    });
+
+    expect(urls.twitter).toContain(encodeURIComponent("Murphy's Law"));
+  });
+
+  it('includes description in LinkedIn URL', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com',
+      title: 'Test',
+      description: 'A detailed description'
+    });
+
+    expect(urls.linkedin).toContain(encodeURIComponent('A detailed description'));
+  });
+
+  it('uses custom email subject when provided', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com',
+      title: 'Test',
+      emailSubject: 'Custom subject line'
+    });
+
+    expect(urls.email).toContain(encodeURIComponent('Custom subject line'));
+  });
+
+  it('uses lawText in email body', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com',
+      title: 'Test',
+      lawText: 'The actual law text'
+    });
+
+    expect(urls.email).toContain(encodeURIComponent('The actual law text'));
+  });
+
+  it('falls back to title when lawText is not provided', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com',
+      title: 'Fallback title'
+    });
+
+    expect(urls.email).toContain(encodeURIComponent('Fallback title'));
+  });
+
+  it('uses default email subject when not provided', () => {
+    const urls = buildShareUrls({
+      url: 'https://test.com',
+      title: 'Test'
+    });
+
+    expect(urls.email).toContain(encodeURIComponent("Check out this Murphy's Law"));
+  });
+});
+
+describe('renderInlineShareButtonsHTML', () => {
+  beforeEach(() => {
+    delete window.location;
+    window.location = { href: 'https://test.com/page', origin: 'https://test.com' };
+  });
+
+  it('returns HTML string with share-buttons-inline class', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('class="share-buttons-inline"');
+  });
+
+  it('includes buttons for all social platforms', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('data-share="twitter"');
+    expect(html).toContain('data-share="facebook"');
+    expect(html).toContain('data-share="linkedin"');
+    expect(html).toContain('data-share="reddit"');
+    expect(html).toContain('data-share="whatsapp"');
+    expect(html).toContain('data-share="email"');
+  });
+
+  it('includes copy buttons', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('data-action="copy-text"');
+    expect(html).toContain('data-action="copy-link"');
+  });
+
+  it('uses shortLabel for button text', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('>X</span>');
+    expect(html).toContain('>Facebook</span>');
+    expect(html).toContain('>LinkedIn</span>');
+    expect(html).toContain('>Reddit</span>');
+    expect(html).toContain('>WhatsApp</span>');
+    expect(html).toContain('>Email</span>');
+    expect(html).toContain('>Copy</span>');
+    expect(html).toContain('>Link</span>');
+  });
+
+  it('includes share-btn-inline class on each button', () => {
+    const html = renderInlineShareButtonsHTML();
+    const matches = html.match(/class="share-btn-inline"/g);
+    // 6 social + 2 copy = 8 buttons
+    expect(matches.length).toBe(8);
+  });
+
+  it('includes icon circles with platform classes', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('icon-circle twitter');
+    expect(html).toContain('icon-circle facebook');
+    expect(html).toContain('icon-circle linkedin');
+    expect(html).toContain('icon-circle reddit');
+    expect(html).toContain('icon-circle whatsapp');
+    expect(html).toContain('icon-circle email');
+    expect(html).toContain('icon-circle copy');
+    expect(html).toContain('icon-circle link');
+  });
+
+  it('includes copy feedback element', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('share-copy-feedback');
+    expect(html).toContain('Copied!');
+  });
+
+  it('sets correct target for social links', () => {
+    const html = renderInlineShareButtonsHTML();
+    // Email should use _self, others should use _blank
+    expect(html).toContain('data-share="email" target="_self"');
+    expect(html).toContain('data-share="twitter" target="_blank"');
+  });
+
+  it('includes noopener noreferrer for non-email links', () => {
+    const html = renderInlineShareButtonsHTML();
+    expect(html).toContain('data-share="twitter" target="_blank" rel="noopener noreferrer"');
+  });
+});
+
+describe('initInlineShareButtons', () => {
+  const localThis = {};
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    localThis.container = document.createElement('div');
+    document.body.appendChild(localThis.container);
+    delete window.location;
+    window.location = { href: 'https://test.com/page', origin: 'https://test.com' };
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('initializes inline share buttons behavior', () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/share',
+      getShareText: () => 'Test share text'
+    });
+
+    expect(typeof teardown).toBe('function');
+  });
+
+  it('returns empty teardown function when no container found', () => {
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/share',
+      getShareText: () => 'Test share text'
+    });
+
+    expect(typeof teardown).toBe('function');
+    // Should not throw
+    teardown();
+  });
+
+  it('updates share link URLs when clicked', () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    let callCount = 0;
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => {
+        callCount++;
+        return 'https://test.com/dynamic-url';
+      },
+      getShareText: () => 'Dynamic text'
+    });
+
+    const twitterLink = localThis.container.querySelector('[data-share="twitter"]');
+    twitterLink.click();
+
+    // getShareableUrl should be called to update URLs
+    expect(callCount).toBeGreaterThan(0);
+    expect(twitterLink.href).toContain(encodeURIComponent('https://test.com/dynamic-url'));
+
+    teardown();
+  });
+
+  it('handles copy-link action', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/copied-url',
+      getShareText: () => 'Copied text'
+    });
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    copyLinkBtn.click();
+
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalledWith('https://test.com/copied-url');
+
+    teardown();
+  });
+
+  it('handles copy-text action', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Text to copy'
+    });
+
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]');
+    copyTextBtn.click();
+
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalledWith('Text to copy');
+
+    teardown();
+  });
+
+  it('shows copy feedback after copy action', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Test text'
+    });
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    copyLinkBtn.click();
+
+    await Promise.resolve();
+
+    const feedback = localThis.container.querySelector('.share-copy-feedback');
+    expect(feedback.classList.contains('visible')).toBe(true);
+
+    teardown();
+  });
+
+  it('hides copy feedback after timeout', async () => {
+    vi.useFakeTimers();
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Test text'
+    });
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    copyLinkBtn.click();
+
+    await Promise.resolve();
+
+    const feedback = localThis.container.querySelector('.share-copy-feedback');
+    expect(feedback.classList.contains('visible')).toBe(true);
+
+    // Advance timer past feedback timeout (1500ms)
+    vi.advanceTimersByTime(1600);
+
+    expect(feedback.classList.contains('visible')).toBe(false);
+
+    vi.useRealTimers();
+    teardown();
+  });
+
+  it('uses fallback copy method when clipboard API fails', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    // Mock clipboard to fail
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockRejectedValue(new Error('Not supported'))
+      }
+    });
+
+    // Mock document.execCommand
+    const execCommandMock = vi.fn();
+    document.execCommand = execCommandMock;
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/fallback',
+      getShareText: () => 'Fallback text'
+    });
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    copyLinkBtn.click();
+
+    await Promise.resolve();
+    await Promise.resolve(); // Wait for catch block
+
+    expect(execCommandMock).toHaveBeenCalledWith('copy');
+
+    teardown();
+  });
+
+  it('uses custom email subject when provided', () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Test text',
+      emailSubject: 'Custom Email Subject'
+    });
+
+    // Trigger URL update by clicking a share link
+    const emailLink = localThis.container.querySelector('[data-share="email"]');
+    emailLink.click();
+
+    expect(emailLink.href).toContain(encodeURIComponent('Custom Email Subject'));
+
+    teardown();
+  });
+
+  it('teardown removes event listeners', () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    let callCount = 0;
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => {
+        callCount++;
+        return 'https://test.com';
+      },
+      getShareText: () => 'Test'
+    });
+
+    // Initial update call
+    const initialCount = callCount;
+
+    teardown();
+
+    // Click after teardown - should not increment count
+    const twitterLink = localThis.container.querySelector('[data-share="twitter"]');
+    twitterLink.click();
+
+    // Count should remain the same after teardown
+    expect(callCount).toBe(initialCount);
+  });
+
+  it('ignores clicks on non-action buttons', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Test'
+    });
+
+    // Click on the wrapper itself (not a button)
+    const wrapper = localThis.container.querySelector('.share-buttons-inline');
+    wrapper.click();
+
+    await Promise.resolve();
+
+    // writeText should not be called
+    expect(writeTextMock).not.toHaveBeenCalled();
+
+    teardown();
   });
 });

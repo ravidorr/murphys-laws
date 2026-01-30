@@ -490,8 +490,8 @@
   color: var(--muted-fg);
   cursor: pointer;
   padding: 0;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem; /* Match button height (44px) */
   display: flex;
   align-items: center;
   justify-content: center;
