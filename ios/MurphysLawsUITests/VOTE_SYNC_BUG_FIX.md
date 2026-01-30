@@ -7,17 +7,17 @@ When viewing a category's laws and voting on a law in the detail view, the vote 
 
 ### Attempted Solutions That Failed:
 
-1. **Fetch single law on `.onDisappear`** ❌
+1. **Fetch single law on `.onDisappear`**
    - Problem: `fetchLawDetail` returns wrong/default law
    - Result: Correct law gets replaced with "Murphy's Law"
    - Reason: API endpoint issue or fallback behavior
 
-2. **Refresh on `.onAppear`** ❌  
+2. **Refresh on `.onAppear`**  
    - Problem: Triggers on every scroll/focus change
    - Result: Constant API calls, poor performance
    - Reason: `.onAppear` fires too frequently
 
-3. **Full list refresh on navigation** ❌
+3. **Full list refresh on navigation**
    - Problem: Too slow, wastes bandwidth
    - Result: Loading spinner, bad UX
    - Reason: Fetches all laws when only one changed
@@ -42,20 +42,20 @@ Users can pull down on the category list to refresh and see updated votes.
 4. See updated vote counts
 
 **Pros:**
-- ✅ Works reliably
-- ✅ User has control
-- ✅ Standard iOS pattern
-- ✅ No bugs
+- Works reliably
+- User has control
+- Standard iOS pattern
+- No bugs
 
 **Cons:**
-- ⚠️ Requires manual action
-- ⚠️ Not immediate feedback
+- Requires manual action
+- Not immediate feedback
 
 ---
 
 ## Proper Solutions (For Future Implementation)
 
-### Option 1: Shared Observable State ⭐ RECOMMENDED
+### Option 1: Shared Observable State RECOMMENDED
 Use a shared state manager that both views observe:
 
 ```swift
@@ -165,9 +165,9 @@ Then use the original `.onDisappear` approach.
 ## Recommendation for Next Steps
 
 ### Immediate (Low Effort):
-1. ✅ Keep current pull-to-refresh behavior
-2. ✅ Document that users should refresh after voting
-3. ✅ Consider adding a toast: "Pull to refresh for updated votes"
+1. Keep current pull-to-refresh behavior
+2. Document that users should refresh after voting
+3. Consider adding a toast: "Pull to refresh for updated votes"
 
 ### Short-term (Medium Effort):  
 1. Implement **Option 2: NotificationCenter**
@@ -197,7 +197,7 @@ The `fetchLawDetail(id: Int)` method in `LawRepository` has a fallback that retu
 4. API returns error or wrong data
 5. Repository fallback returns `Law.mock` (Murphy's Law)
 6. Law 42 gets replaced with mock law
-7. User sees wrong law in list 🤦‍♂️
+7. User sees wrong law in list
 
 ---
 
@@ -227,8 +227,8 @@ When proper solution is implemented:
 ---
 
 **Files Modified (Reverted):**
-- ✅ `CategoriesView.swift` - Removed broken `.onDisappear`
-- ✅ `LawListViewModel.swift` - Removed broken `refreshSingleLaw()`
-- ✅ `VOTE_SYNC_BUG_FIX.md` - Marked as incorrect approach
+- `CategoriesView.swift` - Removed broken `.onDisappear`
+- `LawListViewModel.swift` - Removed broken `refreshSingleLaw()`
+- `VOTE_SYNC_BUG_FIX.md` - Marked as incorrect approach
 
-**Status:** ⚠️ Known issue - requires proper state management solution
+**Status:** Known issue - requires proper state management solution

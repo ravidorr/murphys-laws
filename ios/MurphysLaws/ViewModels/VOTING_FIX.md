@@ -2,15 +2,15 @@
 
 ## Problem
 Clicking on upvote or downvote buttons does nothing:
-- ❌ Button doesn't appear selected
-- ❌ Vote counts don't change
-- ❌ No visible feedback that voting happened
+- Button doesn't appear selected
+- Vote counts don't change
+- No visible feedback that voting happened
 
 ## Root Cause
 
 The voting was actually working in the background (saving to UserDefaults and attempting API sync), but there were **two UI issues**:
 
-### Issue 1: Vote Counts Not Updating ❌
+### Issue 1: Vote Counts Not Updating
 The `updateVoteCounts()` function in `LawDetailViewModel` was returning `nil` and just triggering a background refetch, so the displayed vote counts never changed.
 
 **Old Code:**
@@ -21,14 +21,14 @@ private func updateVoteCounts(law: Law, voteType: VoteType) -> Law? {
     Task {
         await loadLaw()  // Background fetch, doesn't update immediately
     }
-    return nil  // ❌ Doesn't update the UI!
+    return nil  // Doesn't update the UI!
 }
 ```
 
 ### Issue 2: Selection State Not Clear
 The button selection state updates, but without vote counts changing, it wasn't obvious that anything happened.
 
-## Solution: Optimistic Updates ✅
+## Solution: Optimistic Updates
 
 Implemented **optimistic UI updates** - the UI updates immediately, assuming the vote will succeed.
 
@@ -94,60 +94,60 @@ Added comprehensive logging throughout the voting flow:
 
 ### LawDetailViewModel Logs
 ```
-🗳️ Voting Upvote on law 2
-✅ Vote successful! New vote state: Upvote
-📊 Vote counts updated: 50→51 up, 2→2 down
+Voting Upvote on law 2
+Vote successful! New vote state: Upvote
+Vote counts updated: 50→51 up, 2→2 down
 ```
 
 ### VotingService Logs
 ```
-🗳️ VotingService.toggleVote - lawID: 2, requested: Upvote, current: none
-🗳️ Adding new vote: Upvote
-📥 VotingService.vote - lawID: 2, type: Upvote
-💾 Local vote saved
-🌐 Syncing vote with backend...
-✅ Backend sync successful - upvotes: 51, downvotes: 2
-✅ VotingService.toggleVote completed
+VotingService.toggleVote - lawID: 2, requested: Upvote, current: none
+Adding new vote: Upvote
+VotingService.vote - lawID: 2, type: Upvote
+Local vote saved
+Syncing vote with backend...
+Backend sync successful - upvotes: 51, downvotes: 2
+VotingService.toggleVote completed
 ```
 
 ### What to Look For in Console
 
 #### Successful Vote:
 ```
-🗳️ Voting Upvote on law 2
-🗳️ VotingService.toggleVote - lawID: 2, requested: Upvote, current: none
-🗳️ Adding new vote: Upvote
-📥 VotingService.vote - lawID: 2, type: Upvote
-💾 Local vote saved
-🌐 Syncing vote with backend...
-✅ Backend sync successful
-✅ VotingService.toggleVote completed
-✅ Vote successful! New vote state: Upvote
-📊 Vote counts updated: 50→51 up, 2→2 down
+Voting Upvote on law 2
+VotingService.toggleVote - lawID: 2, requested: Upvote, current: none
+Adding new vote: Upvote
+VotingService.vote - lawID: 2, type: Upvote
+Local vote saved
+Syncing vote with backend...
+Backend sync successful
+VotingService.toggleVote completed
+Vote successful! New vote state: Upvote
+Vote counts updated: 50→51 up, 2→2 down
 ```
 
 #### Failed Vote (Network Error):
 ```
-🗳️ Voting Upvote on law 2
-📥 VotingService.vote - lawID: 2, type: Upvote
-💾 Local vote saved
-🌐 Syncing vote with backend...
-❌ Backend sync failed: The Internet connection appears to be offline
-⏪ Vote rolled back
-❌ Error voting: The Internet connection appears to be offline
+Voting Upvote on law 2
+VotingService.vote - lawID: 2, type: Upvote
+Local vote saved
+Syncing vote with backend...
+Backend sync failed: The Internet connection appears to be offline
+Vote rolled back
+Error voting: The Internet connection appears to be offline
 ```
 
 #### Toggling Vote Off:
 ```
-🗳️ Voting Upvote on law 2
-🗳️ VotingService.toggleVote - lawID: 2, requested: Upvote, current: Upvote
-🗳️ Removing vote (clicking same button)
+Voting Upvote on law 2
+VotingService.toggleVote - lawID: 2, requested: Upvote, current: Upvote
+Removing vote (clicking same button)
 🗑️ VotingService.removeVote - lawID: 2
-💾 Local vote removed
-🌐 Syncing vote removal with backend...
-✅ Backend sync successful
-✅ Vote successful! New vote state: none
-📊 Vote counts updated: 51→50 up, 2→2 down
+Local vote removed
+Syncing vote removal with backend...
+Backend sync successful
+Vote successful! New vote state: none
+Vote counts updated: 51→50 up, 2→2 down
 ```
 
 ## Files Modified
@@ -194,8 +194,8 @@ LawDetailViewModel.toggleVote()
 SwiftUI detects @Published var law changed
        ↓
 UI re-renders with:
-  ✅ Button selected state
-  ✅ Updated vote counts
+  Button selected state
+  Updated vote counts
 ```
 
 ### Optimistic Updates Pattern
@@ -237,11 +237,11 @@ UI re-renders with:
 - [ ] Can retry after error
 
 ### Console Logging
-- [ ] See "🗳️ Voting..." when clicking
-- [ ] See "💾 Local vote saved"
-- [ ] See "🌐 Syncing vote with backend..."
-- [ ] See "✅ Backend sync successful" or "❌ Backend sync failed"
-- [ ] See "📊 Vote counts updated: X→Y up, A→B down"
+- [ ] See "Voting..." when clicking
+- [ ] See "Local vote saved"
+- [ ] See "Syncing vote with backend..."
+- [ ] See "Backend sync successful" or "Backend sync failed"
+- [ ] See "Vote counts updated: X→Y up, A→B down"
 
 ### Persistence
 - [ ] Vote on a law
@@ -321,7 +321,7 @@ LawDetailViewModel
 | Time to visual feedback | None | Instant | ∞ |
 | Vote count update delay | Never | 0ms | Perfect |
 | Network calls | Same | Same | No change |
-| User satisfaction | Low | High | 🎉 |
+| User satisfaction | Low | High | |
 
 ## Future Enhancements
 
@@ -340,9 +340,11 @@ generator.impactOccurred()
 
 ### 3. Undo Toast
 Show "Vote added" with undo option:
+<!-- markdownlint-disable search-replace -->
 ```swift
 .toast("Upvoted!", icon: "👍", duration: 2.0)
 ```
+<!-- markdownlint-enable search-replace -->
 
 ### 4. Vote Sync Indicator
 Show subtle indicator when syncing with backend:
@@ -357,16 +359,16 @@ Celebrate milestone votes (100th upvote, etc.)
 
 ## Related Issues Fixed
 
-- ✅ Vote buttons now respond to clicks
-- ✅ Vote counts update in real-time
-- ✅ Button selection state is visible
-- ✅ Switching votes works correctly
-- ✅ Removing votes works correctly
-- ✅ Comprehensive logging for debugging
+- Vote buttons now respond to clicks
+- Vote counts update in real-time
+- Button selection state is visible
+- Switching votes works correctly
+- Removing votes works correctly
+- Comprehensive logging for debugging
 
 ---
 
-**Status**: ✅ All fixes implemented and ready for testing  
+**Status**: All fixes implemented and ready for testing  
 **Date**: 2025-11-08  
 **Modified Files**: 2 (LawDetailViewModel, VotingService)  
 **Impact**: Critical - Fixes core voting functionality

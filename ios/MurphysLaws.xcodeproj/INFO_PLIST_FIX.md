@@ -26,9 +26,9 @@ Info.plist is being processed multiple times, usually because it's incorrectly a
 
 1. Still in **Build Phases**
 2. Check that Info.plist is NOT in:
-   - Copy Bundle Resources ❌
-   - Compile Sources ❌
-   - Any other build phase ❌
+   - Copy Bundle Resources
+   - Compile Sources
+   - Any other build phase
 
 3. Info.plist should ONLY be referenced in:
    - **Build Settings** → Search "Info.plist"
@@ -38,8 +38,8 @@ Info.plist is being processed multiple times, usually because it's incorrectly a
 
 1. In Project Navigator, search for "Info.plist"
 2. You should see:
-   - ✅ `MurphysLaws/Info.plist` (your app's Info.plist)
-   - ❌ No duplicate Info.plist files in the target
+   - `MurphysLaws/Info.plist` (your app's Info.plist)
+   - No duplicate Info.plist files in the target
 
 3. If you see multiple Info.plist files, ensure only ONE is set in Build Settings
 
@@ -71,26 +71,26 @@ xcodebuild clean -project MurphysLaws.xcodeproj -scheme MurphysLaws
 ## Verification
 
 After fixing, you should:
-- ✅ Build succeeds without errors
-- ✅ No duplicate Info.plist warnings
-- ✅ App runs normally
+- Build succeeds without errors
+- No duplicate Info.plist warnings
+- App runs normally
 
 ## Common Mistakes
 
-### ❌ Wrong: Info.plist in Copy Bundle Resources
+### Wrong: Info.plist in Copy Bundle Resources
 ```
 Build Phases
 └── Copy Bundle Resources
-    ├── Info.plist  ❌ REMOVE THIS
-    ├── Config.plist ✅ Keep this
-    └── Assets.xcassets ✅ Keep this
+    ├── Info.plist  REMOVE THIS
+    ├── Config.plist Keep this
+    └── Assets.xcassets Keep this
 ```
 
-### ✅ Correct: Info.plist only in Build Settings
+### Correct: Info.plist only in Build Settings
 ```
 Build Settings
 └── Packaging
-    └── Info.plist File: MurphysLaws/Info.plist ✅
+    └── Info.plist File: MurphysLaws/Info.plist
 ```
 
 ## If Problem Persists
@@ -98,8 +98,8 @@ Build Settings
 ### Check for Config.plist Issues
 Since we just added Config.plist, ensure it's properly configured:
 
-1. **Config.plist should BE in Copy Bundle Resources** ✅
-2. **Config.plist should NOT be in Build Settings Info.plist File** ✅
+1. **Config.plist should BE in Copy Bundle Resources**
+2. **Config.plist should NOT be in Build Settings Info.plist File**
 
 ### Check Target Membership
 1. Select Info.plist in Project Navigator
@@ -124,16 +124,16 @@ xcodebuild clean -project MurphysLaws.xcodeproj
 ## Prevention
 
 To avoid this in the future:
-- ✅ Never manually add Info.plist to Copy Bundle Resources
-- ✅ Let Xcode manage Info.plist through Build Settings
-- ✅ Only .plist files that need runtime access (like Config.plist) go in Copy Bundle Resources
+- Never manually add Info.plist to Copy Bundle Resources
+- Let Xcode manage Info.plist through Build Settings
+- Only .plist files that need runtime access (like Config.plist) go in Copy Bundle Resources
 
 ## Related: Config.plist Setup
 
 Make sure Config.plist IS in Copy Bundle Resources (unlike Info.plist):
 1. Select Config.plist in Navigator
-2. File Inspector → Target Membership → Check your target ✅
-3. Build Phases → Copy Bundle Resources → Config.plist should be listed ✅
+2. File Inspector → Target Membership → Check your target
+3. Build Phases → Copy Bundle Resources → Config.plist should be listed
 
 ## Quick Fix Script
 
@@ -148,17 +148,17 @@ PROJECT="/Users/ravidor/personal-dev/murphys-laws/ios/MurphysLaws.xcodeproj"
 if [ -f "$PROJECT/project.pbxproj" ]; then
     # Check if Info.plist is in Copy Bundle Resources
     if grep -q "Info.plist.*PBXBuildFile" "$PROJECT/project.pbxproj"; then
-        echo "❌ PROBLEM FOUND: Info.plist is in build files"
+        echo "PROBLEM FOUND: Info.plist is in build files"
         echo "   FIX: Remove Info.plist from Copy Bundle Resources in Xcode"
     else
-        echo "✅ Info.plist not in build files (good)"
+        echo "Info.plist not in build files (good)"
     fi
     
     # Check for Info.plist path in build settings
     INFO_COUNT=$(grep -c "INFOPLIST_FILE" "$PROJECT/project.pbxproj")
-    echo "✅ Found $INFO_COUNT Info.plist File references"
+    echo "Found $INFO_COUNT Info.plist File references"
 else
-    echo "❌ Project file not found"
+    echo "Project file not found"
 fi
 ```
 

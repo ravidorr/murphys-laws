@@ -17,7 +17,7 @@ Since your UI tests are already disabled with `XCTSkip`, the fastest solution is
 5. **Click "Close"**
 6. **Build** (⌘B)
 
-✅ **Done!** Your project should now build successfully.
+**Done!** Your project should now build successfully.
 
 ---
 
@@ -28,8 +28,8 @@ Since your UI tests are already disabled with `XCTSkip`, the fastest solution is
 1. **Select `SharedContentLoader.swift`** in Project Navigator
 2. **Open File Inspector** (View → Inspectors → File, or press ⌥⌘1)
 3. In the **Target Membership** section:
-   - ✅ Keep `MurphysLaws` checked
-   - ❌ **Uncheck `MurphysLawsUITests`** if it's checked
+   - Keep `MurphysLaws` checked
+   - **Uncheck `MurphysLawsUITests`** if it's checked
 4. **Repeat for `ContentPage.swift`**
 
 ### Step 2: Remove UIUtilities Framework

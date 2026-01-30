@@ -8,7 +8,7 @@ When clicking on a law in the app, an empty sheet would appear with:
 
 ## Root Causes
 
-### 1. Sheet Presentation Anti-Pattern ❌
+### 1. Sheet Presentation Anti-Pattern
 **Original Code:**
 ```swift
 @State private var showingLawDetail = false
@@ -29,7 +29,7 @@ When clicking on a law in the app, an empty sheet would appear with:
 - `selectedLaw` might be `nil` or cleared
 - Result: Empty sheet content
 
-### 2. View Structure Issue ❌
+### 2. View Structure Issue
 **Original Code in LawDetailView:**
 ```swift
 var body: some View {
@@ -51,12 +51,12 @@ var body: some View {
 - Loading overlay wasn't prominent or visible
 - Empty ScrollView = blank screen
 
-### 3. No Dismiss Button ❌
+### 3. No Dismiss Button
 The sheet had no way to close, trapping users on the blank screen.
 
 ## Solutions Implemented
 
-### Fix 1: Use `.sheet(item:)` Instead ✅
+### Fix 1: Use `.sheet(item:)` Instead
 
 **Updated Code:**
 ```swift
@@ -76,11 +76,11 @@ The sheet had no way to close, trapping users on the blank screen.
 - No race conditions
 
 **Applied to:**
-- ✅ `HomeView.swift`
-- ✅ `BrowseView.swift`  
-- ✅ `CategoriesView.swift`
+- `HomeView.swift`
+- `BrowseView.swift`  
+- `CategoriesView.swift`
 
-### Fix 2: Proper State-Based Rendering ✅
+### Fix 2: Proper State-Based Rendering
 
 **Updated LawDetailView:**
 ```swift
@@ -98,7 +98,7 @@ var body: some View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
         } else if let error = viewModel.error, viewModel.law == nil {
-            // ❌ ERROR STATE
+            // ERROR STATE
             EmptyStateView(
                 title: "Error Loading Law",
                 systemImage: "exclamationmark.triangle",
@@ -106,7 +106,7 @@ var body: some View {
             )
             
         } else if let law = viewModel.law {
-            // ✅ CONTENT STATE
+            // CONTENT STATE
             ScrollView {
                 // ... law content ...
             }
@@ -132,7 +132,7 @@ var body: some View {
 - **Better error handling** - clear error messages
 - **Proper content display** - only when data exists
 
-### Fix 3: Add Dismiss Button ✅
+### Fix 3: Add Dismiss Button
 
 **Added to LawDetailView toolbar:**
 ```swift
@@ -158,20 +158,20 @@ var body: some View {
 - Standard iOS pattern (close button on leading side)
 - Works even if content fails to load
 
-### Fix 4: Debug Logging ✅
+### Fix 4: Debug Logging
 
 **Added comprehensive logging:**
 
 **LawDetailView:**
 ```swift
 .task {
-    print("🔍 LawDetailView task started for lawID: \(lawID)")
-    print("🔍 viewModel.law is nil: \(viewModel.law == nil)")
+    print("LawDetailView task started for lawID: \(lawID)")
+    print("viewModel.law is nil: \(viewModel.law == nil)")
     if viewModel.law == nil {
         await viewModel.loadLaw()
-        print("🔍 After loadLaw - viewModel.law is nil: \(viewModel.law == nil)")
+        print("After loadLaw - viewModel.law is nil: \(viewModel.law == nil)")
         if let error = viewModel.error {
-            print("❌ Error: \(error)")
+            print("Error: \(error)")
         }
     }
 }
@@ -180,23 +180,23 @@ var body: some View {
 **LawDetailViewModel:**
 ```swift
 func loadLaw() async {
-    print("📥 LawDetailViewModel.loadLaw() starting for lawID: \(lawID)")
+    print("LawDetailViewModel.loadLaw() starting for lawID: \(lawID)")
     isLoading = true
     error = nil
 
     do {
-        print("🌐 Fetching law detail from repository...")
+        print("Fetching law detail from repository...")
         law = try await lawRepository.fetchLawDetail(id: lawID)
-        print("✅ Law loaded successfully: \(law?.title ?? law?.text ?? "unknown")")
+        print("Law loaded successfully: \(law?.title ?? law?.text ?? "unknown")")
         currentVote = votingService.getVote(for: lawID)
     } catch {
         self.error = error
-        print("❌ Error loading law detail: \(error)")
-        print("❌ Error localizedDescription: \(error.localizedDescription)")
+        print("Error loading law detail: \(error)")
+        print("Error localizedDescription: \(error.localizedDescription)")
     }
 
     isLoading = false
-    print("📥 LawDetailViewModel.loadLaw() completed. isLoading=\(isLoading), law is nil: \(law == nil), error: \(error?.localizedDescription ?? "none")")
+    print("LawDetailViewModel.loadLaw() completed. isLoading=\(isLoading), law is nil: \(law == nil), error: \(error?.localizedDescription ?? "none")")
 }
 ```
 
@@ -251,7 +251,7 @@ To verify the fixes work:
 
 ## Key Takeaways
 
-### ✅ Do This:
+### Do This:
 ```swift
 // Use .sheet(item:) for item-based presentation
 .sheet(item: $selectedItem) { item in
@@ -259,14 +259,14 @@ To verify the fixes work:
 }
 ```
 
-### ❌ Don't Do This:
+### Don't Do This:
 ```swift
 // Avoid .sheet(isPresented:) with separate state
 @State private var showSheet = false
 @State private var selectedItem: Item?
 
 .sheet(isPresented: $showSheet) {
-    if let item = selectedItem {  // ⚠️ Race condition!
+    if let item = selectedItem {  // Race condition!
         DetailView(item: item)
     }
 }
@@ -348,6 +348,6 @@ Button("Show") {
 
 ---
 
-**Status**: ✅ All fixes implemented and ready for testing
+**Status**: All fixes implemented and ready for testing
 **Date**: 2025-11-08
 **Modified Files**: 5 (LawDetailView, LawDetailViewModel, HomeView, BrowseView, CategoriesView)

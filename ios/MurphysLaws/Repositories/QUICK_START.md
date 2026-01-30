@@ -14,8 +14,8 @@
 ### 2. Test Configuration Loading
 Run your app and check the console for:
 ```
-⚠️ Config.plist not found. Using default values.
-⚠️ Using default API URL
+Config.plist not found. Using default values.
+Using default API URL
 ```
 
 If you see these warnings, Config.plist isn't being loaded properly.
@@ -26,11 +26,11 @@ If you see these warnings, Config.plist isn't being loaded properly.
 ```
 
 Look for the "Configuration Tests" suite. It should show:
-- ✅ API Base URL is loaded
-- ✅ Environment configuration is loaded
-- ✅ API Key handling
-- ✅ Configuration values are accessible
-- ✅ Log level is valid
+- API Base URL is loaded
+- Environment configuration is loaded
+- API Key handling
+- Configuration values are accessible
+- Log level is valid
 
 ### 4. Run Validation Script
 ```bash
@@ -51,7 +51,7 @@ Run your app and verify:
 // Add this temporarily to test
 print("📍 Using API URL: \(Constants.API.baseURL)")
 print("🌍 Environment: \(Constants.Environment.current)")
-print("📊 Log Level: \(Constants.Environment.logLevel)")
+print("Log Level: \(Constants.Environment.logLevel)")
 ```
 
 ### 7. Verify .gitignore
@@ -108,7 +108,7 @@ cat .gitignore | grep Config.plist
 static let baseURL = "https://murphys-laws.com/api/v1"
 
 // print statements everywhere
-print("⚠️ API failed")
+print("API failed")
 ```
 
 ### After:
@@ -126,11 +126,11 @@ logWarning("API failed, falling back to mock data")
 
 Replace your print statements:
 ```swift
-// ❌ Old way
-print("🔍 LawRepository.fetchLawDetail called for ID: \(id)")
-print("⚠️ API failed")
+// Old way
+print("LawRepository.fetchLawDetail called for ID: \(id)")
+print("API failed")
 
-// ✅ New way
+// New way
 logDebug("LawRepository.fetchLawDetail called for ID: \(id)")
 logWarning("API failed, falling back to mock data")
 ```

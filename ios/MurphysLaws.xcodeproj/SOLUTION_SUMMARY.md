@@ -1,8 +1,8 @@
 # UI Tests Linker Errors - COMPLETE SOLUTION
 
-## ✅ I've Created 3 Solutions for You
+## I've Created 3 Solutions for You
 
-### 🚀 **FASTEST (30 seconds)** - Just Disable UI Tests
+### **FASTEST (30 seconds)** - Just Disable UI Tests
 
 Since your UI tests are already skipped, simply disable them:
 
@@ -16,7 +16,7 @@ Since your UI tests are already skipped, simply disable them:
 
 ---
 
-### 🔧 **AUTOMATED (2 minutes)** - Run the Auto-Fix Script
+### **AUTOMATED (2 minutes)** - Run the Auto-Fix Script
 
 I've created a Python script that will automatically fix your project file:
 
@@ -26,10 +26,10 @@ python3 auto_fix_project.py
 ```
 
 This script will:
-- ✅ Backup your project file
-- ✅ Remove `SharedContentLoader.swift` from UI Tests target
-- ✅ Remove `ContentPage.swift` from UI Tests target
-- ✅ Clean derived data
+- Backup your project file
+- Remove `SharedContentLoader.swift` from UI Tests target
+- Remove `ContentPage.swift` from UI Tests target
+- Clean derived data
 
 Then just:
 1. Open Xcode
@@ -49,9 +49,9 @@ Key steps:
 
 ---
 
-## 📝 What I Fixed for You
+## What I Fixed for You
 
-### 1. **Fixed the unused variable warning** ✅
+### 1. **Fixed the unused variable warning**
 
 Updated `NavigationUITests.swift` line 281:
 ```swift
@@ -62,7 +62,7 @@ let lawTextInList = firstLawInList.label
 _ = firstLawInList.label  // Store for potential future use
 ```
 
-### 2. **Created diagnostic scripts** ✅
+### 2. **Created diagnostic scripts**
 
 - `fix_test_targets.sh` - Bash script for cleanup
 - `auto_fix_project.py` - Python script for automatic fix
@@ -70,7 +70,7 @@ _ = firstLawInList.label  // Store for potential future use
 
 ---
 
-## 🎯 Root Cause
+## Root Cause
 
 Your UI Tests target has these files incorrectly added:
 - `SharedContentLoader.swift`
@@ -85,13 +85,13 @@ The linker is trying to compile these files into the UI Tests target, which:
 
 ---
 
-## 🔍 Why This Happened
+## Why This Happened
 
 When files are added to Xcode projects, there's a dialog that asks "Add to targets:". Someone (or Xcode automatically) checked `MurphysLawsUITests` for these files.
 
 This is wrong because:
-- ❌ UI Tests = Black box testing through UI
-- ✅ Unit Tests = White box testing with `@testable import`
+- UI Tests = Black box testing through UI
+- Unit Tests = White box testing with `@testable import`
 
 ---
 
@@ -108,7 +108,7 @@ This is wrong because:
 
 ---
 
-## 🏃 Recommended Next Steps
+## Recommended Next Steps
 
 **Right now:**
 ```bash
@@ -131,7 +131,7 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/MurphysLaws-*
 
 ---
 
-## 🆘 Still Stuck?
+## Still Stuck?
 
 Run this diagnostic:
 ```bash
@@ -161,14 +161,14 @@ Share the output and I can provide more specific help.
 
 ---
 
-## ✅ Success Criteria
+## Success Criteria
 
 After the fix, you should have:
-- ✅ Project builds without errors
-- ✅ No linker errors about undefined symbols
-- ✅ No warnings about UIUtilities
-- ✅ Clean build in < 1 minute
+- Project builds without errors
+- No linker errors about undefined symbols
+- No warnings about UIUtilities
+- Clean build in < 1 minute
 
 ---
 
-**Pick one of the three solutions above and your build errors will be gone! 🎉**
+**Pick one of the three solutions above and your build errors will be gone!**
