@@ -2,6 +2,50 @@
 
 This document outlines additional tasks and potential improvements for the Murphy's Laws project.
 
+## Design Review Findings (Jan 2026)
+
+The following items were identified during comprehensive UX, UI, Accessibility, Microcopy, and SEO skill reviews but not yet implemented.
+
+### UX Improvements
+- [ ] **Move Submit Form to Dedicated Page:** The submit form on the home page creates cognitive overload. Move to dedicated `/submit` route to simplify home page and improve first-time visitor experience.
+- [ ] **Consolidate Browse Page Sidebars:** "Top Voted", "Trending Now", and "Recently Added" sections show similar laws. Consolidate into single "Popular" section or convert to sort options only.
+- [ ] **Add "Back to Top" Button:** Long pages (browse, categories) need a floating "back to top" button for easier navigation.
+- [ ] **Expand Search Field on Desktop:** Currently collapsed behind icon. Consider showing expanded search input on desktop widths for better discoverability.
+- [ ] **Simplify Home Page:** Home page has Law of Day + 2 calculators + submit form. Consider removing calculators from home page (they have dedicated pages) to focus on content discovery.
+- [ ] **Group Categories:** 55 flat categories are hard to scan. Add groupings (e.g., "Technology", "Workplace", "Daily Life") or popularity badges.
+
+### UI Improvements
+- [ ] **Implement 12-Column Grid System:** Current layout lacks consistent grid. Define explicit 12-column grid with 24px gutters for more precise layouts.
+- [ ] **Standardize Section Spacing:** Some areas feel cramped while others have excessive whitespace. Audit and standardize using the new spacing scale.
+
+### Accessibility Improvements
+- [ ] **Investigate Slider Readonly State:** Calculator sliders show as "readonly" in accessibility tree. Verify if this is intentional or needs ARIA fix.
+- [ ] **Rename Footer Navigation:** Footer nav has `aria-label="Utility"` which is vague. Change to "Footer navigation" or "Site links" for clarity.
+- [ ] **Add Skip Links for Calculator Sections:** Long home page could benefit from skip links to jump to specific calculators.
+
+### SEO Improvements
+- [ ] **FAQ Structured Data for Calculators:** Add FAQ schema to Sod's Law and Buttered Toast calculators explaining how they work and what they calculate.
+- [ ] **"What is Murphy's Law?" Section:** Add a dedicated section or expand the home page description to target featured snippet for "What is Murphy's Law?" queries.
+- [ ] **Calculator Meta Descriptions:** Current calculator page meta descriptions could be more compelling with specific value propositions.
+
+### Microcopy Improvements
+- [ ] **Review Error States:** Audit all error messages for consistency and helpfulness. Ensure they follow pattern: What happened + Why + What to do next.
+- [ ] **Empty State Improvements:** Review empty states (no search results, no favorites) for tone and helpfulness.
+- [ ] **Button Label Audit:** Review all button labels for action clarity (e.g., "Submit" vs "Submit Your Law").
+
+### Implemented from Reviews (Jan 2026)
+- [x] **Home Page H1:** Added visible H1 "The Ultimate Murphy's Law Archive" with Murphy's Law definition. Critical for accessibility (WCAG 1.3.1) and SEO.
+- [x] **Law Detail H1:** Changed law title from H3 to H1 for proper heading hierarchy.
+- [x] **Spacing Scale CSS Variables:** Added `--space-1` through `--space-16` based on 4px unit.
+- [x] **Typography Scale CSS Variables:** Added `--text-xs` through `--text-5xl` with line heights and font weights.
+- [x] **Category Card Uniform Heights:** Fixed category cards to 120px height with text truncation.
+- [x] **High-Contrast Mode:** Added `@media (prefers-contrast: more)` styles and `data-contrast="more"` manual toggle for testing. Includes thicker borders, enhanced focus indicators, and underlined links.
+- [x] **Standardized Placeholder Text:** Changed all search placeholders to "Search laws..." for consistency.
+- [x] **Disabled Button Tooltip:** Added tooltip "Complete required fields to submit" on disabled submit button with `pointer-events: auto` fix for hover.
+- [x] **Icon Button Borders in High Contrast:** Added visible borders to vote, favorite, theme toggle, and download buttons in high-contrast mode.
+
+---
+
 ## SEO Recommendations (External / Manual)
 - [ ] **Link Reclamation:** Identify broken links on high-authority sites (e.g., .edu domains) that mention 'Murphy\'s Law' and reach out to suggest our archive as a replacement reference.
 - [ ] **Calculator Outreach:** Pitch the 'Buttered Toast Landing Calculator' to physics and science education blogs as a fun, interactive teaching tool to generate fresh backlinks.

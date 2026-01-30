@@ -62,7 +62,7 @@ export function Favorites({ onNavigate }) {
         <div class="card-body text-center">
           <div class="not-found-search mb-6">
             <form role="search" class="not-found-search-form" id="favorites-search-form" aria-label="Search the archive">
-              <input type="text" id="favorites-search-input" placeholder="Search Murphy's Laws..." class="form-control" aria-label="Search">
+              <input type="text" id="favorites-search-input" placeholder="Search laws..." class="form-control" aria-label="Search">
               <button type="submit" class="btn">
                 <span class="icon" data-icon="search" aria-hidden="true"></span>
                 <span class="btn-text">Search</span>

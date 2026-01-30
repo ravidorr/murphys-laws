@@ -138,6 +138,12 @@ export function SubmitLawSection() {
     const isValid = textValid && termsValid;
     if (submitBtn) {
       submitBtn.disabled = !isValid;
+      // Update tooltip based on button state
+      if (isValid) {
+        submitBtn.removeAttribute('data-tooltip');
+      } else {
+        submitBtn.setAttribute('data-tooltip', 'Complete required fields to submit');
+      }
     }
   }
 

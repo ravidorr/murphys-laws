@@ -1,0 +1,335 @@
+# Changelog
+
+All notable changes to the Murphy's Laws project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.6.0] - 2026-01-30
+
+### Added
+- Spacing scale CSS variables (`--space-1` through `--space-16`)
+- Typography scale CSS variables (`--text-xs` through `--text-5xl`, line heights, font weights)
+- High-contrast mode support (`@media (prefers-contrast: more)` and `data-contrast="more"`)
+- Tooltip on disabled submit button with accessibility fix for hover on disabled elements
+- Icon button borders in high-contrast mode (vote, favorite, theme, download buttons)
+- Design System documentation in web README
+- CHANGELOG.md following Keep a Changelog format
+- Pre-commit reminder for changelog updates
+
+### Changed
+- Category cards now have uniform 120px height with text truncation
+- Standardized placeholder text across all search inputs to "Search laws..."
+
+### Fixed
+- Tooltips now work on disabled buttons (added `pointer-events: auto`)
+- Disabled button styling uses color instead of opacity to preserve tooltip visibility
+
+## [1.0.7] - 2026-01-30
+
+### Added
+- Inline share buttons for calculator pages (replacing dropdown)
+- Markdown linter with emoji and em-dash rules
+
+### Fixed
+- iOS CI updated to use iPhone 16 simulator for Xcode 16.4
+
+## [1.0.6] - 2026-01-30
+
+### Changed
+- Markdown linter now enforces no-emoji and no-em-dash rules
+
+## [1.0.5] - 2026-01-30
+
+### Added
+- Markdown linter with auto-fix support for documentation consistency
+
+## [2.5.8] - 2026-01-29
+
+### Added
+- Favorite button on Law of the Day widget
+- Advanced Search and sort controls on category pages
+- Examples link in footer navigation
+- Voice search support and comprehensive SEO improvements
+- FAQ structured data on calculator pages
+
+### Changed
+- Calculator share buttons redesigned to match law share popover style
+- Card structure standardized with header/body/footer pattern
+- Form control heights standardized to match buttons (44px)
+- Origin Story and Examples links moved to header dropdown menu
+
+### Fixed
+- Filled heart icon now shows on page load for favorited laws
+- SVG click handling on favorites page
+- Empty state shows after unfavoriting last law
+- Slider value contrast in dark mode for WCAG AA compliance
+- Sticky header positioning
+- PWA install prompt dark mode and hover contrast
+
+## [2.4.1] - 2026-01-29
+
+### Added
+- PWA support with offline caching, install prompt, and auto-updates
+- Structured data fixes and FAQ schema for SEO
+
+### Fixed
+- Structured data URLs aligned with sitemap for SEO consistency
+
+## [2.4.0] - 2026-01-27
+
+### Added
+- Progressive Web App (PWA) with offline support
+- Custom install prompt with engagement-based triggers
+- Service worker with smart caching strategies
+- iOS Safari "Add to Home Screen" instructions
+
+## [2.3.0] - 2026-01-26
+
+### Added
+- Universal page export (PDF, CSV, Markdown, Plain Text)
+- Sentry error tracking integration
+- Dynamic Open Graph images for per-law social sharing
+- Schema versioning for localStorage cache
+
+### Changed
+- Export menu renamed to "Download" for clarity
+
+### Fixed
+- Navigation prevented when clicking buttons inside law cards
+- SSG pagination now fetches all laws from API
+- Law URLs have trailing slash to prevent circular redirects
+
+## [2.2.0] - 2026-01-25
+
+### Added
+- User Favorites/Bookmarks with localStorage persistence
+- Unified tooltip system across components
+- Card-based layout for favorites page
+
+### Fixed
+- Horizontal scroll from tooltips prevented
+
+## [2.1.0] - 2026-01-24
+
+### Added
+- Browse Laws by Category page with responsive grid
+- Reusable button component with consistent icon placement
+- Descriptions for all 55 categories
+- Related laws API endpoint
+- Unified loading states component
+
+### Changed
+- SubmitLawSection improved accessibility with required indicators
+
+### Fixed
+- Category descriptions for 9 categories with production slug mismatches
+- Law Not Found page redesigned
+
+## [2.0.0] - 2026-01-23
+
+### Added
+- Search autocomplete with debounced suggestions
+- RSS and Atom feed support (`/api/v1/feed.rss`, `/api/v1/feed.atom`)
+- Print-optimized CSS for law pages
+- Keyboard shortcuts with help modal (press `?`)
+- Manual dark mode toggle (auto/light/dark)
+- WhatsApp share button
+
+### Changed
+- Share buttons unified with popover menu design
+
+### Fixed
+- Share dropdown clipping by section-card overflow
+- Keyboard help modal reopening behavior
+
+## [1.5.0] - 2026-01-21
+
+### Added
+- Tooltip on theme toggle button
+
+### Fixed
+- Keyboard modal and theme tooltip interactions
+
+## [1.4.0] - 2025-12-15
+
+### Added
+- Android app with Kotlin and Jetpack Compose
+- Material 3 UI matching web design
+- Sod's Law Calculator in Android app
+- More screen with markdown content support
+- Pagination support in Android app
+
+### Changed
+- Android UI redesigned to match iOS and web
+- Vote functionality with full test coverage
+- Search functionality with icon-based results
+
+## [1.3.0] - 2025-11-15
+
+### Added
+- iOS app with SwiftUI
+- Skeleton loading views
+- Enhanced launch screen
+- Comprehensive iOS UI tests
+
+### Changed
+- iOS app loads content from shared markdown files
+- Configuration management system added
+
+### Fixed
+- Various iOS compilation and compatibility issues
+- Voting synchronization and UI updates
+
+## [1.2.0] - 2025-11-07
+
+### Added
+- Monorepo structure for iOS and Android apps
+- Shared legal content in markdown files
+- Automated monorepo migration script
+
+### Changed
+- Project restructured as npm workspace
+- Deployment configuration updated for monorepo
+
+## [1.1.0] - 2025-11-01
+
+### Added
+- API versioning (`/api/v1/`)
+- Comprehensive mobile app documentation
+- Branch coverage tests achieving >95%
+
+### Changed
+- Enhanced markdown content handling
+
+## [1.0.0] - 2025-10-20
+
+### Added
+- Law of the Day feature with daily rotation
+- Social sharing functionality (X, Facebook, LinkedIn, Reddit, Email)
+- Open Graph tags for social sharing
+- Daily status report emails
+- Breadcrumb navigation on detail pages
+- Template system for content pages
+- Buttered Toast Calculator with test coverage
+- Advanced search component for filtering laws
+- Category selection in law submission
+
+### Changed
+- Calculator styles consolidated
+- Voting architecture refactored
+- Law list widgets improved
+- Sod's Law email template centralized
+
+### Fixed
+- Daily report formatting and accuracy
+- Law text quote handling in database
+
+## [0.9.0] - 2025-10-10
+
+### Added
+- Health check script for monitoring
+- Google Analytics integration
+- Performance optimizations (preconnect, deferred CSS)
+- Local SVG icons (replaced Font Awesome)
+- Daily rotating Law of the Day
+
+### Changed
+- Accessibility improvements for 100/100 score
+- Dark mode contrast fixes
+
+### Fixed
+- Layout shifts (CLS) improvements
+- Footer layout shift fix
+
+## [0.8.0] - 2025-10-01
+
+### Added
+- Stitch-style Law of the Day widget
+- Material Symbols for voting buttons
+- Pagination with First/Prev/Next/Last and ellipses
+- Enhanced browsing with search functionality
+- Voting functionality for laws
+- Law submission endpoint
+
+### Changed
+- Header branding to "Murphy's Law of the Day"
+- Hero section moved to main layout
+
+## [0.7.0] - 2025-09-30
+
+### Added
+- Warp terminal session documentation
+- E2E tests with Playwright
+- API server in Playwright webServer
+
+## [0.6.0] - 2025-09-08
+
+### Added
+- Enhanced navigation in tests and UI
+- Build before preview script
+
+## [0.5.0] - 2025-08-10
+
+### Added
+- Favicons and site manifest
+- Dark mode styles
+- MathJax integration for formulas
+
+### Changed
+- SQL schema updated (removed language parameter)
+- Blockquote formatting improved
+
+## [0.4.0] - 2025-08-08
+
+### Added
+- API integration for Home and LawDetail views
+- Vitest setup with jsdom and coverage
+- Playwright E2E tests
+- Husky pre-commit hooks
+- ESLint and Stylelint configuration
+
+### Changed
+- Migrated from React/TSX to vanilla JavaScript
+- CSS refactored to utility classes
+- Folder aliases added (`@folders`)
+
+### Fixed
+- Footer link contrast in dark mode
+
+## [0.3.0] - 2025-08-08
+
+### Added
+- Vite-based Murphy's Laws site
+- Calculator view with MathJax
+- Browse view with pagination
+- Unit tests foundation
+
+### Removed
+- React/TSX components
+- Inline CSS (replaced with utility classes)
+
+## [0.2.0] - 2025-08-07
+
+### Added
+- New Murphy's Laws sections
+- TODO tracking (moved to GitHub Wiki)
+
+### Removed
+- Outdated Murphy's Laws files (moved to backup)
+- .DS_Store files from repository
+
+## [0.1.0] - 2025-07-12
+
+### Added
+- Initial project structure
+- Murphy's Laws content database
+- Basic file organization
+
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v1.1.0...HEAD
+[2.6.0]: https://github.com/ravidorr/murphys-laws/compare/v1.0.7...v1.1.0
+[1.0.7]: https://github.com/ravidorr/murphys-laws/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/ravidorr/murphys-laws/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/ravidorr/murphys-laws/releases/tag/v1.0.5

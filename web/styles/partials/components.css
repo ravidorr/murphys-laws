@@ -139,6 +139,18 @@ a.btn:focus-visible,
   visibility: visible;
 }
 
+/*
+ * Enable tooltips on disabled buttons (browsers block hover on disabled by default)
+ * Override opacity with color-based disabled style so tooltip pseudo-elements remain visible
+ */
+button[data-tooltip]:disabled {
+  pointer-events: auto;
+  cursor: not-allowed;
+  opacity: 1; /* Override default disabled opacity so tooltip is fully visible */
+  background: color-mix(in oklab, var(--btn-primary-bg) 50%, var(--bg) 50%);
+  color: color-mix(in oklab, var(--btn-primary-fg) 70%, var(--bg) 30%);
+}
+
 /* Default position: top */
 [data-tooltip]::after,
 [data-tooltip][data-tooltip-pos="top"]::after {
