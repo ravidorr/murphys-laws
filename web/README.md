@@ -213,6 +213,87 @@ All share options are defined in `SHARE_PLATFORMS` constant in `src/components/s
 - Tablet (<=768px): Buttons grow to fill space (max-width 50% each)
 - Mobile (<=480px): Icon-only 44px square buttons
 
+## Design System
+
+The application uses CSS custom properties (variables) for consistent design tokens.
+
+### Spacing Scale
+
+Based on a 4px base unit. Use these for margins, padding, and gaps:
+
+| Variable | Value | Pixels |
+|----------|-------|--------|
+| `--space-1` | 0.25rem | 4px |
+| `--space-2` | 0.5rem | 8px |
+| `--space-3` | 0.75rem | 12px |
+| `--space-4` | 1rem | 16px |
+| `--space-5` | 1.25rem | 20px |
+| `--space-6` | 1.5rem | 24px |
+| `--space-8` | 2rem | 32px |
+| `--space-10` | 2.5rem | 40px |
+| `--space-12` | 3rem | 48px |
+| `--space-16` | 4rem | 64px |
+
+### Typography Scale
+
+Major Third (1.25) ratio. Use these for font sizes:
+
+| Variable | Value | Pixels |
+|----------|-------|--------|
+| `--text-xs` | 0.75rem | 12px |
+| `--text-sm` | 0.875rem | 14px |
+| `--text-base` | 1rem | 16px |
+| `--text-lg` | 1.125rem | 18px |
+| `--text-xl` | 1.25rem | 20px |
+| `--text-2xl` | 1.5rem | 24px |
+| `--text-3xl` | 1.875rem | 30px |
+| `--text-4xl` | 2.25rem | 36px |
+| `--text-5xl` | 3rem | 48px |
+
+**Line Heights:** `--leading-none` (1), `--leading-tight` (1.25), `--leading-snug` (1.375), `--leading-normal` (1.5), `--leading-relaxed` (1.625)
+
+**Font Weights:** `--font-normal` (400), `--font-medium` (500), `--font-semibold` (600), `--font-bold` (700), `--font-extrabold` (800)
+
+### High-Contrast Mode
+
+The application supports users who prefer increased contrast via `@media (prefers-contrast: more)`.
+
+**Features:**
+- Thicker borders (2px) on cards, buttons, and inputs
+- Stronger border colors
+- Enhanced focus indicators (3px outline)
+- Underlined links (except buttons)
+
+**Testing High-Contrast Mode:**
+
+Since browser DevTools may not support `prefers-contrast` emulation, use the data attribute toggle:
+
+```javascript
+// Enable high-contrast mode
+document.documentElement.setAttribute('data-contrast', 'more')
+
+// Disable high-contrast mode
+document.documentElement.removeAttribute('data-contrast')
+```
+
+### CSS Architecture
+
+```
+styles/
+├── main.css              # Entry point, imports all partials
+└── partials/
+    ├── variables.css     # Design tokens (colors, spacing, typography)
+    ├── reset.css         # CSS reset/normalize
+    ├── base.css          # Base element styles
+    ├── layout.css        # Layout utilities
+    ├── components.css    # Reusable components (buttons, cards, tooltips)
+    ├── sections.css      # Page section styles
+    ├── theme.css         # Dark mode and high-contrast mode
+    ├── utilities.css     # Utility classes
+    ├── calculator.css    # Calculator-specific styles
+    └── print.css         # Print styles
+```
+
 ## Project Structure
 
 ```

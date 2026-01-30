@@ -460,3 +460,220 @@
 :root[data-theme="dark"] mark {
   color: #111827;
 }
+
+/* ==========================
+   High Contrast Mode (WCAG 1.4.11)
+   Enhanced for users who prefer increased contrast
+   Triggers via: @media (prefers-contrast: more) OR [data-contrast="more"] on :root
+   To test manually: document.documentElement.setAttribute('data-contrast', 'more')
+   ========================== */
+
+@media (prefers-contrast: more) {
+  :root {
+    /* Increase border visibility */
+    --border: rgb(0 0 0 / 50%);
+
+    /* Increase shadow visibility */
+    --shadow-light: rgb(0 0 0 / 25%);
+    --shadow-medium: rgb(0 0 0 / 35%);
+  }
+
+  /* Enhanced focus indicators */
+  :focus-visible {
+    outline: 3px solid #000 !important;
+    outline-offset: 3px !important;
+  }
+
+  /* Enhanced button contrast */
+  .btn,
+  button {
+    border-width: 2px;
+  }
+
+  .btn.outline,
+  button.outline {
+    border-color: var(--fg);
+  }
+
+  /* Enhanced card borders and remove subtle background variations */
+  .card,
+  .section-card,
+  .category-card {
+    border-width: 2px;
+    border-color: var(--fg);
+    background: var(--bg);
+  }
+
+  /* Enhanced input borders */
+  input[type='text'],
+  input[type='email'],
+  textarea,
+  select {
+    border-width: 2px;
+    border-color: var(--fg);
+  }
+
+  /* Ensure links are underlined */
+  a:not(.btn, .brand, .category-card) {
+    text-decoration: underline;
+  }
+
+  /* Icon buttons need explicit borders (they have border: none by default) */
+  .vote-btn {
+    border: 2px solid var(--fg);
+  }
+
+  .theme-toggle,
+  .export-toggle {
+    border-width: 2px;
+    border-color: var(--fg);
+  }
+}
+
+/* High contrast in dark mode */
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --border: rgb(255 255 255 / 50%);
+  }
+
+  :root:not([data-theme="light"]) :focus-visible {
+    outline-color: #fff !important;
+  }
+
+  :root:not([data-theme="light"]) .btn.outline,
+  :root:not([data-theme="light"]) button.outline {
+    border-color: var(--fg);
+  }
+
+  :root:not([data-theme="light"]) .card,
+  :root:not([data-theme="light"]) .section-card,
+  :root:not([data-theme="light"]) .category-card {
+    border-color: var(--fg);
+  }
+
+  :root:not([data-theme="light"]) input[type='text'],
+  :root:not([data-theme="light"]) input[type='email'],
+  :root:not([data-theme="light"]) textarea,
+  :root:not([data-theme="light"]) select {
+    border-color: var(--fg);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root[data-theme="dark"] {
+    --border: rgb(255 255 255 / 50%);
+  }
+
+  :root[data-theme="dark"] :focus-visible {
+    outline-color: #fff !important;
+  }
+
+  :root[data-theme="dark"] .btn.outline,
+  :root[data-theme="dark"] button.outline {
+    border-color: var(--fg);
+  }
+
+  :root[data-theme="dark"] .card,
+  :root[data-theme="dark"] .section-card,
+  :root[data-theme="dark"] .category-card {
+    border-color: var(--fg);
+  }
+
+  :root[data-theme="dark"] input[type='text'],
+  :root[data-theme="dark"] input[type='email'],
+  :root[data-theme="dark"] textarea,
+  :root[data-theme="dark"] select {
+    border-color: var(--fg);
+  }
+}
+
+/* Manual high contrast toggle via data attribute (for testing) */
+:root[data-contrast="more"] {
+  --border: rgb(0 0 0 / 50%);
+  --shadow-light: rgb(0 0 0 / 25%);
+  --shadow-medium: rgb(0 0 0 / 35%);
+}
+
+:root[data-contrast="more"] :focus-visible {
+  outline: 3px solid #000 !important;
+  outline-offset: 3px !important;
+}
+
+:root[data-contrast="more"] .btn,
+:root[data-contrast="more"] button {
+  border-width: 2px;
+}
+
+:root[data-contrast="more"] .btn.outline,
+:root[data-contrast="more"] button.outline {
+  border-color: var(--fg);
+}
+
+:root[data-contrast="more"] .card,
+:root[data-contrast="more"] .section-card,
+:root[data-contrast="more"] .category-card {
+  border-width: 2px;
+  border-color: var(--fg);
+  background: var(--bg);
+}
+
+:root[data-contrast="more"] input[type='text'],
+:root[data-contrast="more"] input[type='email'],
+:root[data-contrast="more"] textarea,
+:root[data-contrast="more"] select {
+  border-width: 2px;
+  border-color: var(--fg);
+}
+
+:root[data-contrast="more"] a:not(.btn, .brand, .category-card) {
+  text-decoration: underline;
+}
+
+/* Icon buttons need explicit borders in high contrast (they have border: none by default) */
+:root[data-contrast="more"] .vote-btn {
+  border: 2px solid var(--fg);
+}
+
+:root[data-contrast="more"] .theme-toggle,
+:root[data-contrast="more"] .export-toggle {
+  border-width: 2px;
+  border-color: var(--fg);
+}
+
+/* High contrast + dark mode via data attribute */
+:root[data-contrast="more"][data-theme="dark"],
+:root[data-contrast="more"]:not([data-theme="light"]) {
+  --border: rgb(255 255 255 / 50%);
+}
+
+:root[data-contrast="more"][data-theme="dark"] :focus-visible,
+:root[data-contrast="more"]:not([data-theme="light"]) :focus-visible {
+  outline-color: #fff !important;
+}
+
+:root[data-contrast="more"][data-theme="dark"] .btn.outline,
+:root[data-contrast="more"][data-theme="dark"] button.outline,
+:root[data-contrast="more"]:not([data-theme="light"]) .btn.outline,
+:root[data-contrast="more"]:not([data-theme="light"]) button.outline {
+  border-color: var(--fg);
+}
+
+:root[data-contrast="more"][data-theme="dark"] .card,
+:root[data-contrast="more"][data-theme="dark"] .section-card,
+:root[data-contrast="more"][data-theme="dark"] .category-card,
+:root[data-contrast="more"]:not([data-theme="light"]) .card,
+:root[data-contrast="more"]:not([data-theme="light"]) .section-card,
+:root[data-contrast="more"]:not([data-theme="light"]) .category-card {
+  border-color: var(--fg);
+}
+
+:root[data-contrast="more"][data-theme="dark"] input[type='text'],
+:root[data-contrast="more"][data-theme="dark"] input[type='email'],
+:root[data-contrast="more"][data-theme="dark"] textarea,
+:root[data-contrast="more"][data-theme="dark"] select,
+:root[data-contrast="more"]:not([data-theme="light"]) input[type='text'],
+:root[data-contrast="more"]:not([data-theme="light"]) input[type='email'],
+:root[data-contrast="more"]:not([data-theme="light"]) textarea,
+:root[data-contrast="more"]:not([data-theme="light"]) select {
+  border-color: var(--fg);
+}

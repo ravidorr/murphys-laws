@@ -1,12 +1,15 @@
-# Code review reminder (only in interactive terminals)
+# Reminders (only in interactive terminals)
 if [ -t 0 ]; then
   echo ""
   echo "=========================================="
-  echo "  Have you run a code review?"
-  echo "  In Cursor, say: 'pre-commit review'"
+  echo "  Pre-commit checklist:"
+  echo "  1. Have you run a code review?"
+  echo "     In Cursor, say: 'pre-commit review'"
+  echo "  2. Have you updated CHANGELOG.md?"
+  echo "     Add your changes under [Unreleased]"
   echo "=========================================="
   echo ""
-  echo "Press Enter to continue, or Ctrl+C to cancel and review first."
+  echo "Press Enter to continue, or Ctrl+C to cancel."
   read -r
 fi
 

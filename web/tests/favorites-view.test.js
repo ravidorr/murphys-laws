@@ -107,7 +107,7 @@ describe('Favorites View Component', () => {
 
       expect(searchForm).toBeTruthy();
       expect(searchInput).toBeTruthy();
-      expect(searchInput.getAttribute('placeholder')).toBe("Search Murphy's Laws...");
+      expect(searchInput.getAttribute('placeholder')).toBe("Search laws...");
       expect(searchButton).toBeTruthy();
     });
 

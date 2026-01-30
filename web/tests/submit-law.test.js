@@ -75,6 +75,61 @@ describe('SubmitLawSection component', () => {
     expect(submitBtn.disabled).toBe(true);
   });
 
+  it('submit button has tooltip when disabled', () => {
+    const localThis = {};
+    localThis.el = mountSection();
+    localThis.submitBtn = localThis.el.querySelector('#submit-btn');
+
+    expect(localThis.submitBtn.disabled).toBe(true);
+    expect(localThis.submitBtn.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
+  });
+
+  it('submit button tooltip is removed when enabled', () => {
+    const localThis = {};
+    localThis.el = mountSection({ append: true });
+    localThis.textarea = localThis.el.querySelector('#submit-text');
+    localThis.termsCheckbox = localThis.el.querySelector('#submit-terms');
+    localThis.submitBtn = localThis.el.querySelector('#submit-btn');
+
+    // Initially has tooltip
+    expect(localThis.submitBtn.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
+
+    // Fill requirements
+    localThis.textarea.value = 'This is a valid law text with enough characters';
+    localThis.textarea.dispatchEvent(new Event('input'));
+    localThis.termsCheckbox.checked = true;
+    localThis.termsCheckbox.dispatchEvent(new Event('change'));
+
+    // Tooltip should be removed when enabled
+    expect(localThis.submitBtn.disabled).toBe(false);
+    expect(localThis.submitBtn.hasAttribute('data-tooltip')).toBe(false);
+  });
+
+  it('submit button tooltip returns when disabled again', () => {
+    const localThis = {};
+    localThis.el = mountSection({ append: true });
+    localThis.textarea = localThis.el.querySelector('#submit-text');
+    localThis.termsCheckbox = localThis.el.querySelector('#submit-terms');
+    localThis.submitBtn = localThis.el.querySelector('#submit-btn');
+
+    // Enable the button
+    localThis.textarea.value = 'This is a valid law text with enough characters';
+    localThis.textarea.dispatchEvent(new Event('input'));
+    localThis.termsCheckbox.checked = true;
+    localThis.termsCheckbox.dispatchEvent(new Event('change'));
+
+    expect(localThis.submitBtn.disabled).toBe(false);
+    expect(localThis.submitBtn.hasAttribute('data-tooltip')).toBe(false);
+
+    // Disable by unchecking terms
+    localThis.termsCheckbox.checked = false;
+    localThis.termsCheckbox.dispatchEvent(new Event('change'));
+
+    // Tooltip should return
+    expect(localThis.submitBtn.disabled).toBe(true);
+    expect(localThis.submitBtn.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
+  });
+
   it('renders validation requirements display', () => {
     const el = mountSection();
     

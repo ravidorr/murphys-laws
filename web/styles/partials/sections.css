@@ -28,7 +28,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 80px;
+  height: 120px; /* Fixed height for uniform cards */
+  overflow: hidden;
 }
 
 .category-card:hover {
@@ -44,6 +45,10 @@
   font-weight: 600;
   color: var(--fg);
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Truncate long titles to 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .category-card .category-count {

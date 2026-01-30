@@ -10,11 +10,20 @@ import { renderLoadingHTML } from '../components/loading.js';
 import { triggerAdSense } from '../utils/ads.js';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.js';
 
+// Hero section HTML - single source of truth for home page heading
+const HERO_HTML = `
+  <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">The Ultimate Murphy's Law Archive</h1>
+  <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
+    <strong>Murphy's Law</strong> states: "Anything that can go wrong, will go wrong." 
+    First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.
+  </p>
+`;
+
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
 export function renderHome(el, lawOfTheDay, _categories, onNavigate) {
-  // Clear and progressively render: component first, then other sections
-  el.innerHTML = '';
+  // Clear loading indicator but preserve the hero H1 and description
+  el.innerHTML = HERO_HTML;
 
   if (lawOfTheDay) {
     const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
@@ -40,14 +49,7 @@ export function Home({ onNavigate }) {
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = `
-    <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">The Ultimate Murphy's Law Archive</h1>
-    <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
-      <strong>Murphy's Law</strong> states: "Anything that can go wrong, will go wrong." 
-      First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.
-    </p>
-    ${renderLoadingHTML({ size: 'large' })}
-  `;
+  el.innerHTML = `${HERO_HTML}${renderLoadingHTML({ size: 'large' })}`;
 
   function fetchAndRender() {
     fetchLawOfTheDay()
