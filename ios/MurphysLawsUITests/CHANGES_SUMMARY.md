@@ -5,7 +5,7 @@ This document summarizes all changes, fixes, and improvements made to the Murphy
 
 ---
 
-## 🔧 Bug Fixes
+## Bug Fixes
 
 ### 1. Fixed "Reach out" Link in About Sheet
 **Problem:** The "Reach out" link and other internal navigation links in markdown content were not working.
@@ -26,7 +26,7 @@ This document summarizes all changes, fixes, and improvements made to the Murphy
 
 ---
 
-## 🎨 UI Improvements
+## UI Improvements
 
 ### 2. Removed Category Icons
 **Reason:** Cleaner, more text-focused UI requested by user.
@@ -47,7 +47,7 @@ This document summarizes all changes, fixes, and improvements made to the Murphy
 
 ---
 
-## 🔄 Data Quality
+## Data Quality
 
 ### 3. Added Category Deduplication
 **Problem:** Backend API returns duplicate category titles with different IDs.
@@ -90,7 +90,7 @@ for category in fetchedCategories {
 
 ---
 
-## ⚡ Performance Improvements
+## Performance Improvements
 
 ### 4. Optimized Content Loading
 **Problem:** `SharedContentLoader` always tried `Resources/content/` path first, which doesn't exist, then fell back to `content/` which works. This caused:
@@ -113,7 +113,7 @@ for category in fetchedCategories {
 
 ---
 
-## 🧹 Code Quality
+## Code Quality
 
 ### 5. Removed Debug Logging
 **Reason:** Logging was added for troubleshooting duplicate categories and was no longer needed.
@@ -133,7 +133,7 @@ for category in fetchedCategories {
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### 6. Added Comprehensive Test Coverage
 
@@ -206,7 +206,7 @@ for category in fetchedCategories {
 
 ---
 
-## 📝 Git Commit Message Suggestion
+## Git Commit Message Suggestion
 
 ```
 Fix category duplicates, navigation links, and remove icons
@@ -225,7 +225,7 @@ Tests: CategoryRepositoryTests, MarkdownContentTests, NavigationUITests
 
 ---
 
-## 🔮 Future Considerations
+## Future Considerations
 
 ### Potential Backend Fix:
 The duplicate categories should ideally be fixed in the database/API:
@@ -252,7 +252,7 @@ DELETE FROM categories WHERE id IN (58, 63, 65, 75, 60, 83, 81, 96, 101);
 
 ---
 
-## 👥 Contributors
+## Contributors
 - Fixed by: [Your Name]
 - Tested by: [Tester Name]
 - Reviewed by: [Reviewer Name]

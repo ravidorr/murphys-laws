@@ -1,6 +1,6 @@
 # Vote State Synchronization Issue
 
-## Problem 🐛
+## Problem
 When viewing a category's laws and voting on a law in the detail view, the vote counts in the category list don't update automatically when navigating back.
 
 ## Why This Is Complex

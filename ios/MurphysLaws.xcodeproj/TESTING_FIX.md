@@ -110,7 +110,7 @@ class ConfigurationTests: XCTestCase {
             XCTAssertNotEqual(key, "YOUR_API_KEY_HERE", "API key should be replaced from template")
             print("API Key configured (length: \(key.count))")
         } else {
-            print("ℹ️ No API key configured (optional)")
+            print("No API key configured (optional)")
         }
     }
     
@@ -175,7 +175,7 @@ You can add tests back later when needed.
 
 ---
 
-## 🧪 Understanding the Error
+## Understanding the Error
 
 ### Swift Testing Framework
 - **New** testing framework introduced in Swift 5.9+
@@ -206,7 +206,7 @@ import XCTest  // Works in test targets
 
 ---
 
-## 📋 Quick Checklist
+## Quick Checklist
 
 After applying fix:
 

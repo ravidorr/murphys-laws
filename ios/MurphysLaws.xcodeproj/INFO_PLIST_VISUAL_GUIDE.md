@@ -110,7 +110,7 @@ Build Phases
 
 ---
 
-## 🧪 Verification Steps
+## Verification Steps
 
 ### After Removing Info.plist:
 
@@ -129,7 +129,7 @@ Build Phases
 
 ---
 
-## 🚨 If Problem Persists
+## If Problem Persists
 
 ### Try: Delete Derived Data
 
@@ -169,7 +169,7 @@ For **each target**, verify:
 
 ---
 
-## 📋 Checklist
+## Checklist
 
 - [ ] Info.plist is NOT in Copy Bundle Resources
 - [ ] Config.plist IS in Copy Bundle Resources

@@ -87,7 +87,7 @@ The sheet had no way to close, trapping users on the blank screen.
 var body: some View {
     Group {
         if viewModel.isLoading && viewModel.law == nil {
-            // 🔄 LOADING STATE
+            // LOADING STATE
             VStack(spacing: Constants.UI.spacingM) {
                 ProgressView()
                     .scaleEffect(1.5)
@@ -115,7 +115,7 @@ var body: some View {
             }
             
         } else {
-            // 🤷 FALLBACK STATE
+            // FALLBACK STATE
             EmptyStateView(
                 title: "No Law Found",
                 systemImage: "doc.text.magnifyingglass",

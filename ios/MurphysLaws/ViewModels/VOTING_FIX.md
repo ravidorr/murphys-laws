@@ -142,7 +142,7 @@ Error voting: The Internet connection appears to be offline
 Voting Upvote on law 2
 VotingService.toggleVote - lawID: 2, requested: Upvote, current: Upvote
 Removing vote (clicking same button)
-🗑️ VotingService.removeVote - lawID: 2
+VotingService.removeVote - lawID: 2
 Local vote removed
 Syncing vote removal with backend...
 Backend sync successful

@@ -136,7 +136,7 @@ func fetchLawDetail(id: Int) async throws -> Law {
     print("LawRepository.fetchLawDetail called for ID: \(id)")
 #if DEBUG
     if useMockData {
-        print("🧪 Using mock data mode")
+        print("Using mock data mode")
         if let law = mockLaws.first(where: { $0.id == id }) {
             print("Found mock law with ID \(id): \(law.title ?? law.text)")
             // ...
@@ -301,8 +301,8 @@ List View (has data) → Pass complete data → Detail View (use immediately)
 
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
-| Time to display | ~300ms+ | ~0ms | ⚡ Instant |
-| Network calls | 1 per view | 0 (optional 1) | 📉 50-100% reduction |
+| Time to display | ~300ms+ | ~0ms | Instant |
+| Network calls | 1 per view | 0 (optional 1) | 50-100% reduction |
 | Data consistency | Poor | Excellent | 100% match |
 | User experience | Slow | Instant | Much better |
 
