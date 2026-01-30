@@ -31,7 +31,7 @@ swapon /swapfile
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-2. **Create PM2 ecosystem config** (`ecosystem.config.cjs`):
+1. **Create PM2 ecosystem config** (`ecosystem.config.cjs`):
 ```javascript
 module.exports = {
  apps: [
@@ -48,14 +48,14 @@ module.exports = {
 
 **Note:** Frontend is served directly by Nginx from `/root/murphys-laws/web/dist/`. No Vite preview server or PM2 process is needed for the frontend.
 
-3. **Enable PM2 auto-start**:
+1. **Enable PM2 auto-start**:
 ```bash
 pm2 startup systemd
 # Run the command it outputs
 pm2 save
 ```
 
-4. **Configure Nginx**:
+1. **Configure Nginx**:
 ```bash
 # Copy nginx config from repo
 sudo cp /root/murphys-laws/nginx.conf /etc/nginx/sites-available/murphys-laws

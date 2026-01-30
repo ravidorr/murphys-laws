@@ -388,4 +388,3 @@ Total API endpoints: **12** (all use `/api/v1/...` prefix)
 - Error responses include `error` field in JSON body
 - Health check endpoint (`/api/health`) does not use versioning
 - Facebook data deletion endpoint (`/api/facebook/data-deletion`) does not use versioning
-

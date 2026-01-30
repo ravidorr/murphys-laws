@@ -158,13 +158,13 @@ See [SETUP.md](./SETUP.md#troubleshooting) for detailed troubleshooting.
 - Repository layer with caching
 - ViewModels for all features
 - Complete UI implementation
- - Home with Law of the Day
- - Browse with search and filters
- - Category browsing
- - Law detail with voting
- - Sod's Law Calculator
- - Submit law form
- - Settings and about
+- Home with Law of the Day
+- Browse with search and filters
+- Category browsing
+- Law detail with voting
+- Sod's Law Calculator
+- Submit law form
+- Settings and about
 - Xcode project configuration (project.yml)
 - Setup automation (generate-xcode-project.sh, Makefile)
 - Info.plist and Assets.xcassets

@@ -1240,8 +1240,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 **Implementation:**
 - Generate UUID on first app launch
 - Store securely:
- - iOS: Keychain (encrypted, survives app reinstall)
- - Android: EncryptedSharedPreferences
+- iOS: Keychain (encrypted, survives app reinstall)
+- Android: EncryptedSharedPreferences
 - Never share with third parties
 - Used only for vote deduplication
 

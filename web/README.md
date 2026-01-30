@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173
+Open <http://localhost:5173>
 
 ## Build
 
@@ -79,7 +79,7 @@ npm run lint:css:fix
 
 Set via environment variables:
 - `VITE_API_URL` - Primary API URL (default: empty string for same origin)
-- `VITE_API_FALLBACK_URL` - Fallback API URL (default: http://127.0.0.1:8787)
+- `VITE_API_FALLBACK_URL` - Fallback API URL (default: <http://127.0.0.1:8787>)
 
 **Example `.env`:**
 ```
@@ -98,14 +98,14 @@ For source map uploads during build (better stack traces), also set:
 - `SENTRY_PROJECT` - Sentry project slug
 
 ## AdSense
- 
+
  To prevent "Google-served ads on screens without publisher-content" violations (common in SPAs), AdSense loading is deferred:
- 
- 1.  **Script Removal:** The AdSense script is NOT in `index.html` head.
- 2.  **Deferred Loading:** `src/utils/ads.js` injects the script dynamically.
- 3.  **Initialization:** `main.js` calls `initAdSense()` after the app mounts and content is rendered.
- 4.  **Static Shell:** `index.html` contains a static HTML shell to ensure crawlers never see an empty page.
- 
+
+ 1. **Script Removal:** The AdSense script is NOT in `index.html` head.
+ 2. **Deferred Loading:** `src/utils/ads.js` injects the script dynamically.
+ 3. **Initialization:** `main.js` calls `initAdSense()` after the app mounts and content is rendered.
+ 4. **Static Shell:** `index.html` contains a static HTML shell to ensure crawlers never see an empty page.
+
 ## Features
 
 ### Progressive Web App (PWA)

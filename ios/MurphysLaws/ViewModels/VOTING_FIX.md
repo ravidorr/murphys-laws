@@ -163,7 +163,7 @@ Added comprehensive logging throughout the voting flow:
 
 ### 2. VotingService.swift
 **Changes:**
-- Added logging to `toggleVote()` 
+- Added logging to `toggleVote()`
 - Added logging to `vote()`
 - Added logging to `removeVote()`
 - Log backend responses with vote counts

@@ -8,7 +8,7 @@ Complete guide for backing up and restoring the Murphy's Laws application and in
 2. [Manual Backup Procedures](#manual-backup-procedures)
 3. [Restore Procedures](#restore-procedures)
 4. [Testing Backups](#testing-backups)
-5. [Backup Verification](#backup-verification)
+5. [Backup Verification Checklist](#backup-verification-checklist)
 6. [Off-Site Backup Strategy](#off-site-backup-strategy)
 
 ---

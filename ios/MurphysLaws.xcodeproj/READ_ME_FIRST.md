@@ -28,7 +28,7 @@ If you prefer to fix it manually:
 ### In Xcode:
 
 1. **Click scheme dropdown** (next to Run/Stop buttons)
-2. **Edit Scheme...** 
+2. **Edit Scheme...**
 3. **Click "Test"** in left sidebar
 4. **UNCHECK** `MurphysLawsUITests`
 5. **Close**
@@ -131,7 +131,7 @@ If you're still getting errors:
 
 ## 💡 Why This Happened
 
-When files are added to Xcode, there's a dialog asking "Add to targets:". 
+When files are added to Xcode, there's a dialog asking "Add to targets:".
 
 Someone (or Xcode auto-complete) accidentally checked `MurphysLawsUITests` for these files.
 

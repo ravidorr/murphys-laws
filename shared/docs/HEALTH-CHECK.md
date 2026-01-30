@@ -45,15 +45,15 @@ npm run health-check
 ## Setting Up on n8n.io
 
 1. **Create a Cron Workflow** in n8n
- - Trigger: Cron node (e.g., every 5 minutes: `*/5 * * * *`)
+- Trigger: Cron node (e.g., every 5 minutes: `*/5 * * * *`)
 
-2. **Add Execute Command Node**
- - Command: `cd /path/to/murphys-laws && npm run health-check`
- - Or use the direct script: `node /path/to/murphys-laws/backend/scripts/health-check.mjs`
+1. **Add Execute Command Node**
+- Command: `cd /path/to/murphys-laws && npm run health-check`
+- Or use the direct script: `node /path/to/murphys-laws/backend/scripts/health-check.mjs`
 
-3. **Environment Variables**
- - Make sure your n8n environment has access to the `.env` file
- - Or set environment variables directly in n8n
+1. **Environment Variables**
+- Make sure your n8n environment has access to the `.env` file
+- Or set environment variables directly in n8n
 
 ### Example n8n Workflow
 
@@ -149,4 +149,3 @@ The script has a 10-second timeout per check. If checks consistently timeout:
 - SendGrid: Use API key as password
 - AWS SES: Use SMTP credentials from SES console
 - Mailgun: Use SMTP credentials from Mailgun settings
-

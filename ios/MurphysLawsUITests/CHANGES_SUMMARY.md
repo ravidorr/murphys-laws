@@ -12,7 +12,7 @@ This document summarizes all changes, fixes, and improvements made to the Murphy
 
 **Root Cause:** The regex pattern for extracting `data-nav` attribute values was using `String.range(of:)` which returned the full match, then trying to extract the value with additional string manipulation that wasn't working correctly.
 
-**Solution:** 
+**Solution:**
 - Replaced with `NSRegularExpression` with capture groups
 - Properly extracts just the value from `data-nav="value"`
 - File: `MarkdownContentView.swift` - `FlowTextWithLinks.handleTap()`

@@ -70,7 +70,7 @@ git commit -m "Remove Config.plist from tracking"
 ## Common Issues & Fixes
 
 ### Issue: "Config.plist not found"
-**Fix**: 
+**Fix**:
 1. Ensure Config.plist is in the project root (same directory as other Swift files)
 2. Add it to your target in Xcode
 3. Clean build folder (⌘ + Shift + K) and rebuild

@@ -11,7 +11,7 @@
 2. [Repository Structure Options](#repository-structure-options)
 3. [Recommended Structure: Monorepo](#recommended-structure-monorepo)
 4. [Alternative Structures](#alternative-structures)
-5. [CI/CD Integration](#cicd-integration)
+5. [CI-CD Integration](#ci-cd-integration)
 6. [Version Management](#version-management)
 7. [Migration Plan](#migration-plan)
 
@@ -497,7 +497,7 @@ See [Mobile Architecture](../docs/MOBILE-ARCHITECTURE.md#android-architecture)
 
 ---
 
-## CI/CD Integration
+## CI-CD Integration
 
 ### GitHub Actions Workflow Structure
 

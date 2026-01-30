@@ -82,13 +82,13 @@ MurphysLaws/
 
 1. In Xcode's Project Navigator, select the `MurphysLaws` group
 2. From Finder, drag each directory into Xcode:
- - Drag `App/` folder → creates App group
- - Drag `Models/` folder → creates Models group
- - Continue for all directories
-3. In the import dialog:
- - **Create groups** (not folder references)
- - **Copy items if needed** (unchecked - files already in place)
- - Add to target: MurphysLaws
+- Drag `App/` folder → creates App group
+- Drag `Models/` folder → creates Models group
+- Continue for all directories
+1. In the import dialog:
+- **Create groups** (not folder references)
+- **Copy items if needed** (unchecked - files already in place)
+- Add to target: MurphysLaws
 
 **Option B: Add Files Menu**
 
@@ -162,8 +162,8 @@ Add these keys to `Info.plist` (if not present):
 
 1. Select `AccentColor` in Assets
 2. Set color:
- - Light: System Blue (#007AFF) or custom brand color
- - Dark: Same or adjusted for dark mode
+- Light: System Blue (#007AFF) or custom brand color
+- Dark: Same or adjusted for dark mode
 
 ### 8. Build and Test
 
@@ -201,8 +201,8 @@ enum API {
 }
 ```
 
-3. Ensure backend is running locally
-4. Rebuild and run app
+1. Ensure backend is running locally
+2. Rebuild and run app
 
 ### 10. Device Testing
 
@@ -270,4 +270,4 @@ enum API {
 4. **Run** (⌘R) to test functionality
 5. **Commit** changes to git
 
-Happy coding! 
+Happy coding!
