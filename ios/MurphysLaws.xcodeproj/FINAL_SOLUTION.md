@@ -33,7 +33,7 @@ bash JUST_FIX_IT.sh
 
 ---
 
-## 🎨 METHOD 2: Interactive Menu
+## METHOD 2: Interactive Menu
 
 **Open Terminal and run:**
 
@@ -51,7 +51,7 @@ bash FIX_MENU.sh
 
 ---
 
-## 🔧 METHOD 3: Manual Fix in Xcode
+## METHOD 3: Manual Fix in Xcode
 
 **If you prefer doing it yourself:**
 
@@ -66,7 +66,7 @@ bash FIX_MENU.sh
 
 ---
 
-## 📚 METHOD 4: Read Documentation First
+## METHOD 4: Read Documentation First
 
 **See these files I created:**
 

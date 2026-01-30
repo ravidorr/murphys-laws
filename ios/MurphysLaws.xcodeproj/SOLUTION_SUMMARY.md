@@ -38,7 +38,7 @@ Then just:
 
 ---
 
-### 🛠️ **MANUAL (5 minutes)** - Follow Step-by-Step Instructions
+### **MANUAL (5 minutes)** - Follow Step-by-Step Instructions
 
 See the complete guide in: **`FIX_UI_TESTS_INSTRUCTIONS.md`**
 
@@ -95,7 +95,7 @@ This is wrong because:
 
 ---
 
-## ⚡ Quick Decision Guide
+## Quick Decision Guide
 
 **Choose your path:**
 
@@ -151,7 +151,7 @@ Share the output and I can provide more specific help.
 
 ---
 
-## 📚 Files I Created
+## Files I Created
 
 1. **`auto_fix_project.py`** - Automatically fixes project file
 2. **`fix_test_targets.sh`** - Cleanup script

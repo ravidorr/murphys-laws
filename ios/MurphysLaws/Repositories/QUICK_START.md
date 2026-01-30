@@ -49,8 +49,8 @@ Edit Config.plist and set your actual values:
 Run your app and verify:
 ```swift
 // Add this temporarily to test
-print("📍 Using API URL: \(Constants.API.baseURL)")
-print("🌍 Environment: \(Constants.Environment.current)")
+print("Using API URL: \(Constants.API.baseURL)")
+print("Environment: \(Constants.Environment.current)")
 print("Log Level: \(Constants.Environment.logLevel)")
 ```
 

@@ -14,7 +14,7 @@
 
 **Impact:** Users can now see and remove active filters without opening the sheet
 
-### 2. Vote Icon Consistency Fix 🔧
+### 2. Vote Icon Consistency Fix
 **Files:** `CategoriesView.swift` - `LawRowView`
 
 **Changes:**

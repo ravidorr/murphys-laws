@@ -156,7 +156,7 @@ struct Law {
 
 **Compilation:** All errors fixed  
 **Feature:** Vote sync implemented  
-**Testing:** ⏳ Ready to test manually  
+**Testing:** Ready to test manually  
 
 ---
 

@@ -1,5 +1,13 @@
 import searchReplace from 'markdownlint-rule-search-replace';
 
+// Emoji rule using Unicode properties for comprehensive matching
+// Excludes ⬆ and ⬇ arrows which are used legitimately in tables
+const emojiRule = {
+  name: 'no-emoji',
+  message: 'Do not use emojis in documentation. Remove or replace with text.',
+  searchPattern: '/(?![⬆⬇])\\p{Extended_Pictographic}(?:\\p{Emoji_Modifier}|\\uFE0F|\\u200D\\p{Extended_Pictographic})*/gu',
+};
+
 export default {
   // Custom rules
   customRules: [searchReplace],
@@ -78,56 +86,7 @@ export default {
           search: '—',
           replace: '-',
         },
-        {
-          name: 'no-emoji-checkmark',
-          message: 'Do not use emojis. Replace ✅ with [x] or text.',
-          search: '✅',
-        },
-        {
-          name: 'no-emoji-x',
-          message: 'Do not use emojis. Replace ❌ with [ ] or text.',
-          search: '❌',
-        },
-        {
-          name: 'no-emoji-warning',
-          message: 'Do not use emojis. Replace ⚠️ with WARNING: or **Warning:**',
-          search: '⚠️',
-        },
-        {
-          name: 'no-emoji-star',
-          message: 'Do not use emojis. Replace ⭐ with text.',
-          search: '⭐',
-        },
-        {
-          name: 'no-emoji-rocket',
-          message: 'Do not use emojis. Replace 🚀 with text.',
-          search: '🚀',
-        },
-        {
-          name: 'no-emoji-party',
-          message: 'Do not use emojis. Replace with text.',
-          search: '🎉',
-        },
-        {
-          name: 'no-emoji-target',
-          message: 'Do not use emojis. Replace 🎯 with text.',
-          search: '🎯',
-        },
-        {
-          name: 'no-emoji-bulb',
-          message: 'Do not use emojis. Replace 💡 with NOTE: or **Tip:**',
-          search: '💡',
-        },
-        {
-          name: 'no-emoji-thumbsup',
-          message: 'Do not use emojis. Replace 👍 with text.',
-          search: '👍',
-        },
-        {
-          name: 'no-emoji-sparkles',
-          message: 'Do not use emojis. Replace ✨ with text.',
-          search: '✨',
-        },
+        emojiRule,
       ],
     },
   },

@@ -206,7 +206,7 @@ If tests still fail:
 2. **Verify Scheme**: Make sure test scheme includes UI test targets
 3. **Clean Build Folder**: Cmd + Shift + K, then Cmd + Shift + Option + K
 4. **Reset Simulator**: Reset simulator state between test runs
-5. **Check Console**: Look for "🧪 Running in UI Test mode" message
+5. **Check Console**: Look for "Running in UI Test mode" message
 6. **Individual Tests**: Run one test at a time to isolate issues
 
 ## Debugging Tips

@@ -54,7 +54,7 @@ Undefined symbol: MurphysLaws.ContentPage...
 
 ---
 
-## 📁 Files I Created To Help You
+## Files I Created To Help You
 
 | File | Purpose | Use When |
 |------|---------|----------|
@@ -65,7 +65,7 @@ Undefined symbol: MurphysLaws.ContentPage...
 
 ---
 
-## 🎬 Quick Start
+## Quick Start
 
 **Choose ONE:**
 
@@ -165,7 +165,7 @@ UI Tests trying to link internal Apple frameworks (not allowed).
 
 ---
 
-## 🏁 Bottom Line
+## Bottom Line
 
 **Just run this and you're done:**
 

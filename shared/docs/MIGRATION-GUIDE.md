@@ -193,7 +193,7 @@ Execute the actual migration:
 
 **Output Example:**
 ```
-ℹ Starting monorepo migration...
+Starting monorepo migration...
 
 Current structure:
  src/ → web/src/
@@ -203,23 +203,23 @@ Current structure:
 
 Proceed with migration? [y/N] y
 
-ℹ Creating backup at: .migration-backup-20250106-143022
+Creating backup at: .migration-backup-20250106-143022
  Backed up: src
  Backed up: scripts
 ...
  Backup created successfully
 
-ℹ Creating new directory structure...
+Creating new directory structure...
  Created: backend/
  Created: web/
 ...
 
  Migration complete!
 
-ℹ Backup location: .migration-backup-20250106-143022
-ℹ To rollback: ./scripts/migrate-to-monorepo.sh --rollback .migration-backup-20250106-143022
+Backup location: .migration-backup-20250106-143022
+To rollback: ./scripts/migrate-to-monorepo.sh --rollback .migration-backup-20250106-143022
 
-ℹ Next steps:
+Next steps:
  1. Review changes: git status
  2. Test backend: cd backend && npm run build:db && npm start
  3. Test web: cd web && npm run dev
@@ -315,7 +315,7 @@ The script includes built-in verification:
 ./scripts/migrate-to-monorepo.sh
 # ...migration runs...
 # At the end:
-ℹ Verifying migration...
+Verifying migration...
  Migration verification passed!
 ```
 

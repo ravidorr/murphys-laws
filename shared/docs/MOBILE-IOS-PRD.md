@@ -485,7 +485,7 @@ TabView (Bottom Navigation)
 #### Law Detail Screen
 ```
 ┌─────────────────────────┐
-│ ← Back Share ↗ │
+│ ← Back Share │
 ├─────────────────────────┤
 │ Law Title (if exists) │
 │ │
