@@ -37,7 +37,7 @@ jobs:
           xcodebuild build \
             -project MurphysLaws.xcodeproj \
             -scheme MurphysLaws \
-            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)'
+            -destination 'platform=iOS Simulator,name=iPhone 16'
 
       - name: Test (if project exists)
         if: steps.check_project.outputs.exists == 'true'
@@ -46,7 +46,7 @@ jobs:
           xcodebuild test \
             -project MurphysLaws.xcodeproj \
             -scheme MurphysLaws \
-            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)'
+            -destination 'platform=iOS Simulator,name=iPhone 16'
 
       - name: Skip (project not yet created)
         if: steps.check_project.outputs.exists == 'false'
