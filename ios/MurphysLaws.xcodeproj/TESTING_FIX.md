@@ -12,7 +12,7 @@ import Testing
 
 ---
 
-## 🎯 Solution 1: Move to Test Target (Recommended)
+## Solution 1: Move to Test Target (Recommended)
 
 ### Step 1: Locate the File
 In Xcode Project Navigator:
@@ -52,7 +52,7 @@ MurphysLawsTests/
 
 ---
 
-## 🎯 Solution 2: Use XCTest Instead
+## Solution 2: Use XCTest Instead
 
 If you prefer to keep using the traditional XCTest framework:
 
@@ -80,7 +80,7 @@ class ConfigurationTests: XCTestCase {
         XCTAssertFalse(baseURL.isEmpty, "API base URL should not be empty")
         XCTAssertTrue(baseURL.contains("http"), "API base URL should be a valid URL")
         
-        print("✅ API Base URL: \(baseURL)")
+        print("API Base URL: \(baseURL)")
     }
     
     func testEnvironmentConfigurationLoaded() {
@@ -94,7 +94,7 @@ class ConfigurationTests: XCTestCase {
             "Environment should be a valid value"
         )
         
-        print("✅ Environment: \(environment)")
+        print("Environment: \(environment)")
         print("   - Is Development: \(Constants.Environment.isDevelopment)")
         print("   - Is Production: \(Constants.Environment.isProduction)")
         print("   - Analytics Enabled: \(Constants.Environment.enableAnalytics)")
@@ -108,7 +108,7 @@ class ConfigurationTests: XCTestCase {
         if let key = apiKey {
             XCTAssertFalse(key.isEmpty, "API key should not be empty if present")
             XCTAssertNotEqual(key, "YOUR_API_KEY_HERE", "API key should be replaced from template")
-            print("✅ API Key configured (length: \(key.count))")
+            print("API Key configured (length: \(key.count))")
         } else {
             print("ℹ️ No API key configured (optional)")
         }
@@ -125,7 +125,7 @@ class ConfigurationTests: XCTestCase {
         _ = Constants.Environment.enableCrashReporting
         _ = Constants.Environment.logLevel
         
-        print("✅ All configuration values are accessible")
+        print("All configuration values are accessible")
     }
     
     func testLogLevelIsValid() {
@@ -137,7 +137,7 @@ class ConfigurationTests: XCTestCase {
             "Log level should be one of: debug, info, warning, error"
         )
         
-        print("✅ Log Level: \(logLevel)")
+        print("Log Level: \(logLevel)")
     }
     
     func testAPIEndpointsConfigured() {
@@ -147,7 +147,7 @@ class ConfigurationTests: XCTestCase {
         XCTAssertEqual(Constants.API.categories, "/categories")
         XCTAssertEqual(Constants.API.attributions, "/attributions")
         
-        print("✅ All API endpoints configured correctly")
+        print("All API endpoints configured correctly")
     }
 }
 ```
@@ -163,7 +163,7 @@ Still need to move it to test target (see Solution 1, Step 2)
 
 ---
 
-## 🎯 Solution 3: Delete the Test File (Quick Fix)
+## Solution 3: Delete the Test File (Quick Fix)
 
 If you don't need the tests right now:
 
@@ -191,13 +191,13 @@ You can add tests back later when needed.
 
 ### The Problem
 ```swift
-// This file was created in: MurphysLaws (main app) ❌
+// This file was created in: MurphysLaws (main app)
 import Testing  // Only works in test targets!
 ```
 
 ### The Fix
 ```swift
-// Move to: MurphysLawsTests (test target) ✅
+// Move to: MurphysLawsTests (test target)
 import Testing  // Now works!
 
 // OR use XCTest instead:
@@ -218,7 +218,7 @@ After applying fix:
 
 ---
 
-## 🚀 Recommended Approach
+## Recommended Approach
 
 **Best practice:**
 
@@ -233,7 +233,7 @@ After applying fix:
 
 ---
 
-## 🔍 Verify Your Test Target
+## Verify Your Test Target
 
 Make sure you have a test target:
 
@@ -253,7 +253,7 @@ Make sure you have a test target:
 
 ---
 
-## 💡 After Fixing
+## After Fixing
 
 Once tests are in the right place:
 
@@ -270,12 +270,12 @@ Or in Xcode:
 
 Expected output:
 ```
-✅ testAPIBaseURLLoaded passed
-✅ testEnvironmentConfigurationLoaded passed
-✅ testAPIKeyHandling passed
-✅ testConfigurationValuesAccessible passed
-✅ testLogLevelIsValid passed
-✅ testAPIEndpointsConfigured passed
+testAPIBaseURLLoaded passed
+testEnvironmentConfigurationLoaded passed
+testAPIKeyHandling passed
+testConfigurationValuesAccessible passed
+testLogLevelIsValid passed
+testAPIEndpointsConfigured passed
 ```
 
 ---
@@ -286,4 +286,4 @@ Expected output:
 
 **How:** File Inspector → Target Membership → Uncheck app, Check test target.
 
-**Result:** Tests work correctly! ✅
+**Result:** Tests work correctly!

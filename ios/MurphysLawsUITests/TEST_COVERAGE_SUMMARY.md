@@ -33,15 +33,15 @@ This document summarizes the test coverage for changes made to the Murphy's Laws
 - `Category Deduplication Logic Tests` - Comprehensive deduplication testing
 
 **Coverage:**
-- ✅ Category equality based on ID
-- ✅ Category hashability for Set operations
-- ✅ Icon name mapping for different slugs
-- ✅ Color consistency based on slug
-- ✅ Deduplication with empty arrays
-- ✅ Deduplication with single category
-- ✅ Keeping lower ID when titles match
-- ✅ Preserving all unique titles
-- ✅ Handling multiple duplicates correctly
+- Category equality based on ID
+- Category hashability for Set operations
+- Icon name mapping for different slugs
+- Color consistency based on slug
+- Deduplication with empty arrays
+- Deduplication with single category
+- Keeping lower ID when titles match
+- Preserving all unique titles
+- Handling multiple duplicates correctly
 
 **Key Tests:**
 ```swift
@@ -60,16 +60,16 @@ func testMultipleDuplicates()
 - `Content Page Integration Tests` - Actual markdown file tests
 
 **Coverage:**
-- ✅ ContentPage enum values and titles
-- ✅ SharedContentLoader singleton access
-- ✅ Regex pattern for `data-nav` attribute extraction
-- ✅ Regex pattern for href and link text extraction
-- ✅ Multiple `data-nav` links in same content
-- ✅ External links without `data-nav`
-- ✅ Navigation target normalization
-- ✅ All markdown files exist and load
-- ✅ About page contains expected links
-- ✅ Privacy, Terms, and Contact pages have correct links
+- ContentPage enum values and titles
+- SharedContentLoader singleton access
+- Regex pattern for `data-nav` attribute extraction
+- Regex pattern for href and link text extraction
+- Multiple `data-nav` links in same content
+- External links without `data-nav`
+- Navigation target normalization
+- All markdown files exist and load
+- About page contains expected links
+- Privacy, Terms, and Contact pages have correct links
 
 **Key Tests:**
 ```swift
@@ -117,19 +117,19 @@ Currently disabled but ready to enable:
 ## Coverage Metrics
 
 ### Category Deduplication
-- **Unit Tests:** ✅ Full coverage
-- **Integration:** ✅ Tested with real data structure
-- **UI Tests:** ⚠️ Partial (requires visual verification)
+- **Unit Tests:** Full coverage
+- **Integration:** Tested with real data structure
+- **UI Tests:** Partial (requires visual verification)
 
 ### Markdown Navigation
-- **Unit Tests:** ✅ Full coverage (regex patterns, parsing)
-- **Integration:** ✅ File existence and content checks
-- **UI Tests:** ⚠️ Limited (SwiftUI Text link interaction is difficult to test)
+- **Unit Tests:** Full coverage (regex patterns, parsing)
+- **Integration:** File existence and content checks
+- **UI Tests:** Limited (SwiftUI Text link interaction is difficult to test)
 
 ### Category Icon Removal
 - **Unit Tests:** N/A (UI-only change)
 - **Integration:** N/A
-- **UI Tests:** ⚠️ Ready but disabled
+- **UI Tests:** Ready but disabled
 
 ## Known Limitations
 

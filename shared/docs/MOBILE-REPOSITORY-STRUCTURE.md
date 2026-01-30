@@ -41,7 +41,7 @@ Add native iOS and Android apps that share the same backend API and database.
 
 ## Repository Structure Options
 
-### Option 1: Monorepo (Recommended) ⭐
+### Option 1: Monorepo (Recommended)
 
 **Single repository containing web, iOS, Android, and backend**
 

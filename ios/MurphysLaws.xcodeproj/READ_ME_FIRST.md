@@ -1,10 +1,10 @@
-# 🚨 FIX YOUR BUILD ERRORS NOW
+# FIX YOUR BUILD ERRORS NOW
 
 ## Your build is failing with linker errors. Here's how to fix it:
 
 ---
 
-## 🚀 FASTEST FIX (Copy & Paste This)
+## FASTEST FIX (Copy & Paste This)
 
 Open **Terminal** and run:
 
@@ -14,14 +14,14 @@ bash JUST_FIX_IT.sh
 ```
 
 **That's it!** The script will:
-1. ✅ Automatically fix your project file (if Ruby is available)
-2. ✅ Clean build artifacts
-3. ✅ Open Xcode
-4. ✅ Give you simple instructions if auto-fix isn't possible
+1. Automatically fix your project file (if Ruby is available)
+2. Clean build artifacts
+3. Open Xcode
+4. Give you simple instructions if auto-fix isn't possible
 
 ---
 
-## 🎯 Alternative: Manual Fix (30 seconds)
+## Alternative: Manual Fix (30 seconds)
 
 If you prefer to fix it manually:
 
@@ -34,11 +34,11 @@ If you prefer to fix it manually:
 5. **Close**
 6. **Build** (⌘B)
 
-**Done!** ✅
+**Done!**
 
 ---
 
-## 🔧 What's Wrong?
+## What's Wrong?
 
 The error messages show:
 ```
@@ -91,17 +91,17 @@ bash FIX_NOW.sh
 
 ---
 
-## ✅ Success Checklist
+## Success Checklist
 
 After running a fix, you should see:
-- ✅ No linker errors about `SharedContentLoader` or `ContentPage`
-- ✅ No errors about `UIUtilities` framework
-- ✅ No errors about `SwiftUICore`
-- ✅ App builds successfully in < 1 minute
+- No linker errors about `SharedContentLoader` or `ContentPage`
+- No errors about `UIUtilities` framework
+- No errors about `SwiftUICore`
+- App builds successfully in < 1 minute
 
 ---
 
-## 🆘 Still Not Working?
+## Still Not Working?
 
 If you're still getting errors:
 
@@ -116,8 +116,8 @@ If you're still getting errors:
    - In Xcode, select `SharedContentLoader.swift`
    - Open File Inspector (⌥⌘1)
    - Under "Target Membership":
-     - ✅ `MurphysLaws` should be checked
-     - ❌ `MurphysLawsUITests` should be UNCHECKED
+     - `MurphysLaws` should be checked
+     - `MurphysLawsUITests` should be UNCHECKED
    - Repeat for `ContentPage.swift`
 
 3. **Nuclear option - Delete UI Tests:**
@@ -129,19 +129,19 @@ If you're still getting errors:
 
 ---
 
-## 💡 Why This Happened
+## Why This Happened
 
 When files are added to Xcode, there's a dialog asking "Add to targets:".
 
 Someone (or Xcode auto-complete) accidentally checked `MurphysLawsUITests` for these files.
 
 **UI Tests vs Unit Tests:**
-- ❌ **UI Tests**: Black-box testing, NO app code import
-- ✅ **Unit Tests**: White-box testing, CAN use `@testable import`
+- **UI Tests**: Black-box testing, NO app code import
+- **Unit Tests**: White-box testing, CAN use `@testable import`
 
 ---
 
-## 🎓 Understanding the Errors
+## Understanding the Errors
 
 ```
 Undefined symbol: MurphysLaws.SharedContentLoader.shared...
@@ -173,7 +173,7 @@ UI Tests trying to link internal Apple frameworks (not allowed).
 cd /Users/ravidor/personal-dev/murphys-laws/ios && bash JUST_FIX_IT.sh
 ```
 
-Your app will build. Promise. 🎉
+Your app will build. Promise.
 
 ---
 

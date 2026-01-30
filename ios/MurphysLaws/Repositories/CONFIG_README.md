@@ -38,7 +38,7 @@ Edit `Config.plist` with your specific settings:
 
 ### 4. Security Notes
 
-⚠️ **IMPORTANT**: `Config.plist` is in `.gitignore` and should **NEVER** be committed to version control.
+**IMPORTANT**: `Config.plist` is in `.gitignore` and should **NEVER** be committed to version control.
 
 - Keep your API keys secure
 - Don't share your `Config.plist` file

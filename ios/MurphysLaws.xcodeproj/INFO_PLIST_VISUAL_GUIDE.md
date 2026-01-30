@@ -3,8 +3,8 @@
 ## The Error You're Seeing
 
 ```
-❌ Multiple commands produce '.../MurphysLaws.app/Info.plist'
-❌ duplicate output file '.../Info.plist' on task: ProcessInfoPlistFile
+Multiple commands produce '.../MurphysLaws.app/Info.plist'
+duplicate output file '.../Info.plist' on task: ProcessInfoPlistFile
 ```
 
 ## What This Means
@@ -17,7 +17,7 @@ Xcode is trying to process `Info.plist` **twice** during the build, creating a c
 
 ---
 
-## 🎯 Quick Fix (2 minutes)
+## Quick Fix (2 minutes)
 
 ### Step 1: Open Build Phases
 
@@ -44,11 +44,11 @@ Inside "Copy Bundle Resources", you'll see a list like:
 
 ```
 Copy Bundle Resources (8 items)
-    ├── Assets.xcassets              ✅ Keep
-    ├── Config.plist                 ✅ Keep (we just added this!)
-    ├── Info.plist                   ❌ REMOVE THIS!!!
-    ├── LaunchScreen.storyboard      ✅ Keep
-    └── ...other files               ✅ Keep
+    ├── Assets.xcassets              Keep
+    ├── Config.plist                 Keep (we just added this!)
+    ├── Info.plist                   REMOVE THIS!!!
+    ├── LaunchScreen.storyboard      Keep
+    └── ...other files               Keep
 ```
 
 ### Step 4: Remove Info.plist
@@ -63,9 +63,9 @@ Make sure `Config.plist` **IS** in "Copy Bundle Resources" (we just added it):
 
 ```
 Copy Bundle Resources
-    ├── Config.plist ✅ Should be here
-    ├── Assets.xcassets ✅
-    └── Other files... ✅
+    ├── Config.plist Should be here
+    ├── Assets.xcassets
+    └── Other files...
 ```
 
 ### Step 6: Clean and Build
@@ -77,7 +77,7 @@ Copy Bundle Resources
 
 ---
 
-## 🔍 Why This Happens
+## Why This Happens
 
 ### Info.plist vs Config.plist
 
@@ -103,9 +103,9 @@ Build Settings
 
 Build Phases
     └── Copy Bundle Resources
-        ├── Config.plist ✅
-        ├── Assets ✅
-        └── NOT Info.plist ❌
+        ├── Config.plist
+        ├── Assets
+        └── NOT Info.plist
 ```
 
 ---
@@ -121,7 +121,7 @@ Build Phases
 
 2. **Check Config.plist**
    - Select `Config.plist` in Project Navigator
-   - File Inspector → Target Membership: Should be **checked** ✅
+   - File Inspector → Target Membership: Should be **checked**
 
 3. **Build Should Succeed**
    - ⌘ + B
@@ -180,7 +180,7 @@ For **each target**, verify:
 
 ---
 
-## 🎓 Understanding the Error
+## Understanding the Error
 
 ### What Xcode Does with Info.plist:
 
@@ -195,13 +195,13 @@ Build Settings says: "Process Info.plist"
                      ↓
             ProcessInfoPlistFile runs
                      ↓
-            Output: MurphysLaws.app/Info.plist ✅
+            Output: MurphysLaws.app/Info.plist
 
 Copy Bundle Resources says: "Copy Info.plist"
                      ↓
             Copy command runs
                      ↓
-            Output: MurphysLaws.app/Info.plist ❌
+            Output: MurphysLaws.app/Info.plist
 
 CONFLICT! Two commands trying to create same file!
 ```
@@ -209,22 +209,22 @@ CONFLICT! Two commands trying to create same file!
 ### The Fix:
 
 ```
-Build Settings: Process Info.plist ✅
-Copy Bundle Resources: NO Info.plist ✅
+Build Settings: Process Info.plist
+Copy Bundle Resources: NO Info.plist
 
-Result: Only ONE Info.plist in app bundle ✅
+Result: Only ONE Info.plist in app bundle
 ```
 
 ---
 
-## 🎯 TL;DR (Too Long; Didn't Read)
+## TL;DR (Too Long; Didn't Read)
 
 1. **Open Xcode**
 2. **Target → Build Phases → Copy Bundle Resources**
 3. **Remove Info.plist** (press minus button)
 4. **Keep Config.plist** in that list
 5. **Clean + Build** (⌘ + Shift + K, then ⌘ + B)
-6. **Done!** ✅
+6. **Done!**
 
 ---
 
@@ -240,10 +240,10 @@ Result: Only ONE Info.plist in app bundle ✅
 
 Your build should show:
 ```
-✅ Build Succeeded
-✅ No duplicate Info.plist errors  
-✅ App runs normally
-✅ Config.plist loads correctly
+Build Succeeded
+No duplicate Info.plist errors  
+App runs normally
+Config.plist loads correctly
 ```
 
 You can verify Config.plist works by running the configuration tests:
@@ -251,4 +251,4 @@ You can verify Config.plist works by running the configuration tests:
 ⌘ + U (Run Tests)
 ```
 
-Look for "Configuration Tests" suite - all tests should pass! ✅
+Look for "Configuration Tests" suite - all tests should pass!

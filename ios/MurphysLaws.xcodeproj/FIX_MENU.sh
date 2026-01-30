@@ -143,7 +143,7 @@ esac
 
 echo ""
 echo "════════════════════════════════════════════════════════════"
-echo "                         ALL DONE! 🎉                        "
+echo "                         ALL DONE!                        "
 echo "════════════════════════════════════════════════════════════"
 echo ""
 echo "Your build should now work!"

@@ -28,7 +28,7 @@ if [ -f "$WORKING_BACKUP" ]; then
     echo "2. Clean Build Folder (Shift + Cmd + K)"
     echo "3. Build (Cmd + B)"
     echo ""
-    echo "🎉 ContentPage should now be visible!"
+    echo "ContentPage should now be visible!"
 else
     echo "❌ Working backup not found at: $WORKING_BACKUP"
     echo "Cannot restore. Please check the backup file location."

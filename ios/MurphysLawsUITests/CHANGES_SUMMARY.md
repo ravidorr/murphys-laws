@@ -165,7 +165,7 @@ for category in fetchedCategories {
 
 ---
 
-## 📊 Metrics
+## Metrics
 
 ### Code Changes:
 - **Files Modified:** 10
@@ -183,7 +183,7 @@ for category in fetchedCategories {
 
 ---
 
-## 🚀 Before Committing
+## Before Committing
 
 ### Verification Checklist:
 - [x] Code compiles without warnings
@@ -259,4 +259,4 @@ DELETE FROM categories WHERE id IN (58, 63, 65, 75, 60, 83, 81, 96, 101);
 
 ---
 
-**Status:** ✅ Ready for commit (pending manual UI verification)
+**Status:** Ready for commit (pending manual UI verification)

@@ -189,7 +189,7 @@ The fix is simple: Either remove files from wrong target, or disable UI Tests.
 Both solutions work. Your build will succeed.
 
 ===============================================================================
-                           🎉 YOU'RE ALL SET! 🎉
+                           YOU'RE ALL SET! 🎉
 ===============================================================================
 
 Run:  cd /Users/ravidor/personal-dev/murphys-laws/ios && bash JUST_FIX_IT.sh
