@@ -183,6 +183,36 @@ The application includes a universal export feature accessible from the header (
 **Usage:**
 Pages register their exportable content using `setExportContent()` and clear it on unmount with `clearExportContent()`. The export menu automatically updates available formats based on content type.
 
+### Social Sharing
+
+The application provides a unified sharing system used across laws and calculators.
+
+**Supported Platforms:**
+- Twitter/X, Facebook, LinkedIn, Reddit, WhatsApp, Email
+- Copy text (law text or calculation result)
+- Copy link (shareable URL)
+
+**Two Display Modes:**
+
+| Mode | Component | Used In |
+|------|-----------|---------|
+| Dropdown popover | `SocialShare()` | Law cards, Law of the Day |
+| Inline buttons | `renderInlineShareButtonsHTML()` + `initInlineShareButtons()` | Calculators |
+
+**Single Source of Truth:**
+
+All share options are defined in `SHARE_PLATFORMS` constant in `src/components/social-share.js`. Adding, changing, or removing a share platform updates all locations automatically.
+
+**Architecture:**
+- `src/components/social-share.js` - Share component (dropdown and inline variants)
+- `SHARE_PLATFORMS` - Configuration for all share platforms
+- `buildShareUrls()` - Centralized URL generation for all platforms
+
+**Responsive Behavior (Inline Buttons):**
+- Desktop: Buttons fit as many per row as possible (max-width 180px each)
+- Tablet (<=768px): Buttons grow to fill space (max-width 50% each)
+- Mobile (<=480px): Icon-only 44px square buttons
+
 ## Project Structure
 
 ```

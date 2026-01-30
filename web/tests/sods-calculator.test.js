@@ -201,11 +201,11 @@ describe("Calculator view", () => {
   });
 
 
-  it('renders share popover with all social share options', () => {
-    const shareWrapper = el.querySelector('.share-wrapper.calculator-share');
-    expect(shareWrapper).toBeTruthy();
-    expect(el.querySelector('.share-trigger')).toBeTruthy();
-    expect(el.querySelector('.share-popover')).toBeTruthy();
+  it('renders inline share buttons with all social share options', () => {
+    const shareContainer = el.querySelector('#calculator-share-container');
+    expect(shareContainer).toBeTruthy();
+    const shareButtons = el.querySelector('.share-buttons-inline');
+    expect(shareButtons).toBeTruthy();
     expect(el.querySelector('[data-share="twitter"]')).toBeTruthy();
     expect(el.querySelector('[data-share="facebook"]')).toBeTruthy();
     expect(el.querySelector('[data-share="linkedin"]')).toBeTruthy();
@@ -216,15 +216,11 @@ describe("Calculator view", () => {
     expect(el.querySelector('[data-action="copy-link"]')).toBeTruthy();
   });
 
-  it('toggles share popover when trigger is clicked', () => {
-    const trigger = el.querySelector('.share-trigger');
-    const popover = el.querySelector('.share-popover');
-
-    expect(popover.classList.contains('open')).toBe(false);
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(true);
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(false);
+  it('inline share buttons are always visible (no toggle needed)', () => {
+    const shareButtons = el.querySelector('.share-buttons-inline');
+    expect(shareButtons).toBeTruthy();
+    // Inline buttons don't need a trigger - they're always visible
+    expect(el.querySelector('[data-share="twitter"]')).toBeTruthy();
   });
 
   it('copies link to clipboard when copy-link button is clicked', async () => {
@@ -235,10 +231,7 @@ describe("Calculator view", () => {
       }
     });
 
-    // Open popover first
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click copy-link button directly (no popover to open)
     const copyBtn = el.querySelector('[data-action="copy-link"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -261,10 +254,7 @@ describe("Calculator view", () => {
       }
     });
 
-    // Open popover first
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click copy-text button directly (no popover to open)
     const copyBtn = el.querySelector('[data-action="copy-text"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -275,17 +265,16 @@ describe("Calculator view", () => {
     expect(copiedText).toMatch(/Sod's Law score/i);
   });
 
-  it('updates share links with correct URLs when popover opens', () => {
+  it('share links have correct URLs', () => {
     // Set specific slider values
     el.querySelector('#urgency').value = '7';
     el.querySelector('#complexity').value = '8';
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    // Open popover
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click a share link to trigger URL update
     const twitterLink = el.querySelector('[data-share="twitter"]');
+    twitterLink.dispatchEvent(new Event('click', { bubbles: true }));
+
     const facebookLink = el.querySelector('[data-share="facebook"]');
     const linkedinLink = el.querySelector('[data-share="linkedin"]');
     const redditLink = el.querySelector('[data-share="reddit"]');
@@ -300,30 +289,45 @@ describe("Calculator view", () => {
     expect(emailLink.href).toContain('mailto:');
   });
 
-  it('closes share popover on outside click', () => {
-    const trigger = el.querySelector('.share-trigger');
-    const popover = el.querySelector('.share-popover');
+  it('shows copy feedback when copy button is clicked', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
 
-    // Open popover
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(true);
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
-    // Click outside
-    document.dispatchEvent(new Event('click'));
-    expect(popover.classList.contains('open')).toBe(false);
+    await Promise.resolve();
+
+    const feedback = el.querySelector('.share-copy-feedback');
+    expect(feedback.classList.contains('visible')).toBe(true);
   });
 
-  it('closes share popover on Escape key', () => {
-    const trigger = el.querySelector('.share-trigger');
-    const popover = el.querySelector('.share-popover');
+  it('hides copy feedback after timeout', async () => {
+    // Note: vi.useFakeTimers() is already called in beforeEach
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
 
-    // Open popover
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(true);
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
-    // Press Escape
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(popover.classList.contains('open')).toBe(false);
+    await Promise.resolve();
+
+    const feedback = el.querySelector('.share-copy-feedback');
+    expect(feedback.classList.contains('visible')).toBe(true);
+
+    // Advance timer past the feedback timeout (1500ms)
+    vi.advanceTimersByTime(1600);
+
+    expect(feedback.classList.contains('visible')).toBe(false);
+    // Note: vi.useRealTimers() is called in afterEach
   });
 
   it('loads URL parameters into sliders', () => {
@@ -471,9 +475,7 @@ describe("Calculator view", () => {
       }
     });
 
-    // Open popover and click copy-link
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    // Click copy-link button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-link"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 

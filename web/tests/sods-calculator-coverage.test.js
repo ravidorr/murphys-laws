@@ -419,9 +419,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
       clipboard: { writeText: writeTextMock }
     });
 
-    // Open popover and click copy-link
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    // Click copy-link button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-link"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -457,9 +455,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
       clipboard: { writeText: writeTextMock }
     });
 
-    // Open popover and click copy-text
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    // Click copy-text button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-text"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -479,11 +475,10 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     el.querySelector('#urgency').value = '1';
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    // Open popover to trigger URL update
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click a share link to trigger URL update
     const twitterLink = el.querySelector('[data-share="twitter"]');
+    twitterLink.dispatchEvent(new Event('click', { bubbles: true }));
+
     expect(twitterLink.href).toContain('twitter.com/intent/tweet');
     expect(twitterLink.href).toContain('Sod');
   });
@@ -495,11 +490,10 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     el.querySelector('#urgency').value = '5';
     el.querySelector('#urgency').dispatchEvent(new Event('input'));
 
-    // Open popover to trigger URL update
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click a share link to trigger URL update
     const facebookLink = el.querySelector('[data-share="facebook"]');
+    facebookLink.dispatchEvent(new Event('click', { bubbles: true }));
+
     expect(facebookLink.href).toContain('facebook.com/sharer');
     // The shareable URL is URL-encoded within the Facebook URL
     expect(facebookLink.href).toContain(encodeURIComponent('u=5'));

@@ -7,7 +7,7 @@ import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.js';
 import { ensureMathJax } from '@utils/mathjax.js';
 import { hydrateIcons } from '@utils/icons.js';
 import { updateMetaDescription } from '@utils/dom.js';
-import { initCalculatorSharePopover } from '@modules/calculator-share.js';
+import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.js';
 
 export function Calculator() {
   const el = document.createElement('div');
@@ -266,9 +266,15 @@ export function Calculator() {
     }
   });
 
-  // Initialize share popover
-  const teardownShare = initCalculatorSharePopover({
-    root: el,
+  // Render inline share buttons
+  const shareContainer = el.querySelector('#calculator-share-container');
+  if (shareContainer) {
+    shareContainer.innerHTML = renderInlineShareButtonsHTML();
+    hydrateIcons(shareContainer);
+  }
+
+  // Initialize inline share buttons
+  const teardownShare = initInlineShareButtons(el, {
     getShareableUrl,
     getShareText,
     emailSubject: "Check out my Sod's Law calculation"

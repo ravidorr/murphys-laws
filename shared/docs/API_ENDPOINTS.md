@@ -347,7 +347,7 @@ Share SOD (Sod's Law) calculation via email.
 
 **Used in:**
 - Backend API endpoint available for programmatic email sharing
-- Note: Web frontend calculators now use simple mailto: links via `src/modules/calculator-share.js`
+- Note: Web frontend calculators use inline share buttons via `src/components/social-share.js` (same component as law sharing)
 
 ---
 

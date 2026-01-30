@@ -496,14 +496,14 @@ describe('ButteredToastCalculator view', () => {
     window.location = originalLocation;
   });
 
-  it('renders share popover with all social share options', () => {
+  it('renders inline share buttons with all social share options', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    const shareWrapper = el.querySelector('.share-wrapper.calculator-share');
-    expect(shareWrapper).toBeTruthy();
-    expect(el.querySelector('.share-trigger')).toBeTruthy();
-    expect(el.querySelector('.share-popover')).toBeTruthy();
+    const shareContainer = el.querySelector('#calculator-share-container');
+    expect(shareContainer).toBeTruthy();
+    const shareButtons = el.querySelector('.share-buttons-inline');
+    expect(shareButtons).toBeTruthy();
     expect(el.querySelector('[data-share="twitter"]')).toBeTruthy();
     expect(el.querySelector('[data-share="facebook"]')).toBeTruthy();
     expect(el.querySelector('[data-share="linkedin"]')).toBeTruthy();
@@ -516,18 +516,14 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('toggles share popover when trigger is clicked', () => {
+  it('inline share buttons are always visible (no toggle needed)', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    const trigger = el.querySelector('.share-trigger');
-    const popover = el.querySelector('.share-popover');
-
-    expect(popover.classList.contains('open')).toBe(false);
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(true);
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(false);
+    const shareButtons = el.querySelector('.share-buttons-inline');
+    expect(shareButtons).toBeTruthy();
+    // Inline buttons don't need a trigger - they're always visible
+    expect(el.querySelector('[data-share="twitter"]')).toBeTruthy();
 
     document.body.removeChild(el);
   });
@@ -548,10 +544,7 @@ describe('ButteredToastCalculator view', () => {
     el.querySelector('#toast-gravity').value = '1000';
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
-    // Open popover first
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click copy-link button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-link"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -576,10 +569,7 @@ describe('ButteredToastCalculator view', () => {
       }
     });
 
-    // Open popover first
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click copy-text button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-text"]');
     copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
@@ -592,7 +582,7 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('updates share links with correct URLs when popover opens', () => {
+  it('share links have correct URLs', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
@@ -600,11 +590,10 @@ describe('ButteredToastCalculator view', () => {
     el.querySelector('#toast-height').value = '100';
     el.querySelector('#toast-height').dispatchEvent(new Event('input'));
 
-    // Open popover
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-
+    // Click a share link to trigger URL update
     const twitterLink = el.querySelector('[data-share="twitter"]');
+    twitterLink.dispatchEvent(new Event('click', { bubbles: true }));
+
     const facebookLink = el.querySelector('[data-share="facebook"]');
     const linkedinLink = el.querySelector('[data-share="linkedin"]');
 
@@ -615,38 +604,49 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('closes share popover on outside click', () => {
+  it('shows copy feedback when copy button is clicked', async () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    const trigger = el.querySelector('.share-trigger');
-    const popover = el.querySelector('.share-popover');
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
 
-    // Open popover
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(true);
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
-    // Click outside
-    document.dispatchEvent(new Event('click'));
-    expect(popover.classList.contains('open')).toBe(false);
+    await Promise.resolve();
+
+    const feedback = el.querySelector('.share-copy-feedback');
+    expect(feedback.classList.contains('visible')).toBe(true);
 
     document.body.removeChild(el);
   });
 
-  it('closes share popover on Escape key', () => {
+  it('hides copy feedback after timeout', async () => {
+    vi.useFakeTimers();
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    const trigger = el.querySelector('.share-trigger');
-    const popover = el.querySelector('.share-popover');
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
 
-    // Open popover
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(popover.classList.contains('open')).toBe(true);
+    const copyBtn = el.querySelector('[data-action="copy-link"]');
+    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
 
-    // Press Escape
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(popover.classList.contains('open')).toBe(false);
+    await Promise.resolve();
+
+    const feedback = el.querySelector('.share-copy-feedback');
+    expect(feedback.classList.contains('visible')).toBe(true);
+
+    // Advance timer past the feedback timeout (1500ms)
+    vi.advanceTimersByTime(1600);
+
+    expect(feedback.classList.contains('visible')).toBe(false);
+    vi.useRealTimers();
 
     document.body.removeChild(el);
   });
@@ -670,9 +670,7 @@ describe('ButteredToastCalculator view', () => {
       clipboard: { writeText: writeTextMock }
     });
 
-    // Open popover and click copy-link
-    const trigger = el.querySelector('.share-trigger');
-    trigger.dispatchEvent(new Event('click', { bubbles: true }));
+    // Click copy-link button directly (inline share buttons)
     el.querySelector('[data-action="copy-link"]').dispatchEvent(new Event('click', { bubbles: true }));
     await Promise.resolve();
 
