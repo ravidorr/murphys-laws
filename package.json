@@ -20,7 +20,9 @@
     "test:web:e2e": "cd web && npm run test:e2e",
     "test": "npm run test:backend && npm run test:web",
     "lint:web": "cd web && npm run lint && npm run lint:css",
-    "lint": "npm run lint:web",
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\"",
+    "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\"",
+    "lint": "npm run lint:web && npm run lint:md",
     "deploy": "node backend/scripts/deploy.mjs",
     "validate:node": "cd backend && npm run validate:node",
     "validate:node-server": "cd backend && npm run validate:node-server",
@@ -36,5 +38,8 @@
   "license": "CC0-1.0",
   "engines": {
     "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.20.0"
   }
 }

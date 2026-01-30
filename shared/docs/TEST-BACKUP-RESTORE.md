@@ -189,7 +189,7 @@ rm -rf "$TEST_DIR"
 
 ## Option 2: Full Disaster Recovery Drill
 
-** WARNING**: This simulates a real disaster recovery. Schedule during maintenance window.
+**WARNING**: This simulates a real disaster recovery. Schedule during maintenance window.
 
 ### Prerequisites
 

@@ -16,5 +16,8 @@
   ],
   "shared/**/*.{js,mjs}": [
     "eslint --fix || echo 'Linting skipped: shared eslint not configured yet'"
+  ],
+  "**/*.md": [
+    "markdownlint-cli2 --fix"
   ]
 }

@@ -24,7 +24,7 @@ When clicking on a law in the app, an empty sheet would appear with:
 ```
 
 **Problem:** This creates a race condition where:
-- `showingLawDetail` becomes `true` 
+- `showingLawDetail` becomes `true`
 - Sheet tries to render
 - `selectedLaw` might be `nil` or cleared
 - Result: Empty sheet content

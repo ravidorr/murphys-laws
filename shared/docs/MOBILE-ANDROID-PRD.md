@@ -286,11 +286,11 @@ The Android app will be a native Kotlin application that:
 
 **Acceptance Criteria:**
 - Input sliders for:
- - Urgency (U): 1-10
- - Complexity (C): 1-10
- - Importance (I): 1-10
- - Skill Level (S): 1-10
- - Frequency (F): 1-10
+- Urgency (U): 1-10
+- Complexity (C): 1-10
+- Importance (I): 1-10
+- Skill Level (S): 1-10
+- Frequency (F): 1-10
 - Real-time probability calculation
 - Formula display: `((U+C+I) × (10-S))/20 × A × 1/(1-sin(F/10))`
 - Result interpretation (Low/Medium/High risk)
@@ -1113,7 +1113,7 @@ Everyone
 - Add section on Material You dynamic theming (wallpaper colors)
 
 ### Support & Feedback
-- **Email:** support@murphys-laws.com
+- **Email:** <support@murphys-laws.com>
 - **In-App:** Feedback form in Settings
 - **GitHub:** Issue tracker for bug reports
 - **Google Play:** Review responses within 24 hours

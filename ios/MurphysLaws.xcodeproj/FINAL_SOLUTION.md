@@ -196,7 +196,7 @@ cd /Users/ravidor/personal-dev/murphys-laws/ios && bash JUST_FIX_IT.sh
 
 ---
 
-# 🎉 YOU'RE READY!
+# 🎉 YOU'RE READY
 
 Run the script and build your app. It will work. I promise.
 

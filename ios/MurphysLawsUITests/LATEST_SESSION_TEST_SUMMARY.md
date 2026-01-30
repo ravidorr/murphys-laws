@@ -34,7 +34,7 @@
 - Changed to `LawDetailView(lawID: law.id, law: law)`
 - Now passes complete law object to detail view
 
-**Impact:** 
+**Impact:**
 - Shows correct law (not default Murphy's Law)
 - Faster loading (no API call needed)
 - Consistent with BrowseView pattern

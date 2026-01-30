@@ -126,16 +126,6 @@ function updateHreflang(html, url) {
  * @param {string} str - String to escape
  * @returns {string} Escaped string
  */
-function escapeJsonString(str) {
-  if (!str) return '';
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t');
-}
-
 /**
  * Generate JSON-LD script tag
  * @param {Object} data - Structured data object

@@ -6,7 +6,7 @@ Available on **Web**, **iOS**, and **Android**.
 
 ## Platforms
 
-- **Web**: https://murphys-laws.com (PWA - installable, works offline)
+- **Web**: <https://murphys-laws.com> (PWA - installable, works offline)
 - **iOS**: Coming Soon
 - **Android**: Coming Soon
 

@@ -69,16 +69,16 @@ murphys-laws/
 **`package.json`:**
 - **Current:** Single `package.json` at root
 - **New:** Three `package.json` files:
- - `package.json` (root) - Workspace manager
- - `backend/package.json` - Backend dependencies
- - `web/package.json` - Web dependencies
+- `package.json` (root) - Workspace manager
+- `backend/package.json` - Backend dependencies
+- `web/package.json` - Web dependencies
 
 **Scripts:**
 - **Current:** `npm run dev` → starts Vite
 - **New:**
- - `npm run dev` → starts both backend + web
- - `npm run dev:backend` → backend only
- - `npm run dev:web` → web only
+- `npm run dev` → starts both backend + web
+- `npm run dev:backend` → backend only
+- `npm run dev:web` → web only
 
 **Paths:**
 - Backend references to law data: `'murphys-laws'` → `'../shared/data/murphys-laws'`
@@ -109,13 +109,13 @@ murphys-laws/
  git commit -m "chore: prepare for monorepo migration"
  ```
 
-2. **Ensure clean working directory:**
+1. **Ensure clean working directory:**
  ```bash
  git status
  # Should show: "nothing to commit, working tree clean"
  ```
 
-3. **Backup important files (optional but recommended):**
+1. **Backup important files (optional but recommended):**
  ```bash
  cp -r . ../murphys-laws-backup
  ```
@@ -248,17 +248,17 @@ For automated scripts or if you're confident:
  ```
 
  **Expected:**
- - Many files deleted (old locations)
- - Many files added (new locations)
- - New files created (READMEs, workflows)
+- Many files deleted (old locations)
+- Many files added (new locations)
+- New files created (READMEs, workflows)
 
-2. **Check Directory Structure:**
+1. **Check Directory Structure:**
  ```bash
  ls -la
  # Should show: backend/ web/ ios/ android/ shared/
  ```
 
-3. **Verify Backend:**
+1. **Verify Backend:**
  ```bash
  cd backend
  ls
@@ -272,7 +272,7 @@ For automated scripts or if you're confident:
  # Should start on http://127.0.0.1:8787
  ```
 
-4. **Verify Web:**
+1. **Verify Web:**
  ```bash
  cd ../web
  ls
@@ -283,7 +283,7 @@ For automated scripts or if you're confident:
  # Should start on http://localhost:5173
  ```
 
-5. **Verify Shared:**
+1. **Verify Shared:**
  ```bash
  cd ../shared
  ls data/
@@ -293,14 +293,14 @@ For automated scripts or if you're confident:
  # Should show: MOBILE-IOS-PRD.md, MOBILE-ANDROID-PRD.md, etc.
  ```
 
-6. **Test API Endpoints:**
+1. **Test API Endpoints:**
  ```bash
  # With backend running
  curl http://127.0.0.1:8787/api/v1/laws?limit=5
  # Should return JSON with laws
  ```
 
-7. **Test Web App:**
+1. **Test Web App:**
  ```bash
  # With web dev server running
  # Open http://localhost:5173 in browser
@@ -723,28 +723,28 @@ After migration is complete and verified:
  git commit -m "chore: migrate to monorepo structure"
  ```
 
-2. **Push to Remote:**
+1. **Push to Remote:**
  ```bash
  git push origin <branch-name>
  ```
 
-3. **Update Team:**
- - Share migration guide with team
- - Update onboarding documentation
- - Run team walkthrough if needed
+1. **Update Team:**
+- Share migration guide with team
+- Update onboarding documentation
+- Run team walkthrough if needed
 
-4. **Create iOS/Android Projects:**
- - Follow [iOS PRD](../shared/docs/MOBILE-IOS-PRD.md)
- - Follow [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md)
+1. **Create iOS/Android Projects:**
+- Follow [iOS PRD](../shared/docs/MOBILE-IOS-PRD.md)
+- Follow [Android PRD](../shared/docs/MOBILE-ANDROID-PRD.md)
 
-5. **Update CI/CD:**
- - Review GitHub Actions workflows
- - Update any external CI/CD (if applicable)
+1. **Update CI/CD:**
+- Review GitHub Actions workflows
+- Update any external CI/CD (if applicable)
 
-6. **Monitor:**
- - Watch for issues in first few days
- - Check deployment pipeline
- - Gather team feedback
+1. **Monitor:**
+- Watch for issues in first few days
+- Check deployment pipeline
+- Gather team feedback
 
 ---
 

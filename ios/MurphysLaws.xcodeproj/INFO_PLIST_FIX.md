@@ -31,7 +31,7 @@ Info.plist is being processed multiple times, usually because it's incorrectly a
    - Any other build phase ❌
 
 3. Info.plist should ONLY be referenced in:
-   - **Build Settings** → Search "Info.plist" 
+   - **Build Settings** → Search "Info.plist"
    - **Info.plist File** setting should point to: `MurphysLaws/Info.plist`
 
 ### Step 3: Check for Duplicate Info.plist Files

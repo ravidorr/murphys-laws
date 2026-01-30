@@ -1,6 +1,6 @@
 # Database Management Guide
 
-## IMPORTANT: Never commit murphys.db directly!
+## IMPORTANT: Never commit murphys.db directly
 
 The production database contains user data (votes, submissions) that must never be overwritten.
 

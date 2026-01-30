@@ -85,7 +85,7 @@ objectWillChange.send()  // Force UI refresh
 
 ## New Test File
 
-7. ✅ `VoteSyncTests.swift` - Tests for vote sync functionality
+1. ✅ `VoteSyncTests.swift` - Tests for vote sync functionality
 
 ---
 

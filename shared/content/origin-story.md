@@ -25,4 +25,3 @@ While often invoked with a chuckle or a sigh, at its core, Murphy's Law serves a
 - [Murphy's Law on Wikipedia](https://en.wikipedia.org/wiki/Murphy%27s_law)
 - [The Fastest Man on Earth: Dr. John Stapp](https://www.smithsonianmag.com/history/the-man-who-rode-the-fastest-rocket-sled-on-earth-180981125/)
 - [Edwards Air Force Base History](https://www.edwards.af.mil/About/History/)
-
