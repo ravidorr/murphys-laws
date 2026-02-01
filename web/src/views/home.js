@@ -12,7 +12,7 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 
 // Hero section HTML - single source of truth for home page heading
 const HERO_HTML = `
-  <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">The Ultimate Murphy's Law Archive</h1>
+  <h1 class="page-title page-title-hero text-primary mb-4"><span class="accent-text">The Ultimate</span> Murphy's Law Archive</h1>
   <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
     <strong>Murphy's Law</strong> states: "Anything that can go wrong, will go wrong." 
     First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.

@@ -166,6 +166,21 @@
   line-height: 1.2;
 }
 
+/* Page title - consistent h1 styling across all pages */
+.page-title {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Hero variant for home page */
+.page-title-hero {
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  font-weight: 800;
+  text-align: center;
+}
+
 .content-header .lead {
   font-size: 1.1rem;
   line-height: 1.8;

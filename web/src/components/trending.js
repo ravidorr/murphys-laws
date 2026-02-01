@@ -22,7 +22,7 @@ export function Trending() {
 
   el.innerHTML = `
     <header class="card-header">
-      <h4 class="card-title"><span class="accent-text">Trending</span> Now</h4>
+      <h3 class="card-title"><span class="accent-text">Trending</span> Now</h3>
     </header>
     <div class="card-body"></div>
   `;
