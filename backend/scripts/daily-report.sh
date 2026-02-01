@@ -185,6 +185,26 @@ else
 fi
 
 #############################################################################
+# PEAK RESOURCE USAGE (15th of Month Only)
+#############################################################################
+
+if [ "$DAY_OF_MONTH" = "15" ]; then
+    log "Collecting peak resource usage (15th of month)..."
+
+    REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    REPORT+="PEAK RESOURCE USAGE (Last 30 Days)\n"
+    REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    # Run peak analyzer (suppress headers)
+    PEAK_REPORT=$(/root/murphys-laws/backend/scripts/analyze-resource-peaks.sh --no-header 2>/dev/null)
+    if [ -n "$PEAK_REPORT" ]; then
+        REPORT+="$PEAK_REPORT\n\n"
+    else
+        REPORT+="Peak resource analysis not available\n\n"
+    fi
+fi
+
+#############################################################################
 # MURPHY'S LAW OF THE DAY
 #############################################################################
 
@@ -496,6 +516,9 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 fi
 if [ "$DAY_OF_MONTH" = "01" ]; then
     SUBJECT="$SUBJECT (+ Cost Report + Backup Test Reminder)"
+fi
+if [ "$DAY_OF_MONTH" = "15" ]; then
+    SUBJECT="$SUBJECT (+ Peak Resource Report)"
 fi
 
 # Create preview text for email clients
