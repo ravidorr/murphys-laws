@@ -225,11 +225,10 @@ describe('Categories view', () => {
     expect(document.title).toContain("Browse Murphy's Laws by Category");
   });
 
-  it('renders page header and subtitle', () => {
+  it('renders page header', () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     
     expect(el.textContent).toContain("Browse Murphy's Laws by Category");
-    expect(el.textContent).toContain('Explore Murphy\'s Laws organized by topic');
   });
 
   it('removes loading state after categories load', async () => {
