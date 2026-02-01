@@ -211,6 +211,19 @@ export function ButteredToastCalculator() {
 
   Object.keys(sliders).forEach((k) => {
     sliders[k]?.addEventListener('input', () => {
+      const val = sliders[k].value;
+      
+      // Update ARIA attributes
+      sliders[k].setAttribute('aria-valuenow', val);
+      
+      // Set descriptive value text with units
+      let valueText = val;
+      if (k === 'height' || k === 'overhang') valueText += ' cm';
+      else if (k === 'gravity') valueText += ' cm/s²';
+      else if (k === 'butter') valueText = parseFloat(val).toFixed(2);
+      
+      sliders[k].setAttribute('aria-valuetext', valueText);
+
       flashAllVariables();
       calculateLanding();
     });

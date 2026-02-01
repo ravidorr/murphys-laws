@@ -84,11 +84,17 @@ export function SodCalculatorSimple({ onNavigate }) {
     
     // Initial value setup
     sliders[k].setAttribute('aria-valuenow', sliders[k].value);
+    sliders[k].setAttribute('aria-valuetext', sliders[k].value);
     sliders[k].setAttribute('aria-describedby', `${k}-value`);
 
     sliders[k].addEventListener('input', () => {
-      if (sliderValues[k]) sliderValues[k].textContent = sliders[k].value;
-      sliders[k].setAttribute('aria-valuenow', sliders[k].value);
+      const val = sliders[k].value;
+      if (sliderValues[k]) sliderValues[k].textContent = val;
+      
+      // Update ARIA attributes
+      sliders[k].setAttribute('aria-valuenow', val);
+      sliders[k].setAttribute('aria-valuetext', val);
+      
       calculateScore();
     });
   });
