@@ -172,6 +172,7 @@
   font-weight: 700;
   line-height: 1.2;
   margin: 0;
+  padding-bottom: var(--space-4);
 }
 
 /* Hero variant for home page */
