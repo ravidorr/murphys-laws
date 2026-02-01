@@ -168,7 +168,13 @@ export function Calculator() {
 
   Object.keys(sliders).forEach((k) => {
     sliders[k]?.addEventListener('input', () => {
-      if (sliderValues[k]) sliderValues[k].textContent = sliders[k].value;
+      const val = sliders[k].value;
+      if (sliderValues[k]) sliderValues[k].textContent = val;
+      
+      // Update ARIA attributes
+      sliders[k].setAttribute('aria-valuenow', val);
+      sliders[k].setAttribute('aria-valuetext', val);
+      
       flashAllVariables();
     });
   });
