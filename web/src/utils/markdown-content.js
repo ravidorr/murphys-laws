@@ -185,15 +185,22 @@ export function getPageContent(page) {
   // Apply styling enhancements
   html = enhanceMarkdownHtml(html);
 
-  // Wrap in card structure
-  let output = '<article class="card content-card">\n';
+  // Start with empty output - h1 will be added outside the card
+  let output = '';
 
   // Extract h1 and first paragraph to create header section
   const h1Match = html.match(/<h1>([\s\S]*?)<\/h1>/);
   if (h1Match) {
-    const h1Content = h1Match[0];
-    const h1Index = html.indexOf(h1Content);
-    const afterH1 = h1Index + h1Content.length;
+    const h1Content = h1Match[1]; // Get inner content without h1 tags
+    const h1FullMatch = h1Match[0];
+    const h1Index = html.indexOf(h1FullMatch);
+    const afterH1 = h1Index + h1FullMatch.length;
+
+    // Render h1 OUTSIDE the card with page-title class
+    output += `<h1 class="page-title mb-4">${h1Content}</h1>\n`;
+
+    // Start the card
+    output += '<article class="card content-card">\n';
 
     // Find the first paragraph after h1
     const firstPMatch = html.substring(afterH1).match(/<p>([\s\S]*?)<\/p>/);
@@ -203,7 +210,7 @@ export function getPageContent(page) {
       const firstPText = firstPMatch[1];
       const headerEnd = afterH1 + html.substring(afterH1).indexOf(firstPContent) + firstPContent.length;
 
-      // Build header section
+      // Build header section (without h1, just lead paragraph)
       let headerHtml = '  <header class="card-header content-header">\n';
 
       // Add last updated for privacy and terms only
@@ -211,32 +218,31 @@ export function getPageContent(page) {
         headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
       }
 
-      headerHtml += `      ${h1Content}\n`;
       headerHtml += `      <p class="lead">${firstPText}</p>\n`;
       headerHtml += '  </header>';
 
-      // Replace h1 and first paragraph with header section, rest goes in card-body
+      // Rest of content goes in card-body
       const beforeH1 = html.substring(0, h1Index);
       const afterHeader = html.substring(headerEnd);
       html = beforeH1 + headerHtml + '\n  <div class="card-body">' + afterHeader;
     } else {
-      // No paragraph after h1, just wrap h1 in header
-      let headerHtml = '  <header class="card-header content-header">\n';
-
-      // Add last updated for privacy and terms only
-      if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
-        headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
-      }
-
-      headerHtml += `      ${h1Content}\n`;
-      headerHtml += '  </header>';
-
+      // No paragraph after h1
       const beforeH1 = html.substring(0, h1Index);
       const afterH1Content = html.substring(afterH1);
-      html = beforeH1 + headerHtml + '\n  <div class="card-body">' + afterH1Content;
+
+      // For privacy and terms, still show the "Last updated" in a header section
+      if (meta.lastUpdated && (page === 'privacy' || page === 'terms')) {
+        let headerHtml = '  <header class="card-header content-header">\n';
+        headerHtml += `      <p class="small">Last updated: ${meta.lastUpdated}</p>\n`;
+        headerHtml += '  </header>';
+        html = beforeH1 + headerHtml + '\n  <div class="card-body">' + afterH1Content;
+      } else {
+        html = beforeH1 + '  <div class="card-body">' + afterH1Content;
+      }
     }
   } else {
-    // No h1 found, just wrap everything in card-body
+    // No h1 found, just start card with card-body
+    output += '<article class="card content-card">\n';
     html = '  <div class="card-body">\n' + html;
   }
 
