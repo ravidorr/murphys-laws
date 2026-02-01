@@ -25,9 +25,10 @@ export function Favorites({ onNavigate }) {
   // If feature is disabled, show message and redirect option
   if (!isFavoritesEnabled()) {
     el.innerHTML = `
+      <h1 class="page-title text-center mb-4"><span class="accent-text">My</span> Favorites</h1>
       <div class="card content-card">
         <header class="card-header text-center">
-          <h1 class="mb-2"><span class="accent-text">Browse</span> My Favorites Laws</h1>
+          <h2 class="card-title"><span class="accent-text">Feature</span> Disabled</h2>
         </header>
         <div class="card-body text-center">
           <p class="mb-4 text-muted-fg">The favorites feature is currently disabled.</p>
@@ -51,9 +52,10 @@ export function Favorites({ onNavigate }) {
    */
   function renderEmptyState() {
     return `
+      <h1 class="page-title text-center mb-4"><span class="accent-text">My</span> Favorites</h1>
       <div class="card content-card">
         <header class="card-header text-center">
-          <h1 class="mb-2"><span class="accent-text">Browse</span> My Favorites Laws</h1>
+          <h2 class="card-title"><span class="accent-text">No Favorites</span> Yet</h2>
           <blockquote class="not-found-quote">
             "The law you need most will be the one you forgot to save."
           </blockquote>
@@ -106,12 +108,13 @@ export function Favorites({ onNavigate }) {
       : `${count} laws saved to your collection`;
 
     return `
+      <h1 class="page-title mb-4"><span class="accent-text">My</span> Favorites</h1>
       <div class="card">
         <header class="card-header">
           <div class="card-title-row">
-            <h1 class="card-title">
-              <span class="accent-text">Browse</span> My Favorites Laws
-            </h1>
+            <h2 class="card-title">
+              <span class="accent-text">Saved</span> Laws
+            </h2>
             <button type="button" id="clear-favorites-btn" class="btn outline">
               <span class="icon" data-icon="close" aria-hidden="true"></span>
               <span class="btn-text">Clear All</span>

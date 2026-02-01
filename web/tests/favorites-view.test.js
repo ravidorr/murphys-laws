@@ -87,9 +87,9 @@ describe('Favorites View Component', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const heading = el.querySelector('h1');
       expect(heading).toBeTruthy();
-      expect(heading.textContent).toContain('Browse');
-      expect(heading.textContent).toContain('My Favorites Laws');
-      expect(heading.querySelector('.accent-text').textContent).toBe('Browse');
+      expect(heading.textContent).toContain('My');
+      expect(heading.textContent).toContain('Favorites');
+      expect(heading.querySelector('.accent-text').textContent).toBe('My');
     });
 
     it('renders Murphy\'s Law themed quote', () => {
@@ -149,12 +149,12 @@ describe('Favorites View Component', () => {
       expect(card.classList.contains('content-card')).toBe(false);
     });
 
-    it('renders .card-title with "Browse My Favorites Laws" heading', () => {
+    it('renders .card-title with "Saved Laws" heading', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const cardTitle = el.querySelector('.card-title');
       expect(cardTitle).toBeTruthy();
-      expect(cardTitle.textContent).toContain('Browse');
-      expect(cardTitle.textContent).toContain('My Favorites Laws');
+      expect(cardTitle.textContent).toContain('Saved');
+      expect(cardTitle.textContent).toContain('Laws');
     });
 
     it('renders "Clear All" button', () => {

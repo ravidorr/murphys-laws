@@ -261,6 +261,12 @@ const routesMap = {
     const container = document.createElement('div');
     container.className = 'container page pt-0';
 
+    // Add page title h1
+    const h1 = document.createElement('h1');
+    h1.className = 'page-title mb-4';
+    h1.innerHTML = '<span class="accent-text">Submit</span> a Law';
+    container.appendChild(h1);
+
     const submitSection = SubmitLawSection();
     container.appendChild(submitSection);
     clearPageStructuredData();
