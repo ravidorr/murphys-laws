@@ -25,7 +25,7 @@ export function Favorites({ onNavigate }) {
   // If feature is disabled, show message and redirect option
   if (!isFavoritesEnabled()) {
     el.innerHTML = `
-      <h1 class="page-title text-center mb-4"><span class="accent-text">My</span> Favorites</h1>
+      <h1 class="page-title mb-4"><span class="accent-text">My</span> Favorites</h1>
       <div class="card content-card">
         <header class="card-header text-center">
           <h2 class="card-title"><span class="accent-text">Feature</span> Disabled</h2>
@@ -52,7 +52,7 @@ export function Favorites({ onNavigate }) {
    */
   function renderEmptyState() {
     return `
-      <h1 class="page-title text-center mb-4"><span class="accent-text">My</span> Favorites</h1>
+      <h1 class="page-title mb-4"><span class="accent-text">My</span> Favorites</h1>
       <div class="card content-card">
         <header class="card-header text-center">
           <h2 class="card-title"><span class="accent-text">No Favorites</span> Yet</h2>

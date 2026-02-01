@@ -89,7 +89,8 @@ describe('markdown-content.js', () => {
 
     it('applies styling enhancements to h1 tags', () => {
       const html = getPageContent('about');
-      expect(html).toContain('<h1><span class="accent-text">');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><span class="accent-text">');
     });
 
     it('applies styling enhancements to h2 tags', () => {
@@ -137,7 +138,8 @@ describe('markdown-content.js', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1><em>Italic</em> Heading</h1>');
       const html = getPageContent('about');
       expect(html).not.toContain('<span class="accent-text">');
-      expect(html).toContain('<h1><em>Italic</em> Heading</h1>');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><em>Italic</em> Heading</h1>');
       vi.restoreAllMocks();
     });
 
@@ -145,7 +147,8 @@ describe('markdown-content.js', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1> </h1>');
       const html = getPageContent('about');
       // Should NOT wrap empty string or space if trimmed is empty
-      expect(html).toContain('<h1> </h1>');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"> </h1>');
       expect(html).not.toContain('<span class="accent-text">');
       vi.restoreAllMocks();
     });
@@ -153,14 +156,16 @@ describe('markdown-content.js', () => {
     it('handles headings without word characters', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>!!!</h1>');
       const html = getPageContent('about');
-      expect(html).toContain('<h1><span class="accent-text">!!!</span></h1>');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><span class="accent-text">!!!</span></h1>');
       vi.restoreAllMocks();
     });
 
     it('handles headings with single word', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Single</h1>');
       const html = getPageContent('about');
-      expect(html).toContain('<h1><span class="accent-text">Single</span></h1>');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><span class="accent-text">Single</span></h1>');
       vi.restoreAllMocks();
     });
 
@@ -204,15 +209,21 @@ describe('markdown-content.js', () => {
     it('handles content without paragraph after h1', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Title</h1><h2>Section</h2>');
       const html = getPageContent('about');
-      expect(html).toContain('<header class="card-header content-header">');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><span class="accent-text">Title</span></h1>');
+      // No header section for about page without lead paragraph
+      expect(html).not.toContain('<header class="card-header content-header">');
       expect(html).not.toContain('<p class="lead">');
       vi.restoreAllMocks();
     });
 
     it('handles privacy page without first paragraph after h1', () => {
-      // This tests line 221-227 - privacy page with lastUpdated but no first <p> after h1
+      // This tests privacy page with lastUpdated but no first <p> after h1
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Privacy Policy</h1><h2>Section</h2>');
       const html = getPageContent('privacy');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><span class="accent-text">Privacy</span> Policy</h1>');
+      // Privacy page still shows Last updated in header even without lead paragraph
       expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('Last updated:');
       expect(html).not.toContain('<p class="lead">');
@@ -223,6 +234,9 @@ describe('markdown-content.js', () => {
       // This also tests the alternate branch for terms page
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h1>Terms</h1><ul><li>Item</li></ul>');
       const html = getPageContent('terms');
+      // H1 is now outside card with page-title class
+      expect(html).toContain('<h1 class="page-title mb-4"><span class="accent-text">Terms</span></h1>');
+      // Terms page still shows Last updated in header even without lead paragraph
       expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('Last updated:');
       expect(html).not.toContain('<p class="lead">');
