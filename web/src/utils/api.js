@@ -1,6 +1,6 @@
 // Centralized API utilities
 import * as Sentry from '@sentry/browser';
-import { API_BASE_URL, API_FALLBACK_URL, DEFAULT_FETCH_HEADERS } from './constants.js';
+import { API_BASE_URL, DEFAULT_FETCH_HEADERS } from './constants.js';
 
 /**
  * Fetches from API with automatic fallback
@@ -14,30 +14,22 @@ export async function fetchAPI(endpoint, params = {}) {
     : new URLSearchParams(params);
 
   const queryString = qs.toString();
-  const primaryUrl = `${API_BASE_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
+  const url = `${API_BASE_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
 
-  try {
-    const r = await fetch(primaryUrl, { headers: DEFAULT_FETCH_HEADERS });
-    if (!r.ok) {
-      throw new Error(`Primary fetch not ok: ${r.status}`);
-    }
-
-    const ct = r.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) {
-      throw new Error('Primary returned non-JSON');
-    }
-
-    return await r.json();
-  } catch {
-    const fallbackUrl = `${API_FALLBACK_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
-    const r2 = await fetch(fallbackUrl, { headers: DEFAULT_FETCH_HEADERS });
-
-    if (!r2.ok) {
-      throw new Error(`Fallback fetch not ok: ${r2.status}`);
-    }
-
-    return await r2.json();
+  const response = await fetch(url, { headers: DEFAULT_FETCH_HEADERS });
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
   }
+
+  // Check content-type if headers are available (may not be in test mocks)
+  if (response.headers && typeof response.headers.get === 'function') {
+    const ct = response.headers.get('content-type') || '';
+    if (ct && !ct.includes('application/json')) {
+      throw new Error('API returned non-JSON response');
+    }
+  }
+
+  return await response.json();
 }
 
 /**
@@ -52,34 +44,22 @@ export async function fetchLaw(lawId) {
   }
 
   const endpoint = `/api/v1/laws/${numericId}`;
-  const primaryUrl = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  try {
-    const response = await fetch(primaryUrl, { headers: DEFAULT_FETCH_HEADERS });
-    if (!response.ok) {
-      throw new Error(`Primary fetch not ok: ${response.status}`);
-    }
-
-    // Check content-type if headers are available (may not be in test mocks)
-    if (response.headers && typeof response.headers.get === 'function') {
-      const ct = response.headers.get('content-type') || '';
-      if (ct && !ct.includes('application/json')) {
-        throw new Error('Primary returned non-JSON');
-      }
-    }
-
-    return await response.json();
-  } catch {
-    // Try fallback URL
-    const fallbackUrl = `${API_FALLBACK_URL}${endpoint}`;
-    const response = await fetch(fallbackUrl, { headers: DEFAULT_FETCH_HEADERS });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch law: ${response.status}`);
-    }
-
-    return await response.json();
+  const response = await fetch(url, { headers: DEFAULT_FETCH_HEADERS });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch law: ${response.status}`);
   }
+
+  // Check content-type if headers are available (may not be in test mocks)
+  if (response.headers && typeof response.headers.get === 'function') {
+    const ct = response.headers.get('content-type') || '';
+    if (ct && !ct.includes('application/json')) {
+      throw new Error('API returned non-JSON response');
+    }
+  }
+
+  return await response.json();
 }
 
 /**

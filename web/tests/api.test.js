@@ -69,43 +69,21 @@ describe('API utilities', () => {
       await expect(fetchLaw(-1)).rejects.toThrow('Invalid law ID');
     });
 
-    it('falls back when primary fetch fails', async () => {
-      const mockLaw = { id: 1, title: 'Fallback Law', text: 'Fallback text' };
-      
-      // First call fails (primary), second call succeeds (fallback)
-      fetchSpy
-        .mockRejectedValueOnce(new Error('Primary fetch failed'))
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockLaw
-        });
+    it('throws when fetch network error occurs', async () => {
+      fetchSpy.mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await fetchLaw(1);
-      expect(result).toEqual(mockLaw);
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      await expect(fetchLaw(1)).rejects.toThrow('Network error');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('falls back when primary returns non-ok status', async () => {
-      const mockLaw = { id: 1, title: 'Fallback Law', text: 'Fallback text' };
-      
-      fetchSpy
-        .mockResolvedValueOnce({ ok: false, status: 500 })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockLaw
-        });
+    it('throws when API returns non-JSON response', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        json: async () => ({})
+      });
 
-      const result = await fetchLaw(1);
-      expect(result).toEqual(mockLaw);
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('throws when both primary and fallback fail', async () => {
-      fetchSpy
-        .mockRejectedValueOnce(new Error('Primary failed'))
-        .mockResolvedValueOnce({ ok: false, status: 503 });
-
-      await expect(fetchLaw(1)).rejects.toThrow('Failed to fetch law: 503');
+      await expect(fetchLaw(1)).rejects.toThrow('API returned non-JSON response');
     });
   });
 
@@ -186,20 +164,11 @@ describe('API utilities', () => {
       );
     });
 
-    it('uses fallback URL when primary fetch fails', async () => {
-      const mockRelated = { data: [{ id: 3, text: 'Fallback Related' }], law_id: 1 };
-      
-      // First call fails (primary), second call succeeds (fallback)
-      fetchSpy
-        .mockResolvedValueOnce({ ok: false, status: 500 })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockRelated
-        });
+    it('throws when API request fails', async () => {
+      fetchSpy.mockResolvedValueOnce({ ok: false, status: 500 });
 
-      const result = await fetchRelatedLaws(1);
-      expect(result).toEqual(mockRelated);
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      await expect(fetchRelatedLaws(1)).rejects.toThrow('API request failed: 500');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -371,58 +340,31 @@ describe('API utilities', () => {
   });
 
   describe('fetchAPI', () => {
-    it('uses fallback URL when primary fetch fails', async () => {
-
-      // First call fails
+    it('throws error when API request fails', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 500
       });
 
-      // Second call (fallback) succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: [] })
-      });
-
-      const result = await fetchAPI('/api/laws');
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(result).toEqual({ data: [] });
+      await expect(fetchAPI('/api/laws')).rejects.toThrow('API request failed: 500');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('uses fallback URL when primary returns non-JSON', async () => {
-
-      // First call returns HTML
+    it('throws error when API returns non-JSON', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'text/html' })
       });
 
-      // Second call (fallback) succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: [] })
-      });
-
-      const result = await fetchAPI('/api/laws');
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(result).toEqual({ data: [] });
-
+      await expect(fetchAPI('/api/laws')).rejects.toThrow('API returned non-JSON response');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('throws error when fallback also fails', async () => {
+    it('throws error on network failure', async () => {
+      fetchSpy.mockRejectedValueOnce(new Error('Network error'));
 
-      // Both calls fail
-      fetchSpy.mockResolvedValue({
-        ok: false,
-        status: 503
-      });
-
-      await expect(fetchAPI('/api/laws')).rejects.toThrow('Fallback fetch not ok: 503');
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-
+      await expect(fetchAPI('/api/laws')).rejects.toThrow('Network error');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
     it('accepts URLSearchParams as params', async () => {
@@ -445,26 +387,31 @@ describe('API utilities', () => {
       );
     });
 
-    it('handles missing content-type header', async () => {
-
-      // First call has no content-type header
+    it('accepts response when content-type header is missing (test compatibility)', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         headers: new Headers(), // No content-type
         json: async () => ({ data: [] })
       });
 
-      // Second call (fallback) succeeds
+      // When content-type is empty but headers exist, we accept the response
+      // This provides backwards compatibility with test mocks
+      const result = await fetchAPI('/api/laws');
+      expect(result).toEqual({ data: [] });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns JSON data on success', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ data: [] })
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [{ id: 1 }] })
       });
 
       const result = await fetchAPI('/api/laws');
 
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(result).toEqual({ data: [] });
-
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ data: [{ id: 1 }] });
     });
   });
 
@@ -682,18 +629,13 @@ describe('API utilities', () => {
       expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    it('returns empty array when both primary and fallback fail', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
-      // Both calls fail
-      fetchSpy
-        .mockResolvedValueOnce({ ok: false, status: 500 })
-        .mockResolvedValueOnce({ ok: false, status: 503 });
+    it('returns empty array when API request fails', async () => {
+      fetchSpy.mockResolvedValueOnce({ ok: false, status: 500 });
 
       const result = await fetchSuggestions({ q: 'test' });
 
       expect(result).toEqual({ data: [] });
-      consoleSpy.mockRestore();
+      expect(Sentry.captureException).toHaveBeenCalled();
     });
   });
 

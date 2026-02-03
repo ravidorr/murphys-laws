@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, API_FALLBACK_URL, LOADING_MESSAGES } from '../src/utils/constants.js';
+import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, LOADING_MESSAGES } from '../src/utils/constants.js';
 
 
 
@@ -54,13 +54,6 @@ describe('Constants', () => {
   describe('API_BASE_URL', () => {
     it('has a value', () => {
       expect(typeof API_BASE_URL).toBe('string');
-    });
-  });
-
-  describe('API_FALLBACK_URL', () => {
-    it('has a default value', () => {
-      expect(typeof API_FALLBACK_URL).toBe('string');
-      expect(API_FALLBACK_URL.length).toBeGreaterThan(0);
     });
   });
 

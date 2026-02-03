@@ -1,5 +1,5 @@
 import { apiRequest, apiGet, apiPost, apiDelete } from '../src/utils/request.js';
-import { API_BASE_URL, API_FALLBACK_URL } from '../src/utils/constants.js';
+import { API_BASE_URL } from '../src/utils/constants.js';
 
 describe('request utilities', () => {
   let fetchSpy;
@@ -103,31 +103,14 @@ describe('request utilities', () => {
       );
     });
 
-    it('falls back to fallback URL when primary fails', async () => {
-      const mockData = { data: 'from fallback' };
+    it('throws error on network failure', async () => {
+      fetchSpy.mockRejectedValue(new Error('Network failed'));
 
-      // First call (primary) fails
-      fetchSpy.mockRejectedValueOnce(new Error('Primary failed'));
-
-      // Second call (fallback) succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockData
-      });
-
-      const result = await apiRequest('/api/test');
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${API_BASE_URL}/api/test`, expect.any(Object));
-      expect(fetchSpy).toHaveBeenNthCalledWith(2, `${API_FALLBACK_URL}/api/test`, expect.any(Object));
-      expect(result).toEqual(mockData);
+      await expect(apiRequest('/api/test')).rejects.toThrow('Network error');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('falls back when primary returns non-ok response', async () => {
-      const mockData = { data: 'from fallback' };
-
-      // Primary returns 500 error
+    it('throws error when API returns non-ok response', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 500,
@@ -135,40 +118,8 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Server error' })
       });
 
-      // Fallback succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockData
-      });
-
-      const result = await apiRequest('/api/test');
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(result).toEqual(mockData);
-    });
-
-    it('does not fall back when skipFallback is true', async () => {
-      fetchSpy.mockRejectedValue(new Error('Primary failed'));
-
-      await expect(
-        apiRequest('/api/test', { skipFallback: true })
-      ).rejects.toThrow('Network error');
-
+      await expect(apiRequest('/api/test')).rejects.toThrow('Server error');
       expect(fetchSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('does not fall back when API_FALLBACK_URL is not set', async () => {
-      // Skip this test since we can't easily mock module constants in Vitest
-      // The behavior is tested indirectly through skipFallback tests
-    });
-
-    it('throws error when both primary and fallback fail', async () => {
-      fetchSpy.mockRejectedValue(new Error('Request failed'));
-
-      await expect(apiRequest('/api/test')).rejects.toThrow('Network error');
-      // Only 1 call because the mock rejects for both primary and fallback immediately
-      expect(fetchSpy).toHaveBeenCalled();
     });
 
     it('handles non-JSON responses with error', async () => {
@@ -179,7 +130,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('The requested resource was not found');
     });
 
@@ -190,7 +141,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Invalid JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('Invalid response from server. Please try again.');
     });
 
@@ -202,7 +153,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Law not found' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('Law not found');
     });
 
@@ -214,7 +165,7 @@ describe('request utilities', () => {
         json: async () => ({ error: 'Server error' })
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('Server error');
     });
 
@@ -226,7 +177,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('Rate limit exceeded');
     });
 
@@ -238,7 +189,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('do not have permission');
     });
 
@@ -250,7 +201,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('do not have permission');
     });
 
@@ -262,7 +213,7 @@ describe('request utilities', () => {
         json: async () => { throw new Error('Not JSON'); }
       });
 
-      await expect(apiRequest('/api/test', { skipFallback: true }))
+      await expect(apiRequest('/api/test'))
         .rejects.toThrow('Invalid request');
     });
   });
@@ -369,23 +320,11 @@ describe('request utilities', () => {
       expect(result).toEqual(mockData);
     });
 
-    it('falls back on error', async () => {
-      const mockData = { success: true };
-
-      // Primary fails
+    it('throws error on network failure', async () => {
       fetchSpy.mockRejectedValueOnce(new Error('Network error'));
 
-      // Fallback succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => mockData
-      });
-
-      const result = await apiDelete('/api/test');
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      expect(result).toEqual(mockData);
+      await expect(apiDelete('/api/test')).rejects.toThrow('Network error');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -39,7 +39,6 @@ export const SOCIAL_IMAGE_TOAST = `${SITE_URL}/social/buttered-toast-calculator.
 
 // API endpoints
 export const API_BASE_URL = getEnvVar('VITE_API_URL', 'API_URL', '');
-export const API_FALLBACK_URL = getEnvVar('VITE_API_FALLBACK_URL', 'API_FALLBACK_URL', 'http://127.0.0.1:8787');
 export const API_SHARE_CALCULATION_ENDPOINT = '/api/v1/share-calculation';
 
 // Fetch defaults

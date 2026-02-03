@@ -529,20 +529,15 @@ describe('SubmitLawSection component', () => {
 
   });
 
-  it('uses fallback URL when primary fails', async () => {
+  it('handles 503 error', async () => {
     // Mock fetchAPI for category loading
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
 
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, id: 123 })
-      });
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: 'Service unavailable' })
+    });
 
     const el = mountSection();
     document.body.appendChild(el);
@@ -562,24 +557,18 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
   });
 
-  it('handles fallback 404 error', async () => {
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => { throw new Error('Not JSON'); }
-      });
+  it('handles 404 error', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: async () => { throw new Error('Not JSON'); }
+    });
 
     const el = mountSection();
     document.body.appendChild(el);
@@ -601,18 +590,12 @@ describe('SubmitLawSection component', () => {
     vi.restoreAllMocks();
   });
 
-  it('handles fallback 500 error', async () => {
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => { throw new Error('Not JSON'); }
-      });
+  it('handles 500 error', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => { throw new Error('Not JSON'); }
+    });
 
     const el = mountSection();
     document.body.appendChild(el);
@@ -634,18 +617,12 @@ describe('SubmitLawSection component', () => {
     vi.restoreAllMocks();
   });
 
-  it('handles fallback 400 error', async () => {
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => { throw new Error('Not JSON'); }
-      });
+  it('handles 400 error', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => { throw new Error('Not JSON'); }
+    });
 
     const el = mountSection();
     document.body.appendChild(el);
@@ -667,18 +644,12 @@ describe('SubmitLawSection component', () => {
     vi.restoreAllMocks();
   });
 
-  it('handles fallback other status codes', async () => {
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 418,
-        json: async () => { throw new Error('Not JSON'); }
-      });
+  it('handles other status codes', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 418,
+      json: async () => { throw new Error('Not JSON'); }
+    });
 
     const el = mountSection();
     document.body.appendChild(el);
@@ -884,20 +855,19 @@ describe('SubmitLawSection component', () => {
     vi.restoreAllMocks();
   });
 
-  it('handles fallback error with error property', async () => {
-    global.fetch = vi.fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ error: 'Fallback error' })
-      });
+  it('handles error with error property', async () => {
+    // Mock fetchAPI for category loading
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'Validation error' })
+    });
 
     const el = mountSection({ append: true });
+
+    await new Promise(resolve => setTimeout(resolve, 20));
 
     const form = el.querySelector('.submit-form');
     const textarea = el.querySelector('#submit-text');
@@ -911,6 +881,8 @@ describe('SubmitLawSection component', () => {
     form.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
