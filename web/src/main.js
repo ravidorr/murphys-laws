@@ -10,9 +10,11 @@ const IGNORED_ERROR_PATTERNS = [
   /safari-extension:\/\//i,
   // Module import failures (transient network/cache issues)
   /Importing a module script failed/i,
-  // Service worker errors (transient browser state issues)
+  // Service worker errors (transient browser state issues, crawlers, network)
   /Service worker registration failed/i,
+  /Failed to register a ServiceWorker/i,
   /Failed to update a ServiceWorker/i,
+  /error occurred when fetching the script/i,
   /The object is in an invalid state/i,
   /newestWorker is null/i,
 ];
