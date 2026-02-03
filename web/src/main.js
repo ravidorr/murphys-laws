@@ -8,6 +8,7 @@ const IGNORED_ERROR_PATTERNS = [
   /chrome-extension:\/\//i,
   /moz-extension:\/\//i,
   /safari-extension:\/\//i,
+  /Object Not Found Matching Id/i, // LastPass, Grammarly, and similar extensions
   // Module import failures (transient network/cache issues)
   /Importing a module script failed/i,
   // Service worker errors (transient browser state issues, crawlers, network)
