@@ -1,5 +1,3 @@
-import * as Sentry from '@sentry/browser';
-
 let loaderPromise;
 
 const MATHJAX_FONT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2';
@@ -72,18 +70,12 @@ export async function ensureMathJax() {
         await import('mathjax/es5/tex-chtml.js');
       } catch (error) {
         loaderPromise = undefined;
-        // Log module load failures to Sentry for debugging
-        // This can happen due to stale service worker cache, network issues, or bundler chunk mismatch
-        if (import.meta.env.PROD) {
-          Sentry.captureException(error, {
-            tags: { module: 'mathjax', type: 'dynamic_import_failure' },
-            extra: {
-              userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-              online: typeof navigator !== 'undefined' ? navigator.onLine : 'unknown',
-            },
-          });
-        }
-        // Don't throw - MathJax is non-critical, pages should still render
+        // Module import failures are typically caused by:
+        // - Stale service worker cache (old HTML references new chunks)
+        // - Network connectivity issues  
+        // - Mobile Safari ES module bugs
+        // These are transient issues outside our control, so we don't report to Sentry.
+        // MathJax is non-critical - pages still render without math formatting
         console.error('Failed to load MathJax:', error);
         return undefined;
       }
