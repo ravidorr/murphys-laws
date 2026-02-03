@@ -376,12 +376,25 @@ if (isFavoritesEnabled()) {
         const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
         icon.setAttribute('data-icon-name', newIconName);
         // Re-render the icon by importing hydrateIcons dynamically
-        import('./utils/icons.js').then(({ createIcon }) => {
-          const newIcon = createIcon(newIconName);
-          if (newIcon && icon.parentNode) {
-            icon.parentNode.replaceChild(newIcon, icon);
-          }
-        });
+        import('./utils/icons.js')
+          .then(({ createIcon }) => {
+            const newIcon = createIcon(newIconName);
+            if (newIcon && icon.parentNode) {
+              icon.parentNode.replaceChild(newIcon, icon);
+            }
+          })
+          .catch((error) => {
+            // Log module load failures to Sentry for debugging
+            // This can happen due to stale service worker cache, network issues, or CORS
+            if (import.meta.env.PROD) {
+              Sentry.captureException(error, {
+                tags: { module: 'icons.js', action: 'favorite_toggle' },
+                extra: { iconName: newIconName },
+              });
+            }
+            // Graceful degradation: icon won't update visually but functionality still works
+            console.error('Failed to load icons module:', error);
+          });
       }
 
       // Update aria-label and tooltip

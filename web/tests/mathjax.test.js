@@ -1,6 +1,11 @@
 // We need to reset the module between tests to clear the loaderPromise
 let ensureMathJax;
 
+// Mock Sentry to avoid actual error reporting in tests
+vi.mock('@sentry/browser', () => ({
+  captureException: vi.fn(),
+}));
+
 describe('mathjax utility', () => {
   let originalMathJax;
 
@@ -69,12 +74,38 @@ describe('mathjax utility', () => {
       const localEnsureMathJax = module.ensureMathJax;
 
       // The ensureMathJax will try to load mathjax, which will fail
-      // We just need to test that it doesn't return the incomplete MathJax
-      try {
-        await localEnsureMathJax();
-      } catch {
-        // Expected to fail since we can't load the module
-      }
+      // It should return undefined gracefully instead of throwing
+      const result = await localEnsureMathJax();
+      expect(result).toBeUndefined();
+    });
+
+    it('returns undefined and logs error when dynamic import fails', async () => {
+      delete window.MathJax;
+      
+      // Reset modules and mock the mathjax import to fail
+      vi.resetModules();
+      vi.doMock('mathjax/es5/tex-chtml.js', () => {
+        throw new Error('Importing a module script failed');
+      });
+
+      // Re-import to use the mocked module
+      const module = await import('../src/utils/mathjax.js');
+      const localEnsureMathJax = module.ensureMathJax;
+
+      // Spy on console.error
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Should return undefined gracefully, not throw
+      const result = await localEnsureMathJax();
+      expect(result).toBeUndefined();
+      
+      // Should have logged the error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to load MathJax:',
+        expect.any(Error)
+      );
+
+      consoleErrorSpy.mockRestore();
     });
 
     it('configures MathJax window object when loading', async () => {
