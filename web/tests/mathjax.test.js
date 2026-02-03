@@ -1,11 +1,6 @@
 // We need to reset the module between tests to clear the loaderPromise
 let ensureMathJax;
 
-// Mock Sentry to avoid actual error reporting in tests
-vi.mock('@sentry/browser', () => ({
-  captureException: vi.fn(),
-}));
-
 describe('mathjax utility', () => {
   let originalMathJax;
 

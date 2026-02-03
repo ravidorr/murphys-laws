@@ -384,14 +384,11 @@ if (isFavoritesEnabled()) {
             }
           })
           .catch((error) => {
-            // Log module load failures to Sentry for debugging
-            // This can happen due to stale service worker cache, network issues, or CORS
-            if (import.meta.env.PROD) {
-              Sentry.captureException(error, {
-                tags: { module: 'icons.js', action: 'favorite_toggle' },
-                extra: { iconName: newIconName },
-              });
-            }
+            // Module import failures are typically caused by:
+            // - Stale service worker cache (old HTML references new chunks)
+            // - Network connectivity issues
+            // - Mobile Safari ES module bugs
+            // These are transient issues outside our control, so we don't report to Sentry.
             // Graceful degradation: icon won't update visually but functionality still works
             console.error('Failed to load icons module:', error);
           });
