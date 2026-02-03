@@ -10,8 +10,10 @@ const IGNORED_ERROR_PATTERNS = [
   /safari-extension:\/\//i,
   // Module import failures (transient network/cache issues)
   /Importing a module script failed/i,
-  // Service worker errors (handled elsewhere)
+  // Service worker errors (transient browser state issues)
   /Service worker registration failed/i,
+  /Failed to update a ServiceWorker/i,
+  /The object is in an invalid state/i,
 ];
 
 // Initialize Sentry for production error tracking
