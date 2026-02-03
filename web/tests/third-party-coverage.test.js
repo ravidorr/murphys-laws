@@ -293,4 +293,27 @@ describe('third-party utils coverage', () => {
     
     await expect(promise).rejects.toThrow('Failed to load script');
   });
+
+  it('triggerThirdPartyLoads silently catches gtag script load errors', async () => {
+    vi.resetModules();
+    const { initAnalyticsBootstrap } = await import('../src/utils/third-party.js');
+    
+    initAnalyticsBootstrap();
+    
+    // Trigger third-party loads
+    window.dispatchEvent(new Event('scroll'));
+    
+    // Find the gtag script and simulate error (ad blocker scenario)
+    const script = document.querySelector('script[src*="googletagmanager"]');
+    expect(script).toBeTruthy();
+    
+    // Simulate script error - should not throw unhandled rejection
+    script.dispatchEvent(new Event('error'));
+    
+    // Give promise time to settle
+    await new Promise(r => setTimeout(r, 10));
+    
+    // Test passes if no unhandled rejection occurred
+    expect(true).toBe(true);
+  });
 });

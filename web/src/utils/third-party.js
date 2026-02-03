@@ -95,13 +95,19 @@ function triggerThirdPartyLoads() {
   }
 
   // Load Google Analytics script (deferred until user interaction)
+  // Catch errors silently - users with ad blockers will block this
   if (!gtagPromise) {
-    gtagPromise = loadScript(GTAG_SRC).then(() => {
-      if (window.gtag) {
-        window.gtag('js', new Date());
-        window.gtag('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
-      }
-    });
+    gtagPromise = loadScript(GTAG_SRC)
+      .then(() => {
+        if (window.gtag) {
+          window.gtag('js', new Date());
+          window.gtag('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
+        }
+      })
+      .catch(() => {
+        // Silently ignore - script blocked by ad blocker, privacy extension, or network issue
+        // This is expected behavior and not an error in our application
+      });
   }
 }
 
