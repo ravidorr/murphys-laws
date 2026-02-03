@@ -1,16 +1,15 @@
-// Generic API request utility with automatic fallback
+// Generic API request utility with error handling
 // Eliminates ~325 lines of duplicate fetch logic across voting, submissions, etc.
 
-import { API_BASE_URL, API_FALLBACK_URL } from './constants.js';
+import { API_BASE_URL } from './constants.js';
 
 /**
- * Generic API request handler with automatic fallback and error handling
+ * Generic API request handler with error handling
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/laws')
  * @param {Object} options - Fetch options
  * @param {string} options.method - HTTP method (GET, POST, DELETE, etc.)
  * @param {Object} options.body - Request body (will be JSON.stringified)
  * @param {Object} options.headers - Additional headers
- * @param {boolean} options.skipFallback - Skip fallback URL on error
  * @returns {Promise<any>} JSON response
  * @throws {Error} With user-friendly error message
  */
@@ -18,8 +17,7 @@ export async function apiRequest(endpoint, options = {}) {
   const {
     method = 'GET',
     body = null,
-    headers = {},
-    skipFallback = false
+    headers = {}
   } = options;
 
   // Build request options
@@ -37,21 +35,8 @@ export async function apiRequest(endpoint, options = {}) {
     requestOptions.body = JSON.stringify(body);
   }
 
-  // Try primary URL first
-  const primaryUrl = `${API_BASE_URL}${endpoint}`;
-
-  try {
-    return await fetchWithErrorHandling(primaryUrl, requestOptions);
-  } catch (primaryError) {
-    // If skipFallback is true or no fallback configured, throw error
-    if (skipFallback || !API_FALLBACK_URL) {
-      throw primaryError;
-    }
-
-    // Try fallback URL
-    const fallbackUrl = `${API_FALLBACK_URL}${endpoint}`;
-    return await fetchWithErrorHandling(fallbackUrl, requestOptions);
-  }
+  const url = `${API_BASE_URL}${endpoint}`;
+  return await fetchWithErrorHandling(url, requestOptions);
 }
 
 /**

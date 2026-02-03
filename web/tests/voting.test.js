@@ -5,8 +5,7 @@ vi.mock('../src/utils/constants.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    API_BASE_URL: 'http://primary-api.com',
-    API_FALLBACK_URL: 'http://fallback-api.com'
+    API_BASE_URL: 'http://primary-api.com'
   };
 });
 
@@ -155,62 +154,15 @@ describe('Voting utilities', () => {
       await expect(voteLaw(123, 'up')).rejects.toThrow();
     });
 
-    it('uses fallback URL on primary failure', async () => {
-      // Primary fails
+    it('throws error on API failure', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
         json: async () => ({ error: 'Service unavailable' })
       });
 
-      // Fallback succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ upvotes: 11, downvotes: 2 })
-      });
-
-      const result = await voteLaw(123, 'up');
-      expect(result).toEqual({ upvotes: 11, downvotes: 2 });
-      expect(getUserVote(123)).toBe('up');
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('handles fallback error with error property', async () => {
-      // Primary fails
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      });
-
-      // Fallback also fails
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({ error: 'Fallback error' })
-      });
-
-      await expect(voteLaw(123, 'up')).rejects.toThrow('Fallback error');
-    });
-
-    it('handles fallback error with invalid JSON', async () => {
-
-      // Primary fails with error property
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      });
-
-      // Fallback fails with invalid JSON
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => { throw new Error('Invalid JSON'); }
-      });
-
-      await expect(voteLaw(123, 'up')).rejects.toThrow();
-
+      await expect(voteLaw(123, 'up')).rejects.toThrow('Service unavailable');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -258,62 +210,15 @@ describe('Voting utilities', () => {
       await expect(unvoteLaw(123)).rejects.toThrow();
     });
 
-    it('uses fallback URL on primary failure', async () => {
-      // Primary fails
+    it('throws error on API failure', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 503,
         json: async () => ({ error: 'Service unavailable' })
       });
 
-      // Fallback succeeds
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ upvotes: 10, downvotes: 2 })
-      });
-
-      const result = await unvoteLaw(123);
-      expect(result).toEqual({ upvotes: 10, downvotes: 2 });
-      expect(getUserVote(123)).toBeNull();
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it('handles fallback error with error property', async () => {
-      // Primary fails
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      });
-
-      // Fallback also fails
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({ error: 'Fallback error' })
-      });
-
-      await expect(unvoteLaw(123)).rejects.toThrow('Fallback error');
-    });
-
-    it('handles fallback error with invalid JSON', async () => {
-
-      // Primary fails with error property
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({ error: 'Service unavailable' })
-      });
-
-      // Fallback fails with invalid JSON
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => { throw new Error('Invalid JSON'); }
-      });
-
-      await expect(unvoteLaw(123)).rejects.toThrow();
-
+      await expect(unvoteLaw(123)).rejects.toThrow('Service unavailable');
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
   });
 

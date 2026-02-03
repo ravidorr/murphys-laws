@@ -63,18 +63,11 @@ describe('Voting API integration', () => {
       await expect(voteLaw(123, 'up')).rejects.toThrow();
     });
 
-    it('uses fallback URL on primary failure', async () => {
-      global.fetch
-        .mockRejectedValueOnce(new Error('Primary failed'))
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ success: true })
-        });
+    it('throws error on network failure', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network failed'));
 
-      await voteLaw(123, 'up');
-
-      expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(getUserVote(123)).toBe('up');
+      await expect(voteLaw(123, 'up')).rejects.toThrow('Network error');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -123,17 +116,11 @@ describe('Voting API integration', () => {
       await expect(unvoteLaw(123)).rejects.toThrow();
     });
 
-    it('uses fallback URL on primary failure', async () => {
-      global.fetch
-        .mockRejectedValueOnce(new Error('Primary failed'))
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ success: true })
-        });
+    it('throws error on network failure', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network failed'));
 
-      await unvoteLaw(123);
-
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      await expect(unvoteLaw(123)).rejects.toThrow('Network error');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
   });
 
