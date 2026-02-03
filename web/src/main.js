@@ -1,6 +1,19 @@
 // Initialize Sentry first to capture all errors
 import * as Sentry from '@sentry/browser';
 
+// Patterns to filter out from Sentry - these are not application bugs
+const IGNORED_ERROR_PATTERNS = [
+  // Browser extension errors (not our code)
+  /runtime\.sendMessage/i,
+  /chrome-extension:\/\//i,
+  /moz-extension:\/\//i,
+  /safari-extension:\/\//i,
+  // Module import failures (transient network/cache issues)
+  /Importing a module script failed/i,
+  // Service worker errors (handled elsewhere)
+  /Service worker registration failed/i,
+];
+
 // Initialize Sentry for production error tracking
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -14,6 +27,28 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     tracesSampleRate: 0.1,
     // Don't send errors in development
     enabled: import.meta.env.PROD,
+    // Filter out errors that aren't application bugs
+    beforeSend(event) {
+      const errorMessage = event.exception?.values?.[0]?.value || '';
+      const stackTrace = event.exception?.values?.[0]?.stacktrace?.frames || [];
+      
+      // Check if error message matches any ignored pattern
+      for (const pattern of IGNORED_ERROR_PATTERNS) {
+        if (pattern.test(errorMessage)) {
+          return null; // Drop the event
+        }
+      }
+      
+      // Check if stack trace contains browser extension URLs
+      for (const frame of stackTrace) {
+        const filename = frame.filename || '';
+        if (/^(chrome|moz|safari)-extension:\/\//i.test(filename)) {
+          return null; // Drop events from browser extensions
+        }
+      }
+      
+      return event;
+    },
   });
 }
 
@@ -39,10 +74,10 @@ const updateSW = registerSW({
     }
   },
   onRegisterError(error) {
-    // Log service worker registration errors to Sentry
-    if (import.meta.env.PROD) {
-      Sentry.captureException(error);
-    }
+    // Service worker registration errors are typically caused by:
+    // - Module import failures (stale cache, network issues)
+    // - Browser restrictions (private mode, extensions blocking)
+    // These are transient issues outside our control, so we just log to console.
     console.error('Service worker registration failed:', error);
   }
 });
