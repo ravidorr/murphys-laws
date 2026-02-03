@@ -4,8 +4,6 @@
  * preventing "Google-served ads on screens without publisher-content" violations.
  */
 
-import * as Sentry from '@sentry/browser';
-
 let isAdSenseInitialized = false;
 
 function initAdSense() {
@@ -21,9 +19,9 @@ function initAdSense() {
   script.async = true;
   script.crossOrigin = 'anonymous';
 
-  script.onerror = () => {
-    Sentry.captureMessage('AdSense failed to load', 'warning');
-  };
+  // Note: We intentionally don't report AdSense load failures to Sentry.
+  // Ad blockers commonly block this script, which is expected user behavior
+  // and not an application error.
 
   document.head.appendChild(script);
 }
