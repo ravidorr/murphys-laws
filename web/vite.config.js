@@ -11,6 +11,9 @@ export default defineConfig({
     // PWA plugin for service worker and manifest generation
     VitePWA({
       registerType: 'autoUpdate',
+      // Use injectManifest for more control over caching strategy
+      // This helps prevent "Importing a module script failed" errors from stale cache
+      strategies: 'generateSW',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'android-chrome-*.png'],
       manifest: {
         name: "Murphy's Law Archive",
@@ -57,6 +60,13 @@ export default defineConfig({
         // Offline fallback page
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [/^\/api\//],
+        // Clean up old caches on activation to prevent stale chunk errors
+        // This helps prevent "Importing a module script failed" when old HTML references new chunks
+        cleanupOutdatedCaches: true,
+        // Skip waiting to activate new service worker immediately
+        // Combined with registerType: 'autoUpdate', this ensures users get fresh assets
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           // Categories API - rarely changes, use StaleWhileRevalidate
           {
