@@ -14,6 +14,7 @@ const IGNORED_ERROR_PATTERNS = [
   /Service worker registration failed/i,
   /Failed to update a ServiceWorker/i,
   /The object is in an invalid state/i,
+  /newestWorker is null/i,
 ];
 
 // Initialize Sentry for production error tracking
@@ -71,7 +72,13 @@ const updateSW = registerSW({
     // Check for updates periodically (every hour)
     if (registration) {
       setInterval(() => {
-        registration.update();
+        // Wrap in try-catch - registration can become invalid if SW is unregistered
+        // or the browser is in a state where update() cannot be called
+        try {
+          registration.update();
+        } catch {
+          // Silently ignore - SW will recover on next page load
+        }
       }, 60 * 60 * 1000);
     }
   },
