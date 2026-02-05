@@ -12,45 +12,38 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 
 // Hero section HTML - single source of truth for home page heading
 const HERO_HTML = `
-  <h1 class="page-title page-title-hero text-primary mb-4"><span class="accent-text">The Ultimate Archive</span> of Life's Unavoidable Truths</h1>
-  <p class="text-center mb-2 text-lg text-muted-fg max-w-2xl mx-auto">
-    <strong>From Rocket Sleds to Buttered Toast:</strong> Navigating the Science of Murphy's Law.
-  </p>
-  <p class="text-center mb-8 text-muted-fg max-w-2xl mx-auto">
-    "Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during high-stakes rocket sled experiments at Edwards Air Force Base, this simple observation revolutionized how we view safety, engineering, and human error.
-  </p>
+  <h1 class="page-title page-title-hero text-primary mb-4"><span class="accent-text">The</span> Ultimate Murphy's Law Archive</h1>
 `;
 
 const HOME_OVERVIEW_HTML = `
   <section class="card content-card mb-8">
     <header class="card-header">
-      <h2 class="card-title"><span class="accent-text">Why</span> Murphy's Law Still Matters</h2>
-      <p class="text-muted-fg">Murphy's Law is more than just a punchline - it is a call to excellence. It serves as a practical reminder to plan for failure, design for resilience, and maintain a sense of humor when the "impossible" happens anyway.</p>
+      <h2 class="card-title"><span class="accent-text">From Rocket Sleds to Buttered Toast:</span> The Science of Murphy's Law</h2>
+      <p class="text-muted-fg">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base, this observation revolutionized how we approach safety, engineering, and human error.</p>
     </header>
     <div class="card-body">
       <div class="content-section">
+        <h3>Why Murphy's Law Still Matters</h3>
         <p>
-          Our archive is the world's most comprehensive collection of these universal insights. We curate the most enduring formulations of the law - from classical corollaries and field-specific variants in aviation and healthcare to the daily frustrations of modern life.
+          Murphy's Law is more than a punchline. It is a call to excellence: plan for failure, design for resilience, and keep your sense of humor when the "impossible" happens anyway.
+        </p>
+        <p>
+          Our archive is the world's most comprehensive collection of these universal insights. We curate the most enduring formulations - from classical corollaries and field-specific variants in <a href="#/categories" data-nav="categories">aviation, healthcare, and technology</a> to the daily frustrations of modern life.
         </p>
         <ul>
-          <li><strong>Verified Origins:</strong> We prioritize entries with documented sources and real-world relevance.</li>
-          <li><strong>The Law of the Crowd:</strong> Join a community that votes on submissions to ensure the most insightful (and relatable) laws rise to the top.</li>
-          <li><strong>Practical Resilience:</strong> Every category offers lessons in risk management and defensive design to help you stay one step ahead of the unexpected.</li>
+          <li><strong>Verified Origins:</strong> Entries with documented sources and real-world relevance.</li>
+          <li><strong>Community Curation:</strong> Vote on <a href="#/submit" data-nav="submit">submissions</a> to surface the most insightful laws.</li>
+          <li><strong>Practical Resilience:</strong> Every <a href="#/categories" data-nav="categories">category</a> offers lessons in risk management and defensive design.</li>
         </ul>
-      </div>
-    </div>
-  </section>
-  <section class="card content-card mb-8">
-    <header class="card-header">
-      <h2 class="card-title"><span class="accent-text">Master</span> the Chaos</h2>
-      <p class="text-muted-fg">Whether you are an engineer auditing a safety system or a traveler looking for a laugh after a missed flight, our tools help you explore the patterns of the universe with purpose.</p>
-    </header>
-    <div class="card-body">
-      <div class="content-section">
+
+        <h3>Master the Chaos</h3>
+        <p>
+          Whether you are an engineer auditing a safety system or a traveler seeking perspective after a missed flight, our tools help you explore these patterns with purpose.
+        </p>
         <ul>
-          <li><strong>Daily Insight:</strong> Check the Law of the Day for your morning dose of reality.</li>
-          <li><strong>Predict the Inevitable:</strong> Use our Sod's Law and Buttered Toast calculators to model the probability of your next mishap.</li>
-          <li><strong>The Living Record:</strong> Visit our <a href="#/real-life-examples" data-nav="real-life-examples">Real-Life Examples</a> page to see how Murphy's Law manifests in modern projects, travel, and technology.</li>
+          <li><strong>Daily Insight:</strong> The Law of the Day delivers your morning dose of reality.</li>
+          <li><strong>Predict the Inevitable:</strong> Use the <a href="#/calculators/sods-law" data-nav="calculators/sods-law">Sod's Law</a> and <a href="#/calculators/buttered-toast" data-nav="calculators/buttered-toast">Buttered Toast</a> calculators to model your next mishap.</li>
+          <li><strong>The Living Record:</strong> See how Murphy's Law manifests in <a href="#/real-life-examples" data-nav="real-life-examples">real-world projects, travel, and technology</a>.</li>
         </ul>
         <p class="text-center mt-4">
           <em>Don't just wait for things to go wrong. Understand why they do.</em>
