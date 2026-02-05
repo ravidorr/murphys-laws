@@ -45,7 +45,7 @@ describe('Home view', () => {
     expect(block.classList.contains('lod-link')).toBe(true);
   });
 
-  it('shows no Law of the Day when response has no law', async () => {
+  it('shows no Law of the Day widget when response has no law', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
@@ -54,8 +54,9 @@ describe('Home view', () => {
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    // Should still render calculators and submit section, just no Law of the Day
-    expect(el.textContent).not.toMatch(/Law of the Day/);
+    // Should still render calculators and submit section, just no Law of the Day widget
+    // Check for widget element (has #lod-date) rather than text since hero content mentions "Law of the Day"
+    expect(el.querySelector('#lod-date')).toBeNull();
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
@@ -210,7 +211,7 @@ describe('Home view', () => {
     expect(navCalled).toBe(false);
   });
 
-  it('renders with no law of the day when data array is empty', async () => {
+  it('renders with no law of the day widget when data array is empty', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
@@ -219,8 +220,9 @@ describe('Home view', () => {
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 0));
 
-    // Should render calculator and submit sections but no law of the day
-    expect(el.textContent).not.toMatch(/Law of the Day/);
+    // Should render calculator and submit sections but no law of the day widget
+    // Check for widget element rather than text since hero content mentions "Law of the Day"
+    expect(el.querySelector('#lod-date')).toBeNull();
   });
 
   it('handles non-HTMLElement click targets', async () => {
@@ -416,9 +418,10 @@ describe('renderHome function', () => {
 
     renderHome(el, null, [], onNavigate);
 
-    // Should render calculator and submit sections without Law of the Day
+    // Should render calculator and submit sections without Law of the Day widget
     expect(el.textContent).toMatch(/Calculator|Submit/i);
-    expect(el.textContent).not.toMatch(/Law of the Day/);
+    // Check for widget element rather than text since hero content mentions "Law of the Day"
+    expect(el.querySelector('#lod-date')).toBeNull();
   });
 
   it('handles valid lawOfTheDay object', () => {
