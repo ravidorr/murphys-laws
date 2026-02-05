@@ -59,14 +59,32 @@ describe('Icons utility', () => {
       });
     });
 
-    it('creates theme-related icons with correct viewBox', () => {
+    it('creates theme-related icons with correct viewBox (Lucide style)', () => {
       const sunIcon = createIcon('sun');
       const moonIcon = createIcon('moon');
       const sunMoonIcon = createIcon('sunMoon');
 
-      expect(sunIcon.getAttribute('viewBox')).toBe('0 0 512 512');
-      expect(moonIcon.getAttribute('viewBox')).toBe('0 0 384 512');
-      expect(sunMoonIcon.getAttribute('viewBox')).toBe('0 0 512 512');
+      // All Lucide icons use 24x24 viewBox
+      expect(sunIcon.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(moonIcon.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(sunMoonIcon.getAttribute('viewBox')).toBe('0 0 24 24');
+    });
+
+    it('creates stroke-based icons with correct attributes (Lucide style)', () => {
+      const sunIcon = createIcon('sun');
+
+      expect(sunIcon.getAttribute('fill')).toBe('none');
+      expect(sunIcon.getAttribute('stroke')).toBe('currentColor');
+      expect(sunIcon.getAttribute('stroke-width')).toBe('2');
+      expect(sunIcon.getAttribute('stroke-linecap')).toBe('round');
+      expect(sunIcon.getAttribute('stroke-linejoin')).toBe('round');
+    });
+
+    it('creates fill-based icons with correct attributes (Font Awesome style)', () => {
+      const homeIcon = createIcon('home');
+
+      expect(homeIcon.getAttribute('fill')).toBe('currentColor');
+      expect(homeIcon.hasAttribute('stroke')).toBe(false);
     });
 
     it('handles empty classNames array', () => {
