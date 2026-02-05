@@ -19,11 +19,50 @@ const HERO_HTML = `
   </p>
 `;
 
+const HOME_OVERVIEW_HTML = `
+  <section class="card content-card mb-8">
+    <header class="card-header">
+      <h2 class="card-title"><span class="accent-text">Why</span> Murphy's Law Still Matters</h2>
+      <p class="text-muted-fg">Murphy's Law isn't just a punchline - it's a practical reminder to plan for failure, design for resilience, and keep a sense of humor when things go sideways.</p>
+    </header>
+    <div class="card-body">
+      <div class="content-section">
+        <p>
+        This archive curates the most enduring formulations of Murphy's Law, including classical corollaries, field-specific variants, and firsthand stories submitted by readers.
+        We highlight how the law shows up in engineering, aviation, healthcare, finance, and everyday life, with context that explains where each observation came from.
+        </p>
+        <ul>
+          <li><strong>Context-first curation:</strong> We prioritize entries with a known origin, documented source, or clear real-world relevance.</li>
+          <li><strong>Community-reviewed:</strong> Visitors vote on submissions, helping the most insightful laws rise to the top.</li>
+          <li><strong>Actionable takeaways:</strong> Each category includes patterns and lessons you can apply before things go wrong.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <section class="card content-card mb-8">
+    <header class="card-header">
+      <h2 class="card-title"><span class="accent-text">How</span> to Use the Archive</h2>
+      <p class="text-muted-fg">Whether you're researching safety systems or just need a laugh, these tools make it easy to explore the archive with purpose.</p>
+    </header>
+    <div class="card-body">
+      <div class="content-section">
+        <p>
+          Start with the Law of the Day for a daily reminder, then dive into curated categories for your industry or curiosity.
+          Use the calculators to model classic scenarios, or submit your own Murphy moment to keep the archive evolving.
+        </p>
+        <p>
+          Looking for inspiration? Visit the <a href="/examples" data-nav="examples">real-life examples</a> page and explore how other readers describe the patterns they've noticed in projects, travel, and daily life.
+        </p>
+      </div>
+    </div>
+  </section>
+`;
+
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
 export function renderHome(el, lawOfTheDay, _categories, onNavigate) {
   // Clear loading indicator but preserve the hero H1 and description
-  el.innerHTML = HERO_HTML;
+  el.innerHTML = `${HERO_HTML}${HOME_OVERVIEW_HTML}`;
 
   if (lawOfTheDay) {
     const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
@@ -49,7 +88,7 @@ export function Home({ onNavigate }) {
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = `${HERO_HTML}${renderLoadingHTML({ size: 'large' })}`;
+  el.innerHTML = `${HERO_HTML}${HOME_OVERVIEW_HTML}${renderLoadingHTML({ size: 'large' })}`;
 
   function fetchAndRender() {
     fetchLawOfTheDay()
