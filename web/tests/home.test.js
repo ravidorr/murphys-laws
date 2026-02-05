@@ -437,6 +437,25 @@ describe('renderHome function', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
+  it('renders overview section with title in section-header and description in section-subheader', () => {
+    const el = document.createElement('div');
+    renderHome(el, null, [], vi.fn());
+
+    const sectionCard = el.querySelector('.section-card');
+    expect(sectionCard).toBeTruthy();
+
+    const header = sectionCard.querySelector('.section-header');
+    expect(header).toBeTruthy();
+    expect(header.querySelector('.section-title')).toBeTruthy();
+    expect(header.querySelector('p')).toBeNull();
+
+    const subheader = sectionCard.querySelector('.section-subheader');
+    expect(subheader).toBeTruthy();
+    const subtitle = subheader.querySelector('.section-subtitle');
+    expect(subtitle).toBeTruthy();
+    expect(subtitle.textContent).toMatch(/Anything that can go wrong, will go wrong/);
+  });
+
 });
 
 describe('Home view keyboard navigation for law cards', () => {
