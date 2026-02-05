@@ -19,71 +19,41 @@ const HERO_HTML = `
   <p class="text-center mb-8 text-muted-fg max-w-2xl mx-auto">
     "Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during high-stakes rocket sled experiments at Edwards Air Force Base, this simple observation revolutionized how we view safety, engineering, and human error.
   </p>
-
-  <section class="home-section mb-8">
-    <h2 class="section-title">Why Murphy's Law Still Matters</h2>
-    <p class="text-muted-fg mb-4">
-      Murphy's Law is more than just a punchline - it is a call to excellence. It serves as a practical reminder to plan for failure, design for resilience, and maintain a sense of humor when the "impossible" happens anyway.
-    </p>
-    <p class="text-muted-fg mb-6">
-      Our archive is the world's most comprehensive collection of these universal insights. We curate the most enduring formulations of the law - from classical corollaries and field-specific variants in aviation and healthcare to the daily frustrations of modern life.
-    </p>
-    <ul class="feature-list">
-      <li><strong>Verified Origins:</strong> We prioritize entries with documented sources and real-world relevance.</li>
-      <li><strong>The Law of the Crowd:</strong> Join a community that votes on submissions to ensure the most insightful (and relatable) laws rise to the top.</li>
-      <li><strong>Practical Resilience:</strong> Every category offers lessons in risk management and defensive design to help you stay one step ahead of the unexpected.</li>
-    </ul>
-  </section>
-
-  <section class="home-section mb-8">
-    <h2 class="section-title">Master the Chaos</h2>
-    <p class="text-muted-fg mb-6">
-      Whether you are an engineer auditing a safety system or a traveler looking for a laugh after a missed flight, our tools help you explore the patterns of the universe with purpose.
-    </p>
-    <ul class="feature-list">
-      <li><strong>Daily Insight:</strong> Check the Law of the Day for your morning dose of reality.</li>
-      <li><strong>Predict the Inevitable:</strong> Use our Sod's Law and Buttered Toast calculators to model the probability of your next mishap.</li>
-      <li><strong>The Living Record:</strong> Visit our <a href="#/real-life-examples" data-nav="real-life-examples">Real-Life Examples</a> page to see how Murphy's Law manifests in modern projects, travel, and technology.</li>
-    </ul>
-    <p class="text-muted-fg mt-6 text-center">
-      <em>Don't just wait for things to go wrong. Understand why they do.</em>
-    </p>
-  </section>
 `;
 
 const HOME_OVERVIEW_HTML = `
   <section class="card content-card mb-8">
     <header class="card-header">
       <h2 class="card-title"><span class="accent-text">Why</span> Murphy's Law Still Matters</h2>
-      <p class="text-muted-fg">Murphy's Law isn't just a punchline - it's a practical reminder to plan for failure, design for resilience, and keep a sense of humor when things go sideways.</p>
+      <p class="text-muted-fg">Murphy's Law is more than just a punchline - it is a call to excellence. It serves as a practical reminder to plan for failure, design for resilience, and maintain a sense of humor when the "impossible" happens anyway.</p>
     </header>
     <div class="card-body">
       <div class="content-section">
         <p>
-        This archive curates the most enduring formulations of Murphy's Law, including classical corollaries, field-specific variants, and firsthand stories submitted by readers.
-        We highlight how the law shows up in engineering, aviation, healthcare, finance, and everyday life, with context that explains where each observation came from.
+          Our archive is the world's most comprehensive collection of these universal insights. We curate the most enduring formulations of the law - from classical corollaries and field-specific variants in aviation and healthcare to the daily frustrations of modern life.
         </p>
         <ul>
-          <li><strong>Context-first curation:</strong> We prioritize entries with a known origin, documented source, or clear real-world relevance.</li>
-          <li><strong>Community-reviewed:</strong> Visitors vote on submissions, helping the most insightful laws rise to the top.</li>
-          <li><strong>Actionable takeaways:</strong> Each category includes patterns and lessons you can apply before things go wrong.</li>
+          <li><strong>Verified Origins:</strong> We prioritize entries with documented sources and real-world relevance.</li>
+          <li><strong>The Law of the Crowd:</strong> Join a community that votes on submissions to ensure the most insightful (and relatable) laws rise to the top.</li>
+          <li><strong>Practical Resilience:</strong> Every category offers lessons in risk management and defensive design to help you stay one step ahead of the unexpected.</li>
         </ul>
       </div>
     </div>
   </section>
   <section class="card content-card mb-8">
     <header class="card-header">
-      <h2 class="card-title"><span class="accent-text">How</span> to Use the Archive</h2>
-      <p class="text-muted-fg">Whether you're researching safety systems or just need a laugh, these tools make it easy to explore the archive with purpose.</p>
+      <h2 class="card-title"><span class="accent-text">Master</span> the Chaos</h2>
+      <p class="text-muted-fg">Whether you are an engineer auditing a safety system or a traveler looking for a laugh after a missed flight, our tools help you explore the patterns of the universe with purpose.</p>
     </header>
     <div class="card-body">
       <div class="content-section">
-        <p>
-          Start with the Law of the Day for a daily reminder, then dive into curated categories for your industry or curiosity.
-          Use the calculators to model classic scenarios, or submit your own Murphy moment to keep the archive evolving.
-        </p>
-        <p>
-          Looking for inspiration? Visit the <a href="/examples" data-nav="examples">real-life examples</a> page and explore how other readers describe the patterns they've noticed in projects, travel, and daily life.
+        <ul>
+          <li><strong>Daily Insight:</strong> Check the Law of the Day for your morning dose of reality.</li>
+          <li><strong>Predict the Inevitable:</strong> Use our Sod's Law and Buttered Toast calculators to model the probability of your next mishap.</li>
+          <li><strong>The Living Record:</strong> Visit our <a href="#/real-life-examples" data-nav="real-life-examples">Real-Life Examples</a> page to see how Murphy's Law manifests in modern projects, travel, and technology.</li>
+        </ul>
+        <p class="text-center mt-4">
+          <em>Don't just wait for things to go wrong. Understand why they do.</em>
         </p>
       </div>
     </div>
