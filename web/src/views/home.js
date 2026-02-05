@@ -19,7 +19,9 @@ const HOME_OVERVIEW_HTML = `
   <section class="section section-card mb-12">
     <div class="section-header">
       <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
-      <p>"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base, this observation revolutionized how we approach safety, engineering, and human error.</p>
+    </div>
+    <div class="section-subheader">
+      <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base, this observation revolutionized how we approach safety, engineering, and human error.</p>
     </div>
     <div class="section-body">
       <div class="content-section">
