@@ -16,12 +16,12 @@ const HERO_HTML = `
 `;
 
 const HOME_OVERVIEW_HTML = `
-  <section class="card content-card mb-8">
-    <header class="card-header">
-      <h2 class="card-title"><span class="accent-text">From Rocket Sleds to Buttered Toast:</span> The Science of Murphy's Law</h2>
-      <p class="text-muted-fg">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base, this observation revolutionized how we approach safety, engineering, and human error.</p>
-    </header>
-    <div class="card-body">
+  <section class="section section-card mb-12">
+    <div class="section-header">
+      <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
+      <p>"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base, this observation revolutionized how we approach safety, engineering, and human error.</p>
+    </div>
+    <div class="section-body">
       <div class="content-section">
         <h3>Why Murphy's Law Still Matters</h3>
         <p>
