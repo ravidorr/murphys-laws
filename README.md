@@ -75,8 +75,8 @@ cd android
 npm test
 
 # Test specific platform
-npm run test:backend  # 213 Vitest unit tests (controllers, services, middleware)
-npm run test:web      # 1883 web application tests
+npm run test:backend  # Backend Vitest suite
+npm run test:web      # Web Vitest suite
 ```
 
 ## Development

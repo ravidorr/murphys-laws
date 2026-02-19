@@ -41,11 +41,11 @@ Fetch laws with pagination, sorting, and filtering.
 ```
 
 **Used in:**
-- `src/utils/api.js` - `fetchLaws()` function
-- `src/views/browse.js` - Browse page with pagination
-- `src/components/top-voted.js` - Top voted laws widget
-- `src/components/trending.js` - Trending laws widget
-- `src/components/recently-added.js` - Recently added laws widget
+- `web/src/utils/api.ts` - `fetchLaws()` function
+- `web/src/views/browse.ts` - Browse page with pagination
+- `web/src/components/top-voted.ts` - Top voted laws widget
+- `web/src/components/trending.ts` - Trending laws widget
+- `web/src/components/recently-added.ts` - Recently added laws widget
 
 ---
 
@@ -71,8 +71,8 @@ Fetch search suggestions for autocomplete as user types.
 ```
 
 **Used in:**
-- `src/utils/api.js` - `fetchSuggestions()` function
-- `src/components/search-autocomplete.js` - Header search autocomplete dropdown
+- `web/src/utils/api.ts` - `fetchSuggestions()` function
+- `web/src/components/search-autocomplete.ts` - Header search autocomplete dropdown
 
 ---
 
@@ -100,8 +100,8 @@ Fetch a single law by ID.
 ```
 
 **Used in:**
-- `src/utils/api.js` - `fetchLaw()` function
-- `src/views/law-detail.js` - Law detail page
+- `web/src/utils/api.ts` - `fetchLaw()` function
+- `web/src/views/law-detail.ts` - Law detail page
 
 ---
 
@@ -132,8 +132,8 @@ Fetch related laws from the same category(ies).
 ```
 
 **Used in:**
-- `src/utils/api.js` - `fetchRelatedLaws()` function
-- `src/views/law-detail.js` - Law detail page related laws section
+- `web/src/utils/api.ts` - `fetchRelatedLaws()` function
+- `web/src/views/law-detail.ts` - Law detail page related laws section
 
 ---
 
@@ -161,7 +161,7 @@ Submit a new law for review.
 ```
 
 **Used in:**
-- `src/components/submit-law.js` - Submit law form
+- `web/src/components/submit-law.ts` - Submit law form
 
 ---
 
@@ -189,9 +189,9 @@ Vote on a law (upvote or downvote).
 ```
 
 **Used in:**
-- `src/utils/voting.js` - `voteLaw()` function
-- `src/views/law-detail.js` - Law detail page voting
-- `src/views/browse.js` - Browse page voting (via `addVotingListeners()`)
+- `web/src/utils/voting.ts` - `voteLaw()` function
+- `web/src/views/law-detail.ts` - Law detail page voting
+- `web/src/views/browse.ts` - Browse page voting (via `addVotingListeners()`)
 
 ---
 
@@ -210,9 +210,9 @@ Remove vote from a law.
 ```
 
 **Used in:**
-- `src/utils/voting.js` - `unvoteLaw()` function
-- `src/views/law-detail.js` - Law detail page voting
-- `src/views/browse.js` - Browse page voting (via `addVotingListeners()`)
+- `web/src/utils/voting.ts` - `unvoteLaw()` function
+- `web/src/views/law-detail.ts` - Law detail page voting
+- `web/src/views/browse.ts` - Browse page voting (via `addVotingListeners()`)
 
 ---
 
@@ -243,8 +243,8 @@ Get the law of the day (daily rotating law selected by algorithm).
 ```
 
 **Used in:**
-- `src/utils/api.js` - `fetchLawOfTheDay()` function
-- `src/views/home.js` - Home page "Law of the Day" widget
+- `web/src/utils/api.ts` - `fetchLawOfTheDay()` function
+- `web/src/views/home.ts` - Home page "Law of the Day" widget
 
 ---
 
@@ -267,8 +267,8 @@ Get all categories.
 ```
 
 **Used in:**
-- `src/components/advanced-search.js` - Advanced search filters
-- `src/components/submit-law.js` - Submit law form category dropdown
+- `web/src/components/advanced-search.ts` - Advanced search filters
+- `web/src/components/submit-law.ts` - Submit law form category dropdown
 
 ---
 
@@ -288,7 +288,7 @@ Get a single category by ID.
 ```
 
 **Used in:**
-- `src/utils/search-info.js` - Display category name in search info
+- `web/src/utils/search-info.ts` - Display category name in search info
 
 ---
 
@@ -310,7 +310,7 @@ Get all attributions (submitters).
 ```
 
 **Used in:**
-- `src/components/advanced-search.js` - Advanced search filters
+- `web/src/components/advanced-search.ts` - Advanced search filters
 
 ---
 
@@ -347,7 +347,7 @@ Share SOD (Sod's Law) calculation via email.
 
 **Used in:**
 - Backend API endpoint available for programmatic email sharing
-- Note: Web frontend calculators use inline share buttons via `src/components/social-share.js` (same component as law sharing)
+- Note: Web frontend calculators use inline share buttons via `web/src/components/social-share.ts` (same component as law sharing)
 
 ---
 
@@ -370,13 +370,13 @@ Total API endpoints: **12** (all use `/api/v1/...` prefix)
 
 ## Implementation Details
 
-### API Server (`scripts/api-server.mjs`)
+### API Server (`backend/src/server/api-server.ts`)
 - All route handlers check for `/api/v1/...` paths directly
 - Simple, clean routing without backward compatibility overhead
 
-### Frontend (`src/utils/`)
+### Frontend (`web/src/utils/`)
 - All API calls use `/api/v1/...` endpoints
-- `API_VERSION_PREFIX` constant defined in `src/utils/constants.js` as `/api/v1`
+- `API_VERSION_PREFIX` constant defined in `web/src/utils/constants.ts` as `/api/v1`
 - API utility functions (`fetchAPI`, `apiRequest`, etc.) use v1 endpoints
 
 ### Notes

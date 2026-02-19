@@ -1,6 +1,6 @@
 # Murphy's Laws - Repository Structure for Mobile Apps
 
-**Last Updated:** November 6, 2025
+**Last Updated:** February 19, 2026
 **Decision:** Monorepo Approach (Recommended)
 
 ---
@@ -24,13 +24,12 @@ This document outlines the recommended repository structure for adding native iO
 ### Current State
 
 ```
-murphys-laws/ # Single repository
-├── src/ # Web app frontend (Vanilla JS)
-├── scripts/ # Backend API server (Node.js)
-├── db/ # SQLite database
-├── docs/ # Documentation
-├── tests/ # Web app tests
-└── public/ # Static assets
+murphys-laws/ # Monorepo
+├── backend/ # API server (TypeScript runtime via tsx)
+├── web/ # Web app frontend (TypeScript + Vite)
+├── ios/ # iOS app (Swift + SwiftUI)
+├── android/ # Android app (Kotlin + Compose)
+└── shared/ # Shared data, modules, and docs
 ```
 
 ### Goal
@@ -114,7 +113,7 @@ murphys-laws/ # Root repository
 ├── LICENSE
 ├── .gitignore # Combined gitignore for all platforms
 │
-├── docs/ # Shared documentation
+├── shared/docs/ # Shared documentation
 │ ├── README.md # Documentation index
 │ ├── API.md # API endpoint documentation
 │ ├── DATABASE.md # Database schema
@@ -128,9 +127,10 @@ murphys-laws/ # Root repository
 │ ├── README.md # Backend-specific README
 │ ├── package.json
 │ ├── scripts/
-│ │ ├── api-server.mjs # API server
 │ │ ├── build-sqlite.mjs # Data importer
 │ │ └── migrate.mjs # Database migrations
+│ ├── src/server/
+│ │ └── api-server.ts # API server entrypoint
 │ ├── db/
 │ │ ├── schema.sql
 │ │ └── migrations/
@@ -143,8 +143,8 @@ murphys-laws/ # Root repository
 │ ├── vite.config.js
 │ ├── index.html
 │ ├── src/
-│ │ ├── main.js
-│ │ ├── router.js
+│ │ ├── main.ts
+│ │ ├── router.ts
 │ │ ├── views/
 │ │ ├── components/
 │ │ ├── modules/
@@ -329,10 +329,10 @@ A comprehensive collection of Murphy's Laws available on web, iOS, and Android.
 ## Repository Structure
 
 - `backend/` - Shared Node.js API server
-- `web/` - Web application (Vanilla JS + Vite)
+- `web/` - Web application (TypeScript + Vite)
 - `ios/` - iOS app (Swift + SwiftUI)
 - `android/` - Android app (Kotlin + Jetpack Compose)
-- `docs/` - Documentation
+- `shared/docs/` - Documentation
 
 ## Quick Start
 
@@ -524,7 +524,7 @@ jobs:
  - uses: actions/checkout@v3
  - uses: actions/setup-node@v3
  with:
- node-version: '22'
+ node-version-file: '.nvmrc'
  - run: npm ci
  - run: npm test
  - run: npm run test:coverage
@@ -555,7 +555,7 @@ jobs:
  - uses: actions/checkout@v3
  - uses: actions/setup-node@v3
  with:
- node-version: '22'
+ node-version-file: '.nvmrc'
  - run: npm ci
  - run: npm test
  - run: npm run build
@@ -730,7 +730,7 @@ const LAWS_DIR = '../shared/data/murphys-laws'; // Updated path
 
 **Step 4: Update web imports**
 ```javascript
-// web/src/utils/constants.js
+// web/src/utils/constants.ts
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8787';
 ```
 

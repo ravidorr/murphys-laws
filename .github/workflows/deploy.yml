@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install dependencies
@@ -39,7 +39,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "web/dist/,backend/src/,backend/scripts/,backend/db/,backend/utils/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,shared/modules/,nginx.conf,web/vite.config.js"
+          source: "web/dist/,backend/src/,backend/scripts/,backend/db/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,shared/modules/,nginx.conf,web/vite.config.js,.nvmrc"
           target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -66,7 +66,6 @@ jobs:
             sudo install -d -m 755 "$TARGET_DIR/backend/src"
             sudo install -d -m 755 "$TARGET_DIR/backend/scripts"
             sudo install -d -m 755 "$TARGET_DIR/backend/db"
-            sudo install -d -m 755 "$TARGET_DIR/backend/utils"
             sudo install -d -m 755 "$TARGET_DIR/backend/config"
             sudo install -d -m 755 "$TARGET_DIR/backend/logs"
             sudo install -d -m 755 "$TARGET_DIR/shared"
@@ -76,12 +75,12 @@ jobs:
             sudo rsync -a --delete "$STAGING_DIR/backend/src/" "$TARGET_DIR/backend/src/"
             sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
             sudo rsync -a --delete "$STAGING_DIR/backend/db/" "$TARGET_DIR/backend/db/"
-            sudo rsync -a --delete "$STAGING_DIR/backend/utils/" "$TARGET_DIR/backend/utils/"
             sudo rsync -a --delete "$STAGING_DIR/backend/config/" "$TARGET_DIR/backend/config/"
             sudo rsync -a --delete "$STAGING_DIR/shared/modules/" "$TARGET_DIR/shared/modules/"
 
             sudo install -m 644 "$STAGING_DIR/backend/ecosystem.config.cjs" "$TARGET_DIR/backend/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
+            sudo install -m 644 "$STAGING_DIR/.nvmrc" "$TARGET_DIR/.nvmrc"
             
             # Update Nginx config and reload
             sudo cp "$TARGET_DIR/nginx.conf" /etc/nginx/sites-available/murphys-laws
@@ -97,24 +96,31 @@ jobs:
 
             TARGET_DIR="/root/murphys-laws"
 
-            # Load nvm and use Node v22
+            # Load nvm and use Node version from .nvmrc
             export NVM_DIR="/root/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm use 22
-
-            # Verify Node version matches expected version
-            ACTUAL_NODE_VERSION=$(node --version)
-            EXPECTED_NODE_VERSION="v22"
-            if [[ ! "$ACTUAL_NODE_VERSION" =~ ^$EXPECTED_NODE_VERSION ]]; then
-              echo "ERROR: Node version mismatch!"
-              echo "Expected: $EXPECTED_NODE_VERSION.x"
-              echo "Actual: $ACTUAL_NODE_VERSION"
+            cd "$TARGET_DIR"
+            if [ ! -f .nvmrc ]; then
+              echo "ERROR: Missing $TARGET_DIR/.nvmrc"
               exit 1
             fi
+            nvm use
+
+            # Verify Node version matches .nvmrc
+            ACTUAL_NODE_VERSION=$(node --version)
+            EXPECTED_NODE_VERSION=$(tr -d '[:space:]' < "$TARGET_DIR/.nvmrc")
+            case "$ACTUAL_NODE_VERSION" in
+              "v$EXPECTED_NODE_VERSION"|"v$EXPECTED_NODE_VERSION".*) ;;
+              *)
+              echo "ERROR: Node version mismatch!"
+              echo "Expected (from .nvmrc): $EXPECTED_NODE_VERSION"
+              echo "Actual: $ACTUAL_NODE_VERSION"
+              exit 1
+              ;;
+            esac
             echo "✓ Node version verified: $ACTUAL_NODE_VERSION"
 
             # Clean up old root-level files from pre-monorepo structure
-            cd "$TARGET_DIR"
             rm -f package.json ecosystem.config.cjs .env 2>/dev/null || true
             rm -rf config modules scripts utils logs 2>/dev/null || true
 
@@ -175,17 +181,29 @@ jobs:
             pm2 start ecosystem.config.cjs
             pm2 save
 
-            # Verify PM2 is using the correct Node interpreter
+            # Verify PM2 is using Node.js 22.x without pinning to one patch version
             PM2_INTERPRETER=$(pm2 jlist | jq -r '.[] | select(.name=="murphys-api") | .pm2_env.exec_interpreter')
-            EXPECTED_INTERPRETER="/root/.nvm/versions/node/v22.20.0/bin/node"
-            if [[ "$PM2_INTERPRETER" != "$EXPECTED_INTERPRETER" ]]; then
-              echo "ERROR: PM2 interpreter mismatch!"
-              echo "Expected: $EXPECTED_INTERPRETER"
-              echo "Actual: $PM2_INTERPRETER"
+            if [[ -z "$PM2_INTERPRETER" || "$PM2_INTERPRETER" == "null" ]]; then
+              echo "ERROR: Could not determine PM2 interpreter for murphys-api"
+              pm2 list
+              exit 1
+            fi
+
+            if [[ "$PM2_INTERPRETER" == "node" ]]; then
+              PM2_NODE_VERSION=$(node --version)
+            else
+              PM2_NODE_VERSION=$("$PM2_INTERPRETER" --version 2>/dev/null || true)
+            fi
+
+            if [[ ! "$PM2_NODE_VERSION" =~ ^v22\. ]]; then
+              echo "ERROR: PM2 is not using Node 22.x!"
+              echo "Expected: v22.x"
+              echo "Interpreter: $PM2_INTERPRETER"
+              echo "Actual version: ${PM2_NODE_VERSION:-unknown}"
               pm2 logs --lines 50 --nostream
               exit 1
             fi
-            echo "✓ PM2 interpreter verified: $PM2_INTERPRETER"
+            echo "✓ PM2 interpreter verified: $PM2_INTERPRETER ($PM2_NODE_VERSION)"
 
             # Wait for services to start
             sleep 5

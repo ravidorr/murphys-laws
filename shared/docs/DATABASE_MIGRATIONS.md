@@ -18,8 +18,8 @@ This project has two types of database scripts:
 
 ### 2. **Seeding Scripts** (Initial Data)
 - **Purpose**: Populate database from source markdown files
-- **Location**: `murphys-laws/*.md` -> `scripts/build-sqlite.mjs`
-- **Run with**: `npm run db:import` or `npm run db:rebuild`
+- **Location**: `shared/data/murphys-laws/*.md` -> `backend/scripts/build-sqlite.mjs`
+- **Run with**: `npm run build:backend:db` or `cd backend && npm run build:db`
 
 **This is for initial data population only**, not for updating production data.
 
@@ -116,7 +116,7 @@ The migration system will:
 | **Production safe** | Yes - preserves existing data | No - can overwrite data |
 | **Versioned** |Yes - numbered files | Regenerated from markdown |
 | **Tracked** |Yes - in `schema_migrations` | No tracking |
-| **Command** | `npm run migrate` | `npm run db:import` |
+| **Command** | `npm run migrate` | `npm run build:backend:db` |
 
 ## Available Commands
 
@@ -134,12 +134,12 @@ npm run migrate
 npm run review
 
 # Initial database setup (dev only)
-npm run db:rebuild
+npm run build:backend:db
 ```
 
 ## Best Practices
 
-1. **Never run `npm run db:import` in production** - it can overwrite votes
+1. **Never run `npm run build:backend:db` in production** - it can overwrite votes
 2. **Always use migrations for production updates** - they're tracked and safe
 3. **Test migrations locally first** - apply them to your local db before deploying
 4. **Use descriptive migration names** - helps team understand what changed

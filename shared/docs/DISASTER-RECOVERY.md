@@ -196,8 +196,8 @@ EOF
  sudo -u ravidor bash << 'EOF'
  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
  source ~/.bashrc
- nvm install 22
- nvm use 22
+ nvm install
+ nvm use
  npm install -g pm2
  EOF
  ```
@@ -219,7 +219,7 @@ EOF
  If old droplet is gone, you'll need to rebuild from source:
  ```bash
  npm ci
- npm run db:rebuild
+ npm run build:backend:db
  ```
 
 1. **Configure environment**:
