@@ -1,44 +1,42 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { FeedController } from '../../src/controllers/feed.controller.ts';
 
+interface FeedTestContext {
+  feedService: { generateRss: ReturnType<typeof vi.fn>; generateAtom: ReturnType<typeof vi.fn> };
+  feedController: FeedController;
+  req: IncomingMessage;
+  res: ServerResponse;
+}
+
 describe('FeedController', () => {
-  /** @type {object} */
-  let feedService;
-  /** @type {FeedController} */
-  let feedController;
-  /** @type {object} */
-  let req;
-  /** @type {object} */
-  let res;
+  let feedService: FeedTestContext['feedService'];
+  let feedController: FeedController;
+  let req: IncomingMessage;
+  let res: ServerResponse;
 
   beforeEach(() => {
-    const localThis = {};
-    localThis.feedService = {
+    feedService = {
       generateRss: vi.fn(),
       generateAtom: vi.fn(),
     };
-    feedService = localThis.feedService;
-    localThis.feedController = new FeedController(feedService);
-    feedController = localThis.feedController;
+    feedController = new FeedController(feedService as never);
 
-    localThis.req = {
+    req = {
       headers: {},
       socket: { remoteAddress: '127.0.0.1' },
-    };
-    req = localThis.req;
-    localThis.res = {
+    } as IncomingMessage;
+    res = {
       writeHead: vi.fn(),
       end: vi.fn(),
-    };
-    res = localThis.res;
+    } as unknown as ServerResponse;
 
     vi.clearAllMocks();
   });
 
   describe('getRssFeed', () => {
     it('should return RSS feed with correct Content-Type', async () => {
-      const localThis = { feedService, feedController, req, res };
+      const localThis: FeedTestContext = { feedService, feedController, req, res };
       const rssXml = '<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>';
       localThis.feedService.generateRss.mockResolvedValue(rssXml);
 
@@ -53,7 +51,7 @@ describe('FeedController', () => {
     });
 
     it('should set cache headers for RSS feed', async () => {
-      const localThis = { feedService, feedController, req, res };
+      const localThis: FeedTestContext = { feedService, feedController, req, res };
       localThis.feedService.generateRss.mockResolvedValue('<rss></rss>');
 
       await localThis.feedController.getRssFeed(localThis.req, localThis.res);
@@ -64,7 +62,7 @@ describe('FeedController', () => {
     });
 
     it('should return 500 on RSS generation error', async () => {
-      const localThis = { feedService, feedController, req, res };
+      const localThis: FeedTestContext = { feedService, feedController, req, res };
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       localThis.feedService.generateRss.mockRejectedValue(new Error('Generation failed'));
 
@@ -82,7 +80,7 @@ describe('FeedController', () => {
 
   describe('getAtomFeed', () => {
     it('should return Atom feed with correct Content-Type', async () => {
-      const localThis = { feedService, feedController, req, res };
+      const localThis: FeedTestContext = { feedService, feedController, req, res };
       const atomXml = '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"></feed>';
       localThis.feedService.generateAtom.mockResolvedValue(atomXml);
 
@@ -97,7 +95,7 @@ describe('FeedController', () => {
     });
 
     it('should set cache headers for Atom feed', async () => {
-      const localThis = { feedService, feedController, req, res };
+      const localThis: FeedTestContext = { feedService, feedController, req, res };
       localThis.feedService.generateAtom.mockResolvedValue('<feed></feed>');
 
       await localThis.feedController.getAtomFeed(localThis.req, localThis.res);
@@ -108,7 +106,7 @@ describe('FeedController', () => {
     });
 
     it('should return 500 on Atom generation error', async () => {
-      const localThis = { feedService, feedController, req, res };
+      const localThis: FeedTestContext = { feedService, feedController, req, res };
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       localThis.feedService.generateAtom.mockRejectedValue(new Error('Generation failed'));
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Tests specifically targeting uncovered branches to improve branch coverage.
  * This file covers edge cases and branches not tested in the main test files.
@@ -132,8 +131,8 @@ describe('Branch Coverage Tests', () => {
         { label: 'Current Page' }
       ];
 
-      // onNavigate is undefined
-      localThis.el = Breadcrumb({ items });
+      // Intentionally omit onNavigate to test undefined branch; assert to satisfy required type
+      localThis.el = Breadcrumb({ items } as Parameters<typeof Breadcrumb>[0]);
       document.body.appendChild(localThis.el);
 
       const link = localThis.el.querySelector('[data-nav="categories"]');

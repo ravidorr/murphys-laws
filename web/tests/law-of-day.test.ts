@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { LawOfTheDay } from '@components/law-of-day.js';
+import type { Law } from '../src/types/app.d.ts';
 import * as voting from '../src/utils/voting.js';
 import * as featureFlags from '../src/utils/feature-flags.js';
 import * as favorites from '../src/utils/favorites.js';
@@ -10,8 +10,21 @@ vi.mock('../src/components/notification.js', () => ({
   showError: vi.fn()
 }));
 
-function createLocalThis() {
-  const context = {};
+interface LawOfTheDayContext {
+  el?: HTMLElement & { cleanup?: () => void } | null;
+  appended?: boolean;
+}
+
+interface LawOfTheDayMountOptions {
+  append?: boolean;
+  onNavigate?: (page: string, param?: string) => void;
+}
+
+/** Test fixture type: Law with id as string or number for convenience */
+type LawOfTheDayLaw = Omit<Parameters<typeof LawOfTheDay>[0]['law'], 'id'> & { id?: string | number };
+
+function createLocalThis(): () => LawOfTheDayContext {
+  const context: LawOfTheDayContext = {};
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {
@@ -41,9 +54,9 @@ describe('LawOfTheDay component', () => {
     vi.restoreAllMocks();
   });
 
-  function mountLaw(law, options = {}) {
+  function mountLaw(law: LawOfTheDayLaw | null, options: LawOfTheDayMountOptions = {}) {
     const { append = false, onNavigate = () => {} } = options;
-    const el = LawOfTheDay({ law, onNavigate });
+    const el = LawOfTheDay({ law: law as Law | null, onNavigate });
     const self = local();
     self.el = el;
     self.appended = append;
@@ -109,8 +122,8 @@ describe('LawOfTheDay component', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn?.click();
 
     await vi.waitFor(() => {
       expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up');
@@ -121,8 +134,8 @@ describe('LawOfTheDay component', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
-    const downvoteBtn = el.querySelector('[data-vote="down"]');
-    downvoteBtn.click();
+    const downvoteBtn = el.querySelector('[data-vote="down"]') as HTMLElement | null;
+    downvoteBtn?.click();
 
     await vi.waitFor(() => {
       expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'down');
@@ -136,8 +149,8 @@ describe('LawOfTheDay component', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn?.click();
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
@@ -152,11 +165,11 @@ describe('LawOfTheDay component', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn?.click();
 
     await vi.waitFor(() => {
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      expect(upvoteBtn?.classList.contains('voted')).toBe(true);
     });
   });
 
@@ -166,8 +179,8 @@ describe('LawOfTheDay component', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn?.click();
 
     await vi.waitFor(() => {
     });
@@ -196,8 +209,8 @@ describe('LawOfTheDay component', () => {
 
     const el = mountLaw(law, { onNavigate });
 
-    const lawLink = el.querySelector('[data-law-id]');
-    lawLink.click();
+    const lawLink = el.querySelector('[data-law-id]') as HTMLElement | null;
+    lawLink?.click();
 
     await vi.waitFor(() => {
       expect(navigatedTo).toBe('law');
@@ -213,7 +226,7 @@ describe('LawOfTheDay component', () => {
     const el = mountLaw(law, { onNavigate });
 
     // The link with empty law-id should not trigger navigation
-    const lawLink = el.querySelector('[data-law-id]');
+    const lawLink = el.querySelector('[data-law-id]') as HTMLElement | null;
     if (lawLink) {
       lawLink.click();
     }
@@ -230,8 +243,8 @@ describe('LawOfTheDay component', () => {
 
     const el = mountLaw(law, { onNavigate });
 
-    const browseBtn = el.querySelector('[data-nav="browse"]');
-    browseBtn.click();
+    const browseBtn = el.querySelector('[data-nav="browse"]') as HTMLElement | null;
+    browseBtn?.click();
 
     await vi.waitFor(() => {
       expect(navigatedTo).toBe('browse');
@@ -288,8 +301,8 @@ describe('LawOfTheDay component', () => {
 
     const el = mountLaw(law, { onNavigate });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn?.click();
 
     await new Promise(r => setTimeout(r, 10));
 
@@ -303,8 +316,8 @@ describe('LawOfTheDay component', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn?.click();
 
     await vi.waitFor(() => {
     });
@@ -379,9 +392,9 @@ describe('LawOfTheDay component', () => {
       }
     });
 
-    function mountLawForCopy(law, options = {}) {
+    function mountLawForCopy(law: LawOfTheDayLaw | null, options: LawOfTheDayMountOptions = {}) {
       const { append = false, onNavigate = () => {} } = options;
-      const el = LawOfTheDay({ law, onNavigate });
+      const el = LawOfTheDay({ law: law as Law | null, onNavigate });
       const self = localThis();
       self.el = el;
       self.appended = append;
@@ -547,9 +560,9 @@ describe('LawOfTheDay component', () => {
       vi.restoreAllMocks();
     });
 
-    function mountLawForFavorites(law, options = {}) {
+    function mountLawForFavorites(law: LawOfTheDayLaw | null, options: LawOfTheDayMountOptions = {}) {
       const { append = false, onNavigate = () => {} } = options;
-      const el = LawOfTheDay({ law, onNavigate });
+      const el = LawOfTheDay({ law: law as Law | null, onNavigate });
       const self = localThis();
       self.el = el;
       self.appended = append;
@@ -628,8 +641,8 @@ describe('LawOfTheDay component', () => {
       const law = { id: '1', text: 'Test law', title: 'Test Title', upvotes: 10, downvotes: 2 };
       const el = mountLawForFavorites(law, { append: true });
 
-      const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      favoriteBtn.click();
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      favoriteBtn?.click();
 
       await vi.waitFor(() => {
         expect(toggleFavoriteSpy).toHaveBeenCalledWith({
@@ -647,11 +660,11 @@ describe('LawOfTheDay component', () => {
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
       const el = mountLawForFavorites(law, { append: true });
 
-      const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      favoriteBtn.click();
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      favoriteBtn?.click();
 
       await vi.waitFor(() => {
-        expect(favoriteBtn.classList.contains('favorited')).toBe(true);
+        expect(favoriteBtn?.classList.contains('favorited')).toBe(true);
         expect(favoriteBtn.getAttribute('aria-label')).toBe('Remove from favorites');
       });
     });
@@ -663,11 +676,11 @@ describe('LawOfTheDay component', () => {
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
       const el = mountLawForFavorites(law, { append: true });
 
-      const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      favoriteBtn.click();
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      favoriteBtn?.click();
 
       await vi.waitFor(() => {
-        expect(favoriteBtn.classList.contains('favorited')).toBe(false);
+        expect(favoriteBtn?.classList.contains('favorited')).toBe(false);
         expect(favoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
       });
     });
@@ -679,8 +692,8 @@ describe('LawOfTheDay component', () => {
       const onNavigate = () => { navigated = true; };
       const el = mountLawForFavorites(law, { onNavigate, append: true });
 
-      const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      favoriteBtn.click();
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      favoriteBtn?.click();
 
       await new Promise(r => setTimeout(r, 10));
 
@@ -693,9 +706,9 @@ describe('LawOfTheDay component', () => {
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
       const el = mountLawForFavorites(law, { append: true });
 
-      const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      favoriteBtn.removeAttribute('data-law-id');
-      favoriteBtn.click();
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      favoriteBtn?.removeAttribute('data-law-id');
+      favoriteBtn?.click();
 
       await new Promise(r => setTimeout(r, 10));
 

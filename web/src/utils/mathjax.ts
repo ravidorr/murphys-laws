@@ -1,4 +1,4 @@
-let loaderPromise: Promise<any> | undefined;
+let loaderPromise: Promise<unknown> | undefined;
 
 const MATHJAX_FONT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2';
 
@@ -53,7 +53,7 @@ function configureMathJax(): void {
   };
 }
 
-export async function ensureMathJax(): Promise<any> {
+export async function ensureMathJax(): Promise<unknown> {
   if (typeof window === 'undefined') {
     return undefined;
   }

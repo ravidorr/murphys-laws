@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Terms } from '../src/views/terms.js';
 
 describe('Terms page', () => {
@@ -178,7 +177,8 @@ describe('Terms page', () => {
     });
 
     const privacyLink = el.querySelector('[data-nav="privacy"]');
-    privacyLink.click();
+    expect(privacyLink).toBeTruthy();
+    (privacyLink as HTMLElement).click();
     expect(navigated).toBe('privacy');
   });
 
@@ -189,7 +189,8 @@ describe('Terms page', () => {
     });
 
     const contactLink = el.querySelector('[data-nav="contact"]');
-    contactLink.click();
+    expect(contactLink).toBeTruthy();
+    (contactLink as HTMLElement).click();
     expect(navigated).toBe('contact');
   });
 

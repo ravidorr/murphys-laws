@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createLawListSection } from '../src/components/law-list-section.js';
 
 describe('LawListSection component', () => {
@@ -81,9 +80,9 @@ describe('LawListSection component', () => {
       remainderText: ' Voted'
     });
 
-    renderLaws(null);
-    renderLaws(undefined);
-    renderLaws('not an array');
+    renderLaws(null as unknown as Parameters<typeof renderLaws>[0]);
+    renderLaws(undefined as unknown as Parameters<typeof renderLaws>[0]);
+    renderLaws('not an array' as unknown as Parameters<typeof renderLaws>[0]);
 
     // Should not throw
     expect(el).toBeTruthy();
@@ -138,7 +137,7 @@ describe('LawListSection component', () => {
 
     // Should not throw
     expect(() => {
-      renderLaws([{ id: 1, content: 'Law 1' }]);
+      renderLaws([{ id: 1, text: 'Law 1' }]);
     }).not.toThrow();
   });
 

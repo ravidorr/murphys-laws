@@ -1,5 +1,9 @@
-// @ts-nocheck
 import { vi } from 'vitest';
+
+/** HTMLElement with optional cleanup used by the router */
+interface ElementWithCleanup extends HTMLElement {
+  cleanup?: (() => void) | unknown;
+}
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
@@ -162,7 +166,7 @@ describe('Router', () => {
     defineRoute('home', () => {
       const el = document.createElement('div');
       el.textContent = 'Home';
-      (el as any).cleanup = () => { cleanupCalled = true; };
+      (el as ElementWithCleanup).cleanup = () => { cleanupCalled = true; };
       return el;
     });
 
@@ -299,7 +303,7 @@ describe('Router', () => {
     defineRoute('home', () => {
       const el = document.createElement('div');
       el.textContent = 'Home';
-      (el as any).cleanup = () => { throw new Error('Cleanup failed'); };
+      (el as ElementWithCleanup).cleanup = () => { throw new Error('Cleanup failed'); };
       return el;
     });
 
@@ -330,7 +334,7 @@ describe('Router', () => {
       const el = document.createElement('div');
       const child = document.createElement('span');
       child.textContent = 'Child';
-      (child as any).cleanup = () => { childCleanupCalled = true; };
+      (child as ElementWithCleanup).cleanup = () => { childCleanupCalled = true; };
       el.appendChild(child);
       return el;
     });
@@ -357,7 +361,7 @@ describe('Router', () => {
     defineRoute('home', () => {
       const el = document.createElement('div');
       el.textContent = 'Home';
-      (el as any).cleanup = 'not a function'; // Invalid cleanup value
+      (el as ElementWithCleanup).cleanup = 'not a function'; // Invalid cleanup value
       return el;
     });
 

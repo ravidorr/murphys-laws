@@ -33,17 +33,18 @@
       "@components/*": ["src/components/*"],
       "@modules/*": ["src/modules/*"],
       "@utils/*": ["src/utils/*"],
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["../shared/*"],
+      "@playwright/test": ["../node_modules/@playwright/test"]
     }
   },
   "include": [
     "src/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "e2e/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "e2e",
     "scripts"
   ]
 }

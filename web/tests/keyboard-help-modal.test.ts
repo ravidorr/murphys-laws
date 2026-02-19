@@ -1,10 +1,29 @@
-// @ts-nocheck
 import {
   openKeyboardHelpModal,
   closeKeyboardHelpModal,
   isKeyboardHelpModalOpen,
   destroyKeyboardHelpModal
 } from '../src/components/keyboard-help-modal.js';
+
+interface TestLocals {
+  modal?: HTMLElement | null;
+  modal1?: HTMLElement | null;
+  modal2?: HTMLElement | null;
+  modalAfter?: HTMLElement | null;
+  closeBtn?: HTMLElement | null;
+  button?: HTMLElement;
+  backdrop?: HTMLElement | null;
+  event?: KeyboardEvent;
+  focusables?: NodeListOf<Element>;
+  lastFocusable?: HTMLElement;
+  container?: Element | null;
+  extraBtn?: HTMLElement;
+  title?: HTMLElement | null;
+  dialog?: Element | null;
+  content?: string | null;
+  kbds?: NodeListOf<Element>;
+  keyTexts?: (string | null)[];
+}
 
 describe('keyboard-help-modal', () => {
   beforeEach(() => {
@@ -21,7 +40,7 @@ describe('keyboard-help-modal', () => {
 
   describe('openKeyboardHelpModal', () => {
     it('creates and appends modal to body', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
@@ -30,7 +49,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('removes hidden class when opening', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
@@ -43,7 +62,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('focuses the close button', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.closeBtn = document.querySelector('[data-modal-close]');
@@ -51,7 +70,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('stores previous active element', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       localThis.button = document.createElement('button');
       localThis.button.textContent = 'Test';
       document.body.appendChild(localThis.button);
@@ -64,7 +83,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('reuses existing modal element', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
       localThis.modal1 = document.getElementById('keyboard-help-modal');
       closeKeyboardHelpModal();
@@ -77,7 +96,7 @@ describe('keyboard-help-modal', () => {
 
   describe('closeKeyboardHelpModal', () => {
     it('adds hidden class when closing', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
       closeKeyboardHelpModal();
 
@@ -94,7 +113,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('restores focus to previous element', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       localThis.button = document.createElement('button');
       localThis.button.textContent = 'Test';
       document.body.appendChild(localThis.button);
@@ -139,7 +158,7 @@ describe('keyboard-help-modal', () => {
 
   describe('destroyKeyboardHelpModal', () => {
     it('removes modal from DOM', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
       localThis.modal = document.getElementById('keyboard-help-modal');
       expect(localThis.modal).toBeTruthy();
@@ -154,7 +173,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('allows creating new modal after destroy', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
       localThis.modal1 = document.getElementById('keyboard-help-modal');
       destroyKeyboardHelpModal();
@@ -168,7 +187,7 @@ describe('keyboard-help-modal', () => {
 
   describe('modal interactions', () => {
     it('closes when clicking backdrop', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.backdrop = document.querySelector('[data-modal-backdrop]');
@@ -178,7 +197,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('closes when clicking close button', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.closeBtn = document.querySelector('[data-modal-close]');
@@ -190,7 +209,7 @@ describe('keyboard-help-modal', () => {
 
   describe('focus trap', () => {
     it('traps Tab to last focusable when on first', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.closeBtn = document.querySelector('[data-modal-close]');
@@ -210,14 +229,14 @@ describe('keyboard-help-modal', () => {
     });
 
     it('traps Shift+Tab to first focusable when on last', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
       localThis.focusables = localThis.modal.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-      localThis.lastFocusable = localThis.focusables[localThis.focusables.length - 1];
+      localThis.lastFocusable = localThis.focusables[localThis.focusables.length - 1] as HTMLElement;
       localThis.lastFocusable.focus();
 
       localThis.event = new KeyboardEvent('keydown', {
@@ -233,7 +252,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('allows Tab within modal when not at boundary', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       // Add extra focusable element to test mid-list Tab
@@ -261,7 +280,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('ignores non-Tab keys', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
@@ -279,7 +298,7 @@ describe('keyboard-help-modal', () => {
 
   describe('modal content', () => {
     it('contains keyboard shortcuts title', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.title = document.getElementById('keyboard-help-title');
@@ -288,7 +307,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('has proper ARIA attributes', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.dialog = document.querySelector('[role="dialog"]');
@@ -298,7 +317,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('contains shortcut descriptions', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
@@ -310,7 +329,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('contains kbd elements for keys', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.kbds = document.querySelectorAll('kbd');
@@ -324,7 +343,7 @@ describe('keyboard-help-modal', () => {
     });
 
     it('has accessible close button', () => {
-      const localThis = {};
+      const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
       localThis.closeBtn = document.querySelector('[data-modal-close]');

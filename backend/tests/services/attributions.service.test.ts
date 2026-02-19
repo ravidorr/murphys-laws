@@ -1,11 +1,10 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { AttributionService } from '../../src/services/attributions.service.ts';
 
 describe('AttributionService', () => {
-    let db;
-    let attributionService;
+    let db: InstanceType<typeof Database>;
+    let attributionService: AttributionService;
 
     beforeEach(() => {
         db = new Database(':memory:');

@@ -1,16 +1,15 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { OgImageService } from '../../src/services/og-image.service.ts';
+import { OgImageService, type IOgImageLawService } from '../../src/services/og-image.service.ts';
 
 describe('OgImageService', () => {
-  let ogImageService;
-  let mockLawService;
+  let ogImageService: OgImageService;
+  let mockLawService: { getLaw: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockLawService = {
       getLaw: vi.fn(),
     };
-    ogImageService = new OgImageService(mockLawService);
+    ogImageService = new OgImageService(mockLawService as unknown as IOgImageLawService);
   });
 
   describe('generateLawImage', () => {
@@ -37,13 +36,15 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
       // Check PNG magic bytes
-      expect(result[0]).toBe(0x89);
-      expect(result[1]).toBe(0x50); // P
-      expect(result[2]).toBe(0x4e); // N
-      expect(result[3]).toBe(0x47); // G
+      expect(buf[0]).toBe(0x89);
+      expect(buf[1]).toBe(0x50); // P
+      expect(buf[2]).toBe(0x4e); // N
+      expect(buf[3]).toBe(0x47); // G
     });
 
     it('should cache generated images', async () => {
@@ -78,8 +79,10 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
 
     it('should handle law without attributions', async () => {
@@ -95,8 +98,10 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
 
     it('should handle very long law text', async () => {
@@ -111,8 +116,10 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
 
     it('should handle law with empty text', async () => {
@@ -128,8 +135,10 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
 
     it('should handle law with special characters', async () => {
@@ -146,8 +155,10 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
 
     it('should handle law with Unicode characters', async () => {
@@ -162,8 +173,10 @@ describe('OgImageService', () => {
 
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
   });
 
@@ -229,7 +242,7 @@ describe('OgImageService', () => {
     it('should evict oldest entries when at capacity', async () => {
       // Create service with small cache size
       const localThis = {
-        smallCacheService: new OgImageService(mockLawService, { cacheMaxSize: 2 }),
+        smallCacheService: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxSize: 2 }),
       };
 
       mockLawService.getLaw.mockImplementation((id) => ({
@@ -255,7 +268,7 @@ describe('OgImageService', () => {
 
     it('should implement LRU - accessing an item moves it to the end', async () => {
       const localThis = {
-        smallCacheService: new OgImageService(mockLawService, { cacheMaxSize: 2 }),
+        smallCacheService: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxSize: 2 }),
       };
 
       mockLawService.getLaw.mockImplementation((id) => ({
@@ -292,7 +305,7 @@ describe('OgImageService', () => {
     it('should remove expired entries', async () => {
       // Create service with very short cache max age
       const localThis = {
-        shortTTLService: new OgImageService(mockLawService, { cacheMaxAge: 1 }), // 1ms TTL
+        shortTTLService: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxAge: 1 }), // 1ms TTL
       };
 
       mockLawService.getLaw.mockResolvedValue({ id: 1, text: 'Test law' });
@@ -320,12 +333,12 @@ describe('OgImageService', () => {
 
       // Should return the same cached result
       expect(logo1).toBe(logo2);
-      expect(ogImageService.logoLoaded).toBe(true);
+      expect((ogImageService as unknown as { logoLoaded: boolean }).logoLoaded).toBe(true);
     });
 
     it('should handle missing logo file gracefully', async () => {
       const localThis = {
-        serviceWithBadPath: new OgImageService(mockLawService, {
+        serviceWithBadPath: new OgImageService(mockLawService as unknown as IOgImageLawService, {
           logoPath: '/nonexistent/path/logo.png',
         }),
       };
@@ -333,12 +346,12 @@ describe('OgImageService', () => {
       const logo = await localThis.serviceWithBadPath.loadLogo();
 
       expect(logo).toBeNull();
-      expect(localThis.serviceWithBadPath.logoLoaded).toBe(true);
+      expect((localThis.serviceWithBadPath as unknown as { logoLoaded: boolean }).logoLoaded).toBe(true);
     });
 
     it('should generate image without logo when logo fails to load', async () => {
       const localThis = {
-        serviceWithBadPath: new OgImageService(mockLawService, {
+        serviceWithBadPath: new OgImageService(mockLawService as unknown as IOgImageLawService, {
           logoPath: '/nonexistent/path/logo.png',
         }),
         law: { id: 1, text: 'Test law' },
@@ -348,8 +361,10 @@ describe('OgImageService', () => {
 
       const result = await localThis.serviceWithBadPath.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
     });
 
     it('should generate image with logo when logo loads successfully', async () => {
@@ -363,22 +378,24 @@ describe('OgImageService', () => {
       // Load logo first to verify it works
       const logo = await ogImageService.loadLogo();
       expect(logo).not.toBeNull();
-      expect(ogImageService.logoLoaded).toBe(true);
+      expect((ogImageService as unknown as { logoLoaded: boolean }).logoLoaded).toBe(true);
 
       // Generate image - should include logo
       const result = await ogImageService.generateLawImage(1);
 
+      expect(result).not.toBeNull();
       expect(result).toBeInstanceOf(Buffer);
-      expect(result.length).toBeGreaterThan(0);
+      const buf = result as Buffer;
+      expect(buf.length).toBeGreaterThan(0);
       // PNG magic bytes
-      expect(result[0]).toBe(0x89);
-      expect(result[1]).toBe(0x50);
+      expect(buf[0]).toBe(0x89);
+      expect(buf[1]).toBe(0x50);
     });
   });
 
   describe('getAttributionName', () => {
     it('should return null for undefined attributions', () => {
-      const law = { id: 1 };
+      const law: { attributions?: Array<{ name?: string }> } = {};
       const result = ogImageService.getAttributionName(law);
       expect(result).toBeNull();
     });
@@ -406,8 +423,7 @@ describe('OgImageService', () => {
     it('should return null if first attribution has no name', () => {
       const localThis = {
         law: {
-          id: 1,
-          attributions: [{ contact_type: 'email', contact_value: 'test@test.com' }],
+          attributions: [{ name: undefined }],
         },
       };
       const result = ogImageService.getAttributionName(localThis.law);

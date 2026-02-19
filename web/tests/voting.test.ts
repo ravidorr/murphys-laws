@@ -1,4 +1,4 @@
-// @ts-nocheck
+import type { VoteType } from '../src/types/app.d.ts';
 import { getUserVote, voteLaw, unvoteLaw, toggleVote } from '../src/utils/voting.ts';
 
 // Mock constants
@@ -73,7 +73,7 @@ describe('Voting utilities', () => {
       const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 11, downvotes: 2 })
-      } as any);
+      } as unknown as Response);
 
       const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('Storage quota exceeded');
@@ -100,7 +100,7 @@ describe('Voting utilities', () => {
     });
 
     it('throws error for invalid vote type', async () => {
-      await expect(voteLaw(1, 'invalid')).rejects.toThrow('voteType must be "up" or "down"');
+      await expect(voteLaw(1, 'invalid' as VoteType)).rejects.toThrow('voteType must be "up" or "down"');
     });
 
     it('successfully votes up', async () => {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   initKeyboardShortcuts,
   destroyKeyboardShortcuts,
@@ -10,6 +9,22 @@ import {
   handleKeydown
 } from '../src/utils/keyboard-shortcuts.ts';
 import * as helpModal from '../src/components/keyboard-help-modal.js';
+
+/** Shared test state for keyboard-shortcuts tests (avoids repeated any types). */
+interface KeyboardShortcutsLocalThis {
+  result?: boolean;
+  input?: HTMLInputElement;
+  textarea?: HTMLTextAreaElement;
+  div?: HTMLDivElement;
+  button?: HTMLButtonElement;
+  select?: HTMLSelectElement;
+  option?: HTMLOptionElement;
+  textInput?: HTMLInputElement;
+  event?: KeyboardEvent & { preventDefault?: (() => void) | ReturnType<typeof vi.fn> };
+  cards?: HTMLElement[];
+  addEventListenerSpy?: ReturnType<typeof vi.spyOn>;
+  keydownCalls?: unknown[];
+}
 
 // Mock the keyboard help modal module
 vi.mock('../src/components/keyboard-help-modal.js', () => ({
@@ -32,34 +47,34 @@ describe('keyboard-shortcuts', () => {
 
   describe('isEditableElement', () => {
     it('returns false for null element', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.result = isEditableElement(null);
       expect(localThis.result).toBe(false);
     });
 
     it('returns true for input elements', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.result = isEditableElement(localThis.input);
       expect(localThis.result).toBe(true);
     });
 
     it('returns true for textarea elements', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.textarea = document.createElement('textarea');
       localThis.result = isEditableElement(localThis.textarea);
       expect(localThis.result).toBe(true);
     });
 
     it('returns true for select elements', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.select = document.createElement('select');
       localThis.result = isEditableElement(localThis.select);
       expect(localThis.result).toBe(true);
     });
 
     it('returns true for contenteditable elements', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.div = document.createElement('div');
       localThis.div.setAttribute('contenteditable', 'true');
       localThis.result = isEditableElement(localThis.div);
@@ -67,14 +82,14 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('returns false for regular div', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.div = document.createElement('div');
       localThis.result = isEditableElement(localThis.div);
       expect(localThis.result).toBe(false);
     });
 
     it('returns false for button', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.button = document.createElement('button');
       localThis.result = isEditableElement(localThis.button);
       expect(localThis.result).toBe(false);
@@ -83,14 +98,14 @@ describe('keyboard-shortcuts', () => {
 
   describe('isAutocompleteOpen', () => {
     it('returns false when search input does not exist', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       document.body.innerHTML = '';
       localThis.result = isAutocompleteOpen();
       expect(localThis.result).toBe(false);
     });
 
     it('returns false when search input aria-expanded is false', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       localThis.input.setAttribute('aria-expanded', 'false');
@@ -101,7 +116,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('returns false when search input aria-expanded is not set', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -111,7 +126,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('returns true when search input aria-expanded is true', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       localThis.input.setAttribute('aria-expanded', 'true');
@@ -124,7 +139,7 @@ describe('keyboard-shortcuts', () => {
 
   describe('focusSearch', () => {
     it('focuses the header search input', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -135,7 +150,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('selects the text in the search input', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       localThis.input.value = 'test query';
@@ -154,7 +169,7 @@ describe('keyboard-shortcuts', () => {
 
   describe('navigateToNextCard', () => {
     it('focuses first card when no card is focused', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 3 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -170,7 +185,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('focuses next card when a card is focused', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 3 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -187,7 +202,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('stays on last card when already at end', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 3 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -210,7 +225,7 @@ describe('keyboard-shortcuts', () => {
 
   describe('navigateToPreviousCard', () => {
     it('focuses last card when no card is focused', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 3 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -226,7 +241,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('focuses previous card when a card is focused', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 3 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -243,7 +258,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('stays on first card when already at start', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 3 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -266,7 +281,7 @@ describe('keyboard-shortcuts', () => {
 
   describe('handleKeydown', () => {
     it('focuses search on / key', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -282,7 +297,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('opens help modal on ? key', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.event = new KeyboardEvent('keydown', { key: '?' });
       localThis.event.preventDefault = vi.fn();
       Object.defineProperty(localThis.event, 'target', { value: document.body });
@@ -294,9 +309,9 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('does not reopen help modal on ? key when modal is already open', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       // Simulate modal already being open
-      (helpModal.isKeyboardHelpModalOpen as any).mockReturnValue(true);
+      vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(true);
 
       localThis.event = new KeyboardEvent('keydown', { key: '?' });
       localThis.event.preventDefault = vi.fn();
@@ -312,7 +327,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('navigates to next card on j key', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 2 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -330,7 +345,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('navigates to previous card on k key', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.cards = Array.from({ length: 2 }, (_, i) => {
         const card = document.createElement('article');
         card.className = 'law-card-mini';
@@ -348,8 +363,8 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('closes help modal on Escape when modal is open', () => {
-      const localThis: Record<string, any> = {};
-      (helpModal.isKeyboardHelpModalOpen as any).mockReturnValue(true);
+      const localThis: KeyboardShortcutsLocalThis = {};
+      vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(true);
 
       localThis.event = new KeyboardEvent('keydown', { key: 'Escape' });
       localThis.event.preventDefault = vi.fn();
@@ -362,8 +377,8 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('does not close modal on Escape when modal is not open', () => {
-      const localThis: Record<string, any> = {};
-      (helpModal.isKeyboardHelpModalOpen as any).mockReturnValue(false);
+      const localThis: KeyboardShortcutsLocalThis = {};
+      vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(false);
 
       localThis.event = new KeyboardEvent('keydown', { key: 'Escape' });
       localThis.event.preventDefault = vi.fn();
@@ -375,7 +390,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores shortcuts when typing in input', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -396,7 +411,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores shortcuts when typing in textarea', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.textarea = document.createElement('textarea');
       document.body.appendChild(localThis.textarea);
       localThis.textarea.focus();
@@ -416,7 +431,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores shortcuts when typing in select', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.select = document.createElement('select');
       localThis.option = document.createElement('option');
       localThis.option.value = 'test';
@@ -434,7 +449,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores shortcuts when autocomplete dropdown is open', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       localThis.input.setAttribute('aria-expanded', 'true');
@@ -458,7 +473,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores / shortcut when autocomplete dropdown is open', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       localThis.input.setAttribute('aria-expanded', 'true');
@@ -475,7 +490,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores ? shortcut when autocomplete dropdown is open', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       localThis.input.setAttribute('aria-expanded', 'true');
@@ -492,7 +507,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('does nothing for unrecognized keys', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -509,7 +524,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('ignores shortcuts when typing in contenteditable', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.div = document.createElement('div');
       localThis.div.setAttribute('contenteditable', 'true');
       localThis.div.tabIndex = 0;
@@ -526,8 +541,8 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('still handles Escape when in editable element', () => {
-      const localThis: Record<string, any> = {};
-      (helpModal.isKeyboardHelpModalOpen as any).mockReturnValue(true);
+      const localThis: KeyboardShortcutsLocalThis = {};
+      vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(true);
 
       localThis.input = document.createElement('input');
       document.body.appendChild(localThis.input);
@@ -546,7 +561,7 @@ describe('keyboard-shortcuts', () => {
 
   describe('initKeyboardShortcuts', () => {
     it('attaches global keydown listener', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -560,7 +575,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('only attaches listener once when called multiple times', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.addEventListenerSpy = vi.spyOn(document, 'addEventListener');
 
       initKeyboardShortcuts();
@@ -578,7 +593,7 @@ describe('keyboard-shortcuts', () => {
 
   describe('destroyKeyboardShortcuts', () => {
     it('removes global keydown listener', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);
@@ -594,7 +609,7 @@ describe('keyboard-shortcuts', () => {
     });
 
     it('allows re-initialization after destroy', () => {
-      const localThis: Record<string, any> = {};
+      const localThis: KeyboardShortcutsLocalThis = {};
       localThis.input = document.createElement('input');
       localThis.input.id = 'header-search';
       document.body.appendChild(localThis.input);

@@ -1,9 +1,13 @@
-// @ts-nocheck
 // We need to reset the module between tests to clear the loaderPromise
-let ensureMathJax;
+let ensureMathJax: typeof import('../src/utils/mathjax.ts').ensureMathJax | undefined;
+
+/** Shape of renderActions.addMathTitles used by addMathTitles tests */
+interface MathJaxAddMathTitlesAction {
+  addMathTitles?: [number, (doc: { math: Array<{ typesetRoot: Node | null | undefined }> }) => void];
+}
 
 describe('mathjax utility', () => {
-  let originalMathJax;
+  let originalMathJax: typeof window.MathJax | undefined;
 
   beforeEach(async () => {
     // Save original values
@@ -175,10 +179,11 @@ describe('mathjax utility', () => {
       }
 
       // Check that the config was set up
-      expect((window.MathJax?.options?.renderActions as any)?.addMathTitles).toBeDefined();
-      
+      const renderActions = (window.MathJax?.options?.renderActions) as MathJaxAddMathTitlesAction | undefined;
+      expect(renderActions?.addMathTitles).toBeDefined();
+
       // Get the render action callback
-      const renderAction = (window.MathJax!.options!.renderActions as any).addMathTitles;
+      const renderAction = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles!;
       expect(Array.isArray(renderAction)).toBe(true);
       expect(renderAction[0]).toBe(200);
       expect(typeof renderAction[1]).toBe('function');
@@ -194,7 +199,7 @@ describe('mathjax utility', () => {
       }
 
       // Get the render action callback
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as any).addMathTitles[1];
+      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       // Create mock math nodes
       const mockMi = document.createElement('mjx-mi');
@@ -227,7 +232,7 @@ describe('mathjax utility', () => {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as any).addMathTitles[1];
+      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const variables = ['U', 'C', 'I', 'S', 'F', 'A'];
       const expectedTitles = {
@@ -265,7 +270,7 @@ describe('mathjax utility', () => {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as any).addMathTitles[1];
+      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockMi = document.createElement('mjx-mi');
       mockMi.textContent = 'X'; // Unknown variable
@@ -291,7 +296,7 @@ describe('mathjax utility', () => {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as any).addMathTitles[1];
+      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockDoc = {
         math: [{ typesetRoot: null }, { typesetRoot: undefined }]
@@ -310,7 +315,7 @@ describe('mathjax utility', () => {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as any).addMathTitles[1];
+      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockMi = document.createElement('mjx-mi');
       mockMi.textContent = ''; // Empty
@@ -336,7 +341,7 @@ describe('mathjax utility', () => {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as any).addMathTitles[1];
+      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockMi = document.createElement('mjx-mi');
       mockMi.textContent = '   '; // Whitespace only

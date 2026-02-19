@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, LOADING_MESSAGES } from '../src/utils/constants.ts';
 
@@ -13,7 +12,7 @@ describe('Constants', () => {
     });
 
     it('returns different messages on multiple calls', () => {
-      const messages = new Set();
+      const messages = new Set<string>();
       for (let i = 0; i < 20; i++) {
         messages.add(getRandomLoadingMessage());
       }

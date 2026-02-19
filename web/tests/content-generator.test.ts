@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
 
 describe('content-generator', () => {

@@ -257,8 +257,8 @@ export function SubmitLawSection() {
           checkSubmitValidity();
         }, 300);
 
-      } catch (error: any) {
-        showError(error.message || 'Failed to submit law. Please try again.');
+      } catch (error) {
+        showError(error instanceof Error ? error.message : 'Failed to submit law. Please try again.');
       } finally {
         setLoading(false);
       }

@@ -6,6 +6,7 @@ import { ensureMathJax } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
+import type { CleanableElement } from '../types/app.d.ts';
 
 type ToastSliderKey = 'height' | 'gravity' | 'overhang' | 'butter' | 'friction' | 'inertia';
 
@@ -322,7 +323,7 @@ export function ButteredToastCalculator() {
     emailSubject: 'Check out my Buttered Toast calculation'
   });
 
-  (el as any)._teardownShare = teardownShare;
+  (el as CleanableElement).cleanup = teardownShare;
 
   return el;
 }

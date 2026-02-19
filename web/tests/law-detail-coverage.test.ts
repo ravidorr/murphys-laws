@@ -1,15 +1,15 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LawDetail } from '../src/views/law-detail.js';
 
 describe('LawDetail view - Coverage', () => {
-  let container;
+  let container: HTMLDivElement;
+  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    
-    global.fetch = vi.fn().mockResolvedValue({
+
+    fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         id: 1,
@@ -21,6 +21,7 @@ describe('LawDetail view - Coverage', () => {
         downvotes: 2
       })
     });
+    global.fetch = fetchMock as typeof fetch;
   });
 
   afterEach(() => {
@@ -43,7 +44,7 @@ describe('LawDetail view - Coverage', () => {
 
   it('handles law with a single word title', async () => {
     // Branch: else { titleEl.textContent = title; } in renderLawCard
-    global.fetch.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         id: 2,
@@ -64,7 +65,7 @@ describe('LawDetail view - Coverage', () => {
 
   it('handles law without submittedBy field', async () => {
     // Branch: else { submittedEl.setAttribute('hidden', ''); } in renderLawCard
-    global.fetch.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         id: 3,
@@ -84,7 +85,7 @@ describe('LawDetail view - Coverage', () => {
   });
 
   it('handles law with missing title or author', async () => {
-    global.fetch.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         id: 4,
@@ -118,12 +119,13 @@ describe('LawDetail view - Coverage', () => {
     container.appendChild(el);
     await new Promise(resolve => setTimeout(resolve, 50));
     
-    const voteBtn = el.querySelector('[data-vote]');
-    voteBtn.removeAttribute('data-vote'); // Force missing voteType
-    
-    voteBtn.click();
+    const voteBtn = el.querySelector('[data-vote]') as HTMLElement | null;
+    expect(voteBtn).toBeTruthy();
+    voteBtn!.removeAttribute('data-vote'); // Force missing voteType
+
+    voteBtn!.click();
     // Should return early and not call toggleVote
-    expect(global.fetch).not.toHaveBeenCalledWith(expect.stringContaining('vote'), expect.anything());
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('vote'), expect.anything());
   });
 
   it('handles missing vote counts in DOM during voting', async () => {
@@ -132,10 +134,11 @@ describe('LawDetail view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     // Remove vote count elements
-    el.querySelector('[data-upvote-count]').remove();
-    
-    const voteBtn = el.querySelector('[data-vote="up"]');
+    el.querySelector('[data-upvote-count]')?.remove();
+
+    const voteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    expect(voteBtn).toBeTruthy();
     // Should not throw when elements are missing
-    expect(() => voteBtn.click()).not.toThrow();
+    expect(() => voteBtn!.click()).not.toThrow();
   });
 });

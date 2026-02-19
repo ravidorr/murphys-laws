@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LawController } from '../../src/controllers/laws.controller.ts';
 import * as httpHelpers from '../../src/utils/http-helpers.ts';
@@ -10,7 +9,7 @@ vi.mock('../../src/middleware/rate-limit.ts', () => ({
 
 // Mock http helpers
 vi.mock('../../src/utils/http-helpers.ts', async (importOriginal) => {
-    const actual = await importOriginal();
+    const actual = (await importOriginal()) as Record<string, unknown>;
     return {
         ...actual,
         readBody: vi.fn(),
@@ -21,12 +20,36 @@ vi.mock('../../src/utils/http-helpers.ts', async (importOriginal) => {
 // Import the mocked checkRateLimit to manipulate it in tests
 import { checkRateLimit } from '../../src/middleware/rate-limit.ts';
 
+interface LawServiceMock {
+    listLaws: ReturnType<typeof vi.fn>;
+    getLaw: ReturnType<typeof vi.fn>;
+    getLawOfTheDay: ReturnType<typeof vi.fn>;
+    submitLaw: ReturnType<typeof vi.fn>;
+    suggestions: ReturnType<typeof vi.fn>;
+    getRelatedLaws: ReturnType<typeof vi.fn>;
+}
+
+interface EmailServiceMock {
+    sendNewLawEmail: ReturnType<typeof vi.fn>;
+}
+
+interface ReqMock {
+    headers: Record<string, string | undefined>;
+    socket: { remoteAddress: string };
+    url?: string;
+}
+
+interface ResMock {
+    writeHead: ReturnType<typeof vi.fn>;
+    end: ReturnType<typeof vi.fn>;
+}
+
 describe('LawController', () => {
-    let lawService;
-    let emailService;
-    let lawController;
-    let req;
-    let res;
+    let lawService: LawServiceMock;
+    let emailService: EmailServiceMock;
+    let lawController: LawController;
+    let req: ReqMock;
+    let res: ResMock;
 
     beforeEach(() => {
         lawService = {
@@ -50,10 +73,10 @@ describe('LawController', () => {
             writeHead: vi.fn(),
             end: vi.fn(),
         };
-        
+
         // Reset mocks
         vi.clearAllMocks();
-        checkRateLimit.mockReturnValue({ allowed: true, remaining: 10, resetTime: 0 });
+        vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, remaining: 10, resetTime: 0 });
     });
 
     describe('list', () => {
@@ -157,25 +180,25 @@ describe('LawController', () => {
     describe('get', () => {
         it('should get a law by valid ID', async () => {
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Law' });
-            await lawController.get(req, res, '1');
+            await lawController.get(req, res, 1);
 
             expect(lawService.getLaw).toHaveBeenCalledWith(1);
             expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
         });
 
         it('should return 400 for invalid ID', async () => {
-            await lawController.get(req, res, 'invalid');
+            await lawController.get(req, res, NaN);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 400 for negative ID', async () => {
-            await lawController.get(req, res, '-1');
+            await lawController.get(req, res, -1);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 404 for missing law', async () => {
             lawService.getLaw.mockResolvedValue(null);
-            await lawController.get(req, res, '999');
+            await lawController.get(req, res, 999);
             expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
         });
     });
@@ -184,21 +207,21 @@ describe('LawController', () => {
         it('should return 400 for invalid law ID', async () => {
             req.url = '/api/v1/laws/invalid/related';
             req.headers.host = 'localhost:8787';
-            await lawController.getRelated(req, res, 'invalid');
+            await lawController.getRelated(req, res, NaN);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 400 for negative law ID', async () => {
             req.url = '/api/v1/laws/-1/related';
             req.headers.host = 'localhost:8787';
-            await lawController.getRelated(req, res, '-1');
+            await lawController.getRelated(req, res, -1);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 400 for zero law ID', async () => {
             req.url = '/api/v1/laws/0/related';
             req.headers.host = 'localhost:8787';
-            await lawController.getRelated(req, res, '0');
+            await lawController.getRelated(req, res, 0);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
@@ -207,7 +230,7 @@ describe('LawController', () => {
             req.headers.host = 'localhost:8787';
             lawService.getLaw.mockResolvedValue(null);
 
-            await lawController.getRelated(req, res, '999999');
+            await lawController.getRelated(req, res, 999999);
 
             expect(lawService.getLaw).toHaveBeenCalledWith(999999);
             expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
@@ -223,7 +246,7 @@ describe('LawController', () => {
             ];
             lawService.getRelatedLaws.mockResolvedValue(relatedLaws);
 
-            await lawController.getRelated(req, res, '1');
+            await lawController.getRelated(req, res, 1);
 
             expect(lawService.getLaw).toHaveBeenCalledWith(1);
             expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 5 });
@@ -236,7 +259,7 @@ describe('LawController', () => {
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
             lawService.getRelatedLaws.mockResolvedValue([]);
 
-            await lawController.getRelated(req, res, '1');
+            await lawController.getRelated(req, res, 1);
 
             expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 3 });
         });
@@ -247,7 +270,7 @@ describe('LawController', () => {
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
             lawService.getRelatedLaws.mockResolvedValue([]);
 
-            await lawController.getRelated(req, res, '1');
+            await lawController.getRelated(req, res, 1);
 
             expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 1 });
         });
@@ -258,7 +281,7 @@ describe('LawController', () => {
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
             lawService.getRelatedLaws.mockResolvedValue([]);
 
-            await lawController.getRelated(req, res, '1');
+            await lawController.getRelated(req, res, 1);
 
             expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 10 });
         });
@@ -269,7 +292,7 @@ describe('LawController', () => {
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
             lawService.getRelatedLaws.mockResolvedValue([]);
 
-            await lawController.getRelated(req, res, '1');
+            await lawController.getRelated(req, res, 1);
 
             // NaN becomes 5 after Math.max(1, Math.min(10, NaN)) returns NaN, which || 5 handles
             expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 5 });
@@ -282,7 +305,7 @@ describe('LawController', () => {
             const relatedLaws = [{ id: 5, text: 'Related Law' }];
             lawService.getRelatedLaws.mockResolvedValue(relatedLaws);
 
-            await lawController.getRelated(req, res, '42');
+            await lawController.getRelated(req, res, 42);
 
             expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
             // Verify the response structure by checking res.end was called with correct JSON
@@ -298,7 +321,7 @@ describe('LawController', () => {
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
             lawService.getRelatedLaws.mockResolvedValue([]);
 
-            await lawController.getRelated(req, res, '1');
+            await lawController.getRelated(req, res, 1);
 
             expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
             const endCall = res.end.mock.calls[0][0];
@@ -323,13 +346,13 @@ describe('LawController', () => {
 
     describe('submit', () => {
         it('should return 429 if rate limit exceeded', async () => {
-            checkRateLimit.mockReturnValue({ allowed: false, resetTime: Date.now() + 1000 });
+            vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, remaining: 0, resetTime: Date.now() + 1000 });
             await lawController.submit(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(429, expect.any(Object));
         });
 
         it('should return 400 for invalid JSON body', async () => {
-            httpHelpers.readBody.mockRejectedValue(new SyntaxError('Unexpected token'));
+            vi.mocked(httpHelpers.readBody).mockRejectedValue(new SyntaxError('Unexpected token'));
 
             await lawController.submit(req, res);
 
@@ -338,31 +361,31 @@ describe('LawController', () => {
         });
 
         it('should return 400 if text is missing', async () => {
-            httpHelpers.readBody.mockResolvedValue({});
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({});
             await lawController.submit(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 400 if text is too short', async () => {
-            httpHelpers.readBody.mockResolvedValue({ text: 'Short' });
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({ text: 'Short' });
             await lawController.submit(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 400 if text is too long', async () => {
-            httpHelpers.readBody.mockResolvedValue({ text: 'a'.repeat(1001) });
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({ text: 'a'.repeat(1001) });
             await lawController.submit(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return 400 if category_id is invalid', async () => {
-            httpHelpers.readBody.mockResolvedValue({ text: 'Valid length text', category_id: 'invalid' });
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({ text: 'Valid length text', category_id: 'invalid' });
             await lawController.submit(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should submit valid law successfully', async () => {
-            httpHelpers.readBody.mockResolvedValue({
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({
                 title: 'Title',
                 text: 'This is a valid law text.',
                 author: 'Author',
@@ -385,7 +408,7 @@ describe('LawController', () => {
         });
 
         it('should return 400 if service throws error', async () => {
-            httpHelpers.readBody.mockResolvedValue({ text: 'Valid length text' });
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({ text: 'Valid length text' });
             lawService.submitLaw.mockRejectedValue(new Error('DB Error'));
 
             await lawController.submit(req, res);

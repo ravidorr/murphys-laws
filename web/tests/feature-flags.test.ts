@@ -1,8 +1,7 @@
-// @ts-nocheck
 import { isFeatureEnabled, setFeatureOverride, getFeatureState, isFavoritesEnabled } from '../src/utils/feature-flags.ts';
 
 describe('Feature Flags', () => {
-  const localThis: Record<string, any> = {
+  const localThis: { originalEnv: string | undefined | null } = {
     originalEnv: null,
   };
 

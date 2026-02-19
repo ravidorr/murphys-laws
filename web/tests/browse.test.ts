@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Browse } from '@views/browse.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
@@ -6,7 +5,7 @@ import * as cacheUtils from '../src/utils/category-cache.js';
 
 // Mock voting module
 vi.mock('../src/utils/voting.js', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     toggleVote: vi.fn().mockResolvedValue({ upvotes: 11, downvotes: 2 }),
@@ -14,10 +13,16 @@ vi.mock('../src/utils/voting.js', async (importOriginal) => {
   };
 });
 
+interface BrowseTestContext {
+  el?: HTMLElement;
+  sortSelect?: HTMLSelectElement | null;
+  nextBtn?: HTMLButtonElement | undefined;
+}
+
 describe('Browse view', () => {
-  let fetchLawsSpy;
-  let getUserVoteSpy;
-  let toggleVoteSpy;
+  let fetchLawsSpy: ReturnType<typeof vi.spyOn>;
+  let getUserVoteSpy: ReturnType<typeof vi.fn>;
+  let toggleVoteSpy: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     // Mock API responses
     fetchLawsSpy = vi.spyOn(api, 'fetchLaws').mockResolvedValue({
@@ -25,13 +30,15 @@ describe('Browse view', () => {
         { id: 1, title: 'Murphy\'s Law', text: 'Anything that can go wrong will go wrong', upvotes: 10, downvotes: 2 },
         { id: 2, title: 'Parkinson\'s Law', text: 'Work expands to fill the time available', upvotes: 5, downvotes: 1 }
       ],
-      total: 2
+      total: 2,
+      limit: 25,
+      offset: 0
     });
 
     // Mock widget API calls
-    vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: [] });
-    vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
-    vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
+    vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 });
+    vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 });
+    vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 });
 
     // Mock deferUntilIdle to execute immediately for testing
     vi.spyOn(cacheUtils, 'deferUntilIdle').mockImplementation((callback) => {
@@ -39,8 +46,8 @@ describe('Browse view', () => {
     });
 
     // Get references to the mocked functions
-    getUserVoteSpy = voting.getUserVote;
-    toggleVoteSpy = voting.toggleVote;
+    getUserVoteSpy = vi.mocked(voting).getUserVote;
+    toggleVoteSpy = vi.mocked(voting).toggleVote;
 
     // Clear mock call history
     getUserVoteSpy.mockClear();
@@ -54,7 +61,7 @@ describe('Browse view', () => {
   });
 
   it('shows search query when provided', () => {
-    const el = Browse({ searchQuery: 'gravity', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: 'gravity', onNavigate: () => { } });
     expect(el.textContent).toMatch(/gravity/);
   });
 
@@ -70,7 +77,7 @@ describe('Browse view', () => {
   });
 
   it('fetches and displays laws', async () => {
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for async loading
     await vi.waitFor(() => {
@@ -82,7 +89,7 @@ describe('Browse view', () => {
   });
 
   it('displays result count after loading laws', async () => {
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const resultCount = el.querySelector('#browse-result-count');
@@ -100,20 +107,22 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 50
+      total: 50,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const resultCount = el.querySelector('#browse-result-count');
-      expect(resultCount.textContent).toMatch(/Showing 1-25 of 50 laws/);
+      expect(resultCount?.textContent).toMatch(/Showing 1-25 of 50 laws/);
     }, { timeout: 1000 });
 
     // Navigate to page 2
     const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    nextBtn.click();
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    nextBtn!.click();
 
     await vi.waitFor(() => {
       const resultCount = el.querySelector('#browse-result-count');
@@ -122,20 +131,20 @@ describe('Browse view', () => {
   });
 
   it('hides result count when no laws found', async () => {
-    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
 
     await vi.waitFor(() => {
-      const resultCount = el.querySelector('#browse-result-count');
-      expect(resultCount.style.display).toBe('none');
+      const resultCount = el.querySelector('#browse-result-count') as HTMLElement | null;
+      expect(resultCount?.style.display).toBe('none');
     }, { timeout: 1000 });
   });
 
   it('displays empty state when no laws found', async () => {
-    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Murphy spared these results/);
@@ -143,32 +152,32 @@ describe('Browse view', () => {
   });
 
   it('shows submit button in empty state and navigates when clicked', async () => {
-    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
     const onNavigate = vi.fn();
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Murphy spared these results/);
     }, { timeout: 1000 });
 
     // Check that submit button exists
-    const submitBtn = el.querySelector('[data-nav="submit"]');
+    const submitBtn = el.querySelector('[data-nav="submit"]') as HTMLElement | null;
     expect(submitBtn).toBeTruthy();
-    expect(submitBtn.textContent).toMatch(/Submit a Law/);
+    expect(submitBtn?.textContent).toMatch(/Submit a Law/);
 
     // Click the submit button
-    submitBtn.click();
+    submitBtn!.click();
 
     // Verify navigation was called
     expect(onNavigate).toHaveBeenCalledWith('submit');
   });
 
   it('handles clicking on submit button icon or text in empty state', async () => {
-    fetchLawsSpy.mockResolvedValue({ data: [], total: 0 });
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
     const onNavigate = vi.fn();
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'nonexistent', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Murphy spared these results/);
@@ -176,11 +185,11 @@ describe('Browse view', () => {
 
     // Find the icon inside the submit button
     const submitBtn = el.querySelector('[data-nav="submit"]');
-    const icon = submitBtn.querySelector('.icon');
+    const icon = submitBtn?.querySelector('.icon');
     expect(icon).toBeTruthy();
 
     // Click on the icon (not the button itself)
-    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    icon!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await vi.waitFor(() => {
       expect(onNavigate).toHaveBeenCalledWith('submit');
@@ -190,7 +199,7 @@ describe('Browse view', () => {
   it('displays error state on fetch failure', async () => {
     fetchLawsSpy.mockRejectedValue(new Error('Network error'));
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Of course something went wrong/);
@@ -206,10 +215,12 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 50
+      total: 50,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -228,22 +239,24 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 50
+      total: 50,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-        .find(btn => btn.textContent === 'Next');
+        .find(btn => (btn as HTMLElement).textContent === 'Next');
       expect(nextBtn).toBeTruthy();
     }, { timeout: 1000 });
 
     const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
 
     fetchLawsSpy.mockClear();
-    nextBtn.click();
+    nextBtn!.click();
 
     await vi.waitFor(() => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
@@ -253,7 +266,7 @@ describe('Browse view', () => {
   });
 
   it('handles voting on laws', async () => {
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for laws to load
     await vi.waitFor(() => {
@@ -276,14 +289,14 @@ describe('Browse view', () => {
     expect(downCount.textContent).toBe('2');
 
     // Verify button is clickable (doesn't throw)
-    expect(() => upvoteBtn.click()).not.toThrow();
+    expect(() => (upvoteBtn as HTMLElement).click()).not.toThrow();
   });
 
   it('updates vote counts after voting', async () => {
     // Mock successful voting response
     toggleVoteSpy.mockResolvedValue({ upvotes: 11, downvotes: 2 });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for laws to load
     await vi.waitFor(() => {
@@ -292,10 +305,10 @@ describe('Browse view', () => {
 
     // Find vote elements
     const voteBtn = el.querySelector('[data-vote="up"][data-law-id="1"]');
-    const countNum = voteBtn.querySelector('.count-num');
+    const countNum = voteBtn?.querySelector('.count-num');
 
     // Verify initial count
-    expect(countNum.textContent).toBe('10');
+    expect((countNum as HTMLElement)?.textContent).toBe('10');
 
     // Simulate voting by directly calling toggleVote (as addVotingListeners would)
     await voting.toggleVote('1', 'up');
@@ -306,40 +319,40 @@ describe('Browse view', () => {
 
   it('handles law card click navigation', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const lawCard = el.querySelector('.law-card-mini');
-    lawCard.click();
+    const lawCard = el.querySelector('.law-card-mini') as HTMLElement | null;
+    lawCard!.click();
 
     expect(onNavigate).toHaveBeenCalledWith('law', '1');
   });
 
   it('does not navigate when clicking buttons inside law card', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const lawCard = el.querySelector('.law-card-mini');
+    const lawCard = el.querySelector('.law-card-mini') as HTMLElement | null;
     // Find or create a button inside the law card (vote/favorite buttons)
-    let button = lawCard.querySelector('button');
+    let button = lawCard?.querySelector('button') as HTMLButtonElement | null;
     if (!button) {
       button = document.createElement('button');
       button.setAttribute('data-action', 'favorite');
-      lawCard.appendChild(button);
+      lawCard!.appendChild(button);
     }
 
     // Reset the mock to clear any previous calls
     onNavigate.mockClear();
 
     // Click the button inside the card
-    button.click();
+    button!.click();
 
     // Navigation should NOT be triggered when clicking buttons
     expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
@@ -347,40 +360,40 @@ describe('Browse view', () => {
 
   it('handles law card keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const lawCard = el.querySelector('.law-card-mini');
+    const lawCard = el.querySelector('.law-card-mini') as HTMLElement | null;
     
     // Simulate Enter key press on the law card
     const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-    lawCard.dispatchEvent(enterEvent);
+    lawCard!.dispatchEvent(enterEvent);
 
     expect(onNavigate).toHaveBeenCalledWith('law', '1');
   });
 
   it('handles law card keyboard navigation with Space key (WCAG 2.1.1)', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const lawCard = el.querySelector('.law-card-mini');
+    const lawCard = el.querySelector('.law-card-mini') as HTMLElement | null;
     
     // Simulate Space key press on the law card
     const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
-    lawCard.dispatchEvent(spaceEvent);
+    lawCard!.dispatchEvent(spaceEvent);
 
     expect(onNavigate).toHaveBeenCalledWith('law', '1');
   });
 
   it('law cards have proper accessibility attributes', async () => {
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
@@ -389,7 +402,7 @@ describe('Browse view', () => {
     const lawCard = el.querySelector('.law-card-mini');
     
     // Check accessibility attributes (WCAG 2.1.1, 4.1.2)
-    expect(lawCard.tagName).toBe('ARTICLE');
+    expect(lawCard?.tagName).toBe('ARTICLE');
     expect(lawCard.getAttribute('tabindex')).toBe('0');
     expect(lawCard.getAttribute('role')).toBe('article');
     expect(lawCard.getAttribute('aria-label')).toBeTruthy();
@@ -398,10 +411,12 @@ describe('Browse view', () => {
   it('renders search query and laws with search results', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: [{ id: 1, title: 'Murphy\'s Law', text: 'Anything that can go wrong', upvotes: 10, downvotes: 2 }],
-      total: 1
+      total: 1,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: 'wrong', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: 'wrong', onNavigate: () => { } });
 
     // Check that search query is displayed
     expect(el.textContent).toMatch(/Search results for/);
@@ -417,7 +432,7 @@ describe('Browse view', () => {
   it('shows vote button with voted class when user has voted', async () => {
     getUserVoteSpy.mockReturnValue('up');
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const cardText = el.querySelector('#browse-laws-list');
@@ -429,7 +444,7 @@ describe('Browse view', () => {
   it('handles voting errors gracefully', async () => {
     toggleVoteSpy.mockRejectedValue(new Error('Vote failed'));
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const cardText = el.querySelector('#browse-laws-list');
@@ -437,8 +452,8 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     const cardText = el.querySelector('#browse-laws-list');
-    const upvoteBtn = cardText.querySelector('.law-card-mini [data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = cardText?.querySelector('.law-card-mini [data-vote="up"]') as HTMLElement | null;
+    upvoteBtn!.click();
 
     await vi.waitFor(() => {
     }, { timeout: 1000 });
@@ -448,10 +463,12 @@ describe('Browse view', () => {
   it('renders laws without titles correctly', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: [{ id: 1, text: 'Law without title', upvotes: 5, downvotes: 1 }],
-      total: 1
+      total: 1,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Law without title/);
@@ -460,12 +477,12 @@ describe('Browse view', () => {
   });
 
   it('disables pagination buttons during loading', async () => {
-    let resolveFirstFetch;
+    let resolveFirstFetch: (value: unknown) => void;
     const firstFetchPromise = new Promise(resolve => { resolveFirstFetch = resolve; });
 
     fetchLawsSpy.mockImplementation(() => firstFetchPromise);
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Resolve initial load
     resolveFirstFetch({
@@ -476,7 +493,9 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 50
+      total: 50,
+      limit: 25,
+      offset: 0
     });
 
     await vi.waitFor(() => {
@@ -484,13 +503,13 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     // Mock second page fetch to be slow
-    let resolveSecondFetch;
+    let resolveSecondFetch: (value: unknown) => void;
     const secondFetchPromise = new Promise(resolve => { resolveSecondFetch = resolve; });
     fetchLawsSpy.mockImplementation(() => secondFetchPromise);
 
     const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    nextBtn.click();
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    nextBtn!.click();
 
     // Check that buttons are disabled during load
     await vi.waitFor(() => {
@@ -502,17 +521,21 @@ describe('Browse view', () => {
     // Clean up
     resolveSecondFetch({
       data: [],
-      total: 50
+      total: 50,
+      limit: 25,
+      offset: 25
     });
   });
 
   it('handles clicking page number button', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
-      total: 100
+      total: 100,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -521,11 +544,11 @@ describe('Browse view', () => {
 
     // Find and click page 2 button
     const page2Btn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === '2');
+      .find(btn => (btn as HTMLElement).textContent === '2');
 
     if (page2Btn) {
       fetchLawsSpy.mockClear();
-      page2Btn.click();
+      (page2Btn as HTMLButtonElement).click();
 
       await vi.waitFor(() => {
         expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 25 }));
@@ -536,10 +559,12 @@ describe('Browse view', () => {
   it('handles previous button click', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
-      total: 100
+      total: 100,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
@@ -549,21 +574,21 @@ describe('Browse view', () => {
 
     // Click next to go to page 2
     const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    nextBtn.click();
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    nextBtn!.click();
 
     await vi.waitFor(() => {
       const prevBtn = Array.from(el.querySelectorAll('.pagination button'))
-        .find(btn => btn.textContent === 'Previous');
+        .find(btn => (btn as HTMLElement).textContent === 'Previous');
       expect(prevBtn?.hasAttribute('disabled')).toBe(false);
     }, { timeout: 1000 });
 
     // Now click previous to go back to page 1
     const prevBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Previous');
+      .find(btn => (btn as HTMLElement).textContent === 'Previous') as HTMLButtonElement | undefined;
 
     fetchLawsSpy.mockClear();
-    prevBtn.click();
+    prevBtn!.click();
 
     await vi.waitFor(() => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
@@ -573,10 +598,12 @@ describe('Browse view', () => {
   it('disables previous button on first page', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
-      total: 100
+      total: 100,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -584,17 +611,19 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     const prevBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Previous');
+      .find(btn => (btn as HTMLElement).textContent === 'Previous') as HTMLButtonElement | null;
     expect(prevBtn?.disabled).toBe(true);
   });
 
   it('disables next button on last page', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: Array(10).fill(null).map((_, i) => ({ id: i + 1, title: `Law ${i + 1}`, text: `Text ${i + 1}`, upvotes: 0, downvotes: 0 })),
-      total: 30
+      total: 30,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -603,13 +632,13 @@ describe('Browse view', () => {
 
     // Go to last page
     const page2Btn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === '2');
+      .find(btn => (btn as HTMLElement).textContent === '2') as HTMLButtonElement | undefined;
     if (page2Btn) {
       page2Btn.click();
 
       await vi.waitFor(() => {
         const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-          .find(btn => btn.textContent === 'Next');
+          .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | null;
         expect(nextBtn?.disabled).toBe(true);
       }, { timeout: 1000 });
     }
@@ -617,7 +646,7 @@ describe('Browse view', () => {
 
   it('handles data-nav attribute clicks', async () => {
     const onNavigate = vi.fn();
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate });
 
     await vi.waitFor(() => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
@@ -628,7 +657,7 @@ describe('Browse view', () => {
     navBtn.setAttribute('data-nav', 'home');
     el.appendChild(navBtn);
 
-    navBtn.click();
+    (navBtn as HTMLButtonElement).click();
 
     expect(onNavigate).toHaveBeenCalledWith('home');
 
@@ -638,10 +667,12 @@ describe('Browse view', () => {
   it('handles advanced search filter changes', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: [{ id: 1, title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 1 }],
-      total: 1
+      total: 1,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const searchContainer = el.querySelector('#advanced-search-container');
@@ -649,15 +680,15 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     // Find the advanced search component
-    const searchContainer = el.querySelector('#advanced-search-container');
-    const searchInput = searchContainer.querySelector('#search-keyword');
-    const searchBtn = searchContainer.querySelector('#search-btn');
+    const searchContainer = el.querySelector('#advanced-search-container') as HTMLElement | null;
+    const searchInput = searchContainer?.querySelector('#search-keyword') as HTMLInputElement | null;
+    const searchBtn = searchContainer?.querySelector('#search-btn') as HTMLButtonElement | null;
 
     fetchLawsSpy.mockClear();
 
     // Trigger search with new filter
-    searchInput.value = 'murphy';
-    searchBtn.click();
+    if (searchInput) searchInput.value = 'murphy';
+    searchBtn?.click();
 
     // Should call loadPage(1) with new filters
     await vi.waitFor(() => {
@@ -678,10 +709,12 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 250
+      total: 250,
+      limit: 25,
+      offset: 0
     });
 
-    const el = Browse({ _isLoggedIn: false, searchQuery: '', onNavigate: () => { }, _onVote: () => { } });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
       const pagination = el.querySelector('.pagination');
@@ -696,30 +729,30 @@ describe('Browse view', () => {
 
     // Go to page 2
     let nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    nextBtn.click();
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    nextBtn!.click();
 
     await vi.waitFor(() => {
       const page3Btn = Array.from(el.querySelectorAll('.pagination button'))
-        .find(btn => btn.textContent === '3');
+        .find(btn => (btn as HTMLElement).textContent === '3');
       expect(page3Btn).toBeTruthy();
     }, { timeout: 1000 });
 
     // Go to page 3
     nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    nextBtn.click();
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    nextBtn!.click();
 
     await vi.waitFor(() => {
       const page4Btn = Array.from(el.querySelectorAll('.pagination button'))
-        .find(btn => btn.textContent === '4');
+        .find(btn => (btn as HTMLElement).textContent === '4');
       expect(page4Btn).toBeTruthy();
     }, { timeout: 1000 });
 
     // Go to page 4 - this should trigger ellipsis when start > 2
     nextBtn = Array.from(el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    nextBtn.click();
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    nextBtn!.click();
 
     await vi.waitFor(() => {
       // Check for ellipsis - should appear before the current page numbers
@@ -765,8 +798,8 @@ describe('Browse view', () => {
     const searchBtn = el.querySelector('#search-btn');
 
     if (searchInput && searchBtn) {
-      searchInput.value = 'murphy';
-      searchBtn.click();
+      (searchInput as HTMLInputElement).value = 'murphy';
+      (searchBtn as HTMLButtonElement).click();
 
       // Widgets should now be hidden
       await vi.waitFor(() => {
@@ -790,7 +823,7 @@ describe('Browse view', () => {
     const clearBtn = el.querySelector('#clear-btn');
 
     if (clearBtn) {
-      clearBtn.click();
+      (clearBtn as HTMLButtonElement).click();
 
       // Widgets should now be visible again
       await vi.waitFor(() => {
@@ -828,8 +861,8 @@ describe('Browse view', () => {
     const searchBtn = el.querySelector('#search-btn');
 
     if (categorySelect && searchBtn) {
-      categorySelect.value = '1';
-      searchBtn.click();
+      (categorySelect as HTMLSelectElement).value = '1';
+      (searchBtn as HTMLButtonElement).click();
 
       // Widgets should now be hidden
       await vi.waitFor(() => {
@@ -867,8 +900,8 @@ describe('Browse view', () => {
     const searchBtn = el.querySelector('#search-btn');
 
     if (attributionSelect && searchBtn) {
-      attributionSelect.value = 'Edward Murphy';
-      searchBtn.click();
+      (attributionSelect as HTMLSelectElement).value = 'Edward Murphy';
+      (searchBtn as HTMLButtonElement).click();
 
       // Widgets should now be hidden
       await vi.waitFor(() => {
@@ -906,49 +939,49 @@ describe('Browse view', () => {
     const searchBtn = el.querySelector('#search-btn');
 
     if (searchInput && categorySelect && searchBtn) {
-      searchInput.value = 'murphy';
-      categorySelect.value = '1';
-      searchBtn.click();
+      (searchInput as HTMLInputElement).value = 'murphy';
+      (categorySelect as HTMLSelectElement).value = '1';
+      (searchBtn as HTMLButtonElement).click();
 
       // Widgets should be hidden when multiple filters are active
       await vi.waitFor(() => {
         const widgetsContainer = el.querySelector('[data-widgets]');
-        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+        expect(widgetsContainer?.hasAttribute('hidden')).toBe(true);
       }, { timeout: 1000 });
     }
   });
 
   it('renders sort select with default value', async () => {
-    const localThis = {};
+    const localThis: BrowseTestContext = {};
     localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     await vi.waitFor(() => {
-      localThis.sortSelect = localThis.el.querySelector('#sort-select');
+      localThis.sortSelect = localThis.el!.querySelector('#sort-select') as HTMLSelectElement | null;
       expect(localThis.sortSelect).toBeTruthy();
     }, { timeout: 1000 });
 
     // Default value should be 'score-desc' (Top Rated)
-    expect(localThis.sortSelect.value).toBe('score-desc');
+    expect(localThis.sortSelect!.value).toBe('score-desc');
   });
 
   it('changes sort order when selecting different option', async () => {
-    const localThis = {};
+    const localThis: BrowseTestContext = {};
     localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for initial load
     await vi.waitFor(() => {
-      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+      expect(localThis.el!.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    localThis.sortSelect = localThis.el!.querySelector('#sort-select') as HTMLSelectElement | null;
     expect(localThis.sortSelect).toBeTruthy();
 
     // Clear mock to track new calls
     fetchLawsSpy.mockClear();
 
     // Change to 'Oldest' sort
-    localThis.sortSelect.value = 'created_at-asc';
-    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    localThis.sortSelect!.value = 'created_at-asc';
+    localThis.sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
     // Should call fetchLaws with new sort parameters
     await vi.waitFor(() => {
@@ -961,20 +994,20 @@ describe('Browse view', () => {
   });
 
   it('changes to newest sort order', async () => {
-    const localThis = {};
+    const localThis: BrowseTestContext = {};
     localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for initial load
     await vi.waitFor(() => {
-      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+      expect(localThis.el!.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    localThis.sortSelect = localThis.el!.querySelector('#sort-select') as HTMLSelectElement | null;
     fetchLawsSpy.mockClear();
 
     // Change to 'Newest' sort
-    localThis.sortSelect.value = 'created_at-desc';
-    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    localThis.sortSelect!.value = 'created_at-desc';
+    localThis.sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
     await vi.waitFor(() => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
@@ -985,20 +1018,20 @@ describe('Browse view', () => {
   });
 
   it('changes to most upvotes sort order', async () => {
-    const localThis = {};
+    const localThis: BrowseTestContext = {};
     localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for initial load
     await vi.waitFor(() => {
-      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+      expect(localThis.el!.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    localThis.sortSelect = localThis.el!.querySelector('#sort-select') as HTMLSelectElement | null;
     fetchLawsSpy.mockClear();
 
     // Change to 'Most Upvotes' sort
-    localThis.sortSelect.value = 'upvotes-desc';
-    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    localThis.sortSelect!.value = 'upvotes-desc';
+    localThis.sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
     await vi.waitFor(() => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
@@ -1009,20 +1042,20 @@ describe('Browse view', () => {
   });
 
   it('changes to recently voted sort order', async () => {
-    const localThis = {};
+    const localThis: BrowseTestContext = {};
     localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for initial load
     await vi.waitFor(() => {
-      expect(localThis.el.querySelector('.law-card-mini')).toBeTruthy();
+      expect(localThis.el!.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    localThis.sortSelect = localThis.el.querySelector('#sort-select');
+    localThis.sortSelect = localThis.el!.querySelector('#sort-select') as HTMLSelectElement | null;
     fetchLawsSpy.mockClear();
 
     // Change to 'Recently Voted' sort
-    localThis.sortSelect.value = 'last_voted_at-desc';
-    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    localThis.sortSelect!.value = 'last_voted_at-desc';
+    localThis.sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
     await vi.waitFor(() => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
@@ -1033,7 +1066,7 @@ describe('Browse view', () => {
   });
 
   it('resets to page 1 when changing sort order', async () => {
-    const localThis = {};
+    const localThis: BrowseTestContext = {};
     fetchLawsSpy.mockResolvedValue({
       data: Array(25).fill(null).map((_, i) => ({
         id: i + 1,
@@ -1042,20 +1075,22 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 100
+      total: 100,
+      limit: 25,
+      offset: 0
     });
 
     localThis.el = Browse({ searchQuery: '', onNavigate: () => { } });
 
     // Wait for initial load
     await vi.waitFor(() => {
-      expect(localThis.el.querySelector('.pagination')).toBeTruthy();
+      expect(localThis.el!.querySelector('.pagination')).toBeTruthy();
     }, { timeout: 1000 });
 
     // Navigate to page 2
-    localThis.nextBtn = Array.from(localThis.el.querySelectorAll('.pagination button'))
-      .find(btn => btn.textContent === 'Next');
-    localThis.nextBtn.click();
+    localThis.nextBtn = Array.from(localThis.el!.querySelectorAll('.pagination button'))
+      .find(btn => (btn as HTMLElement).textContent === 'Next') as HTMLButtonElement | undefined;
+    localThis.nextBtn!.click();
 
     await vi.waitFor(() => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 25 }));
@@ -1064,9 +1099,9 @@ describe('Browse view', () => {
     fetchLawsSpy.mockClear();
 
     // Change sort order
-    localThis.sortSelect = localThis.el.querySelector('#sort-select');
-    localThis.sortSelect.value = 'created_at-asc';
-    localThis.sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    localThis.sortSelect = localThis.el!.querySelector('#sort-select') as HTMLSelectElement | null;
+    localThis.sortSelect!.value = 'created_at-asc';
+    localThis.sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
     // Should reset to page 1 (offset: 0)
     await vi.waitFor(() => {
@@ -1087,7 +1122,9 @@ describe('Browse view', () => {
         upvotes: 0,
         downvotes: 0
       })),
-      total: 100
+      total: 100,
+      limit: 25,
+      offset: 0
     });
 
     const el = Browse({ searchQuery: '', onNavigate: () => { } });
@@ -1206,7 +1243,9 @@ describe('Browse view', () => {
   it('handles response with non-finite total', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: [{ id: 1, title: 'Law 1', text: 'Text 1', upvotes: 0, downvotes: 0 }],
-      total: NaN
+      total: NaN,
+      limit: 25,
+      offset: 0
     });
 
     const el = Browse({ searchQuery: '', onNavigate: () => { } });
@@ -1216,8 +1255,8 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     // Should use data.length as fallback when total is NaN
-    const resultCount = el.querySelector('#browse-result-count');
-    expect(resultCount.textContent).toContain('1');
+    const resultCount = el.querySelector('#browse-result-count') as HTMLElement | null;
+    expect(resultCount?.textContent).toContain('1');
   });
 
   it('handles non-Element click target gracefully', async () => {
@@ -1258,11 +1297,11 @@ describe('Browse view', () => {
       expect(el.querySelector('.law-card-mini')).toBeTruthy();
     }, { timeout: 1000 });
 
-    const lawCard = el.querySelector('.law-card-mini');
+    const lawCard = el.querySelector('.law-card-mini') as HTMLElement | null;
     
     // Simulate Tab key press (should be ignored)
     const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
-    lawCard.dispatchEvent(tabEvent);
+    lawCard!.dispatchEvent(tabEvent);
 
     // Navigation should not be triggered for Tab key
     expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
@@ -1270,8 +1309,10 @@ describe('Browse view', () => {
 
   it('handles response with non-array data', async () => {
     fetchLawsSpy.mockResolvedValue({
-      data: 'not an array',
-      total: 5
+      data: 'not an array' as unknown as { id: number; title?: string; text: string; upvotes?: number; downvotes?: number }[],
+      total: 5,
+      limit: 25,
+      offset: 0
     });
 
     const el = Browse({ searchQuery: '', onNavigate: () => { } });

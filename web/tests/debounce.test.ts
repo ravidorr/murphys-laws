@@ -1,6 +1,11 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { debounce } from '../src/utils/debounce.ts';
+
+interface DebounceTestLocalThis {
+  func?: ReturnType<typeof vi.fn> | ((this: DebounceTestLocalThis) => string);
+  debounced?: (...args: unknown[]) => void;
+  value?: string;
+}
 
 describe('debounce', () => {
   beforeEach(() => {
@@ -12,11 +17,11 @@ describe('debounce', () => {
   });
 
   it('should delay function execution', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func, 100);
+    localThis.debounced = debounce(localThis.func!, 100);
 
-    localThis.debounced();
+    localThis.debounced!();
     expect(localThis.func).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(100);
@@ -24,11 +29,11 @@ describe('debounce', () => {
   });
 
   it('should use default delay of 240ms when not specified', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func);
+    localThis.debounced = debounce(localThis.func!);
 
-    localThis.debounced();
+    localThis.debounced!();
     expect(localThis.func).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(239);
@@ -39,13 +44,13 @@ describe('debounce', () => {
   });
 
   it('should cancel previous calls when called again before delay', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func, 100);
+    localThis.debounced = debounce(localThis.func!, 100);
 
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(50);
-    localThis.debounced(); // Call again before delay completes
+    localThis.debounced!(); // Call again before delay completes
     vi.advanceTimersByTime(50);
 
     // Function should not have been called yet (only 50ms passed since last call)
@@ -57,28 +62,26 @@ describe('debounce', () => {
   });
 
   it('should pass arguments to debounced function', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func, 100);
+    localThis.debounced = debounce(localThis.func!, 100);
 
-    localThis.debounced('arg1', 'arg2', 123);
+    localThis.debounced!('arg1', 'arg2', 123);
     vi.advanceTimersByTime(100);
 
     expect(localThis.func).toHaveBeenCalledWith('arg1', 'arg2', 123);
   });
 
   it('should preserve function context (this)', () => {
-    const localThis: Record<string, any> = {};
-    localThis.value = 'test';
-    localThis.func = function() {
+    const localThis: DebounceTestLocalThis = { value: 'test' };
+    localThis.func = function (this: DebounceTestLocalThis) {
       return this.value;
     };
-    localThis.debounced = debounce(localThis.func, 100);
+    localThis.debounced = debounce(localThis.func as (...args: unknown[]) => string, 100);
 
-    const promise = new Promise((resolve) => {
-      const result = localThis.debounced();
-      if (result) resolve(result);
-      setTimeout(() => resolve(localThis.func.call(localThis)), 100);
+    const promise = new Promise<string>((resolve) => {
+      localThis.debounced!();
+      setTimeout(() => resolve((localThis.func as (this: DebounceTestLocalThis) => string).call(localThis)), 100);
     });
 
     vi.advanceTimersByTime(100);
@@ -89,20 +92,20 @@ describe('debounce', () => {
   });
 
   it('should handle multiple rapid calls correctly', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func, 100);
+    localThis.debounced = debounce(localThis.func!, 100);
 
     // Call 5 times rapidly
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(20);
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(20);
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(20);
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(20);
-    localThis.debounced();
+    localThis.debounced!();
 
     // Function should not have been called yet
     expect(localThis.func).not.toHaveBeenCalled();
@@ -113,11 +116,11 @@ describe('debounce', () => {
   });
 
   it('should handle custom delay values', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func, 500);
+    localThis.debounced = debounce(localThis.func!, 500);
 
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(499);
     expect(localThis.func).not.toHaveBeenCalled();
 
@@ -126,11 +129,11 @@ describe('debounce', () => {
   });
 
   it('should handle zero delay', () => {
-    const localThis: Record<string, any> = {};
+    const localThis: DebounceTestLocalThis = {};
     localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func, 0);
+    localThis.debounced = debounce(localThis.func!, 0);
 
-    localThis.debounced();
+    localThis.debounced!();
     vi.advanceTimersByTime(0);
     expect(localThis.func).toHaveBeenCalledTimes(1);
   });

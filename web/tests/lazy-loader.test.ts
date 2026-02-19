@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { lazyLoad, lazyImage, batchLazyLoad } from '../src/utils/lazy-loader.ts';
 

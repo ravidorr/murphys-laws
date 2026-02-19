@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { Header } from '../src/components/header.js';
+import type { CleanableElement } from '../src/types/app.js';
 
 // Mock feature flags
 vi.mock('../src/utils/feature-flags.js', () => ({
@@ -50,9 +50,7 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     expect(el.textContent).toMatch(/Murphy's/);
@@ -63,9 +61,7 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     expect(el.querySelector('[data-nav="home"]')).toBeTruthy();
@@ -82,27 +78,23 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: (page) => { navigated = page; },
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
-    el.querySelector('[data-nav="browse"]').click();
+    (el.querySelector('[data-nav="browse"]') as HTMLElement).click();
     expect(navigated).toBe('browse');
   });
 
   it('triggers onSearch when submitting search form', () => {
-    let searchQuery = '';
+    let searchQuery: { q: string } | null = null;
     const el = Header({
       onSearch: (q) => { searchQuery = q; },
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
-    const searchInput = el.querySelector('input[aria-label="Search"]');
+    const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
 
     searchInput.value = 'gravity';
@@ -116,9 +108,7 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'browse',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'browse'
     });
 
     const menuToggle = el.querySelector('#nav-menu-toggle');
@@ -130,14 +120,12 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
 
-    const menuToggle = el.querySelector('#nav-menu-toggle');
+    const menuToggle = el.querySelector('#nav-menu-toggle') as HTMLElement;
     const navDropdown = el.querySelector('#nav-dropdown');
 
     // Initially closed
@@ -154,7 +142,7 @@ describe('Header component', () => {
     expect(navDropdown.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
-    if (el.cleanup) el.cleanup();
+    if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
     document.body.removeChild(el);
   });
 
@@ -162,14 +150,12 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
 
-    const menuToggle = el.querySelector('#nav-menu-toggle');
+    const menuToggle = el.querySelector('#nav-menu-toggle') as HTMLElement;
     const navDropdown = el.querySelector('#nav-dropdown');
 
     // Open the dropdown
@@ -184,7 +170,7 @@ describe('Header component', () => {
     expect(navDropdown.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
-    if (el.cleanup) el.cleanup();
+    if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
     document.body.removeChild(outsideDiv);
     document.body.removeChild(el);
   });
@@ -193,16 +179,14 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
 
-    const menuToggle = el.querySelector('#nav-menu-toggle');
+    const menuToggle = el.querySelector('#nav-menu-toggle') as HTMLElement;
     const navDropdown = el.querySelector('#nav-dropdown');
-    const navItem = el.querySelector('[data-nav="browse"]');
+    const navItem = el.querySelector('[data-nav="browse"]') as HTMLElement;
 
     // Open the dropdown
     menuToggle.click();
@@ -214,7 +198,7 @@ describe('Header component', () => {
     expect(navDropdown.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
-    if (el.cleanup) el.cleanup();
+    if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
     document.body.removeChild(el);
   });
 
@@ -222,23 +206,21 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
 
-    expect(typeof el.cleanup).toBe('function');
+    expect(typeof (el as CleanableElement).cleanup).toBe('function');
 
     // Call cleanup
-    el.cleanup();
+    (el as CleanableElement).cleanup!();
 
     // After cleanup, clicking outside should not affect dropdown
     const menuToggle = el.querySelector('#nav-menu-toggle');
     const navDropdown = el.querySelector('#nav-dropdown');
 
-    menuToggle.click();
+    (menuToggle as HTMLElement).click();
     const outsideDiv = document.createElement('div');
     document.body.appendChild(outsideDiv);
     outsideDiv.click();
@@ -251,17 +233,15 @@ describe('Header component', () => {
   });
 
   it('trims whitespace from search input', () => {
-    let searchQuery = '';
+    let searchQuery: { q: string } | null = null;
     const el = Header({
       onSearch: (q) => { searchQuery = q; },
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
-    const searchInput = el.querySelector('input[aria-label="Search"]');
+    const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
 
     searchInput.value = '  test query  ';
@@ -272,17 +252,15 @@ describe('Header component', () => {
   });
 
   it('handles empty search query', () => {
-    let searchQuery = null;
+    let searchQuery: { q: string } | null = null;
     const el = Header({
       onSearch: (q) => { searchQuery = q; },
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
-    const searchInput = el.querySelector('input[aria-label="Search"]');
+    const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
 
     searchInput.value = '   ';
@@ -293,17 +271,15 @@ describe('Header component', () => {
   });
 
   it('handles search when input without aria-label exists', () => {
-    let searchQuery = '';
+    let searchQuery: { q: string } | null = null;
     const el = Header({
       onSearch: (q) => { searchQuery = q; },
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
-    const searchInput = el.querySelector('input[aria-label="Search"]');
+    const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
 
     // Remove aria-label to test fallback to generic input selector
@@ -317,21 +293,19 @@ describe('Header component', () => {
   });
 
   it('handles search when no input exists', () => {
-    let searchQuery = 'not called';
+    let searchQuery: { q: string } | string | null = 'not called';
     const el = Header({
       onSearch: (q) => { searchQuery = q; },
       onNavigate: () => {},
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     document.body.appendChild(el);
     const searchForm = el.querySelector('form[role="search"]');
-    const searchInput = el.querySelector('input');
+    const searchInput = el.querySelector('input') as HTMLInputElement | null;
 
     // Remove the input element
-    searchInput.remove();
+    searchInput!.remove();
 
     searchForm.dispatchEvent(new Event('submit'));
 
@@ -344,9 +318,7 @@ describe('Header component', () => {
     const el = Header({
       onSearch: () => {},
       onNavigate: (page) => { navigated = page; },
-      currentPage: 'home',
-      isLoggedIn: false,
-      currentUser: null
+      currentPage: 'home'
     });
 
     // Dispatch click event with non-HTMLElement target
@@ -363,9 +335,7 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       const themeToggle = el.querySelector('#theme-toggle');
@@ -377,9 +347,7 @@ describe('Header component', () => {
       Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       expect(initTheme).toHaveBeenCalled();
@@ -389,9 +357,7 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       const themeToggle = el.querySelector('#theme-toggle');
@@ -402,9 +368,7 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       const themeToggle = el.querySelector('#theme-toggle');
@@ -416,26 +380,24 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       themeToggle.click();
 
       expect(cycleTheme).toHaveBeenCalled();
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
 
     it('updates aria-label after theme cycle', () => {
       // Mock cycleTheme to return 'light'
-      cycleTheme.mockReturnValue('light');
-      getThemeLabel.mockImplementation((theme) => {
+      vi.mocked(cycleTheme).mockReturnValue('light');
+      vi.mocked(getThemeLabel).mockImplementation((theme) => {
         if (theme === 'light') return 'Theme: Light. Click for dark mode';
         return 'Theme: Auto. Click for light mode';
       });
@@ -443,26 +405,24 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       themeToggle.click();
 
       expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Light. Click for dark mode');
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
 
     it('updates tooltip after theme cycle', () => {
       // Mock cycleTheme to return 'light'
-      cycleTheme.mockReturnValue('light');
-      getThemeTooltip.mockImplementation((theme) => {
+      vi.mocked(cycleTheme).mockReturnValue('light');
+      vi.mocked(getThemeTooltip).mockImplementation((theme) => {
         if (theme === 'light') return 'Light mode';
         return 'Auto mode';
       });
@@ -470,19 +430,17 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       themeToggle.click();
 
       expect(themeToggle.getAttribute('data-tooltip')).toBe('Light mode');
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
 
@@ -490,17 +448,15 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       // Dispatch a themechange event
-      getThemeLabel.mockReturnValue('Theme: Dark. Click for system preference');
-      getThemeTooltip.mockReturnValue('Dark mode');
+      vi.mocked(getThemeLabel).mockReturnValue('Theme: Dark. Click for system preference');
+      vi.mocked(getThemeTooltip).mockReturnValue('Dark mode');
       document.dispatchEvent(new CustomEvent('themechange', {
         detail: { theme: 'dark', effectiveTheme: 'dark' }
       }));
@@ -508,7 +464,7 @@ describe('Header component', () => {
       expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
       expect(themeToggle.getAttribute('data-tooltip')).toBe('Dark mode');
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
 
@@ -516,23 +472,21 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       // Dispatch a themechange event
-      getThemeTooltip.mockReturnValue('Light mode');
+      vi.mocked(getThemeTooltip).mockReturnValue('Light mode');
       document.dispatchEvent(new CustomEvent('themechange', {
         detail: { theme: 'light', effectiveTheme: 'light' }
       }));
 
       expect(themeToggle.getAttribute('data-tooltip')).toBe('Light mode');
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
 
@@ -540,22 +494,20 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       // Get initial label
       const initialLabel = themeToggle.getAttribute('aria-label');
 
       // Call cleanup
-      el.cleanup();
+      (el as CleanableElement).cleanup!();
 
       // Dispatch a themechange event
-      getThemeLabel.mockReturnValue('Theme: Dark. Click for system preference');
+      vi.mocked(getThemeLabel).mockReturnValue('Theme: Dark. Click for system preference');
       document.dispatchEvent(new CustomEvent('themechange', {
         detail: { theme: 'dark', effectiveTheme: 'dark' }
       }));
@@ -570,13 +522,11 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
-      const themeToggle = el.querySelector('#theme-toggle');
+      const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       // Remove the icon element
       const icon = themeToggle.querySelector('.icon');
@@ -585,7 +535,7 @@ describe('Header component', () => {
       // Should not throw when clicking
       expect(() => themeToggle.click()).not.toThrow();
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
 
@@ -602,9 +552,7 @@ describe('Header component', () => {
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {},
-        currentPage: 'home',
-        isLoggedIn: false,
-        currentUser: null
+        currentPage: 'home'
       });
 
       document.body.appendChild(el);
@@ -619,7 +567,7 @@ describe('Header component', () => {
       // Restore original querySelector
       Element.prototype.querySelector = originalQuerySelector;
 
-      if (el.cleanup) el.cleanup();
+      if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
     });
   });
@@ -639,15 +587,15 @@ describe('Header component', () => {
 
     it('should cleanup autocomplete when header cleanup is called', () => {
       const mockCleanup = vi.fn();
-      SearchAutocomplete.mockReturnValue({ cleanup: mockCleanup, isOpen: () => false });
+      vi.mocked(SearchAutocomplete).mockReturnValue({ cleanup: mockCleanup, isOpen: () => false });
 
       const el = Header({
         onSearch: () => {},
         onNavigate: () => {}
       });
 
-      if (el.cleanup) {
-        el.cleanup();
+      if ((el as CleanableElement).cleanup) {
+        (el as CleanableElement).cleanup!();
       }
 
       expect(mockCleanup).toHaveBeenCalled();
@@ -656,10 +604,10 @@ describe('Header component', () => {
     it('should call onNavigate when suggestion is selected', () => {
       const mockOnNavigate = vi.fn();
       const mockCleanup = vi.fn();
-      let onSelectCallback = null;
+      let onSelectCallback: ((suggestion: { id: number }) => void) | null = null;
 
-      SearchAutocomplete.mockImplementation(({ onSelect }) => {
-        onSelectCallback = onSelect;
+      vi.mocked(SearchAutocomplete).mockImplementation(({ onSelect }) => {
+        onSelectCallback = onSelect as (suggestion: { id: number }) => void;
         return { cleanup: mockCleanup, isOpen: () => false };
       });
 
@@ -748,7 +696,7 @@ describe('Header component', () => {
         onNavigate: (page) => { navigated = page; },
       });
 
-      el.querySelector('[data-nav="favorites"]').click();
+      (el.querySelector('[data-nav="favorites"]') as HTMLElement).click();
       expect(navigated).toBe('favorites');
     });
   });

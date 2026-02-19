@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createIcon, hydrateIcons } from '../src/utils/icons.ts';
 
 describe('Icons utility', () => {

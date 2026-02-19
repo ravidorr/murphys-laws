@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   setExportContent,
   getExportContent,
@@ -8,9 +7,10 @@ import {
   resetExportContext,
   ContentType
 } from '../src/utils/export-context.ts';
+import type { ExportContent } from '../src/utils/export-context.ts';
 
 describe('Export Context', () => {
-  const localThis: Record<string, any> = {
+  const localThis: Record<string, ExportContent | null> = {
     mockLawsContent: null,
     mockSingleLawContent: null,
     mockContentContent: null,
@@ -112,10 +112,7 @@ describe('Export Context', () => {
       setExportContent(contentWithMetadata);
 
       const result = getExportContent();
-      expect(result.metadata.total).toBe(100);
-      expect(result.metadata.filters.q).toBe('test');
-      expect(result.metadata.page).toBe(2);
-      expect(result.metadata.extra).toBe('data');
+      expect(result?.metadata).toEqual({ total: 100, filters: { q: 'test' }, page: 2, extra: 'data' });
     });
   });
 

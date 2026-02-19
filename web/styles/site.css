@@ -12,6 +12,8 @@
   - Sections (Law of Day, Calculator, Submit sections)
   - Calculator (calculator styles)
   - Notification (notification styles)
+  - Install prompt (PWA install banner)
+  - Update notification (PWA update/offline toast)
   - Theme (dark mode overrides)
 
   Fonts:
@@ -28,5 +30,7 @@
 @import url('./partials/calculator.css');
 @import url('./partials/seo.css');
 @import url('./partials/notification.css');
+@import url('./partials/install-prompt.css');
+@import url('./partials/update-notification.css');
 @import url('./partials/theme.css');
 @import url('./partials/print.css');

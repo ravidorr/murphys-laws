@@ -1,8 +1,7 @@
-// @ts-nocheck
 import * as sodsEmailTemplate from '../../shared/modules/sods-email-template.ts';
 
 function createLocalThis() {
-  const context = {};
+  const context: Record<string, string> = {};
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {

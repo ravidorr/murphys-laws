@@ -1,8 +1,8 @@
-// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CategoryDetail } from '../src/views/category-detail.js';
 import * as api from '../src/utils/api.js';
 import * as structuredData from '../src/modules/structured-data.js';
+import type { CleanableElement } from '../src/types/app.js';
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
@@ -42,20 +42,22 @@ vi.mock('../src/utils/voting.js', () => ({
 vi.mock('../src/utils/search-info.js', () => ({
   updateSearchInfo: vi.fn()
 }));
+interface AdvancedSearchMockState {
+  onSearch?: (filters: Record<string, unknown>) => void;
+  initialFilters?: Record<string, unknown>;
+}
 vi.mock('../src/components/advanced-search.js', () => {
-  const localThis = {};
+  const localThis: AdvancedSearchMockState = {};
   return {
-    AdvancedSearch: vi.fn(({ initialFilters, onSearch }) => {
+    AdvancedSearch: vi.fn(({ initialFilters, onSearch }: { initialFilters: Record<string, unknown>; onSearch: (filters: Record<string, unknown>) => void }) => {
       localThis.onSearch = onSearch;
       localThis.initialFilters = initialFilters;
       const el = document.createElement('section');
       el.className = 'section section-card mb-12';
       el.innerHTML = '<div class="test-advanced-search">Advanced Search Mock</div>';
-      el.onSearch = onSearch;
-      el.initialFilters = initialFilters;
       return el;
     }),
-    getLocalThis: () => localThis
+    getLocalThis: (): AdvancedSearchMockState => localThis
   };
 });
 vi.mock('../src/utils/export-context.js', () => ({
@@ -65,25 +67,27 @@ vi.mock('../src/utils/export-context.js', () => ({
 }));
 
 describe('CategoryDetail view', () => {
-  let onNavigate;
-  const categoryId = 1;
+  let onNavigate: ReturnType<typeof vi.fn>;
+  const categoryId = '1';
 
   beforeEach(() => {
     onNavigate = vi.fn();
     vi.clearAllMocks();
     
-    api.fetchLaws.mockResolvedValue({
+    vi.mocked(api.fetchLaws).mockResolvedValue({
       data: [
         { id: 101, title: 'Law 1', text: 'Text 1', score: 5 },
         { id: 102, title: 'Law 2', text: 'Text 2', score: 3 }
       ],
-      total: 2
+      total: 2,
+      limit: 10,
+      offset: 0
     });
 
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
-        { id: 1, title: 'Technology', description: 'Tech truths: to err is human, to really foul things up requires a computer.' },
-        { id: 2, title: 'Work', description: null }
+        { id: 1, slug: 'technology', title: 'Technology', description: 'Tech truths: to err is human, to really foul things up requires a computer.' },
+        { id: 2, slug: 'work', title: 'Work', description: null }
       ]
     });
   });
@@ -134,10 +138,10 @@ describe('CategoryDetail view', () => {
   });
 
   it('displays fallback description when description is null', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
-        { id: 1, title: 'Technology', description: null },
-        { id: 2, title: 'Work', description: null }
+        { id: 1, slug: 'technology', title: 'Technology', description: null },
+        { id: 2, slug: 'work', title: 'Work', description: null }
       ]
     });
 
@@ -150,7 +154,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('renders empty state when no laws found', async () => {
-    api.fetchLaws.mockResolvedValue({ data: [], total: 0 });
+    vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -158,7 +162,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles API error', async () => {
-    api.fetchLaws.mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.fetchLaws).mockRejectedValue(new Error('Network error'));
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -166,9 +170,11 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles pagination', async () => {
-    api.fetchLaws.mockResolvedValue({
+    vi.mocked(api.fetchLaws).mockResolvedValue({
       data: [],
-      total: 20 // Enough for 2 pages
+      total: 20, // Enough for 2 pages
+      limit: 10,
+      offset: 0
     });
     
     const el = CategoryDetail({ categoryId, onNavigate });
@@ -276,7 +282,7 @@ describe('CategoryDetail view', () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
     
-    api.fetchLaws.mockClear();
+    vi.mocked(api.fetchLaws).mockClear();
 
     const disabledBtn = document.createElement('button');
     disabledBtn.dataset.page = '2';
@@ -293,7 +299,7 @@ describe('CategoryDetail view', () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
     
-    api.fetchLaws.mockClear();
+    vi.mocked(api.fetchLaws).mockClear();
 
     const invalidBtn = document.createElement('button');
     invalidBtn.dataset.page = '0'; // Invalid page
@@ -317,12 +323,12 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles category not found in categories list', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
-        { id: 999, title: 'Other Category' }
+        { id: 999, slug: 'other', title: 'Other Category' }
       ]
     });
-    const el = CategoryDetail({ categoryId: 1, onNavigate });
+    const el = CategoryDetail({ categoryId: '1', onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // Should still render with default "Category" title
@@ -330,7 +336,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles fetchCategories error', async () => {
-    api.fetchCategories.mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.fetchCategories).mockRejectedValue(new Error('Network error'));
     
     CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -339,7 +345,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles null data in fetchLaws response', async () => {
-    api.fetchLaws.mockResolvedValue({ data: null, total: null });
+    vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -347,7 +353,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('handles category slug instead of numeric id', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'technology', title: 'Technology Laws', description: 'Tech laws' },
         { id: 2, slug: 'work', title: 'Work Laws', description: 'Work laws' }
@@ -367,7 +373,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('finds category by slug in fetchCategoryDetails', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'computers', title: "Murphy's Computers Laws", description: 'Computer laws description' },
         { id: 2, slug: 'work', title: 'Work Laws', description: 'Work laws' }
@@ -382,7 +388,7 @@ describe('CategoryDetail view', () => {
   });
 
   it('displays description when category found by slug', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'computers', title: "Murphy's Computers Laws", description: 'Digital doom: programs are obsolete when running.' },
         { id: 2, slug: 'work', title: 'Work Laws', description: 'Work laws' }
@@ -401,20 +407,20 @@ describe('CategoryDetail view', () => {
       const el = CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      const sortSelect = el.querySelector('#sort-select');
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement | null;
       expect(sortSelect).toBeTruthy();
-      expect(sortSelect.options.length).toBeGreaterThan(0);
+      expect(sortSelect!.options.length).toBeGreaterThan(0);
     });
 
     it('changes sort order when select changes', async () => {
       const el = CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
       
-      api.fetchLaws.mockClear();
+      vi.mocked(api.fetchLaws).mockClear();
 
-      const sortSelect = el.querySelector('#sort-select');
-      sortSelect.value = 'created_at-desc';
-      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement | null;
+      sortSelect!.value = 'created_at-desc';
+      sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
         sort: 'created_at',
@@ -423,9 +429,11 @@ describe('CategoryDetail view', () => {
     });
 
     it('resets to page 1 when sort changes', async () => {
-      api.fetchLaws.mockResolvedValue({
+      vi.mocked(api.fetchLaws).mockResolvedValue({
         data: Array(10).fill({ id: 1, title: 'Law', text: 'Text' }),
-        total: 25
+        total: 25,
+        limit: 10,
+        offset: 0
       });
 
       const el = CategoryDetail({ categoryId, onNavigate });
@@ -438,12 +446,12 @@ describe('CategoryDetail view', () => {
       pageBtn.click();
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      api.fetchLaws.mockClear();
+      vi.mocked(api.fetchLaws).mockClear();
 
       // Change sort
-      const sortSelect = el.querySelector('#sort-select');
-      sortSelect.value = 'upvotes-desc';
-      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement | null;
+      sortSelect!.value = 'upvotes-desc';
+      sortSelect!.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
         offset: 0 // Page 1
@@ -453,30 +461,32 @@ describe('CategoryDetail view', () => {
 
   describe('result count', () => {
     it('displays result count when laws are loaded', async () => {
-      api.fetchLaws.mockResolvedValue({
+      vi.mocked(api.fetchLaws).mockResolvedValue({
         data: [
           { id: 101, title: 'Law 1', text: 'Text 1' },
           { id: 102, title: 'Law 2', text: 'Text 2' }
         ],
-        total: 2
+        total: 2,
+        limit: 10,
+        offset: 0
       });
 
       const el = CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      const resultCount = el.querySelector('#category-result-count');
+      const resultCount = el.querySelector('#category-result-count') as HTMLElement | null;
       expect(resultCount).toBeTruthy();
-      expect(resultCount.textContent).toContain('1-2 of 2');
+      expect(resultCount!.textContent).toContain('1-2 of 2');
     });
 
     it('hides result count when no laws', async () => {
-      api.fetchLaws.mockResolvedValue({ data: [], total: 0 });
+      vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
 
       const el = CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      const resultCount = el.querySelector('#category-result-count');
-      expect(resultCount.style.display).toBe('none');
+      const resultCount = el.querySelector('#category-result-count') as HTMLElement | null;
+      expect(resultCount!.style.display).toBe('none');
     });
   });
 
@@ -504,12 +514,13 @@ describe('CategoryDetail view', () => {
     });
 
     it('reloads laws when search filters change', async () => {
-      const { getLocalThis } = await import('../src/components/advanced-search.ts');
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const { getLocalThis } = mod;
       
       CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      api.fetchLaws.mockClear();
+      vi.mocked(api.fetchLaws).mockClear();
 
       // Simulate search with keyword
       const localThis = getLocalThis();
@@ -522,12 +533,13 @@ describe('CategoryDetail view', () => {
     });
 
     it('keeps category_id when search is cleared', async () => {
-      const { getLocalThis } = await import('../src/components/advanced-search.ts');
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const { getLocalThis } = mod;
       
       CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      api.fetchLaws.mockClear();
+      vi.mocked(api.fetchLaws).mockClear();
 
       // Simulate clearing search
       const localThis = getLocalThis();
@@ -548,7 +560,7 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Call cleanup
-      el.cleanup();
+      (el as CleanableElement).cleanup!();
 
       expect(clearExportContent).toHaveBeenCalled();
     });
@@ -556,13 +568,14 @@ describe('CategoryDetail view', () => {
 
   describe('search highlighting', () => {
     it('passes search query to law card renderer', async () => {
-      const { renderLawCards } = await import('../src/utils/law-card-renderer.ts');
-      const { getLocalThis } = await import('../src/components/advanced-search.ts');
+      const { renderLawCards } = await import('../src/utils/law-card-renderer.js');
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const { getLocalThis } = mod;
       
       CategoryDetail({ categoryId, onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      renderLawCards.mockClear();
+      vi.mocked(renderLawCards).mockClear();
 
       // Simulate search with keyword
       const localThis = getLocalThis();
@@ -612,13 +625,13 @@ describe('CategoryDetail view', () => {
 
   describe('formatPageTitle styling', () => {
     it('wraps only first word in accent for titles ending with Laws', async () => {
-      api.fetchCategories.mockResolvedValue({
+      vi.mocked(api.fetchCategories).mockResolvedValue({
         data: [
           { id: 1, slug: 'alarm-clock', title: "Murphy's Alarm Clock Laws", description: 'Alarm clock laws' }
         ]
       });
 
-      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      const el = CategoryDetail({ categoryId: '1', onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
@@ -630,13 +643,13 @@ describe('CategoryDetail view', () => {
     });
 
     it('wraps only first word in accent for titles NOT ending with Laws', async () => {
-      api.fetchCategories.mockResolvedValue({
+      vi.mocked(api.fetchCategories).mockResolvedValue({
         data: [
           { id: 1, slug: '4x4-car', title: "Murphy's 4X4 Car Laws Section", description: '4x4 laws' }
         ]
       });
 
-      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      const el = CategoryDetail({ categoryId: '1', onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
@@ -648,13 +661,13 @@ describe('CategoryDetail view', () => {
     });
 
     it('handles single word title ending with Laws', async () => {
-      api.fetchCategories.mockResolvedValue({
+      vi.mocked(api.fetchCategories).mockResolvedValue({
         data: [
           { id: 1, slug: 'laws', title: 'Laws', description: 'Just laws' }
         ]
       });
 
-      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      const el = CategoryDetail({ categoryId: '1', onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
@@ -663,13 +676,13 @@ describe('CategoryDetail view', () => {
     });
 
     it('handles single word title NOT ending with Laws', async () => {
-      api.fetchCategories.mockResolvedValue({
+      vi.mocked(api.fetchCategories).mockResolvedValue({
         data: [
           { id: 1, slug: 'technology', title: 'Technology', description: 'Tech stuff' }
         ]
       });
 
-      const el = CategoryDetail({ categoryId: 1, onNavigate });
+      const el = CategoryDetail({ categoryId: '1', onNavigate });
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');

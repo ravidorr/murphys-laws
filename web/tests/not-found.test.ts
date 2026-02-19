@@ -1,9 +1,8 @@
-// @ts-nocheck
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NotFound } from '../src/views/not-found.js';
 
 describe('NotFound view', () => {
-  let el;
+  let el: HTMLElement | null;
 
   afterEach(() => {
     if (el?.parentNode) {
@@ -71,11 +70,13 @@ describe('NotFound view', () => {
     const onNavigate = vi.fn();
     el = NotFound({ onNavigate });
 
+    expect(el).toBeTruthy();
     const searchForm = el.querySelector('#not-found-search-form');
     const searchInput = el.querySelector('#not-found-search-input');
-
-    searchInput.value = 'test query';
-    searchForm.dispatchEvent(new Event('submit', { bubbles: true }));
+    expect(searchForm).toBeTruthy();
+    expect(searchInput).toBeTruthy();
+    (searchInput as HTMLInputElement).value = 'test query';
+    (searchForm as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true }));
 
     expect(sessionStorage.getItem('searchQuery')).toBe('test query');
     expect(onNavigate).toHaveBeenCalledWith('browse');
@@ -85,11 +86,13 @@ describe('NotFound view', () => {
     const onNavigate = vi.fn();
     el = NotFound({ onNavigate });
 
+    expect(el).toBeTruthy();
     const searchForm = el.querySelector('#not-found-search-form');
     const searchInput = el.querySelector('#not-found-search-input');
-
-    searchInput.value = '   ';
-    searchForm.dispatchEvent(new Event('submit', { bubbles: true }));
+    expect(searchForm).toBeTruthy();
+    expect(searchInput).toBeTruthy();
+    (searchInput as HTMLInputElement).value = '   ';
+    (searchForm as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true }));
 
     expect(onNavigate).not.toHaveBeenCalled();
   });

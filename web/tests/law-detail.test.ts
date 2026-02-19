@@ -1,6 +1,6 @@
-// @ts-nocheck
 import { LawDetail } from '@views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
+import type { CleanableElement } from '../src/types/app.js';
 
 describe('LawDetail view', () => {
   beforeEach(() => {
@@ -9,13 +9,13 @@ describe('LawDetail view', () => {
 
   it('renders not found for unknown id', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false });
-    const el = LawDetail({ lawId: 'nope', _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: 'nope', onNavigate: () => { } });
     await new Promise(r => setTimeout(r, 0));
     expect(el.textContent).toMatch(/Law Not Found/);
   });
 
   it('renders not found when lawId is null', async () => {
-    const el = LawDetail({ lawId: null, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: null as unknown as string, onNavigate: () => { } });
     expect(el.textContent).toMatch(/Law Not Found/);
   });
 
@@ -26,14 +26,14 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 1, downvotes: 0 });
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
     expect(el.textContent).toMatch(law.title);
     const voteBtn = el.querySelector('[data-vote="up"]');
     if (voteBtn) {
-      voteBtn.click();
+      (voteBtn as HTMLElement).click();
       await new Promise(r => setTimeout(r, 0)); // Wait for async handler
       expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'up');
     }
@@ -45,7 +45,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     // Wait for the law to render
     await vi.waitFor(() => {
@@ -62,13 +62,13 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     let navTarget = '';
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: (target) => { navTarget = target; } });
+    const el = LawDetail({ lawId: law.id, onNavigate: (target) => { navTarget = target; } });
 
     await new Promise(r => setTimeout(r, 50));
 
     const browseBtn = el.querySelector('[data-nav="browse"]');
     if (browseBtn) {
-      browseBtn.click();
+      (browseBtn as HTMLElement).click();
       expect(navTarget).toBe('browse');
     }
   });
@@ -80,13 +80,13 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 0, downvotes: 1 });
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
     const downvoteBtn = el.querySelector('[data-vote="down"]');
     if (downvoteBtn) {
-      downvoteBtn.click();
+      (downvoteBtn as HTMLElement).click();
       await new Promise(r => setTimeout(r, 0)); // Wait for async handler
       expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'down');
     }
@@ -98,7 +98,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -117,7 +117,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -131,7 +131,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -144,7 +144,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -162,7 +162,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -184,7 +184,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -205,7 +205,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -218,7 +218,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -240,7 +240,7 @@ describe('LawDetail view', () => {
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -252,7 +252,7 @@ describe('LawDetail view', () => {
 
     // Click upvote
     const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn?.click();
+    (upvoteBtn as HTMLElement | null)?.click();
     await new Promise(r => setTimeout(r, 10));
 
     // Counts should update
@@ -272,7 +272,7 @@ describe('LawDetail view', () => {
 
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -292,7 +292,7 @@ describe('LawDetail view', () => {
 
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('down');
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -312,7 +312,7 @@ describe('LawDetail view', () => {
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -335,7 +335,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -351,7 +351,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -379,8 +379,6 @@ describe('LawDetail view', () => {
 
     LawDetail({
       lawId: law.id,
-      _isLoggedIn: false,
-      _currentUser: null,
       onNavigate: () => { },
       onStructuredData: onStructuredDataSpy
     });
@@ -399,14 +397,14 @@ describe('LawDetail view', () => {
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockRejectedValue(new Error('Network error'));
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
     const upvoteBtn = el.querySelector('[data-vote="up"]');
 
     // Should not throw when voting fails
-    upvoteBtn?.click();
+    (upvoteBtn as HTMLElement | null)?.click();
     await new Promise(r => setTimeout(r, 10));
 
     // If we got here without throwing, the error was handled gracefully
@@ -419,7 +417,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -450,7 +448,7 @@ describe('LawDetail view', () => {
       }
     });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -483,7 +481,7 @@ describe('LawDetail view', () => {
     const execCommandMock = vi.fn().mockReturnValue(true);
     document.execCommand = execCommandMock;
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -514,7 +512,7 @@ describe('LawDetail view', () => {
       }
     });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -543,7 +541,7 @@ describe('LawDetail view', () => {
       }
     });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -570,8 +568,6 @@ describe('LawDetail view', () => {
     let navParam = '';
     const el = LawDetail({
       lawId: law.id,
-      _isLoggedIn: false,
-      _currentUser: null,
       onNavigate: (target, param) => { navTarget = target; navParam = param; }
     });
 
@@ -602,16 +598,16 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValue({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => relatedLaws });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 100));
 
     // Should have made at least 2 fetches (law + related laws)
-    expect(global.fetch.mock.calls.length).toBeGreaterThanOrEqual(2);
-    
+    expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
+
     // Verify the related laws endpoint was called
-    const fetchCalls = global.fetch.mock.calls.map(call => call[0]);
-    const hasRelatedCall = fetchCalls.some(url => url.includes('/related'));
+    const fetchCalls = vi.mocked(global.fetch).mock.calls.map(call => call[0]);
+    const hasRelatedCall = fetchCalls.some(url => String(url).includes('/related'));
     expect(hasRelatedCall).toBe(true);
   });
 
@@ -622,7 +618,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockRejectedValueOnce(new Error('Network error'));
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 100));
 
@@ -637,7 +633,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ data: [], law_id: 7 }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 100));
 
@@ -655,7 +651,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ data: null, law_id: 7 }) });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 100));
 
@@ -676,7 +672,7 @@ describe('LawDetail view', () => {
       }
     });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -708,7 +704,7 @@ describe('LawDetail view', () => {
     const execCommandMock = vi.fn().mockReturnValue(true);
     document.execCommand = execCommandMock;
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -730,7 +726,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -763,7 +759,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -786,7 +782,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -827,7 +823,7 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -851,7 +847,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const onNavigate = vi.fn();
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate });
+    const el = LawDetail({ lawId: law.id, onNavigate });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -887,7 +883,7 @@ describe('LawDetail view', () => {
       }
     });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -918,7 +914,7 @@ describe('LawDetail view', () => {
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
@@ -941,15 +937,15 @@ describe('LawDetail view', () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
-    const el = LawDetail({ lawId: law.id, _isLoggedIn: false, _currentUser: null, onNavigate: () => { } });
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
 
     await new Promise(r => setTimeout(r, 50));
 
     // Element should have a cleanup function
-    expect(typeof el.cleanup).toBe('function');
+    expect(typeof (el as CleanableElement).cleanup).toBe('function');
 
     // Calling cleanup should not throw
-    expect(() => el.cleanup()).not.toThrow();
+    expect(() => (el as CleanableElement).cleanup()).not.toThrow();
   });
 });
 

@@ -1,10 +1,15 @@
-// @ts-nocheck
+import type Database from 'better-sqlite3';
+
+type Db = InstanceType<typeof Database>;
+
 export class VoteService {
-  constructor(db) {
+  private db: Db;
+
+  constructor(db: Db) {
     this.db = db;
   }
 
-  async vote(lawId, voteType, voterIdentifier) {
+  async vote(lawId: number, voteType: string, voterIdentifier: string): Promise<void> {
     const insertVoteSql = `
       INSERT INTO votes (law_id, vote_type, voter_identifier)
       VALUES (?, ?, ?)
@@ -16,7 +21,7 @@ export class VoteService {
     insertVoteStmt.run(lawId, voteType, voterIdentifier);
   }
 
-  async removeVote(lawId, voterIdentifier) {
+  async removeVote(lawId: number, voterIdentifier: string): Promise<void> {
     const deleteVoteSql = `
       DELETE FROM votes WHERE law_id = ? AND voter_identifier = ?;
     `;

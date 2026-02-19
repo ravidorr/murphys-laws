@@ -8,6 +8,7 @@ import { ensureMathJax } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
+import type { CleanableElement } from '../types/app.d.ts';
 
 type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency';
 
@@ -288,7 +289,7 @@ export function Calculator() {
     emailSubject: "Check out my Sod's Law calculation"
   });
 
-  (el as any)._teardownShare = teardownShare;
+  (el as CleanableElement).cleanup = teardownShare;
 
   return el;
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ContentType } from '../src/utils/export-context.ts';
 
 // Mock Sentry
@@ -39,12 +38,45 @@ import {
   generateFilename
 } from '../src/utils/export.ts';
 
+interface MockLaw {
+  id: number;
+  title: string | null;
+  text: string;
+  attribution: string | null;
+  category_slug: string;
+  upvotes: number;
+  downvotes: number;
+}
+
+interface MockCategory {
+  id: number;
+  name: string;
+  slug: string;
+  law_count: number;
+}
+
+interface ExportTestLocalThis {
+  mockLaws: MockLaw[] | null;
+  mockSingleLaw: MockLaw | null;
+  mockCategories: MockCategory[] | null;
+  mockContent: string | null;
+  mockLawWithEscapes: MockLaw | null;
+  createObjectURLSpy: ReturnType<typeof vi.fn> | null;
+  revokeObjectURLSpy: ReturnType<typeof vi.fn> | null;
+  mockAnchor: { href: string; download: string; click: ReturnType<typeof vi.fn> } | null;
+  originalCreateObjectURL: typeof URL.createObjectURL | null;
+  originalRevokeObjectURL: typeof URL.revokeObjectURL | null;
+  lastBlobContent: string | null;
+  originalBlob: typeof Blob | null;
+}
+
 describe('Export Utilities', () => {
-  const localThis: Record<string, any> = {
+  const localThis: ExportTestLocalThis = {
     mockLaws: null,
     mockSingleLaw: null,
     mockCategories: null,
     mockContent: null,
+    mockLawWithEscapes: null,
     createObjectURLSpy: null,
     revokeObjectURLSpy: null,
     mockAnchor: null,
@@ -69,16 +101,17 @@ describe('Export Utilities', () => {
     localThis.lastBlobContent = null;
 
     // Mock Blob to capture content
-    (globalThis as any).Blob = class MockBlob {
-      parts: any;
-      options: any;
-      constructor(parts: any, options: any) {
+    const BlobLike = class MockBlob {
+      parts: BlobPart[];
+      options?: BlobPropertyBag;
+      constructor(parts: BlobPart[], options?: BlobPropertyBag) {
         this.parts = parts;
         this.options = options;
-        // Store the string content for test inspection
-        localThis.lastBlobContent = parts.join('');
+        // Store the string content for test inspection (test only passes string parts)
+        localThis.lastBlobContent = (parts as string[]).join('');
       }
     };
+    (globalThis as unknown as { Blob: typeof BlobLike }).Blob = BlobLike;
 
     // Mock URL.createObjectURL and revokeObjectURL (jsdom doesn't have these)
     URL.createObjectURL = vi.fn().mockReturnValue('blob:test');
@@ -92,14 +125,14 @@ describe('Export Utilities', () => {
     };
     
     const originalCreateElement = document.createElement.bind(document);
-    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+    vi.spyOn(document, 'createElement').mockImplementation(((tag: string) => {
       if (tag === 'a') {
-        return localThis.mockAnchor;
+        return localThis.mockAnchor as unknown as HTMLElement;
       }
       return originalCreateElement(tag);
-    });
-    vi.spyOn(document.body, 'appendChild').mockImplementation((() => {}) as any);
-    vi.spyOn(document.body, 'removeChild').mockImplementation((() => {}) as any);
+    }) as typeof document.createElement);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => node);
+    vi.spyOn(document.body, 'removeChild').mockImplementation((node: Node) => node);
 
     // Set up test data
     localThis.mockLaws = [

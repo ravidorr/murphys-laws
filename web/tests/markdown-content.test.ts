@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { describe, it, expect, vi } from 'vitest';
-import { getPageContent, getPageMetadata, markdownToHtml } from '../src/utils/markdown-content.ts';
+import { getPageContent, getPageMetadata, markdownToHtml, type ContentPage } from '../src/utils/markdown-content.ts';
 import { marked } from 'marked';
 
 describe('markdown-content.js', () => {
@@ -116,7 +115,7 @@ describe('markdown-content.js', () => {
 
     it('throws error for unknown page', () => {
       expect(() => {
-        getPageContent('unknown-page');
+        getPageContent('unknown-page' as ContentPage);
       }).toThrow();
     });
   });
@@ -129,7 +128,7 @@ describe('markdown-content.js', () => {
     });
 
     it('returns undefined for unknown page', () => {
-      const metadata = getPageMetadata('unknown-page');
+      const metadata = getPageMetadata('unknown-page' as ContentPage);
       expect(metadata).toBeUndefined();
     });
   });
@@ -248,7 +247,7 @@ describe('markdown-content.js', () => {
       // The code throws because contentMap[page] is undefined
       // and destructuring undefined throws an error
       expect(() => {
-        getPageContent('invalid-page-name');
+        getPageContent('invalid-page-name' as ContentPage);
       }).toThrow();
     });
   });

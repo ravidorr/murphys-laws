@@ -8,6 +8,7 @@ import { isFavorite } from './favorites.ts';
 import { isFavoritesEnabled } from './feature-flags.ts';
 import { renderShareButtonsHTML } from '../components/social-share.ts';
 import { renderButtonHTML } from './button.ts';
+import type { Law } from '../types/app.d.ts';
 
 /**
  * Renders a law card with consistent HTML structure
@@ -29,7 +30,7 @@ interface LawCardOptions {
   searchQuery?: string;
 }
 
-export function renderLawCard(law: any, options: LawCardOptions = {}) {
+export function renderLawCard(law: Law, options: LawCardOptions = {}) {
   const {
     index = 0,
     rankOffset = null,

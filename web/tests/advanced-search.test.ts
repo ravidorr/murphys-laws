@@ -1,14 +1,25 @@
-// @ts-nocheck
 import { AdvancedSearch } from '@components/advanced-search.js';
 import * as api from '../src/utils/api.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
 
-function createLocalThis() {
-  const context = {};
+interface AdvancedSearchTestContext {
+  el?: HTMLElement;
+  appended?: boolean;
+  appendedClones?: Node[];
+}
+
+interface MountSearchOptions {
+  append?: boolean;
+  onSearch?: (filters: { q?: string; category_id?: string | number; attribution?: string }) => void;
+  initialFilters?: { q?: string; category_id?: string; attribution?: string };
+}
+
+function createLocalThis(): () => AdvancedSearchTestContext {
+  const context: AdvancedSearchTestContext = {};
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {
-      delete context[key];
+      delete context[key as keyof AdvancedSearchTestContext];
     });
   });
 
@@ -43,7 +54,7 @@ describe('AdvancedSearch component', () => {
     vi.restoreAllMocks();
   });
 
-  function mountSearch({ append = false, ...props } = {}) {
+  function mountSearch({ append = false, ...props }: MountSearchOptions = {}) {
     const el = AdvancedSearch({ onSearch: () => {}, ...props });
     const self = local();
     self.el = el;
@@ -77,7 +88,7 @@ describe('AdvancedSearch component', () => {
 
     const el = mountSearch({ initialFilters });
 
-    const keywordInput = el.querySelector('#search-keyword');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
     expect(keywordInput.value).toBe('murphy');
   });
 
@@ -94,7 +105,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const categorySelect = el.querySelector('#search-category');
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       expect(categorySelect.textContent).toMatch(/General/);
       expect(categorySelect.textContent).toMatch(/Technology/);
     });
@@ -117,7 +128,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
     });
@@ -138,7 +149,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
     });
@@ -154,7 +165,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
       // Should not contain empty options
@@ -174,7 +185,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
       // Should not contain "undefined" or "null" string literals
@@ -197,7 +208,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
       // Should only have "All Submitters" + valid options
@@ -216,7 +227,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
       // Should not contain "anonymous" in any case
@@ -243,7 +254,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.textContent).toMatch(/Alice/);
       expect(attributionSelect.textContent).toMatch(/Bob/);
       // Should only have "All Submitters" + valid options
@@ -260,7 +271,7 @@ describe('AdvancedSearch component', () => {
     // Wait for loadFilters() to execute (called immediately when no cache)
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const categorySelect = el.querySelector('#search-category');
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     // When fetch fails and no cache exists, dropdown keeps "Loading..." text
     // This is expected behavior - user can still use the dropdown
     expect(categorySelect).toBeTruthy();
@@ -285,8 +296,8 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     // Should populate immediately from cache
-    const categorySelect = el.querySelector('#search-category');
-    const attributionSelect = el.querySelector('#search-attribution');
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
 
     expect(categorySelect.textContent).toMatch(/General/);
     expect(categorySelect.textContent).toMatch(/Technology/);
@@ -312,7 +323,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     // Trigger focus event to lazy load
-    const categorySelect = el.querySelector('#search-category');
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     categorySelect.dispatchEvent(new Event('focus', { bubbles: true }));
 
     await vi.waitFor(() => {
@@ -330,10 +341,10 @@ describe('AdvancedSearch component', () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    const keywordInput = el.querySelector('#search-keyword');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
     keywordInput.value = 'test query';
 
-    const searchBtn = el.querySelector('#search-btn');
+    const searchBtn = el.querySelector('#search-btn') as HTMLElement;
     searchBtn.click();
 
     expect(searchFilters).toEqual({ q: 'test query' });
@@ -351,14 +362,14 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
-      const categorySelect = el.querySelector('#search-category');
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       expect(categorySelect.options.length).toBeGreaterThan(1);
     });
 
-    const categorySelect = el.querySelector('#search-category');
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     categorySelect.value = '1';
 
-    const searchBtn = el.querySelector('#search-btn');
+    const searchBtn = el.querySelector('#search-btn') as HTMLElement;
     searchBtn.click();
 
     expect(searchFilters).toEqual({ category_id: 1 });
@@ -376,14 +387,14 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.options.length).toBeGreaterThan(1);
     });
 
-    const attributionSelect = el.querySelector('#search-attribution');
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
     attributionSelect.value = 'Alice';
 
-    const searchBtn = el.querySelector('#search-btn');
+    const searchBtn = el.querySelector('#search-btn') as HTMLElement;
     searchBtn.click();
 
     expect(searchFilters).toEqual({ attribution: 'Alice' });
@@ -403,19 +414,19 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
-      const categorySelect = el.querySelector('#search-category');
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       expect(categorySelect.options.length).toBeGreaterThan(1);
     });
 
-    const keywordInput = el.querySelector('#search-keyword');
-    const categorySelect = el.querySelector('#search-category');
-    const attributionSelect = el.querySelector('#search-attribution');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
 
     keywordInput.value = 'murphy';
     categorySelect.value = '1';
     attributionSelect.value = 'Alice';
 
-    const searchBtn = el.querySelector('#search-btn');
+    const searchBtn = el.querySelector('#search-btn') as HTMLElement;
     searchBtn.click();
 
     expect(searchFilters).toEqual({
@@ -435,10 +446,10 @@ describe('AdvancedSearch component', () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    const keywordInput = el.querySelector('#search-keyword');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
     keywordInput.value = '  test query  ';
 
-    const searchBtn = el.querySelector('#search-btn');
+    const searchBtn = el.querySelector('#search-btn') as HTMLElement;
     searchBtn.click();
 
     expect(searchFilters).toEqual({ q: 'test query' });
@@ -454,10 +465,10 @@ describe('AdvancedSearch component', () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    const keywordInput = el.querySelector('#search-keyword');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
     keywordInput.value = '';
 
-    const searchBtn = el.querySelector('#search-btn');
+    const searchBtn = el.querySelector('#search-btn') as HTMLElement;
     searchBtn.click();
 
     expect(searchFilters).toEqual({});
@@ -477,21 +488,21 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
-      const categorySelect = el.querySelector('#search-category');
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       expect(categorySelect.options.length).toBeGreaterThan(1);
     });
 
     // Set some filters
-    const keywordInput = el.querySelector('#search-keyword');
-    const categorySelect = el.querySelector('#search-category');
-    const attributionSelect = el.querySelector('#search-attribution');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
 
     keywordInput.value = 'murphy';
     categorySelect.value = '1';
     attributionSelect.value = 'Alice';
 
     // Clear filters
-    const clearBtn = el.querySelector('#clear-btn');
+    const clearBtn = el.querySelector('#clear-btn') as HTMLElement;
     clearBtn.click();
 
     expect(keywordInput.value).toBe('');
@@ -510,7 +521,7 @@ describe('AdvancedSearch component', () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    const keywordInput = el.querySelector('#search-keyword');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
     keywordInput.value = 'test';
 
     const enterEvent = new KeyboardEvent('keypress', { key: 'Enter' });
@@ -529,7 +540,7 @@ describe('AdvancedSearch component', () => {
 
     await new Promise(r => setTimeout(r, 10));
 
-    const keywordInput = el.querySelector('#search-keyword');
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
     keywordInput.value = 'test';
 
     const keyEvent = new KeyboardEvent('keypress', { key: 'a' });
@@ -554,7 +565,7 @@ describe('AdvancedSearch component', () => {
     });
 
     await vi.waitFor(() => {
-      const categorySelect = el.querySelector('#search-category');
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       expect(categorySelect.value).toBe('2');
     });
   });
@@ -575,7 +586,7 @@ describe('AdvancedSearch component', () => {
     });
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       expect(attributionSelect.value).toBe('Bob');
     });
   });
@@ -589,7 +600,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const categorySelect = el.querySelector('#search-category');
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       // When data property is missing, categories will be empty array
       // Dropdown only updates if categories.length > 0, so it stays with "Loading..."
       // But we can verify the component doesn't crash
@@ -606,7 +617,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       // When data property is missing, attributions will be empty array
       // Dropdown only updates if attributions.length > 0, so it stays with "Loading..."
       // But we can verify the component doesn't crash
@@ -627,7 +638,7 @@ describe('AdvancedSearch component', () => {
     const el = mountSearch();
 
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
+      const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
       // Should use cached attributions
       expect(attributionSelect.innerHTML).toContain('Author A');
       expect(attributionSelect.innerHTML).toContain('Author B');
@@ -653,7 +664,7 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: ['New Author'] });
 
     // Focus on attribution select should trigger reload
-    const attributionSelect = el.querySelector('#search-attribution');
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
     attributionSelect.dispatchEvent(new FocusEvent('focus'));
 
     await vi.waitFor(() => {
@@ -673,7 +684,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch();
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         expect(attributionSelect.innerHTML).toContain('Valid Author');
         expect(attributionSelect.innerHTML).toContain('Another Author');
         expect(attributionSelect.innerHTML).not.toContain('null');
@@ -691,7 +702,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch();
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         expect(attributionSelect.innerHTML).toContain('Valid Author');
         expect(attributionSelect.innerHTML).not.toContain('>undefined<');
         expect(attributionSelect.innerHTML).not.toContain('>UNDEFINED<');
@@ -709,7 +720,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch();
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         expect(attributionSelect.innerHTML).toContain('Valid Author');
         expect(attributionSelect.innerHTML).not.toContain('>null<');
         expect(attributionSelect.innerHTML).not.toContain('>NULL<');
@@ -727,7 +738,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch();
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         expect(attributionSelect.innerHTML).toContain('Valid Author');
         // Empty options would show as empty option text
         const options = attributionSelect.querySelectorAll('option');
@@ -746,7 +757,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch();
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         expect(attributionSelect.innerHTML).toContain('String Author');
         expect(attributionSelect.innerHTML).toContain('Another String Author');
       });
@@ -762,7 +773,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch({ initialFilters: { category_id: '2' } });
 
       await vi.waitFor(() => {
-        const categorySelect = el.querySelector('#search-category');
+        const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
         const selectedOption = categorySelect.querySelector('option[selected]');
         expect(selectedOption).toBeTruthy();
         expect(selectedOption.textContent).toBe('Category Two');
@@ -779,7 +790,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch({ initialFilters: { attribution: 'Author B' } });
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         const selectedOption = attributionSelect.querySelector('option[selected]');
         expect(selectedOption).toBeTruthy();
         expect(selectedOption.textContent).toBe('Author B');
@@ -797,7 +808,7 @@ describe('AdvancedSearch component', () => {
       const el = mountSearch();
 
       await vi.waitFor(() => {
-        const attributionSelect = el.querySelector('#search-attribution');
+        const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         expect(attributionSelect.innerHTML).toContain('Valid Author');
         // Non-string names should be filtered out
         const options = attributionSelect.querySelectorAll('option');

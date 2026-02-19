@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { About } from '../src/views/about.js';
 
 describe('About page', () => {
@@ -86,7 +85,8 @@ describe('About page', () => {
     });
 
     const contactLink = el.querySelector('[data-nav="contact"]');
-    contactLink.click();
+    expect(contactLink).toBeTruthy();
+    (contactLink as HTMLElement).click();
     expect(navigated).toBe('contact');
   });
 
@@ -97,7 +97,8 @@ describe('About page', () => {
     });
 
     const browseLink = el.querySelector('[data-nav="browse"]');
-    browseLink.click();
+    expect(browseLink).toBeTruthy();
+    (browseLink as HTMLElement).click();
     expect(navigated).toBe('browse');
   });
 

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Calculator } from '../src/views/sods-calculator.js';
 import templateHtml from '../src/views/templates/sods-calculator.html?raw';
@@ -27,15 +26,15 @@ describe('Sod\'s Law Calculator - Coverage', () => {
 
   it('handles MathJax being undefined during formula update', async () => {
     const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = (cb) => cb();
+    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
 
     delete global.window.MathJax;
     
     const el = Calculator();
     container.appendChild(el);
     
-    const slider = el.querySelector('#urgency');
-    slider.value = 7;
+    const slider = el.querySelector('#urgency') as HTMLInputElement;
+    slider.value = '7';
     slider.dispatchEvent(new Event('input'));
     
     // Should not throw even if MathJax is missing
@@ -50,8 +49,8 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     const el = Calculator();
     container.appendChild(el);
     
-    const slider = el.querySelector('#urgency');
-    slider.value = 7;
+    const slider = el.querySelector('#urgency') as HTMLInputElement;
+    slider.value = '7';
     slider.dispatchEvent(new Event('input'));
     
     expect(true).toBe(true);
@@ -60,7 +59,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   it('maps MathJax Unicode characters to tooltips', async () => {
     // Mock requestAnimationFrame to run immediately
     const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = (cb) => cb();
+    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
 
     const el = Calculator();
     container.appendChild(el);
@@ -89,7 +88,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     });
     
     // Trigger updateCalculation
-    const slider = el.querySelector('#urgency');
+    const slider = el.querySelector('#urgency') as HTMLInputElement;
     slider.dispatchEvent(new Event('input'));
     
     // Wait for microtasks (promise chain)
@@ -109,7 +108,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   it('handles MathJax typesetPromise rejection gracefully', async () => {
     // Mock requestAnimationFrame
     const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = (cb) => cb();
+    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
 
     const el = Calculator();
     container.appendChild(el);
@@ -117,7 +116,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     // Mock rejection
     window.MathJax.typesetPromise = vi.fn(() => Promise.reject(new Error('MathJax error')));
     
-    const slider = el.querySelector('#urgency');
+    const slider = el.querySelector('#urgency') as HTMLInputElement;
     
     // Should not throw
     await expect(async () => {
@@ -131,67 +130,67 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   it('handles calculation interpretation for risky scores (2-4)', () => {
     const el = Calculator();
     const sliders = {
-      urgency: el.querySelector('#urgency'),
-      complexity: el.querySelector('#complexity'),
-      importance: el.querySelector('#importance'),
-      skill: el.querySelector('#skill'),
-      frequency: el.querySelector('#frequency'),
+      urgency: el.querySelector('#urgency') as HTMLInputElement,
+      complexity: el.querySelector('#complexity') as HTMLInputElement,
+      importance: el.querySelector('#importance') as HTMLInputElement,
+      skill: el.querySelector('#skill') as HTMLInputElement,
+      frequency: el.querySelector('#frequency') as HTMLInputElement,
     };
     
     // Set for risky score (~3.0)
-    sliders.urgency.value = 5;
-    sliders.complexity.value = 5;
-    sliders.importance.value = 5;
-    sliders.skill.value = 8;
-    sliders.frequency.value = 5;
+    sliders.urgency.value = '5';
+    sliders.complexity.value = '5';
+    sliders.importance.value = '5';
+    sliders.skill.value = '8';
+    sliders.frequency.value = '5';
     
     Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
     const interpretation = el.querySelector('#score-interpretation');
-    expect(interpretation.textContent).toMatch(/Risky/i);
+    expect(interpretation?.textContent).toMatch(/Risky/i);
   });
 
   it('handles calculation interpretation for worrying scores (4-6)', () => {
     const el = Calculator();
     const sliders = {
-      urgency: el.querySelector('#urgency'),
-      complexity: el.querySelector('#complexity'),
-      importance: el.querySelector('#importance'),
-      skill: el.querySelector('#skill'),
-      frequency: el.querySelector('#frequency'),
+      urgency: el.querySelector('#urgency') as HTMLInputElement,
+      complexity: el.querySelector('#complexity') as HTMLInputElement,
+      importance: el.querySelector('#importance') as HTMLInputElement,
+      skill: el.querySelector('#skill') as HTMLInputElement,
+      frequency: el.querySelector('#frequency') as HTMLInputElement,
     };
     
     // Set for worrying score (~5.0)
-    sliders.urgency.value = 5;
-    sliders.complexity.value = 5;
-    sliders.importance.value = 5;
-    sliders.skill.value = 5;
-    sliders.frequency.value = 5;
+    sliders.urgency.value = '5';
+    sliders.complexity.value = '5';
+    sliders.importance.value = '5';
+    sliders.skill.value = '5';
+    sliders.frequency.value = '5';
     
     Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
     const interpretation = el.querySelector('#score-interpretation');
-    expect(interpretation.textContent).toMatch(/Worrying/i);
+    expect(interpretation?.textContent).toMatch(/Worrying/i);
   });
 
   it('handles calculation interpretation for dangerous scores (6-8)', () => {
     const el = Calculator();
     const sliders = {
-      urgency: el.querySelector('#urgency'),
-      complexity: el.querySelector('#complexity'),
-      importance: el.querySelector('#importance'),
-      skill: el.querySelector('#skill'),
-      frequency: el.querySelector('#frequency'),
+      urgency: el.querySelector('#urgency') as HTMLInputElement,
+      complexity: el.querySelector('#complexity') as HTMLInputElement,
+      importance: el.querySelector('#importance') as HTMLInputElement,
+      skill: el.querySelector('#skill') as HTMLInputElement,
+      frequency: el.querySelector('#frequency') as HTMLInputElement,
     };
     
     // Set for dangerous score (~6.5)
-    sliders.urgency.value = 7;
-    sliders.complexity.value = 7;
-    sliders.importance.value = 7;
-    sliders.skill.value = 5;
-    sliders.frequency.value = 5;
+    sliders.urgency.value = '7';
+    sliders.complexity.value = '7';
+    sliders.importance.value = '7';
+    sliders.skill.value = '5';
+    sliders.frequency.value = '5';
     
     Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
     const interpretation = el.querySelector('#score-interpretation');
-    expect(interpretation.textContent).toMatch(/Looming/i);
+    expect(interpretation?.textContent).toMatch(/Looming/i);
   });
 
   it('handles calculation interpretation edge cases', () => {
@@ -204,36 +203,36 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     // We can't easily force the score without manipulating sliders
     // Urgency=9, Complexity=9, Importance=9, Skill=1, Frequency=9 -> High score
     const sliders = {
-      urgency: el.querySelector('#urgency'),
-      complexity: el.querySelector('#complexity'),
-      importance: el.querySelector('#importance'),
-      skill: el.querySelector('#skill'),
-      frequency: el.querySelector('#frequency'),
+      urgency: el.querySelector('#urgency') as HTMLInputElement,
+      complexity: el.querySelector('#complexity') as HTMLInputElement,
+      importance: el.querySelector('#importance') as HTMLInputElement,
+      skill: el.querySelector('#skill') as HTMLInputElement,
+      frequency: el.querySelector('#frequency') as HTMLInputElement,
     };
     
     // Set for high probability
-    sliders.urgency.value = 9;
-    sliders.complexity.value = 9;
-    sliders.importance.value = 9;
-    sliders.skill.value = 1;
-    sliders.frequency.value = 9;
+    sliders.urgency.value = '9';
+    sliders.complexity.value = '9';
+    sliders.importance.value = '9';
+    sliders.skill.value = '1';
+    sliders.frequency.value = '9';
     
     Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
     
-    expect(parseFloat(scoreValue.textContent)).toBeGreaterThan(8);
-    expect(interpretation.textContent).toMatch(/Catastrophe/i);
+    expect(parseFloat(scoreValue?.textContent ?? '0')).toBeGreaterThan(8);
+    expect(interpretation?.textContent).toMatch(/Catastrophe/i);
     
     // Set for low probability
-    sliders.urgency.value = 1;
-    sliders.complexity.value = 1;
-    sliders.importance.value = 1;
-    sliders.skill.value = 9;
-    sliders.frequency.value = 1;
+    sliders.urgency.value = '1';
+    sliders.complexity.value = '1';
+    sliders.importance.value = '1';
+    sliders.skill.value = '9';
+    sliders.frequency.value = '1';
     
     Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
     
-    expect(parseFloat(scoreValue.textContent)).toBeLessThan(2);
-    expect(interpretation.textContent).toMatch(/safe/i);
+    expect(parseFloat(scoreValue?.textContent ?? '0')).toBeLessThan(2);
+    expect(interpretation?.textContent).toMatch(/safe/i);
   });
 
   it('handles missing formula display element', () => {
@@ -241,9 +240,9 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
     
     const formulaDisplay = el.querySelector('#formula-display');
-    formulaDisplay.remove();
+    formulaDisplay?.remove();
     
-    const slider = el.querySelector('#urgency');
+    const slider = el.querySelector('#urgency') as HTMLInputElement;
     // Should not throw when element is missing
     expect(() => {
       slider.dispatchEvent(new Event('input'));
@@ -255,7 +254,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     const el = Calculator();
     container.appendChild(el);
     
-    const slider = el.querySelector('#urgency');
+    const slider = el.querySelector('#urgency') as HTMLInputElement;
     slider.dispatchEvent(new Event('input'));
     
     // Formula should now contain values instead of variables
@@ -271,21 +270,21 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   it('covers all interpretation score boundaries', () => {
     const el = Calculator();
     // Helper to set values and get interpretation
-    const getInterp = (u, c, i, s, f) => {
+    const getInterp = (u: number, c: number, i: number, s: number, f: number) => {
       const sliders = {
-        urgency: el.querySelector('#urgency'),
-        complexity: el.querySelector('#complexity'),
-        importance: el.querySelector('#importance'),
-        skill: el.querySelector('#skill'),
-        frequency: el.querySelector('#frequency'),
+        urgency: el.querySelector('#urgency') as HTMLInputElement,
+        complexity: el.querySelector('#complexity') as HTMLInputElement,
+        importance: el.querySelector('#importance') as HTMLInputElement,
+        skill: el.querySelector('#skill') as HTMLInputElement,
+        frequency: el.querySelector('#frequency') as HTMLInputElement,
       };
-      sliders.urgency.value = u;
-      sliders.complexity.value = c;
-      sliders.importance.value = i;
-      sliders.skill.value = s;
-      sliders.frequency.value = f;
+      sliders.urgency.value = String(u);
+      sliders.complexity.value = String(c);
+      sliders.importance.value = String(i);
+      sliders.skill.value = String(s);
+      sliders.frequency.value = String(f);
       Object.values(sliders).forEach(sl => sl.dispatchEvent(new Event('input')));
-      return el.querySelector('#score-interpretation').textContent;
+      return el.querySelector('#score-interpretation')?.textContent ?? '';
     };
 
     // Threshold < 2: Safe
@@ -345,11 +344,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
 
     // Check slider values
-    expect(el.querySelector('#urgency').value).toBe('3');
-    expect(el.querySelector('#complexity').value).toBe('4');
-    expect(el.querySelector('#importance').value).toBe('5');
-    expect(el.querySelector('#skill').value).toBe('6');
-    expect(el.querySelector('#frequency').value).toBe('7');
+    expect((el.querySelector('#urgency') as HTMLInputElement).value).toBe('3');
+    expect((el.querySelector('#complexity') as HTMLInputElement).value).toBe('4');
+    expect((el.querySelector('#importance') as HTMLInputElement).value).toBe('5');
+    expect((el.querySelector('#skill') as HTMLInputElement).value).toBe('6');
+    expect((el.querySelector('#frequency') as HTMLInputElement).value).toBe('7');
 
     // Check slider value displays are also updated
     expect(el.querySelector('#urgency-value').textContent).toBe('3');
@@ -387,11 +386,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
 
     // Sliders should retain their default values (5 for all)
-    expect(el.querySelector('#urgency').value).toBe('5');
-    expect(el.querySelector('#complexity').value).toBe('5');
-    expect(el.querySelector('#importance').value).toBe('5');
-    expect(el.querySelector('#skill').value).toBe('5');
-    expect(el.querySelector('#frequency').value).toBe('5');
+    expect((el.querySelector('#urgency') as HTMLInputElement).value).toBe('5');
+    expect((el.querySelector('#complexity') as HTMLInputElement).value).toBe('5');
+    expect((el.querySelector('#importance') as HTMLInputElement).value).toBe('5');
+    expect((el.querySelector('#skill') as HTMLInputElement).value).toBe('5');
+    expect((el.querySelector('#frequency') as HTMLInputElement).value).toBe('5');
 
     // Restore location
     Object.defineProperty(window, 'location', {
@@ -405,14 +404,14 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
 
     // Set specific slider values
-    el.querySelector('#urgency').value = '2';
-    el.querySelector('#complexity').value = '3';
-    el.querySelector('#importance').value = '4';
-    el.querySelector('#skill').value = '5';
-    el.querySelector('#frequency').value = '6';
+    (el.querySelector('#urgency') as HTMLInputElement).value = '2';
+    (el.querySelector('#complexity') as HTMLInputElement).value = '3';
+    (el.querySelector('#importance') as HTMLInputElement).value = '4';
+    (el.querySelector('#skill') as HTMLInputElement).value = '5';
+    (el.querySelector('#frequency') as HTMLInputElement).value = '6';
 
     // Trigger input to update internal state
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector('#urgency') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     // Copy link calls getShareableUrl
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -441,14 +440,14 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
 
     // Set slider values for high score
-    el.querySelector('#urgency').value = '9';
-    el.querySelector('#complexity').value = '9';
-    el.querySelector('#importance').value = '9';
-    el.querySelector('#skill').value = '1';
-    el.querySelector('#frequency').value = '9';
+    (el.querySelector('#urgency') as HTMLInputElement).value = '9';
+    (el.querySelector('#complexity') as HTMLInputElement).value = '9';
+    (el.querySelector('#importance') as HTMLInputElement).value = '9';
+    (el.querySelector('#skill') as HTMLInputElement).value = '1';
+    (el.querySelector('#frequency') as HTMLInputElement).value = '9';
 
     // Trigger input to update calculation
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector('#urgency') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     // Copy text calls getShareText which uses updateState
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -473,11 +472,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
 
     // Set sliders for a specific score
-    el.querySelector('#urgency').value = '1';
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector('#urgency') as HTMLInputElement).value = '1';
+    (el.querySelector('#urgency') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     // Click a share link to trigger URL update
-    const twitterLink = el.querySelector('[data-share="twitter"]');
+    const twitterLink = el.querySelector('[data-share="twitter"]') as HTMLAnchorElement;
     twitterLink.dispatchEvent(new Event('click', { bubbles: true }));
 
     expect(twitterLink.href).toContain('twitter.com/intent/tweet');
@@ -488,11 +487,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     const el = Calculator();
     container.appendChild(el);
 
-    el.querySelector('#urgency').value = '5';
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector('#urgency') as HTMLInputElement).value = '5';
+    (el.querySelector('#urgency') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     // Click a share link to trigger URL update
-    const facebookLink = el.querySelector('[data-share="facebook"]');
+    const facebookLink = el.querySelector('[data-share="facebook"]') as HTMLAnchorElement;
     facebookLink.dispatchEvent(new Event('click', { bubbles: true }));
 
     expect(facebookLink.href).toContain('facebook.com/sharer');

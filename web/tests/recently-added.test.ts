@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { RecentlyAdded } from '@components/recently-added.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
@@ -19,7 +18,7 @@ describe('RecentlyAdded component', () => {
       ok: true,
       status: 200,
       json: async () => ({ upvotes: 11, downvotes: 2 })
-    });
+    } as Response);
   });
 
   afterEach(() => {
@@ -112,8 +111,8 @@ describe('RecentlyAdded component', () => {
       expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
     });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn!.click();
 
     // Verify fetch was called with correct vote endpoint
     await vi.waitFor(() => {
@@ -133,8 +132,8 @@ describe('RecentlyAdded component', () => {
       expect(el.querySelector('[data-vote="down"]')).toBeTruthy();
     });
 
-    const downvoteBtn = el.querySelector('[data-vote="down"]');
-    downvoteBtn.click();
+    const downvoteBtn = el.querySelector('[data-vote="down"]') as HTMLElement | null;
+    downvoteBtn!.click();
 
     // Verify fetch was called with correct vote endpoint
     await vi.waitFor(() => {
@@ -154,8 +153,8 @@ describe('RecentlyAdded component', () => {
       expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
     });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn!.click();
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
@@ -178,15 +177,15 @@ describe('RecentlyAdded component', () => {
       expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
     });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
     // Initially should not have voted class
-    expect(upvoteBtn.classList.contains('voted')).toBe(false);
+    expect(upvoteBtn!.classList.contains('voted')).toBe(false);
 
-    upvoteBtn.click();
+    upvoteBtn!.click();
 
     // After voting, should have voted class
     await vi.waitFor(() => {
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      expect(upvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 
@@ -204,8 +203,8 @@ describe('RecentlyAdded component', () => {
       expect(el.querySelector('[data-vote="up"]')).toBeTruthy();
     });
 
-    const upvoteBtn = el.querySelector('[data-vote="up"]');
-    upvoteBtn.click();
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement | null;
+    upvoteBtn!.click();
 
     await vi.waitFor(() => {
     });

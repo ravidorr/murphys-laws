@@ -1,9 +1,9 @@
-// @ts-nocheck
 import Database from 'better-sqlite3';
 
-
 export class DatabaseService {
-  constructor(dbPath) {
+  private db: InstanceType<typeof Database>;
+
+  constructor(dbPath: string) {
     this.db = new Database(dbPath, {
       timeout: 5000,
       readonly: false
@@ -12,13 +12,11 @@ export class DatabaseService {
     console.log('Database connected with better-sqlite3');
   }
 
-  prepare(sql) {
+  prepare(sql: string) {
     return this.db.prepare(sql);
   }
 
-  transaction(fn) {
-    return this.db.transaction(fn);
+  transaction<_T>(fn: () => _T): () => _T {
+    return this.db.transaction(fn) as () => _T;
   }
 }
-
-// Singleton instance will be created in app.mjs or we can export a factory

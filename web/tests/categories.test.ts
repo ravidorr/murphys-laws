@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Categories } from '../src/views/categories.js';
 import * as api from '../src/utils/api.js';
@@ -26,14 +25,18 @@ vi.mock('../src/utils/sanitize.js', () => ({
   stripMarkdownFootnotes: vi.fn((text) => text)
 }));
 
+interface CategoriesTestContext {
+  onNavigate: ReturnType<typeof vi.fn>;
+}
+
 describe('Categories view', () => {
-  const localThis = {};
+  const localThis = {} as CategoriesTestContext;
 
   beforeEach(() => {
     localThis.onNavigate = vi.fn();
     vi.clearAllMocks();
 
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { 
           id: 1, 
@@ -103,7 +106,7 @@ describe('Categories view', () => {
   });
 
   it('displays singular "law" for count of 1', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'single', title: 'Single Law Category', description: 'One law only.', law_count: 1 }
       ]
@@ -136,7 +139,7 @@ describe('Categories view', () => {
     const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
     expect(card).toBeTruthy();
     
-    card.click();
+    (card as HTMLElement).click();
     expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
   });
 
@@ -177,7 +180,7 @@ describe('Categories view', () => {
   });
 
   it('displays empty state when no categories', async () => {
-    api.fetchCategories.mockResolvedValue({ data: [] });
+    vi.mocked(api.fetchCategories).mockResolvedValue({ data: [] });
 
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -186,7 +189,7 @@ describe('Categories view', () => {
   });
 
   it('displays error state on API failure', async () => {
-    api.fetchCategories.mockRejectedValue(new Error('Network error'));
+    vi.mocked(api.fetchCategories).mockRejectedValue(new Error('Network error'));
 
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -197,7 +200,7 @@ describe('Categories view', () => {
   });
 
   it('retries loading on retry button click', async () => {
-    api.fetchCategories.mockRejectedValueOnce(new Error('Network error'));
+    vi.mocked(api.fetchCategories).mockRejectedValueOnce(new Error('Network error'));
     
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -206,12 +209,12 @@ describe('Categories view', () => {
     expect(api.fetchCategories).toHaveBeenCalledTimes(1);
 
     // Reset mock to succeed on retry
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [{ id: 1, slug: 'test', title: 'Test Category', description: 'Test', law_count: 10 }]
     });
 
     const retryBtn = el.querySelector('#retry-categories');
-    retryBtn.click();
+    (retryBtn as HTMLElement).click();
     
     await new Promise(resolve => setTimeout(resolve, 10));
     
@@ -246,7 +249,7 @@ describe('Categories view', () => {
   });
 
   it('handles category with law_count of 0', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'empty-category', title: 'Empty Category', description: 'No laws here.', law_count: 0 }
       ]
@@ -259,7 +262,7 @@ describe('Categories view', () => {
   });
 
   it('handles category with undefined law_count', async () => {
-    api.fetchCategories.mockResolvedValue({
+    vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'no-count', title: 'No Count Category', description: 'Missing count.' }
       ]
@@ -273,7 +276,7 @@ describe('Categories view', () => {
   });
 
   it('handles response with undefined data', async () => {
-    api.fetchCategories.mockResolvedValue({});
+    vi.mocked(api.fetchCategories).mockResolvedValue({} as Awaited<ReturnType<typeof api.fetchCategories>>);
 
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));

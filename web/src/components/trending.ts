@@ -52,7 +52,7 @@ export function Trending() {
 
         // Add voting event listeners only if there are laws
         if (trending.length > 0) {
-          addVotingListeners(el as any);
+          addVotingListeners(el);
         }
       }
     })

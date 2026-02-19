@@ -162,7 +162,7 @@ export function exportToPDF(content: ExportContent, filename?: string): void {
       y += 5;
       lineIndex++;
     }
-  } else if (type === ContentType.CATEGORIES) {
+  } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     // Categories list
     doc.setFontSize(10);
 
@@ -255,7 +255,7 @@ export function exportToCSV(content: ExportContent, filename?: string): void {
       ];
       csv += row.join(',') + '\n';
     });
-  } else if (type === ContentType.CATEGORIES) {
+  } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     // Header row
     csv = '"ID","Name","Slug","Law Count"\n';
 
@@ -321,7 +321,7 @@ export function exportToMarkdown(content: ExportContent, filename?: string): voi
     // Content is already markdown, just append it
     md += String(data || '');
     md += '\n\n';
-  } else if (type === ContentType.CATEGORIES) {
+  } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     data.forEach(cat => {
       md += `- **${cat.name || ''}** (${cat.law_count || 0} laws)\n`;
     });
@@ -371,7 +371,7 @@ export function exportToText(content: ExportContent, filename?: string): void {
       .replace(/>\s*/gm, ''); // Remove blockquote markers
 
     txt += plainText;
-  } else if (type === ContentType.CATEGORIES) {
+  } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     data.forEach(cat => {
       txt += `${cat.name || ''} (${cat.law_count || 0} laws)\n`;
     });

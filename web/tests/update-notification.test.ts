@@ -1,24 +1,32 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { showUpdateNotification, showUpdateAvailable, showOfflineReady } from '../src/components/update-notification.js';
+
+interface UpdateNotificationTestContext {
+  notification?: HTMLElement | null;
+  title?: Element | null;
+  updateBtn?: Element | null;
+  dismissBtn?: Element | null;
+  notifications?: NodeListOf<Element>;
+  onUpdate?: ReturnType<typeof vi.fn>;
+  onDismiss?: ReturnType<typeof vi.fn>;
+  updateSW?: ReturnType<typeof vi.fn>;
+}
 
 describe('Update Notification Component', () => {
   beforeEach(() => {
     // Clear any existing notifications
     document.querySelectorAll('.pwa-notification').forEach(el => el.remove());
-    document.getElementById('pwa-notification-styles')?.remove();
     vi.useFakeTimers();
   });
 
   afterEach(() => {
     document.querySelectorAll('.pwa-notification').forEach(el => el.remove());
-    document.getElementById('pwa-notification-styles')?.remove();
     vi.useRealTimers();
   });
 
   describe('showUpdateNotification', () => {
     it('creates a notification element with update type', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'update' });
 
       expect(localThis.notification).toBeTruthy();
@@ -27,7 +35,7 @@ describe('Update Notification Component', () => {
     });
 
     it('creates a notification element with offline type', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'offline' });
 
       expect(localThis.notification).toBeTruthy();
@@ -37,7 +45,7 @@ describe('Update Notification Component', () => {
     it('shows "Update Available" title for update type', () => {
       showUpdateNotification({ type: 'update' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.title = document.querySelector('.pwa-notification-title');
       expect(localThis.title.textContent).toBe('Update Available');
     });
@@ -45,7 +53,7 @@ describe('Update Notification Component', () => {
     it('shows "Ready for Offline" title for offline type', () => {
       showUpdateNotification({ type: 'offline' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.title = document.querySelector('.pwa-notification-title');
       expect(localThis.title.textContent).toBe('Ready for Offline');
     });
@@ -53,7 +61,7 @@ describe('Update Notification Component', () => {
     it('shows Refresh button for update type', () => {
       showUpdateNotification({ type: 'update' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.updateBtn = document.querySelector('[data-action="update"]');
       expect(localThis.updateBtn).toBeTruthy();
       expect(localThis.updateBtn.textContent).toBe('Refresh');
@@ -62,13 +70,13 @@ describe('Update Notification Component', () => {
     it('does not show Refresh button for offline type', () => {
       showUpdateNotification({ type: 'offline' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.updateBtn = document.querySelector('[data-action="update"]');
       expect(localThis.updateBtn).toBeFalsy();
     });
 
     it('has correct accessibility attributes', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'update' });
 
       expect(localThis.notification.getAttribute('role')).toBe('alert');
@@ -79,29 +87,29 @@ describe('Update Notification Component', () => {
       showUpdateNotification({ type: 'update' });
       showUpdateNotification({ type: 'offline' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notifications = document.querySelectorAll('.pwa-notification');
       expect(localThis.notifications.length).toBe(1);
     });
 
     it('calls onUpdate callback when Refresh button is clicked', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.onUpdate = vi.fn();
       showUpdateNotification({ type: 'update', onUpdate: localThis.onUpdate });
 
-      const updateBtn = document.querySelector('[data-action="update"]');
-      updateBtn.click();
+      const updateBtn = document.querySelector<HTMLElement>('[data-action="update"]');
+      updateBtn?.click();
 
       expect(localThis.onUpdate).toHaveBeenCalledTimes(1);
     });
 
     it('removes notification when Refresh button is clicked', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.onUpdate = vi.fn();
       showUpdateNotification({ type: 'update', onUpdate: localThis.onUpdate });
 
-      const updateBtn = document.querySelector('[data-action="update"]');
-      updateBtn.click();
+      const updateBtn = document.querySelector<HTMLElement>('[data-action="update"]');
+      updateBtn?.click();
 
       expect(document.querySelector('.pwa-notification')).toBeFalsy();
     });
@@ -109,45 +117,43 @@ describe('Update Notification Component', () => {
     it('removes notification when dismiss button is clicked', () => {
       showUpdateNotification({ type: 'update' });
 
-      const dismissBtn = document.querySelector('[data-action="dismiss"]');
-      dismissBtn.click();
+      const dismissBtn = document.querySelector<HTMLElement>('[data-action="dismiss"]');
+      dismissBtn?.click();
 
       expect(document.querySelector('.pwa-notification')).toBeFalsy();
     });
 
     it('calls onDismiss callback when dismiss button is clicked', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.onDismiss = vi.fn();
       showUpdateNotification({ type: 'update', onDismiss: localThis.onDismiss });
 
-      const dismissBtn = document.querySelector('[data-action="dismiss"]');
-      dismissBtn.click();
+      const dismissBtn = document.querySelector<HTMLElement>('[data-action="dismiss"]');
+      dismissBtn?.click();
 
       expect(localThis.onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('adds styles element to head', () => {
+    it('adds notification element to DOM', () => {
       showUpdateNotification({ type: 'update' });
 
-      const localThis = {};
-      localThis.styles = document.getElementById('pwa-notification-styles');
-      expect(localThis.styles).toBeTruthy();
-      expect(localThis.styles.tagName).toBe('STYLE');
+      const notification = document.querySelector('.pwa-notification');
+      expect(notification).toBeTruthy();
+      expect(notification?.tagName).toBe('DIV');
     });
 
-    it('does not add duplicate styles element', () => {
+    it('does not add duplicate notification when showing twice', () => {
       showUpdateNotification({ type: 'update' });
       showUpdateNotification({ type: 'offline' });
 
-      const localThis = {};
-      localThis.stylesElements = document.querySelectorAll('#pwa-notification-styles');
-      expect(localThis.stylesElements.length).toBe(1);
+      const notifications = document.querySelectorAll('.pwa-notification');
+      expect(notifications.length).toBe(1);
     });
 
     it('shows "Later" dismiss button text for update type', () => {
       showUpdateNotification({ type: 'update' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
       expect(localThis.dismissBtn.textContent).toBe('Later');
     });
@@ -155,7 +161,7 @@ describe('Update Notification Component', () => {
     it('shows "Got it" dismiss button text for offline type', () => {
       showUpdateNotification({ type: 'offline' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
       expect(localThis.dismissBtn.textContent).toBe('Got it');
     });
@@ -163,7 +169,7 @@ describe('Update Notification Component', () => {
     it('auto-dismisses offline notification after 5 seconds', () => {
       showUpdateNotification({ type: 'offline' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = document.querySelector('.pwa-notification');
       expect(localThis.notification).toBeTruthy();
 
@@ -180,7 +186,7 @@ describe('Update Notification Component', () => {
     it('does not auto-dismiss update notification', () => {
       showUpdateNotification({ type: 'update' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = document.querySelector('.pwa-notification');
       expect(localThis.notification).toBeTruthy();
 
@@ -192,7 +198,7 @@ describe('Update Notification Component', () => {
     });
 
     it('removes element after auto-dismiss animation completes for offline type', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'offline' });
 
       // Fast-forward to trigger auto-dismiss
@@ -207,7 +213,7 @@ describe('Update Notification Component', () => {
 
   describe('showUpdateAvailable', () => {
     it('shows update notification with correct type', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.updateSW = vi.fn();
       showUpdateAvailable(localThis.updateSW);
 
@@ -216,12 +222,12 @@ describe('Update Notification Component', () => {
     });
 
     it('calls updateSW with true when Refresh is clicked', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.updateSW = vi.fn();
       showUpdateAvailable(localThis.updateSW);
 
-      const updateBtn = document.querySelector('[data-action="update"]');
-      updateBtn.click();
+      const updateBtn = document.querySelector<HTMLElement>('[data-action="update"]');
+      updateBtn?.click();
 
       expect(localThis.updateSW).toHaveBeenCalledWith(true);
     });
@@ -231,7 +237,7 @@ describe('Update Notification Component', () => {
     it('shows offline notification with correct type', () => {
       showOfflineReady();
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.title = document.querySelector('.pwa-notification-title');
       expect(localThis.title.textContent).toBe('Ready for Offline');
     });
@@ -239,7 +245,7 @@ describe('Update Notification Component', () => {
     it('does not have update button', () => {
       showOfflineReady();
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.updateBtn = document.querySelector('[data-action="update"]');
       expect(localThis.updateBtn).toBeFalsy();
     });
@@ -247,7 +253,7 @@ describe('Update Notification Component', () => {
 
   describe('edge cases', () => {
     it('handles click on non-HTMLElement target', () => {
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'update' });
 
       // Create a synthetic event with a non-HTMLElement target
@@ -260,7 +266,7 @@ describe('Update Notification Component', () => {
     it('handles click on element without data-action', () => {
       showUpdateNotification({ type: 'update' });
 
-      const localThis = {};
+      const localThis: UpdateNotificationTestContext = {};
       localThis.notification = document.querySelector('.pwa-notification');
       localThis.notification.click();
 

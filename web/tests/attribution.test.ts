@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { firstAttributionLine, renderAttribution, renderAttributionsList } from '../src/utils/attribution.ts';
 
 describe('Attribution utilities', () => {

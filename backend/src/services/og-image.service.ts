@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createCanvas, loadImage } from 'canvas';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -42,28 +41,45 @@ const FONTS = {
   url: '20px "Work Sans", sans-serif',
 };
 
+export interface IOgImageLawService {
+  getLaw(id: number): Promise<{ id: number; title?: string | null; text: string; attributions?: Array<{ name: string }> } | null>;
+}
+
+export interface OgImageServiceOptions {
+  cacheMaxAge?: number;
+  cacheMaxSize?: number;
+  logoPath?: string;
+}
+
 /**
  * OG Image generation service
  * Creates Open Graph images for social sharing
- * 
+ *
  * Features:
  * - In-memory caching with configurable TTL and max size
  * - LRU-style eviction (oldest entries removed first)
  * - Cache statistics for monitoring
  */
 export class OgImageService {
-  constructor(lawService, options = {}) {
+  private lawService: IOgImageLawService;
+  private cache: Map<number, { buffer: Buffer; timestamp: number }>;
+  private cacheMaxAge: number;
+  private cacheMaxSize: number;
+  private logo: Awaited<ReturnType<typeof loadImage>> | null;
+  private logoLoaded: boolean;
+  private logoPath: string;
+  private stats: { hits: number; misses: number; evictions: number };
+
+  constructor(lawService: IOgImageLawService, options: OgImageServiceOptions = {}) {
     this.lawService = lawService;
     this.cache = new Map();
-    this.cacheMaxAge = options.cacheMaxAge || 24 * 60 * 60 * 1000; // 24 hours default
-    this.cacheMaxSize = options.cacheMaxSize || 500; // Max 500 cached images (~500MB at ~1MB each)
-    
-    // Logo image (loaded lazily)
+    this.cacheMaxAge = options.cacheMaxAge ?? 24 * 60 * 60 * 1000; // 24 hours default
+    this.cacheMaxSize = options.cacheMaxSize ?? 500; // Max 500 cached images (~500MB at ~1MB each)
+
     this.logo = null;
     this.logoLoaded = false;
-    this.logoPath = options.logoPath || LOGO_PATH;
-    
-    // Cache statistics
+    this.logoPath = options.logoPath ?? LOGO_PATH;
+
     this.stats = {
       hits: 0,
       misses: 0,
@@ -83,8 +99,8 @@ export class OgImageService {
     try {
       this.logo = await loadImage(this.logoPath);
       this.logoLoaded = true;
-    } catch (error) {
-      console.warn('Could not load logo image:', error.message);
+    } catch (error: unknown) {
+      console.warn('Could not load logo image:', error instanceof Error ? error.message : String(error));
       this.logo = null;
       this.logoLoaded = true;
     }
@@ -97,7 +113,7 @@ export class OgImageService {
    * @param {number} lawId - The law ID
    * @returns {Promise<Buffer|null>} PNG image buffer or null if law not found
    */
-  async generateLawImage(lawId) {
+  async generateLawImage(lawId: number): Promise<Buffer | null> {
     // Check cache first
     const cached = this.cache.get(lawId);
     if (cached && (Date.now() - cached.timestamp) < this.cacheMaxAge) {
@@ -120,13 +136,15 @@ export class OgImageService {
     const logo = await this.loadLogo();
 
     // Generate the image
-    const buffer = this.renderLawImage(law, logo);
+    const buffer = this.renderLawImage(law, logo ?? undefined);
 
     // Evict oldest entries if at capacity
     while (this.cache.size >= this.cacheMaxSize) {
-      const oldestKey = this.cache.keys().next().value;
-      this.cache.delete(oldestKey);
-      this.stats.evictions++;
+      const oldestKey = this.cache.keys().next().value as number | undefined;
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey);
+        this.stats.evictions++;
+      }
     }
 
     // Cache the result
@@ -160,7 +178,7 @@ export class OgImageService {
    * @param {Image|null} logo - Logo image to draw (optional)
    * @returns {Buffer} PNG image buffer
    */
-  renderLawImage(law, logo = null) {
+  renderLawImage(law: { id: number; title?: string | null; text: string; attributions?: Array<{ name: string }> }, logo?: Awaited<ReturnType<typeof loadImage>> | null): Buffer {
     const canvas = createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext('2d');
 
@@ -174,7 +192,7 @@ export class OgImageService {
     this.drawLawContent(ctx, law);
 
     // Draw branding with logo
-    this.drawBranding(ctx, logo);
+    this.drawBranding(ctx, logo ?? null);
 
     return canvas.toBuffer('image/png');
   }
@@ -182,7 +200,7 @@ export class OgImageService {
   /**
    * Draw the background gradient
    */
-  drawBackground(ctx) {
+  drawBackground(ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>): void {
     const gradient = ctx.createLinearGradient(0, 0, 0, HEIGHT);
     gradient.addColorStop(0, COLORS.gradientStart);
     gradient.addColorStop(1, COLORS.gradientEnd);
@@ -193,7 +211,7 @@ export class OgImageService {
   /**
    * Draw decorative elements
    */
-  drawDecorations(ctx) {
+  drawDecorations(ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>): void {
     // Accent line at top
     ctx.fillStyle = COLORS.accent;
     ctx.fillRect(0, 0, WIDTH, 6);
@@ -223,7 +241,7 @@ export class OgImageService {
   /**
    * Draw the law content (title, text, attribution)
    */
-  drawLawContent(ctx, law) {
+  drawLawContent(ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>, law: { id: number; title?: string | null; text: string; attributions?: Array<{ name: string }> }): void {
     let yPosition = 80;
 
     // Draw title if present
@@ -282,7 +300,7 @@ export class OgImageService {
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {Image|null} logo - Logo image to draw (optional)
    */
-  drawBranding(ctx, logo = null) {
+  drawBranding(ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>, logo: Awaited<ReturnType<typeof loadImage>> | null = null): void {
     const brandingY = HEIGHT - 50;
     const logoSize = 40; // Size to draw the logo
     let textStartX = PADDING;
@@ -312,7 +330,7 @@ export class OgImageService {
    * @param {number} maxWidth - Maximum width in pixels
    * @returns {string[]} Array of lines
    */
-  wrapText(ctx, text, maxWidth) {
+  wrapText(ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>, text: string, maxWidth: number): string[] {
     const words = text.split(' ');
     const lines = [];
     let currentLine = '';
@@ -343,7 +361,7 @@ export class OgImageService {
    * @param {number} maxWidth - Maximum width in pixels
    * @returns {string} Truncated text
    */
-  truncateText(ctx, text, maxWidth) {
+  truncateText(ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>, text: string, maxWidth: number): string {
     const metrics = ctx.measureText(text);
     if (metrics.width <= maxWidth) {
       return text;
@@ -361,7 +379,7 @@ export class OgImageService {
    * @param {Object} law - Law object
    * @returns {string|null} Attribution name or null
    */
-  getAttributionName(law) {
+  getAttributionName(law: { attributions?: Array<{ name?: string }> }): string | null {
     if (!law.attributions || !Array.isArray(law.attributions) || law.attributions.length === 0) {
       return null;
     }
