@@ -37,7 +37,7 @@ module.exports = {
  apps: [
  {
  name: 'murphys-api',
- script: './scripts/api-server.mjs',
+ script: './src/server/api-server.ts',
  interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
  cwd: '/root/murphys-laws/backend',
  // ... config ...
@@ -84,7 +84,7 @@ sudo systemctl reload nginx
 ### API Port
 
 The API server runs on port **8787**. This is configured in:
-- `backend/scripts/api-server.mjs` (default port)
+- `backend/src/server/api-server.ts` (default port)
 - `nginx.conf` (proxy_pass to API)
 
 ### Port Validation

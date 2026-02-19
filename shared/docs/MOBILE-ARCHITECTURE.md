@@ -1,7 +1,7 @@
 # Murphy's Laws - Mobile Architecture Documentation
 
 **Version:** 1.0
-**Last Updated:** November 6, 2025
+**Last Updated:** February 19, 2026
 **Platforms:** iOS 16+, Android 8+
 
 ---
@@ -34,7 +34,7 @@
 ├──────────────────────┬──────────────────────┬───────────────┤
 │ │ │ │
 │ iOS App │ Android App │ Web App │
-│ (Swift/SwiftUI) │ (Kotlin/Compose) │ (Vanilla JS)│
+│ (Swift/SwiftUI) │ (Kotlin/Compose) │ (TypeScript + Vite)│
 │ │ │ │
 └──────────┬───────────┴──────────┬───────────┴───────┬───────┘
  │ │ │
@@ -50,7 +50,7 @@
 │ API LAYER │
 ├─────────────────────────────────────────────────────────────┤
 │ │
-│ Node.js API Server (scripts/api-server.mjs) │
+│ Node.js API Server (src/server/api-server.ts via tsx) │
 │ • Versioned Endpoints: /api/v1/* │
 │ • Rate Limiting (IP + Device ID) │
 │ • CORS Management │
@@ -124,32 +124,36 @@ The backend follows a **modular layered architecture** for maintainability and t
 ```
 backend/
 ├── src/
-│   ├── controllers/     # HTTP request handlers (5 files)
-│   │   ├── laws.controller.mjs
-│   │   ├── votes.controller.mjs
-│   │   ├── categories.controller.mjs
-│   │   ├── attributions.controller.mjs
-│   │   └── health.controller.mjs
-│   ├── services/        # Business logic (6 files)
-│   │   ├── laws.service.mjs
-│   │   ├── votes.service.mjs
-│   │   ├── categories.service.mjs
-│   │   ├── attributions.service.mjs
-│   │   ├── database.service.mjs
-│   │   └── email.service.mjs
+│   ├── controllers/     # HTTP request handlers (7 files)
+│   │   ├── attributions.controller.ts
+│   │   ├── categories.controller.ts
+│   │   ├── feed.controller.ts
+│   │   ├── health.controller.ts
+│   │   ├── laws.controller.ts
+│   │   ├── og-image.controller.ts
+│   │   └── votes.controller.ts
+│   ├── services/        # Business logic (8 files)
+│   │   ├── attributions.service.ts
+│   │   ├── categories.service.ts
+│   │   ├── database.service.ts
+│   │   ├── email.service.ts
+│   │   ├── feed.service.ts
+│   │   ├── laws.service.ts
+│   │   ├── og-image.service.ts
+│   │   └── votes.service.ts
 │   ├── middleware/      # Cross-cutting concerns (2 files)
-│   │   ├── cors.mjs
-│   │   └── rate-limit.mjs
+│   │   ├── cors.ts
+│   │   └── rate-limit.ts
 │   ├── routes/          # Route definitions (1 file)
-│   │   └── router.mjs
+│   │   └── router.ts
 │   └── utils/           # Helper functions (4 files)
-├── tests/               # Comprehensive test coverage (13 test files)
+├── tests/               # Comprehensive test coverage (18 test files)
 │   ├── controllers/     # Controller unit tests
 │   ├── services/        # Service unit tests
 │   ├── middleware/      # Middleware unit tests
 │   └── utils/           # Utility unit tests
-└── scripts/
-    └── api-server.mjs   # Main server entry point
+└── src/server/
+    └── api-server.ts    # Main server entry point
 ```
 
 **Architecture Benefits:**
@@ -263,7 +267,7 @@ Content-Type: application/json
 - Backend uses device_id OR IP address for vote deduplication
 
 ```javascript
-// Backend (api-server.mjs)
+// Backend (src/server/api-server.ts)
 function getUserIdentifier(req) {
  // Priority: device_id > IP address
  return req.headers['x-device-id']

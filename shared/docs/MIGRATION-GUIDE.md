@@ -634,8 +634,8 @@ git push -u origin migration/monorepo-structure
 **A:** Yes! Git tracks file movements.
 
 ```bash
-git log --follow web/src/main.js
-# Shows history from src/main.js
+git log --follow web/src/main.ts
+# Shows history from src/main.ts
 ```
 
 ---
