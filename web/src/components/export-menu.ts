@@ -41,7 +41,7 @@ const FORMAT_LABELS = {
  *
  * @returns {HTMLElement} The export menu container element
  */
-export function ExportMenu() {
+export function ExportMenu(): HTMLDivElement {
   const container = document.createElement('div');
   container.className = 'export-menu-container';
 

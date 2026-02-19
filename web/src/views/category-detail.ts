@@ -14,16 +14,17 @@ import { setJsonLd, setCategoryItemListSchema } from '@modules/structured-data.t
 import { SITE_URL, SITE_NAME } from '@utils/constants.ts';
 import { fetchCategories } from '../utils/api.ts'; // To get category title for structured data
 import { triggerAdSense } from '../utils/ads.ts';
-import { copyToClipboard } from '../utils/clipboard.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import { handleCopyAction } from '../utils/copy-actions.ts';
+import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
-import type { CleanableElement, OnNavigate, SearchFilters } from '../types/app.ts';
+import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
-export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string; onNavigate: OnNavigate }) {
+export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string; onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
   el.setAttribute('role', 'main');
@@ -31,17 +32,17 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
   let currentPage = 1;
   let totalLaws = 0;
-  let laws = [];
+  let laws: Law[] = [];
   let categoryTitle = 'Category'; // Default title
   let categoryDescription = ''; // Category description
   let currentFilters: SearchFilters = { category_id: categoryId };
   let currentSort = 'score';
   let currentOrder = 'desc';
-  let categoryNumericId = null; // Will be set after fetching category details
+  let categoryNumericId: number | null = null; // Will be set after fetching category details
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
   // Always wraps only the first word (typically "Murphy's") in accent color
-  function formatPageTitle(title) {
+  function formatPageTitle(title: string) {
     const endsWithLaws = title.endsWith('Laws') || title.endsWith('laws');
     const words = title.split(' ');
     
@@ -65,7 +66,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
   // Render law cards
-  function renderLaws(laws, query) {
+  function renderLaws(laws: Law[], query?: string) {
     if (!laws || laws.length === 0) {
       return `
         <div class="empty-state">
@@ -111,7 +112,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
       hydrateIcons(cardText);
-      initSharePopovers(cardText as unknown as Document);
+      initSharePopovers(cardText as HTMLElement);
 
       // Only trigger ads if we have laws with content
       if (laws.length > 0) {
@@ -139,7 +140,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
   // Load laws for current page
-  async function loadPage(page) {
+  async function loadPage(page: number) {
     currentPage = page;
 
     // Show loading state
@@ -323,42 +324,19 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
 
-  // Event delegation for navigation and pagination
-  el.addEventListener('click', async (e) => {
+  // Event delegation for navigation, copy actions, pagination, and law card clicks
+  el.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
 
-    // Handle copy text action
-    const copyTextBtn = t.closest('[data-action="copy-text"]');
-    if (copyTextBtn) {
-      e.stopPropagation();
-      const textToCopy = copyTextBtn.getAttribute('data-copy-value') || '';
-      if (textToCopy) {
-        await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
-      }
+    // Handle copy text/link actions (shared utility) — sync guard, async clipboard
+    if (t.closest('[data-action="copy-text"]') || t.closest('[data-action="copy-link"]')) {
+      void handleCopyAction(e, t);
       return;
     }
 
-    // Handle copy link action
-    const copyLinkBtn = t.closest('[data-action="copy-link"]');
-    if (copyLinkBtn) {
-      e.stopPropagation();
-      const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || '';
-      if (linkToCopy) {
-        await copyToClipboard(linkToCopy, 'Link copied to clipboard!');
-      }
-      return;
-    }
-
-    // Handle navigation buttons (data-nav)
-    const navBtn = t.closest('[data-nav]');
-    if (navBtn) {
-      const navTarget = navBtn.getAttribute('data-nav');
-      if (navTarget) {
-        onNavigate(navTarget);
-        return;
-      }
-    }
+    // Handle navigation buttons (shared utility)
+    if (handleNavClick(t, onNavigate)) return;
 
     // Handle page navigation
     if (t.dataset.page && !t.hasAttribute('disabled')) {
@@ -379,20 +357,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     }
   });
 
-  // Keyboard navigation for law cards (WCAG 2.1.1)
-  el.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-
-    const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
-
-    // Handle law card keyboard activation
-    const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
-    if (lawCard && lawCard.dataset.lawId) {
-      e.preventDefault();
-      onNavigate('law', lawCard.dataset.lawId);
-    }
-  });
+  // Keyboard navigation for law cards (WCAG 2.1.1) — shared utility
+  addNavigationListener(el, onNavigate);
 
   // Initial render and load
   render();
@@ -407,7 +373,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   const sortSelect = el.querySelector('#sort-select');
   if (sortSelect) {
     sortSelect.addEventListener('change', (e) => {
-      const value = (e.target as HTMLInputElement).value;
+      const value = (e.target as HTMLSelectElement).value;
       const [sort, order] = value.split('-');
       currentSort = sort;
       currentOrder = order;

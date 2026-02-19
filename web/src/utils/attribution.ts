@@ -1,12 +1,13 @@
 // Attribution rendering utilities
 import { escapeHtml, sanitizeUrl } from './sanitize.ts';
+import type { Law, Attribution } from '../types/app.d.ts';
 
 /**
  * Renders a single attribution object to HTML - exported for testing
  * @param {Object} att - Attribution object
  * @returns {string} HTML string for attribution
  */
-export function renderAttribution(att) {
+export function renderAttribution(att: Attribution) {
   if (!att) return '';
 
   const { name, contact_type, contact_value, note } = att;
@@ -31,7 +32,7 @@ export function renderAttribution(att) {
  * @param {Object} law - Law object with attributions array
  * @returns {string} HTML string for first attribution
  */
-export function firstAttributionLine(law) {
+export function firstAttributionLine(law: Law) {
   const a = Array.isArray(law.attributions) ? law.attributions[0] : null;
   if (!a) {
     return law.author ? `- ${escapeHtml(law.author)}` : '';
@@ -44,7 +45,7 @@ export function firstAttributionLine(law) {
  * @param {Array} atts - Array of attribution objects
  * @returns {string} HTML string with all attributions
  */
-export function renderAttributionsList(atts = []) {
+export function renderAttributionsList(atts: Attribution[] = []) {
   if (!atts || atts.length === 0) return '';
   const items = atts.map(renderAttribution).filter(Boolean).join(', ');
   return items ? `<p class="small mb-4">Sent by ${items}</p>` : '';

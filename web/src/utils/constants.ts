@@ -1,5 +1,7 @@
 // Web application constants
 
+declare const process: { env: Record<string, string | undefined> } | undefined;
+
 // Pagination
 export const LAWS_PER_PAGE = 25;
 

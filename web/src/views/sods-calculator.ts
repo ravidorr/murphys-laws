@@ -12,7 +12,7 @@ import type { CleanableElement } from '../types/app.d.ts';
 
 type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency';
 
-export function Calculator() {
+export function Calculator(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page calculator';
 
@@ -192,7 +192,7 @@ export function Calculator() {
       updateCalculation();
     });
 
-  function updateResultInterpretation(score) {
+  function updateResultInterpretation(score: number) {
     let interpretation: string;
     let cls: string;
 

@@ -7,7 +7,7 @@ import { getFavorites, clearAllFavorites, removeFavorite } from '@utils/favorite
 import { isFavoritesEnabled } from '@utils/feature-flags.ts';
 import { addVotingListeners } from '@utils/voting.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
-import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
+import type { CleanableElement, OnNavigate, FavoriteLaw, Law } from '../types/app.d.ts';
 
 /**
  * Favorites page view
@@ -15,7 +15,7 @@ import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
  * @param {Function} options.onNavigate - Navigation callback
  * @returns {HTMLElement} View element
  */
-export function Favorites({ onNavigate }: { onNavigate: OnNavigate }) {
+export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
   el.setAttribute('role', 'main');
@@ -102,7 +102,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }) {
    * @param {Array} favorites - Array of favorite laws
    * @returns {string} HTML string
    */
-  function renderPopulatedState(favorites) {
+  function renderPopulatedState(favorites: FavoriteLaw[]) {
     const count = favorites.length;
     const subtitle = count === 1
       ? '1 law saved to your collection'
@@ -125,7 +125,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }) {
         </header>
         <div class="card-body">
           <div class="card-text">
-            ${renderLawCards(favorites)}
+            ${renderLawCards(favorites as unknown as Law[])}
           </div>
         </div>
       </div>
@@ -202,7 +202,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }) {
    * Handle favorite toggle (remove from favorites on this page)
    * @param {string} lawId - Law ID to unfavorite
    */
-  function handleUnfavorite(lawId) {
+  function handleUnfavorite(lawId: string) {
     removeFavorite(lawId);
 
     // Find the card element specifically (not the button which also has data-law-id)

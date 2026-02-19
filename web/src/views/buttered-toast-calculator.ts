@@ -10,7 +10,7 @@ import type { CleanableElement } from '../types/app.d.ts';
 
 type ToastSliderKey = 'height' | 'gravity' | 'overhang' | 'butter' | 'friction' | 'inertia';
 
-export function ButteredToastCalculator() {
+export function ButteredToastCalculator(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page calculator';
 
@@ -187,7 +187,7 @@ export function ButteredToastCalculator() {
     updateInterpretation(finalProbability);
   }
 
-  function updateInterpretation(probability) {
+  function updateInterpretation(probability: number) {
     let interpretation: string;
     let cls: string;
 

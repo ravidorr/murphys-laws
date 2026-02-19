@@ -19,7 +19,7 @@ interface SearchAutocompleteOptions {
  * @param {number} options.debounceDelay - Debounce delay in milliseconds (default: 240)
  * @returns {Object} Component object with cleanup method
  */
-export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY }: SearchAutocompleteOptions) {
+export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY }: SearchAutocompleteOptions): { cleanup(): void; isOpen(): boolean } {
   if (!inputElement) {
     throw new Error('inputElement is required');
   }

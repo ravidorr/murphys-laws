@@ -73,7 +73,7 @@ export function isTransientError(error: unknown): boolean {
  * @param {number} maxDelay - Maximum delay in ms
  * @returns {number} Delay in ms
  */
-export function calculateBackoff(attempt, baseDelay = 1000, maxDelay = 10000) {
+export function calculateBackoff(attempt: number, baseDelay = 1000, maxDelay = 10000) {
   // Exponential backoff: baseDelay * 2^attempt
   const exponentialDelay = baseDelay * Math.pow(2, attempt);
 
@@ -89,7 +89,7 @@ export function calculateBackoff(attempt, baseDelay = 1000, maxDelay = 10000) {
  * @param {number} ms - Duration in milliseconds
  * @returns {Promise<void>}
  */
-function sleep(ms) {
+function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -192,7 +192,7 @@ export async function safeAsync<T>(fn: () => Promise<T>, options: SafeAsyncOptio
  * @param {Object} options - Options for safeAsync
  * @returns {Object} Object with execute() and getLastError() methods
  */
-export function createRetryable(fn, options = {}) {
+export function createRetryable(fn: () => Promise<unknown>, options: SafeAsyncOptions = {}) {
   let lastError = null;
   let isExecuting = false;
 
@@ -240,14 +240,15 @@ export function createRetryable(fn, options = {}) {
  * @param {string} fallbackMessage - Fallback message if error has no message
  * @returns {string} User-friendly error message
  */
-export function formatErrorMessage(error, fallbackMessage = 'An unexpected error occurred.') {
+export function formatErrorMessage(error: unknown, fallbackMessage = 'An unexpected error occurred.') {
   if (!error) {
     return fallbackMessage;
   }
 
   // If error already has a user-friendly message (from request.js), use it
-  if (error.message && !error.message.includes('Error:') && !error.message.includes('TypeError')) {
-    return error.message;
+  const message = error instanceof Error ? error.message : typeof (error as Record<string, unknown>).message === 'string' ? (error as Record<string, unknown>).message as string : null;
+  if (message && !message.includes('Error:') && !message.includes('TypeError')) {
+    return message;
   }
 
   return fallbackMessage;

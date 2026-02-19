@@ -74,7 +74,7 @@ const updateSW = registerSW({
   onRegisteredSW(swUrl, registration) {
     // Check for updates periodically (every hour)
     if (registration) {
-      const _swUpdateInterval = setInterval(() => {
+      void setInterval(() => {
         // Wrap in try-catch - registration can become invalid if SW is unregistered
         // or the browser is in a state where update() cannot be called
         try {

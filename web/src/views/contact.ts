@@ -3,7 +3,7 @@ import { SITE_NAME } from '@utils/constants.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
-export function Contact({ onNavigate }: { onNavigate: OnNavigate }) {
+export function Contact({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');

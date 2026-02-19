@@ -45,12 +45,15 @@ export const ContentType = {
 // Using a singleton pattern to allow any page to register content
 // and the header export menu to access it without prop drilling
 
+/** Content type literal union */
+export type ContentTypeValue = typeof ContentType[keyof typeof ContentType];
+
 /** Data types that can be exported */
 export type ExportData = Law | Law[] | FavoriteLaw[] | Category[] | Partial<Category>[] | string;
 
 /** Exportable content registered by a page */
 export interface ExportContent {
-  type: string;
+  type: ContentTypeValue;
   title: string;
   data: ExportData;
   metadata?: Record<string, unknown>;
@@ -67,7 +70,7 @@ const listeners: Set<ExportContentListener> = new Set();
  * Call this when a page loads its content to make it available for export.
  * @param {ExportContent} content - The content to register
  */
-export function setExportContent({ type, title, data, metadata = {} }: { type: string; title: string; data: ExportData; metadata?: Record<string, unknown> }): void {
+export function setExportContent({ type, title, data, metadata = {} }: { type: ContentTypeValue; title: string; data: ExportData; metadata?: Record<string, unknown> }): void {
   currentContent = { type, title, data, metadata };
   // Notify all subscribers of the content change
   listeners.forEach(fn => fn(currentContent));
@@ -115,7 +118,7 @@ export function getAvailableFormats(): string[] {
   const formats = ['pdf', 'md', 'txt']; // Always available for all content types
 
   // CSV only for structured data (laws and categories)
-  if (([ContentType.LAWS, ContentType.SINGLE_LAW, ContentType.CATEGORIES] as string[]).includes(type)) {
+  if (([ContentType.LAWS, ContentType.SINGLE_LAW, ContentType.CATEGORIES] as ContentTypeValue[]).includes(type)) {
     formats.splice(1, 0, 'csv'); // Insert after PDF
   }
 
