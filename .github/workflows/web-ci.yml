@@ -5,11 +5,17 @@ on:
     paths:
       - 'web/**'
       - 'shared/modules/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
       - '.github/workflows/web-ci.yml'
   pull_request:
     paths:
       - 'web/**'
       - 'shared/modules/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
 
 jobs:
   test-and-build:

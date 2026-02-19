@@ -42,5 +42,9 @@
   "devDependencies": {
     "markdownlint-cli2": "^0.20.0",
     "markdownlint-rule-search-replace": "^1.2.0"
+  },
+  "optionalDependencies": {
+    "@esbuild/darwin-x64": "^0.25.10",
+    "@rollup/rollup-darwin-x64": "^4.52.4"
   }
 }

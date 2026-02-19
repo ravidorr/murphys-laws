@@ -2,9 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
-import { generateCategoryDescription } from '../src/utils/content-generator.js';
-import { truncateTitle } from '../src/utils/seo.js';
-import { HOME_HERO_ACCENT, HOME_HERO_TITLE } from '../src/utils/constants.js';
+import { generateCategoryDescription } from '../src/utils/content-generator.ts';
+import { truncateTitle } from '../src/utils/seo.ts';
+import { HOME_HERO_ACCENT, HOME_HERO_TITLE } from '../src/utils/constants.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -6,12 +6,18 @@ on:
       - 'backend/**'
       - 'shared/data/**'
       - 'shared/modules/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     paths:
       - 'backend/**'
       - 'shared/data/**'
       - 'shared/modules/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
 
 jobs:
   test:
