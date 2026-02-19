@@ -445,7 +445,11 @@ describe('renderHome function', () => {
     const el = document.createElement('div');
     renderHome(el, null, [], vi.fn());
 
-    const sectionCard = el.querySelector('.section-card');
+    // Science of Murphy's Law section is rendered last (below Submit a Law)
+    const sectionCards = el.querySelectorAll('.section-card');
+    const sectionCard = Array.from(sectionCards).find(
+      (s) => s.textContent?.includes('Anything that can go wrong, will go wrong')
+    );
     expect(sectionCard).toBeTruthy();
 
     const header = sectionCard.querySelector('.section-header');

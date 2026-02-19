@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Home: move "The Science of Murphy's Law" section below "Submit a Law"
+
 ## [2.0.6] - 2026-02-19
 
 ### Added
