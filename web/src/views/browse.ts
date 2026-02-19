@@ -16,24 +16,25 @@ import { TopVoted } from '../components/top-voted.ts';
 import { Trending } from '../components/trending.ts';
 import { RecentlyAdded } from '../components/recently-added.ts';
 import { triggerAdSense } from '../utils/ads.ts';
-import { copyToClipboard } from '../utils/clipboard.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
-import type { CleanableElement, OnNavigate, SearchFilters } from '../types/app.ts';
+import { handleCopyAction } from '../utils/copy-actions.ts';
+import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
+import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
-export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNavigate: OnNavigate }) {
+export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
 
   let currentPage = 1;
   let totalLaws = 0;
-  let laws = [];
+  let laws: Law[] = [];
   let currentFilters: SearchFilters = { q: searchQuery || '' };
   let currentSort = 'score';
   let currentOrder = 'desc';
 
   // Render law cards
-  function renderLaws(laws, query) {
+  function renderLaws(laws: Law[], query?: string) {
     if (!laws || laws.length === 0) {
       return `
         <div class="empty-state">
@@ -86,7 +87,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
         ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
       `;
       hydrateIcons(cardText);
-      initSharePopovers(cardText as unknown as Document);
+      initSharePopovers(cardText as HTMLElement);
     }
     
     // Update result count
@@ -107,7 +108,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   }
 
   // Load laws for current page
-  async function loadPage(page) {
+  async function loadPage(page: number) {
     currentPage = page;
 
     // Show loading state
@@ -168,43 +169,20 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     }
   }
 
-  // Event delegation for navigation and pagination
-  // Note: Voting is handled by addVotingListeners() utility (eliminates ~35 lines of duplicate code)
-  el.addEventListener('click', async (e) => {
+  // Event delegation for navigation, copy actions, pagination, and law card clicks
+  // Note: Voting is handled by addVotingListeners() utility
+  el.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
 
-    // Handle copy text action
-    const copyTextBtn = t.closest('[data-action="copy-text"]');
-    if (copyTextBtn) {
-      e.stopPropagation();
-      const textToCopy = copyTextBtn.getAttribute('data-copy-value') || '';
-      if (textToCopy) {
-        await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
-      }
+    // Handle copy text/link actions (shared utility) — sync guard, async clipboard
+    if (t.closest('[data-action="copy-text"]') || t.closest('[data-action="copy-link"]')) {
+      void handleCopyAction(e, t);
       return;
     }
 
-    // Handle copy link action
-    const copyLinkBtn = t.closest('[data-action="copy-link"]');
-    if (copyLinkBtn) {
-      e.stopPropagation();
-      const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || '';
-      if (linkToCopy) {
-        await copyToClipboard(linkToCopy, 'Link copied to clipboard!');
-      }
-      return;
-    }
-
-    // Handle navigation buttons (data-nav)
-    const navBtn = t.closest('[data-nav]');
-    if (navBtn) {
-      const navTarget = navBtn.getAttribute('data-nav');
-      if (navTarget) {
-        onNavigate(navTarget);
-        return;
-      }
-    }
+    // Handle navigation buttons (shared utility)
+    if (handleNavClick(t, onNavigate)) return;
 
     // Handle page navigation
     const pageAttr = t.getAttribute('data-page');
@@ -226,20 +204,8 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     }
   });
 
-  // Keyboard navigation for law cards (WCAG 2.1.1)
-  el.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-
-    const t = e.target;
-    if (!(t instanceof Element)) return;
-
-    // Handle law card keyboard activation
-    const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
-    if (lawCard && lawCard.dataset.lawId) {
-      e.preventDefault();
-      onNavigate('law', lawCard.dataset.lawId);
-    }
-  });
+  // Keyboard navigation for law cards (WCAG 2.1.1) — shared utility
+  addNavigationListener(el, onNavigate);
 
   // Initial render and load
   render();
@@ -293,7 +259,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   const sortSelect = el.querySelector('#sort-select');
   if (sortSelect) {
     sortSelect.addEventListener('change', (e) => {
-      const value = (e.target as HTMLInputElement).value;
+      const value = (e.target as HTMLSelectElement).value;
       const [sort, order] = value.split('-');
       currentSort = sort;
       currentOrder = order;

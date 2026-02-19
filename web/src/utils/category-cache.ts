@@ -1,6 +1,8 @@
 // Category caching utility to reduce API calls and improve performance
 // Uses localStorage with TTL and versioning to cache categories
 
+import type { Category } from '../types/app.d.ts';
+
 const CACHE_KEY = 'murphys_categories';
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 const ATTRIBUTION_CACHE_KEY = 'murphys_attributions';
@@ -11,12 +13,12 @@ const MIN_ACCEPTED_VERSION = 0; // For backward compatibility with old caches (b
  * Get cached categories from localStorage
  * @returns {Array|null} Cached categories or null if expired/missing/outdated
  */
-export function getCachedCategories(): unknown[] | null {
+export function getCachedCategories(): Category[] | null {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
 
-    const { version, data, timestamp } = JSON.parse(cached);
+    const { version, data, timestamp } = JSON.parse(cached) as { version?: number; data: Category[]; timestamp: number };
     const cacheVersion = version ?? 0; // Backward compatibility for old caches
     const now = Date.now();
 
@@ -42,7 +44,7 @@ export function getCachedCategories(): unknown[] | null {
  * Cache categories in localStorage
  * @param {Array} categories - Categories array to cache
  */
-export function setCachedCategories(categories: unknown[]): void {
+export function setCachedCategories(categories: Category[]): void {
   try {
     const cacheData = {
       version: CACHE_VERSION,
@@ -59,12 +61,12 @@ export function setCachedCategories(categories: unknown[]): void {
  * Get cached attributions from localStorage
  * @returns {Array|null} Cached attributions or null if expired/missing/outdated
  */
-export function getCachedAttributions(): unknown[] | null {
+export function getCachedAttributions(): string[] | null {
   try {
     const cached = localStorage.getItem(ATTRIBUTION_CACHE_KEY);
     if (!cached) return null;
 
-    const { version, data, timestamp } = JSON.parse(cached);
+    const { version, data, timestamp } = JSON.parse(cached) as { version?: number; data: string[]; timestamp: number };
     const cacheVersion = version ?? 0; // Backward compatibility for old caches
     const now = Date.now();
 
@@ -90,7 +92,7 @@ export function getCachedAttributions(): unknown[] | null {
  * Cache attributions in localStorage
  * @param {Array} attributions - Attributions array to cache
  */
-export function setCachedAttributions(attributions: unknown[]): void {
+export function setCachedAttributions(attributions: string[]): void {
   try {
     const cacheData = {
       version: CACHE_VERSION,

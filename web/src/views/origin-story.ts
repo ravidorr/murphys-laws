@@ -8,7 +8,7 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { updateMetaDescription } from '@utils/dom.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
-export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}) {
+export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page content-page';
   el.setAttribute('role', 'main');

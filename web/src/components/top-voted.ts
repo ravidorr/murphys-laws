@@ -8,7 +8,7 @@ import { WIDGET_CARD_COUNT } from '../utils/constants.ts';
  * Creates a Top Voted component that displays the 3 highest voted laws
  * @returns {HTMLDivElement} Component element with top voted laws
  */
-export function TopVoted() {
+export function TopVoted(): HTMLDivElement {
   const { el, renderLaws, renderError } = createLawListSection({
     accentText: 'Top',
     remainderText: ' Voted',

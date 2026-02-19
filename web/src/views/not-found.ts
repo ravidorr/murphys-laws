@@ -2,7 +2,7 @@ import templateHtml from '@views/templates/not-found.html?raw';
 import { hydrateIcons } from '@utils/icons.ts';
 import type { OnNavigate } from '../types/app.d.ts';
 
-export function NotFound({ onNavigate }: { onNavigate: OnNavigate }) {
+export function NotFound({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page pt-0';
   el.innerHTML = templateHtml;

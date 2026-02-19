@@ -12,6 +12,16 @@ import {
   setCachedCategories,
   deferUntilIdle
 } from '../utils/category-cache.ts';
+import type { Category } from '../types/app.d.ts';
+
+interface SubmitLawPayload extends Record<string, unknown> {
+  text: string;
+  title?: string;
+  author?: string;
+  email?: string;
+  anonymous?: boolean;
+  category_id?: string;
+}
 
 export function SubmitLawSection() {
   const el = document.createElement('section');
@@ -37,10 +47,9 @@ export function SubmitLawSection() {
   function populateFromCache() {
     const cached = getCachedCategories();
     if (cached && cached.length > 0) {
-      cached.forEach((cat: unknown) => {
-        const category = cat as { id: string; title: string };
+      cached.forEach((category) => {
         const option = document.createElement('option');
-        option.value = category.id;
+        option.value = String(category.id);
         option.textContent = stripMarkdownFootnotes(category.title);
         categorySelect?.appendChild(option);
       });
@@ -53,20 +62,19 @@ export function SubmitLawSection() {
     categoriesLoaded = true;
 
     try {
-      const response = await fetchAPI('/api/v1/categories') as { data?: Array<{ id: number; name: string }> };
+      const response = await fetchAPI('/api/v1/categories') as { data?: Category[] };
       if (response && response.data && Array.isArray(response.data)) {
         const categories = response.data;
         setCachedCategories(categories);
-        
+
         // Clear existing options (except any that might have been cached)
         if (categorySelect) {
           categorySelect.innerHTML = '<option value="">Select a category (optional)</option>';
         }
 
-        categories.forEach((cat: unknown) => {
-          const category = cat as { id: string; title: string };
+        categories.forEach((category) => {
           const option = document.createElement('option');
-          option.value = category.id;
+          option.value = String(category.id);
           option.textContent = stripMarkdownFootnotes(category.title);
           categorySelect?.appendChild(option);
         });
@@ -181,7 +189,7 @@ export function SubmitLawSection() {
   }
 
   // Submit law to API - Uses generic request helper (eliminates ~80 lines of duplicate code)
-  async function submitLaw(lawData: Record<string, unknown>) {
+  async function submitLaw(lawData: SubmitLawPayload) {
     return await apiPost('/api/v1/laws', lawData);
   }
 

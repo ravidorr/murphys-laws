@@ -8,18 +8,18 @@ import { getRandomLoadingMessage } from '../utils/constants.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
-import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
+import type { CleanableElement, OnNavigate, Category } from '../types/app.d.ts';
 
-export function Categories({ onNavigate }: { onNavigate: OnNavigate }) {
+export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
-  let categories = [];
+  let categories: Category[] = [];
 
   // Render a single category card
-  function renderCategoryCard(category) {
+  function renderCategoryCard(category: Category) {
     const title = stripMarkdownFootnotes(category.title);
     const description = category.description || 'Explore laws in this category.';
     const lawCount = category.law_count || 0;
@@ -43,7 +43,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }) {
   }
 
   // Render all category cards
-  function renderCategories(categories) {
+  function renderCategories(categories: Category[]) {
     if (!categories || categories.length === 0) {
       return `
         <div class="empty-state">

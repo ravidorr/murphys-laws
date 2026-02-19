@@ -58,7 +58,7 @@ const HOME_OVERVIEW_HTML = `
 
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
-export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories: unknown, onNavigate: OnNavigate) {
+export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories: unknown, onNavigate: OnNavigate): void {
   // Clear loading indicator but preserve the hero H1
   el.innerHTML = HERO_HTML;
 
@@ -86,7 +86,7 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
   if (scienceSection) el.appendChild(scienceSection);
 }
 
-export function Home({ onNavigate }: { onNavigate: OnNavigate }) {
+export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page pt-0 min-h-400';
   el.setAttribute('role', 'main');

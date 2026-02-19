@@ -72,11 +72,11 @@ export function removeJsonLd(id: string): void {
   }
 }
 
-export function clearPageStructuredData() {
+export function clearPageStructuredData(): void {
   PAGE_IDS.forEach(removeJsonLd);
 }
 
-export function setSiteStructuredData() {
+export function setSiteStructuredData(): void {
   setJsonLd('website', {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -107,7 +107,7 @@ export function setSiteStructuredData() {
   });
 }
 
-export function setHomeStructuredData() {
+export function setHomeStructuredData(): void {
   clearPageStructuredData();
   setJsonLd('home-page', {
     '@context': 'https://schema.org',
@@ -133,7 +133,7 @@ export function setHomeStructuredData() {
   });
 }
 
-export function setBrowseStructuredData() {
+export function setBrowseStructuredData(): void {
   clearPageStructuredData();
   setJsonLd('browse-page', {
     '@context': 'https://schema.org',
@@ -200,7 +200,7 @@ export function setLawStructuredData(law: Law): void {
   });
 }
 
-export function setSodCalculatorStructuredData() {
+export function setSodCalculatorStructuredData(): void {
   clearPageStructuredData();
   setJsonLd('calculator-sod', {
     '@context': 'https://schema.org',
@@ -265,7 +265,7 @@ export function setSodCalculatorStructuredData() {
   });
 }
 
-export function setToastCalculatorStructuredData() {
+export function setToastCalculatorStructuredData(): void {
   clearPageStructuredData();
   setJsonLd('calculator-toast', {
     '@context': 'https://schema.org',

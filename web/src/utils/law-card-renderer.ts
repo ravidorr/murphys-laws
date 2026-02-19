@@ -139,7 +139,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
  * @param {Object} options - Rendering options (same as renderLawCard)
  * @returns {string} HTML string for all law cards concatenated
  */
-export function renderLawCards(laws, options = {}) {
+export function renderLawCards(laws: Law[], options: LawCardOptions = {}) {
   if (!Array.isArray(laws) || laws.length === 0) {
     return '';
   }

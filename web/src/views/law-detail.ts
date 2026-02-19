@@ -25,7 +25,7 @@ interface LawDetailProps {
   onStructuredData?: (law: Law) => void;
 }
 
-export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProps) {
+export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProps): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
   el.setAttribute('role', 'main');
@@ -228,9 +228,6 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         // Add social share buttons to the footer
         const footer = lawCard.querySelector('.section-footer .right');
         if (footer) {
-          const lawUrl = `${window.location.origin}/law/${law.id}/`;
-          const lawText = law.text || '';
-
           // Create engaging Twitter text with the actual law
           const twitterText = `I'm on Murphy's Law Site and I've seen this law: "${lawText}". See it for yourself:`;
 
@@ -238,7 +235,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
             url: lawUrl,
             title: twitterText,
             description: lawText,
-            lawText: lawText,
+            lawText,
             lawId: String(law.id)
           });
 
@@ -268,7 +265,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       if (data && Array.isArray(data.data) && data.data.length > 0) {
         relatedList.innerHTML = renderLawCards(data.data);
         hydrateIcons(relatedList);
-        initSharePopovers(relatedList as unknown as Document);
+        initSharePopovers(relatedList as HTMLElement);
         addVotingListeners(relatedList as HTMLElement);
         relatedSection.removeAttribute('hidden');
       }

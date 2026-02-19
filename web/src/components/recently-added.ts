@@ -8,7 +8,7 @@ import { WIDGET_CARD_COUNT } from '../utils/constants.ts';
  * Creates a Recently Added component that displays the 3 most recently added laws
  * @returns {HTMLDivElement} Component element with recently added laws
  */
-export function RecentlyAdded() {
+export function RecentlyAdded(): HTMLDivElement {
   const { el, renderLaws, renderError } = createLawListSection({
     accentText: 'Recently',
     remainderText: ' Added',

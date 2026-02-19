@@ -18,13 +18,13 @@ interface AdvancedSearchFilters {
   attribution?: string;
 }
 
-export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearchFilters }: { onSearch: (filters: AdvancedSearchFilters) => void; initialFilters?: AdvancedSearchFilters }) {
+export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearchFilters }: { onSearch: (filters: AdvancedSearchFilters) => void; initialFilters?: AdvancedSearchFilters }): HTMLElement {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
   // State
-  let categories = [];
-  let attributions = [];
+  let categories: Array<{ id: number; title: string; slug: string }> = [];
+  let attributions: string[] = [];
   let selectedCategory = initialFilters.category_id || '';
   let selectedAttribution = initialFilters.attribution || '';
   let searchQuery = initialFilters.q || '';
@@ -59,7 +59,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     if (cachedAttributions && cachedAttributions.length > 0) {
       attributions = cachedAttributions;
       // Filter out null/undefined/empty and handle both string and object formats
-      const validAttributions = attributions
+      const validAttributions = (attributions as Array<string | { name?: string }>)
         .map(att => {
           const name = typeof att === 'string' ? att : att?.name;
           return name;
@@ -127,7 +127,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     // Update attribution dropdown
     if (attributions.length > 0) {
       // Filter out null/undefined/empty and handle both string and object formats
-      const validAttributions = attributions
+      const validAttributions = (attributions as Array<string | { name?: string }>)
         .map(att => {
           // Handle both string format (from API) and object format (legacy)
           const name = typeof att === 'string' ? att : att?.name;

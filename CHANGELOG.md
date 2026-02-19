@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Home: move "The Science of Murphy's Law" section below "Submit a Law"
 
+## [2.0.7] - 2026-02-19
+
+### Changed
+- Web: eliminate all remaining `any` usage in source (`as any` casts, `: any` annotations, `Promise<any>` returns)
+- Web: add explicit parameter and return types to all exported functions (prep for `noImplicitAny: true`)
+- Web: extract shared `copy-actions.ts` and `navigation.ts` utilities, reducing ~60 lines of duplicate event handling across views
+- Web: improve type safety in `export-context.ts` (literal union for `ContentType`, `ExportData` union type), `category-cache.ts` (typed `JSON.parse`), `error-handler.ts` (generic `withRetry<T>`, `safeAsync<T>`), and `submit-law.ts` (`SubmitLawPayload` interface)
+- Web: fix `global.d.ts` MathJax typing, `HTMLSelectElement` cast, unused variable warning in `main.ts`
+
 ## [2.0.6] - 2026-02-19
 
 ### Added
@@ -393,7 +402,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Murphy's Laws content database
 - Basic file organization
 
-[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.4...HEAD
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.7...HEAD
+[2.0.7]: https://github.com/ravidorr/murphys-laws/compare/v2.0.6...v2.0.7
+[2.0.6]: https://github.com/ravidorr/murphys-laws/compare/v2.0.5...v2.0.6
+[2.0.5]: https://github.com/ravidorr/murphys-laws/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/ravidorr/murphys-laws/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/ravidorr/murphys-laws/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/ravidorr/murphys-laws/compare/v2.6.1...v2.0.2

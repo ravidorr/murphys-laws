@@ -85,7 +85,7 @@ function handleModalKeydown(event: KeyboardEvent) {
  * Check if the keyboard help modal is currently open
  * @returns {boolean}
  */
-export function isKeyboardHelpModalOpen() {
+export function isKeyboardHelpModalOpen(): boolean {
   return !!(modalElement && !modalElement.classList.contains('hidden'));
 }
 
