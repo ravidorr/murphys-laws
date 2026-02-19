@@ -37,7 +37,8 @@ module.exports = {
  apps: [
  {
  name: 'murphys-api',
- script: './src/server/api-server.ts',
+ script: './node_modules/tsx/dist/cli.mjs',
+ args: './src/server/api-server.ts',
  interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
  cwd: '/root/murphys-laws/backend',
  // ... config ...
