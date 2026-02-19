@@ -125,6 +125,14 @@ describe('Favorites Service', () => {
       localStorage.setItem('murphys_favorites', 'invalid json');
       expect(getFavorites()).toEqual([]);
     });
+
+    it('handles localStorage.getItem throwing', () => {
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('getItem failed');
+      });
+      expect(getFavorites()).toEqual([]);
+      getItemSpy.mockRestore();
+    });
   });
 
   describe('getFavoritesCount', () => {

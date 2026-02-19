@@ -7,11 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.4] - 2026-02-19
+
+### Added
+- Pre-commit: fail when CHANGELOG.md is not staged and there are other staged changes (SKIP_CHANGELOG_CHECK=1 to bypass)
+
+### Changed
+- CHANGELOG history filled from git commit log (2.0.2, 2.6.1 entries and compare links)
+
 ## [2.0.3] - 2026-02-19
 
 ### Fixed
 - Lint and type fixes: MathJax `Window` type (`Record<string, unknown>`), debounce generic args, unused imports/vars
 - CSS: added standard `line-clamp` alongside `-webkit-line-clamp` for compatibility (components.css, sections.css)
+- Documentation: CHANGELOG, TODO, web README (file references), coverage thresholds (96% functions, 95.5% branches)
+- Pre-commit: require CHANGELOG.md staged when there are other staged changes
+
+## [2.0.2] - 2026-02-19
+
+### Changed
+- Backend runs TypeScript source via tsx in PM2 (no JS build step)
+- Complete TypeScript migration for backend and shared modules
+
+### Fixed
+- Deploy: run backend via local tsx CLI in PM2
+- CI: repair deploy SSG imports and workspace trigger paths
+- CI: remove darwin-only root dependencies
+- Lockfile and workflow alignment to .nvmrc
+
+## [2.6.1] - 2026-02-05
+
+### Added
+- Monthly peak resource usage report in daily status email
+
+### Changed
+- Theme toggle icons and home page content (Murphy's Law description in section-subheader, intro consolidated into single card)
+- Content depth enhancements across key pages (Google Ads policy compliance review)
+
+### Fixed
+- Theme toggle icons not rendering correctly
+- Sentry: filter browser extension internal messaging, ServiceWorker registration/update, and transient errors
+- Sentry: stop reporting AdSense load failures, GA script errors, module import failures
+- Service worker InvalidStateError handling
+- Localhost fallback URL removed (production errors)
+- Dynamic import failures handled gracefully
+- Page title bottom padding, redundant categories description removed
+- H1 alignment and heading hierarchy standardized
+- Calculator slider readonly state in accessibility tree
 
 ## [2.6.0] - 2026-01-30
 
@@ -334,8 +376,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Murphy's Laws content database
 - Basic file organization
 
-[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v1.1.0...HEAD
-[2.6.0]: https://github.com/ravidorr/murphys-laws/compare/v1.0.7...v1.1.0
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.4...HEAD
+[2.0.4]: https://github.com/ravidorr/murphys-laws/compare/v2.0.3...v2.0.4
+[2.0.3]: https://github.com/ravidorr/murphys-laws/compare/v2.0.2...v2.0.3
+[2.0.2]: https://github.com/ravidorr/murphys-laws/compare/v2.6.1...v2.0.2
+[2.6.1]: https://github.com/ravidorr/murphys-laws/compare/v2.6.0...v2.6.1
+[2.6.0]: https://github.com/ravidorr/murphys-laws/compare/v1.0.7...v2.6.0
 [1.0.7]: https://github.com/ravidorr/murphys-laws/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/ravidorr/murphys-laws/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/ravidorr/murphys-laws/releases/tag/v1.0.5

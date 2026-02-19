@@ -426,6 +426,26 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
+  it('handles missing render function when route and home are undefined', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Do not define 'home'; only define an unrelated route
+    defineRoute('other', () => {
+      const el = document.createElement('div');
+      el.textContent = 'Other';
+      return el;
+    });
+
+    history.replaceState(null, '', '/missing-route');
+    startRouter(rootEl, null);
+
+    expect(consoleSpy).toHaveBeenCalledWith('No render function for route:', 'missing-route');
+    consoleSpy.mockRestore();
+    document.body.removeChild(rootEl);
+  });
+
   it('warns when navigate is called before startRouter', async () => {
     // Reset the module to ensure renderFn is null
     vi.resetModules();

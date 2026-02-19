@@ -108,17 +108,35 @@ describe('Footer component - Coverage', () => {
       writable: true,
       configurable: true
     });
-    
+
     mainElement.textContent = 'Short';
-    
+
     const el = Footer({ onNavigate: () => {} });
-    
+
     // Listeners should NOT be attached
     // We can verify this by triggering an event and checking if ad loads
     window.dispatchEvent(new Event('pointerdown'));
-    
+
     const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
     expect(adSlot?.dataset.loaded).not.toBe('true');
+  });
+
+  it('does not load ads when main element is missing', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    document.body.removeChild(mainElement);
+
+    const el = Footer({ onNavigate: () => {} });
+    window.dispatchEvent(new Event('pointerdown'));
+
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).not.toBe('true');
+
+    document.body.appendChild(mainElement);
   });
 
   it('handles missing IntersectionObserver in scheduleAd', () => {
@@ -129,15 +147,47 @@ describe('Footer component - Coverage', () => {
     });
 
     const originalIntersectionObserver = global.IntersectionObserver;
+    const originalRequestIdleCallback = window.requestIdleCallback;
+    delete (window as Partial<Window>).requestIdleCallback;
     delete global.IntersectionObserver;
-    
+
     try {
       const el = Footer({ onNavigate: () => {} });
-      // Should hit the 'else' branch in scheduleAd() and call defer()
-      // We don't need to await the defer, just ensure no error occurred
+      // Should hit the 'else' branch in scheduleAd() and call defer(loadAd),
+      // which then uses setTimeout when requestIdleCallback is missing
       expect(el).toBeTruthy();
     } finally {
       global.IntersectionObserver = originalIntersectionObserver;
+      if (originalRequestIdleCallback !== undefined) {
+        window.requestIdleCallback = originalRequestIdleCallback;
+      }
+    }
+  });
+
+  it('runs loadAd via setTimeout when both IntersectionObserver and requestIdleCallback are missing', async () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const originalIntersectionObserver = global.IntersectionObserver;
+    const originalRequestIdleCallback = window.requestIdleCallback;
+    delete (window as Partial<Window>).requestIdleCallback;
+    delete global.IntersectionObserver;
+
+    vi.useFakeTimers();
+    try {
+      const el = Footer({ onNavigate: () => {} });
+      vi.advanceTimersByTime(1500);
+      const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+      expect(adSlot?.dataset.loaded).toBe('true');
+    } finally {
+      vi.useRealTimers();
+      global.IntersectionObserver = originalIntersectionObserver;
+      if (originalRequestIdleCallback !== undefined) {
+        window.requestIdleCallback = originalRequestIdleCallback;
+      }
     }
   });
 

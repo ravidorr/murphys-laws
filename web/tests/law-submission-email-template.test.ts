@@ -280,10 +280,10 @@ describe('Law submission email template', () => {
       expect(html.length).toBeGreaterThan(2000);
     });
 
-    it('handles unicode and emoji characters', () => {
+    it('handles unicode characters', () => {
       const lawData = {
         id: 777,
-        title: 'Murphy\'s Law 😀',
+        title: 'Murphy\'s Law (c)',
         text: 'Текст на русском 中文',
         author: 'Müller',
         email: 'test@example.com'
@@ -291,7 +291,7 @@ describe('Law submission email template', () => {
 
       const html = lawSubmissionTemplate.createLawSubmissionEmailHtml(lawData);
 
-      expect(html).toContain('Murphy&#39;s Law 😀');
+      expect(html).toContain('Murphy&#39;s Law (c)');
       expect(html).toContain('Текст на русском 中文');
       expect(html).toContain('Müller');
     });

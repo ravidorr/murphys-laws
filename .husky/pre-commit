@@ -1,3 +1,19 @@
+# Require CHANGELOG.md to be staged when there are other staged changes
+if [ "$SKIP_CHANGELOG_CHECK" != "1" ]; then
+  STAGED=$(git diff --cached --name-only)
+  OTHER=$(echo "$STAGED" | grep -v "^CHANGELOG.md$")
+  if [ -n "$OTHER" ] && ! echo "$STAGED" | grep -q "^CHANGELOG.md$"; then
+    echo ""
+    echo "ERROR: You have staged changes but CHANGELOG.md is not staged."
+    echo ""
+    echo "Add your changes under [Unreleased] in CHANGELOG.md and stage it:"
+    echo "  git add CHANGELOG.md"
+    echo ""
+    echo "To bypass (emergency only): SKIP_CHANGELOG_CHECK=1 git commit ..."
+    exit 1
+  fi
+fi
+
 # Reminders (only in interactive terminals)
 if [ -t 0 ]; then
   echo ""
