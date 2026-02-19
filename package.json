@@ -40,8 +40,6 @@
     "node": ">=22.0.0"
   },
   "devDependencies": {
-    "@esbuild/darwin-x64": "^0.25.10",
-    "@rollup/rollup-darwin-x64": "^4.57.1",
     "markdownlint-cli2": "^0.20.0",
     "markdownlint-rule-search-replace": "^1.2.0"
   }
