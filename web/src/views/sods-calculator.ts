@@ -36,13 +36,20 @@ export function Calculator(): HTMLDivElement {
   }
 
   // Wire up interactions
-  const sliders: Record<SliderKey, HTMLInputElement | null> = {
+  const _sliders: Record<SliderKey, HTMLInputElement | null> = {
     urgency: el.querySelector<HTMLInputElement>('#urgency'),
     complexity: el.querySelector<HTMLInputElement>('#complexity'),
     importance: el.querySelector<HTMLInputElement>('#importance'),
     skill: el.querySelector<HTMLInputElement>('#skill'),
     frequency: el.querySelector<HTMLInputElement>('#frequency'),
   };
+
+  // Verify all sliders exist
+  for (const [name, slider] of Object.entries(_sliders)) {
+    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
+  }
+  const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
+
   const sliderValues = {
     urgency: el.querySelector('#urgency-value'),
     complexity: el.querySelector('#complexity-value'),
@@ -132,11 +139,13 @@ export function Calculator(): HTMLDivElement {
               if (mjxC) {
                 const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
                 if (classMatch) {
-                  const unicodeHex = classMatch[1];
-                  const letter = unicodeMap[unicodeHex];
+                  const unicodeHex = classMatch[1] as string | undefined;
+                  if (unicodeHex) {
+                    const letter = unicodeMap[unicodeHex];
 
-                  if (letter && titles[letter]) {
-                    mi.setAttribute('data-tooltip', titles[letter]);
+                    if (letter && titles[letter]) {
+                      mi.setAttribute('data-tooltip', titles[letter]);
+                    }
                   }
                 }
               }

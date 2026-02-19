@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Home: move "The Science of Murphy's Law" section below "Submit a Law"
 
+## [2.0.8] - 2026-02-19
+
+### Changed
+- Web: fix 182 `strictNullChecks` errors across 23 source files (prep for enabling `strictNullChecks: true`)
+- Web: add null guards for `querySelector` results, `getAttribute` returns, `dataset` properties, and regex capture groups
+- Web: type all `[]` array initializations explicitly to avoid `never[]` inference under strict null checks
+- Web: add `?? ''` fallbacks for `noUncheckedIndexedAccess` on record/array lookups (`button.ts`, `icons.ts`, `theme.ts`, `router.ts`)
+- Web: null-safe calculator slider access with runtime validation and type narrowing across 4 calculator files
+
 ## [2.0.7] - 2026-02-19
 
 ### Changed
@@ -402,7 +411,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Murphy's Laws content database
 - Basic file organization
 
-[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.7...HEAD
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.8...HEAD
+[2.0.8]: https://github.com/ravidorr/murphys-laws/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/ravidorr/murphys-laws/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/ravidorr/murphys-laws/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/ravidorr/murphys-laws/compare/v2.0.4...v2.0.5

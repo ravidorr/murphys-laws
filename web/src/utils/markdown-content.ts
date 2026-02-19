@@ -133,22 +133,23 @@ function enhanceMarkdownHtml(html: string): string {
 
   // Process h2 tags - wrap first word with accent-text and add section wrapper
   // We need to process from end to start to avoid index issues
-  const h2Matches = [];
+  const h2Matches: Array<{ index: number; fullMatch: string; open: string; content: string; close: string }> = [];
   let h2Regex = /(<h2[^>]*>)([\s\S]*?)(<\/h2>)/g;
   let match;
   while ((match = h2Regex.exec(html)) !== null) {
     h2Matches.push({
       index: match.index,
       fullMatch: match[0],
-      open: match[1],
-      content: match[2],
-      close: match[3]
+      open: match[1] ?? '',
+      content: match[2] ?? '',
+      close: match[3] ?? ''
     });
   }
 
   // Replace h2 tags from end to start to preserve indices
   for (let i = h2Matches.length - 1; i >= 0; i--) {
     const h2Match = h2Matches[i];
+    if (!h2Match) continue;
     const replacement = `<section class="content-section">\n      ${h2Match.open}${wrapFirstWordWithAccent(h2Match.content)}${h2Match.close}`;
     html = html.substring(0, h2Match.index) + replacement + html.substring(h2Match.index + h2Match.fullMatch.length);
   }
@@ -156,9 +157,10 @@ function enhanceMarkdownHtml(html: string): string {
   // Close sections properly - find each section and close it before the next section or at the end
   const sections = html.split('<section class="content-section">');
   if (sections.length > 1) {
-    html = sections[0]; // Content before first section
+    html = sections[0] ?? ''; // Content before first section
     for (let i = 1; i < sections.length; i++) {
       const sectionContent = sections[i];
+      if (sectionContent === undefined) continue;
       // Find where this section should end (before next section or at end)
       const nextSectionIndex = sectionContent.indexOf('<section class="content-section">');
 

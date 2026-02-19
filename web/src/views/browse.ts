@@ -67,7 +67,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
         ],
         onNavigate
       });
-      breadcrumbContainer.replaceChildren(breadcrumb);
+      if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
     }
 
     // Replace static loading message with random one
@@ -261,8 +261,8 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     sortSelect.addEventListener('change', (e) => {
       const value = (e.target as HTMLSelectElement).value;
       const [sort, order] = value.split('-');
-      currentSort = sort;
-      currentOrder = order;
+      currentSort = sort ?? '';
+      currentOrder = order ?? '';
       loadPage(1); // Reset to page 1 when sort changes
     });
   }

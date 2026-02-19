@@ -51,25 +51,25 @@ export function currentRoute(): RouteInfo {
   // Match /law/murphys-computers-laws
   const lawMatch = path.match(/^\/law\/([^/]+)/);
   if (lawMatch) {
-    return { name: 'law', param: lawMatch[1] };
+    return { name: 'law', param: lawMatch[1] ?? null };
   }
 
   // Match /category/some-category
   const catMatch = path.match(/^\/category\/([^/]+)/);
   if (catMatch) {
-    return { name: 'category', param: catMatch[1] };
+    return { name: 'category', param: catMatch[1] ?? null };
   }
 
   // Match /calculator/sods-law or /calculator/buttered-toast
   const calcMatch = path.match(/^\/calculator\/([^/]+)/);
   if (calcMatch) {
-    return { name: 'calculator', param: calcMatch[1] };
+    return { name: 'calculator', param: calcMatch[1] ?? null };
   }
 
   // Generic match for top-level routes like /browse, /about, /submit
   const genericMatch = path.match(/^\/([^/]+)/);
   if (genericMatch) {
-    return { name: genericMatch[1], param: null };
+    return { name: genericMatch[1] ?? '', param: null };
   }
 
   return { name: 'home', param: null };

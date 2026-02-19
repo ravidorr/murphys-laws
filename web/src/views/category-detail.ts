@@ -253,7 +253,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
             ],
             onNavigate
           });
-          breadcrumbContainer.replaceChildren(breadcrumb);
+          if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
         }
         
         // Create and insert advanced search component with category pre-selected
@@ -375,8 +375,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     sortSelect.addEventListener('change', (e) => {
       const value = (e.target as HTMLSelectElement).value;
       const [sort, order] = value.split('-');
-      currentSort = sort;
-      currentOrder = order;
+      currentSort = sort ?? '';
+      currentOrder = order ?? '';
       loadPage(1); // Reset to page 1 when sort changes
     });
   }

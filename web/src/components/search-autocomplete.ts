@@ -46,7 +46,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       form.appendChild(dropdown);
     } else {
       // Fallback: insert after input
-      inputElement.parentNode.insertBefore(dropdown, inputElement.nextSibling);
+      inputElement.parentNode?.insertBefore(dropdown, inputElement.nextSibling);
     }
 
     return dropdown;
@@ -65,6 +65,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     if (!dropdown) {
       createDropdown();
     }
+    if (!dropdown) return;
 
     if (suggestions.length === 0) {
       dropdown.innerHTML = '';
@@ -211,7 +212,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   function handleDropdownClick(event: Event) {
     const item = (event.target as HTMLElement).closest('.search-suggestion-item');
     if (item) {
-      const index = parseInt(item.getAttribute('data-index'), 10);
+      const index = parseInt(item.getAttribute('data-index') ?? '', 10);
       if (!isNaN(index)) {
         selectSuggestion(index);
       }
@@ -231,15 +232,13 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   inputElement.setAttribute('aria-autocomplete', 'list');
   inputElement.setAttribute('aria-controls', 'search-autocomplete-listbox');
   
-  if (!dropdown) {
-    createDropdown();
-  }
-  dropdown.setAttribute('id', 'search-autocomplete-listbox');
+  const activeDropdown = dropdown ?? createDropdown();
+  activeDropdown.setAttribute('id', 'search-autocomplete-listbox');
 
   // Attach event listeners
   inputElement.addEventListener('input', handleInput);
   inputElement.addEventListener('keydown', handleKeydown);
-  dropdown.addEventListener('click', handleDropdownClick);
+  activeDropdown.addEventListener('click', handleDropdownClick);
   document.addEventListener('click', handleDocumentClick);
 
   // Cleanup function

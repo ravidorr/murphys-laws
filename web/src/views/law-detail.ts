@@ -212,7 +212,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         ],
         onNavigate
       });
-      breadcrumbContainer.replaceChildren(breadcrumb);
+      if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
     }
 
     showLaw();

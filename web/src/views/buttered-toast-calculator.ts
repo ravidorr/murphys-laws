@@ -34,7 +34,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
   }
 
   // Wire up interactions
-  const sliders: Record<ToastSliderKey, HTMLInputElement | null> = {
+  const _sliders: Record<ToastSliderKey, HTMLInputElement | null> = {
     height: el.querySelector<HTMLInputElement>('#toast-height'),
     gravity: el.querySelector<HTMLInputElement>('#toast-gravity'),
     overhang: el.querySelector<HTMLInputElement>('#toast-overhang'),
@@ -42,6 +42,12 @@ export function ButteredToastCalculator(): HTMLDivElement {
     friction: el.querySelector<HTMLInputElement>('#toast-friction'),
     inertia: el.querySelector<HTMLInputElement>('#toast-inertia'),
   };
+
+  // Verify all sliders exist
+  for (const [name, slider] of Object.entries(_sliders)) {
+    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
+  }
+  const sliders = _sliders as Record<ToastSliderKey, HTMLInputElement>;
 
   const sliderValues = {
     height: el.querySelector('#toast-height-value'),
@@ -124,11 +130,13 @@ export function ButteredToastCalculator(): HTMLDivElement {
               if (mjxC) {
                 const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
                 if (classMatch) {
-                  const unicodeHex = classMatch[1];
-                  const letter = unicodeMap[unicodeHex];
+                  const unicodeHex = classMatch[1] as string | undefined;
+                  if (unicodeHex) {
+                    const letter = unicodeMap[unicodeHex];
 
-                  if (letter && titles[letter]) {
-                    mi.setAttribute('data-tooltip', titles[letter]);
+                    if (letter && titles[letter]) {
+                      mi.setAttribute('data-tooltip', titles[letter]);
+                    }
                   }
                 }
               }
@@ -170,12 +178,12 @@ export function ButteredToastCalculator(): HTMLDivElement {
     const T = parseFloat(sliders.inertia.value);
 
     // Update display values
-    sliderValues.height.textContent = `${H} cm`;
-    sliderValues.gravity.textContent = `${g} cm/s²`;
-    sliderValues.overhang.textContent = `${O} cm`;
-    sliderValues.butter.textContent = `${B.toFixed(2)}`;
-    sliderValues.friction.textContent = `${F}`;
-    sliderValues.inertia.textContent = `${T}`;
+    if (sliderValues.height) sliderValues.height.textContent = `${H} cm`;
+    if (sliderValues.gravity) sliderValues.gravity.textContent = `${g} cm/s²`;
+    if (sliderValues.overhang) sliderValues.overhang.textContent = `${O} cm`;
+    if (sliderValues.butter) sliderValues.butter.textContent = `${B.toFixed(2)}`;
+    if (sliderValues.friction) sliderValues.friction.textContent = `${F}`;
+    if (sliderValues.inertia) sliderValues.inertia.textContent = `${T}`;
 
     // Calculate rotation factor
     const totalRotationFactor = (30 * Math.sqrt(H / g) * O * B) / (T + F);

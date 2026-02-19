@@ -20,8 +20,9 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
   container.innerHTML = templateHtml;
   
   const nav = container.firstElementChild;
+  if (!nav) return container;
   const list = nav.querySelector('.breadcrumb-list');
-  
+
   // Add additional breadcrumb items
   items.forEach((item, index) => {
     const li = document.createElement('li');
@@ -56,7 +57,7 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
       li.appendChild(link);
     }
     
-    list.appendChild(li);
+    list?.appendChild(li);
   });
   
   // Hydrate icons

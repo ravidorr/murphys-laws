@@ -197,10 +197,10 @@ function validateOptions(options: ButtonOptions): void {
 function buildClassString(options: ButtonOptions): string {
   const { variant, direction, className, loading } = options;
 
-  const classes = [];
+  const classes: string[] = [];
 
   // Base variant class
-  classes.push(VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary);
+  classes.push(VARIANT_CLASSES[variant ?? 'primary'] ?? VARIANT_CLASSES.primary ?? 'btn');
 
   // Vote direction class
   if (variant === 'vote' && direction) {
@@ -321,51 +321,51 @@ export function createButton(options: ButtonOptions = {}): HTMLButtonElement {
   }
 
   // Set data attributes
-  if (nav !== null) {
+  if (nav != null) {
     button.setAttribute('data-nav', nav);
   }
-  if (navParam !== null) {
+  if (navParam != null) {
     button.setAttribute('data-param', navParam);
   }
-  if (lawId !== null) {
+  if (lawId != null) {
     button.setAttribute('data-law-id', String(lawId));
   }
-  if (action !== null) {
+  if (action != null) {
     button.setAttribute('data-action', action);
   }
-  if (page !== null) {
+  if (page != null) {
     button.setAttribute('data-page', String(page));
   }
-  if (copyValue !== null) {
+  if (copyValue != null) {
     button.setAttribute('data-copy-value', copyValue);
   }
-  if (vote !== null) {
+  if (vote != null) {
     button.setAttribute('data-vote', vote);
   }
-  if (tooltip !== null) {
+  if (tooltip != null) {
     button.setAttribute('data-tooltip', tooltip);
   }
 
   // Set ARIA attributes
-  if (ariaLabel !== null) {
+  if (ariaLabel != null) {
     button.setAttribute('aria-label', ariaLabel);
   }
-  if (ariaExpanded !== null) {
+  if (ariaExpanded != null) {
     button.setAttribute('aria-expanded', String(ariaExpanded));
   }
-  if (ariaHaspopup !== null) {
+  if (ariaHaspopup != null) {
     button.setAttribute('aria-haspopup', String(ariaHaspopup));
   }
-  if (ariaCurrent !== null) {
+  if (ariaCurrent != null) {
     button.setAttribute('aria-current', ariaCurrent);
   }
-  if (ariaBusy !== null || loading) {
+  if (ariaBusy != null || loading) {
     button.setAttribute('aria-busy', String(ariaBusy ?? loading));
   }
-  if (ariaDisabled !== null) {
+  if (ariaDisabled != null) {
     button.setAttribute('aria-disabled', String(ariaDisabled));
   }
-  if (role !== null) {
+  if (role != null) {
     button.setAttribute('role', role);
   }
 
@@ -412,7 +412,7 @@ export function renderButtonHTML(options: ButtonOptions = {}): string {
   } = opts;
 
   // Build attributes array
-  const attrs = [];
+  const attrs: string[] = [];
 
   // Type attribute
   attrs.push(`type="${type}"`);
@@ -431,53 +431,53 @@ export function renderButtonHTML(options: ButtonOptions = {}): string {
   }
 
   // Data attributes
-  if (nav !== null) {
+  if (nav != null) {
     attrs.push(`data-nav="${nav}"`);
   }
-  if (navParam !== null) {
+  if (navParam != null) {
     attrs.push(`data-param="${navParam}"`);
   }
-  if (lawId !== null) {
+  if (lawId != null) {
     attrs.push(`data-law-id="${lawId}"`);
   }
-  if (action !== null) {
+  if (action != null) {
     attrs.push(`data-action="${action}"`);
   }
-  if (page !== null) {
+  if (page != null) {
     attrs.push(`data-page="${page}"`);
   }
-  if (copyValue !== null) {
+  if (copyValue != null) {
     // Escape quotes in copy value
     const safeCopyValue = String(copyValue).replace(/"/g, '&quot;');
     attrs.push(`data-copy-value="${safeCopyValue}"`);
   }
-  if (vote !== null) {
+  if (vote != null) {
     attrs.push(`data-vote="${vote}"`);
   }
-  if (tooltip !== null) {
+  if (tooltip != null) {
     attrs.push(`data-tooltip="${tooltip}"`);
   }
 
   // ARIA attributes
-  if (ariaLabel !== null) {
+  if (ariaLabel != null) {
     attrs.push(`aria-label="${ariaLabel}"`);
   }
-  if (ariaExpanded !== null) {
+  if (ariaExpanded != null) {
     attrs.push(`aria-expanded="${ariaExpanded}"`);
   }
-  if (ariaHaspopup !== null) {
+  if (ariaHaspopup != null) {
     attrs.push(`aria-haspopup="${ariaHaspopup}"`);
   }
-  if (ariaCurrent !== null) {
+  if (ariaCurrent != null) {
     attrs.push(`aria-current="${ariaCurrent}"`);
   }
-  if (ariaBusy !== null || loading) {
+  if (ariaBusy != null || loading) {
     attrs.push(`aria-busy="${ariaBusy ?? loading}"`);
   }
-  if (ariaDisabled !== null) {
+  if (ariaDisabled != null) {
     attrs.push(`aria-disabled="${ariaDisabled}"`);
   }
-  if (role !== null) {
+  if (role != null) {
     attrs.push(`role="${role}"`);
   }
 
@@ -581,14 +581,14 @@ export function renderLinkButtonHTML(options: LinkButtonOptions): string {
   }
 
   // Build class list
-  const classes = [];
-  classes.push(VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary);
+  const classes: string[] = [];
+  classes.push(VARIANT_CLASSES[variant ?? 'primary'] ?? VARIANT_CLASSES.primary ?? 'btn');
   if (className) {
     classes.push(className);
   }
 
   // Build attributes array
-  const attrs = [];
+  const attrs: string[] = [];
   attrs.push(`href="${href}"`);
   attrs.push(`class="${classes.join(' ')}"`);
 
@@ -678,7 +678,7 @@ export function renderShareLinkHTML(options: ShareLinkOptions): string {
   }
 
   // Build attributes array
-  const attrs = [];
+  const attrs: string[] = [];
   attrs.push('class="share-popover-item"');
   attrs.push(`href="${href}"`);
   attrs.push('role="menuitem"');

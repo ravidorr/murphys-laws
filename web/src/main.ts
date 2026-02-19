@@ -146,7 +146,7 @@ function onNavigate(page: string, param?: string): void {
   // Handle compound routes like "calculator/sods-law"
   if (page && page.includes('/') && !param) {
     const parts = page.split('/');
-    navigate(parts[0], parts[1]);
+    navigate(parts[0] ?? '', parts[1] ?? '');
   } else {
     navigate(page, param);
   }
@@ -279,7 +279,7 @@ const routesMap = {
   category: ({ param }: { param?: string | null }) => {
     trackPageView();
     clearPageStructuredData();
-    return layout(CategoryDetail({ categoryId: param, onNavigate }));
+    return layout(CategoryDetail({ categoryId: param ?? '', onNavigate }));
   },
   browse: () => {
     trackPageView();
@@ -303,7 +303,7 @@ const routesMap = {
   law: ({ param }: { param?: string | null }) => {
     trackPageView();
     trackLawView();
-    return layout(LawDetail({ lawId: param, onNavigate, onStructuredData: setLawStructuredData }));
+    return layout(LawDetail({ lawId: param ?? '', onNavigate, onStructuredData: setLawStructuredData }));
   },
   submit: () => {
     trackPageView();

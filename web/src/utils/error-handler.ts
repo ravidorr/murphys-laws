@@ -193,7 +193,7 @@ export async function safeAsync<T>(fn: () => Promise<T>, options: SafeAsyncOptio
  * @returns {Object} Object with execute() and getLastError() methods
  */
 export function createRetryable(fn: () => Promise<unknown>, options: SafeAsyncOptions = {}) {
-  let lastError = null;
+  let lastError: Error | null = null;
   let isExecuting = false;
 
   return {

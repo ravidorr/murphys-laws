@@ -21,7 +21,7 @@ export async function updateSearchInfo(infoElement: HTMLElement | null, filters:
     return;
   }
 
-  const filterParts = [];
+  const filterParts: string[] = [];
 
   if (filters.q) {
     filterParts.push(`<strong>${escapeHtml(filters.q)}</strong>`);

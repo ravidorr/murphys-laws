@@ -182,10 +182,10 @@ export function createIcon(name: string, { classNames = [], labelled = false }: 
     svg.setAttribute('stroke-width', '2');
     svg.setAttribute('stroke-linecap', 'round');
     svg.setAttribute('stroke-linejoin', 'round');
-    svg.innerHTML = iconData.content;
+    svg.innerHTML = iconData.content ?? '';
   } else {
     svg.setAttribute('fill', 'currentColor');
-    svg.innerHTML = iconData.path;
+    svg.innerHTML = iconData.path ?? '';
   }
 
   if (!labelled) {
@@ -209,7 +209,7 @@ export function hydrateIcons(root?: Element | Document): void {
     const name = placeholder.getAttribute('data-icon');
     // Normalize aliases before checking ICON_MARKUP
     const normalizedName = name === 'clear' ? 'close' : name;
-    if (!name || !ICON_MARKUP[normalizedName]) {
+    if (!name || !normalizedName || !ICON_MARKUP[normalizedName]) {
       return;
     }
 
@@ -224,16 +224,16 @@ export function hydrateIcons(root?: Element | Document): void {
     }
 
     if (placeholder.hasAttribute('aria-label')) {
-      svg.setAttribute('aria-label', placeholder.getAttribute('aria-label'));
+      svg.setAttribute('aria-label', placeholder.getAttribute('aria-label') ?? '');
       svg.removeAttribute('aria-hidden');
     }
 
     if (placeholder.hasAttribute('role')) {
-      svg.setAttribute('role', placeholder.getAttribute('role'));
+      svg.setAttribute('role', placeholder.getAttribute('role') ?? '');
     }
 
     if (placeholder.hasAttribute('title')) {
-      svg.setAttribute('title', placeholder.getAttribute('title'));
+      svg.setAttribute('title', placeholder.getAttribute('title') ?? '');
     }
 
     placeholder.replaceWith(svg);
