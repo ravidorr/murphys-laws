@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Browse } from '../src/views/browse.js';
 
@@ -41,10 +40,10 @@ describe('Browse view - Coverage', () => {
 
   it('handles empty laws array in loadPage', async () => {
     // Mock return empty data
-    global.fetch.mockResolvedValueOnce({
+    vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: [], total: 0 })
-    });
+    } as Response);
     
     const el = Browse({ searchQuery: '', onNavigate: () => {} });
     
@@ -56,7 +55,7 @@ describe('Browse view - Coverage', () => {
   
   it('handles fetch errors in loadPage', async () => {
     // Set mock to reject for all calls to ensure it hits the error branch
-    global.fetch.mockRejectedValue(new Error('API Failure'));
+    vi.mocked(global.fetch).mockRejectedValue(new Error('API Failure'));
     
     const el = Browse({ searchQuery: '', onNavigate: () => {} });
     container.appendChild(el);

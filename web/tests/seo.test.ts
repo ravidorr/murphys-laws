@@ -1,17 +1,14 @@
-// @ts-nocheck
 import { truncateTitle } from '../src/utils/seo.ts';
 
 describe('SEO utilities', () => {
   describe('truncateTitle', () => {
-    const localThis: Record<string, any> = {};
-
-    beforeEach(() => {
-      // Default suffix is " - Murphy's Law Archive" (23 chars)
-      // Max total length is 60 chars (reduced from 70 for better SERP display)
-      // So max title length is 37 chars
-      localThis.maxTitleLength = 37;
-      localThis.defaultSuffix = " - Murphy's Law Archive";
-    });
+    // Default suffix is " - Murphy's Law Archive" (23 chars)
+    // Max total length is 60 chars (reduced from 70 for better SERP display)
+    // So max title length is 37 chars
+    const localThis: { maxTitleLength: number; defaultSuffix: string } = {
+      maxTitleLength: 37,
+      defaultSuffix: " - Murphy's Law Archive",
+    };
 
     it('returns title unchanged when under max length', () => {
       const title = "Murphy's Laws"; // 13 chars

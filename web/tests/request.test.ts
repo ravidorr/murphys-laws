@@ -1,12 +1,22 @@
-// @ts-nocheck
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { apiRequest, apiGet, apiPost, apiDelete } from '../src/utils/request.ts';
 import { API_BASE_URL } from '../src/utils/constants.ts';
 
+const asResponse = (r: unknown): Response => r as Response;
+
+interface FetchSpy {
+  mockResolvedValue: (v: unknown) => void;
+  mockResolvedValueOnce: (v: unknown) => void;
+  mockRejectedValue: (v: unknown) => void;
+  mockRejectedValueOnce: (v: unknown) => void;
+  mock: { calls: unknown[] };
+}
+
 describe('request utilities', () => {
-  let fetchSpy;
+  let fetchSpy: FetchSpy;
 
   beforeEach(() => {
-    fetchSpy = vi.spyOn(global, 'fetch');
+    fetchSpy = vi.spyOn(global, 'fetch') as unknown as FetchSpy;
   });
 
   afterEach(() => {
@@ -16,11 +26,11 @@ describe('request utilities', () => {
   describe('apiRequest', () => {
     it('makes GET request to primary URL by default', async () => {
       const mockData = { data: 'test' };
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => mockData
-      });
+      }));
 
       const result = await apiRequest('/api/test');
 
@@ -40,11 +50,11 @@ describe('request utilities', () => {
     it('makes POST request with body', async () => {
       const mockData = { success: true };
       const requestBody = { name: 'test' };
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => mockData
-      });
+      }));
 
       const result = await apiRequest('/api/test', {
         method: 'POST',
@@ -66,11 +76,11 @@ describe('request utilities', () => {
     });
 
     it('makes DELETE request', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => ({ success: true })
-      });
+      }));
 
       await apiRequest('/api/test', { method: 'DELETE' });
 
@@ -83,11 +93,11 @@ describe('request utilities', () => {
     });
 
     it('includes custom headers', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => ({})
-      });
+      }));
 
       await apiRequest('/api/test', {
         headers: { 'X-Custom-Header': 'value' }
@@ -112,107 +122,107 @@ describe('request utilities', () => {
     });
 
     it('throws error when API returns non-ok response', async () => {
-      fetchSpy.mockResolvedValueOnce({
+      fetchSpy.mockResolvedValueOnce(asResponse({
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
         json: async () => ({ error: 'Server error' })
-      });
+      }));
 
       await expect(apiRequest('/api/test')).rejects.toThrow('Server error');
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
     it('handles non-JSON responses with error', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 404,
         statusText: 'Not Found',
         json: async () => { throw new Error('Not JSON'); }
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('The requested resource was not found');
     });
 
     it('throws error when response is OK but JSON parsing fails', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => { throw new Error('Invalid JSON'); }
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('Invalid response from server. Please try again.');
     });
 
     it('handles 404 error responses', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 404,
         statusText: 'Not Found',
         json: async () => ({ error: 'Law not found' })
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('Law not found');
     });
 
     it('handles 500 error responses', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
         json: async () => ({ error: 'Server error' })
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('Server error');
     });
 
     it('handles 429 rate limit error', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 429,
         statusText: 'Too Many Requests',
         json: async () => { throw new Error('Not JSON'); }
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('Rate limit exceeded');
     });
 
     it('handles 401 unauthorized error', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
         json: async () => { throw new Error('Not JSON'); }
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('do not have permission');
     });
 
     it('handles 403 forbidden error', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 403,
         statusText: 'Forbidden',
         json: async () => { throw new Error('Not JSON'); }
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('do not have permission');
     });
 
     it('handles 400 bad request error', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
         json: async () => { throw new Error('Not JSON'); }
-      });
+      }));
 
       await expect(apiRequest('/api/test'))
         .rejects.toThrow('Invalid request');
@@ -222,11 +232,11 @@ describe('request utilities', () => {
   describe('apiGet', () => {
     it('makes GET request', async () => {
       const mockData = { data: 'test' };
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => mockData
-      });
+      }));
 
       const result = await apiGet('/api/test');
 
@@ -238,11 +248,11 @@ describe('request utilities', () => {
     });
 
     it('passes query parameters', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => ({})
-      });
+      }));
 
       await apiGet('/api/test', { q: 'search', limit: '10' });
 
@@ -259,11 +269,11 @@ describe('request utilities', () => {
     it('makes POST request with body', async () => {
       const mockData = { id: 1, created: true };
       const requestBody = { name: 'test' };
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 201,
         json: async () => mockData
-      });
+      }));
 
       const result = await apiPost('/api/test', requestBody);
 
@@ -281,11 +291,11 @@ describe('request utilities', () => {
     });
 
     it('handles null body', async () => {
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => ({})
-      });
+      }));
 
       await apiPost('/api/test', null);
 
@@ -306,11 +316,11 @@ describe('request utilities', () => {
   describe('apiDelete', () => {
     it('makes DELETE request', async () => {
       const mockData = { success: true };
-      fetchSpy.mockResolvedValue({
+      fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
         json: async () => mockData
-      });
+      }));
 
       const result = await apiDelete('/api/test');
 

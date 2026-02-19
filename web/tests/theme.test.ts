@@ -1,4 +1,4 @@
-// @ts-nocheck
+import type { Theme } from '../src/types/app.d.ts';
 import {
   getTheme,
   setTheme,
@@ -11,8 +11,12 @@ import {
   initTheme
 } from '../src/utils/theme.ts';
 
+interface ThemeTestLocalThis {
+  originalMatchMedia?: typeof window.matchMedia | null;
+}
+
 describe('Theme utilities', () => {
-  const localThis: Record<string, any> = {
+  const localThis: ThemeTestLocalThis = {
     originalMatchMedia: null
   };
 
@@ -25,7 +29,7 @@ describe('Theme utilities', () => {
   afterEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
-    window.matchMedia = localThis.originalMatchMedia;
+    window.matchMedia = localThis.originalMatchMedia!;
   });
 
   describe('getTheme', () => {
@@ -66,7 +70,7 @@ describe('Theme utilities', () => {
     });
 
     it('does not store invalid theme', () => {
-      setTheme('invalid' as any);
+      setTheme('invalid' as Parameters<typeof setTheme>[0]);
       expect(localStorage.getItem('murphys_theme')).toBeNull();
     });
 
@@ -271,7 +275,7 @@ describe('Theme utilities', () => {
     });
 
     it('returns Auto mode for unknown theme values', () => {
-      expect(getThemeTooltip('unknown' as any)).toBe('Auto mode');
+      expect(getThemeTooltip('unknown' as Theme)).toBe('Auto mode');
     });
   });
 

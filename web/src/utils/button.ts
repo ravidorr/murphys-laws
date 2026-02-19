@@ -91,7 +91,7 @@ export interface ButtonOptions {
   variant?: 'primary' | 'secondary' | 'vote';
   direction?: 'up' | 'down' | null;
   count?: number;
-  type?: string;
+  type?: 'button' | 'submit' | 'reset';
   disabled?: boolean;
   loading?: boolean;
   loadingText?: string | null;
@@ -260,7 +260,7 @@ export function createButton(options: ButtonOptions = {}): HTMLButtonElement {
 
   // Create button element
   const button = document.createElement('button');
-  (button as any).type = type;
+  button.type = type ?? 'button';
   button.className = buildClassString(opts);
 
   // Set ID if provided

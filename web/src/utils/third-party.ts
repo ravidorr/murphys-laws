@@ -66,7 +66,7 @@ export function loadScript(src: string, props: ScriptProps = {}): Promise<void> 
         return;
       }
       if (key in script) {
-        (script as any)[key] = value;
+        (script as HTMLScriptElement & Record<string, unknown>)[key] = value;
       } else {
         script.setAttribute(key, String(value));
       }

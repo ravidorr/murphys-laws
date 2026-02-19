@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { showNotification, showSuccess, showError, clearAllNotifications } from '../src/components/notification.js';
 describe('Notification system', () => {
   afterEach(() => {
@@ -91,8 +90,8 @@ describe('Notification system', () => {
     it('dismisses notification when close button is clicked', async () => {
       showNotification('Test', 'info', 0);
       const closeBtn = document.querySelector('.notification-close');
-
-      closeBtn.click();
+      expect(closeBtn).toBeTruthy();
+      (closeBtn as HTMLElement).click();
 
       await new Promise(r => setTimeout(r, 350)); // Wait for animation
 
@@ -112,8 +111,8 @@ describe('Notification system', () => {
       // Verify notification is in the DOM with a parent
       expect(notification).toBeTruthy();
       expect(notification.parentNode).toBeTruthy();
-
-      closeBtn.click();
+      expect(closeBtn).toBeTruthy();
+      (closeBtn as HTMLElement).click();
 
       await new Promise(r => setTimeout(r, 350)); // Wait for animation
 
@@ -148,13 +147,13 @@ describe('Notification system', () => {
 
     it('sets different icon for error type', () => {
       showNotification('Error', 'error', 0);
-      const icon = document.querySelector('.notification-error .notification-icon');
+      const icon = document.querySelector('.notification-error .notification-icon') as HTMLElement | null;
       expect(icon?.dataset.iconName).toBe('error');
     });
 
     it('sets checkCircle icon for non-error type', () => {
       showNotification('Info', 'info', 0);
-      const icon = document.querySelector('.notification-info .notification-icon');
+      const icon = document.querySelector('.notification-info .notification-icon') as HTMLElement | null;
       expect(icon?.dataset.iconName).toBe('checkCircle');
     });
 

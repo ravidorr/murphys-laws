@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, vi } from 'vitest';
 import { OriginStory } from '../src/views/origin-story.js';
 import * as structuredData from '../src/modules/structured-data.js';

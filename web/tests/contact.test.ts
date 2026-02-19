@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Contact } from '../src/views/contact.js';
 
 describe('Contact page', () => {
@@ -73,7 +72,8 @@ describe('Contact page', () => {
     });
 
     const submitLink = el.querySelector('[data-nav="submit"]');
-    submitLink.click();
+    expect(submitLink).toBeTruthy();
+    (submitLink as HTMLElement).click();
     expect(navigated).toBe('submit');
   });
 

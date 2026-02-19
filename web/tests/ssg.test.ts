@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { wrapFirstWordWithAccent, enhanceMarkdownHtml, wrapInCardStructure } from '../scripts/ssg.mjs';
 

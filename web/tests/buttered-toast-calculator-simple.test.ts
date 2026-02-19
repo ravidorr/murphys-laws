@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calculator-simple.js';
 
 describe('ButteredToastCalculatorSimple component', () => {
@@ -23,152 +22,152 @@ describe('ButteredToastCalculatorSimple component', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     const probabilityDisplay = el.querySelector('#toast-probability-simple');
-    expect(probabilityDisplay.textContent).toMatch(/%$/);
+    expect(probabilityDisplay?.textContent).toMatch(/%$/);
   });
 
   it('displays initial interpretation', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     const interpretation = el.querySelector('#toast-interpretation-simple');
-    expect(interpretation.textContent.length).toBeGreaterThan(10);
+    expect(interpretation?.textContent?.length).toBeGreaterThan(10);
   });
 
   it('updates height value display when slider changes', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const heightSlider = el.querySelector('#toast-height-simple');
+    const heightSlider = el.querySelector('#toast-height-simple') as HTMLInputElement;
     const heightValue = el.querySelector('#toast-height-simple-value');
 
     heightSlider.value = '100';
     heightSlider.dispatchEvent(new Event('input'));
 
-    expect(heightValue.textContent).toBe('100 cm');
+    expect(heightValue?.textContent).toBe('100 cm');
   });
 
   it('updates overhang value display when slider changes', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const overhangSlider = el.querySelector('#toast-overhang-simple');
+    const overhangSlider = el.querySelector('#toast-overhang-simple') as HTMLInputElement;
     const overhangValue = el.querySelector('#toast-overhang-simple-value');
 
     overhangSlider.value = '15';
     overhangSlider.dispatchEvent(new Event('input'));
 
-    expect(overhangValue.textContent).toBe('15 cm');
+    expect(overhangValue?.textContent).toBe('15 cm');
   });
 
   it('recalculates probability when height slider changes', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const heightSlider = el.querySelector('#toast-height-simple');
+    const heightSlider = el.querySelector('#toast-height-simple') as HTMLInputElement;
     const probabilityDisplay = el.querySelector('#toast-probability-simple');
-    const initialProbability = probabilityDisplay.textContent;
+    const initialProbability = probabilityDisplay?.textContent;
 
     heightSlider.value = '150';
     heightSlider.dispatchEvent(new Event('input'));
 
-    expect(probabilityDisplay.textContent).not.toBe(initialProbability);
+    expect(probabilityDisplay?.textContent).not.toBe(initialProbability);
   });
 
   it('recalculates probability when overhang slider changes', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const overhangSlider = el.querySelector('#toast-overhang-simple');
+    const overhangSlider = el.querySelector('#toast-overhang-simple') as HTMLInputElement;
     const probabilityDisplay = el.querySelector('#toast-probability-simple');
-    const initialProbability = probabilityDisplay.textContent;
+    const initialProbability = probabilityDisplay?.textContent;
 
     overhangSlider.value = '15';
     overhangSlider.dispatchEvent(new Event('input'));
 
-    expect(probabilityDisplay.textContent).not.toBe(initialProbability);
+    expect(probabilityDisplay?.textContent).not.toBe(initialProbability);
   });
 
   it('shows safe interpretation for low probability', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     // Set values to get low probability
-    el.querySelector('#toast-height-simple').value = '30';
-    el.querySelector('#toast-overhang-simple').value = '1';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '30';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '1';
 
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#toast-interpretation-simple');
-    expect(interpretation.textContent).toMatch(/Looking good/i);
+    expect(interpretation?.textContent).toMatch(/Looking good/i);
   });
 
   it('shows toss-up interpretation for medium probability', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     // Set values to get medium probability (25-60%)
-    el.querySelector('#toast-height-simple').value = '60';
-    el.querySelector('#toast-overhang-simple').value = '7';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '60';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '7';
 
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#toast-interpretation-simple');
-    expect(interpretation.textContent).toMatch(/toss-up/i);
+    expect(interpretation?.textContent).toMatch(/toss-up/i);
   });
 
   it('shows butter zone interpretation for high probability', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     // Set values to get high probability (60-85%)
-    el.querySelector('#toast-height-simple').value = '80';
-    el.querySelector('#toast-overhang-simple').value = '8';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '80';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '8';
 
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#toast-interpretation-simple');
-    expect(interpretation.textContent).toMatch(/butter zone/i);
+    expect(interpretation?.textContent).toMatch(/butter zone/i);
   });
 
   it('shows catastrophe interpretation for very high probability', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     // Set values to get very high probability (> 85%)
-    el.querySelector('#toast-height-simple').value = '90';
-    el.querySelector('#toast-overhang-simple').value = '11';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '90';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '11';
 
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#toast-interpretation-simple');
-    expect(interpretation.textContent).toMatch(/Catastrophe is imminent/i);
+    expect(interpretation?.textContent).toMatch(/Catastrophe is imminent/i);
   });
 
   it('navigates to full calculator when button is clicked', () => {
     let navigated = '';
-    const onNavigate = (target) => { navigated = target; };
+    const onNavigate = (target: string) => { navigated = target; };
 
     const el = ButteredToastCalculatorSimple({ onNavigate });
 
-    const navBtn = el.querySelector('[data-nav="calculator/buttered-toast"]');
-    navBtn.click();
+    const navBtn = el.querySelector('[data-nav="calculator/buttered-toast"]') as HTMLElement | null;
+    navBtn?.click();
 
     expect(navigated).toBe('calculator/buttered-toast');
   });
 
   it('navigates when clicking button text (child element)', () => {
     let navigated = '';
-    const onNavigate = (target) => { navigated = target; };
+    const onNavigate = (target: string) => { navigated = target; };
 
     const el = ButteredToastCalculatorSimple({ onNavigate });
 
     // Click on the text span inside the button (simulates real user behavior)
-    const btnText = el.querySelector('.btn-text');
-    btnText.click();
+    const btnText = el.querySelector('.btn-text') as HTMLElement | null;
+    btnText?.click();
 
     expect(navigated).toBe('calculator/buttered-toast');
   });
 
   it('navigates when clicking button icon (child element)', () => {
     let navigated = '';
-    const onNavigate = (target) => { navigated = target; };
+    const onNavigate = (target: string) => { navigated = target; };
 
     const el = ButteredToastCalculatorSimple({ onNavigate });
 
     // Click on the icon span inside the button
     const icon = el.querySelector('[data-nav="calculator/buttered-toast"] .icon');
-    icon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    icon?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(navigated).toBe('calculator/buttered-toast');
   });
@@ -178,16 +177,16 @@ describe('ButteredToastCalculatorSimple component', () => {
     const scoreSection = el.querySelector('.sod-simple-score');
 
     // Test low probability
-    el.querySelector('#toast-height-simple').value = '30';
-    el.querySelector('#toast-overhang-simple').value = '1';
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
-    expect(scoreSection.classList.contains('calc-ok')).toBe(true);
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '30';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '1';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
+    expect(scoreSection?.classList.contains('calc-ok')).toBe(true);
 
     // Test very high probability (> 85%)
-    el.querySelector('#toast-height-simple').value = '90';
-    el.querySelector('#toast-overhang-simple').value = '11';
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
-    expect(scoreSection.classList.contains('calc-dark')).toBe(true);
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '90';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '11';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
+    expect(scoreSection?.classList.contains('calc-dark')).toBe(true);
   });
 
   it('does not navigate when clicking non-navigation elements', () => {
@@ -197,7 +196,7 @@ describe('ButteredToastCalculatorSimple component', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate });
 
     const label = el.querySelector('label');
-    label.click();
+    label?.click();
 
     expect(navigated).toBe(false);
   });
@@ -209,7 +208,7 @@ describe('ButteredToastCalculatorSimple component', () => {
     // With height=75 and overhang=5, we can verify the calculation is using these constants
 
     const probabilityDisplay = el.querySelector('#toast-probability-simple');
-    const initialProbability = probabilityDisplay.textContent;
+    const initialProbability = probabilityDisplay?.textContent;
 
     // The probability should be consistent with these constants
     expect(initialProbability).toBeTruthy();
@@ -219,32 +218,32 @@ describe('ButteredToastCalculatorSimple component', () => {
   it('handles minimum slider values correctly', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    el.querySelector('#toast-height-simple').value = '30';
-    el.querySelector('#toast-overhang-simple').value = '1';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '30';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '1';
 
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
-    const probability = el.querySelector('#toast-probability-simple').textContent;
+    const probability = el.querySelector('#toast-probability-simple')?.textContent;
     expect(probability).toMatch(/\d+%/);
   });
 
   it('handles maximum slider values correctly', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    el.querySelector('#toast-height-simple').value = '200';
-    el.querySelector('#toast-overhang-simple').value = '20';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '200';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '20';
 
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
-    const probability = el.querySelector('#toast-probability-simple').textContent;
+    const probability = el.querySelector('#toast-probability-simple')?.textContent;
     expect(probability).toMatch(/\d+%/);
   });
 
   it('rounds probability to nearest integer', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const probability = el.querySelector('#toast-probability-simple').textContent;
-    const numericProbability = parseInt(probability);
+    const probability = el.querySelector('#toast-probability-simple')?.textContent ?? '';
+    const numericProbability = parseInt(probability, 10);
 
     expect(numericProbability).toBe(Math.round(numericProbability));
   });
@@ -261,11 +260,11 @@ describe('ButteredToastCalculatorSimple component', () => {
     ];
 
     testCases.forEach(testCase => {
-      el.querySelector('#toast-height-simple').value = testCase.height;
-      el.querySelector('#toast-overhang-simple').value = testCase.overhang;
-      el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+      (el.querySelector('#toast-height-simple') as HTMLInputElement).value = testCase.height;
+      (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = testCase.overhang;
+      (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
-      const probability = parseInt(el.querySelector('#toast-probability-simple').textContent);
+      const probability = parseInt(el.querySelector('#toast-probability-simple')?.textContent ?? '0', 10);
       expect(probability).toBeGreaterThanOrEqual(0);
     });
   });
@@ -275,19 +274,19 @@ describe('ButteredToastCalculatorSimple component', () => {
     const scoreSection = el.querySelector('.sod-simple-score');
 
     // Start with low probability
-    el.querySelector('#toast-height-simple').value = '30';
-    el.querySelector('#toast-overhang-simple').value = '1';
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
-    expect(scoreSection.classList.contains('calc-ok')).toBe(true);
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '30';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '1';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
+    expect(scoreSection?.classList.contains('calc-ok')).toBe(true);
 
     // Change to very high probability (> 85%)
-    el.querySelector('#toast-height-simple').value = '90';
-    el.querySelector('#toast-overhang-simple').value = '11';
-    el.querySelector('#toast-height-simple').dispatchEvent(new Event('input'));
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).value = '90';
+    (el.querySelector('#toast-overhang-simple') as HTMLInputElement).value = '11';
+    (el.querySelector('#toast-height-simple') as HTMLInputElement).dispatchEvent(new Event('input'));
 
     // Old class should be removed
-    expect(scoreSection.classList.contains('calc-ok')).toBe(false);
-    expect(scoreSection.classList.contains('calc-dark')).toBe(true);
+    expect(scoreSection?.classList.contains('calc-ok')).toBe(false);
+    expect(scoreSection?.classList.contains('calc-dark')).toBe(true);
   });
 
   it('displays subtitle text', () => {
@@ -300,7 +299,7 @@ describe('ButteredToastCalculatorSimple component', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
     const button = el.querySelector('[data-nav="calculator/buttered-toast"]');
-    expect(button.getAttribute('aria-label')).toMatch(/View full Buttered Toast Calculator/i);
+    expect(button?.getAttribute('aria-label')).toMatch(/View full Buttered Toast Calculator/i);
   });
 
   it('shows probability label', () => {
@@ -312,18 +311,18 @@ describe('ButteredToastCalculatorSimple component', () => {
   it('updates both display value and calculation when slider changes', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
-    const heightSlider = el.querySelector('#toast-height-simple');
+    const heightSlider = el.querySelector('#toast-height-simple') as HTMLInputElement;
     const heightValue = el.querySelector('#toast-height-simple-value');
     const probabilityDisplay = el.querySelector('#toast-probability-simple');
 
-    const initialProbability = probabilityDisplay.textContent;
+    const initialProbability = probabilityDisplay?.textContent;
 
     heightSlider.value = '120';
     heightSlider.dispatchEvent(new Event('input'));
 
     // Check both value display and probability changed
-    expect(heightValue.textContent).toBe('120 cm');
-    expect(probabilityDisplay.textContent).not.toBe(initialProbability);
+    expect(heightValue?.textContent).toBe('120 cm');
+    expect(probabilityDisplay?.textContent).not.toBe(initialProbability);
   });
 
   it('handles click on non-HTMLElement gracefully', () => {

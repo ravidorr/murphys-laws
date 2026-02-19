@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { vi } from 'vitest';
 
 // Mock export context
@@ -32,6 +31,7 @@ vi.mock('../src/utils/icons.js', () => ({
   })
 }));
 
+import type { CleanableElement } from '../src/types/app.js';
 import { ExportMenu } from '../src/components/export-menu.js';
 import {
   getExportContent,
@@ -88,16 +88,16 @@ describe('Export Menu Component', () => {
 
       const button = menu.querySelector('#export-toggle');
       expect(button).toBeTruthy();
-      expect(button.querySelector('svg')).toBeTruthy();
+      expect(button!.querySelector('svg')).toBeTruthy();
     });
 
     it('renders dropdown menu (hidden by default)', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const dropdown = menu.querySelector('#export-dropdown');
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
       expect(dropdown).toBeTruthy();
-      expect(dropdown.hidden).toBe(true);
+      expect(dropdown!.hidden).toBe(true);
     });
 
     it('shows all formats when LAWS content type', () => {
@@ -128,16 +128,18 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      expect(button.disabled).toBe(true);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      expect(button).toBeTruthy();
+      expect(button!.disabled).toBe(true);
     });
 
     it('enables button when export content available', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      expect(button.disabled).toBe(false);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      expect(button).toBeTruthy();
+      expect(button!.disabled).toBe(false);
     });
   });
 
@@ -146,61 +148,68 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      expect(dropdown.hidden).toBe(false);
+      expect(dropdown!.hidden).toBe(false);
     });
 
     it('closes dropdown on outside click', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
       // Open dropdown
-      button.click();
-      expect(dropdown.hidden).toBe(false);
+      button!.click();
+      expect(dropdown!.hidden).toBe(false);
 
       // Click outside
       document.body.click();
 
-      expect(dropdown.hidden).toBe(true);
+      expect(dropdown!.hidden).toBe(true);
     });
 
     it('closes dropdown on Escape key', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
       // Open dropdown
-      button.click();
-      expect(dropdown.hidden).toBe(false);
+      button!.click();
+      expect(dropdown!.hidden).toBe(false);
 
       // Press Escape
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
 
-      expect(dropdown.hidden).toBe(true);
+      expect(dropdown!.hidden).toBe(true);
     });
 
     it('sets aria-expanded correctly', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      expect(button).toBeTruthy();
 
-      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(button!.getAttribute('aria-expanded')).toBe('false');
 
-      button.click();
-      expect(button.getAttribute('aria-expanded')).toBe('true');
+      button!.click();
+      expect(button!.getAttribute('aria-expanded')).toBe('true');
 
-      button.click();
-      expect(button.getAttribute('aria-expanded')).toBe('false');
+      button!.click();
+      expect(button!.getAttribute('aria-expanded')).toBe('false');
     });
   });
 
@@ -209,11 +218,12 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      button.click();
-
-      const pdfOption = menu.querySelector('[data-format="pdf"]');
-      pdfOption.click();
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const pdfOption = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(pdfOption).toBeTruthy();
+      button!.click();
+      pdfOption!.click();
 
       expect(exportToPDF).toHaveBeenCalled();
     });
@@ -222,11 +232,12 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      button.click();
-
-      const csvOption = menu.querySelector('[data-format="csv"]');
-      csvOption.click();
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const csvOption = menu.querySelector('[data-format="csv"]') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(csvOption).toBeTruthy();
+      button!.click();
+      csvOption!.click();
 
       expect(exportToCSV).toHaveBeenCalled();
     });
@@ -235,11 +246,12 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      button.click();
-
-      const mdOption = menu.querySelector('[data-format="md"]');
-      mdOption.click();
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const mdOption = menu.querySelector('[data-format="md"]') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(mdOption).toBeTruthy();
+      button!.click();
+      mdOption!.click();
 
       expect(exportToMarkdown).toHaveBeenCalled();
     });
@@ -248,11 +260,12 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      button.click();
-
-      const txtOption = menu.querySelector('[data-format="txt"]');
-      txtOption.click();
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const txtOption = menu.querySelector('[data-format="txt"]') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(txtOption).toBeTruthy();
+      button!.click();
+      txtOption!.click();
 
       expect(exportToText).toHaveBeenCalled();
     });
@@ -261,14 +274,16 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      button.click();
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const pdfOption = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(pdfOption).toBeTruthy();
+      button!.click();
 
       // Set content to null before clicking export
       vi.mocked(getExportContent).mockReturnValue(null);
 
-      const pdfOption = menu.querySelector('[data-format="pdf"]');
-      pdfOption.click();
+      pdfOption!.click();
 
       // exportToPDF should NOT be called when content is null
       expect(exportToPDF).not.toHaveBeenCalled();
@@ -278,16 +293,19 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      const pdfOption = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
+      expect(pdfOption).toBeTruthy();
 
-      button.click();
-      expect(dropdown.hidden).toBe(false);
+      button!.click();
+      expect(dropdown!.hidden).toBe(false);
 
-      const pdfOption = menu.querySelector('[data-format="pdf"]');
-      pdfOption.click();
+      pdfOption!.click();
 
-      expect(dropdown.hidden).toBe(true);
+      expect(dropdown!.hidden).toBe(true);
     });
   });
 
@@ -296,15 +314,17 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[0].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
 
       expect(document.activeElement).toBe(items[1]);
     });
@@ -313,15 +333,17 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[1].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[1] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
 
       expect(document.activeElement).toBe(items[0]);
     });
@@ -330,15 +352,17 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[items.length - 1].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[items.length - 1] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
 
       expect(document.activeElement).toBe(items[0]);
     });
@@ -347,15 +371,17 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[0].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
 
       expect(document.activeElement).toBe(items[items.length - 1]);
     });
@@ -364,15 +390,17 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[0].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(exportToPDF).toHaveBeenCalled();
     });
@@ -381,15 +409,17 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[0].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
 
       expect(exportToPDF).toHaveBeenCalled();
     });
@@ -398,17 +428,19 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
+      button!.click();
 
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[0].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
-      expect(dropdown.hidden).toBe(true);
+      expect(dropdown!.hidden).toBe(true);
       expect(document.activeElement).toBe(button);
     });
 
@@ -416,19 +448,21 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      const dropdown = menu.querySelector('#export-dropdown');
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button).toBeTruthy();
+      expect(dropdown).toBeTruthy();
 
-      button.click();
-      expect(dropdown.hidden).toBe(false);
+      button!.click();
+      expect(dropdown!.hidden).toBe(false);
 
       // Focus an item and press Tab
-      const items = dropdown.querySelectorAll('[role="menuitem"]');
-      items[0].focus();
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
 
-      dropdown.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
 
-      expect(dropdown.hidden).toBe(true);
+      expect(dropdown!.hidden).toBe(true);
     });
   });
 
@@ -466,8 +500,9 @@ describe('Export Menu Component', () => {
       const menu = ExportMenu();
       localThis.container.appendChild(menu);
 
-      const button = menu.querySelector('#export-toggle');
-      expect(button.disabled).toBe(false);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      expect(button).toBeTruthy();
+      expect(button!.disabled).toBe(false);
 
       // Simulate content cleared
       vi.mocked(getAvailableFormats).mockReturnValue([]);
@@ -477,7 +512,7 @@ describe('Export Menu Component', () => {
         localThis.subscribeCallback(null);
       }
 
-      expect(button.disabled).toBe(true);
+      expect(button!.disabled).toBe(true);
     });
   });
 
@@ -487,7 +522,8 @@ describe('Export Menu Component', () => {
       localThis.container.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
-      expect(button.getAttribute('aria-label')).toBe('Download page content');
+      expect(button).toBeTruthy();
+      expect(button!.getAttribute('aria-label')).toBe('Download page content');
     });
 
     it('button has aria-haspopup="true"', () => {
@@ -495,7 +531,8 @@ describe('Export Menu Component', () => {
       localThis.container.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
-      expect(button.getAttribute('aria-haspopup')).toBe('true');
+      expect(button).toBeTruthy();
+      expect(button!.getAttribute('aria-haspopup')).toBe('true');
     });
 
     it('button has aria-expanded attribute', () => {
@@ -503,7 +540,8 @@ describe('Export Menu Component', () => {
       localThis.container.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
-      expect(button.hasAttribute('aria-expanded')).toBe(true);
+      expect(button).toBeTruthy();
+      expect(button!.hasAttribute('aria-expanded')).toBe(true);
     });
 
     it('dropdown has role="menu"', () => {
@@ -511,7 +549,8 @@ describe('Export Menu Component', () => {
       localThis.container.appendChild(menu);
 
       const dropdown = menu.querySelector('#export-dropdown');
-      expect(dropdown.getAttribute('role')).toBe('menu');
+      expect(dropdown).toBeTruthy();
+      expect(dropdown!.getAttribute('role')).toBe('menu');
     });
 
     it('menu items have role="menuitem"', () => {
@@ -529,7 +568,7 @@ describe('Export Menu Component', () => {
     it('has cleanup function', () => {
       const menu = ExportMenu();
 
-      expect(typeof menu.cleanup).toBe('function');
+      expect(typeof (menu as CleanableElement).cleanup).toBe('function');
     });
 
     it('unsubscribes on cleanup', () => {
@@ -537,7 +576,7 @@ describe('Export Menu Component', () => {
       vi.mocked(subscribeToExportContent).mockReturnValue(unsubscribeMock);
 
       const menu = ExportMenu();
-      menu.cleanup();
+      (menu as CleanableElement).cleanup!();
 
       expect(unsubscribeMock).toHaveBeenCalled();
     });

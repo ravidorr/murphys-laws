@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Home, renderHome } from '@views/home.js';
 
 describe('Home view', () => {
@@ -15,7 +14,7 @@ describe('Home view', () => {
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
 
-    const el = Home({ isLoggedIn: false, onNavigate: () => {}, _onVote: () => {} });
+    const el = Home({ onNavigate: () => {} });
 
     await new Promise(r => setTimeout(r, 0));
 
@@ -36,7 +35,7 @@ describe('Home view', () => {
     });
 
     let _nav = '';
-    const el = Home({ isLoggedIn: false, onNavigate: (name, id) => { _nav = `${name}:${id}`; }, _onVote: () => {} });
+    const el = Home({ onNavigate: (name, id) => { _nav = `${name}:${id}`; } });
 
     await new Promise(r => setTimeout(r, 0));
 
@@ -601,14 +600,16 @@ describe('Home view keyboard navigation for law cards', () => {
   });
 
   it('does not navigate when clicking buttons inside law card', async () => {
-    const localThis = {};
+    const localThis: { onNavigate: ReturnType<typeof vi.fn>; el: HTMLElement } = {
+      onNavigate: vi.fn(),
+      el: document.createElement('div')
+    };
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
 
-    localThis.onNavigate = vi.fn();
     localThis.el = Home({ onNavigate: localThis.onNavigate });
 
     await new Promise(r => setTimeout(r, 0));

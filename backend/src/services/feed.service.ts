@@ -1,12 +1,27 @@
-// @ts-nocheck
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, FEED_ITEMS_LIMIT } from '../utils/constants.ts';
+
+export interface IFeedLawService {
+  getLawOfTheDay(): Promise<{ law: { id: number; title?: string | null; text: string; [key: string]: unknown } } | null>;
+  listLaws(params: { limit: number; offset: number; sort?: string; order?: string }): Promise<{ data: Array<{ id: number; title?: string | null; text: string; [key: string]: unknown }> }>;
+}
+
+/** Law shape used internally for feed item generation */
+interface IFeedLaw {
+  id: number;
+  title?: string | null;
+  text: string | null;
+  created_at?: string | null;
+  attributions?: Array<{ name: string }>;
+}
 
 /**
  * Feed Service - Generates RSS 2.0 and Atom 1.0 feeds
  * Combines Law of the Day with recent laws
  */
 export class FeedService {
-  constructor(lawService) {
+  private lawService: IFeedLawService;
+
+  constructor(lawService: IFeedLawService) {
     this.lawService = lawService;
   }
 
@@ -28,12 +43,12 @@ export class FeedService {
     });
 
     // Deduplicate: remove LOTD from recent laws if present
-    const items = [];
+    const items: IFeedLaw[] = [];
     const lotdId = lotd ? lotd.id : null;
 
     for (const law of recentLaws) {
       if (law.id !== lotdId) {
-        items.push(law);
+        items.push(law as IFeedLaw);
       }
     }
 
@@ -46,8 +61,8 @@ export class FeedService {
    * @param {boolean} isLotd - Whether this is the Law of the Day
    * @returns {string}
    */
-  _getLawTitle(law, isLotd = false) {
-    let title = law.title || this._truncateText(law.text, 60);
+  _getLawTitle(law: { title?: string | null; text: string | null }, isLotd = false): string {
+    let title = law.title || this._truncateText(law.text ?? '', 60);
     if (isLotd) {
       title = `[Law of the Day] ${title}`;
     }
@@ -60,7 +75,7 @@ export class FeedService {
    * @param {number} maxLength - Maximum length before truncation
    * @returns {string}
    */
-  _truncateText(text, maxLength) {
+  _truncateText(text: string | null | undefined, maxLength: number): string {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
@@ -71,7 +86,7 @@ export class FeedService {
    * @param {object} law - The law object
    * @returns {string|null}
    */
-  _getAuthor(law) {
+  _getAuthor(law: { attributions?: Array<{ name: string }> }): string | null {
     if (law.attributions && law.attributions.length > 0) {
       return law.attributions[0].name;
     }
@@ -83,7 +98,7 @@ export class FeedService {
    * @param {string} isoDate - ISO 8601 date string
    * @returns {string}
    */
-  _formatRfc822Date(isoDate) {
+  _formatRfc822Date(isoDate?: string | null): string {
     if (!isoDate) {
       return new Date().toUTCString();
     }
@@ -95,7 +110,7 @@ export class FeedService {
    * @param {string} isoDate - ISO 8601 date string
    * @returns {string}
    */
-  _formatIso8601Date(isoDate) {
+  _formatIso8601Date(isoDate?: string | null): string {
     if (!isoDate) {
       return new Date().toISOString();
     }
@@ -113,7 +128,7 @@ export class FeedService {
    * @param {string} text - Text to escape
    * @returns {string}
    */
-  _escapeXml(text) {
+  _escapeXml(text: string | null | undefined): string {
     if (!text) return '';
     return text
       .replace(/&/g, '&amp;')
@@ -128,7 +143,7 @@ export class FeedService {
    * @param {number} lawId - The law ID
    * @returns {string}
    */
-  _getLawUrl(lawId) {
+  _getLawUrl(lawId: number): string {
     return `${SITE_URL}/#/law:${lawId}`;
   }
 
@@ -174,7 +189,7 @@ export class FeedService {
    * @param {boolean} isLotd - Whether this is the Law of the Day
    * @returns {string}
    */
-  _generateRssItem(law, isLotd) {
+  _generateRssItem(law: IFeedLaw, isLotd: boolean): string {
     const title = this._getLawTitle(law, isLotd);
     const link = this._getLawUrl(law.id);
     const description = law.text || '';
@@ -241,7 +256,7 @@ export class FeedService {
    * @param {boolean} isLotd - Whether this is the Law of the Day
    * @returns {string}
    */
-  _generateAtomEntry(law, isLotd) {
+  _generateAtomEntry(law: IFeedLaw, isLotd: boolean): string {
     const title = this._getLawTitle(law, isLotd);
     const link = this._getLawUrl(law.id);
     const content = law.text || '';

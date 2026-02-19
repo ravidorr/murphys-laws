@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   SocialShare,
   renderShareButtonsHTML,
@@ -11,12 +10,15 @@ import {
 import * as icons from '../src/utils/icons.js';
 
 describe('SocialShare component', () => {
-  const localThis = {};
+  const localThis: { documentClickHandler: (() => void) | null; documentKeydownHandler: (() => void) | null } = {
+    documentClickHandler: null,
+    documentKeydownHandler: null
+  };
 
   beforeEach(() => {
     // Mock window.location
-    delete window.location;
-    window.location = { href: 'https://test.com/page', origin: 'https://test.com' };
+    delete (window as unknown as { location?: Location }).location;
+    (window as unknown as { location: Location }).location = { href: 'https://test.com/page', origin: 'https://test.com' } as Location;
     // Store spies for cleanup
     localThis.documentClickHandler = null;
     localThis.documentKeydownHandler = null;
@@ -33,7 +35,7 @@ describe('SocialShare component', () => {
 
   it('creates a trigger button', () => {
     const el = SocialShare();
-    const trigger = el.querySelector('.share-trigger');
+    const trigger = el.querySelector('.share-trigger') as HTMLElement;
     
     expect(trigger).toBeTruthy();
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
@@ -43,7 +45,7 @@ describe('SocialShare component', () => {
 
   it('creates a popover with menu items', () => {
     const el = SocialShare();
-    const popover = el.querySelector('.share-popover');
+    const popover = el.querySelector('.share-popover') as HTMLElement;
     
     expect(popover).toBeTruthy();
     expect(popover.getAttribute('role')).toBe('menu');
@@ -57,7 +59,7 @@ describe('SocialShare component', () => {
     document.title = 'Test Page Title';
     const el = SocialShare();
 
-    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]');
+    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
     expect(twitterLink.href).toContain(encodeURIComponent('https://test.com/page'));
     expect(twitterLink.href).toContain(encodeURIComponent('Test Page Title'));
   });
@@ -65,14 +67,14 @@ describe('SocialShare component', () => {
   it('uses provided url instead of window.location.href', () => {
     const el = SocialShare({ url: 'https://custom.com/law/123' });
 
-    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]');
+    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
     expect(twitterLink.href).toContain(encodeURIComponent('https://custom.com/law/123'));
   });
 
   it('uses provided title instead of document.title', () => {
     const el = SocialShare({ title: 'Custom Law Title' });
 
-    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]');
+    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
     expect(twitterLink.href).toContain(encodeURIComponent('Custom Law Title'));
   });
 
@@ -83,14 +85,14 @@ describe('SocialShare component', () => {
       description: 'Custom description here'
     });
 
-    const linkedinLink = el.querySelector('.share-popover-item[href*="linkedin"]');
+    const linkedinLink = el.querySelector('.share-popover-item[href*="linkedin"]') as HTMLAnchorElement;
     expect(linkedinLink.href).toContain(encodeURIComponent('Custom description here'));
   });
 
   describe('Twitter button', () => {
     it('creates Twitter share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="twitter"]');
+      const link = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('role')).toBe('menuitem');
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
@@ -102,7 +104,7 @@ describe('SocialShare component', () => {
   describe('Facebook button', () => {
     it('creates Facebook share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="facebook"]');
+      const link = el.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('role')).toBe('menuitem');
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
@@ -114,7 +116,7 @@ describe('SocialShare component', () => {
   describe('LinkedIn button', () => {
     it('creates LinkedIn share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="linkedin"]');
+      const link = el.querySelector('.share-popover-item[href*="linkedin"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('role')).toBe('menuitem');
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
@@ -128,7 +130,7 @@ describe('SocialShare component', () => {
         title: 'Test Law',
         description: 'This is a detailed description'
       });
-      const link = el.querySelector('.share-popover-item[href*="linkedin"]');
+      const link = el.querySelector('.share-popover-item[href*="linkedin"]') as HTMLAnchorElement;
 
       expect(link.href).toContain('summary=');
       expect(link.href).toContain(encodeURIComponent('This is a detailed description'));
@@ -138,7 +140,7 @@ describe('SocialShare component', () => {
   describe('Reddit button', () => {
     it('creates Reddit share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="reddit"]');
+      const link = el.querySelector('.share-popover-item[href*="reddit"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('role')).toBe('menuitem');
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
@@ -150,7 +152,7 @@ describe('SocialShare component', () => {
   describe('WhatsApp button', () => {
     it('creates WhatsApp share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="whatsapp"]');
+      const link = el.querySelector('.share-popover-item[href*="whatsapp"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('role')).toBe('menuitem');
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
@@ -163,7 +165,7 @@ describe('SocialShare component', () => {
         url: 'https://murphys-laws.com/law/123',
         title: "Murphy's Law"
       });
-      const link = el.querySelector('.share-popover-item[href*="whatsapp"]');
+      const link = el.querySelector('.share-popover-item[href*="whatsapp"]') as HTMLAnchorElement;
 
       expect(link.href).toContain('text=');
       expect(link.href).toContain('Murphy');
@@ -174,7 +176,7 @@ describe('SocialShare component', () => {
   describe('Email button', () => {
     it('creates Email share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="mailto"]');
+      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('role')).toBe('menuitem');
       expect(link.href).toContain('mailto:');
@@ -185,7 +187,7 @@ describe('SocialShare component', () => {
         url: 'https://test.com/law/123',
         title: 'Murphy\'s Original Law'
       });
-      const link = el.querySelector('.share-popover-item[href*="mailto"]');
+      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
 
       expect(link.href).toContain('subject=');
       expect(link.href).toContain(encodeURIComponent('Check out this Murphy\'s Law'));
@@ -196,7 +198,7 @@ describe('SocialShare component', () => {
 
     it('uses _self target for email link', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="mailto"]');
+      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
 
       expect(link.getAttribute('target')).toBe('_self');
       // Email should not have rel="noopener noreferrer"
@@ -207,7 +209,7 @@ describe('SocialShare component', () => {
   describe('Icons', () => {
     it('includes share icon on trigger button', () => {
       const el = SocialShare();
-      const trigger = el.querySelector('.share-trigger');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
       const icon = trigger.querySelector('svg');
       
       expect(icon).toBeTruthy();
@@ -241,7 +243,7 @@ describe('SocialShare component', () => {
   describe('Copy Text button', () => {
     it('creates Copy Text button with correct attributes', () => {
       const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
-      const button = el.querySelector('[data-action="copy-text"]');
+      const button = el.querySelector('[data-action="copy-text"]') as HTMLButtonElement;
 
       expect(button.getAttribute('role')).toBe('menuitem');
       expect(button.getAttribute('data-action')).toBe('copy-text');
@@ -261,7 +263,7 @@ describe('SocialShare component', () => {
   describe('Copy Link button', () => {
     it('creates Copy Link button with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com/law/123', lawId: '123' });
-      const button = el.querySelector('[data-action="copy-link"]');
+      const button = el.querySelector('[data-action="copy-link"]') as HTMLButtonElement;
 
       expect(button.getAttribute('role')).toBe('menuitem');
       expect(button.getAttribute('data-action')).toBe('copy-link');
@@ -293,8 +295,8 @@ describe('SocialShare component', () => {
       const el = SocialShare();
       document.body.appendChild(el);
       
-      const trigger = el.querySelector('.share-trigger');
-      const popover = el.querySelector('.share-popover');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
+      const popover = el.querySelector('.share-popover') as HTMLElement;
       
       expect(popover.classList.contains('open')).toBe(false);
       
@@ -315,10 +317,10 @@ describe('SocialShare component', () => {
       document.body.appendChild(el1);
       document.body.appendChild(el2);
       
-      const trigger1 = el1.querySelector('.share-trigger');
-      const popover1 = el1.querySelector('.share-popover');
-      const trigger2 = el2.querySelector('.share-trigger');
-      const popover2 = el2.querySelector('.share-popover');
+      const trigger1 = el1.querySelector('.share-trigger') as HTMLElement;
+      const popover1 = el1.querySelector('.share-popover') as HTMLElement;
+      const trigger2 = el2.querySelector('.share-trigger') as HTMLElement;
+      const popover2 = el2.querySelector('.share-popover') as HTMLElement;
       
       // Open first popover
       trigger1.click();
@@ -339,19 +341,13 @@ describe('SocialShare component', () => {
       const el = SocialShare();
       document.body.appendChild(el);
       
-      const trigger = el.querySelector('.share-trigger');
-      const popover = el.querySelector('.share-popover');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
+      const popover = el.querySelector('.share-popover') as HTMLElement;
       
       // Mock getBoundingClientRect to simulate trigger near bottom of viewport
-      const originalGetBoundingClientRect = trigger.getBoundingClientRect;
-      trigger.getBoundingClientRect = () => ({
-        top: 400,
-        bottom: 420,
-        left: 0,
-        right: 100,
-        width: 100,
-        height: 20
-      });
+      const originalGetBoundingClientRect = trigger.getBoundingClientRect.bind(trigger);
+      trigger.getBoundingClientRect = () =>
+        ({ top: 400, bottom: 420, left: 0, right: 100, width: 100, height: 20, x: 0, y: 400, toJSON: () => ({}) } as DOMRect);
       
       // Mock window.innerHeight to be small
       const originalInnerHeight = window.innerHeight;
@@ -363,7 +359,7 @@ describe('SocialShare component', () => {
       expect(popover.classList.contains('popover-above')).toBe(true);
       
       // Restore mocks
-      trigger.getBoundingClientRect = originalGetBoundingClientRect;
+      trigger.getBoundingClientRect = originalGetBoundingClientRect as () => DOMRect;
       Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, writable: true });
       
       document.body.removeChild(el);
@@ -373,8 +369,8 @@ describe('SocialShare component', () => {
       const el = SocialShare();
       document.body.appendChild(el);
       
-      const trigger = el.querySelector('.share-trigger');
-      const popover = el.querySelector('.share-popover');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
+      const popover = el.querySelector('.share-popover') as HTMLElement;
       
       // First, open with limited space (manually add class)
       trigger.click();
@@ -390,7 +386,7 @@ describe('SocialShare component', () => {
   });
 
   describe('Event propagation for copy buttons', () => {
-    const localThis = {};
+    const localThis: { container: HTMLDivElement } = {} as { container: HTMLDivElement };
 
     beforeEach(() => {
       localThis.container = document.createElement('div');
@@ -408,10 +404,10 @@ describe('SocialShare component', () => {
       const parentClickHandler = vi.fn();
       localThis.container.addEventListener('click', parentClickHandler);
 
-      const trigger = el.querySelector('.share-trigger');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
       trigger.click(); // Open popover
 
-      const copyTextBtn = el.querySelector('[data-action="copy-text"]');
+      const copyTextBtn = el.querySelector('[data-action="copy-text"]') as HTMLElement;
       copyTextBtn.click();
 
       expect(parentClickHandler).toHaveBeenCalled();
@@ -424,10 +420,10 @@ describe('SocialShare component', () => {
       const parentClickHandler = vi.fn();
       localThis.container.addEventListener('click', parentClickHandler);
 
-      const trigger = el.querySelector('.share-trigger');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
       trigger.click(); // Open popover
 
-      const copyLinkBtn = el.querySelector('[data-action="copy-link"]');
+      const copyLinkBtn = el.querySelector('[data-action="copy-link"]') as HTMLElement;
       copyLinkBtn.click();
 
       expect(parentClickHandler).toHaveBeenCalled();
@@ -438,13 +434,13 @@ describe('SocialShare component', () => {
       const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
       localThis.container.appendChild(el);
 
-      const trigger = el.querySelector('.share-trigger');
-      const popover = el.querySelector('.share-popover');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
+      const popover = el.querySelector('.share-popover') as HTMLElement;
 
       trigger.click(); // Open popover
       expect(popover.classList.contains('open')).toBe(true);
 
-      const copyTextBtn = el.querySelector('[data-action="copy-text"]');
+      const copyTextBtn = el.querySelector('[data-action="copy-text"]') as HTMLElement;
       copyTextBtn.click();
 
       // Wait for setTimeout to close popover
@@ -460,12 +456,12 @@ describe('SocialShare component', () => {
       const parentClickHandler = vi.fn();
       localThis.container.addEventListener('click', parentClickHandler);
 
-      const trigger = el.querySelector('.share-trigger');
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
       trigger.click(); // Open popover
 
-      const popover = el.querySelector('.share-popover');
+      const popover = el.querySelector('.share-popover') as HTMLElement;
       // Click on divider or feedback element (non-action areas)
-      const divider = popover.querySelector('.share-popover-divider');
+      const divider = popover.querySelector('.share-popover-divider') as HTMLElement;
       divider.click();
 
       // Parent handler should NOT be called because stopPropagation was used
@@ -484,7 +480,7 @@ describe('SocialShare component', () => {
         title: 'Law with & and = chars'
       });
 
-      const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]');
+      const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
       expect(twitterLink.href).toContain(encodeURIComponent('https://test.com/law?id=123&sort=votes'));
     });
 
@@ -494,7 +490,7 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law: "Everything fails"'
       });
 
-      const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]');
+      const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
       // Check that special characters are present (browser may encode ' as %27)
       expect(twitterLink.href).toContain('Murphy');
       expect(twitterLink.href).toContain('Law');
@@ -509,7 +505,7 @@ describe('SocialShare component', () => {
         description: ''
       });
 
-      const linkedinLink = el.querySelector('.share-popover-item[href*="linkedin"]');
+      const linkedinLink = el.querySelector('.share-popover-item[href*="linkedin"]') as HTMLAnchorElement;
       expect(linkedinLink.href).toContain('summary=');
     });
   });
@@ -521,7 +517,7 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="twitter"]');
+      const link = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
       expect(link.href).toContain('https://twitter.com/intent/tweet?url=');
       expect(link.href).toContain(encodeURIComponent('https://murphys-laws.com/law/42'));
       expect(link.href).toContain('&text=');
@@ -532,7 +528,7 @@ describe('SocialShare component', () => {
     it('creates correct Facebook sharer URL', () => {
       const el = SocialShare({ url: 'https://murphys-laws.com/law/42' });
 
-      const link = el.querySelector('.share-popover-item[href*="facebook"]');
+      const link = el.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
       const expectedUrl = 'https://www.facebook.com/sharer/sharer.php?u=' +
         encodeURIComponent('https://murphys-laws.com/law/42');
 
@@ -546,7 +542,7 @@ describe('SocialShare component', () => {
         description: 'Anything that can go wrong'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="linkedin"]');
+      const link = el.querySelector('.share-popover-item[href*="linkedin"]') as HTMLAnchorElement;
       expect(link.href).toContain('https://www.linkedin.com/shareArticle?mini=true');
       expect(link.href).toContain('url=' + encodeURIComponent('https://murphys-laws.com/law/42'));
       expect(link.href).toContain('title=');
@@ -560,7 +556,7 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="reddit"]');
+      const link = el.querySelector('.share-popover-item[href*="reddit"]') as HTMLAnchorElement;
       expect(link.href).toContain('https://www.reddit.com/submit?url=');
       expect(link.href).toContain(encodeURIComponent('https://murphys-laws.com/law/42'));
       expect(link.href).toContain('&title=');
@@ -574,7 +570,7 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="whatsapp"]');
+      const link = el.querySelector('.share-popover-item[href*="whatsapp"]') as HTMLAnchorElement;
       expect(link.href).toContain('https://api.whatsapp.com/send?text=');
       expect(link.href).toContain('Murphy');
       expect(link.href).toContain(encodeURIComponent('https://murphys-laws.com/law/42'));
@@ -586,7 +582,7 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="mailto"]');
+      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
       expect(link.href).toContain('mailto:?subject=');
       expect(link.href).toContain('&body=');
     });
@@ -595,8 +591,8 @@ describe('SocialShare component', () => {
 
 describe('renderShareButtonsHTML', () => {
   beforeEach(() => {
-    delete window.location;
-    window.location = { href: 'https://test.com/page', origin: 'https://test.com' };
+    delete (window as unknown as { location?: Location }).location;
+    (window as unknown as { location: Location }).location = { href: 'https://test.com/page', origin: 'https://test.com' } as Location;
   });
 
   it('returns HTML string with share-wrapper class', () => {
@@ -664,7 +660,7 @@ describe('renderShareButtonsHTML', () => {
 });
 
 describe('initSharePopovers', () => {
-  const localThis = {};
+  const localThis: { container: HTMLDivElement } = {} as { container: HTMLDivElement };
 
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -682,8 +678,8 @@ describe('initSharePopovers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     expect(trigger.dataset.initialized).toBe('true');
     
@@ -699,10 +695,10 @@ describe('initSharePopovers', () => {
     initSharePopovers(localThis.container);
     initSharePopovers(localThis.container); // Call again
 
-    const trigger = localThis.container.querySelector('.share-trigger');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
     // Should still work normally, no double event listeners
     trigger.click();
-    const popover = localThis.container.querySelector('.share-popover');
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
     expect(popover.classList.contains('open')).toBe(true);
   });
 
@@ -715,10 +711,10 @@ describe('initSharePopovers', () => {
     const parentClickHandler = vi.fn();
     localThis.container.addEventListener('click', parentClickHandler);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
     trigger.click(); // Open popover
 
-    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]');
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement;
     copyTextBtn.click();
 
     expect(parentClickHandler).toHaveBeenCalled();
@@ -733,10 +729,10 @@ describe('initSharePopovers', () => {
     const parentClickHandler = vi.fn();
     localThis.container.addEventListener('click', parentClickHandler);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
     trigger.click(); // Open popover
 
-    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
     expect(parentClickHandler).toHaveBeenCalled();
@@ -749,13 +745,13 @@ describe('initSharePopovers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     trigger.click(); // Open popover
     expect(popover.classList.contains('open')).toBe(true);
 
-    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]');
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement;
     copyTextBtn.click();
 
     // Wait for setTimeout to close popover
@@ -773,14 +769,14 @@ describe('initSharePopovers', () => {
     const parentClickHandler = vi.fn();
     localThis.container.addEventListener('click', parentClickHandler);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
     trigger.click(); // Open popover
 
     // Reset the mock after trigger click
     parentClickHandler.mockClear();
 
-    const popover = localThis.container.querySelector('.share-popover');
-    const divider = popover.querySelector('.share-popover-divider');
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
+    const divider = popover.querySelector('.share-popover-divider') as HTMLElement;
     divider.click();
 
     // Parent handler should NOT be called because stopPropagation was used
@@ -794,14 +790,14 @@ describe('initSharePopovers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     trigger.click(); // Open popover
     expect(popover.classList.contains('open')).toBe(true);
 
     // Click a social link
-    const twitterLink = localThis.container.querySelector('.share-popover-item[href*="twitter"]');
+    const twitterLink = localThis.container.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
     twitterLink.click();
 
     // Wait for setTimeout to close popover
@@ -822,7 +818,7 @@ describe('initSharePopovers', () => {
     initSharePopovers(localThis.container);
 
     // No initialization should happen
-    const popover = localThis.container.querySelector('.share-popover');
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
     expect(popover.classList.contains('open')).toBe(false);
   });
 
@@ -837,14 +833,14 @@ describe('initSharePopovers', () => {
     // Should not throw
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
     // Trigger should not be marked as initialized
     expect(trigger.dataset.initialized).toBeUndefined();
   });
 });
 
 describe('Global event handlers', () => {
-  const localThis = {};
+  const localThis: { container: HTMLDivElement } = {} as { container: HTMLDivElement };
 
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -862,8 +858,8 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // Open popover
     trigger.click();
@@ -882,8 +878,8 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // Open popover
     trigger.click();
@@ -903,8 +899,8 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // Open popover
     trigger.click();
@@ -924,8 +920,8 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // Manually add popover-above class to simulate positioning
     trigger.click();
@@ -946,8 +942,8 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // Manually add popover-above class to simulate positioning
     trigger.click();
@@ -967,8 +963,8 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // First click opens
     trigger.click();
@@ -991,22 +987,16 @@ describe('Global event handlers', () => {
 
     initSharePopovers(localThis.container);
 
-    const trigger = localThis.container.querySelector('.share-trigger');
-    const popover = localThis.container.querySelector('.share-popover');
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
 
     // Mock getBoundingClientRect to simulate trigger near bottom of viewport
     const originalGetBoundingClientRect = trigger.getBoundingClientRect;
-    trigger.getBoundingClientRect = () => ({
-      top: 500,
-      bottom: window.innerHeight - 50, // Only 50px below trigger
-      left: 100,
-      right: 200,
-      width: 100,
-      height: 30
-    });
+    trigger.getBoundingClientRect = () =>
+      ({ top: 500, bottom: window.innerHeight - 50, left: 100, right: 200, width: 100, height: 30, x: 100, y: 500, toJSON: () => ({}) } as DOMRect);
 
     // Click to open
-    trigger.click();
+    (trigger as HTMLElement).click();
 
     // Should have popover-above class because not enough space below
     expect(popover.classList.contains('open')).toBe(true);
@@ -1148,8 +1138,8 @@ describe('buildShareUrls', () => {
 
 describe('renderInlineShareButtonsHTML', () => {
   beforeEach(() => {
-    delete window.location;
-    window.location = { href: 'https://test.com/page', origin: 'https://test.com' };
+    delete (window as unknown as { location?: Location }).location;
+    (window as unknown as { location: Location }).location = { href: 'https://test.com/page', origin: 'https://test.com' } as Location;
   });
 
   it('returns HTML string with share-buttons-inline class', () => {
@@ -1224,14 +1214,14 @@ describe('renderInlineShareButtonsHTML', () => {
 });
 
 describe('initInlineShareButtons', () => {
-  const localThis = {};
+  const localThis: { container: HTMLDivElement } = {} as { container: HTMLDivElement };
 
   beforeEach(() => {
     document.body.innerHTML = '';
     localThis.container = document.createElement('div');
     document.body.appendChild(localThis.container);
-    delete window.location;
-    window.location = { href: 'https://test.com/page', origin: 'https://test.com' };
+    delete (window as unknown as { location?: Location }).location;
+    (window as unknown as { location: Location }).location = { href: 'https://test.com/page', origin: 'https://test.com' } as Location;
   });
 
   afterEach(() => {
@@ -1274,7 +1264,7 @@ describe('initInlineShareButtons', () => {
       getShareText: () => 'Dynamic text'
     });
 
-    const twitterLink = localThis.container.querySelector('[data-share="twitter"]');
+    const twitterLink = localThis.container.querySelector('[data-share="twitter"]') as HTMLAnchorElement;
     twitterLink.click();
 
     // getShareableUrl should be called to update URLs
@@ -1298,7 +1288,7 @@ describe('initInlineShareButtons', () => {
       getShareText: () => 'Copied text'
     });
 
-    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
     await Promise.resolve();
@@ -1322,7 +1312,7 @@ describe('initInlineShareButtons', () => {
       getShareText: () => 'Text to copy'
     });
 
-    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]');
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement;
     copyTextBtn.click();
 
     await Promise.resolve();
@@ -1346,12 +1336,12 @@ describe('initInlineShareButtons', () => {
       getShareText: () => 'Test text'
     });
 
-    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
     await Promise.resolve();
 
-    const feedback = localThis.container.querySelector('.share-copy-feedback');
+    const feedback = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
     expect(feedback.classList.contains('visible')).toBe(true);
 
     teardown();
@@ -1372,12 +1362,12 @@ describe('initInlineShareButtons', () => {
       getShareText: () => 'Test text'
     });
 
-    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
     await Promise.resolve();
 
-    const feedback = localThis.container.querySelector('.share-copy-feedback');
+    const feedback = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
     expect(feedback.classList.contains('visible')).toBe(true);
 
     // Advance timer past feedback timeout (1500ms)
@@ -1409,7 +1399,7 @@ describe('initInlineShareButtons', () => {
       getShareText: () => 'Fallback text'
     });
 
-    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]');
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
     await Promise.resolve();
@@ -1431,7 +1421,7 @@ describe('initInlineShareButtons', () => {
     });
 
     // Trigger URL update by clicking a share link
-    const emailLink = localThis.container.querySelector('[data-share="email"]');
+    const emailLink = localThis.container.querySelector('[data-share="email"]') as HTMLAnchorElement;
     emailLink.click();
 
     expect(emailLink.href).toContain(encodeURIComponent('Custom Email Subject'));
@@ -1458,7 +1448,7 @@ describe('initInlineShareButtons', () => {
     teardown();
 
     // Click after teardown - should not increment count
-    const twitterLink = localThis.container.querySelector('[data-share="twitter"]');
+    const twitterLink = localThis.container.querySelector('[data-share="twitter"]') as HTMLAnchorElement;
     twitterLink.click();
 
     // Count should remain the same after teardown
@@ -1480,7 +1470,7 @@ describe('initInlineShareButtons', () => {
     });
 
     // Click on the wrapper itself (not a button)
-    const wrapper = localThis.container.querySelector('.share-buttons-inline');
+    const wrapper = localThis.container.querySelector('.share-buttons-inline') as HTMLElement;
     wrapper.click();
 
     await Promise.resolve();

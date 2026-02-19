@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as lawSubmissionTemplate from '../../shared/modules/law-submission-email-template.ts';
 
 describe('Law submission email template', () => {

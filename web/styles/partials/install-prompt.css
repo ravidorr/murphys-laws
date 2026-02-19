@@ -1,3 +1,5 @@
+/* PWA install prompt (banner and iOS instructions) */
+
 .install-prompt {
   position: fixed;
   bottom: 1rem;
@@ -7,7 +9,7 @@
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 1rem;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 15%), 0 10px 20px -5px rgb(0 0 0 / 10%);
   padding: 1.25rem;
   max-width: calc(100vw - 2rem);
   width: 380px;
@@ -33,7 +35,7 @@
 
 .install-prompt-icon img {
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
 }
 
 .install-prompt-text {
@@ -45,7 +47,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--fg);
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.25rem;
 }
 
 .install-prompt-desc {
@@ -140,7 +142,7 @@
   color: var(--fg);
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .install-prompt {
     bottom: 0.5rem;
     width: calc(100vw - 1rem);
@@ -157,7 +159,7 @@
   :root:not([data-theme="light"]) .install-prompt {
     background: var(--dark-bg-primary, #0b0b11);
     border-color: var(--dark-border, rgb(255 255 255 / 25%));
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 40px -10px rgb(0 0 0 / 40%), 0 10px 20px -5px rgb(0 0 0 / 30%);
   }
 
   :root:not([data-theme="light"]) .install-prompt-title {
@@ -195,7 +197,7 @@
 :root[data-theme="dark"] .install-prompt {
   background: var(--dark-bg-primary, #0b0b11);
   border-color: var(--dark-border, rgb(255 255 255 / 25%));
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 40%), 0 10px 20px -5px rgb(0 0 0 / 30%);
 }
 
 :root[data-theme="dark"] .install-prompt-title {

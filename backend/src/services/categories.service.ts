@@ -1,6 +1,11 @@
-// @ts-nocheck
+import type Database from 'better-sqlite3';
+
+type Db = InstanceType<typeof Database>;
+
 export class CategoryService {
-  constructor(db) {
+  private db: Db;
+
+  constructor(db: Db) {
     this.db = db;
   }
 
@@ -21,7 +26,7 @@ export class CategoryService {
     return stmt.all();
   }
 
-  async getCategory(id) {
+  async getCategory(id: number | string) {
     const stmt = this.db.prepare(`
       SELECT id, slug, title, description
       FROM categories

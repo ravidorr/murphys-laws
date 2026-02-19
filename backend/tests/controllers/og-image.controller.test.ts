@@ -1,29 +1,29 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { OgImageController } from '../../src/controllers/og-image.controller.ts';
 
 describe('OgImageController', () => {
-  let controller;
-  let mockOgImageService;
-  let mockReq;
-  let mockRes;
+  let controller: OgImageController;
+  let mockOgImageService: { generateLawImage: ReturnType<typeof vi.fn> };
+  let mockReq: IncomingMessage;
+  let mockRes: ServerResponse;
 
   beforeEach(() => {
     mockOgImageService = {
       generateLawImage: vi.fn(),
     };
-    controller = new OgImageController(mockOgImageService);
+    controller = new OgImageController(mockOgImageService as never);
 
     mockReq = {
       method: 'GET',
       url: '/api/v1/og/law/1.png',
       headers: {},
-    };
+    } as IncomingMessage;
 
     mockRes = {
       writeHead: vi.fn(),
       end: vi.fn(),
-    };
+    } as unknown as ServerResponse;
   });
 
   describe('getLawImage', () => {

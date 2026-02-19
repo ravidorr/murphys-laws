@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { createErrorState, updateSocialMetaTags, updateMetaDescription } from '../src/utils/dom.ts';
 
 describe('DOM utilities', () => {

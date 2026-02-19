@@ -1,8 +1,17 @@
-// @ts-nocheck
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.js';
 
-function createLocalThis() {
-  const context = {};
+interface SodCalculatorSimpleContext {
+  el?: HTMLElement;
+  appended?: boolean;
+}
+
+interface MountOptions {
+  onNavigate?: (page: string, param?: string) => void;
+  append?: boolean;
+}
+
+function createLocalThis(): () => SodCalculatorSimpleContext {
+  const context: SodCalculatorSimpleContext = {};
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {
@@ -23,7 +32,7 @@ describe('SodCalculatorSimple component', () => {
     }
   });
 
-  function mountCalculator({ onNavigate = () => {}, append = false } = {}) {
+  function mountCalculator({ onNavigate = () => {}, append = false }: MountOptions = {}) {
     const el = SodCalculatorSimple({ onNavigate });
     const self = local();
     self.el = el;
@@ -44,9 +53,9 @@ describe('SodCalculatorSimple component', () => {
   it('updates score when sliders change', () => {
     const el = mountCalculator({ append: true });
 
-    const urgencySlider = el.querySelector('#urgency');
-    urgencySlider.value = '9';
-    urgencySlider.dispatchEvent(new Event('input'));
+    const urgencySlider = el.querySelector<HTMLInputElement>('#urgency');
+    urgencySlider!.value = '9';
+    urgencySlider!.dispatchEvent(new Event('input'));
 
     const scoreDisplay = el.querySelector('#score-display');
 
@@ -54,11 +63,11 @@ describe('SodCalculatorSimple component', () => {
   });
 
   it('navigates when button is clicked', () => {
-    let navigated = null;
-    const el = mountCalculator({ onNavigate: (page) => { navigated = page; } });
+    let navigated: string | null = null;
+    const el = mountCalculator({ onNavigate: (page: string) => { navigated = page; } });
 
-    const button = el.querySelector('[data-nav="calculator/sods-law"]');
-    button.click();
+    const button = el.querySelector<HTMLElement>('[data-nav="calculator/sods-law"]');
+    button!.click();
 
     expect(navigated).toBe('calculator/sods-law');
   });
@@ -66,11 +75,11 @@ describe('SodCalculatorSimple component', () => {
   it('updates slider labels when inputs change', () => {
     const el = mountCalculator({ append: true });
 
-    const skillSlider = el.querySelector('#skill');
+    const skillSlider = el.querySelector<HTMLInputElement>('#skill');
     const skillValue = el.querySelector('#skill-value');
 
-    skillSlider.value = '7';
-    skillSlider.dispatchEvent(new Event('input'));
+    skillSlider!.value = '7';
+    skillSlider!.dispatchEvent(new Event('input'));
 
     expect(skillValue.textContent).toBe('7');
   });
@@ -78,14 +87,14 @@ describe('SodCalculatorSimple component', () => {
   it('updates interpretation based on score', () => {
     const el = mountCalculator({ append: true });
 
-    const urgencySlider = el.querySelector('#urgency');
-    const skillSlider = el.querySelector('#skill');
+    const urgencySlider = el.querySelector<HTMLInputElement>('#urgency');
+    const skillSlider = el.querySelector<HTMLInputElement>('#skill');
 
-    urgencySlider.value = '9';
-    skillSlider.value = '1';
+    urgencySlider!.value = '9';
+    skillSlider!.value = '1';
 
-    urgencySlider.dispatchEvent(new Event('input'));
-    skillSlider.dispatchEvent(new Event('input'));
+    urgencySlider!.dispatchEvent(new Event('input'));
+    skillSlider!.dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation.length).toBeGreaterThan(0);
@@ -95,14 +104,14 @@ describe('SodCalculatorSimple component', () => {
     const el = mountCalculator({ append: true });
 
     // Set all values to minimize score: low urgency, low complexity, low importance, high skill, low frequency
-    el.querySelector('#urgency').value = '1';
-    el.querySelector('#complexity').value = '1';
-    el.querySelector('#importance').value = '1';
-    el.querySelector('#skill').value = '9';
-    el.querySelector('#frequency').value = '1';
+    (el.querySelector<HTMLInputElement>('#urgency'))!.value = '1';
+    (el.querySelector<HTMLInputElement>('#complexity'))!.value = '1';
+    (el.querySelector<HTMLInputElement>('#importance'))!.value = '1';
+    (el.querySelector<HTMLInputElement>('#skill'))!.value = '9';
+    (el.querySelector<HTMLInputElement>('#frequency'))!.value = '1';
 
     // Trigger update
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#interpretation').textContent;
     const scoreDisplay = el.querySelector('#score-display').textContent;
@@ -117,13 +126,13 @@ describe('SodCalculatorSimple component', () => {
 
     // Set values to produce score between 2-4
     // Formula: ((U + C + I) * (10 - S)) / 20 * 0.7 * (1 / (1 - Math.sin(F / 10)))
-    el.querySelector('#urgency').value = '6';
-    el.querySelector('#complexity').value = '6';
-    el.querySelector('#importance').value = '6';
-    el.querySelector('#skill').value = '7';
-    el.querySelector('#frequency').value = '4';
+    (el.querySelector<HTMLInputElement>('#urgency'))!.value = '6';
+    (el.querySelector<HTMLInputElement>('#complexity'))!.value = '6';
+    (el.querySelector<HTMLInputElement>('#importance'))!.value = '6';
+    (el.querySelector<HTMLInputElement>('#skill'))!.value = '7';
+    (el.querySelector<HTMLInputElement>('#frequency'))!.value = '4';
 
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation).toContain('risky');
@@ -133,13 +142,13 @@ describe('SodCalculatorSimple component', () => {
     const el = mountCalculator({ append: true });
 
     // Default values produce ~5.04 which is in 4-6 range
-    el.querySelector('#urgency').value = '5';
-    el.querySelector('#complexity').value = '5';
-    el.querySelector('#importance').value = '5';
-    el.querySelector('#skill').value = '5';
-    el.querySelector('#frequency').value = '5';
+    (el.querySelector<HTMLInputElement>('#urgency'))!.value = '5';
+    (el.querySelector<HTMLInputElement>('#complexity'))!.value = '5';
+    (el.querySelector<HTMLInputElement>('#importance'))!.value = '5';
+    (el.querySelector<HTMLInputElement>('#skill'))!.value = '5';
+    (el.querySelector<HTMLInputElement>('#frequency'))!.value = '5';
 
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation).toContain('worrying');
@@ -150,13 +159,13 @@ describe('SodCalculatorSimple component', () => {
 
     // Set values for disaster score (6-8)
     // Need lower values to keep score under 8
-    el.querySelector('#urgency').value = '7';
-    el.querySelector('#complexity').value = '7';
-    el.querySelector('#importance').value = '7';
-    el.querySelector('#skill').value = '4';
-    el.querySelector('#frequency').value = '4';
+    (el.querySelector<HTMLInputElement>('#urgency'))!.value = '7';
+    (el.querySelector<HTMLInputElement>('#complexity'))!.value = '7';
+    (el.querySelector<HTMLInputElement>('#importance'))!.value = '7';
+    (el.querySelector<HTMLInputElement>('#skill'))!.value = '4';
+    (el.querySelector<HTMLInputElement>('#frequency'))!.value = '4';
 
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation).toContain('looming');
@@ -166,13 +175,13 @@ describe('SodCalculatorSimple component', () => {
     const el = mountCalculator({ append: true });
 
     // Set values for maximum score
-    el.querySelector('#urgency').value = '9';
-    el.querySelector('#complexity').value = '9';
-    el.querySelector('#importance').value = '9';
-    el.querySelector('#skill').value = '1';
-    el.querySelector('#frequency').value = '9';
+    (el.querySelector<HTMLInputElement>('#urgency'))!.value = '9';
+    (el.querySelector<HTMLInputElement>('#complexity'))!.value = '9';
+    (el.querySelector<HTMLInputElement>('#importance'))!.value = '9';
+    (el.querySelector<HTMLInputElement>('#skill'))!.value = '1';
+    (el.querySelector<HTMLInputElement>('#frequency'))!.value = '9';
 
-    el.querySelector('#urgency').dispatchEvent(new Event('input'));
+    (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
     const interpretation = el.querySelector('#interpretation').textContent;
     expect(interpretation).toContain('Catastrophe');
@@ -190,12 +199,12 @@ describe('SodCalculatorSimple component', () => {
   });
 
   it('handles click on element without data-nav attribute', () => {
-    let navigated = null;
-    const el = mountCalculator({ onNavigate: (page) => { navigated = page; } });
+    let navigated: string | null = null;
+    const el = mountCalculator({ onNavigate: (page: string) => { navigated = page; } });
 
     // Click on a slider (which doesn't have data-nav)
-    const slider = el.querySelector('#urgency');
-    slider.click();
+    const slider = el.querySelector<HTMLInputElement>('#urgency');
+    slider!.click();
 
     // Should not trigger navigation
     expect(navigated).toBeNull();

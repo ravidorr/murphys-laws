@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
@@ -59,8 +58,9 @@ describe('Footer component', () => {
       onNavigate: (page) => { navigated = page; }
     });
 
-    const aboutLink = el.querySelector('[data-nav="about"]');
-    aboutLink.click();
+    const aboutLink = el.querySelector('[data-nav="about"]') as HTMLElement | null;
+    expect(aboutLink).toBeTruthy();
+    aboutLink!.click();
     expect(navigated).toBe('about');
   });
 
@@ -70,8 +70,9 @@ describe('Footer component', () => {
       onNavigate: (page) => { navigated = page; }
     });
 
-    const privacyLink = el.querySelector('[data-nav="privacy"]');
-    privacyLink.click();
+    const privacyLink = el.querySelector('[data-nav="privacy"]') as HTMLElement | null;
+    expect(privacyLink).toBeTruthy();
+    privacyLink!.click();
     expect(navigated).toBe('privacy');
   });
 
@@ -81,8 +82,9 @@ describe('Footer component', () => {
       onNavigate: (page) => { navigated = page; }
     });
 
-    const termsLink = el.querySelector('[data-nav="terms"]');
-    termsLink.click();
+    const termsLink = el.querySelector('[data-nav="terms"]') as HTMLElement | null;
+    expect(termsLink).toBeTruthy();
+    termsLink!.click();
     expect(navigated).toBe('terms');
   });
 
@@ -92,8 +94,9 @@ describe('Footer component', () => {
       onNavigate: (page) => { navigated = page; }
     });
 
-    const contactLink = el.querySelector('[data-nav="contact"]');
-    contactLink.click();
+    const contactLink = el.querySelector('[data-nav="contact"]') as HTMLElement | null;
+    expect(contactLink).toBeTruthy();
+    contactLink!.click();
     expect(navigated).toBe('contact');
   });
 
@@ -102,9 +105,9 @@ describe('Footer component', () => {
       onNavigate: () => { }
     });
 
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot).toBeTruthy();
-    expect(adSlot.dataset.loaded).not.toBe('true');
+    expect(adSlot!.dataset.loaded).not.toBe('true');
   });
 
   it('loads AdSense ad when triggered', () => {
@@ -127,7 +130,7 @@ describe('Footer component', () => {
       push: () => {
         throw new Error('AdSense error');
       }
-    };
+    } as unknown as typeof window.adsbygoogle;
 
     const el = Footer({ onNavigate: () => { } });
 
@@ -160,7 +163,8 @@ describe('Footer component', () => {
       onNavigate: () => { }
     });
 
-    const aboutLink = el.querySelector('[data-nav="about"]');
+    const aboutLink = el.querySelector('[data-nav="about"]') as HTMLElement | null;
+    expect(aboutLink).toBeTruthy();
     const event = new MouseEvent('click', { bubbles: true, cancelable: true });
     const preventDefaultSpy = { called: false };
 
@@ -168,7 +172,7 @@ describe('Footer component', () => {
       value: () => { preventDefaultSpy.called = true; }
     });
 
-    aboutLink.dispatchEvent(event);
+    aboutLink!.dispatchEvent(event);
     expect(preventDefaultSpy.called).toBe(true);
   });
 
@@ -178,8 +182,9 @@ describe('Footer component', () => {
       onNavigate: (page) => { navigated = page; }
     });
 
-    const container = el.querySelector('.container');
-    container.click();
+    const container = el.querySelector('.container') as HTMLElement | null;
+    expect(container).toBeTruthy();
+    container!.click();
     expect(navigated).toBe('');
   });
 
@@ -190,8 +195,9 @@ describe('Footer component', () => {
       onNavigate: () => { }
     });
 
-    const adSlot = el.querySelector('[data-ad-slot]');
-    adSlot.dataset.loaded = 'true';
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
+    expect(adSlot).toBeTruthy();
+    adSlot!.dataset.loaded = 'true';
 
     // Should not throw and should not create duplicate ad
     expect(() => {
@@ -258,16 +264,11 @@ describe('Footer component', () => {
     // Ensure IntersectionObserver is available
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
-    const mockIntersectionObserver = vi.fn((callback, options) => {
-      // Store the callback so we can trigger it
-      mockIntersectionObserver.lastCallback = callback;
-      mockIntersectionObserver.lastOptions = options;
-      return {
-        observe: observeMock,
-        disconnect: disconnectMock
-      };
-    });
-    global.IntersectionObserver = mockIntersectionObserver;
+    const mockIntersectionObserver = vi.fn((_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) => ({
+      observe: observeMock,
+      disconnect: disconnectMock
+    }));
+    global.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver;
 
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -298,14 +299,14 @@ describe('Footer component', () => {
     let intersectionCallback;
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
-    const mockIntersectionObserver = vi.fn((callback) => {
+    const mockIntersectionObserver = vi.fn((callback: IntersectionObserverCallback) => {
       intersectionCallback = callback;
       return {
         observe: observeMock,
         disconnect: disconnectMock
       };
     });
-    global.IntersectionObserver = mockIntersectionObserver;
+    global.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver;
 
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -323,7 +324,7 @@ describe('Footer component', () => {
     }
 
     // Ad should be loaded
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot?.dataset.loaded).toBe('true');
     expect(disconnectMock).toHaveBeenCalled();
 
@@ -434,7 +435,7 @@ describe('Footer component', () => {
     window.dispatchEvent(new Event('pointerdown'));
 
     // Ad should be loaded after user interaction
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot?.dataset.loaded).toBe('true');
 
     // Restore
@@ -459,7 +460,7 @@ describe('Footer component', () => {
       onNavigate: () => { }
     });
 
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
 
     // Load ad first time
     el.dispatchEvent(new Event('adslot:init'));
@@ -526,15 +527,16 @@ describe('Footer component', () => {
       onNavigate: () => { }
     });
 
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
+    expect(adSlot).toBeTruthy();
     // Pre-set the loaded flag before primeAd would run
-    adSlot.dataset.loaded = 'true';
+    adSlot!.dataset.loaded = 'true';
 
     // Trigger primeAd via scroll
     window.dispatchEvent(new Event('scroll'));
 
     // Ad should remain marked as loaded but no new ad created
-    expect(adSlot.dataset.loaded).toBe('true');
+    expect(adSlot!.dataset.loaded).toBe('true');
   });
 
   it('does not load ads when hideAds prop is true', () => {
@@ -546,14 +548,14 @@ describe('Footer component', () => {
     });
 
     // The ad slot should exist in template but ad loading logic should be skipped
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot).toBeTruthy();
     
     // Trigger event that would normally load ad
     el.dispatchEvent(new Event('adslot:init'));
     
     // Ad should not be loaded since hideAds is true
-    expect(adSlot.dataset.loaded).not.toBe('true');
+    expect(adSlot!.dataset.loaded).not.toBe('true');
   });
 
   it('skips ad loading when main content is insufficient', () => {
@@ -582,9 +584,9 @@ describe('Footer component', () => {
     // primeAd should check content and skip loading
     window.dispatchEvent(new Event('scroll'));
 
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     // Ad should not be loaded due to insufficient content
-    expect(adSlot.dataset.loaded).not.toBe('true');
+    expect(adSlot!.dataset.loaded).not.toBe('true');
 
     // Cleanup
     emptyMain.remove();

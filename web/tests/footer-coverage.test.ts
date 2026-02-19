@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
@@ -37,10 +36,16 @@ describe('Footer component - Coverage', () => {
 
     const disconnectMock = vi.fn();
     const observeMock = vi.fn();
-    global.IntersectionObserver = vi.fn(() => ({
+    const mockObserverInstance = {
       observe: observeMock,
-      disconnect: disconnectMock
-    }));
+      disconnect: disconnectMock,
+      root: null as Element | Document | null,
+      rootMargin: '',
+      thresholds: [] as readonly number[],
+      takeRecords: vi.fn(() => []),
+      unobserve: vi.fn()
+    };
+    global.IntersectionObserver = vi.fn(() => mockObserverInstance) as unknown as typeof IntersectionObserver;
 
     const el = Footer({ onNavigate: () => {} });
     
@@ -77,8 +82,8 @@ describe('Footer component - Coverage', () => {
     window.dispatchEvent(new Event('pointerdown'));
     
     // Ad slot should NOT be loaded
-    const adSlot = el.querySelector('[data-ad-slot]');
-    expect(adSlot.dataset.loaded).not.toBe('true');
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).not.toBe('true');
   });
 
   it('handles missing adHost in scheduleAd gracefully', () => {
@@ -112,8 +117,8 @@ describe('Footer component - Coverage', () => {
     // We can verify this by triggering an event and checking if ad loads
     window.dispatchEvent(new Event('pointerdown'));
     
-    const adSlot = el.querySelector('[data-ad-slot]');
-    expect(adSlot.dataset.loaded).not.toBe('true');
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).not.toBe('true');
   });
 
   it('handles missing IntersectionObserver in scheduleAd', () => {
@@ -137,20 +142,32 @@ describe('Footer component - Coverage', () => {
   });
 
   it('handles multiple IntersectionObserver entries', () => {
-    let callback;
+    let callback: IntersectionObserverCallback;
     const observeMock = vi.fn();
-    global.IntersectionObserver = vi.fn((cb) => {
+    const mockObserverInstance = {
+      observe: observeMock,
+      disconnect: vi.fn(),
+      root: null as Element | Document | null,
+      rootMargin: '',
+      thresholds: [] as readonly number[],
+      takeRecords: vi.fn(() => []),
+      unobserve: vi.fn()
+    };
+    global.IntersectionObserver = vi.fn((cb: IntersectionObserverCallback) => {
       callback = cb;
-      return { observe: observeMock, disconnect: vi.fn() };
-    });
+      return mockObserverInstance;
+    }) as unknown as typeof IntersectionObserver;
 
     Footer({ onNavigate: () => {} });
     
     // Trigger with multiple entries
-    callback([
-      { isIntersecting: false },
-      { isIntersecting: true }
-    ]);
+    callback(
+      [
+        { isIntersecting: false } as IntersectionObserverEntry,
+        { isIntersecting: true } as IntersectionObserverEntry
+      ],
+      mockObserverInstance as IntersectionObserver
+    );
     
     expect(true).toBe(true); // Ensure it handled the loop
   });
@@ -163,18 +180,18 @@ describe('Footer component - Coverage', () => {
     });
 
     const el = Footer({ onNavigate: () => {} });
-    const adSlot = el.querySelector('[data-ad-slot]');
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
     
     // Manually mark as loaded BEFORE primeAd logic runs
     // We need to trigger loadAd first
     el.dispatchEvent(new Event('adslot:init'));
-    expect(adSlot.dataset.loaded).toBe('true');
+    expect(adSlot?.dataset.loaded).toBe('true');
     
     // Now try to trigger primeAd via window load again - should early return
     window.dispatchEvent(new Event('load'));
     
     // Should still be loaded (no double loading)
-    expect(adSlot.dataset.loaded).toBe('true');
+    expect(adSlot?.dataset.loaded).toBe('true');
   });
 
   it('skips scheduleAd when adHost is null', () => {

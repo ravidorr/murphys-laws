@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { renderLawCards, renderLawCard } from '../src/utils/law-card-renderer.js';
+import type { Law } from '../src/types/app.d.ts';
 
 // Mock voting utility
 vi.mock('../src/utils/voting.js', () => ({
@@ -71,7 +71,7 @@ describe('law-card-renderer', () => {
     });
 
     it('handles law with undefined text', () => {
-      const law = { id: 1, title: 'Title', upvotes: 0, downvotes: 0 };
+      const law = { id: 1, title: 'Title', upvotes: 0, downvotes: 0 } as Law;
       const html = renderLawCard(law);
       
       expect(html).toContain('Title');

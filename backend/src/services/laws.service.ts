@@ -1,13 +1,95 @@
-// @ts-nocheck
+import type Database from 'better-sqlite3';
 import { safeParseJsonArray } from '../utils/helpers.ts';
 
+type Db = InstanceType<typeof Database>;
+
+export interface ListLawsParams {
+  limit: number;
+  offset: number;
+  q?: string;
+  categoryId?: number | null;
+  categorySlug?: string | null;
+  attribution?: string;
+  sort?: string;
+  order?: string;
+}
+
+/** Law shape returned by getLaw / getLawOfTheDay; compatible with IFeedLawService */
+export interface LawRow {
+  id: number;
+  title?: string | null;
+  text: string;
+  [key: string]: unknown;
+}
+
+interface CountRow {
+  total: number;
+}
+
+interface ListLawRow {
+  id: number;
+  title?: string | null;
+  text: string;
+  file_path?: string | null;
+  line_number?: number | null;
+  created_at: string;
+  attributions: string;
+  upvotes: number;
+  downvotes: number;
+  score: number;
+  last_voted_at: string;
+  [key: string]: unknown;
+}
+
+interface LawDbRow {
+  id: number;
+  title?: string | null;
+  text: string;
+  attributions: string | unknown[];
+  upvotes: number;
+  downvotes: number;
+  category_ids?: number[];
+  category_id?: number | null;
+  [key: string]: unknown;
+}
+
+interface LawCategoryRow {
+  category_id: number;
+}
+
+interface LawOfTheDayHistoryRow {
+  law_id: number;
+}
+
+interface CandidateRow {
+  id: number;
+}
+
+interface InsertLawResult {
+  id: number;
+}
+
+export interface SuggestionsParams {
+  q?: string;
+  limit?: number;
+}
+
+export interface SubmitLawParams {
+  title: string;
+  text: string;
+  author?: string;
+  email?: string;
+  categoryId?: number | null;
+}
 
 export class LawService {
-  constructor(db) {
+  private db: Db;
+
+  constructor(db: Db) {
     this.db = db;
   }
 
-  async listLaws({ limit, offset, q, categoryId, categorySlug, attribution, sort = 'score', order = 'desc' }) {
+  async listLaws({ limit, offset, q = '', categoryId = null, categorySlug = null, attribution = '', sort = 'score', order = 'desc' }: ListLawsParams) {
     const baseSelect = `
       SELECT
         l.id,
@@ -99,14 +181,14 @@ export class LawService {
     const listSql = `${baseSelect}${where}\nORDER BY ${orderBy}\nLIMIT ? OFFSET ?;`;
 
     const countStmt = this.db.prepare(countSql);
-    const countResult = countStmt.get(...countParams);
+    const countResult = countStmt.get(...countParams) as CountRow | undefined;
     const total = countResult ? countResult.total : 0;
 
     listParams.push(limit, offset);
     const listStmt = this.db.prepare(listSql);
-    const rows = listStmt.all(...listParams);
+    const rows = listStmt.all(...listParams) as ListLawRow[];
 
-    const data = rows.map(r => ({
+    const data = rows.map((r: ListLawRow) => ({
       ...r,
       attributions: safeParseJsonArray(r.attributions),
     }));
@@ -114,7 +196,7 @@ export class LawService {
     return { data, total };
   }
 
-  async getLaw(id) {
+  async getLaw(id: number): Promise<LawRow | undefined> {
     const sql = `
       SELECT
         l.id,
@@ -137,7 +219,7 @@ export class LawService {
       LIMIT 1;
     `;
     const stmt = this.db.prepare(sql);
-    const law = stmt.get(id);
+    const law = stmt.get(id) as LawDbRow | undefined;
 
     if (law) {
       law.attributions = safeParseJsonArray(law.attributions);
@@ -146,26 +228,26 @@ export class LawService {
       const categoriesStmt = this.db.prepare(`
         SELECT category_id FROM law_categories WHERE law_id = ?
       `);
-      const categories = categoriesStmt.all(id);
-      law.category_ids = categories.map(c => c.category_id);
-      law.category_id = law.category_ids[0] || null; // Primary category for backward compatibility
+      const categories = categoriesStmt.all(id) as LawCategoryRow[];
+      law.category_ids = categories.map((c: LawCategoryRow) => c.category_id);
+      law.category_id = law.category_ids[0] ?? null; // Primary category for backward compatibility
     }
 
-    return law;
+    return law as LawRow | undefined;
   }
 
-  async getRelatedLaws(lawId, { limit = 5 } = {}) {
+  async getRelatedLaws(lawId: number, { limit = 5 }: { limit?: number } = {}) {
     // 1. Get category IDs for this law
     const categoriesStmt = this.db.prepare(`
       SELECT category_id FROM law_categories WHERE law_id = ?
     `);
-    const categories = categoriesStmt.all(lawId);
+    const categories = categoriesStmt.all(lawId) as LawCategoryRow[];
 
     if (categories.length === 0) {
       return [];
     }
 
-    const categoryIds = categories.map(c => c.category_id);
+    const categoryIds = categories.map((c: LawCategoryRow) => c.category_id);
 
     // 2. Fetch related laws from same categories, excluding current law
     // Sort by score, limit to requested count
@@ -192,7 +274,7 @@ export class LawService {
     return stmt.all(...categoryIds, lawId, limit);
   }
 
-  async getLawOfTheDay() {
+  async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {
     const today = new Date().toISOString().split('T')[0];
 
     const existingStmt = this.db.prepare(`
@@ -201,9 +283,9 @@ export class LawService {
       WHERE featured_date = ?
       LIMIT 1
     `);
-    const existingLaw = existingStmt.get(today);
+    const existingLaw = existingStmt.get(today) as LawOfTheDayHistoryRow | undefined;
 
-    let lawId;
+    let lawId: number;
 
     if (existingLaw) {
       lawId = existingLaw.law_id;
@@ -221,7 +303,7 @@ export class LawService {
         ORDER BY upvotes DESC, l.text ASC
         LIMIT 1
       `);
-      const candidates = candidatesStmt.all();
+      const candidates = candidatesStmt.all() as CandidateRow[];
 
       if (candidates.length === 0) {
         const fallbackStmt = this.db.prepare(`
@@ -232,7 +314,7 @@ export class LawService {
           ORDER BY upvotes DESC, l.text ASC
           LIMIT 1
         `);
-        const fallbackCandidates = fallbackStmt.all();
+        const fallbackCandidates = fallbackStmt.all() as CandidateRow[];
 
         if (fallbackCandidates.length === 0) {
           return null;
@@ -251,10 +333,11 @@ export class LawService {
     }
 
     const law = await this.getLaw(lawId);
+    if (!law) return null;
     return { law, featured_date: today };
   }
 
-  async suggestions({ q, limit = 10 }) {
+  async suggestions({ q, limit = 10 }: SuggestionsParams = {}) {
     if (!q || q.trim().length < 2) {
       return { data: [] };
     }
@@ -287,7 +370,7 @@ export class LawService {
     return { data: rows };
   }
 
-  async submitLaw({ title, text, author, email, categoryId }) {
+  async submitLaw({ title, text, author, email, categoryId }: SubmitLawParams) {
     const insertLawSql = `
       INSERT INTO laws (title, text, status, first_seen_file_path)
       VALUES (?, ?, 'in_review', 'web-submission')
@@ -295,7 +378,7 @@ export class LawService {
     `;
 
     const insertLawStmt = this.db.prepare(insertLawSql);
-    const lawResult = insertLawStmt.get(title, text);
+    const lawResult = insertLawStmt.get(title, text) as InsertLawResult | undefined;
 
     if (!lawResult) {
       throw new Error('Failed to insert law');

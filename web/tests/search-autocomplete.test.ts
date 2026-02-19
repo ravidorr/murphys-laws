@@ -1,7 +1,11 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SearchAutocomplete } from '../src/components/search-autocomplete.js';
 import * as api from '../src/utils/api.js';
+import type { Law, PaginatedResponse } from '../src/types/app.d.ts';
+
+function suggestionsResponse(data: Law[]): PaginatedResponse<Law> {
+  return { data, total: data.length, limit: 10, offset: 0 };
+}
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
@@ -51,7 +55,7 @@ describe('SearchAutocomplete', () => {
 
   it('should throw error if inputElement is missing', () => {
     expect(() => {
-      SearchAutocomplete({ onSelect });
+      SearchAutocomplete({ onSelect } as Parameters<typeof SearchAutocomplete>[0]);
     }).toThrow('inputElement is required');
   });
 
@@ -71,12 +75,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should fetch suggestions on input with debounce', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -102,12 +104,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should render suggestions in dropdown', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -124,9 +124,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should highlight matching text in suggestions', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -142,12 +140,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle keyboard navigation with ArrowDown', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -165,12 +161,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle keyboard navigation with ArrowUp', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -188,9 +182,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should select suggestion with Enter key', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -210,9 +202,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should close dropdown with Escape key', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -230,9 +220,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should select suggestion on mouse click', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -242,15 +230,13 @@ describe('SearchAutocomplete', () => {
 
     const dropdown = document.querySelector('.search-autocomplete');
     const item = dropdown.querySelector('.search-suggestion-item');
-    item.click();
+    (item as HTMLElement).click();
 
     expect(onSelect).toHaveBeenCalledWith({ id: 1, text: 'Test law', title: null });
   });
 
   it('should close dropdown when clicking outside', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -267,7 +253,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle API errors gracefully', async () => {
-    api.fetchSuggestions.mockRejectedValue(new Error('API Error'));
+    vi.mocked(api.fetchSuggestions).mockRejectedValue(new Error('API Error'));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -294,7 +280,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should use custom debounce delay', async () => {
-    api.fetchSuggestions.mockResolvedValue({ data: [] });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect, debounceDelay: 100 });
     
@@ -308,9 +294,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should display title when available', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Law text', title: 'Law Title' }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Law text', title: 'Law Title' }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -342,9 +326,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle highlightMatch with empty query', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -360,9 +342,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle highlightMatch with null text gracefully', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: null, title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: null as unknown as string, title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -377,9 +357,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not call onSelect for invalid suggestion index (negative)', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -401,9 +379,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not call onSelect for invalid suggestion index (too large)', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -425,12 +401,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should wrap selection from end to beginning with ArrowDown', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -453,12 +427,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should go to no selection when pressing ArrowUp at first item', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -479,12 +451,10 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should wrap to last item when pressing ArrowUp with no selection', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [
-        { id: 1, text: 'Test law 1', title: null },
-        { id: 2, text: 'Test law 2', title: null }
-      ]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: null },
+      { id: 2, text: 'Test law 2', title: null }
+    ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -513,9 +483,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should allow Enter key to pass through when no item is selected', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -534,9 +502,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not close dropdown when clicking on input element', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -554,9 +520,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not close dropdown when clicking on dropdown itself', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -579,9 +543,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle empty suggestions array from API', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: []
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -596,7 +558,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle API response with undefined data', async () => {
-    api.fetchSuggestions.mockResolvedValue({});
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -609,9 +571,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle other keys without preventing default', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -628,9 +588,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle click on dropdown area without item', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -649,9 +607,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle click on item with invalid data-index attribute', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -673,9 +629,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should close dropdown for empty query after debounce', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -696,9 +650,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should display text only when title is empty string', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Law text only', title: '' }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Law text only', title: '' }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -714,9 +666,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle special regex characters in query for highlighting', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test (law) [special]', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test (law) [special]', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -732,9 +682,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should return correct isOpen state', async () => {
-    api.fetchSuggestions.mockResolvedValue({
-      data: [{ id: 1, text: 'Test law', title: null }]
-    });
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
 

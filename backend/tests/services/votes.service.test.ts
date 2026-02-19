@@ -1,11 +1,10 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { VoteService } from '../../src/services/votes.service.ts';
 
 describe('VoteService', () => {
-    let db;
-    let voteService;
+    let db: InstanceType<typeof Database>;
+    let voteService: VoteService;
 
     beforeEach(() => {
         db = new Database(':memory:');
@@ -24,7 +23,7 @@ describe('VoteService', () => {
     it('should cast a vote', async () => {
         await voteService.vote(1, 'up', 'user1');
         const vote = db.prepare('SELECT * FROM votes WHERE law_id = 1 AND voter_identifier = ?').get('user1');
-        expect(vote.vote_type).toBe('up');
+        expect((vote as { vote_type: string }).vote_type).toBe('up');
     });
 
     it('should update an existing vote', async () => {
@@ -32,7 +31,7 @@ describe('VoteService', () => {
         await voteService.vote(1, 'down', 'user1');
 
         const vote = db.prepare('SELECT * FROM votes WHERE law_id = 1 AND voter_identifier = ?').get('user1');
-        expect(vote.vote_type).toBe('down');
+        expect((vote as { vote_type: string }).vote_type).toBe('down');
     });
 
     it('should remove a vote', async () => {

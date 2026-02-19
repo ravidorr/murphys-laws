@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { updateSearchInfo, hasActiveFilters } from '../src/utils/search-info.ts';
 import * as apiModule from '../src/utils/api.ts';

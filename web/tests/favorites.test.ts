@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   isFavorite,
   getFavorites,
@@ -18,8 +17,17 @@ vi.mock('../src/utils/feature-flags.ts', () => ({
 
 import { isFavoritesEnabled } from '../src/utils/feature-flags.ts';
 
+interface MockFavoriteLaw {
+  id: number;
+  text: string;
+  title: string;
+  attribution?: string;
+  category_id?: number;
+  category_slug?: string;
+}
+
 describe('Favorites Service', () => {
-  const localThis: Record<string, any> = {
+  const localThis: { mockLaw: MockFavoriteLaw | null; mockLaw2: MockFavoriteLaw | null } = {
     mockLaw: null,
     mockLaw2: null,
   };

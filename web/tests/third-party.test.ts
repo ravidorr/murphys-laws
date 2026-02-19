@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ensureAdsense, initAnalyticsBootstrap } from '../src/utils/third-party.ts';
 

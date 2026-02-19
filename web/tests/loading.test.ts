@@ -1,11 +1,17 @@
-// @ts-nocheck
 import { createLoading, renderLoadingHTML } from '../src/components/loading.js';
 import { LOADING_MESSAGES } from '../src/utils/constants.js';
+
+interface LoadingTestContext {
+  el?: Element;
+  html?: string;
+  domEl?: HTMLElement;
+  htmlEl?: Element | null;
+}
 
 describe('Loading Component', () => {
   describe('createLoading', () => {
     it('creates loading element with random message when no options provided', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading();
 
       expect(localThis.el.className).toBe('loading-placeholder');
@@ -18,14 +24,14 @@ describe('Loading Component', () => {
     });
 
     it('creates loading element with custom message', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ message: 'Custom loading...' });
 
       expect(localThis.el.querySelector('p.small').textContent).toBe('Custom loading...');
     });
 
     it('creates loading element with default size', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading();
 
       expect(localThis.el.className).toBe('loading-placeholder');
@@ -33,7 +39,7 @@ describe('Loading Component', () => {
     });
 
     it('creates loading element with small size', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ size: 'small' });
 
       expect(localThis.el.classList.contains('loading-placeholder')).toBe(true);
@@ -41,7 +47,7 @@ describe('Loading Component', () => {
     });
 
     it('creates loading element with large size', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ size: 'large' });
 
       expect(localThis.el.classList.contains('loading-placeholder')).toBe(true);
@@ -49,29 +55,29 @@ describe('Loading Component', () => {
     });
 
     it('ignores invalid size and uses default', () => {
-      const localThis = {};
-      localThis.el = createLoading({ size: 'invalid' });
+      const localThis: LoadingTestContext = {};
+      localThis.el = createLoading({ size: 'invalid' as 'small' | 'default' | 'large' });
 
       expect(localThis.el.className).toBe('loading-placeholder');
       expect(localThis.el.classList.contains('size-invalid')).toBe(false);
     });
 
     it('adds custom aria-label when provided', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ ariaLabel: 'Loading content' });
 
       expect(localThis.el.getAttribute('aria-label')).toBe('Loading content');
     });
 
     it('does not add aria-label when not provided', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading();
 
       expect(localThis.el.hasAttribute('aria-label')).toBe(false);
     });
 
     it('handles all options together', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.el = createLoading({
         message: 'Loading laws...',
         size: 'large',
@@ -89,7 +95,7 @@ describe('Loading Component', () => {
 
   describe('renderLoadingHTML', () => {
     it('renders HTML string with random message when no options provided', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML();
 
       expect(localThis.html).toContain('class="loading-placeholder"');
@@ -99,14 +105,14 @@ describe('Loading Component', () => {
     });
 
     it('renders HTML string with custom message', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML({ message: 'Loading data...' });
 
       expect(localThis.html).toContain('Loading data...');
     });
 
     it('renders HTML string with default size', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML();
 
       expect(localThis.html).toContain('class="loading-placeholder"');
@@ -114,28 +120,28 @@ describe('Loading Component', () => {
     });
 
     it('renders HTML string with small size', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML({ size: 'small' });
 
       expect(localThis.html).toContain('loading-placeholder size-small');
     });
 
     it('renders HTML string with large size', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML({ size: 'large' });
 
       expect(localThis.html).toContain('loading-placeholder size-large');
     });
 
     it('renders HTML string with custom aria-label', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML({ ariaLabel: 'Loading categories' });
 
       expect(localThis.html).toContain('aria-label="Loading categories"');
     });
 
     it('renders valid HTML that can be inserted into DOM', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML({ message: 'Test message' });
       
       const container = document.createElement('div');
@@ -148,7 +154,7 @@ describe('Loading Component', () => {
     });
 
     it('handles all options together', () => {
-      const localThis = {};
+      const localThis: LoadingTestContext = {};
       localThis.html = renderLoadingHTML({
         message: 'Loading categories...',
         size: 'small',
@@ -165,9 +171,9 @@ describe('Loading Component', () => {
 
   describe('consistency between createLoading and renderLoadingHTML', () => {
     it('produces equivalent output structure', () => {
-      const localThis = {};
-      const options = { message: 'Loading...', size: 'small', ariaLabel: 'Test' };
-      
+      const localThis: LoadingTestContext = {};
+      const options = { message: 'Loading...', size: 'small' as const, ariaLabel: 'Test' };
+
       localThis.domEl = createLoading(options);
       localThis.html = renderLoadingHTML(options);
       

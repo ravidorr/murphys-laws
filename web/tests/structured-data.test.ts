@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   setJsonLd,
   removeJsonLd,
@@ -32,7 +31,7 @@ describe('Structured Data module', () => {
 
       const el = document.head.querySelector('#jsonld-test');
       expect(el).toBeTruthy();
-      expect(el.type).toBe('application/ld+json');
+      expect((el as HTMLScriptElement).type).toBe('application/ld+json');
 
       const data = JSON.parse(el.textContent);
       expect(data['@type']).toBe('WebSite');
@@ -58,14 +57,14 @@ describe('Structured Data module', () => {
     });
 
     it('does nothing if data is not an object', () => {
-      setJsonLd('test', 'string');
+      setJsonLd('test', 'string' as unknown as Record<string, unknown>);
 
       const el = document.head.querySelector('#jsonld-test');
       expect(el).toBeFalsy();
     });
 
     it('does nothing if data is null', () => {
-      setJsonLd('test', null);
+      setJsonLd('test', null as unknown as Record<string, unknown>);
 
       const el = document.head.querySelector('#jsonld-test');
       expect(el).toBeFalsy();
@@ -310,7 +309,7 @@ describe('Structured Data module', () => {
   describe('setLawStructuredData', () => {
     it('creates law article structured data', () => {
       const law = {
-        id: '123',
+        id: 123,
         title: 'Murphy\'s Law',
         text: 'Anything that can go wrong, will.',
         author: 'Murphy',
@@ -330,7 +329,7 @@ describe('Structured Data module', () => {
 
     it('uses text slice as headline if no title', () => {
       const law = {
-        id: '123',
+        id: 123,
         text: 'A very long law text that exceeds one hundred and twenty characters and should be truncated when used as headline',
         created_at: '2024-01-01'
       };
@@ -345,7 +344,7 @@ describe('Structured Data module', () => {
 
     it('includes author if provided', () => {
       const law = {
-        id: '123',
+        id: 123,
         text: 'Test law',
         author: 'Edward Murphy',
         created_at: '2024-01-01'
@@ -362,7 +361,7 @@ describe('Structured Data module', () => {
 
     it('handles missing author gracefully', () => {
       const law = {
-        id: '123',
+        id: 123,
         text: 'Test law',
         created_at: '2024-01-01'
       };
@@ -385,7 +384,7 @@ describe('Structured Data module', () => {
     it('clears previous page data', () => {
       setJsonLd('home-page', { name: 'Home' });
 
-      const law = { id: '123', text: 'Test', created_at: '2024-01-01' };
+      const law = { id: 123, text: 'Test', created_at: '2024-01-01' };
       setLawStructuredData(law);
 
       expect(document.head.querySelector('#jsonld-home-page')).toBeFalsy();
@@ -393,7 +392,7 @@ describe('Structured Data module', () => {
 
     it('uses created_at for dateModified if updated_at is missing', () => {
       const law = {
-        id: '123',
+        id: 123,
         text: 'Test law',
         created_at: '2024-01-01'
       };
@@ -408,7 +407,7 @@ describe('Structured Data module', () => {
 
     it('includes speakable specification for voice search', () => {
       const law = {
-        id: '123',
+        id: 123,
         title: 'Murphy\'s Law',
         text: 'Anything that can go wrong, will.',
         created_at: '2024-01-01'

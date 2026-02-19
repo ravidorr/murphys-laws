@@ -1,24 +1,24 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { HealthController } from '../../src/controllers/health.controller.ts';
 
 describe('HealthController', () => {
-    let db;
-    let healthController;
-    let req;
-    let res;
+    let db: { prepare: ReturnType<typeof vi.fn> };
+    let healthController: HealthController;
+    let req: IncomingMessage;
+    let res: ServerResponse;
 
     beforeEach(() => {
         db = {
             prepare: vi.fn(),
         };
-        healthController = new HealthController(db);
+        healthController = new HealthController(db as never);
 
-        req = {};
+        req = {} as IncomingMessage;
         res = {
             writeHead: vi.fn(),
             end: vi.fn(),
-        };
+        } as unknown as ServerResponse;
     });
 
     it('should return 200 if db is healthy', async () => {

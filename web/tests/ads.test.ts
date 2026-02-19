@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setupAdSense, triggerAdSense, resetAdSenseForTesting, hasMinimumContent } from '../src/utils/ads.ts';
 

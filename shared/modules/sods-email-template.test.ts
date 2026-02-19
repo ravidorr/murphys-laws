@@ -1,8 +1,15 @@
-// @ts-nocheck
 import * as sodsEmailTemplate from './sods-email-template.ts';
 
-function createLocalThis() {
-  const context = {};
+interface SodsTestContext {
+  subject?: string;
+  text?: string;
+  html?: string;
+  preview?: string;
+  [key: string]: unknown;
+}
+
+function createLocalThis(): () => SodsTestContext {
+  const context: SodsTestContext = {};
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   getCachedCategories,
   setCachedCategories,
@@ -7,8 +6,12 @@ import {
   deferUntilIdle
 } from '../src/utils/category-cache.ts';
 
-function createLocalThis() {
-  const context: Record<string, any> = {};
+interface CategoryCacheContext {
+  originalStorage?: Storage;
+}
+
+function createLocalThis(): () => CategoryCacheContext {
+  const context: CategoryCacheContext = {};
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {

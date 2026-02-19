@@ -1,4 +1,3 @@
-// @ts-nocheck
 import nodemailer from 'nodemailer';
 import {
   createSodsEmailHtml,
@@ -6,16 +5,29 @@ import {
   createSodsEmailText,
 } from '../../../shared/modules/sods-email-template.ts';
 import {
+  type LawSubmissionEmailData,
   createLawSubmissionEmailSubject,
   createLawSubmissionEmailText,
   createLawSubmissionEmailHtml,
 } from '../../../shared/modules/law-submission-email-template.ts';
 
+export interface EmailConfig {
+  host?: string;
+  port?: number;
+  user?: string;
+  pass?: string;
+  from?: string;
+  to?: string;
+}
+
 export class EmailService {
-  constructor(config) {
+  private config: EmailConfig;
+  private transporter: ReturnType<typeof nodemailer.createTransport> | null;
+
+  constructor(config: EmailConfig) {
     this.config = config;
     this.transporter = null;
-    
+
     if (config.host && config.user && config.pass) {
       this.transporter = nodemailer.createTransport({
         host: config.host,
@@ -32,7 +44,7 @@ export class EmailService {
     }
   }
 
-  async sendNewLawEmail(lawData) {
+  async sendNewLawEmail(lawData: LawSubmissionEmailData): Promise<void> {
     if (!this.transporter) {
       console.log('Email not configured, skipping notification');
       return;
@@ -49,13 +61,26 @@ export class EmailService {
 
       await this.transporter.sendMail(mailOptions);
       console.log(`Email notification sent for law ID ${lawData.id}`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to send email notification:', error);
       // Don't fail the submission if email fails
     }
   }
 
-  async sendCalculationEmail(calculationData) {
+  async sendCalculationEmail(calculationData: {
+    to: string;
+    taskDescription: string;
+    senderName: string;
+    senderEmail: string;
+    recipientName: string;
+    urgency: string;
+    complexity: string;
+    importance: string;
+    skill: string;
+    frequency: string;
+    probability: number;
+    interpretation: string;
+  }): Promise<{ success: boolean }> {
     if (!this.transporter) {
       throw new Error('Email service not configured');
     }
@@ -111,8 +136,8 @@ export class EmailService {
 
       await this.transporter.sendMail(mailOptions);
       return { success: true };
-    } catch (error) {
-      throw new Error(`Failed to send calculation email: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to send calculation email: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

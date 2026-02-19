@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Favorites } from '../src/views/favorites.js';
 
 // Mock feature flags
@@ -205,8 +204,8 @@ describe('Favorites View Component', () => {
 
       // Simulate clearing all favorites (which triggers re-render)
       vi.mocked(getFavorites).mockReturnValue([]);
-      const clearButton = el.querySelector('#clear-favorites-btn');
-      clearButton.click();
+      const clearButton = el.querySelector('#clear-favorites-btn') as HTMLElement | null;
+      clearButton?.click();
 
       // addVotingListeners should NOT be called again during re-render
       expect(addVotingListeners).not.toHaveBeenCalled();
@@ -219,10 +218,10 @@ describe('Favorites View Component', () => {
     it('navigates to browse and stores query on search submit', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const searchForm = el.querySelector('#favorites-search-form');
-      const searchInput = el.querySelector('#favorites-search-input');
+      const searchInput = el.querySelector('#favorites-search-input') as HTMLInputElement | null;
 
-      searchInput.value = 'gravity';
-      searchForm.dispatchEvent(new Event('submit'));
+      if (searchInput) searchInput.value = 'gravity';
+      searchForm?.dispatchEvent(new Event('submit'));
 
       expect(localThis.mockNavigate).toHaveBeenCalledWith('browse');
       expect(sessionStorage.getItem('searchQuery')).toBe('gravity');
@@ -231,10 +230,10 @@ describe('Favorites View Component', () => {
     it('does not navigate for empty search query', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const searchForm = el.querySelector('#favorites-search-form');
-      const searchInput = el.querySelector('#favorites-search-input');
+      const searchInput = el.querySelector('#favorites-search-input') as HTMLInputElement | null;
 
-      searchInput.value = '   ';
-      searchForm.dispatchEvent(new Event('submit'));
+      if (searchInput) searchInput.value = '   ';
+      searchForm?.dispatchEvent(new Event('submit'));
 
       expect(localThis.mockNavigate).not.toHaveBeenCalled();
     });
@@ -243,27 +242,27 @@ describe('Favorites View Component', () => {
   describe('Navigation', () => {
     it('navigates to home when "Back to Home" is clicked', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const homeButton = el.querySelector('[data-nav="home"]');
+      const homeButton = el.querySelector('[data-nav="home"]') as HTMLElement | null;
 
-      homeButton.click();
+      homeButton?.click();
 
       expect(localThis.mockNavigate).toHaveBeenCalledWith('home', undefined);
     });
 
     it('navigates to browse when "Browse All Laws" is clicked', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const browseButton = el.querySelector('[data-nav="browse"]');
+      const browseButton = el.querySelector('[data-nav="browse"]') as HTMLElement | null;
 
-      browseButton.click();
+      browseButton?.click();
 
       expect(localThis.mockNavigate).toHaveBeenCalledWith('browse', undefined);
     });
 
     it('navigates to category with param when category link is clicked', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const categoryLink = el.querySelector('[data-param="murphys-computer-laws"]');
+      const categoryLink = el.querySelector('[data-param="murphys-computer-laws"]') as HTMLElement | null;
 
-      categoryLink.click();
+      categoryLink?.click();
 
       expect(localThis.mockNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
     });
@@ -271,9 +270,9 @@ describe('Favorites View Component', () => {
     it('navigates to law detail when law card is clicked', () => {
       vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const lawCard = el.querySelector('.law-card-mini');
+      const lawCard = el.querySelector('.law-card-mini') as HTMLElement | null;
 
-      lawCard.click();
+      lawCard?.click();
 
       expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
     });
@@ -302,18 +301,18 @@ describe('Favorites View Component', () => {
 
     it('shows confirmation dialog when Clear All is clicked', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const clearButton = el.querySelector('#clear-favorites-btn');
+      const clearButton = el.querySelector('#clear-favorites-btn') as HTMLElement | null;
 
-      clearButton.click();
+      clearButton?.click();
 
       expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to remove all favorites?');
     });
 
     it('clears favorites when confirmed', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const clearButton = el.querySelector('#clear-favorites-btn');
+      const clearButton = el.querySelector('#clear-favorites-btn') as HTMLElement | null;
 
-      clearButton.click();
+      clearButton?.click();
 
       expect(clearAllFavorites).toHaveBeenCalled();
     });
@@ -321,9 +320,9 @@ describe('Favorites View Component', () => {
     it('does not clear favorites when cancelled', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const clearButton = el.querySelector('#clear-favorites-btn');
+      const clearButton = el.querySelector('#clear-favorites-btn') as HTMLElement | null;
 
-      clearButton.click();
+      clearButton?.click();
 
       expect(clearAllFavorites).not.toHaveBeenCalled();
     });
@@ -417,9 +416,9 @@ describe('Favorites View Component', () => {
       );
 
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const favoriteButton = el.querySelector('[data-action="favorite"]');
+      const favoriteButton = el.querySelector('[data-action="favorite"]') as HTMLElement | null;
 
-      favoriteButton.click();
+      favoriteButton?.click();
 
       // Should not navigate to law detail
       expect(localThis.mockNavigate).not.toHaveBeenCalledWith('law', '123');
@@ -435,9 +434,9 @@ describe('Favorites View Component', () => {
       );
 
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const favoriteButton = el.querySelector('[data-action="favorite"]');
+      const favoriteButton = el.querySelector('[data-action="favorite"]') as HTMLElement | null;
 
-      favoriteButton.click();
+      favoriteButton?.click();
 
       expect(removeFavorite).toHaveBeenCalledWith('123');
     });
@@ -464,8 +463,8 @@ describe('Favorites View Component', () => {
       vi.mocked(getFavorites).mockReturnValue([]);
 
       // Click unfavorite
-      const favoriteButton = el.querySelector('[data-action="favorite"]');
-      favoriteButton.click();
+      const favoriteButton = el.querySelector('[data-action="favorite"]') as HTMLElement | null;
+      favoriteButton?.click();
 
       // Wait for animation timeout (200ms)
       vi.advanceTimersByTime(200);
@@ -496,8 +495,8 @@ describe('Favorites View Component', () => {
       vi.mocked(getFavorites).mockReturnValue([]);
 
       // Click unfavorite - the card won't be found because data-law-id is missing from article
-      const favoriteButton = el.querySelector('[data-action="favorite"]');
-      favoriteButton.click();
+      const favoriteButton = el.querySelector('[data-action="favorite"]') as HTMLElement | null;
+      favoriteButton?.click();
 
       // Should render immediately without waiting for timeout
       // (the else branch: card not found, render immediately)
@@ -509,7 +508,7 @@ describe('Favorites View Component', () => {
     it('exposes cleanup function that clears export content', () => {
       vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
 
-      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const el = Favorites({ onNavigate: localThis.mockNavigate }) as unknown as HTMLElement & { cleanup: () => void };
 
       // Verify cleanup function exists
       expect(typeof el.cleanup).toBe('function');

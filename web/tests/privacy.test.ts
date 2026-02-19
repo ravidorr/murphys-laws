@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Privacy } from '../src/views/privacy.js';
 
 describe('Privacy page', () => {
@@ -121,7 +120,8 @@ describe('Privacy page', () => {
     });
 
     const contactLink = el.querySelector('[data-nav="contact"]');
-    contactLink.click();
+    expect(contactLink).toBeTruthy();
+    (contactLink as HTMLElement).click();
     expect(navigated).toBe('contact');
   });
 

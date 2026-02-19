@@ -1,8 +1,12 @@
-// @ts-nocheck
 import { TopVoted } from '../src/components/top-voted.js';
 import { Trending } from '../src/components/trending.js';
 import { RecentlyAdded } from '../src/components/recently-added.js';
 import * as api from '../src/utils/api.js';
+import type { Law, PaginatedResponse } from '../src/types/app.d.ts';
+
+function paginatedResponse(data: Law[]): PaginatedResponse<Law> {
+  return { data, total: data.length, limit: data.length, offset: 0 };
+}
 
 describe('Law components', () => {
   const mockLaws = [
@@ -56,7 +60,7 @@ describe('Law components', () => {
     });
 
     it('renders top voted laws after fetch', async () => {
-      vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: mockLaws });
+      vi.spyOn(api, 'fetchTopVoted').mockResolvedValue(paginatedResponse(mockLaws));
 
       const el = TopVoted();
       document.body.appendChild(el);
@@ -74,7 +78,7 @@ describe('Law components', () => {
     });
 
     it('handles empty law list', async () => {
-      vi.spyOn(api, 'fetchTopVoted').mockResolvedValue({ data: [] });
+      vi.spyOn(api, 'fetchTopVoted').mockResolvedValue(paginatedResponse([]));
 
       const el = TopVoted();
 
@@ -108,7 +112,7 @@ describe('Law components', () => {
     });
 
     it('renders trending laws after fetch', async () => {
-      vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: mockLaws.slice(0, 3) });
+      vi.spyOn(api, 'fetchTrending').mockResolvedValue(paginatedResponse(mockLaws.slice(0, 3)));
 
       const el = Trending();
       document.body.appendChild(el);
@@ -123,7 +127,7 @@ describe('Law components', () => {
     });
 
     it('handles empty law list', async () => {
-      vi.spyOn(api, 'fetchTrending').mockResolvedValue({ data: [] });
+      vi.spyOn(api, 'fetchTrending').mockResolvedValue(paginatedResponse([]));
 
       const el = Trending();
 
@@ -157,7 +161,7 @@ describe('Law components', () => {
     });
 
     it('renders recently added laws after fetch', async () => {
-      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: mockLaws.slice(0, 3) });
+      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue(paginatedResponse(mockLaws.slice(0, 3)));
 
       const el = RecentlyAdded();
       document.body.appendChild(el);
@@ -173,7 +177,7 @@ describe('Law components', () => {
     });
 
     it('handles empty law list', async () => {
-      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [] });
+      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue(paginatedResponse([]));
 
       const el = RecentlyAdded();
 
@@ -200,7 +204,7 @@ describe('Law components', () => {
         json: async () => ({ success: true })
       });
 
-      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue({ data: [mockLaws[0]] });
+      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue(paginatedResponse([mockLaws[0]]));
 
       const el = RecentlyAdded();
       document.body.appendChild(el);
@@ -208,7 +212,7 @@ describe('Law components', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const upvoteBtn = el.querySelector('[data-vote="up"]');
-      if (upvoteBtn) {
+      if (upvoteBtn instanceof HTMLElement) {
         upvoteBtn.click();
         await new Promise(resolve => setTimeout(resolve, 10));
       }

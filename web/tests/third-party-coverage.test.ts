@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('third-party utils coverage', () => {
@@ -55,7 +54,9 @@ describe('third-party utils coverage', () => {
 
   it('toAbsoluteUrl returns src if URL construction fails', async () => {
     const originalURL = global.URL;
-    global.URL = function() { throw new Error('URL constructor failed'); };
+    global.URL = (function() {
+      throw new Error('URL constructor failed');
+    }) as unknown as typeof URL;
     
     try {
       const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
@@ -76,9 +77,9 @@ describe('third-party utils coverage', () => {
     initAnalyticsBootstrap();
     window.dispatchEvent(new Event('scroll'));
     
-    const script = document.querySelector('script[src*="googletagmanager"]');
-    // Check property as it's set directly on the object
-    expect(script.async).toBe(true);
+    const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement | null;
+    expect(script).not.toBeNull();
+    expect(script!.async).toBe(true);
   });
 
   it('initAnalyticsBootstrap returns early if already started', async () => {
@@ -178,7 +179,9 @@ describe('third-party utils coverage', () => {
     const { toAbsoluteUrl } = await import('../src/utils/third-party.ts');
     
     const originalURL = global.URL;
-    global.URL = function() { throw new Error('Invalid URL'); };
+    global.URL = (function() {
+      throw new Error('Invalid URL');
+    }) as unknown as typeof URL;
     
     try {
       expect(toAbsoluteUrl('invalid')).toBe('invalid');

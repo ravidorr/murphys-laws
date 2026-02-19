@@ -1,22 +1,16 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { LawService } from '../../src/services/laws.service.ts';
 import { FeedService } from '../../src/services/feed.service.ts';
 
 describe('FeedService', () => {
-  /** @type {Database.Database} */
-  let db;
-  /** @type {LawService} */
-  let lawService;
-  /** @type {FeedService} */
-  let feedService;
+  let db: InstanceType<typeof Database>;
+  let lawService: LawService;
+  let feedService: FeedService;
 
   beforeEach(() => {
-    const localThis = {};
     // Use in-memory database for testing
-    localThis.db = new Database(':memory:');
-    db = localThis.db;
+    db = new Database(':memory:');
 
     // Create schema
     db.exec(`
@@ -68,10 +62,8 @@ describe('FeedService', () => {
       );
     `);
 
-    localThis.lawService = new LawService(db);
-    lawService = localThis.lawService;
-    localThis.feedService = new FeedService(lawService);
-    feedService = localThis.feedService;
+    lawService = new LawService(db);
+    feedService = new FeedService(lawService);
   });
 
   describe('buildFeedData', () => {
@@ -101,6 +93,7 @@ describe('FeedService', () => {
 
       const { lotd, items } = await localThis.feedService.buildFeedData();
       expect(lotd).toBeDefined();
+      if (!lotd) return;
       expect(lotd.text).toBe('Only Law');
       // Items should not include the LOTD since it's already featured
       expect(items).toHaveLength(0);
@@ -116,6 +109,7 @@ describe('FeedService', () => {
       
       // LOTD should be one of the laws
       expect(lotd).toBeDefined();
+      if (!lotd) return;
       
       // Items should not contain the LOTD
       const lotdInItems = items.find(item => item.id === lotd.id);
@@ -125,15 +119,15 @@ describe('FeedService', () => {
     // HIGH PRIORITY: Error propagation tests
     it('should propagate error when lawService.getLawOfTheDay() fails', async () => {
       const localThis = { feedService };
-      vi.spyOn(localThis.feedService.lawService, 'getLawOfTheDay').mockRejectedValue(new Error('DB error'));
+      vi.spyOn((localThis.feedService as unknown as { lawService: LawService }).lawService, 'getLawOfTheDay').mockRejectedValue(new Error('DB error'));
       
       await expect(localThis.feedService.buildFeedData()).rejects.toThrow('DB error');
     });
 
     it('should propagate error when lawService.listLaws() fails', async () => {
       const localThis = { feedService };
-      vi.spyOn(localThis.feedService.lawService, 'getLawOfTheDay').mockResolvedValue(null);
-      vi.spyOn(localThis.feedService.lawService, 'listLaws').mockRejectedValue(new Error('Query failed'));
+      vi.spyOn((localThis.feedService as unknown as { lawService: LawService }).lawService, 'getLawOfTheDay').mockResolvedValue(null);
+      vi.spyOn((localThis.feedService as unknown as { lawService: LawService }).lawService, 'listLaws').mockRejectedValue(new Error('Query failed'));
       
       await expect(localThis.feedService.buildFeedData()).rejects.toThrow('Query failed');
     });

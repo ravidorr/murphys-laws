@@ -23,6 +23,8 @@
  * @module export-context
  */
 
+import type { Law, Category, FavoriteLaw } from '../types/app.d.ts';
+
 /**
  * Content types for export.
  * Determines which export formats are available.
@@ -43,12 +45,15 @@ export const ContentType = {
 // Using a singleton pattern to allow any page to register content
 // and the header export menu to access it without prop drilling
 
+/** Data types that can be exported */
+export type ExportData = Law | Law[] | FavoriteLaw[] | Category[] | Partial<Category>[] | string;
+
 /** Exportable content registered by a page */
 export interface ExportContent {
   type: string;
   title: string;
-  data: any;
-  metadata?: Record<string, any>;
+  data: ExportData;
+  metadata?: Record<string, unknown>;
 }
 
 type ExportContentListener = (content: ExportContent | null) => void;
@@ -62,7 +67,7 @@ const listeners: Set<ExportContentListener> = new Set();
  * Call this when a page loads its content to make it available for export.
  * @param {ExportContent} content - The content to register
  */
-export function setExportContent({ type, title, data, metadata = {} }: { type: string; title: string; data: any; metadata?: Record<string, any> }): void {
+export function setExportContent({ type, title, data, metadata = {} }: { type: string; title: string; data: ExportData; metadata?: Record<string, unknown> }): void {
   currentContent = { type, title, data, metadata };
   // Notify all subscribers of the content change
   listeners.forEach(fn => fn(currentContent));

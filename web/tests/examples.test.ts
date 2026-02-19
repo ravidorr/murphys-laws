@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Examples } from '@views/examples.js';
 import * as markdownContent from '@utils/markdown-content.js';
 import * as structuredData from '@modules/structured-data.js';

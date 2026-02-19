@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { describe, it, expect, vi } from 'vitest';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Router } from '../src/routes/router.ts';
 
 describe('Router', () => {
@@ -11,11 +11,11 @@ describe('Router', () => {
       url: '/api/v1/og/law/123.png',
       headers: {},
       socket: { remoteAddress: '127.0.0.1' },
-    };
+    } as IncomingMessage;
     const res = {
       writeHead: vi.fn(),
       end: vi.fn(),
-    };
+    } as unknown as ServerResponse;
 
     router.get('/api/v1/og/law/:id.png', handler);
     await router.handle(req, res);
@@ -37,11 +37,11 @@ describe('Router', () => {
       url: '/api/v1/og/law/123Apng',
       headers: {},
       socket: { remoteAddress: '127.0.0.1' },
-    };
+    } as IncomingMessage;
     const res = {
       writeHead: vi.fn(),
       end: vi.fn(),
-    };
+    } as unknown as ServerResponse;
 
     router.get('/api/v1/og/law/:id.png', handler);
     await router.handle(req, res);

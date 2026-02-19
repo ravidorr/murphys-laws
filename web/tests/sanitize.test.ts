@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { escapeHtml, highlightSearchTerm, sanitizeUrl, stripMarkdownFootnotes } from '../src/utils/sanitize.ts';
 
 describe('Sanitization utilities', () => {

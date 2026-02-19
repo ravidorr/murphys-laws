@@ -105,7 +105,7 @@ function sleep(ms) {
  * @returns {Promise<any>} Result of the function
  * @throws {Error} The last error if all retries fail
  */
-export async function withRetry(fn: () => Promise<any>, options: RetryConfig = {}) {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryConfig = {}): Promise<T> {
   const config = { ...DEFAULT_RETRY_CONFIG, ...options };
   const { maxRetries, baseDelay, maxDelay, shouldRetry, onRetry } = config;
 
@@ -133,6 +133,9 @@ export async function withRetry(fn: () => Promise<any>, options: RetryConfig = {
       await sleep(delay);
     }
   }
+
+  // Unreachable — loop always returns or throws
+  throw new Error('withRetry: unexpected loop exit');
 }
 
 /**
@@ -146,7 +149,7 @@ export async function withRetry(fn: () => Promise<any>, options: RetryConfig = {
  * @param {Function} options.onError - Custom error handler
  * @returns {Promise<{data: any, error: Error|null}>} Result object with data or error
  */
-export async function safeAsync(fn: () => Promise<any>, options: SafeAsyncOptions = {}) {
+export async function safeAsync<T>(fn: () => Promise<T>, options: SafeAsyncOptions = {}): Promise<SafeAsyncResult<T>> {
   const {
     showNotification = false,
     errorMessage,

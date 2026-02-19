@@ -28,7 +28,7 @@ interface ContentMetadata {
 }
 
 /** Valid page identifiers for content pages */
-type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples';
+export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples';
 
 const typedMetadata = metadata as ContentMetadata;
 

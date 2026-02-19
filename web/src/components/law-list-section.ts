@@ -60,7 +60,7 @@ export function createLawListSection({ accentText, remainderText }: { accentText
 
     // Only add voting listeners if there are actually laws to vote on
     if (sliced.length > 0) {
-      addVotingListeners(el as any);
+      addVotingListeners(el);
     }
   }
 

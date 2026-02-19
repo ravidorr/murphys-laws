@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Calculator } from '@views/sods-calculator.js';
 
 describe("Calculator view", () => {
@@ -6,8 +5,9 @@ describe("Calculator view", () => {
   let originalMathJax;
   let originalFetch;
 
-  function mountCalculator({ mathJaxStub } = {}) {
-    el?._teardownShare?.();
+  type MountOptions = { mathJaxStub?: { typesetPromise: (elements?: HTMLElement[]) => Promise<void> } | null };
+  function mountCalculator({ mathJaxStub }: MountOptions = {}) {
+    el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
 
     if (mathJaxStub === null) {
@@ -36,7 +36,7 @@ describe("Calculator view", () => {
     vi.runAllTimers();
     // Flush any pending promises (e.g., from requestAnimationFrame callbacks)
     await vi.runAllTimersAsync();
-    el?._teardownShare?.();
+    el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
     el = null;
     vi.useRealTimers();
@@ -333,7 +333,7 @@ describe("Calculator view", () => {
 
   it('loads URL parameters into sliders', () => {
     // Clean up existing element
-    el?._teardownShare?.();
+    el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
 
     // Use vi.stubGlobal for proper location mocking
@@ -367,7 +367,7 @@ describe("Calculator view", () => {
 
   it('ignores URL parameters outside valid range 1-9', () => {
     // Clean up existing element
-    el?._teardownShare?.();
+    el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
 
     // Use vi.stubGlobal for proper location mocking
@@ -394,17 +394,17 @@ describe("Calculator view", () => {
 
   it('loads URL parameters and updates slider value displays', () => {
     // Clean up existing element
-    el?._teardownShare?.();
+    el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
 
     // Mock window.location to have URL params
     const originalLocation = window.location;
-    delete window.location;
-    window.location = { 
+    const mockLocation = {
       ...originalLocation,
       href: 'http://localhost:3000/calculator?u=5&c=6&i=7&s=8&f=9',
       search: '?u=5&c=6&i=7&s=8&f=9'
     };
+    Object.defineProperty(window, 'location', { value: mockLocation, writable: true, configurable: true });
 
     // Mount new calculator
     el = Calculator();
@@ -425,22 +425,22 @@ describe("Calculator view", () => {
     expect(el.querySelector('#frequency-value').textContent).toBe('9');
 
     // Restore location
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
   });
 
   it('ignores invalid URL parameters (out of range)', () => {
     // Clean up existing element
-    el?._teardownShare?.();
+    el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
 
     // Mock window.location with invalid URL params
     const originalLocation = window.location;
-    delete window.location;
-    window.location = { 
+    const mockLocation = {
       ...originalLocation,
       href: 'http://localhost:3000/calculator?u=0&c=10&i=-5&s=abc&f=',
       search: '?u=0&c=10&i=-5&s=abc&f='
     };
+    Object.defineProperty(window, 'location', { value: mockLocation, writable: true, configurable: true });
 
     // Mount new calculator
     el = Calculator();
@@ -454,7 +454,7 @@ describe("Calculator view", () => {
     expect(el.querySelector('#frequency').value).toBe('5');
 
     // Restore location
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
   });
 
   it('uses current state values when generating shareable URL', async () => {

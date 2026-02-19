@@ -1,23 +1,30 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AttributionController } from '../../src/controllers/attributions.controller.ts';
 
+interface AttributionsTestLocalThis {
+    attributionService: { listAttributions: ReturnType<typeof vi.fn> };
+    attributionController: AttributionController;
+    req: IncomingMessage;
+    res: ServerResponse;
+}
+
 describe('AttributionController', () => {
-    let localThis;
+    let localThis: AttributionsTestLocalThis;
 
     beforeEach(() => {
         localThis = {
             attributionService: {
                 listAttributions: vi.fn(),
             },
-            attributionController: null,
-            req: {},
+            attributionController: null!,
+            req: {} as IncomingMessage,
             res: {
                 writeHead: vi.fn(),
                 end: vi.fn(),
-            },
+            } as unknown as ServerResponse,
         };
-        localThis.attributionController = new AttributionController(localThis.attributionService);
+        localThis.attributionController = new AttributionController(localThis.attributionService as never);
     });
 
     it('should list attributions', async () => {

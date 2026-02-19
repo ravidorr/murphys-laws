@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   isRunningStandalone,
@@ -20,14 +19,36 @@ import {
   _setIsInstalledForTesting
 } from '../src/components/install-prompt.js';
 
+/** Test-only: cast mock to the deferred prompt type expected by _setDeferredPromptForTesting */
+type DeferredPrompt = NonNullable<Parameters<typeof _setDeferredPromptForTesting>[0]>;
+
+interface InstallPromptTestContext {
+  originalUA?: string;
+  originalPlatform?: string;
+  originalMaxTouchPoints?: number;
+  callCount?: number;
+  addEventListenerSpy?: ReturnType<typeof vi.spyOn>;
+  prompt?: Element | null;
+  steps?: NodeListOf<Element>;
+  dismissBtn?: HTMLElement | null;
+  dismissed?: string | null;
+  mockPromptEvent?: {
+    preventDefault: ReturnType<typeof vi.fn>;
+    prompt: ReturnType<typeof vi.fn>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  };
+  installBtn?: Element | null;
+  before?: { pageViews: number; lawsViewed: number; calculatorUsed: boolean };
+  after?: { pageViews: number; lawsViewed: number; calculatorUsed: boolean };
+}
+
 describe('Install Prompt Component', () => {
   beforeEach(() => {
     // Reset module state
     _resetForTesting();
 
-    // Clear any existing prompts and styles
+    // Clear any existing prompts
     document.querySelectorAll('.install-prompt').forEach(el => el.remove());
-    document.getElementById('install-prompt-styles')?.remove();
 
     // Clear localStorage
     localStorage.clear();
@@ -47,7 +68,6 @@ describe('Install Prompt Component', () => {
 
   afterEach(() => {
     document.querySelectorAll('.install-prompt').forEach(el => el.remove());
-    document.getElementById('install-prompt-styles')?.remove();
     vi.restoreAllMocks();
   });
 
@@ -58,10 +78,9 @@ describe('Install Prompt Component', () => {
     });
 
     it('returns true when in standalone mode', () => {
-      const localThis = {};
-      localThis.callCount = 0;
+      const localThis: InstallPromptTestContext = { callCount: 0 };
       window.matchMedia = vi.fn().mockImplementation((query) => {
-        localThis.callCount++;
+        localThis.callCount!++;
         return { matches: query.includes('standalone') };
       });
       expect(isRunningStandalone()).toBe(true);
@@ -85,7 +104,7 @@ describe('Install Prompt Component', () => {
 
   describe('isIOS', () => {
     it('returns true for iPhone user agent', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
@@ -101,7 +120,7 @@ describe('Install Prompt Component', () => {
     });
 
     it('returns true for iPad user agent', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X)',
@@ -117,7 +136,7 @@ describe('Install Prompt Component', () => {
     });
 
     it('returns false for Android user agent', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (Linux; Android 10; Pixel 4)',
@@ -135,7 +154,7 @@ describe('Install Prompt Component', () => {
 
   describe('isSafari', () => {
     it('returns true for Safari user agent', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15',
@@ -151,7 +170,7 @@ describe('Install Prompt Component', () => {
     });
 
     it('returns false for Chrome user agent', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -177,7 +196,7 @@ describe('Install Prompt Component', () => {
         matches: query.includes('standalone')
       }));
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.addEventListenerSpy = vi.spyOn(window, 'addEventListener');
 
       initInstallPrompt();
@@ -227,7 +246,7 @@ describe('Install Prompt Component', () => {
 
       showIOSInstallInstructions();
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.prompt = document.querySelector('.install-prompt');
       expect(localThis.prompt).toBeTruthy();
       expect(localThis.prompt.classList.contains('install-prompt-ios')).toBe(true);
@@ -238,7 +257,7 @@ describe('Install Prompt Component', () => {
 
       showIOSInstallInstructions();
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.steps = document.querySelectorAll('.install-step');
       expect(localThis.steps.length).toBe(3);
     });
@@ -248,7 +267,7 @@ describe('Install Prompt Component', () => {
 
       showIOSInstallInstructions();
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.prompt = document.querySelector('.install-prompt');
       expect(localThis.prompt.getAttribute('role')).toBe('dialog');
       expect(localThis.prompt.getAttribute('aria-labelledby')).toBe('install-prompt-title');
@@ -259,9 +278,9 @@ describe('Install Prompt Component', () => {
 
       showIOSInstallInstructions();
 
-      const localThis = {};
-      localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
-      localThis.dismissBtn.click();
+      const localThis: InstallPromptTestContext = {};
+      localThis.dismissBtn = document.querySelector('[data-action="dismiss"]') as HTMLElement | null;
+      localThis.dismissBtn?.click();
 
       // Wait for transition
       return new Promise(resolve => setTimeout(resolve, 350)).then(() => {
@@ -302,7 +321,7 @@ describe('Install Prompt Component', () => {
     it('shows iOS instructions for iOS Safari', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
 
       // Set iOS Safari user agent
@@ -336,7 +355,7 @@ describe('Install Prompt Component', () => {
     it('returns true for iOS Safari when not installed', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
 
       // Set iOS Safari user agent
@@ -367,28 +386,31 @@ describe('Install Prompt Component', () => {
     });
   });
 
-  describe('styles', () => {
-    it('adds styles element when showing prompt', () => {
+  describe('prompt element', () => {
+    it('adds prompt element to DOM when showing', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
       showIOSInstallInstructions();
 
-      const localThis = {};
-      localThis.styles = document.getElementById('install-prompt-styles');
-      expect(localThis.styles).toBeTruthy();
-      expect(localThis.styles.tagName).toBe('STYLE');
+      const prompt = document.getElementById('install-prompt');
+      expect(prompt).toBeTruthy();
+      expect(prompt?.tagName).toBe('DIV');
+      expect(prompt?.className).toContain('install-prompt');
     });
 
-    it('does not add duplicate styles', () => {
+    it('does not add duplicate prompt when showing after hide', async () => {
+      vi.useFakeTimers();
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
       showIOSInstallInstructions();
       hideInstallPrompt();
+      // hideInstallPrompt removes the element asynchronously (transitionend or 300ms fallback)
+      await vi.advanceTimersByTimeAsync(350);
       showIOSInstallInstructions();
 
-      const localThis = {};
-      localThis.stylesElements = document.querySelectorAll('#install-prompt-styles');
-      expect(localThis.stylesElements.length).toBe(1);
+      const prompts = document.querySelectorAll('#install-prompt');
+      expect(prompts.length).toBe(1);
+      vi.useRealTimers();
     });
   });
 
@@ -398,9 +420,9 @@ describe('Install Prompt Component', () => {
 
       showIOSInstallInstructions();
 
-      const localThis = {};
-      localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
-      localThis.dismissBtn.click();
+      const localThis: InstallPromptTestContext = {};
+      localThis.dismissBtn = document.querySelector('[data-action="dismiss"]') as HTMLElement | null;
+      localThis.dismissBtn?.click();
 
       localThis.dismissed = localStorage.getItem('pwa_install_dismissed');
       expect(localThis.dismissed).toBeTruthy();
@@ -412,14 +434,14 @@ describe('Install Prompt Component', () => {
     it('creates install prompt UI when deferredPrompt exists', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
       showInstallPrompt();
 
       localThis.prompt = document.querySelector('.install-prompt');
@@ -430,14 +452,14 @@ describe('Install Prompt Component', () => {
     it('does not show prompt when already installed', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
       _setIsInstalledForTesting(true);
 
       showInstallPrompt();
@@ -448,18 +470,18 @@ describe('Install Prompt Component', () => {
     it('calls deferredPrompt.prompt() when Install button is clicked', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
       showInstallPrompt();
 
       localThis.installBtn = document.querySelector('[data-action="install"]');
-      localThis.installBtn.click();
+      (localThis.installBtn as HTMLElement | null)?.click();
 
       // Wait for async handling
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -470,7 +492,7 @@ describe('Install Prompt Component', () => {
 
   describe('engagement tracking', () => {
     it('trackPageView increments page view counter', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.before = _getEngagementForTesting();
       expect(localThis.before.pageViews).toBe(0);
 
@@ -481,7 +503,7 @@ describe('Install Prompt Component', () => {
     });
 
     it('trackLawView increments law view counter', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.before = _getEngagementForTesting();
       expect(localThis.before.lawsViewed).toBe(0);
 
@@ -492,7 +514,7 @@ describe('Install Prompt Component', () => {
     });
 
     it('trackCalculatorUse sets calculator used flag', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.before = _getEngagementForTesting();
       expect(localThis.before.calculatorUsed).toBe(false);
 
@@ -507,14 +529,14 @@ describe('Install Prompt Component', () => {
     it('shows prompt after meeting all engagement thresholds with deferredPrompt', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Set engagement to meet thresholds: 3+ page views, 2+ laws, 30+ seconds
       _setEngagementForTesting({
@@ -533,14 +555,14 @@ describe('Install Prompt Component', () => {
     it('shows prompt immediately after calculator use (bonus)', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Only calculator use, no other engagement
       trackCalculatorUse();
@@ -551,14 +573,14 @@ describe('Install Prompt Component', () => {
     it('respects 7-day cooldown after dismissal', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Set dismissal to 3 days ago (within 7 day cooldown)
       localStorage.setItem('pwa_install_dismissed',
@@ -581,14 +603,14 @@ describe('Install Prompt Component', () => {
     it('shows prompt again after 7+ days since dismissal', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Set dismissal to 8 days ago (past 7 day cooldown)
       localStorage.setItem('pwa_install_dismissed',
@@ -625,7 +647,7 @@ describe('Install Prompt Component', () => {
 
   describe('iPad Pro detection', () => {
     it('returns true for iPad Pro (MacIntel with touch)', () => {
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
       localThis.originalPlatform = navigator.platform;
       localThis.originalMaxTouchPoints = navigator.maxTouchPoints;
@@ -665,7 +687,7 @@ describe('Install Prompt Component', () => {
     it('returns false when neither deferredPrompt nor iOS Safari available', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.originalUA = navigator.userAgent;
 
       // Set Android Chrome user agent (not iOS, not Safari)
@@ -687,14 +709,14 @@ describe('Install Prompt Component', () => {
     it('returns true and shows prompt when deferredPrompt exists', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       const result = manuallyShowInstallPrompt();
       expect(result).toBe(true);
@@ -706,18 +728,18 @@ describe('Install Prompt Component', () => {
     it('handles dismissed outcome from userChoice', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'dismissed' })
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
       showInstallPrompt();
 
       localThis.installBtn = document.querySelector('[data-action="install"]');
-      localThis.installBtn.click();
+      (localThis.installBtn as HTMLElement | null)?.click();
 
       // Wait for async handling and transition
       await new Promise(resolve => setTimeout(resolve, 400));
@@ -730,18 +752,18 @@ describe('Install Prompt Component', () => {
     it('clears deferredPrompt after use', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
       showInstallPrompt();
 
       localThis.installBtn = document.querySelector('[data-action="install"]');
-      localThis.installBtn.click();
+      (localThis.installBtn as HTMLElement | null)?.click();
 
       // Wait for async handling and transition
       await new Promise(resolve => setTimeout(resolve, 400));
@@ -767,14 +789,14 @@ describe('Install Prompt Component', () => {
     it('does not show prompt when thresholds not met', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Only 1 page view (need 3)
       trackPageView();
@@ -785,14 +807,14 @@ describe('Install Prompt Component', () => {
     it('does not show prompt when only page views threshold met', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Meet page view threshold but not others
       _setEngagementForTesting({
@@ -810,14 +832,14 @@ describe('Install Prompt Component', () => {
     it('does not show prompt when only time threshold met', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Meet time threshold but not others
       _setEngagementForTesting({
@@ -837,14 +859,14 @@ describe('Install Prompt Component', () => {
     it('returns true when deferredPrompt exists', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       expect(canShowInstallPrompt()).toBe(true);
     });
@@ -884,14 +906,14 @@ describe('Install Prompt Component', () => {
       showIOSInstallInstructions();
       expect(document.querySelector('.install-prompt-ios')).toBeTruthy();
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Wait for transition timeout fallback
       await new Promise(resolve => setTimeout(resolve, 350));
@@ -910,19 +932,19 @@ describe('Install Prompt Component', () => {
     it('does not show prompt again after dismissal in same session', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      const localThis = {};
+      const localThis: InstallPromptTestContext = {};
       localThis.mockPromptEvent = {
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
       };
 
-      _setDeferredPromptForTesting(localThis.mockPromptEvent);
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
       // Show and dismiss
       showInstallPrompt();
-      const dismissBtn = document.querySelector('[data-action="dismiss"]');
-      dismissBtn.click();
+      const dismissBtn = document.querySelector('[data-action="dismiss"]') as HTMLElement | null;
+      dismissBtn?.click();
 
       // Wait for transition to complete and state to update
       await new Promise(resolve => setTimeout(resolve, 400));
@@ -931,8 +953,8 @@ describe('Install Prompt Component', () => {
       _setDeferredPromptForTesting({
         preventDefault: vi.fn(),
         prompt: vi.fn(),
-        userChoice: Promise.resolve({ outcome: 'accepted' })
-      });
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      } as unknown as DeferredPrompt);
       trackCalculatorUse();
 
       // Should NOT show because dismissed this session
