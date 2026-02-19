@@ -59,8 +59,8 @@ const HOME_OVERVIEW_HTML = `
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
 export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories: unknown, onNavigate: OnNavigate) {
-  // Clear loading indicator but preserve the hero H1 and description
-  el.innerHTML = `${HERO_HTML}${HOME_OVERVIEW_HTML}`;
+  // Clear loading indicator but preserve the hero H1
+  el.innerHTML = HERO_HTML;
 
   if (lawOfTheDay) {
     const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
@@ -78,6 +78,12 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
   // Add Submit Law section
   const submitWidget = SubmitLawSection();
   el.appendChild(submitWidget);
+
+  // Add Science of Murphy's Law section (below Submit a Law)
+  const scienceWrap = document.createElement('div');
+  scienceWrap.innerHTML = HOME_OVERVIEW_HTML;
+  const scienceSection = scienceWrap.firstElementChild;
+  if (scienceSection) el.appendChild(scienceSection);
 }
 
 export function Home({ onNavigate }: { onNavigate: OnNavigate }) {
@@ -86,7 +92,7 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }) {
   el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = `${HERO_HTML}${HOME_OVERVIEW_HTML}${renderLoadingHTML({ size: 'large' })}`;
+  el.innerHTML = `${HERO_HTML}${renderLoadingHTML({ size: 'large' })}`;
 
   function fetchAndRender() {
     fetchLawOfTheDay()
