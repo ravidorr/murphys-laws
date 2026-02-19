@@ -43,7 +43,7 @@ export function lazyLoad(componentFactory: () => HTMLElement, options: LazyLoadO
   placeholder.setAttribute('aria-label', 'Loading content');
 
   let isLoaded = false;
-  let observer = null;
+  let observer: IntersectionObserver | null = null;
 
   const loadComponent = () => {
     if (isLoaded) return;

@@ -185,28 +185,28 @@ export function ExportMenu(): HTMLDivElement {
       case 'ArrowDown':
         e.preventDefault();
         if (currentIndex < items.length - 1) {
-          items[currentIndex + 1].focus();
+          items[currentIndex + 1]?.focus();
         } else {
           // Wrap to first item
-          items[0].focus();
+          items[0]?.focus();
         }
         break;
 
       case 'ArrowUp':
         e.preventDefault();
         if (currentIndex > 0) {
-          items[currentIndex - 1].focus();
+          items[currentIndex - 1]?.focus();
         } else {
           // Wrap to last item
-          items[items.length - 1].focus();
+          items[items.length - 1]?.focus();
         }
         break;
 
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (document.activeElement.hasAttribute('data-format')) {
-          const format = document.activeElement.getAttribute('data-format');
+        if (document.activeElement?.hasAttribute('data-format')) {
+          const format = document.activeElement.getAttribute('data-format') ?? '';
           handleExport(format);
         }
         break;
@@ -235,7 +235,7 @@ export function ExportMenu(): HTMLDivElement {
   dropdown.addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest('[data-format]');
     if (item) {
-      const format = item.getAttribute('data-format');
+      const format = item.getAttribute('data-format') ?? '';
       handleExport(format);
     }
   });

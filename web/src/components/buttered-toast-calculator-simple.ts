@@ -15,10 +15,16 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
   hydrateIcons(el);
 
   // Wire up interactions
-  const sliders: Record<ToastSimpleSliderKey, HTMLInputElement | null> = {
+  const _sliders: Record<ToastSimpleSliderKey, HTMLInputElement | null> = {
     height: el.querySelector<HTMLInputElement>('#toast-height-simple'),
     overhang: el.querySelector<HTMLInputElement>('#toast-overhang-simple'),
   };
+
+  // Verify all sliders exist
+  for (const [name, slider] of Object.entries(_sliders)) {
+    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
+  }
+  const sliders = _sliders as Record<ToastSimpleSliderKey, HTMLInputElement>;
 
   const sliderValues = {
     height: el.querySelector('#toast-height-simple-value'),
@@ -35,8 +41,8 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
   const TOAST_INERTIA = 250;
 
   function updateDisplayValues() {
-    sliderValues.height.textContent = `${sliders.height.value} cm`;
-    sliderValues.overhang.textContent = `${sliders.overhang.value} cm`;
+    if (sliderValues.height) sliderValues.height.textContent = `${sliders.height.value} cm`;
+    if (sliderValues.overhang) sliderValues.overhang.textContent = `${sliders.overhang.value} cm`;
   }
 
   function calculateLanding() {
@@ -117,7 +123,8 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
 
     const navElement = t.closest('[data-nav]');
     if (navElement) {
-      onNavigate((navElement as HTMLElement).dataset.nav);
+      const nav = (navElement as HTMLElement).dataset.nav;
+      if (nav) onNavigate(nav);
     }
   });
 

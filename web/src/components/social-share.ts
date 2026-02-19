@@ -71,8 +71,8 @@ export const SHARE_PLATFORMS = {
  * @returns {Object} - Object with URL for each platform
  */
 export function buildShareUrls({ url, title, description = '', lawText, emailSubject }: BuildShareUrlsOptions = {}): Record<string, string> {
-  const encodedUrl = encodeURIComponent(url);
-  const encodedTitle = encodeURIComponent(title);
+  const encodedUrl = encodeURIComponent(url ?? '');
+  const encodedTitle = encodeURIComponent(title ?? '');
   const encodedDescription = encodeURIComponent(description);
   
   const subject = encodeURIComponent(emailSubject || "Check out this Murphy's Law");
@@ -139,7 +139,7 @@ export function SocialShare({ url, title, description, lawText, lawId }: SocialS
   SHARE_PLATFORMS.social.forEach(({ id, label, icon: iconName }) => {
     const link = document.createElement('a');
     link.className = 'share-popover-item';
-    link.href = shareUrls[id];
+    link.href = shareUrls[id] ?? '';
     link.setAttribute('role', 'menuitem');
     link.setAttribute('target', id === 'email' ? '_self' : '_blank');
     if (id !== 'email') {
@@ -477,8 +477,8 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
 
   // Update share link URLs
   function updateShareLinks() {
-    const url = getShareableUrl();
-    const text = getShareText();
+    const url = getShareableUrl?.() ?? '';
+    const text = getShareText?.() ?? '';
     const shareUrls = buildShareUrls({
       url,
       title: text,
@@ -488,7 +488,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
 
     // Update all social share links
     SHARE_PLATFORMS.social.forEach(({ id }) => {
-      const link = wrapper.querySelector(`[data-share="${id}"]`) as HTMLAnchorElement | null;
+      const link = wrapper?.querySelector(`[data-share="${id}"]`) as HTMLAnchorElement | null;
       if (link && shareUrls[id]) {
         link.href = shareUrls[id];
       }
@@ -504,9 +504,9 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     let textToCopy: string;
 
     if (action === 'copy-text') {
-      textToCopy = getShareText();
+      textToCopy = getShareText?.() ?? '';
     } else if (action === 'copy-link') {
-      textToCopy = getShareableUrl();
+      textToCopy = getShareableUrl?.() ?? '';
     } else {
       return;
     }

@@ -95,7 +95,7 @@ export function cycleTheme(): Theme {
   const current = getTheme();
   const order: Theme[] = ['auto', 'light', 'dark'];
   const currentIndex = order.indexOf(current);
-  const nextTheme = order[(currentIndex + 1) % order.length];
+  const nextTheme = order[(currentIndex + 1) % order.length] ?? 'auto';
   setTheme(nextTheme);
   return nextTheme;
 }

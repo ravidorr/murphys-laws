@@ -15,13 +15,20 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
   hydrateIcons(el);
 
   // Wire up interactions
-  const sliders: Record<SliderKey, HTMLInputElement | null> = {
+  const _sliders: Record<SliderKey, HTMLInputElement | null> = {
     urgency: el.querySelector<HTMLInputElement>('#urgency'),
     complexity: el.querySelector<HTMLInputElement>('#complexity'),
     importance: el.querySelector<HTMLInputElement>('#importance'),
     skill: el.querySelector<HTMLInputElement>('#skill'),
     frequency: el.querySelector<HTMLInputElement>('#frequency'),
   };
+
+  // Verify all sliders exist
+  for (const [name, slider] of Object.entries(_sliders)) {
+    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
+  }
+  const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
+
   const sliderValues = {
     urgency: el.querySelector('#urgency-value'),
     complexity: el.querySelector('#complexity-value'),
@@ -113,7 +120,8 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     // Check if clicked element or any parent has data-nav
     const navElement = t.closest('[data-nav]');
     if (navElement) {
-      onNavigate((navElement as HTMLElement).dataset.nav);
+      const nav = (navElement as HTMLElement).dataset.nav;
+      if (nav) onNavigate(nav);
     }
   });
 

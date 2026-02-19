@@ -97,7 +97,7 @@ function triggerThirdPartyLoads(): void {
 
   if (!window.gtag) {
     window.gtag = function gtag(...args: unknown[]) {
-      window.dataLayer.push(args);
+      window.dataLayer?.push(args);
     };
   }
 
