@@ -39,7 +39,7 @@ function pruneUndefined(value: unknown): unknown {
       .filter((item) => item !== undefined && item !== null);
   }
   if (value && typeof value === 'object') {
-    const next = {};
+    const next: Record<string, unknown> = {};
     Object.entries(value).forEach(([key, val]) => {
       const sanitized = pruneUndefined(val);
       if (sanitized !== undefined && sanitized !== null && (typeof sanitized !== 'object' || Object.keys(sanitized).length > 0)) {

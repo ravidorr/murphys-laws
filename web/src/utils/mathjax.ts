@@ -26,11 +26,11 @@ function configureMathJax(): void {
       renderActions: {
         addMathTitles: [
           200,
-          (doc) => {
-            for (const node of doc.math) {
+          (doc: Document) => {
+            for (const node of (doc as unknown as { math: Array<{ typesetRoot: Element | null }> }).math) {
               const element = node.typesetRoot;
               if (element) {
-                element.querySelectorAll('mjx-mi').forEach((mi) => {
+                element.querySelectorAll('mjx-mi').forEach((mi: Element) => {
                   const text = mi.textContent?.trim();
                   const titles: Record<string, string> = {
                     U: 'Urgency (1-9)',

@@ -105,7 +105,7 @@ export function ExportMenu(): HTMLDivElement {
       item.setAttribute('role', 'menuitem');
       item.setAttribute('data-format', format);
       item.setAttribute('tabindex', index === 0 ? '0' : '-1');
-      item.textContent = FORMAT_LABELS[format] || format.toUpperCase();
+      item.textContent = FORMAT_LABELS[format as keyof typeof FORMAT_LABELS] || format.toUpperCase();
       dropdown.appendChild(item);
     });
   }

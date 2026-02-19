@@ -234,7 +234,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
         upBtn?.classList.toggle('voted', newUserVote === 'up');
         downBtn?.classList.toggle('voted', newUserVote === 'down');
       } catch (error) {
-        showError(error.message || 'Failed to vote. Please try again.');
+        showError(error instanceof Error ? error.message : 'Failed to vote. Please try again.');
       }
       return;
     }

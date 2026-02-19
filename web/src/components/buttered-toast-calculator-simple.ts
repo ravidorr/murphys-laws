@@ -90,7 +90,7 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
     }
   }
 
-  Object.keys(sliders).forEach((k) => {
+  (Object.keys(sliders) as ToastSimpleSliderKey[]).forEach((k) => {
     if (!sliders[k]) return;
 
     // Initial setup
@@ -103,11 +103,11 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
     sliders[k].addEventListener('input', () => {
       const val = sliders[k].value;
       updateDisplayValues();
-      
+
       // Update ARIA attributes
       sliders[k].setAttribute('aria-valuenow', val);
       sliders[k].setAttribute('aria-valuetext', `${val} cm`);
-      
+
       calculateLanding();
     });
   });

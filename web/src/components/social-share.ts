@@ -174,7 +174,7 @@ export function SocialShare({ url, title, description, lawText, lawId }: SocialS
     button.className = 'share-popover-item';
     button.setAttribute('role', 'menuitem');
     button.setAttribute('data-action', action);
-    button.setAttribute('data-copy-value', copyValues[action]);
+    button.setAttribute('data-copy-value', copyValues[action as keyof typeof copyValues]);
     if (lawId) {
       button.setAttribute('data-law-id', lawId);
     }
@@ -300,7 +300,7 @@ export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButto
   };
   const copyButtonsHTML = SHARE_PLATFORMS.copy.map(({ id, label, icon, action }) => {
     const iconCircleClass = id === 'copy-text' ? 'copy' : 'link';
-    return `<button type="button" class="share-popover-item" role="menuitem" data-action="${action}" data-copy-value="${copyValues[action]}" data-law-id="${lawId}">
+    return `<button type="button" class="share-popover-item" role="menuitem" data-action="${action}" data-copy-value="${copyValues[action as keyof typeof copyValues]}" data-law-id="${lawId}">
           <span class="icon-circle ${iconCircleClass}"><span class="icon" data-icon="${icon}" aria-hidden="true"></span></span>
           ${label}
         </button>`;
