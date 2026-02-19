@@ -3,8 +3,8 @@
  * Safe deployment script for Murphy's Laws
  *
  * This script:
- * 1. Builds the project locally
- * 2. Syncs only the dist/ folder to the server
+ * 1. Builds the web project locally
+ * 2. Syncs web dist and backend source/runtime files to the server
  * 3. Restarts PM2 services safely
  *
  * Usage: npm run deploy
@@ -52,8 +52,8 @@ async function deploy() {
     'Syncing web dist folder'
   );
 
-  // Step 3: Sync backend files
-  log('\nSyncing backend files...', 'blue');
+  // Step 3: Sync backend runtime artifacts
+  log('\nSyncing backend runtime artifacts...', 'blue');
   exec(
     `rsync -avz --delete src/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/src/`,
     'Syncing backend src'
@@ -63,16 +63,16 @@ async function deploy() {
     'Syncing backend scripts'
   );
   exec(
-    `rsync -avz --delete utils/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/utils/`,
-    'Syncing backend utils'
-  );
-  exec(
     `rsync -avz --delete db/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/db/`,
     'Syncing backend db'
   );
   exec(
     `rsync -avz --delete config/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/config/`,
     'Syncing backend config'
+  );
+  exec(
+    `rsync -avz --delete ../shared/modules/ ${DROPLET_HOST}:${DROPLET_PATH}/shared/modules/`,
+    'Syncing shared modules'
   );
   exec(
     `rsync -avz ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,

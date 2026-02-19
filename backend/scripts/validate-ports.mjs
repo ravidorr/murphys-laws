@@ -55,8 +55,8 @@ try {
   const nginxFrontendPort = ports[0] || null;
   const nginxApiPort = ports[1] || null;
 
-  // Read api-server.mjs for default port
-  const apiServer = readFileSync(resolve(ROOT, 'scripts/api-server.mjs'), 'utf-8');
+  // Read src/server/api-server.ts for default port
+  const apiServer = readFileSync(resolve(ROOT, 'src/server/api-server.ts'), 'utf-8');
   const apiDefaultPort = extractPort(apiServer, /PORT\s*\|\|\s*(\d+)/);
 
   // Display found ports
@@ -66,7 +66,7 @@ try {
   console.log(`  ecosystem.config.cjs:         ${ecosystemFrontendPort || 'NOT FOUND'}`);
   console.log(`  nginx.conf (frontend):        ${nginxFrontendPort || 'NOT FOUND'}`);
   console.log(`  nginx.conf (api):             ${nginxApiPort || 'NOT FOUND'}`);
-  console.log(`  api-server.mjs (default):     ${apiDefaultPort || 'NOT FOUND'}`);
+  console.log(`  src/server/api-server.ts:     ${apiDefaultPort || 'NOT FOUND'}`);
 
   // Validate frontend ports
   const errors = [];
@@ -81,7 +81,7 @@ try {
   }
 
   if (nginxApiPort !== apiDefaultPort) {
-    warnings.push(`API port mismatch: nginx.conf (${nginxApiPort}) != api-server.mjs default (${apiDefaultPort})`);
+    warnings.push(`API port mismatch: nginx.conf (${nginxApiPort}) != src/server/api-server.ts default (${apiDefaultPort})`);
   }
 
   // Report results

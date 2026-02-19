@@ -233,28 +233,29 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: [
-      'tests/**/*.test.js',
-      '../shared/**/*.test.js'
+      'tests/**/*.test.{js,ts}',
+      '../shared/**/*.test.{js,ts}'
     ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary', 'lcov'],
       include: [
-        'src/**/*.js',
-        '../shared/**/*.js'
+        'src/**/*.{js,ts}',
+        '../shared/**/*.{js,ts}'
       ],
       exclude: [
         'e2e/**',
         'node_modules/**',
         'tests/**',
-        '../shared/**/*.test.js',
+        '../shared/**/*.test.{js,ts}',
         'scripts/**',
         'dist/**',
         '**/*.config.js',
         '**/*.config.ts',
         '**/*.config.cjs',
-        'src/main.js', // Entry point - tested via e2e (Playwright) integration tests that exercise routing, navigation, and search
+        'src/main.{js,ts}', // Entry point - tested via e2e (Playwright) integration tests that exercise routing, navigation, and search
         'src/utils/facebook-signed-request.js', // Server-side utility (uses Node.js crypto, used in scripts/api-server.mjs but not currently tested)
+        'src/types/**', // Type declaration files - no runtime code
       ],
       thresholds: {
         lines: 95,
