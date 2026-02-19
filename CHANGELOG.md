@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Home: move "The Science of Murphy's Law" section below "Submit a Law"
 
+## [2.0.9] - 2026-02-19
+
+### Changed
+- Web: enable full `strict: true` TypeScript -- remove `noImplicitAny: false`, `strictNullChecks: false`, and `useUnknownInCatchVariables: false` overrides from `tsconfig.json`
+- Web: fix 97 `noImplicitAny` errors across 10 source files (typed `Object.keys()` casts for calculator `for...in` loops, `ExportData` union narrowing via type assertions, MathJax ambient module declaration, `Record<string, unknown>` for dynamic index access)
+- Web: fix 1 `useUnknownInCatchVariables` error (`instanceof Error` narrowing in `law-of-day.ts`)
+
 ## [2.0.8] - 2026-02-19
 
 ### Changed
@@ -411,7 +418,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Murphy's Laws content database
 - Basic file organization
 
-[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.8...HEAD
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.9...HEAD
+[2.0.9]: https://github.com/ravidorr/murphys-laws/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/ravidorr/murphys-laws/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/ravidorr/murphys-laws/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/ravidorr/murphys-laws/compare/v2.0.5...v2.0.6

@@ -64,8 +64,9 @@ export function Calculator(): HTMLDivElement {
   const formulaDisplay = el.querySelector('#formula-display');
 
   // Track which variables should show values (temporarily after slider change)
-  const showValues = { U: false, C: false, I: false, S: false, F: false };
-  let resetTimeouts = { U: null, C: null, I: null, S: null, F: null };
+  type FormulaVarKey = 'U' | 'C' | 'I' | 'S' | 'F';
+  const showValues: Record<FormulaVarKey, boolean> = { U: false, C: false, I: false, S: false, F: false };
+  let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { U: null, C: null, I: null, S: null, F: null };
 
   function updateCalculation() {
     const U = parseFloat(sliders.urgency.value);
@@ -109,7 +110,7 @@ export function Calculator(): HTMLDivElement {
 
           mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
             // Add title attributes to variables after MathJax renders
-            const titles = {
+            const titles: Record<string, string> = {
               'U': 'Urgency (1-9)',
               'C': 'Complexity (1-9)',
               'I': 'Importance (1-9)',
@@ -124,7 +125,7 @@ export function Calculator(): HTMLDivElement {
             variables.forEach((mi) => {
               // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
               // Map Unicode Math Italic characters to regular letters
-              const unicodeMap = {
+              const unicodeMap: Record<string, string> = {
                 '1D443': 'P', // 𝑃
                 '1D448': 'U', // 𝑈
                 '1D436': 'C', // 𝐶
@@ -160,7 +161,7 @@ export function Calculator(): HTMLDivElement {
 
   function flashAllVariables() {
     // Show all values temporarily
-    Object.keys(showValues).forEach(v => showValues[v] = true);
+    (Object.keys(showValues) as FormulaVarKey[]).forEach(v => showValues[v] = true);
     updateCalculation();
 
     // Clear existing timeouts
@@ -170,23 +171,23 @@ export function Calculator(): HTMLDivElement {
 
     // Reset all back to variable names after 2 seconds
     const timeout = setTimeout(() => {
-      Object.keys(showValues).forEach(v => showValues[v] = false);
+      (Object.keys(showValues) as FormulaVarKey[]).forEach(v => showValues[v] = false);
       updateCalculation();
     }, 2000);
 
     // Store timeout for all variables
-    Object.keys(resetTimeouts).forEach(v => resetTimeouts[v] = timeout);
+    (Object.keys(resetTimeouts) as FormulaVarKey[]).forEach(v => resetTimeouts[v] = timeout);
   }
 
-  Object.keys(sliders).forEach((k) => {
+  (Object.keys(sliders) as SliderKey[]).forEach((k) => {
     sliders[k]?.addEventListener('input', () => {
       const val = sliders[k].value;
-      if (sliderValues[k]) sliderValues[k].textContent = val;
-      
+      if (sliderValues[k]) sliderValues[k]!.textContent = val;
+
       // Update ARIA attributes
       sliders[k].setAttribute('aria-valuenow', val);
       sliders[k].setAttribute('aria-valuetext', val);
-      
+
       flashAllVariables();
     });
   });
@@ -269,16 +270,16 @@ export function Calculator(): HTMLDivElement {
 
   // Load parameters from URL if present
   const urlParams = new URLSearchParams(window.location.search);
-  const paramKeys = { u: 'urgency', c: 'complexity', i: 'importance', s: 'skill', f: 'frequency' };
-  
+  const paramKeys: Record<string, SliderKey> = { u: 'urgency', c: 'complexity', i: 'importance', s: 'skill', f: 'frequency' };
+
   Object.entries(paramKeys).forEach(([param, slider]) => {
     const value = urlParams.get(param);
     if (value && sliders[slider]) {
       const numValue = parseFloat(value);
       if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
-        sliders[slider].value = numValue;
+        sliders[slider].value = String(numValue);
         if (sliderValues[slider]) {
-          sliderValues[slider].textContent = String(numValue);
+          sliderValues[slider]!.textContent = String(numValue);
         }
       }
     }

@@ -12,12 +12,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
 
-    /* Type Checking — strict ramp with temporary transition overrides */
+    /* Type Checking — full strict mode */
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "useUnknownInCatchVariables": false,
     "noEmit": true,
     "skipLibCheck": true,
 

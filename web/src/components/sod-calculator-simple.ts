@@ -89,9 +89,9 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     }
   }
 
-  Object.keys(sliders).forEach((k) => {
+  (Object.keys(sliders) as SliderKey[]).forEach((k) => {
     if (!sliders[k]) return;
-    
+
     // Initial value setup
     sliders[k].setAttribute('aria-valuenow', sliders[k].value);
     sliders[k].setAttribute('aria-valuetext', sliders[k].value);
@@ -99,12 +99,12 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
 
     sliders[k].addEventListener('input', () => {
       const val = sliders[k].value;
-      if (sliderValues[k]) sliderValues[k].textContent = val;
-      
+      if (sliderValues[k]) sliderValues[k]!.textContent = val;
+
       // Update ARIA attributes
       sliders[k].setAttribute('aria-valuenow', val);
       sliders[k].setAttribute('aria-valuetext', val);
-      
+
       calculateScore();
     });
   });

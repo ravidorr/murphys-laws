@@ -96,8 +96,8 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
 
   function fetchAndRender() {
     fetchLawOfTheDay()
-      .catch(() => null)
-      .then((lawJson) => {
+      .catch((): null => null)
+      .then((lawJson): void => {
         const lawOfTheDay = lawJson && lawJson.data && lawJson.data[0] ? lawJson.data[0] : null;
         
         renderHome(el, lawOfTheDay, [], onNavigate);

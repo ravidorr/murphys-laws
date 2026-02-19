@@ -64,8 +64,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
   const formulaDisplay = el.querySelector('#toast-formula-display');
 
   // Track which variables should show values (temporarily after slider change)
-  const showValues = { H: false, g: false, O: false, B: false, F: false, T: false };
-  let resetTimeouts = { H: null, g: null, O: null, B: null, F: null, T: null };
+  type FormulaVarKey = 'H' | 'g' | 'O' | 'B' | 'F' | 'T';
+  const showValues: Record<FormulaVarKey, boolean> = { H: false, g: false, O: false, B: false, F: false, T: false };
+  let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { H: null, g: null, O: null, B: null, F: null, T: null };
 
   function updateFormula() {
     const H = parseFloat(sliders.height.value);
@@ -99,7 +100,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
           mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
             // Add title attributes to variables after MathJax renders
-            const titles = {
+            const titles: Record<string, string> = {
               'H': 'Height of Fall (30-200 cm)',
               'g': 'Gravity (162-2479 cm/s²)',
               'O': 'Initial Overhang / Push (1-20 cm)',
@@ -114,7 +115,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
             variables.forEach((mi) => {
               // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
               // Map Unicode Math Italic characters to regular letters
-              const unicodeMap = {
+              const unicodeMap: Record<string, string> = {
                 '1D443': 'P', // 𝑃
                 '1D43B': 'H', // 𝐸
                 '1D434': 'A', // 𝐴 (not used but included)
@@ -151,7 +152,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   function flashAllVariables() {
     // Show all values temporarily
-    Object.keys(showValues).forEach(v => showValues[v] = true);
+    (Object.keys(showValues) as FormulaVarKey[]).forEach(v => showValues[v] = true);
     updateFormula();
 
     // Clear existing timeouts
@@ -161,12 +162,12 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
     // Reset all back to variable names after 2 seconds
     const timeout = setTimeout(() => {
-      Object.keys(showValues).forEach(v => showValues[v] = false);
+      (Object.keys(showValues) as FormulaVarKey[]).forEach(v => showValues[v] = false);
       updateFormula();
     }, 2000);
 
     // Store timeout for all variables
-    Object.keys(resetTimeouts).forEach(v => resetTimeouts[v] = timeout);
+    (Object.keys(resetTimeouts) as FormulaVarKey[]).forEach(v => resetTimeouts[v] = timeout);
   }
 
   function calculateLanding() {
@@ -220,19 +221,19 @@ export function ButteredToastCalculator(): HTMLDivElement {
     }
   }
 
-  Object.keys(sliders).forEach((k) => {
+  (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
     sliders[k]?.addEventListener('input', () => {
       const val = sliders[k].value;
-      
+
       // Update ARIA attributes
       sliders[k].setAttribute('aria-valuenow', val);
-      
+
       // Set descriptive value text with units
       let valueText = val;
       if (k === 'height' || k === 'overhang') valueText += ' cm';
       else if (k === 'gravity') valueText += ' cm/s²';
       else if (k === 'butter') valueText = parseFloat(val).toFixed(2);
-      
+
       sliders[k].setAttribute('aria-valuetext', valueText);
 
       flashAllVariables();
@@ -297,8 +298,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   // Load parameters from URL if present
   const urlParams = new URLSearchParams(window.location.search);
-  const paramKeys = { h: 'height', g: 'gravity', o: 'overhang', b: 'butter', f: 'friction', t: 'inertia' };
-  
+  const paramKeys: Record<string, ToastSliderKey> = { h: 'height', g: 'gravity', o: 'overhang', b: 'butter', f: 'friction', t: 'inertia' };
+
   Object.entries(paramKeys).forEach(([param, slider]) => {
     const value = urlParams.get(param);
     if (value && sliders[slider]) {
@@ -306,7 +307,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
       const min = parseFloat(sliders[slider].min);
       const max = parseFloat(sliders[slider].max);
       if (!isNaN(numValue) && !isNaN(min) && !isNaN(max) && numValue >= min && numValue <= max) {
-        sliders[slider].value = numValue;
+        sliders[slider].value = String(numValue);
       }
     }
   });

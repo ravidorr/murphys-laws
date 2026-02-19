@@ -25,7 +25,7 @@ import { jsPDF } from 'jspdf';
 import { SITE_NAME, SITE_URL } from './constants.ts';
 import { ContentType } from './export-context.ts';
 import type { ExportContent } from './export-context.ts';
-import type { Law } from '../types/app.d.ts';
+import type { Law, Category } from '../types/app.d.ts';
 
 /**
  * Trigger file download by creating a temporary anchor element.
@@ -103,7 +103,7 @@ export function exportToPDF(content: ExportContent, filename?: string): void {
 
   // Content based on type
   if (type === ContentType.LAWS || type === ContentType.SINGLE_LAW) {
-    const laws = Array.isArray(data) ? data : [data];
+    const laws = (Array.isArray(data) ? data : [data]) as Partial<Law>[];
 
     laws.forEach((law) => {
       // Check for page break - leave room for at least text + attribution
@@ -164,9 +164,10 @@ export function exportToPDF(content: ExportContent, filename?: string): void {
     }
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     // Categories list
+    const categories = data as Partial<Category>[];
     doc.setFontSize(10);
 
-    data.forEach((cat) => {
+    categories.forEach((cat) => {
       if (y > pageHeight - 20) {
         doc.addPage();
         y = 20;
@@ -235,7 +236,7 @@ export function exportToCSV(content: ExportContent, filename?: string): void {
   let csv = '';
 
   if (type === ContentType.LAWS || type === ContentType.SINGLE_LAW) {
-    const laws = Array.isArray(data) ? data : [data];
+    const laws = (Array.isArray(data) ? data : [data]) as Partial<Law>[];
 
     // Header row - includes Full Text which combines title and text
     csv = '"ID","Full Text","Title","Text","Attribution","Category","Upvotes","Downvotes"\n';
@@ -257,10 +258,11 @@ export function exportToCSV(content: ExportContent, filename?: string): void {
     });
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     // Header row
+    const categories = data as Partial<Category>[];
     csv = '"ID","Name","Slug","Law Count"\n';
 
     // Data rows
-    data.forEach(cat => {
+    categories.forEach(cat => {
       const row = [
         escapeCSVValue(cat.id || ''),
         escapeCSVValue(cat.name || ''),
@@ -307,7 +309,7 @@ export function exportToMarkdown(content: ExportContent, filename?: string): voi
   let md = `# ${title}\n\n`;
 
   if (type === ContentType.LAWS || type === ContentType.SINGLE_LAW) {
-    const laws = Array.isArray(data) ? data : [data];
+    const laws = (Array.isArray(data) ? data : [data]) as Partial<Law>[];
 
     laws.forEach((law, index) => {
       const lawText = getLawDisplayText(law);
@@ -322,7 +324,8 @@ export function exportToMarkdown(content: ExportContent, filename?: string): voi
     md += String(data || '');
     md += '\n\n';
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
-    data.forEach(cat => {
+    const categories = data as Partial<Category>[];
+    categories.forEach(cat => {
       md += `- **${cat.name || ''}** (${cat.law_count || 0} laws)\n`;
     });
     md += '\n';
@@ -348,7 +351,7 @@ export function exportToText(content: ExportContent, filename?: string): void {
   txt += '='.repeat(50) + '\n\n';
 
   if (type === ContentType.LAWS || type === ContentType.SINGLE_LAW) {
-    const laws = Array.isArray(data) ? data : [data];
+    const laws = (Array.isArray(data) ? data : [data]) as Partial<Law>[];
 
     laws.forEach(law => {
       const lawText = getLawDisplayText(law);
@@ -372,7 +375,8 @@ export function exportToText(content: ExportContent, filename?: string): void {
 
     txt += plainText;
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
-    data.forEach(cat => {
+    const categories = data as Partial<Category>[];
+    categories.forEach(cat => {
       txt += `${cat.name || ''} (${cat.law_count || 0} laws)\n`;
     });
   }
