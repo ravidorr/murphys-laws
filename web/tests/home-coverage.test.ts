@@ -8,7 +8,7 @@ describe('Home view - Coverage', () => {
     container = document.createElement('div');
     document.body.appendChild(container);
     
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [] })
     });

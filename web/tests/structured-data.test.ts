@@ -6,6 +6,7 @@ import {
   setHomeStructuredData,
   setBrowseStructuredData,
   setLawStructuredData,
+  setCategoryItemListSchema,
   setSodCalculatorStructuredData,
   setToastCalculatorStructuredData
 } from '../src/modules/structured-data.js';
@@ -422,6 +423,44 @@ describe('Structured Data module', () => {
       expect(data.speakable['@type']).toBe('SpeakableSpecification');
       expect(data.speakable.cssSelector).toBeInstanceOf(Array);
       expect(data.speakable.cssSelector).toContain('.law-text');
+    });
+  });
+
+  describe('setCategoryItemListSchema', () => {
+    it('clears page structured data when laws is empty', () => {
+      setJsonLd('category-detail-itemlist', { name: 'Existing' });
+      setCategoryItemListSchema({ categoryTitle: 'Test', categorySlug: 'test', laws: [] });
+
+      expect(document.head.querySelector('#jsonld-category-detail-itemlist')).toBeFalsy();
+    });
+
+    it('creates ItemList schema when laws are provided', () => {
+      const laws = [
+        { id: 1, title: 'Law One', text: 'Text one' },
+        { id: 2, title: 'Law Two', text: 'Text two' }
+      ];
+      setCategoryItemListSchema({ categoryTitle: 'Computers', categorySlug: 'computers', laws });
+
+      const el = document.head.querySelector('#jsonld-category-detail-itemlist');
+      expect(el).toBeTruthy();
+      const data = JSON.parse((el as HTMLScriptElement).textContent);
+      expect(data['@type']).toBe('ItemList');
+      expect(data.name).toMatch(/Computers/);
+      expect(data.numberOfItems).toBe(2);
+      expect(data.itemListElement).toHaveLength(2);
+      expect(data.itemListElement[0].item.name).toBe('Law One');
+      expect(data.itemListElement[1].item.name).toBe('Law Two');
+    });
+
+    it('uses fallback title for law without title', () => {
+      const laws = [
+        { id: 1, text: 'Text only' }
+      ];
+      setCategoryItemListSchema({ categoryTitle: 'Test', categorySlug: 'test', laws });
+
+      const el = document.head.querySelector('#jsonld-category-detail-itemlist');
+      const data = JSON.parse((el as HTMLScriptElement).textContent);
+      expect(data.itemListElement[0].item.name).toMatch(/Murphy's Law #1/);
     });
   });
 

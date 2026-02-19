@@ -487,7 +487,7 @@ export function renderButtonHTML(options: ButtonOptions = {}): string {
     : '';
 
   // Build content based on variant
-  let content = '';
+  let content: string;
 
   if (variant === 'vote') {
     // Vote buttons: icon + count

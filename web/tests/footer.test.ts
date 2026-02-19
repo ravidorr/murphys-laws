@@ -264,11 +264,13 @@ describe('Footer component', () => {
     // Ensure IntersectionObserver is available
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
-    const mockIntersectionObserver = vi.fn((_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) => ({
-      observe: observeMock,
-      disconnect: disconnectMock
-    }));
-    global.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver;
+    const mockIntersectionObserver = vi.fn(function (_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {
+      return {
+        observe: observeMock,
+        disconnect: disconnectMock
+      };
+    });
+    globalThis.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver;
 
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -299,14 +301,14 @@ describe('Footer component', () => {
     let intersectionCallback;
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
-    const mockIntersectionObserver = vi.fn((callback: IntersectionObserverCallback) => {
+    const mockIntersectionObserver = vi.fn(function (callback: IntersectionObserverCallback) {
       intersectionCallback = callback;
       return {
         observe: observeMock,
         disconnect: disconnectMock
       };
     });
-    global.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver;
+    globalThis.IntersectionObserver = mockIntersectionObserver as unknown as typeof IntersectionObserver;
 
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -342,8 +344,8 @@ describe('Footer component', () => {
     const originalRequestIdleCallback = window.requestIdleCallback;
 
     // Remove IntersectionObserver to trigger the else branch
-    const originalIntersectionObserver = global.IntersectionObserver;
-    delete global.IntersectionObserver;
+    const originalIntersectionObserver = globalThis.IntersectionObserver;
+    delete globalThis.IntersectionObserver;
 
     // Remove requestIdleCallback to trigger setTimeout branch
     delete window.requestIdleCallback;
@@ -373,7 +375,7 @@ describe('Footer component', () => {
       window.requestIdleCallback = originalRequestIdleCallback;
     }
     if (originalIntersectionObserver) {
-      global.IntersectionObserver = originalIntersectionObserver;
+      globalThis.IntersectionObserver = originalIntersectionObserver;
     }
     setTimeoutSpy.mockRestore();
   });
@@ -383,8 +385,8 @@ describe('Footer component', () => {
     const originalReadyState = document.readyState;
 
     // Remove IntersectionObserver to trigger the else branch
-    const originalIntersectionObserver = global.IntersectionObserver;
-    delete global.IntersectionObserver;
+    const originalIntersectionObserver = globalThis.IntersectionObserver;
+    delete globalThis.IntersectionObserver;
 
     // Ensure requestIdleCallback is available
     const requestIdleCallbackSpy = vi.fn(() => {
@@ -413,7 +415,7 @@ describe('Footer component', () => {
       configurable: true
     });
     if (originalIntersectionObserver) {
-      global.IntersectionObserver = originalIntersectionObserver;
+      globalThis.IntersectionObserver = originalIntersectionObserver;
     }
   });
 

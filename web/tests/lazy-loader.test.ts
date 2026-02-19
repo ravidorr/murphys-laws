@@ -21,10 +21,10 @@ describe('Lazy Loader Utilities', () => {
       disconnect: vi.fn()
     };
 
-    vi.stubGlobal('IntersectionObserver', vi.fn((callback) => {
+    vi.stubGlobal('IntersectionObserver', vi.fn(function (this: unknown, callback: IntersectionObserverCallback) {
       localThis.intersectionCallback = callback;
       return localThis.mockObserver;
-    }));
+    }) as unknown as typeof IntersectionObserver);
 
     // Mock requestAnimationFrame
     vi.stubGlobal('requestAnimationFrame', (cb) => setTimeout(cb, 0));

@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import type { OnNavigate } from '../src/types/app.d.ts';
+import type { CleanableElement } from '../src/types/app.js';
 import { Categories } from '../src/views/categories.js';
 import * as api from '../src/utils/api.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
@@ -26,14 +29,14 @@ vi.mock('../src/utils/sanitize.js', () => ({
 }));
 
 interface CategoriesTestContext {
-  onNavigate: ReturnType<typeof vi.fn>;
+  onNavigate: Mock<OnNavigate>;
 }
 
 describe('Categories view', () => {
   const localThis = {} as CategoriesTestContext;
 
   beforeEach(() => {
-    localThis.onNavigate = vi.fn();
+    localThis.onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
     vi.clearAllMocks();
 
     vi.mocked(api.fetchCategories).mockResolvedValue({
@@ -322,7 +325,7 @@ describe('Categories view', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // Reset the mock to clear any calls from initial render
-    localThis.onNavigate.mockClear();
+    vi.mocked(localThis.onNavigate).mockClear();
 
     // Create a card manually without the data-category-slug attribute
     const manualCard = document.createElement('div');
@@ -341,7 +344,7 @@ describe('Categories view', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // Reset the mock to clear any calls from initial render
-    localThis.onNavigate.mockClear();
+    vi.mocked(localThis.onNavigate).mockClear();
 
     // Create a card manually without the data-category-slug attribute
     const manualCard = document.createElement('div');
@@ -354,5 +357,16 @@ describe('Categories view', () => {
     
     // onNavigate should not have been called since card has no slug
     expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('cleanup calls clearExportContent', async () => {
+    const clearSpy = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => {
+      expect(el.querySelector('.category-card')).toBeTruthy();
+    });
+    (el as CleanableElement).cleanup!();
+    expect(clearSpy).toHaveBeenCalled();
+    clearSpy.mockRestore();
   });
 });

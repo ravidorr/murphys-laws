@@ -14,7 +14,7 @@ describe('Trending component', () => {
     fetchTrendingSpy = vi.spyOn(api, 'fetchTrending');
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
     // Mock fetch for voting API calls
-    fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ upvotes: 11, downvotes: 2 }), {
         status: 200,
         statusText: 'OK',
@@ -227,6 +227,19 @@ describe('Trending component', () => {
 
     await vi.waitFor(() => {
       expect(el.querySelector('.card-body')).toBeTruthy();
+    });
+  });
+
+  it('handles response without data property', async () => {
+    fetchTrendingSpy.mockResolvedValue({});
+
+    const el = Trending();
+
+    await vi.waitFor(() => {
+      const bodyDiv = el.querySelector('.card-body');
+      expect(bodyDiv).toBeTruthy();
+      const lawCards = bodyDiv.querySelectorAll('.law-card-mini');
+      expect(lawCards.length).toBe(0);
     });
   });
 

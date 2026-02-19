@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import type { OnNavigate } from '../src/types/app.d.ts';
 import { CategoryDetail } from '../src/views/category-detail.js';
 import * as api from '../src/utils/api.js';
 import * as structuredData from '../src/modules/structured-data.js';
@@ -67,11 +68,11 @@ vi.mock('../src/utils/export-context.js', () => ({
 }));
 
 describe('CategoryDetail view', () => {
-  let onNavigate: ReturnType<typeof vi.fn>;
+  let onNavigate: Mock<OnNavigate>;
   const categoryId = '1';
 
   beforeEach(() => {
-    onNavigate = vi.fn();
+    onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
     vi.clearAllMocks();
     
     vi.mocked(api.fetchLaws).mockResolvedValue({

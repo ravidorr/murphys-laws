@@ -199,7 +199,7 @@ describe('Law components', () => {
     });
 
     it('handles vote button clicks', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ success: true })
       });

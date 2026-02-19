@@ -501,7 +501,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     if (!button) return;
 
     const action = button.dataset.action;
-    let textToCopy = '';
+    let textToCopy: string;
 
     if (action === 'copy-text') {
       textToCopy = getShareText();
@@ -557,6 +557,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
 // Global click handler to close popovers when clicking outside
 let globalListenersInitialized = false;
 if (typeof document !== 'undefined' && !globalListenersInitialized) {
+  // eslint-disable-next-line no-useless-assignment -- flag is read on next top-level check
   globalListenersInitialized = true;
 
   document.addEventListener('click', () => {

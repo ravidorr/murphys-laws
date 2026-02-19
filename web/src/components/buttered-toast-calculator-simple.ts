@@ -58,8 +58,8 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
   }
 
   function updateInterpretation(probability: number) {
-    let interpretation = '';
-    let cls = 'calc-ok';
+    let interpretation: string;
+    let cls: string;
 
     if (probability > 85) {
       cls = 'calc-dark';

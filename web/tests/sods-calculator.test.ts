@@ -26,7 +26,7 @@ describe("Calculator view", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     originalMathJax = window.MathJax;
-    originalFetch = global.fetch;
+    originalFetch = globalThis.fetch;
     mountCalculator();
   });
 
@@ -41,7 +41,7 @@ describe("Calculator view", () => {
     el = null;
     vi.useRealTimers();
     window.MathJax = originalMathJax;
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it('computes a score and updates interpretation', () => {

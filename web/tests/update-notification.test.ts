@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { showUpdateNotification, showUpdateAvailable, showOfflineReady } from '../src/components/update-notification.js';
 
@@ -7,9 +8,9 @@ interface UpdateNotificationTestContext {
   updateBtn?: Element | null;
   dismissBtn?: Element | null;
   notifications?: NodeListOf<Element>;
-  onUpdate?: ReturnType<typeof vi.fn>;
-  onDismiss?: ReturnType<typeof vi.fn>;
-  updateSW?: ReturnType<typeof vi.fn>;
+  onUpdate?: (() => void) | Mock<() => void>;
+  onDismiss?: (() => void) | Mock<() => void>;
+  updateSW?: ((reloadPage?: boolean) => void) | Mock<(reloadPage?: boolean) => void>;
 }
 
 describe('Update Notification Component', () => {
@@ -94,7 +95,7 @@ describe('Update Notification Component', () => {
 
     it('calls onUpdate callback when Refresh button is clicked', () => {
       const localThis: UpdateNotificationTestContext = {};
-      localThis.onUpdate = vi.fn();
+      localThis.onUpdate = vi.fn<() => void>() as Mock<() => void>;
       showUpdateNotification({ type: 'update', onUpdate: localThis.onUpdate });
 
       const updateBtn = document.querySelector<HTMLElement>('[data-action="update"]');
@@ -105,7 +106,7 @@ describe('Update Notification Component', () => {
 
     it('removes notification when Refresh button is clicked', () => {
       const localThis: UpdateNotificationTestContext = {};
-      localThis.onUpdate = vi.fn();
+      localThis.onUpdate = vi.fn<() => void>() as Mock<() => void>;
       showUpdateNotification({ type: 'update', onUpdate: localThis.onUpdate });
 
       const updateBtn = document.querySelector<HTMLElement>('[data-action="update"]');
@@ -125,7 +126,7 @@ describe('Update Notification Component', () => {
 
     it('calls onDismiss callback when dismiss button is clicked', () => {
       const localThis: UpdateNotificationTestContext = {};
-      localThis.onDismiss = vi.fn();
+      localThis.onDismiss = vi.fn<() => void>() as Mock<() => void>;
       showUpdateNotification({ type: 'update', onDismiss: localThis.onDismiss });
 
       const dismissBtn = document.querySelector<HTMLElement>('[data-action="dismiss"]');
@@ -214,7 +215,7 @@ describe('Update Notification Component', () => {
   describe('showUpdateAvailable', () => {
     it('shows update notification with correct type', () => {
       const localThis: UpdateNotificationTestContext = {};
-      localThis.updateSW = vi.fn();
+      localThis.updateSW = vi.fn<(reloadPage?: boolean) => void>() as Mock<(reloadPage?: boolean) => void>;
       showUpdateAvailable(localThis.updateSW);
 
       const title = document.querySelector('.pwa-notification-title');
@@ -223,7 +224,7 @@ describe('Update Notification Component', () => {
 
     it('calls updateSW with true when Refresh is clicked', () => {
       const localThis: UpdateNotificationTestContext = {};
-      localThis.updateSW = vi.fn();
+      localThis.updateSW = vi.fn<(reloadPage?: boolean) => void>() as Mock<(reloadPage?: boolean) => void>;
       showUpdateAvailable(localThis.updateSW);
 
       const updateBtn = document.querySelector<HTMLElement>('[data-action="update"]');

@@ -85,8 +85,8 @@ describe('DOM utilities', () => {
     });
 
     it('does nothing when document is undefined (SSR)', () => {
-      const savedDocument = global.document;
-      delete global.document;
+      const savedDocument = globalThis.document;
+      delete globalThis.document;
 
       expect(() => {
         updateSocialMetaTags({
@@ -94,7 +94,7 @@ describe('DOM utilities', () => {
         });
       }).not.toThrow();
 
-      global.document = savedDocument;
+      globalThis.document = savedDocument;
     });
 
     it('skips updating when value is missing', () => {
@@ -151,14 +151,14 @@ describe('DOM utilities', () => {
     });
 
     it('does nothing when document is undefined (SSR)', () => {
-      const savedDocument = global.document;
-      delete global.document;
+      const savedDocument = globalThis.document;
+      delete globalThis.document;
 
       expect(() => {
         updateMetaDescription('Test description');
       }).not.toThrow();
 
-      global.document = savedDocument;
+      globalThis.document = savedDocument;
     });
   });
 });

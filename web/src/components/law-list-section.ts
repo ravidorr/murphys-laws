@@ -32,10 +32,9 @@ export function createLawListSection({ accentText, remainderText }: { accentText
   `;
 
   const bodyDiv = el.querySelector('.card-body');
-  let loadingEl: HTMLElement | null = null;
 
   if (bodyDiv) {
-    loadingEl = createLoading();
+    const loadingEl = createLoading();
     bodyDiv.appendChild(loadingEl);
   }
 

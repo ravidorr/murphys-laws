@@ -2,18 +2,18 @@ import type { VoteType } from '../src/types/app.d.ts';
 import { voteLaw, unvoteLaw, toggleVote, getUserVote } from '../src/utils/voting.ts';
 
 describe('Voting API integration', () => {
-  let originalFetch: typeof global.fetch;
+  let originalFetch: typeof globalThis.fetch;
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     localStorage.clear();
-    originalFetch = global.fetch;
+    originalFetch = globalThis.fetch;
     fetchMock = vi.fn();
-    global.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock as typeof fetch;
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     localStorage.clear();
   });
 
@@ -26,7 +26,7 @@ describe('Voting API integration', () => {
 
       const result = await voteLaw(123, 'up');
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/laws/123/vote'),
         expect.objectContaining({
           method: 'POST',
@@ -71,7 +71,7 @@ describe('Voting API integration', () => {
       fetchMock.mockRejectedValueOnce(new Error('Network failed'));
 
       await expect(voteLaw(123, 'up')).rejects.toThrow('Network error');
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -86,7 +86,7 @@ describe('Voting API integration', () => {
 
       await unvoteLaw(123);
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/laws/123/vote'),
         expect.objectContaining({
           method: 'DELETE'
@@ -124,7 +124,7 @@ describe('Voting API integration', () => {
       fetchMock.mockRejectedValueOnce(new Error('Network failed'));
 
       await expect(unvoteLaw(123)).rejects.toThrow('Network error');
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
   });
 

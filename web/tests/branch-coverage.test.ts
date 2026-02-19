@@ -5,6 +5,7 @@
 
 import { Breadcrumb } from '@components/breadcrumb.js';
 import { AdvancedSearch } from '@components/advanced-search.js';
+import { addVotingListeners } from '../src/utils/voting.js';
 import * as api from '../src/utils/api.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
 
@@ -245,6 +246,40 @@ describe('Branch Coverage Tests', () => {
         const attributionSelect = localThis.el.querySelector('#search-attribution');
         expect(attributionSelect.innerHTML).toContain('Cached Author');
       });
+    });
+  });
+
+  describe('voting addVotingListeners branches', () => {
+    it('handles vote click when button is not inside law-card-mini', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ upvotes: 1, downvotes: 0 }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      );
+      const container = document.createElement('div');
+      const voteBtn = document.createElement('button');
+      voteBtn.setAttribute('data-vote', 'up');
+      voteBtn.setAttribute('data-law-id', '999');
+      container.appendChild(voteBtn);
+      addVotingListeners(container);
+      voteBtn.click();
+      await new Promise(r => setTimeout(r, 5));
+      expect(fetchSpy).toHaveBeenCalled();
+      fetchSpy.mockRestore();
+    });
+
+    it('handles toggleVote rejection without throwing', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
+      const container = document.createElement('div');
+      container.innerHTML = `
+        <div class="law-card-mini">
+          <button data-vote="up" data-law-id="1"><span class="count-num">0</span></button>
+          <button data-vote="down" data-law-id="1"><span class="count-num">0</span></button>
+        </div>
+      `;
+      addVotingListeners(container);
+      const upBtn = container.querySelector('[data-vote="up"]');
+      (upBtn as HTMLElement).click();
+      await new Promise(r => setTimeout(r, 10));
+      vi.restoreAllMocks();
     });
   });
 });

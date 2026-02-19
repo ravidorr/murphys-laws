@@ -14,7 +14,7 @@ describe('RecentlyAdded component', () => {
     fetchRecentlyAddedSpy = vi.spyOn(api, 'fetchRecentlyAdded');
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
     // Mock fetch for voting API calls
-    fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ upvotes: 11, downvotes: 2 })

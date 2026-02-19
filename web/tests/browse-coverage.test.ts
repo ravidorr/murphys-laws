@@ -9,7 +9,7 @@ describe('Browse view - Coverage', () => {
     document.body.appendChild(container);
     
     // Mock fetch
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], total: 0 })
     });
@@ -40,7 +40,7 @@ describe('Browse view - Coverage', () => {
 
   it('handles empty laws array in loadPage', async () => {
     // Mock return empty data
-    vi.mocked(global.fetch).mockResolvedValueOnce({
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: [], total: 0 })
     } as Response);
@@ -55,7 +55,7 @@ describe('Browse view - Coverage', () => {
   
   it('handles fetch errors in loadPage', async () => {
     // Set mock to reject for all calls to ensure it hits the error branch
-    vi.mocked(global.fetch).mockRejectedValue(new Error('API Failure'));
+    vi.mocked(globalThis.fetch).mockRejectedValue(new Error('API Failure'));
     
     const el = Browse({ searchQuery: '', onNavigate: () => {} });
     container.appendChild(el);

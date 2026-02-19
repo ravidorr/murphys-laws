@@ -362,7 +362,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('submits form with valid data', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, id: 123 })
     });
@@ -388,7 +388,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('shows error message on submit failure', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
       json: async () => ({ error: 'Invalid data' })
@@ -470,7 +470,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('handles 404 error with user-friendly message', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
       json: async () => { throw new Error('Not JSON'); }
@@ -494,7 +494,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('handles 500 error with user-friendly message', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: async () => { throw new Error('Not JSON'); }
@@ -518,7 +518,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('handles other status codes with generic message', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 418,
       json: async () => { throw new Error('Not JSON'); }
@@ -545,7 +545,7 @@ describe('SubmitLawSection component', () => {
     // Mock fetchAPI for category loading
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 503,
       json: async () => ({ error: 'Service unavailable' })
@@ -569,14 +569,14 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
   });
 
   it('handles 404 error', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 404,
       json: async () => { throw new Error('Not JSON'); }
@@ -603,7 +603,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('handles 500 error', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 500,
       json: async () => { throw new Error('Not JSON'); }
@@ -630,7 +630,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('handles 400 error', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: async () => { throw new Error('Not JSON'); }
@@ -657,7 +657,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('handles other status codes', async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 418,
       json: async () => { throw new Error('Not JSON'); }
@@ -684,7 +684,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('submits with title, author, and category when provided', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, id: 123 })
     });
@@ -720,7 +720,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('omits author and email when anonymous is checked', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, id: 123 })
     });
@@ -750,7 +750,7 @@ describe('SubmitLawSection component', () => {
   });
 
   it('clears form after successful submission', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, id: 123 })
     });
@@ -819,7 +819,7 @@ describe('SubmitLawSection component', () => {
   it('prevents submission without text', async () => {
     // Mock fetchAPI to prevent category loading from calling fetch
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
-    global.fetch = vi.fn();
+    globalThis.fetch = vi.fn();
 
     const el = mountSection({ append: true });
 
@@ -835,8 +835,8 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Form should not submit - global.fetch should not be called for submission
-    expect(global.fetch).not.toHaveBeenCalled();
+    // Form should not submit - globalThis.fetch should not be called for submission
+    expect(globalThis.fetch).not.toHaveBeenCalled();
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
@@ -845,7 +845,7 @@ describe('SubmitLawSection component', () => {
   it('prevents submission without terms checked', async () => {
     // Mock fetchAPI to prevent category loading from calling fetch
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
-    global.fetch = vi.fn();
+    globalThis.fetch = vi.fn();
 
     const el = mountSection({ append: true });
 
@@ -860,8 +860,8 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Form should not submit - global.fetch should not be called for submission
-    expect(global.fetch).not.toHaveBeenCalled();
+    // Form should not submit - globalThis.fetch should not be called for submission
+    expect(globalThis.fetch).not.toHaveBeenCalled();
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
@@ -871,7 +871,7 @@ describe('SubmitLawSection component', () => {
     // Mock fetchAPI for category loading
     vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 400,
       json: async () => ({ error: 'Validation error' })
@@ -894,7 +894,7 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();

@@ -49,14 +49,14 @@ describe('mathjax utility', () => {
     });
 
     it('returns undefined when window is undefined (SSR)', async () => {
-      const originalWindow = global.window;
-      delete global.window;
+      const originalWindow = globalThis.window;
+      delete globalThis.window;
       
       try {
         const result = await ensureMathJax();
         expect(result).toBeUndefined();
       } finally {
-        global.window = originalWindow;
+        globalThis.window = originalWindow;
       }
     });
 
