@@ -422,6 +422,18 @@ describe('Button component', () => {
         localThis.html = renderButtonHTML({ text: 'Test', ariaDisabled: true });
         expect(localThis.html!).toContain('aria-disabled="true"');
       });
+
+      it('renders aria-haspopup attribute', () => {
+        const localThis: ButtonTestLocalThis = {};
+        localThis.html = renderButtonHTML({ text: 'Menu', ariaHaspopup: true });
+        expect(localThis.html!).toContain('aria-haspopup="true"');
+      });
+
+      it('renders role attribute', () => {
+        const localThis: ButtonTestLocalThis = {};
+        localThis.html = renderButtonHTML({ text: 'Item', role: 'menuitem' });
+        expect(localThis.html!).toContain('role="menuitem"');
+      });
     });
 
     describe('loading state', () => {

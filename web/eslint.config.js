@@ -3,6 +3,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import noEmoji from 'eslint-plugin-no-emoji';
 
 export default [
   // Top-level ignores for ESLint 9 flat config
@@ -15,6 +16,7 @@ export default [
     ],
   },
   js.configs.recommended,
+  noEmoji.configs['flat/recommended'],
   {
     languageOptions: {
       ecmaVersion: 2022,
