@@ -10,7 +10,6 @@ import { updateSocialMetaTags } from '../utils/dom.ts';
 // for text replacement, which is compatible with the unified loading approach
 import { hydrateIcons, createIcon } from '@utils/icons.ts';
 import { triggerAdSense } from '../utils/ads.ts';
-import { showSuccess } from '../components/notification.ts';
 import { copyToClipboard } from '../utils/clipboard.ts';
 import { renderLawCards } from '../utils/law-card-renderer.ts';
 import { addVotingListeners } from '../utils/voting.ts';

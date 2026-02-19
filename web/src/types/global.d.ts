@@ -2,9 +2,9 @@ export {};
 
 declare global {
   interface Window {
-    MathJax?: Record<string, any> & {
+    MathJax?: Record<string, unknown> & {
       typesetPromise?: (elements?: HTMLElement[]) => Promise<void>;
-      startup?: Record<string, any>;
+      startup?: Record<string, unknown>;
       tex?: Record<string, unknown>;
       options?: Record<string, unknown>;
     };

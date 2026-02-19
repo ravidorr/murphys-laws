@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-02-19
+
+### Fixed
+- Lint and type fixes: MathJax `Window` type (`Record<string, unknown>`), debounce generic args, unused imports/vars
+- CSS: added standard `line-clamp` alongside `-webkit-line-clamp` for compatibility (components.css, sections.css)
+
 ## [2.6.0] - 2026-01-30
 
 ### Added
