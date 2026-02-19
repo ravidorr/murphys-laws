@@ -102,8 +102,8 @@ For source map uploads during build (better stack traces), also set:
  To prevent "Google-served ads on screens without publisher-content" violations (common in SPAs), AdSense loading is deferred:
 
  1. **Script Removal:** The AdSense script is NOT in `index.html` head.
- 2. **Deferred Loading:** `src/utils/ads.js` injects the script dynamically.
- 3. **Initialization:** `main.js` calls `initAdSense()` after the app mounts and content is rendered.
+ 2. **Deferred Loading:** `src/utils/ads.ts` injects the script dynamically.
+ 3. **Initialization:** `main.ts` calls `initAdSense()` after the app mounts and content is rendered.
  4. **Static Shell:** `index.html` contains a static HTML shell to ensure crawlers never see an empty page.
 
 ## Features
@@ -176,9 +176,9 @@ The application includes a universal export feature accessible from the header (
 *Calculators and 404 page do not support export (button disabled).*
 
 **Architecture:**
-- `src/utils/export-context.js` - Page content registration system (singleton context)
-- `src/utils/export.js` - Format-specific export functions
-- `src/components/export-menu.js` - Header dropdown component
+- `src/utils/export-context.ts` - Page content registration system (singleton context)
+- `src/utils/export.ts` - Format-specific export functions
+- `src/components/export-menu.ts` - Header dropdown component
 
 **Usage:**
 Pages register their exportable content using `setExportContent()` and clear it on unmount with `clearExportContent()`. The export menu automatically updates available formats based on content type.
@@ -201,10 +201,10 @@ The application provides a unified sharing system used across laws and calculato
 
 **Single Source of Truth:**
 
-All share options are defined in `SHARE_PLATFORMS` constant in `src/components/social-share.js`. Adding, changing, or removing a share platform updates all locations automatically.
+All share options are defined in `SHARE_PLATFORMS` constant in `src/components/social-share.ts`. Adding, changing, or removing a share platform updates all locations automatically.
 
 **Architecture:**
-- `src/components/social-share.js` - Share component (dropdown and inline variants)
+- `src/components/social-share.ts` - Share component (dropdown and inline variants)
 - `SHARE_PLATFORMS` - Configuration for all share platforms
 - `buildShareUrls()` - Centralized URL generation for all platforms
 
@@ -299,12 +299,12 @@ styles/
 ```
 web/
 ├── src/
-│   ├── main.js              # Entry point (includes PWA registration)
-│   ├── router.js            # Client-side routing
+│   ├── main.ts              # Entry point (includes PWA registration)
+│   ├── router.ts            # Client-side routing
 │   ├── views/               # Page views
 │   ├── components/          # Reusable components
-│   │   ├── install-prompt.js    # PWA install prompt
-│   │   ├── update-notification.js # PWA update notification
+│   │   ├── install-prompt.ts    # PWA install prompt
+│   │   ├── update-notification.ts # PWA update notification
 │   │   └── ...
 │   ├── modules/             # Shared logic
 │   └── utils/               # Helper functions
