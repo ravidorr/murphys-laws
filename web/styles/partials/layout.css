@@ -363,7 +363,6 @@ header form[role="search"] input {
   border-bottom: 1px solid var(--border);
   color: var(--fg);
   transition: background-color 0.15s ease;
-  word-wrap: break-word;
   overflow-wrap: break-word;
 }
 

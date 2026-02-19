@@ -70,7 +70,7 @@ describe('Voting utilities', () => {
     });
 
     it('handles localStorage.setItem errors gracefully', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 11, downvotes: 2 })
       } as unknown as Response);
@@ -92,7 +92,7 @@ describe('Voting utilities', () => {
     let fetchSpy;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch');
+      fetchSpy = vi.spyOn(globalThis, 'fetch');
     });
 
     afterEach(() => {
@@ -171,7 +171,7 @@ describe('Voting utilities', () => {
     let fetchSpy;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch');
+      fetchSpy = vi.spyOn(globalThis, 'fetch');
       // Set up initial vote
       localStorage.setItem('murphy_votes', JSON.stringify({ '123': 'up' }));
     });
@@ -227,7 +227,7 @@ describe('Voting utilities', () => {
     let fetchSpy;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(global, 'fetch');
+      fetchSpy = vi.spyOn(globalThis, 'fetch');
     });
 
     afterEach(() => {

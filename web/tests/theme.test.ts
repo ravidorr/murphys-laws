@@ -391,36 +391,36 @@ describe('Theme utilities', () => {
 
   describe('SSR environment (globals undefined)', () => {
     it('getTheme returns "auto" when localStorage is undefined', () => {
-      const originalLocalStorage = global.localStorage;
+      const originalLocalStorage = globalThis.localStorage;
       // @ts-ignore - intentionally setting to undefined for SSR test
-      delete global.localStorage;
+      delete globalThis.localStorage;
 
       expect(getTheme()).toBe('auto');
 
-      global.localStorage = originalLocalStorage;
+      globalThis.localStorage = originalLocalStorage;
     });
 
     it('setTheme still applies theme when localStorage is undefined', () => {
-      const originalLocalStorage = global.localStorage;
+      const originalLocalStorage = globalThis.localStorage;
       // @ts-ignore - intentionally setting to undefined for SSR test
-      delete global.localStorage;
+      delete globalThis.localStorage;
 
       // Should not throw and should still apply theme
       expect(() => setTheme('dark')).not.toThrow();
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 
-      global.localStorage = originalLocalStorage;
+      globalThis.localStorage = originalLocalStorage;
     });
 
     it('applyTheme returns early when document is undefined', () => {
-      const originalDocument = global.document;
+      const originalDocument = globalThis.document;
       // @ts-ignore - intentionally setting to undefined for SSR test
-      delete global.document;
+      delete globalThis.document;
 
       // Should not throw
       expect(() => applyTheme('dark')).not.toThrow();
 
-      global.document = originalDocument;
+      globalThis.document = originalDocument;
     });
   });
 });

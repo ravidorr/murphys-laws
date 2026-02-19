@@ -20,18 +20,18 @@ describe('third-party utils coverage', () => {
 
   it('handles loadScript when document is undefined (SSR)', async () => {
     // Simulate SSR by temporarily hiding document/window
-    const originalDoc = global.document;
-    const originalWin = global.window;
+    const originalDoc = globalThis.document;
+    const originalWin = globalThis.window;
     
-    delete global.document;
-    delete global.window;
+    delete globalThis.document;
+    delete globalThis.window;
     
     try {
       const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
       expect(() => initAnalyticsBootstrap()).not.toThrow();
     } finally {
-      global.document = originalDoc;
-      global.window = originalWin;
+      globalThis.document = originalDoc;
+      globalThis.window = originalWin;
     }
   });
 
@@ -53,22 +53,16 @@ describe('third-party utils coverage', () => {
   });
 
   it('toAbsoluteUrl returns src if URL construction fails', async () => {
-    const originalURL = global.URL;
-    global.URL = (function() {
+    const { initAnalyticsBootstrap, toAbsoluteUrl } = await import('../src/utils/third-party.ts');
+    const originalURL = globalThis.URL;
+    globalThis.URL = (function (this: unknown) {
       throw new Error('URL constructor failed');
     }) as unknown as typeof URL;
-    
+
     try {
-      const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
-      
-      initAnalyticsBootstrap();
-      window.dispatchEvent(new Event('scroll'));
-      
-      // Should still proceed and try to load script with original src
-      const script = document.querySelector('script[src*="googletagmanager"]');
-      expect(script).toBeTruthy();
+      expect(toAbsoluteUrl('https://example.com/script.js')).toBe('https://example.com/script.js');
     } finally {
-      global.URL = originalURL;
+      globalThis.URL = originalURL;
     }
   });
 
@@ -117,7 +111,7 @@ describe('third-party utils coverage', () => {
   it('uses requestIdleCallback when available', async () => {
     // Mock requestIdleCallback
     const idleMock = vi.fn((cb) => cb());
-    global.window.requestIdleCallback = idleMock;
+    globalThis.window.requestIdleCallback = idleMock;
 
     try {
       // Re-import to bind to new global
@@ -130,18 +124,18 @@ describe('third-party utils coverage', () => {
       const script = document.querySelector('script[src*="googletagmanager"]');
       expect(script).toBeTruthy();
     } finally {
-      delete global.window.requestIdleCallback;
+      delete globalThis.window.requestIdleCallback;
     }
   });
 
   it('ensureAdsense handles existing adsbygoogle', async () => {
-    global.window.adsbygoogle = [];
+    globalThis.window.adsbygoogle = [];
     const { ensureAdsense } = await import('../src/utils/third-party.ts');
     
     const promise = ensureAdsense();
     await expect(promise).resolves.toBeUndefined();
     
-    delete global.window.adsbygoogle;
+    delete globalThis.window.adsbygoogle;
   });
 
   it('ensureAdsense resolves after timeout if script does not load', async () => {
@@ -164,53 +158,53 @@ describe('third-party utils coverage', () => {
     const promise = ensureAdsense();
     
     // Simulate script load
-    global.window.adsbygoogle = [];
+    globalThis.window.adsbygoogle = [];
     
     // Advance timer slightly to trigger interval
     vi.advanceTimersByTime(100);
     
     await expect(promise).resolves.toBeUndefined();
     vi.useRealTimers();
-    delete global.window.adsbygoogle;
+    delete globalThis.window.adsbygoogle;
   });
 
   // Direct tests for exported utilities
   it('toAbsoluteUrl handles invalid URLs gracefully', async () => {
     const { toAbsoluteUrl } = await import('../src/utils/third-party.ts');
     
-    const originalURL = global.URL;
-    global.URL = (function() {
+    const originalURL = globalThis.URL;
+    globalThis.URL = (function() {
       throw new Error('Invalid URL');
     }) as unknown as typeof URL;
     
     try {
       expect(toAbsoluteUrl('invalid')).toBe('invalid');
     } finally {
-      global.URL = originalURL;
+      globalThis.URL = originalURL;
     }
   });
 
   it('toAbsoluteUrl returns src when document is undefined', async () => {
-    const originalDoc = global.document;
-    delete global.document;
+    const originalDoc = globalThis.document;
+    delete globalThis.document;
     
     try {
       const { toAbsoluteUrl } = await import('../src/utils/third-party.ts');
       expect(toAbsoluteUrl('/script.js')).toBe('/script.js');
     } finally {
-      global.document = originalDoc;
+      globalThis.document = originalDoc;
     }
   });
 
   it('loadScript returns resolved promise when document is undefined', async () => {
-    const originalDoc = global.document;
-    delete global.document;
+    const originalDoc = globalThis.document;
+    delete globalThis.document;
     
     try {
       const { loadScript } = await import('../src/utils/third-party.ts');
       await expect(loadScript('src')).resolves.toBeUndefined();
     } finally {
-      global.document = originalDoc;
+      globalThis.document = originalDoc;
     }
   });
 

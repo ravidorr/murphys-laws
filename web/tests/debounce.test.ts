@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { debounce } from '../src/utils/debounce.ts';
 
+type DebouncedFn = (...args: unknown[]) => unknown;
+
 interface DebounceTestLocalThis {
-  func?: ReturnType<typeof vi.fn> | ((this: DebounceTestLocalThis) => string);
+  func?: Mock<DebouncedFn> | ((this: DebounceTestLocalThis) => string);
   debounced?: (...args: unknown[]) => void;
   value?: string;
 }
@@ -18,8 +20,8 @@ describe('debounce', () => {
 
   it('should delay function execution', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!, 100);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func, 100);
 
     localThis.debounced!();
     expect(localThis.func).not.toHaveBeenCalled();
@@ -30,8 +32,8 @@ describe('debounce', () => {
 
   it('should use default delay of 240ms when not specified', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func);
 
     localThis.debounced!();
     expect(localThis.func).not.toHaveBeenCalled();
@@ -45,8 +47,8 @@ describe('debounce', () => {
 
   it('should cancel previous calls when called again before delay', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!, 100);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func, 100);
 
     localThis.debounced!();
     vi.advanceTimersByTime(50);
@@ -63,8 +65,8 @@ describe('debounce', () => {
 
   it('should pass arguments to debounced function', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!, 100);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func, 100);
 
     localThis.debounced!('arg1', 'arg2', 123);
     vi.advanceTimersByTime(100);
@@ -93,8 +95,8 @@ describe('debounce', () => {
 
   it('should handle multiple rapid calls correctly', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!, 100);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func, 100);
 
     // Call 5 times rapidly
     localThis.debounced!();
@@ -117,8 +119,8 @@ describe('debounce', () => {
 
   it('should handle custom delay values', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!, 500);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func, 500);
 
     localThis.debounced!();
     vi.advanceTimersByTime(499);
@@ -130,8 +132,8 @@ describe('debounce', () => {
 
   it('should handle zero delay', () => {
     const localThis: DebounceTestLocalThis = {};
-    localThis.func = vi.fn();
-    localThis.debounced = debounce(localThis.func!, 0);
+    localThis.func = vi.fn<DebouncedFn>() as Mock<DebouncedFn>;
+    localThis.debounced = debounce(localThis.func, 0);
 
     localThis.debounced!();
     vi.advanceTimersByTime(0);

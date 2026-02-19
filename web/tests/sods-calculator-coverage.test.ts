@@ -28,7 +28,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     const originalRAF = window.requestAnimationFrame;
     window.requestAnimationFrame = (cb) => { cb(0); return 0; };
 
-    delete global.window.MathJax;
+    delete globalThis.window.MathJax;
     
     const el = Calculator();
     container.appendChild(el);
@@ -44,7 +44,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   });
 
   it('handles MathJax.typesetPromise being missing', async () => {
-    global.window.MathJax = {}; // Missing typesetPromise
+    globalThis.window.MathJax = {}; // Missing typesetPromise
     
     const el = Calculator();
     container.appendChild(el);

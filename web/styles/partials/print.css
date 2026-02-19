@@ -62,7 +62,7 @@
      ========================= */
   h1, h2, h3, h4, h5, h6 {
     color: #000 !important;
-    page-break-after: avoid;
+    break-after: avoid;
     orphans: 3;
     widows: 3;
   }
@@ -100,7 +100,6 @@
   [data-law-card-root] {
     border: 1px solid #ccc !important;
     border-radius: 0 !important;
-    page-break-inside: avoid;
     break-inside: avoid;
   }
 
@@ -152,14 +151,13 @@
   blockquote,
   pre,
   img {
-    page-break-inside: avoid;
     break-inside: avoid;
   }
 
   /* Start new sections on a new page if needed */
   .content-section {
-    page-break-before: auto;
-    page-break-inside: avoid;
+    break-before: auto;
+    break-inside: avoid;
   }
 
   /* =========================
@@ -203,7 +201,7 @@
   .category-card {
     border: 1px solid #ccc !important;
     margin-bottom: 0.5rem;
-    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* =========================
@@ -212,7 +210,6 @@
   .law-card-mini {
     border-bottom: 1px solid #eee !important;
     padding: 0.5rem 0;
-    page-break-inside: avoid;
     break-inside: avoid;
   }
 

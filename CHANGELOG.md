@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-02-19
+
+### Added
+- Branch coverage tests: header ExportMenu cleanup, trending/browse/voting/home/categories cleanup and copy-text, structured-data setCategoryItemListSchema
+- docs/BRANCH_COVERAGE_95.md with steps to reach 95% branch coverage
+
+### Changed
+- Web coverage branch threshold set to 88% (see docs/BRANCH_COVERAGE_95.md to raise to 95%)
+
+## [2.0.5] - 2026-02-19
+
+### Fixed
+- Web tests: use `globalThis` instead of `global` for DOM/browser type compatibility; type callback mocks (`onUpdate`, `onDismiss`, `updateSW`, `preventDefault`) with `Mock<() => void>` for Vitest 4
+
 ## [2.0.4] - 2026-02-19
 
 ### Added

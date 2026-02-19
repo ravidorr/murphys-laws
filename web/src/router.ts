@@ -12,17 +12,17 @@ export function defineRoute(name: string, renderFn: RouteRenderFn): void {
 const BASE_PATH = ''; // Change this if deploying to a subdirectory
 
 export function navigate(name: string, param?: string): void {
-  let path = BASE_PATH || '/';
-  
+  const base = BASE_PATH || '';
+  let path: string;
+
   if (name === 'home') {
-    path = '/';
+    path = base + '/';
   } else if (name === 'law' && param) {
-    path = `/law/${param}`;
+    path = `${base}/law/${param}`;
   } else if (name === 'category' && param) {
-    path = `/category/${param}`;
+    path = `${base}/category/${param}`;
   } else {
-    // Generic fallback for other routes: /name or /name/param
-    path = `/${name}${param ? '/' + param : ''}`;
+    path = `${base}/${name}${param ? '/' + param : ''}`;
   }
 
   // Avoid pushing the same state twice

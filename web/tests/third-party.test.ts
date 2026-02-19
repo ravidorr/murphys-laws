@@ -7,21 +7,21 @@ describe('third-party utilities', () => {
 
     beforeEach(() => {
       // Save and reset adsbygoogle
-      originalAdsbygoogle = global.window?.adsbygoogle;
-      if (global.window) {
-        delete global.window.adsbygoogle;
+      originalAdsbygoogle = globalThis.window?.adsbygoogle;
+      if (globalThis.window) {
+        delete globalThis.window.adsbygoogle;
       }
     });
 
     afterEach(() => {
       // Restore original state
-      if (global.window) {
-        global.window.adsbygoogle = originalAdsbygoogle;
+      if (globalThis.window) {
+        globalThis.window.adsbygoogle = originalAdsbygoogle;
       }
     });
 
     it('returns resolved promise immediately if adsbygoogle exists', async () => {
-      global.window.adsbygoogle = [];
+      globalThis.window.adsbygoogle = [];
 
       const result = await ensureAdsense();
 
@@ -29,7 +29,7 @@ describe('third-party utilities', () => {
     });
 
     it('returns resolved promise if adsbygoogle is already loaded', async () => {
-      global.window.adsbygoogle = [{ loaded: true }];
+      globalThis.window.adsbygoogle = [{ loaded: true }];
 
       const result = await ensureAdsense();
 
@@ -38,18 +38,18 @@ describe('third-party utilities', () => {
 
     it('polls and resolves when adsbygoogle appears', async () => {
       // Initially adsbygoogle doesn't exist
-      expect(global.window.adsbygoogle).toBeUndefined();
+      expect(globalThis.window.adsbygoogle).toBeUndefined();
 
       const promise = ensureAdsense();
 
       // Simulate script loading after 100ms
       setTimeout(() => {
-        global.window.adsbygoogle = [];
+        globalThis.window.adsbygoogle = [];
       }, 100);
 
       await promise;
 
-      expect(global.window.adsbygoogle).toBeDefined();
+      expect(globalThis.window.adsbygoogle).toBeDefined();
     }, 10000); // Increase timeout for this test
 
     it('times out after 5 seconds if adsbygoogle never appears', async () => {
@@ -63,7 +63,7 @@ describe('third-party utilities', () => {
       // Should resolve even though adsbygoogle doesn't exist
       await promise;
 
-      expect(global.window.adsbygoogle).toBeUndefined();
+      expect(globalThis.window.adsbygoogle).toBeUndefined();
 
       vi.useRealTimers();
     });
@@ -77,14 +77,14 @@ describe('third-party utilities', () => {
       expect(promise1).toBe(promise2);
 
       // Clean up by setting adsbygoogle so promise resolves
-      global.window.adsbygoogle = [];
+      globalThis.window.adsbygoogle = [];
       await promise1;
     });
 
     it('handles SSR case when window is undefined', () => {
       // Temporarily remove window
-      const savedWindow = global.window;
-      delete global.window;
+      const savedWindow = globalThis.window;
+      delete globalThis.window;
 
       // Should not throw and should return resolved promise
       expect(() => {
@@ -93,7 +93,7 @@ describe('third-party utilities', () => {
       }).not.toThrow();
 
       // Restore window
-      global.window = savedWindow;
+      globalThis.window = savedWindow;
     });
 
     it('resolves quickly when adsbygoogle appears during polling', async () => {
@@ -103,7 +103,7 @@ describe('third-party utilities', () => {
 
       // Simulate adsbygoogle appearing after 200ms
       setTimeout(() => {
-        global.window.adsbygoogle = [];
+        globalThis.window.adsbygoogle = [];
       }, 200);
 
       // Fast-forward time
@@ -111,7 +111,7 @@ describe('third-party utilities', () => {
 
       await promise;
 
-      expect(global.window.adsbygoogle).toBeDefined();
+      expect(globalThis.window.adsbygoogle).toBeDefined();
 
       vi.useRealTimers();
     });
@@ -123,7 +123,7 @@ describe('third-party utilities', () => {
 
       // Simulate adsbygoogle appearing
       setTimeout(() => {
-        global.window.adsbygoogle = [];
+        globalThis.window.adsbygoogle = [];
       }, 100);
 
       vi.advanceTimersByTime(200);
@@ -149,20 +149,20 @@ describe('third-party utilities', () => {
 
     beforeEach(() => {
       // Save original state
-      originalWindow = global.window;
-      originalDataLayer = global.window?.dataLayer;
-      originalGtag = global.window?.gtag;
-      originalRequestIdleCallback = global.window?.requestIdleCallback;
+      originalWindow = globalThis.window;
+      originalDataLayer = globalThis.window?.dataLayer;
+      originalGtag = globalThis.window?.gtag;
+      originalRequestIdleCallback = globalThis.window?.requestIdleCallback;
 
       // Reset state
-      if (global.window) {
-        delete global.window.dataLayer;
-        delete global.window.gtag;
-        delete global.window.requestIdleCallback;
+      if (globalThis.window) {
+        delete globalThis.window.dataLayer;
+        delete globalThis.window.gtag;
+        delete globalThis.window.requestIdleCallback;
       }
 
       // Spy on addEventListener
-      addEventListenerSpy = vi.spyOn(global.window, 'addEventListener');
+      addEventListenerSpy = vi.spyOn(globalThis.window, 'addEventListener');
     });
 
     afterEach(() => {
@@ -173,28 +173,28 @@ describe('third-party utilities', () => {
 
       // Restore original state
       if (originalWindow) {
-        global.window = originalWindow;
+        globalThis.window = originalWindow;
         if (originalDataLayer !== undefined) {
-          global.window.dataLayer = originalDataLayer;
+          globalThis.window.dataLayer = originalDataLayer;
         }
         if (originalGtag !== undefined) {
-          global.window.gtag = originalGtag;
+          globalThis.window.gtag = originalGtag;
         }
         if (originalRequestIdleCallback !== undefined) {
-          global.window.requestIdleCallback = originalRequestIdleCallback;
+          globalThis.window.requestIdleCallback = originalRequestIdleCallback;
         }
       }
     });
 
     it('does nothing if window is undefined (SSR)', () => {
-      const savedWindow = global.window;
-      delete global.window;
+      const savedWindow = globalThis.window;
+      delete globalThis.window;
 
       expect(() => {
         initAnalyticsBootstrap();
       }).not.toThrow();
 
-      global.window = savedWindow;
+      globalThis.window = savedWindow;
     });
 
     it('sets up interaction listeners on first call', () => {
@@ -218,7 +218,7 @@ describe('third-party utilities', () => {
         setTimeout(cb, 0);
         return 1;
       });
-      global.window.requestIdleCallback = idleCallbackSpy;
+      globalThis.window.requestIdleCallback = idleCallbackSpy;
 
       freshInit();
 
@@ -231,7 +231,7 @@ describe('third-party utilities', () => {
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       
-      const setTimeoutSpy = vi.spyOn(global.window, 'setTimeout');
+      const setTimeoutSpy = vi.spyOn(globalThis.window, 'setTimeout');
 
       freshInit();
 
@@ -250,11 +250,11 @@ describe('third-party utilities', () => {
 
       // Simulate pointerdown event
       const pointerdownEvent = new Event('pointerdown', { bubbles: true });
-      global.window.dispatchEvent(pointerdownEvent);
+      globalThis.window.dispatchEvent(pointerdownEvent);
 
       // After interaction, dataLayer should be initialized
-      expect(global.window.dataLayer).toBeDefined();
-      expect(Array.isArray(global.window.dataLayer)).toBe(true);
+      expect(globalThis.window.dataLayer).toBeDefined();
+      expect(Array.isArray(globalThis.window.dataLayer)).toBe(true);
     });
 
     it('initializes gtag function on user interaction', async () => {
@@ -266,11 +266,11 @@ describe('third-party utilities', () => {
 
       // Simulate keydown event
       const keydownEvent = new Event('keydown', { bubbles: true });
-      global.window.dispatchEvent(keydownEvent);
+      globalThis.window.dispatchEvent(keydownEvent);
 
       // After interaction, gtag should be initialized
-      expect(global.window.gtag).toBeDefined();
-      expect(typeof global.window.gtag).toBe('function');
+      expect(globalThis.window.gtag).toBeDefined();
+      expect(typeof globalThis.window.gtag).toBe('function');
     });
 
     it('resolves ensureAdsense after timeout if adsbygoogle never appears', async () => {
@@ -298,7 +298,7 @@ describe('third-party utilities', () => {
 
       vi.useFakeTimers();
 
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+      const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
 
       const promise = freshEnsureAdsense();
 

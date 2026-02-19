@@ -27,7 +27,7 @@ describe('Category cache utilities', () => {
 
   beforeEach(() => {
     const self = local();
-    self.originalStorage = global.localStorage;
+    self.originalStorage = globalThis.localStorage;
     // Clear localStorage before each test
     localStorage.clear();
   });
@@ -320,8 +320,8 @@ describe('Category cache utilities', () => {
   describe('deferUntilIdle', () => {
     it('calls callback via setTimeout when requestIdleCallback is not available', async () => {
       const callback = vi.fn();
-      const originalRIC = global.requestIdleCallback;
-      delete global.requestIdleCallback;
+      const originalRIC = globalThis.requestIdleCallback;
+      delete globalThis.requestIdleCallback;
 
       deferUntilIdle(callback);
 
@@ -331,7 +331,7 @@ describe('Category cache utilities', () => {
       });
 
       if (originalRIC) {
-        global.requestIdleCallback = originalRIC;
+        globalThis.requestIdleCallback = originalRIC;
       }
     });
 
@@ -343,7 +343,7 @@ describe('Category cache utilities', () => {
         return 1; // Return a handle
       });
 
-      global.requestIdleCallback = mockIdleCallback;
+      globalThis.requestIdleCallback = mockIdleCallback;
 
       deferUntilIdle(callback, 1000);
 
@@ -354,7 +354,7 @@ describe('Category cache utilities', () => {
       );
 
       // Cleanup
-      delete global.requestIdleCallback;
+      delete globalThis.requestIdleCallback;
     });
 
     it('respects timeout parameter', () => {
@@ -364,7 +364,7 @@ describe('Category cache utilities', () => {
         return 1;
       });
 
-      global.requestIdleCallback = mockIdleCallback;
+      globalThis.requestIdleCallback = mockIdleCallback;
 
       deferUntilIdle(callback, 5000);
 
@@ -373,7 +373,7 @@ describe('Category cache utilities', () => {
         { timeout: 5000 }
       );
 
-      delete global.requestIdleCallback;
+      delete globalThis.requestIdleCallback;
     });
   });
 });

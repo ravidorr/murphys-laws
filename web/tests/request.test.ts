@@ -16,7 +16,7 @@ describe('request utilities', () => {
   let fetchSpy: FetchSpy;
 
   beforeEach(() => {
-    fetchSpy = vi.spyOn(global, 'fetch') as unknown as FetchSpy;
+    fetchSpy = vi.spyOn(globalThis, 'fetch') as unknown as FetchSpy;
   });
 
   afterEach(() => {

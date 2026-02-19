@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import {
   initKeyboardShortcuts,
   destroyKeyboardShortcuts,
@@ -20,7 +21,7 @@ interface KeyboardShortcutsLocalThis {
   select?: HTMLSelectElement;
   option?: HTMLOptionElement;
   textInput?: HTMLInputElement;
-  event?: KeyboardEvent & { preventDefault?: (() => void) | ReturnType<typeof vi.fn> };
+  event?: KeyboardEvent & { preventDefault?: (() => void) | Mock<() => void> };
   cards?: HTMLElement[];
   addEventListenerSpy?: ReturnType<typeof vi.spyOn>;
   keydownCalls?: unknown[];
@@ -287,7 +288,7 @@ describe('keyboard-shortcuts', () => {
       document.body.appendChild(localThis.input);
 
       localThis.event = new KeyboardEvent('keydown', { key: '/' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -299,7 +300,7 @@ describe('keyboard-shortcuts', () => {
     it('opens help modal on ? key', () => {
       const localThis: KeyboardShortcutsLocalThis = {};
       localThis.event = new KeyboardEvent('keydown', { key: '?' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -314,7 +315,7 @@ describe('keyboard-shortcuts', () => {
       vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(true);
 
       localThis.event = new KeyboardEvent('keydown', { key: '?' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -367,7 +368,7 @@ describe('keyboard-shortcuts', () => {
       vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(true);
 
       localThis.event = new KeyboardEvent('keydown', { key: 'Escape' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -381,7 +382,7 @@ describe('keyboard-shortcuts', () => {
       vi.mocked(helpModal.isKeyboardHelpModalOpen).mockReturnValue(false);
 
       localThis.event = new KeyboardEvent('keydown', { key: 'Escape' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -400,7 +401,7 @@ describe('keyboard-shortcuts', () => {
       localThis.textInput.focus();
 
       localThis.event = new KeyboardEvent('keydown', { key: '/' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: localThis.textInput });
 
       handleKeydown(localThis.event);
@@ -440,7 +441,7 @@ describe('keyboard-shortcuts', () => {
       localThis.select.focus();
 
       localThis.event = new KeyboardEvent('keydown', { key: '/' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: localThis.select });
 
       handleKeydown(localThis.event);
@@ -480,7 +481,7 @@ describe('keyboard-shortcuts', () => {
       document.body.appendChild(localThis.input);
 
       localThis.event = new KeyboardEvent('keydown', { key: '/' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -497,7 +498,7 @@ describe('keyboard-shortcuts', () => {
       document.body.appendChild(localThis.input);
 
       localThis.event = new KeyboardEvent('keydown', { key: '?' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -513,7 +514,7 @@ describe('keyboard-shortcuts', () => {
       document.body.appendChild(localThis.input);
 
       localThis.event = new KeyboardEvent('keydown', { key: 'x' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: document.body });
 
       handleKeydown(localThis.event);
@@ -532,7 +533,7 @@ describe('keyboard-shortcuts', () => {
       localThis.div.focus();
 
       localThis.event = new KeyboardEvent('keydown', { key: '?' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: localThis.div });
 
       handleKeydown(localThis.event);
@@ -549,7 +550,7 @@ describe('keyboard-shortcuts', () => {
       localThis.input.focus();
 
       localThis.event = new KeyboardEvent('keydown', { key: 'Escape' });
-      localThis.event.preventDefault = vi.fn();
+      localThis.event.preventDefault = vi.fn<() => void>() as Mock<() => void>;
       Object.defineProperty(localThis.event, 'target', { value: localThis.input });
 
       handleKeydown(localThis.event);

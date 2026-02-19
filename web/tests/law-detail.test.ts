@@ -8,7 +8,7 @@ describe('LawDetail view', () => {
   });
 
   it('renders not found for unknown id', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
     const el = LawDetail({ lawId: 'nope', onNavigate: () => { } });
     await new Promise(r => setTimeout(r, 0));
     expect(el.textContent).toMatch(/Law Not Found/);
@@ -22,7 +22,7 @@ describe('LawDetail view', () => {
   it('renders title for existing law and triggers vote', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, submittedBy: 'tester' };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 1, downvotes: 0 });
@@ -42,7 +42,7 @@ describe('LawDetail view', () => {
   it('renders law successfully', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -58,7 +58,7 @@ describe('LawDetail view', () => {
   it('handles navigation button clicks', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     let navTarget = '';
@@ -76,7 +76,7 @@ describe('LawDetail view', () => {
   it('handles downvote button clicks', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 0, downvotes: 1 });
@@ -95,7 +95,7 @@ describe('LawDetail view', () => {
   it('handles non-HTMLElement click targets', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -114,7 +114,7 @@ describe('LawDetail view', () => {
   it('renders law without title', async () => {
     const law = { id: '7', text: 'Test text without title', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -128,7 +128,7 @@ describe('LawDetail view', () => {
   it('renders law without author or submittedBy', async () => {
     const law = { id: '7', text: 'Anonymous law', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -141,7 +141,7 @@ describe('LawDetail view', () => {
   it('handles negative score display', async () => {
     const law = { id: '7', title: 'Unpopular Law', text: 'Test text', score: -5, upvotes: 2, downvotes: 7 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -159,7 +159,7 @@ describe('LawDetail view', () => {
   it('handles law with category information', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, category: 'Technology' };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -181,7 +181,7 @@ describe('LawDetail view', () => {
       publishDate: '2024-01-01'
     };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -202,7 +202,7 @@ describe('LawDetail view', () => {
       attributions: [{ name: 'Contributor Name' }]
     };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -215,7 +215,7 @@ describe('LawDetail view', () => {
   it('handles law with undefined score', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text' };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -234,7 +234,7 @@ describe('LawDetail view', () => {
   it('updates vote counts in UI after voting', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
@@ -267,7 +267,7 @@ describe('LawDetail view', () => {
   it('displays voted state when user has already voted', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('up');
@@ -287,7 +287,7 @@ describe('LawDetail view', () => {
   it('displays downvote voted state when user has downvoted', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const getUserVoteSpy = vi.spyOn(votingModule, 'getUserVote').mockReturnValue('down');
@@ -307,7 +307,7 @@ describe('LawDetail view', () => {
   it('handles clicking on icon inside vote button', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
@@ -332,7 +332,7 @@ describe('LawDetail view', () => {
   it('renders social share buttons in footer', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text for sharing', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -348,7 +348,7 @@ describe('LawDetail view', () => {
   it('renders all social share buttons', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -372,7 +372,7 @@ describe('LawDetail view', () => {
   it('calls onStructuredData callback when provided', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const onStructuredDataSpy = vi.fn();
@@ -392,7 +392,7 @@ describe('LawDetail view', () => {
   it('handles voting errors gracefully', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockRejectedValue(new Error('Network error'));
@@ -414,7 +414,7 @@ describe('LawDetail view', () => {
   it('handles missing law card template gracefully', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -438,7 +438,7 @@ describe('LawDetail view', () => {
   it('copies related law link to clipboard when share button is clicked', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -467,7 +467,7 @@ describe('LawDetail view', () => {
   it('uses fallback when clipboard API fails on share button', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
@@ -502,7 +502,7 @@ describe('LawDetail view', () => {
   it('uses window.location.href as fallback when data-copy-value is missing on copy link', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -531,7 +531,7 @@ describe('LawDetail view', () => {
   it('uses law-text element as fallback when data-copy-value is missing on copy text', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -561,7 +561,7 @@ describe('LawDetail view', () => {
   it('navigates to related law card when clicked', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     let navTarget = '';
@@ -594,7 +594,7 @@ describe('LawDetail view', () => {
       law_id: 7
     };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValue({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => relatedLaws });
 
@@ -603,10 +603,10 @@ describe('LawDetail view', () => {
     await new Promise(r => setTimeout(r, 100));
 
     // Should have made at least 2 fetches (law + related laws)
-    expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
 
     // Verify the related laws endpoint was called
-    const fetchCalls = vi.mocked(global.fetch).mock.calls.map(call => call[0]);
+    const fetchCalls = vi.mocked(globalThis.fetch).mock.calls.map(call => call[0]);
     const hasRelatedCall = fetchCalls.some(url => String(url).includes('/related'));
     expect(hasRelatedCall).toBe(true);
   });
@@ -614,7 +614,7 @@ describe('LawDetail view', () => {
   it('handles related laws fetch failure silently', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockRejectedValueOnce(new Error('Network error'));
 
@@ -629,7 +629,7 @@ describe('LawDetail view', () => {
   it('handles empty related laws array', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ data: [], law_id: 7 }) });
 
@@ -647,7 +647,7 @@ describe('LawDetail view', () => {
   it('handles related laws with null data', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law })
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({ data: null, law_id: 7 }) });
 
@@ -662,7 +662,7 @@ describe('LawDetail view', () => {
   it('handles copy text action with successful clipboard', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text content', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -690,7 +690,7 @@ describe('LawDetail view', () => {
   it('handles copy text action with clipboard failure fallback', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text content', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard error'));
@@ -723,7 +723,7 @@ describe('LawDetail view', () => {
   it('handles favorite button click on main law card', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -756,7 +756,7 @@ describe('LawDetail view', () => {
   it('handles favorite button click without law id', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -779,7 +779,7 @@ describe('LawDetail view', () => {
   it('handles related law favorite button click', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -820,7 +820,7 @@ describe('LawDetail view', () => {
   it('handles related law favorite button click without law id', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
@@ -843,7 +843,7 @@ describe('LawDetail view', () => {
   it('does not navigate when clicking buttons inside related law card', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const onNavigate = vi.fn();
@@ -873,7 +873,7 @@ describe('LawDetail view', () => {
   it('does not copy when copy text button has no text to copy', async () => {
     const law = { id: '7', title: 'Test Law', text: '', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
@@ -909,7 +909,7 @@ describe('LawDetail view', () => {
   it('handles vote button click without voteType attribute', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const toggleVoteSpy = vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 6, downvotes: 2 });
@@ -934,7 +934,7 @@ describe('LawDetail view', () => {
   it('provides a cleanup function that clears export content', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     const el = LawDetail({ lawId: law.id, onNavigate: () => { } });

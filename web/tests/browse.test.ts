@@ -1,7 +1,9 @@
+import type { CleanableElement } from '../src/types/app.js';
 import { Browse } from '@views/browse.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 // Mock voting module
 vi.mock('../src/utils/voting.js', async (importOriginal) => {
@@ -1332,5 +1334,38 @@ describe('Browse view', () => {
       // Should show empty state when response is null
       expect(el.textContent).toMatch(/Murphy spared these results/);
     }, { timeout: 1000 });
+  });
+
+  it('calls clearExportContent when cleanup is invoked', async () => {
+    const clearSpy = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    (el as CleanableElement).cleanup!();
+    expect(clearSpy).toHaveBeenCalled();
+    clearSpy.mockRestore();
+  });
+
+  it('copy-text button with data-copy-value copies to clipboard', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const copyTextBtn = document.createElement('button');
+    copyTextBtn.setAttribute('data-action', 'copy-text');
+    copyTextBtn.setAttribute('data-copy-value', 'Law text to copy');
+    el.appendChild(copyTextBtn);
+    copyTextBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(writeTextMock).toHaveBeenCalledWith('Law text to copy');
   });
 });

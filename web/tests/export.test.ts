@@ -8,27 +8,29 @@ vi.mock('@sentry/browser', () => ({
 
 import * as Sentry from '@sentry/browser';
 
-// Mock jsPDF
-const mockJsPDF = {
-  text: vi.fn(),
-  setFontSize: vi.fn(),
-  setFont: vi.fn(),
-  splitTextToSize: vi.fn((text) => [text]),
-  addPage: vi.fn(),
-  setPage: vi.fn(),
-  getNumberOfPages: vi.fn().mockReturnValue(1),
-  getTextWidth: vi.fn().mockReturnValue(50),
-  save: vi.fn(),
-  internal: {
-    pageSize: { getWidth: () => 210, getHeight: () => 297 }
-  }
-};
+vi.mock('jspdf', () => {
+  const mockInstance = {
+    text: vi.fn(),
+    setFontSize: vi.fn(),
+    setFont: vi.fn(),
+    splitTextToSize: vi.fn((text: string) => [text]),
+    addPage: vi.fn(),
+    setPage: vi.fn(),
+    getNumberOfPages: vi.fn().mockReturnValue(1),
+    getTextWidth: vi.fn().mockReturnValue(50),
+    save: vi.fn(),
+    internal: {
+      pageSize: { getWidth: () => 210, getHeight: () => 297 }
+    }
+  };
+  const jsPDF = vi.fn(function (this: unknown) {
+    return mockInstance;
+  });
+  return { jsPDF, __getMockJsPDFInstance: () => mockInstance };
+});
 
-vi.mock('jspdf', () => ({
-  jsPDF: vi.fn(() => mockJsPDF)
-}));
-
-// Import after mocking
+// Import after mocking (mock adds __getMockJsPDFInstance at runtime)
+import * as jspdfModule from 'jspdf';
 import {
   exportToPDF,
   exportToCSV,
@@ -37,6 +39,21 @@ import {
   exportContent,
   generateFilename
 } from '../src/utils/export.ts';
+
+interface MockJsPDFInstance {
+  text: ReturnType<typeof vi.fn>;
+  setFontSize: ReturnType<typeof vi.fn>;
+  setFont: ReturnType<typeof vi.fn>;
+  splitTextToSize: ReturnType<typeof vi.fn>;
+  addPage: ReturnType<typeof vi.fn>;
+  setPage: ReturnType<typeof vi.fn>;
+  getNumberOfPages: ReturnType<typeof vi.fn>;
+  getTextWidth: ReturnType<typeof vi.fn>;
+  save: ReturnType<typeof vi.fn>;
+  internal: { pageSize: { getWidth: () => number; getHeight: () => number } };
+}
+
+const mockJsPDF = (jspdfModule as typeof jspdfModule & { __getMockJsPDFInstance: () => MockJsPDFInstance }).__getMockJsPDFInstance();
 
 interface MockLaw {
   id: number;

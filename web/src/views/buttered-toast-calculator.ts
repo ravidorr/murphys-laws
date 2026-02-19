@@ -188,8 +188,8 @@ export function ButteredToastCalculator() {
   }
 
   function updateInterpretation(probability) {
-    let interpretation = '';
-    let cls = 'calc-ok';
+    let interpretation: string;
+    let cls: string;
 
     if (probability > 85) {
       cls = 'calc-dark';

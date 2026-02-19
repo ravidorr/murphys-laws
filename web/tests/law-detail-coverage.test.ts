@@ -21,7 +21,7 @@ describe('LawDetail view - Coverage', () => {
         downvotes: 2
       })
     });
-    global.fetch = fetchMock as typeof fetch;
+    globalThis.fetch = fetchMock as typeof fetch;
   });
 
   afterEach(() => {

@@ -40,6 +40,14 @@ vi.mock('../src/components/search-autocomplete.js', () => ({
   }))
 }));
 
+// Mock ExportMenu so we can assert cleanup is called
+vi.mock('../src/components/export-menu.js', () => ({
+  ExportMenu: vi.fn(() => ({
+    cleanup: vi.fn()
+  }))
+}));
+
+import { ExportMenu } from '../src/components/export-menu.js';
 import { SearchAutocomplete } from '../src/components/search-autocomplete.js';
 
 describe('Header component', () => {
@@ -599,6 +607,23 @@ describe('Header component', () => {
       }
 
       expect(mockCleanup).toHaveBeenCalled();
+    });
+
+    it('should call ExportMenu cleanup when header cleanup is called', () => {
+      const exportMenuCleanupMock = vi.fn();
+      vi.mocked(ExportMenu).mockImplementation(() => {
+        const container = document.createElement('div');
+        (container as CleanableElement).cleanup = exportMenuCleanupMock;
+        return container as ReturnType<typeof ExportMenu>;
+      });
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {}
+      });
+
+      (el as CleanableElement).cleanup!();
+      expect(exportMenuCleanupMock).toHaveBeenCalled();
     });
 
     it('should call onNavigate when suggestion is selected', () => {

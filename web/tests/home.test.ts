@@ -1,4 +1,8 @@
+import type { OnNavigate } from '../src/types/app.d.ts';
+import type { CleanableElement } from '../src/types/app.js';
+import type { Mock } from 'vitest';
 import { Home, renderHome } from '@views/home.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 describe('Home view', () => {
   it('renders Law of the Day after fetching data', async () => {
@@ -9,7 +13,7 @@ describe('Home view', () => {
       upvotes: 10,
       downvotes: 0
     };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -29,7 +33,7 @@ describe('Home view', () => {
       upvotes: 1,
       downvotes: 0
     };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -46,7 +50,7 @@ describe('Home view', () => {
   });
 
   it('shows no Law of the Day widget when response has no law', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
     });
@@ -61,7 +65,7 @@ describe('Home view', () => {
   });
 
   it('shows graceful degradation on fetch failure', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
@@ -73,7 +77,7 @@ describe('Home view', () => {
 
   it('navigates to category when clicking category:id nav button', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -97,7 +101,7 @@ describe('Home view', () => {
 
   it('navigates using data-nav attribute', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -118,7 +122,7 @@ describe('Home view', () => {
 
   it('handles keyboard navigation with Enter key (WCAG 2.1.1)', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -142,7 +146,7 @@ describe('Home view', () => {
 
   it('handles keyboard navigation with Space key (WCAG 2.1.1)', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -166,7 +170,7 @@ describe('Home view', () => {
 
   it('handles category keyboard navigation', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -192,7 +196,7 @@ describe('Home view', () => {
 
   it('handles law card without id gracefully', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -212,7 +216,7 @@ describe('Home view', () => {
   });
 
   it('renders with no law of the day widget when data array is empty', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
     });
@@ -227,7 +231,7 @@ describe('Home view', () => {
 
   it('handles non-HTMLElement click targets', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -252,7 +256,7 @@ describe('Home view', () => {
       upvotes: 100,
       downvotes: 0
     };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -265,7 +269,7 @@ describe('Home view', () => {
   });
 
   it('handles fetch that returns non-ok status', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
 
     const el = Home({ onNavigate: () => {} });
     await new Promise(r => setTimeout(r, 50));
@@ -276,7 +280,7 @@ describe('Home view', () => {
 
   it('renders with calculator section', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -289,7 +293,7 @@ describe('Home view', () => {
 
   it('renders with submit section', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -301,7 +305,7 @@ describe('Home view', () => {
   });
 
   it('handles response with no data array', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: [], total: 0, limit: 1, offset: 0 })
     });
@@ -314,7 +318,7 @@ describe('Home view', () => {
   });
 
   it('handles response with missing data field', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ total: 0, limit: 1, offset: 0 })
     });
@@ -327,7 +331,7 @@ describe('Home view', () => {
   });
 
   it('handles response with null json', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       headers: new Headers({ 'content-type': 'application/json' }),
       json: async () => ({ law: null, featured_date: null })
@@ -341,7 +345,7 @@ describe('Home view', () => {
   });
 
   it('handles response where data is not an array', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: 'not an array', total: 5, limit: 1, offset: 0 })
     });
@@ -356,7 +360,7 @@ describe('Home view', () => {
   });
 
   it('handles response where data is missing', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ total: 5, limit: 1, offset: 0 })
     });
@@ -370,7 +374,7 @@ describe('Home view', () => {
 
   it('handles law without upvotes field', async () => {
     const lawOfTheDay = { id: 1, text: 'Law without upvotes' };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -384,7 +388,7 @@ describe('Home view', () => {
 
   it('handles law with upvotes as 0', async () => {
     const lawOfTheDay = { id: 1, text: 'First law', upvotes: 0, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -398,7 +402,7 @@ describe('Home view', () => {
 
   it('handles law with null upvotes', async () => {
     const lawOfTheDay = { id: 1, text: 'Law with null upvotes', upvotes: null, downvotes: null };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -461,7 +465,7 @@ describe('renderHome function', () => {
 describe('Home view keyboard navigation for law cards', () => {
   it('navigates to law when pressing Enter on law card with data-law-id', async () => {
     const lawOfTheDay = { id: 42, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -486,7 +490,7 @@ describe('Home view keyboard navigation for law cards', () => {
 
   it('navigates to law when pressing Space on law card with data-law-id', async () => {
     const lawOfTheDay = { id: 42, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -511,7 +515,7 @@ describe('Home view keyboard navigation for law cards', () => {
 
   it('does not navigate when keydown on element without data-law-id or data-nav', async () => {
     const lawOfTheDay = { id: 42, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -535,7 +539,7 @@ describe('Home view keyboard navigation for law cards', () => {
 
   it('handles non-Element keydown target gracefully', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -554,7 +558,7 @@ describe('Home view keyboard navigation for law cards', () => {
 
   it('ignores keydown events that are not Enter or Space', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -578,7 +582,7 @@ describe('Home view keyboard navigation for law cards', () => {
 
   it('does not navigate when clicking law card with empty data-law-id', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -600,12 +604,12 @@ describe('Home view keyboard navigation for law cards', () => {
   });
 
   it('does not navigate when clicking buttons inside law card', async () => {
-    const localThis: { onNavigate: ReturnType<typeof vi.fn>; el: HTMLElement } = {
-      onNavigate: vi.fn(),
+    const localThis: { onNavigate: Mock<OnNavigate>; el: HTMLElement } = {
+      onNavigate: vi.fn<OnNavigate>() as Mock<OnNavigate>,
       el: document.createElement('div')
     };
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
     });
@@ -627,6 +631,19 @@ describe('Home view keyboard navigation for law cards', () => {
 
     // Navigation should NOT be triggered when clicking buttons
     expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('cleanup calls clearExportContent', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: null, featured_date: '2025-01-01' })
+    });
+    const clearSpy = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+    (el as CleanableElement).cleanup!();
+    expect(clearSpy).toHaveBeenCalled();
+    clearSpy.mockRestore();
   });
 });
 

@@ -45,7 +45,9 @@ describe('Footer component - Coverage', () => {
       takeRecords: vi.fn(() => []),
       unobserve: vi.fn()
     };
-    global.IntersectionObserver = vi.fn(() => mockObserverInstance) as unknown as typeof IntersectionObserver;
+    globalThis.IntersectionObserver = vi.fn(function (this: unknown) {
+      return mockObserverInstance;
+    }) as unknown as typeof IntersectionObserver;
 
     const el = Footer({ onNavigate: () => {} });
     
@@ -146,10 +148,10 @@ describe('Footer component - Coverage', () => {
       configurable: true
     });
 
-    const originalIntersectionObserver = global.IntersectionObserver;
+    const originalIntersectionObserver = globalThis.IntersectionObserver;
     const originalRequestIdleCallback = window.requestIdleCallback;
     delete (window as Partial<Window>).requestIdleCallback;
-    delete global.IntersectionObserver;
+    delete globalThis.IntersectionObserver;
 
     try {
       const el = Footer({ onNavigate: () => {} });
@@ -157,7 +159,7 @@ describe('Footer component - Coverage', () => {
       // which then uses setTimeout when requestIdleCallback is missing
       expect(el).toBeTruthy();
     } finally {
-      global.IntersectionObserver = originalIntersectionObserver;
+      globalThis.IntersectionObserver = originalIntersectionObserver;
       if (originalRequestIdleCallback !== undefined) {
         window.requestIdleCallback = originalRequestIdleCallback;
       }
@@ -171,10 +173,10 @@ describe('Footer component - Coverage', () => {
       configurable: true
     });
 
-    const originalIntersectionObserver = global.IntersectionObserver;
+    const originalIntersectionObserver = globalThis.IntersectionObserver;
     const originalRequestIdleCallback = window.requestIdleCallback;
     delete (window as Partial<Window>).requestIdleCallback;
-    delete global.IntersectionObserver;
+    delete globalThis.IntersectionObserver;
 
     vi.useFakeTimers();
     try {
@@ -184,7 +186,7 @@ describe('Footer component - Coverage', () => {
       expect(adSlot?.dataset.loaded).toBe('true');
     } finally {
       vi.useRealTimers();
-      global.IntersectionObserver = originalIntersectionObserver;
+      globalThis.IntersectionObserver = originalIntersectionObserver;
       if (originalRequestIdleCallback !== undefined) {
         window.requestIdleCallback = originalRequestIdleCallback;
       }
@@ -203,7 +205,7 @@ describe('Footer component - Coverage', () => {
       takeRecords: vi.fn(() => []),
       unobserve: vi.fn()
     };
-    global.IntersectionObserver = vi.fn((cb: IntersectionObserverCallback) => {
+    globalThis.IntersectionObserver = vi.fn(function (cb: IntersectionObserverCallback) {
       callback = cb;
       return mockObserverInstance;
     }) as unknown as typeof IntersectionObserver;

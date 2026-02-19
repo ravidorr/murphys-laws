@@ -230,13 +230,13 @@ describe('Icons utility', () => {
     });
 
     it('returns early when document is undefined (SSR environment)', () => {
-      const originalDocument = global.document;
-      delete global.document;
+      const originalDocument = globalThis.document;
+      delete globalThis.document;
       
       // Should not throw
       expect(() => hydrateIcons(null)).not.toThrow();
       
-      global.document = originalDocument;
+      globalThis.document = originalDocument;
     });
 
     it('skips icon replacement when createIcon returns null for unknown icon', () => {
@@ -258,13 +258,13 @@ describe('Icons utility', () => {
 
   describe('createIcon SSR handling', () => {
     it('returns null when document is undefined', () => {
-      const originalDocument = global.document;
-      delete global.document;
+      const originalDocument = globalThis.document;
+      delete globalThis.document;
       
       const icon = createIcon('home');
       expect(icon).toBeNull();
       
-      global.document = originalDocument;
+      globalThis.document = originalDocument;
     });
   });
 });

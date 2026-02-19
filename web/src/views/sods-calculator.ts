@@ -193,8 +193,8 @@ export function Calculator() {
     });
 
   function updateResultInterpretation(score) {
-    let interpretation = '';
-    let cls = 'calc-ok';
+    let interpretation: string;
+    let cls: string;
 
     if (score < 2) {
       interpretation = "You're probably safe. What could possibly go wrong?";
