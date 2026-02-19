@@ -79,14 +79,15 @@ backend/
 │   ├── services/        # Business logic (7 services)
 │   ├── middleware/      # Express middleware (CORS, rate limiting)
 │   ├── routes/          # Route definitions
+│   ├── server/          # Runtime bootstrap (api-server.ts)
 │   └── utils/           # Helper functions
 ├── tests/
 │   ├── controllers/     # Controller unit tests
 │   ├── services/        # Service unit tests
 │   ├── middleware/      # Middleware unit tests
 │   └── utils/           # Utility unit tests
-└── scripts/
-    └── api-server.mjs   # Main server entry point
+├── scripts/             # Operational/deploy scripts (.mjs)
+└── ../shared/modules/   # Shared TypeScript runtime templates
 ```
 
 **Key Components:**
@@ -94,6 +95,7 @@ backend/
 - **Services**: Business logic and database operations
 - **Middleware**: CORS, rate limiting, error handling
 - **Routes**: API endpoint definitions
+- **Runtime Entry**: `src/server/api-server.ts` (executed via `tsx`)
 
 ## Testing
 
@@ -111,7 +113,7 @@ npm run test:coverage
 ```
 
 **Test Structure:**
-- 17 test files covering all layers (213 tests)
+- 18 test files covering all layers (221 tests)
 - Services: `laws`, `categories`, `votes`, `attributions`, `feed`, `og-image`
 - Controllers: `laws`, `categories`, `votes`, `health`, `attributions`, `feed`, `og-image`
 - Middleware: `cors`, `rate-limit`
@@ -121,6 +123,6 @@ npm run test:coverage
 
 See [Deployment Guide](../shared/docs/DEPLOYMENT.md).
 
-## Architecture
+## Architecture Docs
 
 See [Mobile Architecture](../shared/docs/MOBILE-ARCHITECTURE.md).

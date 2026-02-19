@@ -1,24 +1,27 @@
 {
   "name": "murphys-laws-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Murphy's Laws API Server",
   "type": "module",
-  "main": "scripts/api-server.mjs",
+  "main": "src/server/api-server.ts",
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
-    "start": "node scripts/api-server.mjs",
+    "start": "tsx src/server/api-server.ts",
     "predev": "node scripts/cleanup-ports.mjs --kill",
-    "dev": "node --watch scripts/api-server.mjs",
+    "dev": "tsx watch src/server/api-server.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:strict:src": "tsc -p tsconfig.strict-src.json --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "build:db": "node scripts/build-sqlite.mjs",
     "migrate": "node scripts/migrate.mjs",
     "cleanup-ports": "node scripts/cleanup-ports.mjs",
     "validate:node": "node scripts/validate-node-version.mjs",
     "validate:node-server": "node scripts/validate-node-version.mjs --server",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest",
+    "test": "vitest run tests/*.test.ts tests/**/*.test.ts",
+    "test:coverage": "vitest run --coverage tests/*.test.ts tests/**/*.test.ts",
+    "test:watch": "vitest tests/*.test.ts tests/**/*.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -35,13 +38,18 @@
     "canvas": "^3.2.1",
     "dotenv": "^16.4.7",
     "nodemailer": "^7.0.7",
+    "tsx": "^4.20.3",
     "validator": "^13.15.20"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.10.1",
+    "@types/nodemailer": "^7.0.4",
     "@vitest/coverage-v8": "^4.0.12",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.12"
   }
 }

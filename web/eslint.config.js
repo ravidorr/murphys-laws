@@ -1,7 +1,8 @@
-// ESLint flat config for a Vite vanilla JS project
+// ESLint flat config for a Vite vanilla JS/TS project
 // More: https://eslint.org/docs/latest/use/configure/configuration-files-new
 import js from '@eslint/js';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default [
   // Top-level ignores for ESLint 9 flat config
@@ -40,9 +41,31 @@ export default [
       reportUnusedDisableDirectives: true,
     },
   },
+  // TypeScript files configuration
+  {
+    files: ['src/**/*.ts', 'tests/**/*.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: "module",
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+    },
+    rules: {
+      // Use TypeScript-aware no-unused-vars instead of base rule
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Disable no-undef for TS files (TypeScript handles this)
+      'no-undef': 'off',
+    },
+  },
   // Test files configuration
   {
-    files: ['tests/**/*.js', 'tests/**/*.test.js'],
+    files: ['tests/**/*.ts', 'tests/**/*.test.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -61,6 +84,7 @@ export default [
       'no-undef': 'off',
       // Allow unused variables in tests
       'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 ];

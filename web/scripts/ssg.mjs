@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.js';
 import { truncateTitle } from '../src/utils/seo.js';
+import { HOME_HERO_ACCENT, HOME_HERO_TITLE } from '../src/utils/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -720,7 +721,7 @@ async function main() {
   const homeContent = `
     <div class="container page pt-0" role="main">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
-        The Ultimate <span class="accent-text">Murphy's Law</span> Archive
+        <span class="accent-text">${HOME_HERO_ACCENT}</span> ${HOME_HERO_TITLE}
       </h1>
       <p class="text-center mb-12 text-lg text-muted-fg max-w-2xl mx-auto">
         "If anything can go wrong, it will." Explore the complete collection of laws, corollaries, and observations about the perversity of the universe.

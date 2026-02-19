@@ -17,7 +17,9 @@ module.exports = {
   apps: [
     {
       name: 'murphys-api',
-      script: './scripts/api-server.mjs',
+      // Run source directly with TS runtime loader.
+      script: './src/server/api-server.ts',
+      node_args: '--import tsx',
       // CRITICAL: Must match system Node.js version
       interpreter: '/root/.nvm/versions/node/v22.20.0/bin/node',
       cwd: '/root/murphys-laws/backend',

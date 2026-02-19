@@ -282,6 +282,7 @@ button[data-tooltip]:disabled {
   height: 1rem;
 
   /* No fill - Lucide icons use stroke: currentColor set via JS */
+  fill: none;
 }
 
 .theme-toggle:hover {

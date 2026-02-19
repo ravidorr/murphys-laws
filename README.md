@@ -16,8 +16,8 @@ This is a monorepo containing:
 
 ```
 murphys-laws/
-├── backend/        # Node.js API server (shared by all platforms)
-├── web/            # Web application (Vanilla JS + Vite)
+├── backend/        # Node.js API server (TypeScript runtime via tsx)
+├── web/            # Web application (TypeScript + Vite)
 ├── ios/            # iOS app (Swift + SwiftUI)
 ├── android/        # Android app (Kotlin + Jetpack Compose)
 └── shared/         # Shared resources and documentation
@@ -32,6 +32,7 @@ cd backend
 npm install
 npm run build:db # Build SQLite database
 npm run dev # Start API server
+npm start # Run API from src/server/api-server.ts via tsx
 ```
 
 ### Web Application
@@ -137,6 +138,13 @@ npm run build
 npm run build:web
 npm run build:backend:db
 ```
+
+## TypeScript Runtime Architecture
+
+- Backend runs TypeScript source directly with `tsx` (no JS build step required for startup).
+- Canonical backend runtime entrypoint: `backend/src/server/api-server.ts`.
+- PM2 runtime uses Node loader: `node --import tsx`.
+- Shared runtime templates are TypeScript in `shared/modules/*.ts`.
 
 ## Deployment
 
