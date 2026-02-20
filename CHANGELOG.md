@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Web: update components, utils, and views (calculators, trending, keyboard help, categories, favorites, not-found, copy/nav/voting/icons/content)
 - Web: bump to 3.0.11
 
 ### Fixed

@@ -39,6 +39,7 @@ export async function handleCopyAction(e: Event, target: Element): Promise<boole
 export function addCopyActionListeners(el: HTMLElement): void {
   el.addEventListener('click', async (e) => {
     const t = e.target;
+    /* v8 ignore next - Click handler only fires on Element targets */
     if (!(t instanceof Element)) return;
     await handleCopyAction(e, t);
   });

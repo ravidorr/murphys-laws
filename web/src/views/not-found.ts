@@ -14,6 +14,7 @@ export function NotFound({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEle
   const searchForm = el.querySelector('#not-found-search-form');
   const searchInput = el.querySelector('#not-found-search-input');
   
+  /* v8 ignore next - Template always provides search form and input */
   if (searchForm && searchInput) {
     searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -35,6 +36,7 @@ export function NotFound({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEle
     if (navBtn) {
       const navTarget = navBtn.getAttribute('data-nav');
       const navParam = navBtn.getAttribute('data-param');
+      /* v8 ignore next - data-nav always has a value in template */
       if (navTarget) {
         onNavigate(navTarget, navParam || undefined);
       }

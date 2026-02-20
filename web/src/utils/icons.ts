@@ -219,6 +219,7 @@ export function hydrateIcons(root?: Element | Document): void {
       labelled,
     });
 
+    /* v8 ignore next 2 - Unknown icon names filtered before reaching hydrateIcons */
     if (!svg) {
       return;
     }

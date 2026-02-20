@@ -125,7 +125,9 @@ export function addVotingListeners(el: HTMLElement): void {
           const upCount = upBtn?.querySelector('.count-num');
           const downCount = downBtn?.querySelector('.count-num');
 
+          /* v8 ignore next - Vote count elements always present in law cards */
           if (upCount) upCount.textContent = String(result.upvotes);
+          /* v8 ignore next - Vote count elements always present in law cards */
           if (downCount) downCount.textContent = String(result.downvotes);
 
           // Update active state

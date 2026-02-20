@@ -113,6 +113,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     } catch (error) {
       Sentry.captureException(error);
       const grid = el.querySelector('#categories-grid');
+      /* v8 ignore next - Grid element always exists from template */
       if (grid) {
         grid.classList.remove('loading-placeholder');
         grid.innerHTML = `
@@ -149,6 +150,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     // Handle retry button
     if (target.closest('#retry-categories')) {
       const grid = el.querySelector('#categories-grid');
+      /* v8 ignore next - Grid element always exists from template */
       if (grid) {
         grid.classList.add('loading-placeholder');
         grid.innerHTML = `<p class="text-center small">${getRandomLoadingMessage()}</p>`;

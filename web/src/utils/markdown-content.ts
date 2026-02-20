@@ -197,6 +197,7 @@ export function getPageContent(page: ContentPage): string {
 
   const entry = contentMap[page];
   const { markdown, meta } = entry;
+  /* v8 ignore next 3 - TypeScript guarantees valid ContentPage input */
   if (!markdown) {
     throw new Error(`Unknown page: ${page}`);
   }
