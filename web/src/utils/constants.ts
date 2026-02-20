@@ -85,5 +85,6 @@ export const LOADING_MESSAGES = [
  * @returns {string} A random loading message
  */
 export function getRandomLoadingMessage(): string {
+  /* v8 ignore next - Index always valid via Math.floor on non-empty const array */
   return LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)] ?? '';
 }

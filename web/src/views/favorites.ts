@@ -273,12 +273,14 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         const target = e.target;
+        /* v8 ignore next - Keyboard handler always gets HTMLElement targets */
         if (!(target instanceof HTMLElement)) return;
 
         const lawCard = target.closest('.law-card-mini');
         if (lawCard && !target.closest('button')) {
           e.preventDefault();
           const lawId = lawCard.getAttribute('data-law-id');
+          /* v8 ignore next - Law card always provides data-law-id */
           if (lawId) {
             onNavigate('law', lawId);
           }

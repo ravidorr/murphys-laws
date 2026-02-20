@@ -122,6 +122,7 @@ export function Calculator(): HTMLDivElement {
 
             const variables = formulaDisplay.querySelectorAll('mjx-mi');
 
+            /* v8 ignore start - MathJax CHTML DOM only exists in real browser, not jsdom */
             variables.forEach((mi) => {
               // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
               // Map Unicode Math Italic characters to regular letters
@@ -151,6 +152,7 @@ export function Calculator(): HTMLDivElement {
                 }
               }
             });
+            /* v8 ignore stop */
           }).catch(() => {
             // Silently handle MathJax errors
           });

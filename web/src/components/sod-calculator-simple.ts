@@ -25,6 +25,7 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
 
   // Verify all sliders exist
   for (const [name, slider] of Object.entries(_sliders)) {
+    /* v8 ignore next - Template always contains these elements */
     if (!slider) throw new Error(`Calculator slider "${name}" not found`);
   }
   const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
@@ -51,6 +52,7 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
     const displayScore = Math.min(score, 8.6);
 
+    /* v8 ignore next - Template always provides score display */
     if (scoreDisplay) {
       scoreDisplay.textContent = displayScore.toFixed(2);
     }
@@ -78,10 +80,12 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
       cls = 'calc-dark';
     }
 
+    /* v8 ignore next - Template always provides interpretation display */
     if (interpretationDisplay) {
       interpretationDisplay.textContent = interpretation;
     }
 
+    /* v8 ignore next 4 - Template always provides score section */
     const scoreSection = el.querySelector('.sod-simple-score');
     if (scoreSection) {
       scoreSection.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
@@ -90,6 +94,7 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
   }
 
   (Object.keys(sliders) as SliderKey[]).forEach((k) => {
+    /* v8 ignore next - Sliders verified above */
     if (!sliders[k]) return;
 
     // Initial value setup
@@ -99,6 +104,7 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
 
     sliders[k].addEventListener('input', () => {
       const val = sliders[k].value;
+      /* v8 ignore next - Always has slider values in template */
       if (sliderValues[k]) sliderValues[k]!.textContent = val;
 
       // Update ARIA attributes
@@ -121,6 +127,7 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     const navElement = t.closest('[data-nav]');
     if (navElement) {
       const nav = (navElement as HTMLElement).dataset.nav;
+      /* v8 ignore next - data-nav always has a value in the template */
       if (nav) onNavigate(nav);
     }
   });

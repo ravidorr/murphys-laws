@@ -28,6 +28,7 @@ export function Trending() {
   `;
 
   const bodyDiv = el.querySelector('.card-body');
+  /* v8 ignore next 3 - Template always provides .card-body */
   if (bodyDiv) {
     const loading = createLoading();
     bodyDiv.appendChild(loading);
@@ -40,6 +41,7 @@ export function Trending() {
       const trending = laws.slice(0, WIDGET_CARD_COUNT);
 
       const bodyDiv = el.querySelector('.card-body');
+      /* v8 ignore next - querySelector always finds .card-body on own element */
       if (bodyDiv) {
         // Use shared law card renderer (eliminates ~30 lines of duplicate HTML generation)
         bodyDiv.innerHTML = `

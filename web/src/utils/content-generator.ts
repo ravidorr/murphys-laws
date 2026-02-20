@@ -15,5 +15,6 @@ export function generateCategoryDescription(title: string, lawCount: number): st
   const sum = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const index = sum % templates.length;
 
-  return templates[index] ?? '';
+  // Index is always valid: computed via modulo on non-empty const array
+  return templates[index] as string;
 }
