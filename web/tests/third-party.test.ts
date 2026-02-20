@@ -1,22 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ensureAdsense, initAnalyticsBootstrap } from '../src/utils/third-party.ts';
 
+/** Window plus analytics globals; Vitest's globalThis.window type doesn't merge with src/types/global.d.ts */
+type WindowWithAnalytics = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
+
 describe('third-party utilities', () => {
   describe('ensureAdsense', () => {
-    let originalAdsbygoogle;
+    let originalAdsbygoogle: unknown;
 
     beforeEach(() => {
-      // Save and reset adsbygoogle
-      originalAdsbygoogle = globalThis.window?.adsbygoogle;
+      const win = globalThis.window as unknown as { adsbygoogle?: unknown };
+      originalAdsbygoogle = win?.adsbygoogle;
       if (globalThis.window) {
-        delete globalThis.window.adsbygoogle;
+        win.adsbygoogle = undefined;
       }
     });
 
     afterEach(() => {
-      // Restore original state
       if (globalThis.window) {
-        globalThis.window.adsbygoogle = originalAdsbygoogle;
+        (globalThis.window as unknown as { adsbygoogle?: unknown }).adsbygoogle = originalAdsbygoogle;
       }
     });
 
@@ -82,9 +84,9 @@ describe('third-party utilities', () => {
     });
 
     it('handles SSR case when window is undefined', () => {
-      // Temporarily remove window
-      const savedWindow = globalThis.window;
-      delete globalThis.window;
+      const g = globalThis as unknown as { window?: Window };
+      const savedWindow = g.window;
+      g.window = undefined;
 
       // Should not throw and should return resolved promise
       expect(() => {
@@ -92,8 +94,7 @@ describe('third-party utilities', () => {
         expect(result).toBeInstanceOf(Promise);
       }).not.toThrow();
 
-      // Restore window
-      globalThis.window = savedWindow;
+      g.window = savedWindow;
     });
 
     it('resolves quickly when adsbygoogle appears during polling', async () => {
@@ -141,28 +142,27 @@ describe('third-party utilities', () => {
   });
 
   describe('initAnalyticsBootstrap', () => {
-    let originalWindow;
-    let originalDataLayer;
-    let originalGtag;
-    let originalRequestIdleCallback;
-    let addEventListenerSpy;
+    let originalWindow: Window | undefined;
+    let originalDataLayer: unknown;
+    let originalGtag: unknown;
+    let originalRequestIdleCallback: typeof window.requestIdleCallback | undefined;
+    let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      // Save original state
-      originalWindow = globalThis.window;
-      originalDataLayer = globalThis.window?.dataLayer;
-      originalGtag = globalThis.window?.gtag;
-      originalRequestIdleCallback = globalThis.window?.requestIdleCallback;
+      const win = globalThis.window as Window & { dataLayer?: unknown; gtag?: unknown };
+      originalWindow = win;
+      originalDataLayer = win?.dataLayer;
+      originalGtag = (win as Window & { gtag?: unknown })?.gtag;
+      originalRequestIdleCallback = win?.requestIdleCallback;
 
-      // Reset state
+      const w = win as unknown as { dataLayer?: unknown; gtag?: unknown; requestIdleCallback?: typeof window.requestIdleCallback };
       if (globalThis.window) {
-        delete globalThis.window.dataLayer;
-        delete globalThis.window.gtag;
-        delete globalThis.window.requestIdleCallback;
+        w.dataLayer = undefined;
+        w.gtag = undefined;
+        w.requestIdleCallback = undefined;
       }
 
-      // Spy on addEventListener
-      addEventListenerSpy = vi.spyOn(globalThis.window, 'addEventListener');
+      addEventListenerSpy = vi.spyOn(globalThis as unknown as { addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void }, 'addEventListener');
     });
 
     afterEach(() => {
@@ -173,28 +173,30 @@ describe('third-party utilities', () => {
 
       // Restore original state
       if (originalWindow) {
-        globalThis.window = originalWindow;
+        (globalThis as unknown as { window: Window }).window = originalWindow;
+        const w = globalThis.window as unknown as { dataLayer?: unknown; gtag?: unknown; requestIdleCallback?: typeof window.requestIdleCallback };
         if (originalDataLayer !== undefined) {
-          globalThis.window.dataLayer = originalDataLayer;
+          w.dataLayer = originalDataLayer;
         }
         if (originalGtag !== undefined) {
-          globalThis.window.gtag = originalGtag;
+          w.gtag = originalGtag;
         }
         if (originalRequestIdleCallback !== undefined) {
-          globalThis.window.requestIdleCallback = originalRequestIdleCallback;
+          w.requestIdleCallback = originalRequestIdleCallback;
         }
       }
     });
 
     it('does nothing if window is undefined (SSR)', () => {
-      const savedWindow = globalThis.window;
-      delete globalThis.window;
+      const g = globalThis as unknown as { window?: Window };
+      const savedWindow = g.window;
+      g.window = undefined;
 
       expect(() => {
         initAnalyticsBootstrap();
       }).not.toThrow();
 
-      globalThis.window = savedWindow;
+      g.window = savedWindow;
     });
 
     it('sets up interaction listeners on first call', () => {
@@ -202,7 +204,7 @@ describe('third-party utilities', () => {
 
       // Verify listeners were added for pointerdown, keydown, and scroll
       const calls = addEventListenerSpy.mock.calls;
-      const eventTypes = calls.map(call => call[0]);
+      const eventTypes = calls.map((call: unknown[]) => call[0] as string);
       
       expect(eventTypes).toContain('pointerdown');
       expect(eventTypes).toContain('keydown');
@@ -253,8 +255,8 @@ describe('third-party utilities', () => {
       globalThis.window.dispatchEvent(pointerdownEvent);
 
       // After interaction, dataLayer should be initialized
-      expect(globalThis.window.dataLayer).toBeDefined();
-      expect(Array.isArray(globalThis.window.dataLayer)).toBe(true);
+      expect((globalThis.window as WindowWithAnalytics).dataLayer).toBeDefined();
+      expect(Array.isArray((globalThis.window as WindowWithAnalytics).dataLayer)).toBe(true);
     });
 
     it('initializes gtag function on user interaction', async () => {
@@ -269,8 +271,8 @@ describe('third-party utilities', () => {
       globalThis.window.dispatchEvent(keydownEvent);
 
       // After interaction, gtag should be initialized
-      expect(globalThis.window.gtag).toBeDefined();
-      expect(typeof globalThis.window.gtag).toBe('function');
+      expect((globalThis.window as WindowWithAnalytics).gtag).toBeDefined();
+      expect(typeof (globalThis.window as WindowWithAnalytics).gtag).toBe('function');
     });
 
     it('resolves ensureAdsense after timeout if adsbygoogle never appears', async () => {
@@ -342,15 +344,17 @@ describe('third-party utilities', () => {
       // Simulate user interaction to trigger third-party loads
       window.dispatchEvent(new Event('scroll'));
 
+      const win = window as WindowWithAnalytics;
       // Check that gtag is defined and functional
-      expect(window.gtag).toBeDefined();
-      expect(window.dataLayer).toBeDefined();
+      expect(win.gtag).toBeDefined();
+      expect(win.dataLayer).toBeDefined();
 
       // Call gtag and verify it pushes to dataLayer
-      const initialLength = window.dataLayer.length;
-      window.gtag('event', 'test_event', { test_param: 'value' });
-      
-      expect(window.dataLayer.length).toBeGreaterThan(initialLength);
+      const dataLayer = win.dataLayer!;
+      const initialLength = dataLayer.length;
+      win.gtag!('event', 'test_event', { test_param: 'value' });
+
+      expect(dataLayer.length).toBeGreaterThan(initialLength);
     });
 
     it('removes interaction listeners after first interaction', async () => {
@@ -374,11 +378,12 @@ describe('third-party utilities', () => {
 
     it('does not reinitialize gtag if already exists', async () => {
       vi.resetModules();
-      
+
+      const win = window as WindowWithAnalytics;
       // Pre-set gtag
       const existingGtag = vi.fn();
-      window.gtag = existingGtag;
-      window.dataLayer = [];
+      win.gtag = existingGtag;
+      win.dataLayer = [];
 
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       freshInit();
@@ -387,7 +392,7 @@ describe('third-party utilities', () => {
       window.dispatchEvent(new Event('pointerdown'));
 
       // gtag should still be the original function
-      expect(window.gtag).toBe(existingGtag);
+      expect(win.gtag).toBe(existingGtag);
     });
 
     it('does not trigger loads again if already triggered', async () => {
@@ -396,16 +401,16 @@ describe('third-party utilities', () => {
 
       freshInit();
 
+      const win = window as WindowWithAnalytics;
       // First trigger via scroll
       window.dispatchEvent(new Event('scroll'));
-      const firstDataLayerRef = window.dataLayer;
+      const firstDataLayerRef = win.dataLayer;
 
       // Try to trigger again via keydown (should be no-op since already triggered)
       window.dispatchEvent(new Event('keydown'));
 
       // dataLayer should be the same reference
-      expect(window.dataLayer).toBe(firstDataLayerRef);
+      expect(win.dataLayer).toBe(firstDataLayerRef);
     });
   });
 });
-

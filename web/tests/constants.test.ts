@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { describe, it, expect } from 'vitest';
 import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, LOADING_MESSAGES } from '../src/utils/constants.ts';
 
@@ -72,7 +73,8 @@ describe('Constants', () => {
 
     it('returns process.env var when available', () => {
       // Try to mock process.env
-      const originalProcess = globalThis.process;
+      const g = globalThis as unknown as Record<string, unknown>;
+      const originalProcess = g.process as { env?: Record<string, string | undefined> } | undefined;
       const originalEnv = originalProcess?.env;
 
       try {
@@ -86,8 +88,9 @@ describe('Constants', () => {
         };
 
         // Temporarily replace global process
-        if (typeof globalThis.process === 'undefined') {
-          globalThis.process = mockProcess;
+        const g = globalThis as unknown as Record<string, unknown>;
+        if (typeof g.process === 'undefined') {
+          g.process = mockProcess;
         } else {
           Object.defineProperty(globalThis, 'process', {
             value: mockProcess,
@@ -107,7 +110,7 @@ describe('Constants', () => {
             configurable: true
           });
         } else {
-          delete globalThis.process;
+          delete g.process;
         }
       } catch {
         // If we can't mock process.env, skip this test
@@ -175,4 +178,3 @@ describe('Constants', () => {
     });
   });
 });
-

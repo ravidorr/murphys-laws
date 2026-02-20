@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { showNotification, showSuccess, showError, clearAllNotifications } from '../src/components/notification.js';
 describe('Notification system', () => {
   afterEach(() => {
@@ -65,26 +66,26 @@ describe('Notification system', () => {
     it('sets role to alert for error notifications', () => {
       showNotification('Error test', 'error', 0);
       const notification = document.querySelector('.notification-error');
-      expect(notification.getAttribute('role')).toBe('alert');
+      expect(notification!.getAttribute('role')).toBe('alert');
     });
 
     it('sets role to status for non-error notifications', () => {
       showNotification('Info test', 'info', 0);
       const notification = document.querySelector('.notification-info');
-      expect(notification.getAttribute('role')).toBe('status');
+      expect(notification!.getAttribute('role')).toBe('status');
     });
 
     it('escapes HTML in message', () => {
       showNotification('<script>alert("xss")</script>', 'info', 0);
       const message = document.querySelector('.notification-message');
-      expect(message.innerHTML).toContain('&lt;script&gt;');
-      expect(message.innerHTML).not.toContain('<script>');
+      expect(message!.innerHTML).toContain('&lt;script&gt;');
+      expect(message!.innerHTML).not.toContain('<script>');
     });
 
     it('handles non-string messages', () => {
-      showNotification(null, 'info', 0);
+      showNotification(null as unknown as string, 'info', 0);
       const message = document.querySelector('.notification-message');
-      expect(message.textContent).toBe('');
+      expect(message!.textContent).toBe('');
     });
 
     it('dismisses notification when close button is clicked', async () => {
@@ -110,13 +111,13 @@ describe('Notification system', () => {
 
       // Verify notification is in the DOM with a parent
       expect(notification).toBeTruthy();
-      expect(notification.parentNode).toBeTruthy();
+      expect(notification!.parentNode).toBeTruthy();
       expect(closeBtn).toBeTruthy();
       (closeBtn as HTMLElement).click();
 
       await new Promise(r => setTimeout(r, 350)); // Wait for animation
 
-      // Notification should be removed
+      // Notification should be removed (notification was truthy above)
       expect(document.querySelectorAll('.notification').length).toBe(0);
     });
 

@@ -69,7 +69,7 @@ describe('markdown-content.js', () => {
       // Verify "Last updated:" appears only once
       const lastUpdatedMatches = html.match(/Last updated:/g);
       expect(lastUpdatedMatches).toBeTruthy();
-      expect(lastUpdatedMatches.length).toBe(1);
+      expect(lastUpdatedMatches!.length).toBe(1);
     });
 
     it('includes last updated date for terms page', () => {
@@ -124,7 +124,7 @@ describe('markdown-content.js', () => {
     it('returns metadata for about page', () => {
       const metadata = getPageMetadata('about');
       expect(metadata).toBeDefined();
-      expect(metadata.version).toBeDefined();
+      expect(metadata!.version).toBeDefined();
     });
 
     it('returns undefined for unknown page', () => {

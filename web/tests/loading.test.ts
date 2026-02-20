@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { createLoading, renderLoadingHTML } from '../src/components/loading.js';
 import { LOADING_MESSAGES } from '../src/utils/constants.js';
 
@@ -14,12 +15,13 @@ describe('Loading Component', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading();
 
-      expect(localThis.el.className).toBe('loading-placeholder');
-      expect(localThis.el.getAttribute('role')).toBe('status');
-      expect(localThis.el.getAttribute('aria-live')).toBe('polite');
-      expect(localThis.el.querySelector('p.small')).toBeTruthy();
+      expect(localThis.el!.className).toBe('loading-placeholder');
+      expect(localThis.el!.getAttribute('role')).toBe('status');
+      expect(localThis.el!.getAttribute('aria-live')).toBe('polite');
+      const pSmall = localThis.el!.querySelector('p.small');
+      expect(pSmall).toBeTruthy();
       // Message should be one of the loading messages
-      const text = localThis.el.querySelector('p.small').textContent;
+      const text = pSmall!.textContent;
       expect(LOADING_MESSAGES).toContain(text);
     });
 
@@ -27,53 +29,53 @@ describe('Loading Component', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ message: 'Custom loading...' });
 
-      expect(localThis.el.querySelector('p.small').textContent).toBe('Custom loading...');
+      expect(localThis.el!.querySelector('p.small')!.textContent).toBe('Custom loading...');
     });
 
     it('creates loading element with default size', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading();
 
-      expect(localThis.el.className).toBe('loading-placeholder');
-      expect(localThis.el.classList.contains('size-default')).toBe(false);
+      expect(localThis.el!.className).toBe('loading-placeholder');
+      expect(localThis.el!.classList.contains('size-default')).toBe(false);
     });
 
     it('creates loading element with small size', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ size: 'small' });
 
-      expect(localThis.el.classList.contains('loading-placeholder')).toBe(true);
-      expect(localThis.el.classList.contains('size-small')).toBe(true);
+      expect(localThis.el!.classList.contains('loading-placeholder')).toBe(true);
+      expect(localThis.el!.classList.contains('size-small')).toBe(true);
     });
 
     it('creates loading element with large size', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ size: 'large' });
 
-      expect(localThis.el.classList.contains('loading-placeholder')).toBe(true);
-      expect(localThis.el.classList.contains('size-large')).toBe(true);
+      expect(localThis.el!.classList.contains('loading-placeholder')).toBe(true);
+      expect(localThis.el!.classList.contains('size-large')).toBe(true);
     });
 
     it('ignores invalid size and uses default', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ size: 'invalid' as 'small' | 'default' | 'large' });
 
-      expect(localThis.el.className).toBe('loading-placeholder');
-      expect(localThis.el.classList.contains('size-invalid')).toBe(false);
+      expect(localThis.el!.className).toBe('loading-placeholder');
+      expect(localThis.el!.classList.contains('size-invalid')).toBe(false);
     });
 
     it('adds custom aria-label when provided', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading({ ariaLabel: 'Loading content' });
 
-      expect(localThis.el.getAttribute('aria-label')).toBe('Loading content');
+      expect(localThis.el!.getAttribute('aria-label')).toBe('Loading content');
     });
 
     it('does not add aria-label when not provided', () => {
       const localThis: LoadingTestContext = {};
       localThis.el = createLoading();
 
-      expect(localThis.el.hasAttribute('aria-label')).toBe(false);
+      expect(localThis.el!.hasAttribute('aria-label')).toBe(false);
     });
 
     it('handles all options together', () => {
@@ -84,12 +86,12 @@ describe('Loading Component', () => {
         ariaLabel: 'Loading law list'
       });
 
-      expect(localThis.el.classList.contains('loading-placeholder')).toBe(true);
-      expect(localThis.el.classList.contains('size-large')).toBe(true);
-      expect(localThis.el.querySelector('p.small').textContent).toBe('Loading laws...');
-      expect(localThis.el.getAttribute('aria-label')).toBe('Loading law list');
-      expect(localThis.el.getAttribute('role')).toBe('status');
-      expect(localThis.el.getAttribute('aria-live')).toBe('polite');
+      expect(localThis.el!.classList.contains('loading-placeholder')).toBe(true);
+      expect(localThis.el!.classList.contains('size-large')).toBe(true);
+      expect(localThis.el!.querySelector('p.small')!.textContent).toBe('Loading laws...');
+      expect(localThis.el!.getAttribute('aria-label')).toBe('Loading law list');
+      expect(localThis.el!.getAttribute('role')).toBe('status');
+      expect(localThis.el!.getAttribute('aria-live')).toBe('polite');
     });
   });
 
@@ -145,12 +147,13 @@ describe('Loading Component', () => {
       localThis.html = renderLoadingHTML({ message: 'Test message' });
       
       const container = document.createElement('div');
-      container.innerHTML = localThis.html;
-      localThis.el = container.firstElementChild;
+      container.innerHTML = localThis.html!;
+      localThis.el = container.firstElementChild ?? undefined;
 
-      expect(localThis.el.className).toBe('loading-placeholder');
-      expect(localThis.el.getAttribute('role')).toBe('status');
-      expect(localThis.el.querySelector('p.small').textContent).toBe('Test message');
+      expect(localThis.el).toBeTruthy();
+      expect(localThis.el!.className).toBe('loading-placeholder');
+      expect(localThis.el!.getAttribute('role')).toBe('status');
+      expect(localThis.el!.querySelector('p.small')!.textContent).toBe('Test message');
     });
 
     it('handles all options together', () => {
@@ -182,12 +185,12 @@ describe('Loading Component', () => {
       localThis.htmlEl = container.firstElementChild;
 
       // Compare key attributes
-      expect(localThis.domEl.className).toBe(localThis.htmlEl.className);
-      expect(localThis.domEl.getAttribute('role')).toBe(localThis.htmlEl.getAttribute('role'));
-      expect(localThis.domEl.getAttribute('aria-live')).toBe(localThis.htmlEl.getAttribute('aria-live'));
-      expect(localThis.domEl.getAttribute('aria-label')).toBe(localThis.htmlEl.getAttribute('aria-label'));
-      expect(localThis.domEl.querySelector('p.small').textContent).toBe(
-        localThis.htmlEl.querySelector('p.small').textContent
+      expect(localThis.domEl!.className).toBe(localThis.htmlEl!.className);
+      expect(localThis.domEl!.getAttribute('role')).toBe(localThis.htmlEl!.getAttribute('role'));
+      expect(localThis.domEl!.getAttribute('aria-live')).toBe(localThis.htmlEl!.getAttribute('aria-live'));
+      expect(localThis.domEl!.getAttribute('aria-label')).toBe(localThis.htmlEl!.getAttribute('aria-label'));
+      expect(localThis.domEl!.querySelector('p.small')!.textContent).toBe(
+        localThis.htmlEl!.querySelector('p.small')!.textContent
       );
     });
   });

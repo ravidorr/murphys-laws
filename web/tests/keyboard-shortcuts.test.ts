@@ -1,4 +1,4 @@
-import type { Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import {
   initKeyboardShortcuts,
   destroyKeyboardShortcuts,
@@ -182,7 +182,7 @@ describe('keyboard-shortcuts', () => {
 
       navigateToNextCard();
 
-      expect(document.activeElement).toBe(localThis.cards[0]);
+      expect(document.activeElement).toBe(localThis.cards[0]!);
     });
 
     it('focuses next card when a card is focused', () => {
@@ -196,10 +196,10 @@ describe('keyboard-shortcuts', () => {
         return card;
       });
 
-      localThis.cards[0].focus();
+      localThis.cards[0]!.focus();
       navigateToNextCard();
 
-      expect(document.activeElement).toBe(localThis.cards[1]);
+      expect(document.activeElement).toBe(localThis.cards[1]!);
     });
 
     it('stays on last card when already at end', () => {
@@ -213,10 +213,10 @@ describe('keyboard-shortcuts', () => {
         return card;
       });
 
-      localThis.cards[2].focus();
+      localThis.cards[2]!.focus();
       navigateToNextCard();
 
-      expect(document.activeElement).toBe(localThis.cards[2]);
+      expect(document.activeElement).toBe(localThis.cards[2]!);
     });
 
     it('does nothing when no cards exist', () => {
@@ -238,7 +238,7 @@ describe('keyboard-shortcuts', () => {
 
       navigateToPreviousCard();
 
-      expect(document.activeElement).toBe(localThis.cards[2]);
+      expect(document.activeElement).toBe(localThis.cards[2]!);
     });
 
     it('focuses previous card when a card is focused', () => {
@@ -252,10 +252,10 @@ describe('keyboard-shortcuts', () => {
         return card;
       });
 
-      localThis.cards[2].focus();
+      localThis.cards[2]!.focus();
       navigateToPreviousCard();
 
-      expect(document.activeElement).toBe(localThis.cards[1]);
+      expect(document.activeElement).toBe(localThis.cards[1]!);
     });
 
     it('stays on first card when already at start', () => {
@@ -269,10 +269,10 @@ describe('keyboard-shortcuts', () => {
         return card;
       });
 
-      localThis.cards[0].focus();
+      localThis.cards[0]!.focus();
       navigateToPreviousCard();
 
-      expect(document.activeElement).toBe(localThis.cards[0]);
+      expect(document.activeElement).toBe(localThis.cards[0]!);
     });
 
     it('does nothing when no cards exist', () => {
@@ -342,7 +342,7 @@ describe('keyboard-shortcuts', () => {
 
       handleKeydown(localThis.event);
 
-      expect(document.activeElement).toBe(localThis.cards[0]);
+      expect(document.activeElement).toBe(localThis.cards[0]!);
     });
 
     it('navigates to previous card on k key', () => {
@@ -360,7 +360,7 @@ describe('keyboard-shortcuts', () => {
 
       handleKeydown(localThis.event);
 
-      expect(document.activeElement).toBe(localThis.cards[1]);
+      expect(document.activeElement).toBe(localThis.cards[1]!);
     });
 
     it('closes help modal on Escape when modal is open', () => {
@@ -584,9 +584,9 @@ describe('keyboard-shortcuts', () => {
       initKeyboardShortcuts();
 
       localThis.keydownCalls = localThis.addEventListenerSpy.mock.calls.filter(
-        call => call[0] === 'keydown'
+        (call: [string, EventListener]) => call[0] === 'keydown'
       );
-      expect(localThis.keydownCalls.length).toBe(1);
+      expect(localThis.keydownCalls!.length).toBe(1);
 
       localThis.addEventListenerSpy.mockRestore();
     });

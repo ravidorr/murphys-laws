@@ -1,11 +1,12 @@
-import { Trending } from '@components/trending.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Trending } from '../src/components/trending.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 
 describe('Trending component', () => {
-  let fetchTrendingSpy;
-  let getUserVoteSpy;
-  let fetchSpy;
+  let fetchTrendingSpy: ReturnType<typeof vi.spyOn>;
+  let getUserVoteSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     // Clear localStorage before each test
@@ -13,8 +14,7 @@ describe('Trending component', () => {
 
     fetchTrendingSpy = vi.spyOn(api, 'fetchTrending');
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
-    // Mock fetch for voting API calls
-    fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    fetchSpy = vi.spyOn(globalThis as unknown as { fetch: typeof fetch }, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ upvotes: 11, downvotes: 2 }), {
         status: 200,
         statusText: 'OK',
@@ -95,8 +95,10 @@ describe('Trending component', () => {
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
       const downCount = el.querySelector('[data-vote="down"] .count-num');
-      expect(upCount.textContent).toBe('0');
-      expect(downCount.textContent).toBe('0');
+      expect(upCount).toBeTruthy();
+      expect(downCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('0');
+      expect(downCount!.textContent).toBe('0');
     });
   });
 
@@ -157,7 +159,8 @@ describe('Trending component', () => {
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
-      expect(upCount.textContent).toBe('11');
+      expect(upCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('11');
     });
   });
 
@@ -184,7 +187,8 @@ describe('Trending component', () => {
 
     // After voting, should have voted class
     await vi.waitFor(() => {
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      expect(upvoteBtn).toBeTruthy();
+      expect(upvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 
@@ -238,7 +242,7 @@ describe('Trending component', () => {
     await vi.waitFor(() => {
       const bodyDiv = el.querySelector('.card-body');
       expect(bodyDiv).toBeTruthy();
-      const lawCards = bodyDiv.querySelectorAll('.law-card-mini');
+      const lawCards = bodyDiv!.querySelectorAll('.law-card-mini');
       expect(lawCards.length).toBe(0);
     });
   });
@@ -325,7 +329,8 @@ describe('Trending component', () => {
 
     await vi.waitFor(() => {
       const upvoteBtn = el.querySelector('[data-vote="up"]');
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      expect(upvoteBtn).toBeTruthy();
+      expect(upvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 
@@ -340,7 +345,8 @@ describe('Trending component', () => {
 
     await vi.waitFor(() => {
       const downvoteBtn = el.querySelector('[data-vote="down"]');
-      expect(downvoteBtn.classList.contains('voted')).toBe(true);
+      expect(downvoteBtn).toBeTruthy();
+      expect(downvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 });

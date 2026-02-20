@@ -4,6 +4,12 @@
  * preventing "Google-served ads on screens without publisher-content" violations.
  */
 
+declare global {
+  interface Window {
+    adsbygoogle?: unknown[];
+  }
+}
+
 let isAdSenseInitialized: boolean = false;
 
 function initAdSense(): void {
@@ -33,8 +39,8 @@ function initAdSense(): void {
 export function setupAdSense(): void {
   document.addEventListener('murphys-laws-content-ready', () => {
     // specific events will trigger the ad loading.
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      requestIdleCallback(() => initAdSense());
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => initAdSense());
     } else {
       setTimeout(() => initAdSense(), 500);
     }
@@ -48,8 +54,8 @@ export function setupAdSense(): void {
  * @param {number} minChars - Minimum character count (default: 500)
  * @returns {boolean} True if content meets minimum requirements
  */
-export function hasMinimumContent(element: HTMLElement | null, minChars: number = 500): boolean {
-  if (!element) return false;
+export function hasMinimumContent(element: HTMLElement | null | undefined, minChars: number = 500): boolean {
+  if (element == null) return false;
   const textContent = element.textContent || '';
   // Remove excessive whitespace and count meaningful characters
   const contentLength = textContent.replace(/\s+/g, ' ').trim().length;

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   getCachedCategories,
   setCachedCategories,
@@ -14,7 +15,7 @@ function createLocalThis(): () => CategoryCacheContext {
   const context: CategoryCacheContext = {};
 
   beforeEach(() => {
-    Object.keys(context).forEach((key) => {
+    (Object.keys(context) as (keyof CategoryCacheContext)[]).forEach((key) => {
       delete context[key];
     });
   });
@@ -40,8 +41,8 @@ describe('Category cache utilities', () => {
   describe('Categories caching', () => {
     it('caches categories and retrieves them', () => {
       const categories = [
-        { id: 1, title: 'General' },
-        { id: 2, title: 'Technology' }
+        { id: 1, title: 'General', slug: 'general' },
+        { id: 2, title: 'Technology', slug: 'technology' }
       ];
 
       setCachedCategories(categories);
@@ -56,7 +57,7 @@ describe('Category cache utilities', () => {
     });
 
     it('returns null when cache is expired', () => {
-      const categories = [{ id: 1, title: 'General' }];
+      const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
       // Set cache with old timestamp (more than 1 hour ago)
       // Note: This also exercises backward compatibility since the old format
@@ -83,7 +84,7 @@ describe('Category cache utilities', () => {
     });
 
     it('handles localStorage setItem errors gracefully', () => {
-      const categories = [{ id: 1, title: 'General' }];
+      const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
       // Mock localStorage to throw errors
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -160,7 +161,7 @@ describe('Category cache utilities', () => {
   describe('Cache versioning', () => {
     describe('Categories', () => {
       it('reads old cache format without version field (backward compatibility)', () => {
-        const categories = [{ id: 1, title: 'General' }];
+        const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
         // Old format: { data, timestamp } without version
         const oldCache = {
@@ -175,11 +176,11 @@ describe('Category cache utilities', () => {
       });
 
       it('writes new cache format with version field', () => {
-        const categories = [{ id: 1, title: 'General' }];
+        const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
         setCachedCategories(categories);
 
-        const stored = JSON.parse(localStorage.getItem('murphys_categories'));
+        const stored = JSON.parse(localStorage.getItem('murphys_categories')!);
         expect(stored).toHaveProperty('version');
         expect(stored.version).toBe(1);
         expect(stored).toHaveProperty('data');
@@ -187,7 +188,7 @@ describe('Category cache utilities', () => {
       });
 
       it('accepts cache with current version', () => {
-        const categories = [{ id: 1, title: 'General' }];
+        const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
         // Cache with current version (1)
         const versionedCache = {
@@ -202,7 +203,7 @@ describe('Category cache utilities', () => {
       });
 
       it('invalidates cache with version below minimum accepted version', () => {
-        const categories = [{ id: 1, title: 'General' }];
+        const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
         // Cache with version below MIN_ACCEPTED_VERSION (which is 0)
         // This exercises the version invalidation branch and simulates
@@ -234,7 +235,7 @@ describe('Category cache utilities', () => {
         //
         // This behavior cannot be tested without mocking constants, but we verify
         // the version check logic exists by confirming versioned caches work correctly.
-        const categories = [{ id: 1, title: 'General' }];
+        const categories = [{ id: 1, title: 'General', slug: 'general' }];
 
         // Verify the version field is used in cache lookup
         const versionedCache = {
@@ -248,7 +249,7 @@ describe('Category cache utilities', () => {
         expect(cached).toEqual(categories);
 
         // Verify stored cache has version field
-        const stored = JSON.parse(localStorage.getItem('murphys_categories'));
+        const stored = JSON.parse(localStorage.getItem('murphys_categories')!);
         expect(stored.version).toBe(1);
       });
     });
@@ -274,7 +275,7 @@ describe('Category cache utilities', () => {
 
         setCachedAttributions(attributions);
 
-        const stored = JSON.parse(localStorage.getItem('murphys_attributions'));
+        const stored = JSON.parse(localStorage.getItem('murphys_attributions')!);
         expect(stored).toHaveProperty('version');
         expect(stored.version).toBe(1);
         expect(stored).toHaveProperty('data');
@@ -320,8 +321,9 @@ describe('Category cache utilities', () => {
   describe('deferUntilIdle', () => {
     it('calls callback via setTimeout when requestIdleCallback is not available', async () => {
       const callback = vi.fn();
-      const originalRIC = globalThis.requestIdleCallback;
-      delete globalThis.requestIdleCallback;
+      const g = globalThis as unknown as { requestIdleCallback?: typeof globalThis.requestIdleCallback };
+      const originalRIC = g.requestIdleCallback;
+      g.requestIdleCallback = undefined;
 
       deferUntilIdle(callback);
 
@@ -331,7 +333,7 @@ describe('Category cache utilities', () => {
       });
 
       if (originalRIC) {
-        globalThis.requestIdleCallback = originalRIC;
+        g.requestIdleCallback = originalRIC;
       }
     });
 
@@ -354,7 +356,7 @@ describe('Category cache utilities', () => {
       );
 
       // Cleanup
-      delete globalThis.requestIdleCallback;
+      (globalThis as unknown as { requestIdleCallback?: unknown }).requestIdleCallback = undefined;
     });
 
     it('respects timeout parameter', () => {
@@ -373,8 +375,7 @@ describe('Category cache utilities', () => {
         { timeout: 5000 }
       );
 
-      delete globalThis.requestIdleCallback;
+      (globalThis as unknown as { requestIdleCallback?: unknown }).requestIdleCallback = undefined;
     });
   });
 });
-

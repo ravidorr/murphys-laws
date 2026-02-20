@@ -203,7 +203,7 @@ describe('Install Prompt Component', () => {
 
       // Should not add beforeinstallprompt listener when already installed
       const beforeinstallpromptCalls = localThis.addEventListenerSpy.mock.calls.filter(
-        call => call[0] === 'beforeinstallprompt'
+        (call: [string, EventListener]) => call[0] === 'beforeinstallprompt'
       );
       expect(beforeinstallpromptCalls.length).toBe(0);
     });
@@ -249,7 +249,7 @@ describe('Install Prompt Component', () => {
       const localThis: InstallPromptTestContext = {};
       localThis.prompt = document.querySelector('.install-prompt');
       expect(localThis.prompt).toBeTruthy();
-      expect(localThis.prompt.classList.contains('install-prompt-ios')).toBe(true);
+      expect(localThis.prompt!.classList.contains('install-prompt-ios')).toBe(true);
     });
 
     it('shows step-by-step instructions', () => {
@@ -269,8 +269,9 @@ describe('Install Prompt Component', () => {
 
       const localThis: InstallPromptTestContext = {};
       localThis.prompt = document.querySelector('.install-prompt');
-      expect(localThis.prompt.getAttribute('role')).toBe('dialog');
-      expect(localThis.prompt.getAttribute('aria-labelledby')).toBe('install-prompt-title');
+      expect(localThis.prompt).toBeTruthy();
+      expect(localThis.prompt!.getAttribute('role')).toBe('dialog');
+      expect(localThis.prompt!.getAttribute('aria-labelledby')).toBe('install-prompt-title');
     });
 
     it('removes prompt when dismiss is clicked', () => {
@@ -426,7 +427,7 @@ describe('Install Prompt Component', () => {
 
       localThis.dismissed = localStorage.getItem('pwa_install_dismissed');
       expect(localThis.dismissed).toBeTruthy();
-      expect(new Date(localThis.dismissed).getTime()).toBeLessThanOrEqual(Date.now());
+      expect(new Date(localThis.dismissed!).getTime()).toBeLessThanOrEqual(Date.now());
     });
   });
 
@@ -446,7 +447,7 @@ describe('Install Prompt Component', () => {
 
       localThis.prompt = document.querySelector('.install-prompt');
       expect(localThis.prompt).toBeTruthy();
-      expect(localThis.prompt.querySelector('[data-action="install"]')).toBeTruthy();
+      expect(localThis.prompt!.querySelector('[data-action="install"]')).toBeTruthy();
     });
 
     it('does not show prompt when already installed', () => {

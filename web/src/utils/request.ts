@@ -143,7 +143,7 @@ export async function apiGet(endpoint: string, params: URLSearchParams | Record<
  * @param {Object} body - Request body
  * @returns {Promise<unknown>} JSON response
  */
-export async function apiPost(endpoint: string, body: Record<string, unknown>): Promise<unknown> {
+export async function apiPost(endpoint: string, body: Record<string, unknown> | null = null): Promise<unknown> {
   return apiRequest(endpoint, {
     method: 'POST',
     body

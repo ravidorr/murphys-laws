@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TopVoted } from '../src/components/top-voted.js';
 import { Trending } from '../src/components/trending.js';
 import { RecentlyAdded } from '../src/components/recently-added.js';
@@ -24,11 +25,11 @@ describe('Law components', () => {
       text: 'Second law text',
       upvotes: 90,
       downvotes: 5,
-      attributions: [{ name: 'Test Author', contact_type: null }]
+      attributions: [{ name: 'Test Author', contact_type: undefined }]
     },
     {
       id: 3,
-      title: null,
+      title: undefined,
       text: 'Third law without title',
       upvotes: 80,
       downvotes: 8,
@@ -204,7 +205,7 @@ describe('Law components', () => {
         json: async () => ({ success: true })
       });
 
-      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue(paginatedResponse([mockLaws[0]]));
+      vi.spyOn(api, 'fetchRecentlyAdded').mockResolvedValue(paginatedResponse([mockLaws[0]!]));
 
       const el = RecentlyAdded();
       document.body.appendChild(el);

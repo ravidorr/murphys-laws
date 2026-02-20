@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { createLawListSection } from '../src/components/law-list-section.js';
 
 describe('LawListSection component', () => {
@@ -19,8 +20,8 @@ describe('LawListSection component', () => {
 
     const title = el.querySelector('.card-title');
     expect(title).toBeTruthy();
-    expect(title.textContent).toContain('Top');
-    expect(title.textContent).toContain('Voted');
+    expect(title!.textContent).toContain('Top');
+    expect(title!.textContent).toContain('Voted');
   });
 
   it('uses h3 for proper heading hierarchy (WCAG 1.3.1)', () => {
@@ -30,7 +31,8 @@ describe('LawListSection component', () => {
     });
 
     const title = el.querySelector('.card-title');
-    expect(title.tagName).toBe('H3');
+    expect(title).toBeTruthy();
+    expect(title!.tagName).toBe('H3');
   });
 
   it('shows loading placeholder initially', () => {
@@ -58,8 +60,8 @@ describe('LawListSection component', () => {
 
     const body = el.querySelector('.card-body');
     expect(body).toBeTruthy();
-    expect(body.textContent).toContain('Law 1');
-    expect(body.textContent).toContain('Law 2');
+    expect(body!.textContent).toContain('Law 1');
+    expect(body!.textContent).toContain('Law 2');
   });
 
   it('handles empty laws array', () => {
@@ -106,10 +108,10 @@ describe('LawListSection component', () => {
     // Check that content was rendered
     const body = el.querySelector('.card-body');
     expect(body).toBeTruthy();
-    expect(body.textContent).toContain('Law 2');
-    expect(body.textContent).toContain('Law 3');
-    expect(body.textContent).not.toContain('Law 1');
-    expect(body.textContent).not.toContain('Law 4');
+    expect(body!.textContent).toContain('Law 2');
+    expect(body!.textContent).toContain('Law 3');
+    expect(body!.textContent).not.toContain('Law 1');
+    expect(body!.textContent).not.toContain('Law 4');
   });
 
   it('renders error state', () => {
@@ -122,7 +124,7 @@ describe('LawListSection component', () => {
 
     const errorEl = el.querySelector('.error-state');
     expect(errorEl).toBeTruthy();
-    expect(errorEl.textContent).toContain('Something went wrong');
+    expect(errorEl!.textContent).toContain('Something went wrong');
   });
 
   it('handles missing body div gracefully', () => {
@@ -133,7 +135,8 @@ describe('LawListSection component', () => {
 
     // Remove body div
     const bodyDiv = el.querySelector('.card-body');
-    bodyDiv.remove();
+    expect(bodyDiv).toBeTruthy();
+    bodyDiv!.remove();
 
     // Should not throw
     expect(() => {
@@ -149,7 +152,8 @@ describe('LawListSection component', () => {
 
     // Remove body div
     const bodyDiv = el.querySelector('.card-body');
-    bodyDiv.remove();
+    expect(bodyDiv).toBeTruthy();
+    bodyDiv!.remove();
 
     // Should not throw
     expect(() => {
@@ -178,4 +182,3 @@ describe('LawListSection component', () => {
     expect(voteButtonsAfter.length).toBeGreaterThan(0);
   });
 });
-

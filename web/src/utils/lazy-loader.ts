@@ -75,7 +75,7 @@ export function lazyLoad(componentFactory: () => HTMLElement, options: LazyLoadO
   };
 
   // Check if IntersectionObserver is supported
-  if ('IntersectionObserver' in window) {
+  if (typeof window.IntersectionObserver === 'function') {
     observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
@@ -165,7 +165,7 @@ export function batchLazyLoad(items: Array<{ element: HTMLElement; onVisible: ()
   const loadedSet = new WeakSet<Element>();
 
   // Check if IntersectionObserver is supported
-  if (!('IntersectionObserver' in window)) {
+  if (typeof window.IntersectionObserver !== 'function') {
     // Fallback: load all immediately
     items.forEach(({ onVisible }) => {
       try {

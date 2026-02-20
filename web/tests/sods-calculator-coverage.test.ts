@@ -1,9 +1,11 @@
+/// <reference path="../src/types/vite-env.d.ts" />
+/// <reference path="../src/types/global.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Calculator } from '../src/views/sods-calculator.js';
-import templateHtml from '../src/views/templates/sods-calculator.html?raw';
+import templateHtml from '@views/templates/sods-calculator.html?raw';
 
 describe('Sod\'s Law Calculator - Coverage', () => {
-  let container;
+  let container: HTMLElement;
 
   beforeEach(() => {
     container = document.createElement('div');
@@ -20,7 +22,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
       container.parentNode.removeChild(container);
     }
     // Clean up MathJax
-    delete window.MathJax;
+    (window as unknown as { MathJax?: unknown }).MathJax = undefined;
     vi.restoreAllMocks();
   });
 
@@ -28,7 +30,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     const originalRAF = window.requestAnimationFrame;
     window.requestAnimationFrame = (cb) => { cb(0); return 0; };
 
-    delete globalThis.window.MathJax;
+    (globalThis.window as unknown as { MathJax?: unknown }).MathJax = undefined;
     
     const el = Calculator();
     container.appendChild(el);
@@ -44,7 +46,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   });
 
   it('handles MathJax.typesetPromise being missing', async () => {
-    globalThis.window.MathJax = {}; // Missing typesetPromise
+    (globalThis.window as unknown as { MathJax?: Record<string, unknown> }).MathJax = {}; // Missing typesetPromise
     
     const el = Calculator();
     container.appendChild(el);
@@ -65,12 +67,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
     
     // Override MathJax mock to simulate rendering
-    window.MathJax.typesetPromise = vi.fn((elements) => {
-      // Simulate MathJax rendering by injecting DOM structure
-      const display = elements[0];
+    const typesetMock = vi.fn((elements?: HTMLElement[]) => {
+      if (!elements?.length) return Promise.resolve();
+      const display = elements[0]!;
       display.innerHTML = ''; // Clear text
-      
-      // Simulate MathJax output for 'P' (Probability) and 'U' (Urgency)
+
       const miP = document.createElement('mjx-mi');
       const cP = document.createElement('mjx-c');
       cP.className = 'mjx-c1D443'; // Italic P
@@ -83,9 +84,10 @@ describe('Sod\'s Law Calculator - Coverage', () => {
 
       display.appendChild(miP);
       display.appendChild(miU);
-      
+
       return Promise.resolve();
     });
+    window.MathJax!.typesetPromise = typesetMock;
     
     // Trigger updateCalculation
     const slider = el.querySelector('#urgency') as HTMLInputElement;
@@ -96,11 +98,13 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     
     // Check if tooltips were added
     const formulaDisplay = el.querySelector('#formula-display');
-    const miP = formulaDisplay.querySelector('mjx-mi:first-child');
-    const miU = formulaDisplay.querySelector('mjx-mi:last-child');
-    
-    expect(miP.getAttribute('data-tooltip')).toBe('Probability');
-    expect(miU.getAttribute('data-tooltip')).toBe('Urgency (1-9)');
+    expect(formulaDisplay).toBeTruthy();
+    const miP = formulaDisplay!.querySelector('mjx-mi:first-child');
+    const miU = formulaDisplay!.querySelector('mjx-mi:last-child');
+    expect(miP).toBeTruthy();
+    expect(miU).toBeTruthy();
+    expect(miP!.getAttribute('data-tooltip')).toBe('Probability');
+    expect(miU!.getAttribute('data-tooltip')).toBe('Urgency (1-9)');
 
     window.requestAnimationFrame = originalRAF;
   });
@@ -114,7 +118,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     container.appendChild(el);
     
     // Mock rejection
-    window.MathJax.typesetPromise = vi.fn(() => Promise.reject(new Error('MathJax error')));
+    window.MathJax!.typesetPromise = vi.fn(() => Promise.reject(new Error('MathJax error')));
     
     const slider = el.querySelector('#urgency') as HTMLInputElement;
     
@@ -317,7 +321,8 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     
     // Formula display should still have content (updateCalculation called)
     const formulaDisplay = el.querySelector('#formula-display');
-    expect(formulaDisplay.textContent).toBeTruthy();
+    expect(formulaDisplay).toBeTruthy();
+    expect(formulaDisplay!.textContent).toBeTruthy();
     
     vi.clearAllMocks();
   });
@@ -351,11 +356,11 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     expect((el.querySelector('#frequency') as HTMLInputElement).value).toBe('7');
 
     // Check slider value displays are also updated
-    expect(el.querySelector('#urgency-value').textContent).toBe('3');
-    expect(el.querySelector('#complexity-value').textContent).toBe('4');
-    expect(el.querySelector('#importance-value').textContent).toBe('5');
-    expect(el.querySelector('#skill-value').textContent).toBe('6');
-    expect(el.querySelector('#frequency-value').textContent).toBe('7');
+    expect(el.querySelector('#urgency-value')!.textContent).toBe('3');
+    expect(el.querySelector('#complexity-value')!.textContent).toBe('4');
+    expect(el.querySelector('#importance-value')!.textContent).toBe('5');
+    expect(el.querySelector('#skill-value')!.textContent).toBe('6');
+    expect(el.querySelector('#frequency-value')!.textContent).toBe('7');
 
     // Restore location
     Object.defineProperty(window, 'location', {
@@ -421,13 +426,14 @@ describe('Sod\'s Law Calculator - Coverage', () => {
 
     // Click copy-link button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-link"]');
-    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(copyBtn).toBeTruthy();
+    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
     // Verify URL contains the slider values
     expect(writeTextMock).toHaveBeenCalled();
-    const url = writeTextMock.mock.calls[0][0];
+    const url = writeTextMock.mock.calls[0]![0];
     expect(url).toContain('u=2');
     expect(url).toContain('c=3');
     expect(url).toContain('i=4');
@@ -457,13 +463,14 @@ describe('Sod\'s Law Calculator - Coverage', () => {
 
     // Click copy-text button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-text"]');
-    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(copyBtn).toBeTruthy();
+    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
-    
+
     // The copied text should contain the high probability (8.60 is max due to capping)
     expect(writeTextMock).toHaveBeenCalled();
-    const text = writeTextMock.mock.calls[0][0];
+    const text = writeTextMock.mock.calls[0]![0];
     expect(text).toContain('8.');
   });
 

@@ -1,4 +1,9 @@
-import { AdvancedSearch } from '@components/advanced-search.js';
+import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+import type { MockInstance } from 'vitest';
+import type { Category } from '../src/types/app.d.ts';
+import type { SearchFilters } from '../src/types/app.d.ts';
+import type { CachedAttribution } from '../src/utils/category-cache.js';
+import { AdvancedSearch } from '../src/components/advanced-search.ts';
 import * as api from '../src/utils/api.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
 
@@ -10,7 +15,7 @@ interface AdvancedSearchTestContext {
 
 interface MountSearchOptions {
   append?: boolean;
-  onSearch?: (filters: { q?: string; category_id?: string | number; attribution?: string }) => void;
+  onSearch?: (filters: SearchFilters) => void;
   initialFilters?: { q?: string; category_id?: string; attribution?: string };
 }
 
@@ -28,8 +33,8 @@ function createLocalThis(): () => AdvancedSearchTestContext {
 
 describe('AdvancedSearch component', () => {
   const local = createLocalThis();
-  let fetchAPISpy;
-  let deferUntilIdleSpy;
+  let fetchAPISpy: MockInstance;
+  let deferUntilIdleSpy: MockInstance;
 
   beforeEach(() => {
     fetchAPISpy = vi.spyOn(api, 'fetchAPI');
@@ -93,9 +98,9 @@ describe('AdvancedSearch component', () => {
   });
 
   it('loads categories successfully', async () => {
-    const categories = [
-      { id: 1, title: 'General' },
-      { id: 2, title: 'Technology' }
+    const categories: Category[] = [
+      { id: 1, title: 'General', slug: 'general' },
+      { id: 2, title: 'Technology', slug: 'technology' }
     ];
 
     fetchAPISpy
@@ -280,9 +285,9 @@ describe('AdvancedSearch component', () => {
   });
 
   it('populates dropdowns from cache immediately', () => {
-    const categories = [
-      { id: 1, title: 'General' },
-      { id: 2, title: 'Technology' }
+    const categories: Category[] = [
+      { id: 1, title: 'General', slug: 'general' },
+      { id: 2, title: 'Technology', slug: 'technology' }
     ];
     const attributions = [
       { name: 'Alice' },
@@ -309,8 +314,8 @@ describe('AdvancedSearch component', () => {
   });
 
   it('loads categories on focus if not loaded yet', async () => {
-    const categories = [
-      { id: 1, title: 'General' }
+    const categories: Category[] = [
+      { id: 1, title: 'General', slug: 'general' }
     ];
 
     fetchAPISpy
@@ -334,8 +339,8 @@ describe('AdvancedSearch component', () => {
   it('calls onSearch with filters when search button is clicked', async () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -351,13 +356,13 @@ describe('AdvancedSearch component', () => {
   });
 
   it('calls onSearch with category filter', async () => {
-    const categories = [{ id: 1, title: 'General' }];
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
     fetchAPISpy
       .mockResolvedValueOnce({ data: categories })
       .mockResolvedValueOnce({ data: [] });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -381,8 +386,8 @@ describe('AdvancedSearch component', () => {
       .mockResolvedValueOnce({ data: [] })
       .mockResolvedValueOnce({ data: attributions });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -401,15 +406,15 @@ describe('AdvancedSearch component', () => {
   });
 
   it('calls onSearch with all filters combined', async () => {
-    const categories = [{ id: 1, title: 'General' }];
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
     const attributions = [{ name: 'Alice' }];
 
     fetchAPISpy
       .mockResolvedValueOnce({ data: categories })
       .mockResolvedValueOnce({ data: attributions });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -439,8 +444,8 @@ describe('AdvancedSearch component', () => {
   it('trims whitespace from keyword input', async () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -458,8 +463,8 @@ describe('AdvancedSearch component', () => {
   it('excludes empty filters from search', async () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -475,15 +480,15 @@ describe('AdvancedSearch component', () => {
   });
 
   it('clears all filters when clear button is clicked', async () => {
-    const categories = [{ id: 1, title: 'General' }];
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
     const attributions = [{ name: 'Alice' }];
 
     fetchAPISpy
       .mockResolvedValueOnce({ data: categories })
       .mockResolvedValueOnce({ data: attributions });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -514,8 +519,8 @@ describe('AdvancedSearch component', () => {
   it('triggers search when Enter key is pressed in keyword input', async () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
 
-    let searchFilters = null;
-    const onSearch = (filters) => { searchFilters = filters; };
+    let searchFilters: SearchFilters | null = null;
+    const onSearch = (filters: SearchFilters) => { searchFilters = filters; };
 
     const el = mountSearch({ onSearch });
 
@@ -551,8 +556,8 @@ describe('AdvancedSearch component', () => {
 
   it('selects initial category when provided', async () => {
     const categories = [
-      { id: 1, title: 'General' },
-      { id: 2, title: 'Technology' }
+      { id: 1, title: 'General', slug: 'general' },
+      { id: 2, title: 'Technology', slug: 'technology' }
     ];
 
     fetchAPISpy
@@ -742,7 +747,7 @@ describe('AdvancedSearch component', () => {
         expect(attributionSelect.innerHTML).toContain('Valid Author');
         // Empty options would show as empty option text
         const options = attributionSelect.querySelectorAll('option');
-        const optionTexts = Array.from(options).map(o => o.textContent.trim());
+        const optionTexts = Array.from(options).map(o => (o.textContent ?? '').trim());
         expect(optionTexts.filter(t => t === '').length).toBe(0);
       });
     });
@@ -765,8 +770,8 @@ describe('AdvancedSearch component', () => {
 
     it('marks selected category from initial filters', async () => {
       vi.spyOn(cacheUtils, 'getCachedCategories').mockReturnValue([
-        { id: 1, title: 'Category One' },
-        { id: 2, title: 'Category Two' }
+        { id: 1, title: 'Category One', slug: 'category-one' },
+        { id: 2, title: 'Category Two', slug: 'category-two' }
       ]);
       fetchAPISpy.mockResolvedValue({ data: [] });
 
@@ -776,7 +781,7 @@ describe('AdvancedSearch component', () => {
         const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
         const selectedOption = categorySelect.querySelector('option[selected]');
         expect(selectedOption).toBeTruthy();
-        expect(selectedOption.textContent).toBe('Category Two');
+        expect(selectedOption!.textContent).toBe('Category Two');
       });
     });
 
@@ -793,7 +798,7 @@ describe('AdvancedSearch component', () => {
         const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
         const selectedOption = attributionSelect.querySelector('option[selected]');
         expect(selectedOption).toBeTruthy();
-        expect(selectedOption.textContent).toBe('Author B');
+        expect(selectedOption!.textContent).toBe('Author B');
       });
     });
 
@@ -802,7 +807,7 @@ describe('AdvancedSearch component', () => {
         { name: 'Valid Author' },
         { name: 123 },
         { name: { nested: 'object' } }
-      ]);
+      ] as CachedAttribution[]);
       fetchAPISpy.mockResolvedValue({ data: [] });
 
       const el = mountSearch();

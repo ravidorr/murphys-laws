@@ -1,4 +1,6 @@
-import { ButteredToastCalculator } from '@views/buttered-toast-calculator.js';
+/// <reference path="../src/types/global.d.ts" />
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { ButteredToastCalculator } from '../src/views/buttered-toast-calculator.ts';
 
 function input(el: HTMLElement, id: string): HTMLInputElement {
   const node = el.querySelector(`#${id}`);
@@ -37,9 +39,9 @@ describe('ButteredToastCalculator view', () => {
     // Trigger input event to calculate
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    const probability = el.querySelector('#toast-probability-value').textContent;
+    const probability = el.querySelector('#toast-probability-value')!.textContent;
     expect(probability).toMatch(/%$/);
-    expect(el.querySelector('#toast-interpretation').textContent.length).toBeGreaterThan(5);
+    expect(el.querySelector('#toast-interpretation')!.textContent!.length).toBeGreaterThan(5);
 
     document.body.removeChild(el);
   });
@@ -58,10 +60,10 @@ describe('ButteredToastCalculator view', () => {
 
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#toast-interpretation').textContent;
+    const interpretation = el.querySelector('#toast-interpretation')!.textContent;
 
     expect(interpretation).toMatch(/Looking good/i);
-    expect(el.querySelector('#toast-result-display').classList.contains('calc-ok')).toBe(true);
+    expect(el.querySelector('#toast-result-display')!.classList.contains('calc-ok')).toBe(true);
 
     document.body.removeChild(el);
   });
@@ -80,10 +82,10 @@ describe('ButteredToastCalculator view', () => {
 
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#toast-interpretation').textContent;
+    const interpretation = el.querySelector('#toast-interpretation')!.textContent;
 
     expect(interpretation).toMatch(/toss-up/i);
-    expect(el.querySelector('#toast-result-display').classList.contains('calc-orange')).toBe(true);
+    expect(el.querySelector('#toast-result-display')!.classList.contains('calc-orange')).toBe(true);
 
     document.body.removeChild(el);
   });
@@ -102,10 +104,10 @@ describe('ButteredToastCalculator view', () => {
 
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#toast-interpretation').textContent;
+    const interpretation = el.querySelector('#toast-interpretation')!.textContent;
 
     expect(interpretation).toMatch(/butter zone/i);
-    expect(el.querySelector('#toast-result-display').classList.contains('calc-danger')).toBe(true);
+    expect(el.querySelector('#toast-result-display')!.classList.contains('calc-danger')).toBe(true);
 
     document.body.removeChild(el);
   });
@@ -124,10 +126,10 @@ describe('ButteredToastCalculator view', () => {
 
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#toast-interpretation').textContent;
+    const interpretation = el.querySelector('#toast-interpretation')!.textContent;
 
     expect(interpretation).toMatch(/Catastrophe is imminent/i);
-    expect(el.querySelector('#toast-result-display').classList.contains('calc-dark')).toBe(true);
+    expect(el.querySelector('#toast-result-display')!.classList.contains('calc-dark')).toBe(true);
 
     document.body.removeChild(el);
   });
@@ -138,27 +140,27 @@ describe('ButteredToastCalculator view', () => {
 
     input(el, 'toast-height').value = '100';
     input(el, 'toast-height').dispatchEvent(new Event('input'));
-    expect(el.querySelector('#toast-height-value').textContent).toBe('100 cm');
+    expect(el.querySelector('#toast-height-value')!.textContent).toBe('100 cm');
 
     input(el, 'toast-gravity').value = '1500';
-    el.querySelector('#toast-gravity').dispatchEvent(new Event('input'));
-    expect(el.querySelector('#toast-gravity-value').textContent).toBe('1500 cm/s²');
+    el.querySelector('#toast-gravity')!.dispatchEvent(new Event('input'));
+    expect(el.querySelector('#toast-gravity-value')!.textContent).toBe('1500 cm/s²');
 
     input(el, 'toast-overhang').value = '10';
     input(el, 'toast-overhang').dispatchEvent(new Event('input'));
-    expect(el.querySelector('#toast-overhang-value').textContent).toBe('10 cm');
+    expect(el.querySelector('#toast-overhang-value')!.textContent).toBe('10 cm');
 
     input(el, 'toast-butter').value = '1.5';
-    el.querySelector('#toast-butter').dispatchEvent(new Event('input'));
-    expect(el.querySelector('#toast-butter-value').textContent).toBe('1.50');
+    el.querySelector('#toast-butter')!.dispatchEvent(new Event('input'));
+    expect(el.querySelector('#toast-butter-value')!.textContent).toBe('1.50');
 
     input(el, 'toast-friction').value = '50';
-    el.querySelector('#toast-friction').dispatchEvent(new Event('input'));
-    expect(el.querySelector('#toast-friction-value').textContent).toBe('50');
+    el.querySelector('#toast-friction')!.dispatchEvent(new Event('input'));
+    expect(el.querySelector('#toast-friction-value')!.textContent).toBe('50');
 
     input(el, 'toast-inertia').value = '400';
     input(el, 'toast-inertia').dispatchEvent(new Event('input'));
-    expect(el.querySelector('#toast-inertia-value').textContent).toBe('400');
+    expect(el.querySelector('#toast-inertia-value')!.textContent).toBe('400');
 
     document.body.removeChild(el);
   });
@@ -366,8 +368,8 @@ describe('ButteredToastCalculator view', () => {
 
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    const probability = el.querySelector('#toast-probability-value').textContent;
-    const numericProb = parseInt(probability);
+    const probability = el.querySelector('#toast-probability-value')!.textContent;
+    const numericProb = parseInt(probability!, 10);
 
     expect(numericProb).toBeGreaterThanOrEqual(0);
 
@@ -392,7 +394,7 @@ describe('ButteredToastCalculator view', () => {
       slider.value = test.value;
       slider.dispatchEvent(new Event('input'));
 
-      expect(el.querySelector(`#${test.display}`).textContent).toBe(test.expected);
+      expect(el.querySelector(`#${test.display}`)!.textContent).toBe(test.expected);
     });
 
     document.body.removeChild(el);
@@ -402,7 +404,7 @@ describe('ButteredToastCalculator view', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    const probability = el.querySelector('#toast-probability-value').textContent;
+    const probability = el.querySelector('#toast-probability-value')!.textContent;
     expect(probability).toMatch(/\d+%/);
 
     document.body.removeChild(el);
@@ -432,9 +434,9 @@ describe('ButteredToastCalculator view', () => {
 
   it('loads slider values from URL parameters', () => {
     // Set URL with parameters
+    const win = window as unknown as { location?: Location };
     const originalLocation = window.location;
-    delete (window as unknown as { location: Location }).location;
-    (window as unknown as { location: Location }).location = {
+    win.location = {
       ...originalLocation,
       search: '?h=80&g=1000&o=6&b=1.5&f=25&t=400'
     } as Location;
@@ -451,14 +453,14 @@ describe('ButteredToastCalculator view', () => {
     expect(input(el, 'toast-inertia').value).toBe('400');
 
     document.body.removeChild(el);
-    (window as unknown as { location: Location }).location = originalLocation;
+    win.location = originalLocation;
   });
 
   it('ignores URL parameters outside valid range', () => {
     // Set URL with out-of-range parameters
+    const win = window as unknown as { location?: Location };
     const originalLocation = window.location;
-    delete (window as unknown as { location: Location }).location;
-    (window as unknown as { location: Location }).location = {
+    win.location = {
       ...originalLocation,
       search: '?h=999&g=-100&o=50' // Values outside valid ranges
     } as Location;
@@ -478,14 +480,14 @@ describe('ButteredToastCalculator view', () => {
     expect(parseFloat(overhangSlider.value)).toBeLessThanOrEqual(parseFloat(overhangSlider.max));
 
     document.body.removeChild(el);
-    (window as unknown as { location: Location }).location = originalLocation;
+    win.location = originalLocation;
   });
 
   it('recalculates when URL parameters are loaded', () => {
     // Set URL with some parameters
+    const win = window as unknown as { location?: Location };
     const originalLocation = window.location;
-    delete (window as unknown as { location: Location }).location;
-    (window as unknown as { location: Location }).location = {
+    win.location = {
       ...originalLocation,
       search: '?h=90'
     } as Location;
@@ -496,10 +498,10 @@ describe('ButteredToastCalculator view', () => {
     // The probability should be calculated (not the default)
     const probability = el.querySelector('#toast-probability-value');
     expect(probability).toBeTruthy();
-    expect(probability.textContent).toMatch(/\d+%/);
+    expect(probability!.textContent).toMatch(/\d+%/);
 
     document.body.removeChild(el);
-    (window as unknown as { location: Location }).location = originalLocation;
+    win.location = originalLocation;
   });
 
   it('renders inline share buttons with all social share options', () => {
@@ -552,12 +554,13 @@ describe('ButteredToastCalculator view', () => {
 
     // Click copy-link button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-link"]');
-    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(copyBtn).toBeTruthy();
+    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
     expect(writeTextMock).toHaveBeenCalled();
-    const copiedUrl = writeTextMock.mock.calls[0][0];
+    const copiedUrl = writeTextMock.mock.calls[0]![0];
     expect(copiedUrl).toContain('h=80');
     expect(copiedUrl).toContain('g=1000');
 
@@ -577,12 +580,13 @@ describe('ButteredToastCalculator view', () => {
 
     // Click copy-text button directly (inline share buttons)
     const copyBtn = el.querySelector('[data-action="copy-text"]');
-    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(copyBtn).toBeTruthy();
+    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
     expect(writeTextMock).toHaveBeenCalled();
-    const copiedText = writeTextMock.mock.calls[0][0];
+    const copiedText = writeTextMock.mock.calls[0]![0];
     expect(copiedText).toMatch(/Buttered Toast/i);
 
     document.body.removeChild(el);
@@ -598,7 +602,8 @@ describe('ButteredToastCalculator view', () => {
 
     // Click a share link to trigger URL update
     const twitterLink = el.querySelector('[data-share="twitter"]');
-    twitterLink.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(twitterLink).toBeTruthy();
+    twitterLink!.dispatchEvent(new Event('click', { bubbles: true }));
 
     const facebookLink = el.querySelector('[data-share="facebook"]');
     const linkedinLink = el.querySelector('[data-share="linkedin"]');
@@ -620,12 +625,14 @@ describe('ButteredToastCalculator view', () => {
     });
 
     const copyBtn = el.querySelector('[data-action="copy-link"]');
-    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(copyBtn).toBeTruthy();
+    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
     const feedback = el.querySelector('.share-copy-feedback');
-    expect(feedback.classList.contains('visible')).toBe(true);
+    expect(feedback).toBeTruthy();
+    expect(feedback!.classList.contains('visible')).toBe(true);
 
     document.body.removeChild(el);
   });
@@ -641,17 +648,19 @@ describe('ButteredToastCalculator view', () => {
     });
 
     const copyBtn = el.querySelector('[data-action="copy-link"]');
-    copyBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(copyBtn).toBeTruthy();
+    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
     await Promise.resolve();
 
     const feedback = el.querySelector('.share-copy-feedback');
-    expect(feedback.classList.contains('visible')).toBe(true);
+    expect(feedback).toBeTruthy();
+    expect(feedback!.classList.contains('visible')).toBe(true);
 
     // Advance timer past the feedback timeout (1500ms)
     vi.advanceTimersByTime(1600);
 
-    expect(feedback.classList.contains('visible')).toBe(false);
+    expect(feedback!.classList.contains('visible')).toBe(false);
     vi.useRealTimers();
 
     document.body.removeChild(el);
@@ -677,10 +686,12 @@ describe('ButteredToastCalculator view', () => {
     });
 
     // Click copy-link button directly (inline share buttons)
-    el.querySelector('[data-action="copy-link"]').dispatchEvent(new Event('click', { bubbles: true }));
+    const copyLinkBtn = el.querySelector('[data-action="copy-link"]');
+    expect(copyLinkBtn).toBeTruthy();
+    copyLinkBtn!.dispatchEvent(new Event('click', { bubbles: true }));
     await Promise.resolve();
 
-    const url = writeTextMock.mock.calls[0][0];
+    const url = writeTextMock.mock.calls[0]![0];
     expect(url).toContain('h=120');
     expect(url).toContain('g=1100');
     expect(url).toContain('o=8');
@@ -706,7 +717,7 @@ describe('ButteredToastCalculator view', () => {
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
     // Remove MathJax to simulate it becoming undefined
-    delete window.MathJax;
+    (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
     // Wait for requestAnimationFrame
     await new Promise(resolve => requestAnimationFrame(resolve));
@@ -721,10 +732,10 @@ describe('ButteredToastCalculator view', () => {
 
   it('handles MathJax.typesetPromise becoming non-function during RAF', async () => {
     const originalRAF = window.requestAnimationFrame;
-    let rafCallback = null;
-    
+    let rafCallback: FrameRequestCallback | null = null;
+
     // Capture the RAF callback instead of executing immediately
-    window.requestAnimationFrame = (cb) => {
+    window.requestAnimationFrame = (cb: FrameRequestCallback) => {
       rafCallback = cb;
       return 1;
     };
@@ -732,10 +743,10 @@ describe('ButteredToastCalculator view', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    // Set up MathJax with typesetPromise
+    // Set up MathJax with typesetPromise (optional so we can clear it to test defensive check)
     const originalMathJax = window.MathJax;
-    const mathJaxRef = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
-    window.MathJax = mathJaxRef;
+    const mathJaxRef: { typesetPromise?: () => Promise<unknown> } = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
+    window.MathJax = mathJaxRef as unknown as typeof window.MathJax;
 
     // Trigger formula update (which schedules RAF)
     input(el, 'toast-height').dispatchEvent(new Event('input'));
@@ -744,7 +755,7 @@ describe('ButteredToastCalculator view', () => {
     mathJaxRef.typesetPromise = undefined;
 
     // Execute the RAF callback - should hit the defensive check
-    if (rafCallback) rafCallback();
+    if (rafCallback) (rafCallback as FrameRequestCallback)(performance.now());
 
     // Should not throw
     expect(true).toBe(true);
@@ -777,7 +788,7 @@ describe('ButteredToastCalculator view', () => {
     // Formula should still be displayed (updateFormula called in catch)
     const formulaDisplay = el.querySelector('#toast-formula-display');
     expect(formulaDisplay).toBeTruthy();
-    expect(formulaDisplay.textContent).toBeTruthy();
+    expect(formulaDisplay!.textContent).toBeTruthy();
 
     document.body.removeChild(container);
     vi.clearAllMocks();

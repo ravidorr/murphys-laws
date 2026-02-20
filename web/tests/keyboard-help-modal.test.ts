@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   openKeyboardHelpModal,
   closeKeyboardHelpModal,
@@ -45,7 +46,7 @@ describe('keyboard-help-modal', () => {
 
       localThis.modal = document.getElementById('keyboard-help-modal');
       expect(localThis.modal).toBeTruthy();
-      expect(document.body.contains(localThis.modal)).toBe(true);
+      expect(document.body.contains(localThis.modal!)).toBe(true);
     });
 
     it('removes hidden class when opening', () => {
@@ -53,7 +54,8 @@ describe('keyboard-help-modal', () => {
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
-      expect(localThis.modal.classList.contains('hidden')).toBe(false);
+      expect(localThis.modal).toBeTruthy();
+      expect(localThis.modal!.classList.contains('hidden')).toBe(false);
     });
 
     it('sets body overflow to hidden', () => {
@@ -65,7 +67,7 @@ describe('keyboard-help-modal', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
-      localThis.closeBtn = document.querySelector('[data-modal-close]');
+      localThis.closeBtn = document.querySelector('[data-modal-close]') as HTMLElement | null;
       expect(document.activeElement).toBe(localThis.closeBtn);
     });
 
@@ -101,7 +103,8 @@ describe('keyboard-help-modal', () => {
       closeKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
-      expect(localThis.modal.classList.contains('hidden')).toBe(true);
+      expect(localThis.modal).toBeTruthy();
+      expect(localThis.modal!.classList.contains('hidden')).toBe(true);
     });
 
     it('restores body overflow', () => {
@@ -190,8 +193,9 @@ describe('keyboard-help-modal', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
-      localThis.backdrop = document.querySelector('[data-modal-backdrop]');
-      localThis.backdrop.click();
+      localThis.backdrop = document.querySelector('[data-modal-backdrop]') as HTMLElement | null;
+      expect(localThis.backdrop).toBeTruthy();
+      localThis.backdrop!.click();
 
       expect(isKeyboardHelpModalOpen()).toBe(false);
     });
@@ -200,8 +204,9 @@ describe('keyboard-help-modal', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
-      localThis.closeBtn = document.querySelector('[data-modal-close]');
-      localThis.closeBtn.click();
+      localThis.closeBtn = document.querySelector('[data-modal-close]') as HTMLElement | null;
+      expect(localThis.closeBtn).toBeTruthy();
+      localThis.closeBtn!.click();
 
       expect(isKeyboardHelpModalOpen()).toBe(false);
     });
@@ -212,8 +217,9 @@ describe('keyboard-help-modal', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
-      localThis.closeBtn = document.querySelector('[data-modal-close]');
-      localThis.closeBtn.focus();
+      localThis.closeBtn = document.querySelector('[data-modal-close]') as HTMLElement | null;
+      expect(localThis.closeBtn).toBeTruthy();
+      localThis.closeBtn!.focus();
 
       localThis.event = new KeyboardEvent('keydown', {
         key: 'Tab',
@@ -223,7 +229,8 @@ describe('keyboard-help-modal', () => {
       localThis.event.preventDefault = vi.fn();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
-      localThis.modal.dispatchEvent(localThis.event);
+      expect(localThis.modal).toBeTruthy();
+      localThis.modal!.dispatchEvent(localThis.event!);
 
       expect(localThis.event.preventDefault).toHaveBeenCalled();
     });
@@ -233,7 +240,8 @@ describe('keyboard-help-modal', () => {
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
-      localThis.focusables = localThis.modal.querySelectorAll(
+      expect(localThis.modal).toBeTruthy();
+      localThis.focusables = localThis.modal!.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       localThis.lastFocusable = localThis.focusables[localThis.focusables.length - 1] as HTMLElement;
@@ -246,7 +254,7 @@ describe('keyboard-help-modal', () => {
       });
       localThis.event.preventDefault = vi.fn();
 
-      localThis.modal.dispatchEvent(localThis.event);
+      localThis.modal!.dispatchEvent(localThis.event);
 
       expect(localThis.event.preventDefault).toHaveBeenCalled();
     });
@@ -257,13 +265,15 @@ describe('keyboard-help-modal', () => {
 
       // Add extra focusable element to test mid-list Tab
       localThis.modal = document.getElementById('keyboard-help-modal');
-      localThis.container = localThis.modal.querySelector('.modal-container');
+      expect(localThis.modal).toBeTruthy();
+      localThis.container = localThis.modal!.querySelector('.modal-container');
       localThis.extraBtn = document.createElement('button');
       localThis.extraBtn.textContent = 'Extra';
-      localThis.container.appendChild(localThis.extraBtn);
+      localThis.container!.appendChild(localThis.extraBtn);
 
-      localThis.closeBtn = document.querySelector('[data-modal-close]');
-      localThis.closeBtn.focus();
+      localThis.closeBtn = document.querySelector('[data-modal-close]') as HTMLElement | null;
+      expect(localThis.closeBtn).toBeTruthy();
+      localThis.closeBtn!.focus();
 
       localThis.event = new KeyboardEvent('keydown', {
         key: 'Tab',
@@ -272,7 +282,7 @@ describe('keyboard-help-modal', () => {
       });
       localThis.event.preventDefault = vi.fn();
 
-      localThis.modal.dispatchEvent(localThis.event);
+      localThis.modal!.dispatchEvent(localThis.event!);
 
       // Should not prevent default when not at boundary
       // Note: The actual focus trap logic prevents at boundaries only
@@ -284,13 +294,14 @@ describe('keyboard-help-modal', () => {
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
+      expect(localThis.modal).toBeTruthy();
       localThis.event = new KeyboardEvent('keydown', {
         key: 'Enter',
         bubbles: true
       });
       localThis.event.preventDefault = vi.fn();
 
-      localThis.modal.dispatchEvent(localThis.event);
+      localThis.modal!.dispatchEvent(localThis.event);
 
       expect(localThis.event.preventDefault).not.toHaveBeenCalled();
     });
@@ -303,7 +314,7 @@ describe('keyboard-help-modal', () => {
 
       localThis.title = document.getElementById('keyboard-help-title');
       expect(localThis.title).toBeTruthy();
-      expect(localThis.title.textContent).toMatch(/keyboard shortcuts/i);
+      expect(localThis.title!.textContent).toMatch(/keyboard shortcuts/i);
     });
 
     it('has proper ARIA attributes', () => {
@@ -312,8 +323,8 @@ describe('keyboard-help-modal', () => {
 
       localThis.dialog = document.querySelector('[role="dialog"]');
       expect(localThis.dialog).toBeTruthy();
-      expect(localThis.dialog.getAttribute('aria-modal')).toBe('true');
-      expect(localThis.dialog.getAttribute('aria-labelledby')).toBe('keyboard-help-title');
+      expect(localThis.dialog!.getAttribute('aria-modal')).toBe('true');
+      expect(localThis.dialog!.getAttribute('aria-labelledby')).toBe('keyboard-help-title');
     });
 
     it('contains shortcut descriptions', () => {
@@ -321,7 +332,8 @@ describe('keyboard-help-modal', () => {
       openKeyboardHelpModal();
 
       localThis.modal = document.getElementById('keyboard-help-modal');
-      localThis.content = localThis.modal.textContent;
+      expect(localThis.modal).toBeTruthy();
+      localThis.content = localThis.modal!.textContent;
 
       expect(localThis.content).toMatch(/focus search/i);
       expect(localThis.content).toMatch(/next law card/i);
@@ -346,9 +358,10 @@ describe('keyboard-help-modal', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();
 
-      localThis.closeBtn = document.querySelector('[data-modal-close]');
-      expect(localThis.closeBtn.getAttribute('aria-label')).toBeTruthy();
-      expect(localThis.closeBtn.getAttribute('type')).toBe('button');
+      localThis.closeBtn = document.querySelector('[data-modal-close]') as HTMLElement | null;
+      expect(localThis.closeBtn).toBeTruthy();
+      expect(localThis.closeBtn!.getAttribute('aria-label')).toBeTruthy();
+      expect(localThis.closeBtn!.getAttribute('type')).toBe('button');
     });
   });
 });

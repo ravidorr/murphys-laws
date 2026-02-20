@@ -1,7 +1,7 @@
+import { describe, it, expect, vi, type Mock } from 'vitest';
 import type { OnNavigate } from '../src/types/app.d.ts';
 import type { CleanableElement } from '../src/types/app.js';
-import type { Mock } from 'vitest';
-import { Home, renderHome } from '@views/home.js';
+import { Home, renderHome } from '../src/views/home.ts';
 import * as exportContext from '../src/utils/export-context.js';
 
 describe('Home view', () => {
@@ -46,7 +46,7 @@ describe('Home view', () => {
     // Law of the Day should have data-law-id attribute and be clickable
     const block = el.querySelector(`[data-law-id="42"]`);
     expect(block).toBeTruthy();
-    expect(block.classList.contains('lod-link')).toBe(true);
+    expect(block!.classList.contains('lod-link')).toBe(true);
   });
 
   it('shows no Law of the Day widget when response has no law', async () => {
@@ -83,7 +83,7 @@ describe('Home view', () => {
     });
 
     let navTarget = '';
-    let navParam = '';
+    let navParam: string | undefined = '';
     const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
 
     await new Promise(r => setTimeout(r, 0));
@@ -96,7 +96,7 @@ describe('Home view', () => {
     catBtn.click();
 
     expect(navTarget).toBe('category');
-    expect(navParam).toBe('technology');
+    expect(navParam!).toBe('technology');
   });
 
   it('navigates using data-nav attribute', async () => {
@@ -176,7 +176,7 @@ describe('Home view', () => {
     });
 
     let navTarget = '';
-    let navParam = '';
+    let navParam: string | undefined = '';
     const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
 
     await new Promise(r => setTimeout(r, 0));
@@ -191,7 +191,7 @@ describe('Home view', () => {
     catBtn.dispatchEvent(enterEvent);
 
     expect(navTarget).toBe('category');
-    expect(navParam).toBe('computers');
+    expect(navParam!).toBe('computers');
   });
 
   it('handles law card without id gracefully', async () => {
@@ -452,16 +452,16 @@ describe('renderHome function', () => {
     );
     expect(sectionCard).toBeTruthy();
 
-    const header = sectionCard.querySelector('.section-header');
+    const header = sectionCard!.querySelector('.section-header');
     expect(header).toBeTruthy();
-    expect(header.querySelector('.section-title')).toBeTruthy();
-    expect(header.querySelector('p')).toBeNull();
+    expect(header!.querySelector('.section-title')).toBeTruthy();
+    expect(header!.querySelector('p')).toBeNull();
 
-    const subheader = sectionCard.querySelector('.section-subheader');
+    const subheader = sectionCard!.querySelector('.section-subheader');
     expect(subheader).toBeTruthy();
-    const subtitle = subheader.querySelector('.section-subtitle');
+    const subtitle = subheader!.querySelector('.section-subtitle');
     expect(subtitle).toBeTruthy();
-    expect(subtitle.textContent).toMatch(/Anything that can go wrong, will go wrong/);
+    expect(subtitle!.textContent).toMatch(/Anything that can go wrong, will go wrong/);
   });
 
 });
@@ -475,7 +475,7 @@ describe('Home view keyboard navigation for law cards', () => {
     });
 
     let navTarget = '';
-    let navParam = '';
+    let navParam: string | undefined = '';
     const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
 
     await new Promise(r => setTimeout(r, 0));
@@ -486,10 +486,10 @@ describe('Home view keyboard navigation for law cards', () => {
 
     // Simulate Enter key press on the law card
     const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-    lawCard.dispatchEvent(enterEvent);
+    lawCard!.dispatchEvent(enterEvent);
 
     expect(navTarget).toBe('law');
-    expect(navParam).toBe('42');
+    expect(navParam!).toBe('42');
   });
 
   it('navigates to law when pressing Space on law card with data-law-id', async () => {
@@ -500,7 +500,7 @@ describe('Home view keyboard navigation for law cards', () => {
     });
 
     let navTarget = '';
-    let navParam = '';
+    let navParam: string | undefined = '';
     const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
 
     await new Promise(r => setTimeout(r, 0));
@@ -511,10 +511,10 @@ describe('Home view keyboard navigation for law cards', () => {
 
     // Simulate Space key press on the law card
     const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
-    lawCard.dispatchEvent(spaceEvent);
+    lawCard!.dispatchEvent(spaceEvent);
 
     expect(navTarget).toBe('law');
-    expect(navParam).toBe('42');
+    expect(navParam!).toBe('42');
   });
 
   it('does not navigate when keydown on element without data-law-id or data-nav', async () => {
@@ -650,4 +650,3 @@ describe('Home view keyboard navigation for law cards', () => {
     clearSpy.mockRestore();
   });
 });
-

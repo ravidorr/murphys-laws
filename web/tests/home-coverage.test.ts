@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Home } from '../src/views/home.js';
 
 describe('Home view - Coverage', () => {
-  let container;
+  let container: HTMLDivElement;
 
   beforeEach(() => {
     container = document.createElement('div');

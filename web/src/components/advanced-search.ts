@@ -2,8 +2,9 @@
 
 import templateHtml from '@components/templates/advanced-search.html?raw';
 import { fetchAPI } from '../utils/api.ts';
-import { hydrateIcons } from '@utils/icons.ts';
+import { hydrateIcons } from '../utils/icons.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import type { CachedAttribution } from '../utils/category-cache.ts';
 import {
   getCachedCategories,
   setCachedCategories,
@@ -24,7 +25,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
 
   // State
   let categories: Array<{ id: number; title: string; slug: string }> = [];
-  let attributions: string[] = [];
+  let attributions: CachedAttribution[] = [];
   let selectedCategory = initialFilters.category_id || '';
   let selectedAttribution = initialFilters.attribution || '';
   let searchQuery = initialFilters.q || '';
@@ -110,7 +111,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
 
     // Fetch attributions
     try {
-      const attData = await fetchAPI('/api/v1/attributions') as { data?: string[] };
+      const attData = await fetchAPI('/api/v1/attributions') as { data?: CachedAttribution[] };
       attributions = attData.data || [];
       setCachedAttributions(attributions);
     } catch {

@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { Terms } from '../src/views/terms.js';
 
 describe('Terms page', () => {
@@ -80,8 +81,8 @@ describe('Terms page', () => {
 
     const ccLink = el.querySelector('a[href*="creativecommons.org"]');
     expect(ccLink).toBeTruthy();
-    expect(ccLink.getAttribute('target')).toBe('_blank');
-    expect(ccLink.getAttribute('rel')).toBe('noopener');
+    expect(ccLink!.getAttribute('target')).toBe('_blank');
+    expect(ccLink!.getAttribute('rel')).toBe('noopener');
   });
 
   it('contains Advertising & External Links section', () => {
@@ -206,7 +207,8 @@ describe('Terms page', () => {
       value: () => { preventDefaultSpy.called = true; }
     });
 
-    contactLink.dispatchEvent(event);
+    expect(contactLink).toBeTruthy();
+    contactLink!.dispatchEvent(event);
     expect(preventDefaultSpy.called).toBe(true);
   });
 
@@ -217,7 +219,8 @@ describe('Terms page', () => {
     });
 
     const article = el.querySelector('article');
-    article.click();
+    expect(article).toBeTruthy();
+    article!.click();
     expect(navigated).toBe('');
   });
 

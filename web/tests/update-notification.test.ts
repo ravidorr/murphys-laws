@@ -1,5 +1,4 @@
-import type { Mock } from 'vitest';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { showUpdateNotification, showUpdateAvailable, showOfflineReady } from '../src/components/update-notification.js';
 
 interface UpdateNotificationTestContext {
@@ -48,7 +47,8 @@ describe('Update Notification Component', () => {
 
       const localThis: UpdateNotificationTestContext = {};
       localThis.title = document.querySelector('.pwa-notification-title');
-      expect(localThis.title.textContent).toBe('Update Available');
+      expect(localThis.title!).toBeTruthy();
+      expect(localThis.title!.textContent).toBe('Update Available');
     });
 
     it('shows "Ready for Offline" title for offline type', () => {
@@ -56,7 +56,8 @@ describe('Update Notification Component', () => {
 
       const localThis: UpdateNotificationTestContext = {};
       localThis.title = document.querySelector('.pwa-notification-title');
-      expect(localThis.title.textContent).toBe('Ready for Offline');
+      expect(localThis.title!).toBeTruthy();
+      expect(localThis.title!.textContent).toBe('Ready for Offline');
     });
 
     it('shows Refresh button for update type', () => {
@@ -65,7 +66,7 @@ describe('Update Notification Component', () => {
       const localThis: UpdateNotificationTestContext = {};
       localThis.updateBtn = document.querySelector('[data-action="update"]');
       expect(localThis.updateBtn).toBeTruthy();
-      expect(localThis.updateBtn.textContent).toBe('Refresh');
+      expect(localThis.updateBtn!.textContent).toBe('Refresh');
     });
 
     it('does not show Refresh button for offline type', () => {
@@ -80,8 +81,9 @@ describe('Update Notification Component', () => {
       const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'update' });
 
-      expect(localThis.notification.getAttribute('role')).toBe('alert');
-      expect(localThis.notification.getAttribute('aria-live')).toBe('polite');
+      expect(localThis.notification!).toBeTruthy();
+      expect(localThis.notification!.getAttribute('role')).toBe('alert');
+      expect(localThis.notification!.getAttribute('aria-live')).toBe('polite');
     });
 
     it('removes existing notification before showing new one', () => {
@@ -156,7 +158,8 @@ describe('Update Notification Component', () => {
 
       const localThis: UpdateNotificationTestContext = {};
       localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
-      expect(localThis.dismissBtn.textContent).toBe('Later');
+      expect(localThis.dismissBtn).toBeTruthy();
+      expect(localThis.dismissBtn!.textContent).toBe('Later');
     });
 
     it('shows "Got it" dismiss button text for offline type', () => {
@@ -164,21 +167,22 @@ describe('Update Notification Component', () => {
 
       const localThis: UpdateNotificationTestContext = {};
       localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
-      expect(localThis.dismissBtn.textContent).toBe('Got it');
+      expect(localThis.dismissBtn).toBeTruthy();
+      expect(localThis.dismissBtn!.textContent).toBe('Got it');
     });
 
     it('auto-dismisses offline notification after 5 seconds', () => {
       showUpdateNotification({ type: 'offline' });
 
       const localThis: UpdateNotificationTestContext = {};
-      localThis.notification = document.querySelector('.pwa-notification');
+      localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
       expect(localThis.notification).toBeTruthy();
 
       // Fast-forward 5 seconds
       vi.advanceTimersByTime(5000);
 
       // Notification should start animating out (still in DOM but with reverse animation)
-      localThis.notification = document.querySelector('.pwa-notification');
+      localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
       if (localThis.notification) {
         expect(localThis.notification.style.animation).toContain('reverse');
       }
@@ -188,13 +192,13 @@ describe('Update Notification Component', () => {
       showUpdateNotification({ type: 'update' });
 
       const localThis: UpdateNotificationTestContext = {};
-      localThis.notification = document.querySelector('.pwa-notification');
+      localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
       expect(localThis.notification).toBeTruthy();
 
       // Fast-forward 10 seconds
       vi.advanceTimersByTime(10000);
 
-      localThis.notification = document.querySelector('.pwa-notification');
+      localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
       expect(localThis.notification).toBeTruthy();
     });
 
@@ -206,7 +210,7 @@ describe('Update Notification Component', () => {
       vi.advanceTimersByTime(5000);
 
       // Simulate animation end
-      localThis.notification.dispatchEvent(new Event('animationend'));
+      localThis.notification!.dispatchEvent(new Event('animationend'));
 
       expect(document.querySelector('.pwa-notification')).toBeFalsy();
     });
@@ -219,7 +223,8 @@ describe('Update Notification Component', () => {
       showUpdateAvailable(localThis.updateSW);
 
       const title = document.querySelector('.pwa-notification-title');
-      expect(title.textContent).toBe('Update Available');
+      expect(title).toBeTruthy();
+      expect(title!.textContent).toBe('Update Available');
     });
 
     it('calls updateSW with true when Refresh is clicked', () => {
@@ -240,7 +245,8 @@ describe('Update Notification Component', () => {
 
       const localThis: UpdateNotificationTestContext = {};
       localThis.title = document.querySelector('.pwa-notification-title');
-      expect(localThis.title.textContent).toBe('Ready for Offline');
+      expect(localThis.title).toBeTruthy();
+      expect(localThis.title!.textContent).toBe('Ready for Offline');
     });
 
     it('does not have update button', () => {
@@ -261,15 +267,16 @@ describe('Update Notification Component', () => {
       const event = new Event('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: null });
 
-      expect(() => localThis.notification.dispatchEvent(event)).not.toThrow();
+      expect(() => localThis.notification!.dispatchEvent(event)).not.toThrow();
     });
 
     it('handles click on element without data-action', () => {
       showUpdateNotification({ type: 'update' });
 
       const localThis: UpdateNotificationTestContext = {};
-      localThis.notification = document.querySelector('.pwa-notification');
-      localThis.notification.click();
+      localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
+      expect(localThis.notification).toBeTruthy();
+      localThis.notification!.click();
 
       // Notification should still be there
       expect(document.querySelector('.pwa-notification')).toBeTruthy();

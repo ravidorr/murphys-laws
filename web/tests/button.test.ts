@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { createButton, renderButtonHTML, renderLinkButtonHTML, renderShareLinkHTML } from '../src/utils/button.ts';
 
 interface ButtonTestLocalThis {
@@ -65,8 +66,8 @@ describe('Button component', () => {
         localThis.btn = createButton({ text: 'Search', icon: 'search' });
         localThis.children = Array.from(localThis.btn!.children);
 
-        expect(localThis.children![0].tagName).toBe('svg');
-        expect(localThis.children![1].className).toBe('btn-text');
+        expect(localThis.children![0]!.tagName).toBe('svg');
+        expect(localThis.children![1]!.className).toBe('btn-text');
       });
 
       it('renders icon on right for arrowForward only', () => {
@@ -74,8 +75,8 @@ describe('Button component', () => {
         localThis.btn = createButton({ text: 'Next', icon: 'arrowForward', iconPosition: 'right' });
         localThis.children = Array.from(localThis.btn!.children);
 
-        expect(localThis.children![0].className).toBe('btn-text');
-        expect(localThis.children![1].tagName).toBe('svg');
+        expect(localThis.children![0]!.className).toBe('btn-text');
+        expect(localThis.children![1]!.tagName).toBe('svg');
       });
 
       it('throws error when iconPosition right used with non-arrow icon', () => {
@@ -88,7 +89,7 @@ describe('Button component', () => {
         localThis.btn = createButton({ icon: 'close', iconOnly: true, ariaLabel: 'Close' });
 
         expect(localThis.btn!.children.length).toBe(1);
-        expect(localThis.btn!.children[0].tagName).toBe('svg');
+        expect(localThis.btn!.children[0]!.tagName).toBe('svg');
         expect(localThis.btn!.querySelector('.btn-text')).toBeNull();
       });
 
@@ -470,8 +471,8 @@ describe('Button component', () => {
 
         expect(localThis.htmlBtn!.className).toBe(localThis.domBtn!.className);
         expect(localThis.htmlBtn!.type).toBe(localThis.domBtn!.type);
-        expect(localThis.htmlBtn!.querySelector('.btn-text').textContent)
-          .toBe(localThis.domBtn!.querySelector('.btn-text').textContent);
+        expect(localThis.htmlBtn!.querySelector('.btn-text')!.textContent)
+          .toBe(localThis.domBtn!.querySelector('.btn-text')!.textContent);
       });
 
       it('produces equivalent structure for vote button', () => {
@@ -504,8 +505,8 @@ describe('Button component', () => {
           .toBe(localThis.domBtn!.getAttribute('data-law-id'));
         expect(localThis.htmlBtn!.getAttribute('data-vote'))
           .toBe(localThis.domBtn!.getAttribute('data-vote'));
-        expect(localThis.htmlBtn!.querySelector('.count-num').textContent)
-          .toBe(localThis.domBtn!.querySelector('.count-num').textContent);
+        expect(localThis.htmlBtn!.querySelector('.count-num')!.textContent)
+          .toBe(localThis.domBtn!.querySelector('.count-num')!.textContent);
       });
     });
   });
@@ -526,7 +527,7 @@ describe('Button component', () => {
         icon: 'thumbDown',
         count: 0,
       });
-      expect(localThis.btn!.querySelector('.count-num').textContent).toBe('0');
+      expect(localThis.btn!.querySelector('.count-num')!.textContent).toBe('0');
     });
 
     it('handles null values for data attributes', () => {
@@ -546,7 +547,7 @@ describe('Button component', () => {
       const localThis: ButtonTestLocalThis = {};
       localThis.btn = createButton({ text: 'No Icon' });
       expect(localThis.btn!.querySelector('svg')).toBeNull();
-      expect(localThis.btn!.querySelector('.btn-text').textContent).toBe('No Icon');
+      expect(localThis.btn!.querySelector('.btn-text')!.textContent).toBe('No Icon');
     });
   });
 
@@ -700,9 +701,9 @@ describe('Button component', () => {
         expect(localThis.link!.getAttribute('id')).toBe('about-link');
         expect(localThis.link!.getAttribute('aria-label')).toBe('Learn about us');
         expect(localThis.link!.getAttribute('target')).toBe('_self');
-        expect(localThis.link!.querySelector('.btn-text').textContent).toBe('About Us');
+        expect(localThis.link!.querySelector('.btn-text')!.textContent).toBe('About Us');
         expect(localThis.link!.querySelector('.icon')).toBeTruthy();
-        expect(localThis.link!.querySelector('.icon').getAttribute('data-icon')).toBe('info');
+        expect(localThis.link!.querySelector('.icon')!.getAttribute('data-icon')).toBe('info');
       });
     });
   });

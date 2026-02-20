@@ -1,4 +1,5 @@
-import { LawDetail } from '@views/law-detail.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { LawDetail } from '../src/views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
 import type { CleanableElement } from '../src/types/app.js';
 
@@ -342,7 +343,7 @@ describe('LawDetail view', () => {
     // Check that social share popover exists in the footer
     const shareWrapper = el.querySelector('.section-footer .share-wrapper');
     expect(shareWrapper).toBeTruthy();
-    expect(shareWrapper.querySelector('.share-trigger')).toBeTruthy();
+    expect(shareWrapper!.querySelector('.share-trigger')).toBeTruthy();
   });
 
   it('renders all social share buttons', async () => {
@@ -358,15 +359,15 @@ describe('LawDetail view', () => {
     // Check that share popover exists with all social links
     const shareWrapper = el.querySelector('.share-wrapper');
     expect(shareWrapper).toBeTruthy();
-    expect(shareWrapper.querySelector('.share-trigger')).toBeTruthy();
-    
-    const popover = shareWrapper.querySelector('.share-popover');
+    expect(shareWrapper!.querySelector('.share-trigger')).toBeTruthy();
+
+    const popover = shareWrapper!.querySelector('.share-popover');
     expect(popover).toBeTruthy();
-    expect(popover.querySelector('[href*="twitter"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="facebook"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="linkedin"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="reddit"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="mailto"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="twitter"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="facebook"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="linkedin"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="reddit"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
   it('calls onStructuredData callback when provided', async () => {
@@ -427,7 +428,7 @@ describe('LawDetail view', () => {
       // Replace the template with a non-template element
       const div = document.createElement('div');
       div.setAttribute('data-law-card-template', '');
-      template.parentNode.replaceChild(div, template);
+      template.parentNode!.replaceChild(div, template);
     }
 
     // Try to re-render - should not crash
@@ -565,7 +566,7 @@ describe('LawDetail view', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => law });
 
     let navTarget = '';
-    let navParam = '';
+    let navParam: string | undefined = '';
     const el = LawDetail({
       lawId: law.id,
       onNavigate: (target, param) => { navTarget = target; navParam = param; }
@@ -945,7 +946,6 @@ describe('LawDetail view', () => {
     expect(typeof (el as CleanableElement).cleanup).toBe('function');
 
     // Calling cleanup should not throw
-    expect(() => (el as CleanableElement).cleanup()).not.toThrow();
+    expect(() => (el as CleanableElement).cleanup!()).not.toThrow();
   });
 });
-

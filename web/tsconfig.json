@@ -31,11 +31,13 @@
       "@modules/*": ["src/modules/*"],
       "@utils/*": ["src/utils/*"],
       "@shared/*": ["../shared/*"],
+      "@scripts/ssg": ["src/types/ssg.d.ts"],
       "@playwright/test": ["../node_modules/@playwright/test"]
     }
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.d.ts",
     "tests/**/*.ts",
     "e2e/**/*.ts"
   ],

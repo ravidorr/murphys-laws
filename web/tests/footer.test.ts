@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
 describe('Footer component', () => {
-  let originalReadyState;
-  let mainElement;
+  let originalReadyState: string;
+  let mainElement: HTMLElement;
 
   beforeEach(() => {
     // Save original readyState before each test
@@ -121,7 +121,7 @@ describe('Footer component', () => {
 
     const adsenseEl = el.querySelector('.adsbygoogle');
     expect(adsenseEl).toBeTruthy();
-    expect(adsenseEl.getAttribute('data-ad-client')).toBe('ca-pub-3615614508734124');
+    expect(adsenseEl!.getAttribute('data-ad-client')).toBe('ca-pub-3615614508734124');
     expect(window.adsbygoogle.length).toBe(1);
   });
 
@@ -154,8 +154,8 @@ describe('Footer component', () => {
 
     const ccLink = el.querySelector('a[href*="creativecommons.org"]');
     expect(ccLink).toBeTruthy();
-    expect(ccLink.getAttribute('target')).toBe('_blank');
-    expect(ccLink.getAttribute('rel')).toBe('noopener');
+    expect(ccLink!.getAttribute('target')).toBe('_blank');
+    expect(ccLink!.getAttribute('rel')).toBe('noopener');
   });
 
   it('prevents default behavior when clicking nav links', () => {
@@ -298,7 +298,7 @@ describe('Footer component', () => {
     window.adsbygoogle = [];
     const originalReadyState = document.readyState;
 
-    let intersectionCallback;
+    let intersectionCallback: IntersectionObserverCallback | undefined;
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
     const mockIntersectionObserver = vi.fn(function (callback: IntersectionObserverCallback) {
@@ -322,7 +322,8 @@ describe('Footer component', () => {
 
     // Trigger intersection
     if (intersectionCallback) {
-      intersectionCallback([{ isIntersecting: true }]);
+      const mockObserver = { observe: observeMock, disconnect: disconnectMock } as unknown as IntersectionObserver;
+      intersectionCallback([{ isIntersecting: true } as IntersectionObserverEntry], mockObserver);
     }
 
     // Ad should be loaded
@@ -344,11 +345,12 @@ describe('Footer component', () => {
     const originalRequestIdleCallback = window.requestIdleCallback;
 
     // Remove IntersectionObserver to trigger the else branch
-    const originalIntersectionObserver = globalThis.IntersectionObserver;
-    delete globalThis.IntersectionObserver;
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const originalIntersectionObserver = g.IntersectionObserver;
+    g.IntersectionObserver = undefined;
 
     // Remove requestIdleCallback to trigger setTimeout branch
-    delete window.requestIdleCallback;
+    (window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback }).requestIdleCallback = undefined;
 
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
 
@@ -375,7 +377,7 @@ describe('Footer component', () => {
       window.requestIdleCallback = originalRequestIdleCallback;
     }
     if (originalIntersectionObserver) {
-      globalThis.IntersectionObserver = originalIntersectionObserver;
+      g.IntersectionObserver = originalIntersectionObserver;
     }
     setTimeoutSpy.mockRestore();
   });
@@ -385,8 +387,9 @@ describe('Footer component', () => {
     const originalReadyState = document.readyState;
 
     // Remove IntersectionObserver to trigger the else branch
-    const originalIntersectionObserver = globalThis.IntersectionObserver;
-    delete globalThis.IntersectionObserver;
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const originalIntersectionObserver = g.IntersectionObserver;
+    g.IntersectionObserver = undefined;
 
     // Ensure requestIdleCallback is available
     const requestIdleCallbackSpy = vi.fn(() => {
@@ -415,7 +418,7 @@ describe('Footer component', () => {
       configurable: true
     });
     if (originalIntersectionObserver) {
-      globalThis.IntersectionObserver = originalIntersectionObserver;
+      g.IntersectionObserver = originalIntersectionObserver;
     }
   });
 

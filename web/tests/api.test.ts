@@ -1,4 +1,5 @@
-import { vi } from 'vitest';
+import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+import type { MockInstance } from 'vitest';
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
@@ -10,7 +11,7 @@ import * as Sentry from '@sentry/browser';
 import { fetchAPI, fetchLaw, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.ts';
 
 describe('API utilities', () => {
-  let fetchSpy;
+  let fetchSpy: MockInstance;
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -332,7 +333,9 @@ describe('API utilities', () => {
 
       await fetchLaws({ q: 'test', category_id: 3, attribution: 'Smith' });
 
-      const callUrl = fetchSpy.mock.calls[0][0];
+      const firstCall = fetchSpy.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      const callUrl = firstCall![0] as string;
       expect(callUrl).toContain('q=test');
       expect(callUrl).toContain('category_id=3');
       expect(callUrl).toContain('attribution=Smith');

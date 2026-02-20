@@ -21,9 +21,9 @@ vi.mock('../src/utils/api.js', () => ({
 }));
 
 describe('SearchAutocomplete', () => {
-  let inputElement;
-  let onSelect;
-  let autocomplete;
+  let inputElement: HTMLInputElement;
+  let onSelect: (law: Law) => void;
+  let autocomplete: { cleanup(): void; isOpen(): boolean } | undefined;
 
   beforeEach(() => {
     // Create a form with input element
@@ -55,7 +55,7 @@ describe('SearchAutocomplete', () => {
 
   it('should throw error if inputElement is missing', () => {
     expect(() => {
-      SearchAutocomplete({ onSelect } as Parameters<typeof SearchAutocomplete>[0]);
+      SearchAutocomplete({ onSelect } as unknown as Parameters<typeof SearchAutocomplete>[0]);
     }).toThrow('inputElement is required');
   });
 
@@ -70,14 +70,14 @@ describe('SearchAutocomplete', () => {
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     const dropdown = document.querySelector('.search-autocomplete');
     expect(dropdown).toBeTruthy();
-    expect(dropdown.getAttribute('role')).toBe('listbox');
-    expect(dropdown.getAttribute('aria-label')).toBe('Search suggestions');
+    expect(dropdown!.getAttribute('role')).toBe('listbox');
+    expect(dropdown!.getAttribute('aria-label')).toBe('Search suggestions');
   });
 
   it('should fetch suggestions on input with debounce', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -105,8 +105,8 @@ describe('SearchAutocomplete', () => {
 
   it('should render suggestions in dropdown', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -117,14 +117,14 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
     expect(items.length).toBe(2);
-    expect(items[0].getAttribute('data-law-id')).toBe('1');
-    expect(items[1].getAttribute('data-law-id')).toBe('2');
+    expect(items[0]!.getAttribute('data-law-id')).toBe('1');
+    expect(items[1]!.getAttribute('data-law-id')).toBe('2');
   });
 
   it('should highlight matching text in suggestions', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -134,15 +134,15 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
-    expect(item.innerHTML).toContain('<mark');
-    expect(item.innerHTML).toContain('search-suggestion-highlight');
+    const item = dropdown!.querySelector('.search-suggestion-item');
+    expect(item!.innerHTML).toContain('<mark');
+    expect(item!.innerHTML).toContain('search-suggestion-highlight');
   });
 
   it('should handle keyboard navigation with ArrowDown', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -156,14 +156,14 @@ describe('SearchAutocomplete', () => {
     inputElement.dispatchEvent(arrowDownEvent);
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
-    expect(items[0].classList.contains('selected')).toBe(true);
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
+    expect(items[0]!.classList.contains('selected')).toBe(true);
   });
 
   it('should handle keyboard navigation with ArrowUp', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -177,12 +177,12 @@ describe('SearchAutocomplete', () => {
     inputElement.dispatchEvent(arrowUpEvent);
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
-    expect(items[1].classList.contains('selected')).toBe(true);
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
+    expect(items[1]!.classList.contains('selected')).toBe(true);
   });
 
   it('should select suggestion with Enter key', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -198,11 +198,11 @@ describe('SearchAutocomplete', () => {
     const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
     inputElement.dispatchEvent(enterEvent);
 
-    expect(onSelect).toHaveBeenCalledWith({ id: 1, text: 'Test law', title: null });
+    expect(onSelect).toHaveBeenCalledWith({ id: 1, text: 'Test law', title: undefined });
   });
 
   it('should close dropdown with Escape key', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -220,7 +220,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should select suggestion on mouse click', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -229,14 +229,14 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
+    const item = dropdown!.querySelector('.search-suggestion-item');
     (item as HTMLElement).click();
 
-    expect(onSelect).toHaveBeenCalledWith({ id: 1, text: 'Test law', title: null });
+    expect(onSelect).toHaveBeenCalledWith({ id: 1, text: 'Test law', title: undefined });
   });
 
   it('should close dropdown when clicking outside', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -303,9 +303,9 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
-    expect(item.textContent).toContain('Law Title');
-    expect(item.textContent).toContain('Law text');
+    const item = dropdown!.querySelector('.search-suggestion-item');
+    expect(item!.textContent).toContain('Law Title');
+    expect(item!.textContent).toContain('Law text');
   });
 
   it('should create dropdown as sibling when input has no form parent', () => {
@@ -326,7 +326,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle highlightMatch with empty query', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -337,12 +337,12 @@ describe('SearchAutocomplete', () => {
 
     // The text should still be displayed (no highlighting when query is empty)
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
-    expect(item.textContent).toContain('Test law');
+    const item = dropdown!.querySelector('.search-suggestion-item');
+    expect(item!.textContent).toContain('Test law');
   });
 
   it('should handle highlightMatch with null text gracefully', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: null as unknown as string, title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: null as unknown as string, title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -351,13 +351,13 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
+    const item = dropdown!.querySelector('.search-suggestion-item');
     // Should not throw, item should exist
     expect(item).toBeTruthy();
   });
 
   it('should not call onSelect for invalid suggestion index (negative)', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -370,7 +370,7 @@ describe('SearchAutocomplete', () => {
     const fakeItem = document.createElement('div');
     fakeItem.className = 'search-suggestion-item';
     fakeItem.setAttribute('data-index', '-1');
-    dropdown.appendChild(fakeItem);
+    dropdown!.appendChild(fakeItem);
     
     fakeItem.click();
 
@@ -379,7 +379,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not call onSelect for invalid suggestion index (too large)', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -392,7 +392,7 @@ describe('SearchAutocomplete', () => {
     const fakeItem = document.createElement('div');
     fakeItem.className = 'search-suggestion-item';
     fakeItem.setAttribute('data-index', '999');
-    dropdown.appendChild(fakeItem);
+    dropdown!.appendChild(fakeItem);
     
     fakeItem.click();
 
@@ -402,8 +402,8 @@ describe('SearchAutocomplete', () => {
 
   it('should wrap selection from end to beginning with ArrowDown', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -420,16 +420,16 @@ describe('SearchAutocomplete', () => {
     inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
     // No item should be selected after wrapping
-    expect(items[0].classList.contains('selected')).toBe(false);
-    expect(items[1].classList.contains('selected')).toBe(false);
+    expect(items[0]!.classList.contains('selected')).toBe(false);
+    expect(items[1]!.classList.contains('selected')).toBe(false);
   });
 
   it('should go to no selection when pressing ArrowUp at first item', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -444,16 +444,16 @@ describe('SearchAutocomplete', () => {
     inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
     // No item should be selected
-    expect(items[0].classList.contains('selected')).toBe(false);
-    expect(items[1].classList.contains('selected')).toBe(false);
+    expect(items[0]!.classList.contains('selected')).toBe(false);
+    expect(items[1]!.classList.contains('selected')).toBe(false);
   });
 
   it('should wrap to last item when pressing ArrowUp with no selection', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
-      { id: 1, text: 'Test law 1', title: null },
-      { id: 2, text: 'Test law 2', title: null }
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
     ]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
@@ -466,9 +466,9 @@ describe('SearchAutocomplete', () => {
     inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
     // Last item should be selected
-    expect(items[1].classList.contains('selected')).toBe(true);
+    expect(items[1]!.classList.contains('selected')).toBe(true);
   });
 
   it('should not handle keyboard events when dropdown is closed', () => {
@@ -483,7 +483,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should allow Enter key to pass through when no item is selected', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -502,7 +502,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not close dropdown when clicking on input element', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -520,7 +520,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should not close dropdown when clicking on dropdown itself', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -538,7 +538,7 @@ describe('SearchAutocomplete', () => {
     document.dispatchEvent(clickEvent);
 
     // Dropdown should still be open (items are still there)
-    const items = dropdown.querySelectorAll('.search-suggestion-item');
+    const items = dropdown!.querySelectorAll('.search-suggestion-item');
     expect(items.length).toBe(1);
   });
 
@@ -554,7 +554,7 @@ describe('SearchAutocomplete', () => {
     // Dropdown should be closed with empty suggestions
     expect(inputElement.getAttribute('aria-expanded')).toBe('false');
     const dropdown = document.querySelector('.search-autocomplete');
-    expect(dropdown.innerHTML).toBe('');
+    expect(dropdown!.innerHTML).toBe('');
   });
 
   it('should handle API response with undefined data', async () => {
@@ -571,7 +571,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle other keys without preventing default', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -588,7 +588,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should handle click on dropdown area without item', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -600,14 +600,14 @@ describe('SearchAutocomplete', () => {
     
     // Click on dropdown but not on an item
     const clickEvent = new MouseEvent('click', { bubbles: true });
-    dropdown.dispatchEvent(clickEvent);
+    dropdown!.dispatchEvent(clickEvent);
 
     // onSelect should not be called
     expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('should handle click on item with invalid data-index attribute', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -620,7 +620,7 @@ describe('SearchAutocomplete', () => {
     const fakeItem = document.createElement('div');
     fakeItem.className = 'search-suggestion-item';
     fakeItem.setAttribute('data-index', 'invalid');
-    dropdown.appendChild(fakeItem);
+    dropdown!.appendChild(fakeItem);
     
     fakeItem.click();
 
@@ -629,7 +629,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should close dropdown for empty query after debounce', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -659,14 +659,14 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
+    const item = dropdown!.querySelector('.search-suggestion-item');
     // Should display text without title prefix
-    expect(item.textContent.trim()).not.toContain(':');
-    expect(item.textContent).toContain('Law text only');
+    expect((item!.textContent ?? '').trim()).not.toContain(':');
+    expect(item!.textContent).toContain('Law text only');
   });
 
   it('should handle special regex characters in query for highlighting', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test (law) [special]', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test (law) [special]', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     
@@ -676,13 +676,13 @@ describe('SearchAutocomplete', () => {
     await new Promise(resolve => setTimeout(resolve, 250));
 
     const dropdown = document.querySelector('.search-autocomplete');
-    const item = dropdown.querySelector('.search-suggestion-item');
+    const item = dropdown!.querySelector('.search-suggestion-item');
     // Should not throw and should contain the text
-    expect(item.textContent).toContain('(law)');
+    expect(item!.textContent).toContain('(law)');
   });
 
   it('should return correct isOpen state', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: null }]));
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
 

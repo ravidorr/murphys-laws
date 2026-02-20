@@ -21,14 +21,18 @@ vi.mock('../src/components/notification.js', () => ({
 import * as Sentry from '@sentry/browser';
 import { showError } from '../src/components/notification.js';
 
+interface ErrorHandlerLocalThis {
+  mockFn: () => Promise<unknown>;
+  onRetryCallback: (attempt: number, error: Error, delay: number) => void;
+}
+
 describe('Error Handler Utilities', () => {
-  /** @type {typeof globalThis} */
-  let localThis;
+  let localThis: ErrorHandlerLocalThis;
 
   beforeEach(() => {
     localThis = {
-      mockFn: vi.fn(),
-      onRetryCallback: vi.fn()
+      mockFn: vi.fn() as () => Promise<unknown>,
+      onRetryCallback: vi.fn() as (attempt: number, error: Error, delay: number) => void
     };
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -112,18 +116,18 @@ describe('Error Handler Utilities', () => {
 
   describe('withRetry', () => {
     it('returns result on first success', async () => {
-      localThis.mockFn.mockResolvedValue('success');
+      vi.mocked(localThis.mockFn).mockResolvedValue('success');
 
       const resultPromise = withRetry(localThis.mockFn);
       await vi.runAllTimersAsync();
       const result = await resultPromise;
 
       expect(result).toBe('success');
-      expect(localThis.mockFn).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(1);
     });
 
     it('retries on transient error and succeeds', async () => {
-      localThis.mockFn
+      vi.mocked(localThis.mockFn)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce('success');
 
@@ -132,14 +136,14 @@ describe('Error Handler Utilities', () => {
       const result = await resultPromise;
 
       expect(result).toBe('success');
-      expect(localThis.mockFn).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(2);
     });
 
     it('throws after max retries', async () => {
       vi.useRealTimers(); // Use real timers for this test to avoid async handling issues
 
       const error = new Error('Network error');
-      localThis.mockFn.mockRejectedValue(error);
+      vi.mocked(localThis.mockFn).mockRejectedValue(error);
 
       await expect(withRetry(localThis.mockFn, {
         maxRetries: 2,
@@ -147,19 +151,19 @@ describe('Error Handler Utilities', () => {
         maxDelay: 1
       })).rejects.toThrow('Network error');
 
-      expect(localThis.mockFn).toHaveBeenCalledTimes(3); // Initial + 2 retries
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(3); // Initial + 2 retries
     });
 
     it('does not retry non-transient errors', async () => {
       const error = new Error('Invalid input');
-      localThis.mockFn.mockRejectedValue(error);
+      vi.mocked(localThis.mockFn).mockRejectedValue(error);
 
       await expect(withRetry(localThis.mockFn)).rejects.toThrow('Invalid input');
-      expect(localThis.mockFn).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(1);
     });
 
     it('calls onRetry callback before each retry', async () => {
-      localThis.mockFn
+      vi.mocked(localThis.mockFn)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce('success');
@@ -171,14 +175,14 @@ describe('Error Handler Utilities', () => {
       await vi.runAllTimersAsync();
       await resultPromise;
 
-      expect(localThis.onRetryCallback).toHaveBeenCalledTimes(2);
-      expect(localThis.onRetryCallback).toHaveBeenCalledWith(1, expect.any(Error), expect.any(Number));
-      expect(localThis.onRetryCallback).toHaveBeenCalledWith(2, expect.any(Error), expect.any(Number));
+      expect(vi.mocked(localThis.onRetryCallback)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(localThis.onRetryCallback)).toHaveBeenCalledWith(1, expect.any(Error), expect.any(Number));
+      expect(vi.mocked(localThis.onRetryCallback)).toHaveBeenCalledWith(2, expect.any(Error), expect.any(Number));
     });
 
     it('respects custom shouldRetry function', async () => {
       const error = new Error('Custom retryable error');
-      localThis.mockFn
+      vi.mocked(localThis.mockFn)
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce('success');
 
@@ -189,13 +193,13 @@ describe('Error Handler Utilities', () => {
       const result = await resultPromise;
 
       expect(result).toBe('success');
-      expect(localThis.mockFn).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('safeAsync', () => {
     it('returns data on success', async () => {
-      localThis.mockFn.mockResolvedValue('result');
+      vi.mocked(localThis.mockFn).mockResolvedValue('result');
 
       const { data, error } = await safeAsync(localThis.mockFn);
 
@@ -205,7 +209,7 @@ describe('Error Handler Utilities', () => {
 
     it('returns error on failure', async () => {
       const testError = new Error('Test error');
-      localThis.mockFn.mockRejectedValue(testError);
+      vi.mocked(localThis.mockFn).mockRejectedValue(testError);
 
       const { data, error } = await safeAsync(localThis.mockFn);
 
@@ -215,7 +219,7 @@ describe('Error Handler Utilities', () => {
 
     it('reports error to Sentry on failure', async () => {
       const testError = new Error('Test error');
-      localThis.mockFn.mockRejectedValue(testError);
+      vi.mocked(localThis.mockFn).mockRejectedValue(testError);
 
       await safeAsync(localThis.mockFn);
 
@@ -223,7 +227,7 @@ describe('Error Handler Utilities', () => {
     });
 
     it('shows notification when showNotification is true', async () => {
-      localThis.mockFn.mockRejectedValue(new Error('Test error'));
+      vi.mocked(localThis.mockFn).mockRejectedValue(new Error('Test error'));
 
       await safeAsync(localThis.mockFn, { showNotification: true });
 
@@ -231,7 +235,7 @@ describe('Error Handler Utilities', () => {
     });
 
     it('uses custom error message for notification', async () => {
-      localThis.mockFn.mockRejectedValue(new Error('Original error'));
+      vi.mocked(localThis.mockFn).mockRejectedValue(new Error('Original error'));
 
       await safeAsync(localThis.mockFn, {
         showNotification: true,
@@ -243,7 +247,7 @@ describe('Error Handler Utilities', () => {
 
     it('calls onError callback', async () => {
       const testError = new Error('Test error');
-      localThis.mockFn.mockRejectedValue(testError);
+      vi.mocked(localThis.mockFn).mockRejectedValue(testError);
       const onError = vi.fn();
 
       await safeAsync(localThis.mockFn, { onError });
@@ -252,7 +256,7 @@ describe('Error Handler Utilities', () => {
     });
 
     it('enables retry when retry option is true', async () => {
-      localThis.mockFn
+      vi.mocked(localThis.mockFn)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce('success');
 
@@ -262,11 +266,11 @@ describe('Error Handler Utilities', () => {
 
       expect(data).toBe('success');
       expect(error).toBeNull();
-      expect(localThis.mockFn).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(2);
     });
 
     it('uses fallback message when error has no message', async () => {
-      localThis.mockFn.mockRejectedValue({});
+      vi.mocked(localThis.mockFn).mockRejectedValue({});
 
       await safeAsync(localThis.mockFn, { showNotification: true });
 
@@ -276,7 +280,7 @@ describe('Error Handler Utilities', () => {
     it('reports error to Sentry even when retry is enabled and fails', async () => {
       vi.useRealTimers();
       const testError = new Error('Network error');
-      localThis.mockFn.mockRejectedValue(testError);
+      vi.mocked(localThis.mockFn).mockRejectedValue(testError);
 
       const { error } = await safeAsync(localThis.mockFn, {
         retry: true,
@@ -288,7 +292,7 @@ describe('Error Handler Utilities', () => {
     });
 
     it('does not call Sentry.captureException on success', async () => {
-      localThis.mockFn.mockResolvedValue('result');
+      vi.mocked(localThis.mockFn).mockResolvedValue('result');
       vi.clearAllMocks();
 
       await safeAsync(localThis.mockFn);
@@ -298,7 +302,7 @@ describe('Error Handler Utilities', () => {
 
     it('passes custom retryConfig to withRetry', async () => {
       vi.useRealTimers();
-      localThis.mockFn.mockRejectedValue(new Error('Network error'));
+      vi.mocked(localThis.mockFn).mockRejectedValue(new Error('Network error'));
 
       await safeAsync(localThis.mockFn, {
         retry: true,
@@ -306,13 +310,13 @@ describe('Error Handler Utilities', () => {
       });
 
       // With maxRetries: 0, it should only try once
-      expect(localThis.mockFn).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('createRetryable', () => {
     it('creates a retryable operation', async () => {
-      localThis.mockFn.mockResolvedValue('result');
+      vi.mocked(localThis.mockFn).mockResolvedValue('result');
       const retryable = createRetryable(localThis.mockFn);
 
       const { data, error } = await retryable.execute();
@@ -323,7 +327,7 @@ describe('Error Handler Utilities', () => {
 
     it('tracks last error', async () => {
       const testError = new Error('Test error');
-      localThis.mockFn.mockRejectedValue(testError);
+      vi.mocked(localThis.mockFn).mockRejectedValue(testError);
       const retryable = createRetryable(localThis.mockFn);
 
       await retryable.execute();
@@ -332,7 +336,7 @@ describe('Error Handler Utilities', () => {
     });
 
     it('clears last error on success', async () => {
-      localThis.mockFn
+      vi.mocked(localThis.mockFn)
         .mockRejectedValueOnce(new Error('First error'))
         .mockResolvedValueOnce('success');
 
@@ -346,8 +350,8 @@ describe('Error Handler Utilities', () => {
     });
 
     it('prevents concurrent execution', async () => {
-      let resolveFirst;
-      localThis.mockFn.mockImplementation(() => new Promise(resolve => {
+      let resolveFirst: (value: unknown) => void = () => {};
+      vi.mocked(localThis.mockFn).mockImplementation(() => new Promise(resolve => {
         resolveFirst = resolve;
       }));
 
@@ -357,7 +361,7 @@ describe('Error Handler Utilities', () => {
       expect(retryable.isExecuting()).toBe(true);
 
       const secondCall = await retryable.execute();
-      expect(secondCall.error.message).toBe('Operation already in progress');
+      expect(secondCall.error!.message).toBe('Operation already in progress');
 
       resolveFirst('result');
       const firstResult = await firstCall;
@@ -366,7 +370,7 @@ describe('Error Handler Utilities', () => {
     });
 
     it('reports execution state', async () => {
-      localThis.mockFn.mockResolvedValue('result');
+      vi.mocked(localThis.mockFn).mockResolvedValue('result');
       const retryable = createRetryable(localThis.mockFn);
 
       expect(retryable.isExecuting()).toBe(false);

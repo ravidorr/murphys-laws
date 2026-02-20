@@ -190,8 +190,8 @@ export async function fetchCategories(): Promise<ListResponse<Category>> {
  * @param {number} options.limit - Number of suggestions to fetch (default: 10, max: 20)
  * @returns {Promise<Object>} Response with suggestions data
  */
-export async function fetchSuggestions({ q, limit = 10 }: { q?: string; limit?: number } = {}): Promise<PaginatedResponse<Law>> {
-  if (!q || q.trim().length < 2) {
+export async function fetchSuggestions({ q, limit = 10 }: { q?: string | null; limit?: number } = {}): Promise<PaginatedResponse<Law>> {
+  if (q == null || typeof q !== 'string' || q.trim().length < 2) {
     return { data: [], total: 0, limit: 0, offset: 0 };
   }
 

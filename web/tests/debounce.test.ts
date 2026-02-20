@@ -76,8 +76,8 @@ describe('debounce', () => {
 
   it('should preserve function context (this)', () => {
     const localThis: DebounceTestLocalThis = { value: 'test' };
-    localThis.func = function (this: DebounceTestLocalThis) {
-      return this.value;
+    localThis.func = function (this: DebounceTestLocalThis): string {
+      return this.value ?? '';
     };
     localThis.debounced = debounce(localThis.func as (...args: unknown[]) => string, 100);
 

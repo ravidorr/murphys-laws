@@ -1,3 +1,5 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { OnNavigate, FavoriteLaw } from '../src/types/app.d.ts';
 import { Favorites } from '../src/views/favorites.js';
 
 // Mock feature flags
@@ -14,7 +16,7 @@ vi.mock('../src/utils/favorites.js', () => ({
 
 // Mock law card renderer
 vi.mock('../src/utils/law-card-renderer.js', () => ({
-  renderLawCards: vi.fn((laws) => laws.map((law) =>
+  renderLawCards: vi.fn((laws: FavoriteLaw[]) => laws.map((law: FavoriteLaw) =>
     `<article class="law-card-mini" data-law-id="${law.id}"><p>${law.text}</p></article>`
   ).join('')),
 }));
@@ -30,10 +32,14 @@ import { renderLawCards } from '../src/utils/law-card-renderer.js';
 import { addVotingListeners } from '../src/utils/voting.js';
 
 describe('Favorites View Component', () => {
-  const localThis = {
-    mockNavigate: null,
-    mockLaw1: null,
-    mockLaw2: null,
+  const localThis: {
+    mockNavigate: OnNavigate;
+    mockLaw1: FavoriteLaw;
+    mockLaw2: FavoriteLaw;
+  } = {
+    mockNavigate: vi.fn() as unknown as OnNavigate,
+    mockLaw1: { id: 123, text: 'Test law text', title: 'Test Law', savedAt: 0 },
+    mockLaw2: { id: 456, text: 'Another law text', title: 'Another Law', savedAt: 0 },
   };
 
   beforeEach(() => {
@@ -43,17 +49,9 @@ describe('Favorites View Component', () => {
     vi.mocked(getFavorites).mockReturnValue([]);
 
     // Set up test data
-    localThis.mockNavigate = vi.fn();
-    localThis.mockLaw1 = {
-      id: 123,
-      text: 'Test law text',
-      title: 'Test Law',
-    };
-    localThis.mockLaw2 = {
-      id: 456,
-      text: 'Another law text',
-      title: 'Another Law',
-    };
+    localThis.mockNavigate = vi.fn() as unknown as OnNavigate;
+    localThis.mockLaw1 = { id: 123, text: 'Test law text', title: 'Test Law', savedAt: 0 };
+    localThis.mockLaw2 = { id: 456, text: 'Another law text', title: 'Another Law', savedAt: 0 };
 
     // Clear sessionStorage
     sessionStorage.clear();
@@ -86,16 +84,16 @@ describe('Favorites View Component', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const heading = el.querySelector('h1');
       expect(heading).toBeTruthy();
-      expect(heading.textContent).toContain('My');
-      expect(heading.textContent).toContain('Favorites');
-      expect(heading.querySelector('.accent-text').textContent).toBe('My');
+      expect(heading!.textContent).toContain('My');
+      expect(heading!.textContent).toContain('Favorites');
+      expect(heading!.querySelector('.accent-text')!.textContent).toBe('My');
     });
 
     it('renders Murphy\'s Law themed quote', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const quote = el.querySelector('.not-found-quote');
       expect(quote).toBeTruthy();
-      expect(quote.textContent).toContain('The law you need most will be the one you forgot to save');
+      expect(quote!.textContent).toContain('The law you need most will be the one you forgot to save');
     });
 
     it('renders search form with input and button', () => {
@@ -106,7 +104,7 @@ describe('Favorites View Component', () => {
 
       expect(searchForm).toBeTruthy();
       expect(searchInput).toBeTruthy();
-      expect(searchInput.getAttribute('placeholder')).toBe("Search laws...");
+      expect(searchInput!.getAttribute('placeholder')).toBe("Search laws...");
       expect(searchButton).toBeTruthy();
     });
 
@@ -118,9 +116,9 @@ describe('Favorites View Component', () => {
 
       expect(actionsContainer).toBeTruthy();
       expect(homeButton).toBeTruthy();
-      expect(homeButton.textContent).toContain('Back to Home');
+      expect(homeButton!.textContent).toContain('Back to Home');
       expect(browseButton).toBeTruthy();
-      expect(browseButton.textContent).toContain('Browse All Laws');
+      expect(browseButton!.textContent).toContain('Browse All Laws');
     });
 
     it('renders category links section', () => {
@@ -130,9 +128,9 @@ describe('Favorites View Component', () => {
 
       expect(categoriesSection).toBeTruthy();
       expect(categoryLinks.length).toBe(3);
-      expect(categoryLinks[0].getAttribute('data-param')).toBe('murphys-computer-laws');
-      expect(categoryLinks[1].getAttribute('data-param')).toBe('murphys-love-laws');
-      expect(categoryLinks[2].getAttribute('data-param')).toBe('murphys-technology-laws');
+      expect(categoryLinks[0]!.getAttribute('data-param')).toBe('murphys-computer-laws');
+      expect(categoryLinks[1]!.getAttribute('data-param')).toBe('murphys-love-laws');
+      expect(categoryLinks[2]!.getAttribute('data-param')).toBe('murphys-technology-laws');
     });
   });
 
@@ -145,36 +143,36 @@ describe('Favorites View Component', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const card = el.querySelector('.card');
       expect(card).toBeTruthy();
-      expect(card.classList.contains('content-card')).toBe(false);
+      expect(card!.classList.contains('content-card')).toBe(false);
     });
 
     it('renders .card-title with "Saved Laws" heading', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const cardTitle = el.querySelector('.card-title');
       expect(cardTitle).toBeTruthy();
-      expect(cardTitle.textContent).toContain('Saved');
-      expect(cardTitle.textContent).toContain('Laws');
+      expect(cardTitle!.textContent).toContain('Saved');
+      expect(cardTitle!.textContent).toContain('Laws');
     });
 
     it('renders "Clear All" button', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const clearButton = el.querySelector('#clear-favorites-btn');
       expect(clearButton).toBeTruthy();
-      expect(clearButton.textContent).toContain('Clear All');
+      expect(clearButton!.textContent).toContain('Clear All');
     });
 
     it('renders subtitle with correct count', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const subtitle = el.querySelector('#favorites-subtitle');
       expect(subtitle).toBeTruthy();
-      expect(subtitle.textContent).toBe('2 laws saved to your collection');
+      expect(subtitle!.textContent).toBe('2 laws saved to your collection');
     });
 
     it('renders singular subtitle for single favorite', () => {
       vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const subtitle = el.querySelector('#favorites-subtitle');
-      expect(subtitle.textContent).toBe('1 law saved to your collection');
+      expect(subtitle!.textContent).toBe('1 law saved to your collection');
     });
 
     it('renders law cards inside .card-text', () => {
@@ -220,9 +218,9 @@ describe('Favorites View Component', () => {
       const searchInput = el.querySelector('#favorites-search-input') as HTMLInputElement | null;
 
       if (searchInput) searchInput.value = 'gravity';
-      searchForm?.dispatchEvent(new Event('submit'));
+      searchForm!.dispatchEvent(new Event('submit'));
 
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('browse');
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('browse');
       expect(sessionStorage.getItem('searchQuery')).toBe('gravity');
     });
 
@@ -232,9 +230,9 @@ describe('Favorites View Component', () => {
       const searchInput = el.querySelector('#favorites-search-input') as HTMLInputElement | null;
 
       if (searchInput) searchInput.value = '   ';
-      searchForm?.dispatchEvent(new Event('submit'));
+      searchForm!.dispatchEvent(new Event('submit'));
 
-      expect(localThis.mockNavigate).not.toHaveBeenCalled();
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
     });
   });
 
@@ -245,7 +243,7 @@ describe('Favorites View Component', () => {
 
       homeButton?.click();
 
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('home', undefined);
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('home', undefined);
     });
 
     it('navigates to browse when "Browse All Laws" is clicked', () => {
@@ -254,7 +252,7 @@ describe('Favorites View Component', () => {
 
       browseButton?.click();
 
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('browse', undefined);
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('browse', undefined);
     });
 
     it('navigates to category with param when category link is clicked', () => {
@@ -263,7 +261,7 @@ describe('Favorites View Component', () => {
 
       categoryLink?.click();
 
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('category', 'murphys-computer-laws');
     });
 
     it('navigates to law detail when law card is clicked', () => {
@@ -273,7 +271,7 @@ describe('Favorites View Component', () => {
 
       lawCard?.click();
 
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('law', '123');
     });
 
     it('supports keyboard navigation on law cards', () => {
@@ -281,9 +279,9 @@ describe('Favorites View Component', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const lawCard = el.querySelector('.law-card-mini');
 
-      lawCard.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      lawCard!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('law', '123');
     });
   });
 
@@ -354,7 +352,7 @@ describe('Favorites View Component', () => {
       Object.defineProperty(event, 'target', { value: null });
       el.dispatchEvent(event);
 
-      expect(localThis.mockNavigate).not.toHaveBeenCalled();
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
     });
 
     it('handles click on SVG element inside favorite button', () => {
@@ -373,11 +371,12 @@ describe('Favorites View Component', () => {
 
       // Create a proper SVG element and append it
       const iconWrapper = el.querySelector('.icon-wrapper');
+      expect(iconWrapper).toBeTruthy();
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', 'M10 20');
       svg.appendChild(path);
-      iconWrapper.appendChild(svg);
+      iconWrapper!.appendChild(svg);
 
       // Append to document for proper event delegation
       document.body.appendChild(el);
@@ -401,7 +400,7 @@ describe('Favorites View Component', () => {
       Object.defineProperty(event, 'target', { value: null });
       el.dispatchEvent(event);
 
-      expect(localThis.mockNavigate).not.toHaveBeenCalled();
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
     });
 
     it('does not navigate when clicking button inside law card', () => {
@@ -420,7 +419,7 @@ describe('Favorites View Component', () => {
       favoriteButton?.click();
 
       // Should not navigate to law detail
-      expect(localThis.mockNavigate).not.toHaveBeenCalledWith('law', '123');
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalledWith('law', '123');
     });
 
     it('calls removeFavorite when clicking favorite button', () => {
