@@ -28,10 +28,12 @@ export interface Attribution {
   note?: string | null;
 }
 
-/** A category record returned by the API */
+/** A category record returned by the API. The primary display field is `title`. */
 export interface Category {
   id: number;
+  /** Primary display name from the API (e.g. "Murphy's Laws") */
   title: string;
+  /** @deprecated Legacy alias for `title` -- prefer `title` in new code */
   name?: string;
   slug: string;
   description?: string;

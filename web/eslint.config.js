@@ -30,7 +30,7 @@ export default [
       // Code quality
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-console': 'off',
-      eqeqeq: 'error',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
       curly: ['error', 'multi-line'],
 
       // Style preferences
@@ -60,7 +60,7 @@ export default [
       // Use TypeScript-aware no-unused-vars instead of base rule
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       // Disable no-undef for TS files (TypeScript handles this)
       'no-undef': 'off',
     },
