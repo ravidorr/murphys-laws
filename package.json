@@ -37,7 +37,9 @@
   "author": "",
   "license": "CC0-1.0",
   "overrides": {
-    "minimatch": "10.2.1"
+    "minimatch": "10.2.1",
+    "typescript-eslint": "8.56.0",
+    "@typescript-eslint/scope-manager": "8.56.0"
   },
   "engines": {
     "node": ">=22.0.0"
