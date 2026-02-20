@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump to 2.0.7; npm audit fix --force (downgrade @sentry/node to 9.20, add typescript-eslint)
+- Audit fixes: upgrade vite-plugin-pwa to 1.2.0 (critical ejs/json-schema); upgrade @sentry/node to 9.47.1; add root overrides for minimatch 10.2.1 and regenerate lockfile (fixes all 14 high). Pre-push blocks on high/critical. 10 moderate (ajv in eslint stack) remain with no non-breaking fix. Remove unused @sentry/node from web deps.
+
 ### Added
 - CI and pre-push guardrails: typecheck and lint in web/backend CI; backend coverage thresholds (vitest.config.ts); npm audit in CI and pre-push; commit-msg hook (min length); lint-staged includes TypeScript; HTML validation step in web CI
 - Backend: IOgImageLawService.getLaw return type allows undefined for LawService compatibility
