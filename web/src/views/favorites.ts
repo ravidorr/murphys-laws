@@ -18,7 +18,6 @@ import type { CleanableElement, OnNavigate, FavoriteLaw, Law } from '../types/ap
 export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
-  el.setAttribute('role', 'main');
 
   // Set page title
   document.title = `Browse My Favorites Laws | Murphy's Law Archive`;

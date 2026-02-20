@@ -69,10 +69,9 @@ describe('Favorites View Component', () => {
       expect(document.title).toBe("Browse My Favorites Laws | Murphy's Law Archive");
     });
 
-    it('creates a container with correct classes and role', () => {
+    it('creates a container with correct classes', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       expect(el.className).toBe('container page');
-      expect(el.getAttribute('role')).toBe('main');
     });
   });
 

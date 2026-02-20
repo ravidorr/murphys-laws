@@ -7,7 +7,6 @@ import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 export function Privacy({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page content-page';
-  el.setAttribute('role', 'main');
 
   // Set page title
   document.title = `Privacy Policy | ${SITE_NAME}`;

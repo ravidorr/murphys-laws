@@ -13,7 +13,6 @@ import type { CleanableElement, OnNavigate, Category } from '../types/app.d.ts';
 export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
-  el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
   let categories: Category[] = [];

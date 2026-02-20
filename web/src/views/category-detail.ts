@@ -27,7 +27,6 @@ import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/
 export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string; onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
-  el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
   let currentPage = 1;

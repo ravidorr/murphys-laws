@@ -11,7 +11,6 @@ import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page content-page';
-  el.setAttribute('role', 'main');
 
   // Set page title and meta description
   document.title = `The True Origin of Murphy's Law | ${SITE_NAME}`;
