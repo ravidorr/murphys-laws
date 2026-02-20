@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- CI and pre-push guardrails: typecheck and lint in web/backend CI; backend coverage thresholds (vitest.config.ts); npm audit in CI and pre-push; commit-msg hook (min length); lint-staged includes TypeScript; HTML validation step in web CI
+- Backend: IOgImageLawService.getLaw return type allows undefined for LawService compatibility
+
 ### Changed
 - Home: move "The Science of Murphy's Law" section below "Submit a Law"
 

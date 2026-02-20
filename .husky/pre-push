@@ -1,5 +1,16 @@
 #!/bin/sh
 
+# Block push if high/critical vulnerabilities exist (bypass with SKIP_AUDIT=1)
+if [ "$SKIP_AUDIT" != "1" ]; then
+  echo "Running npm audit (high/critical)..."
+  npm audit --audit-level=high
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "Audit failed. Fix vulnerabilities or use: SKIP_AUDIT=1 git push ..."
+    exit 1
+  fi
+fi
+
 # Deployment reminder
 echo ""
 echo "Code pushed to GitHub!"

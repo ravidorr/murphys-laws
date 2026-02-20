@@ -42,7 +42,7 @@ const FONTS = {
 };
 
 export interface IOgImageLawService {
-  getLaw(id: number): Promise<{ id: number; title?: string | null; text: string; attributions?: Array<{ name: string }> } | null>;
+  getLaw(id: number): Promise<{ id: number; title?: string | null; text: string; attributions?: Array<{ name: string }> } | null | undefined>;
 }
 
 export interface OgImageServiceOptions {
