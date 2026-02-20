@@ -226,7 +226,7 @@ function generateLawPage(law, template) {
   
   // Build static content for law detail page
   const staticContent = `
-    <div class="container page law-detail pt-0" role="main">
+    <div class="container page law-detail pt-0">
       <article class="law-detail-card card">
         <header class="card-header">
           <h1 class="card-title">${accentTitle}</h1>
@@ -237,7 +237,7 @@ function generateLawPage(law, template) {
         </div>
       </article>
     </div>
-  `;
+`;
   
   // Inject content into main
   pageHtml = pageHtml.replace(
@@ -456,7 +456,7 @@ async function main() {
     const descriptionText = generateCategoryDescription(title, law_count);
     
     const staticContent = `
-      <div class="container page pt-0" role="main">
+      <div class="container page pt-0">
         <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
           <span class="accent-text">${title.split(' ')[0]}</span> ${title.split(' ').slice(1).join(' ')}
         </h1>
@@ -465,7 +465,7 @@ async function main() {
           ${htmlContent}
         </div>
       </div>
-    `;
+`;
     
     // Regex to replace inside <main>...<p>Loading...</p>...</main>
     // The template has: <main ...> ... <p ...>Loading...</p> </main>
@@ -508,7 +508,7 @@ async function main() {
   browseHtml = updateHreflang(browseHtml, 'https://murphys-laws.com/browse');
 
   const browseContent = `
-    <div class="container page pt-0" role="main">
+    <div class="container page pt-0">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
         Browse <span class="accent-text">Murphy's</span> Laws
       </h1>
@@ -516,7 +516,7 @@ async function main() {
         Search and filter through our complete collection of Murphy's Laws.
       </p>
     </div>
-  `;
+`;
 
   browseHtml = browseHtml.replace(
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
@@ -556,7 +556,7 @@ async function main() {
     .join('');
 
   const categoriesContent = `
-    <div class="container page pt-0" role="main">
+    <div class="container page pt-0">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
         Browse <span class="accent-text">Murphy's</span> Laws by Category
       </h1>
@@ -564,10 +564,10 @@ async function main() {
         Explore our complete collection organized into ${categories.length} categories.
       </p>
       <div class="categories-grid">
-        ${categoryCardsHtml}
+${categoryCardsHtml.trim()}
       </div>
     </div>
-  `;
+`;
 
   categoriesHtml = categoriesHtml.replace(
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
@@ -632,10 +632,10 @@ async function main() {
       // Build the static content wrapper using card-header/card-body structure
       const cardHtml = wrapInCardStructure(htmlContent, { lastUpdated });
       const staticContent = `
-      <div class="container page content-page" role="main">
-        ${cardHtml}
+      <div class="container page content-page">
+${cardHtml.trim()}
       </div>
-      `;
+`;
       
       // Inject into main
       pageHtml = pageHtml.replace(
@@ -719,7 +719,7 @@ async function main() {
   let homeHtml = template;
   
   const homeContent = `
-    <div class="container page pt-0" role="main">
+    <div class="container page pt-0">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
         <span class="accent-text">${HOME_HERO_ACCENT}</span> ${HOME_HERO_TITLE}
       </h1>
@@ -727,7 +727,7 @@ async function main() {
         "If anything can go wrong, it will." Explore the complete collection of laws, corollaries, and observations about the perversity of the universe.
       </p>
     </div>
-  `;
+`;
 
   // Inject into main
   homeHtml = homeHtml.replace(

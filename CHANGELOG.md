@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Web: ensure dist HTML passes html-validate (aria-labels on header/main, remove redundant role=main, trim SSG output to avoid trailing whitespace)
+
 ### Changed
 - Bump to 2.0.7; npm audit fix --force (downgrade @sentry/node to 9.20, add typescript-eslint)
 - Audit fixes: upgrade vite-plugin-pwa to 1.2.0 (critical ejs/json-schema); upgrade @sentry/node to 9.47.1; add root overrides for minimatch 10.2.1 and regenerate lockfile (fixes all 14 high). Pre-push blocks on high/critical. 10 moderate (ajv in eslint stack) remain with no non-breaking fix. Remove unused @sentry/node from web deps.

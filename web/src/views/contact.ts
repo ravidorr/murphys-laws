@@ -6,7 +6,6 @@ import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 export function Contact({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page content-page';
-  el.setAttribute('role', 'main');
 
   // Set page title
   document.title = `Contact | ${SITE_NAME}`;

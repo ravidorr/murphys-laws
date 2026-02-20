@@ -7,7 +7,6 @@ import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 export function Terms({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page content-page';
-  el.setAttribute('role', 'main');
 
   // Set page title
   document.title = `Terms of Service | ${SITE_NAME}`;

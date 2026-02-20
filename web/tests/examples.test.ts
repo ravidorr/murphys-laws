@@ -56,7 +56,6 @@ describe('Examples view', () => {
     expect(localThis.el).toBeTruthy();
     expect(localThis.el.className).toContain('container');
     expect(localThis.el.className).toContain('content-page');
-    expect(localThis.el.getAttribute('role')).toBe('main');
   });
 
   it('sets the page title', () => {

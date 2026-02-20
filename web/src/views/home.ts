@@ -89,7 +89,6 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
 export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page pt-0 min-h-400';
-  el.setAttribute('role', 'main');
   el.setAttribute('aria-live', 'polite');
 
   el.innerHTML = `${HERO_HTML}${renderLoadingHTML({ size: 'large' })}`;

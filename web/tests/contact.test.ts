@@ -8,7 +8,6 @@ describe('Contact page', () => {
 
     expect(el.tagName).toBe('DIV');
     expect(el.className).toContain('content-page');
-    expect(el.getAttribute('role')).toBe('main');
   });
 
   it('shows page title', () => {

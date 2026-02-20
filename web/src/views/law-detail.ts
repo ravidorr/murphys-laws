@@ -28,7 +28,6 @@ interface LawDetailProps {
 export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProps): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
-  el.setAttribute('role', 'main');
 
   el.innerHTML = templateHtml;
 
