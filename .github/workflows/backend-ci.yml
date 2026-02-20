@@ -36,12 +36,24 @@ jobs:
       - name: Install dependencies (root - npm workspaces)
         run: npm ci
 
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: backend
+
+      - name: Lint
+        run: npm run lint
+        working-directory: backend
+
       - name: Build database
         run: npm run build:db
         working-directory: backend
 
-      - name: Run tests
-        run: npm test
+      - name: Run tests with coverage
+        run: npm run test:coverage
         working-directory: backend
 
       - name: Check database exists

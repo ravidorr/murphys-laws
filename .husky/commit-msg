@@ -1,0 +1,28 @@
+#!/bin/sh
+# Enforce minimum commit message length (bypass with SKIP_COMMIT_MSG_CHECK=1)
+
+if [ "$SKIP_COMMIT_MSG_CHECK" = "1" ]; then
+  exit 0
+fi
+
+msg_file="$1"
+min_len=10
+
+if [ ! -f "$msg_file" ]; then
+  exit 0
+fi
+
+# First line only, strip comments and whitespace
+first_line=$(sed -e '/^#/d' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$msg_file" | head -n1)
+len=${#first_line}
+
+if [ "$len" -lt "$min_len" ]; then
+  echo ""
+  echo "Commit message too short (${len} chars). Minimum ${min_len} characters."
+  echo "First line: $first_line"
+  echo ""
+  echo "Bypass with: SKIP_COMMIT_MSG_CHECK=1 git commit ..."
+  exit 1
+fi
+
+exit 0
