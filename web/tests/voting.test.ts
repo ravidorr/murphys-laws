@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { VoteType } from '../src/types/app.d.ts';
 import { getUserVote, voteLaw, unvoteLaw, toggleVote } from '../src/utils/voting.ts';
 
@@ -70,7 +71,7 @@ describe('Voting utilities', () => {
     });
 
     it('handles localStorage.setItem errors gracefully', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      const fetchSpy = vi.spyOn(window as unknown as { fetch: typeof fetch }, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 11, downvotes: 2 })
       } as unknown as Response);
@@ -89,10 +90,10 @@ describe('Voting utilities', () => {
   });
 
   describe('voteLaw', () => {
-    let fetchSpy;
+    let fetchSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(globalThis, 'fetch');
+      fetchSpy = vi.spyOn(window as unknown as { fetch: typeof fetch }, 'fetch');
     });
 
     afterEach(() => {
@@ -107,7 +108,7 @@ describe('Voting utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 11, downvotes: 2 })
-      });
+      } as unknown as Response);
 
       const result = await voteLaw(123, 'up');
       expect(result).toEqual({ upvotes: 11, downvotes: 2 });
@@ -118,7 +119,7 @@ describe('Voting utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 10, downvotes: 3 })
-      });
+      } as unknown as Response);
 
       const result = await voteLaw(123, 'down');
       expect(result).toEqual({ upvotes: 10, downvotes: 3 });
@@ -130,7 +131,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 400,
         json: async () => ({ error: 'Invalid vote' })
-      });
+      } as unknown as Response);
 
       await expect(voteLaw(123, 'up')).rejects.toThrow('Invalid vote');
     });
@@ -140,7 +141,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 500,
         json: async () => ({ message: 'Server error' })
-      });
+      } as unknown as Response);
 
       await expect(voteLaw(123, 'up')).rejects.toThrow();
     });
@@ -150,7 +151,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 500,
         json: async () => { throw new Error('Invalid JSON'); }
-      });
+      } as unknown as Response);
 
       await expect(voteLaw(123, 'up')).rejects.toThrow();
     });
@@ -160,7 +161,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 503,
         json: async () => ({ error: 'Service unavailable' })
-      });
+      } as unknown as Response);
 
       await expect(voteLaw(123, 'up')).rejects.toThrow('Service unavailable');
       expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -168,10 +169,10 @@ describe('Voting utilities', () => {
   });
 
   describe('unvoteLaw', () => {
-    let fetchSpy;
+    let fetchSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(globalThis, 'fetch');
+      fetchSpy = vi.spyOn(globalThis as unknown as { fetch: typeof fetch }, 'fetch');
       // Set up initial vote
       localStorage.setItem('murphy_votes', JSON.stringify({ '123': 'up' }));
     });
@@ -184,7 +185,7 @@ describe('Voting utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 10, downvotes: 2 })
-      });
+      } as unknown as Response);
 
       const result = await unvoteLaw(123);
       expect(result).toEqual({ upvotes: 10, downvotes: 2 });
@@ -196,7 +197,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 400,
         json: async () => ({ error: 'Cannot remove vote' })
-      });
+      } as unknown as Response);
 
       await expect(unvoteLaw(123)).rejects.toThrow('Cannot remove vote');
     });
@@ -206,7 +207,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 500,
         json: async () => { throw new Error('Invalid JSON'); }
-      });
+      } as unknown as Response);
 
       await expect(unvoteLaw(123)).rejects.toThrow();
     });
@@ -216,7 +217,7 @@ describe('Voting utilities', () => {
         ok: false,
         status: 503,
         json: async () => ({ error: 'Service unavailable' })
-      });
+      } as unknown as Response);
 
       await expect(unvoteLaw(123)).rejects.toThrow('Service unavailable');
       expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -224,10 +225,10 @@ describe('Voting utilities', () => {
   });
 
   describe('toggleVote', () => {
-    let fetchSpy;
+    let fetchSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      fetchSpy = vi.spyOn(globalThis, 'fetch');
+      fetchSpy = vi.spyOn(window as unknown as { fetch: typeof fetch }, 'fetch');
     });
 
     afterEach(() => {
@@ -238,7 +239,7 @@ describe('Voting utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 11, downvotes: 2 })
-      });
+      } as unknown as Response);
 
       const result = await toggleVote(123, 'up');
       expect(result).toEqual({ upvotes: 11, downvotes: 2 });
@@ -251,7 +252,7 @@ describe('Voting utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 10, downvotes: 2 })
-      });
+      } as unknown as Response);
 
       const result = await toggleVote(123, 'up');
       expect(result).toEqual({ upvotes: 10, downvotes: 2 });
@@ -264,7 +265,7 @@ describe('Voting utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({ upvotes: 10, downvotes: 3 })
-      });
+      } as unknown as Response);
 
       const result = await toggleVote(123, 'down');
       expect(result).toEqual({ upvotes: 10, downvotes: 3 });

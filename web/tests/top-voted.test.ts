@@ -1,11 +1,12 @@
-import { TopVoted } from '@components/top-voted.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { TopVoted } from '../src/components/top-voted.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 
 describe('TopVoted component', () => {
-  let fetchTopVotedSpy;
-  let getUserVoteSpy;
-  let fetchSpy;
+  let fetchTopVotedSpy: ReturnType<typeof vi.spyOn>;
+  let getUserVoteSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     // Clear localStorage before each test
@@ -13,8 +14,7 @@ describe('TopVoted component', () => {
 
     fetchTopVotedSpy = vi.spyOn(api, 'fetchTopVoted');
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
-    // Mock fetch for voting API calls
-    fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    fetchSpy = vi.spyOn(globalThis as unknown as { fetch: typeof fetch }, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ upvotes: 11, downvotes: 2 })
@@ -98,10 +98,13 @@ describe('TopVoted component', () => {
       const lawCards = el.querySelectorAll('.law-card-mini');
       expect(lawCards.length).toBeGreaterThan(1);
       const secondCard = lawCards[1];
-      const upCount = secondCard.querySelector('[data-vote="up"] .count-num');
-      const downCount = secondCard.querySelector('[data-vote="down"] .count-num');
-      expect(upCount.textContent).toBe('0');
-      expect(downCount.textContent).toBe('0');
+      expect(secondCard).toBeDefined();
+      const upCount = secondCard!.querySelector('[data-vote="up"] .count-num');
+      const downCount = secondCard!.querySelector('[data-vote="down"] .count-num');
+      expect(upCount).toBeTruthy();
+      expect(downCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('0');
+      expect(downCount!.textContent).toBe('0');
     });
   });
 
@@ -167,7 +170,8 @@ describe('TopVoted component', () => {
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
-      expect(upCount.textContent).toBe('11');
+      expect(upCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('11');
     });
   });
 
@@ -328,7 +332,8 @@ describe('TopVoted component', () => {
 
     await vi.waitFor(() => {
       const upvoteBtn = el.querySelector('[data-vote="up"]');
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      expect(upvoteBtn).toBeTruthy();
+      expect(upvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 
@@ -344,7 +349,8 @@ describe('TopVoted component', () => {
 
     await vi.waitFor(() => {
       const downvoteBtn = el.querySelector('[data-vote="down"]');
-      expect(downvoteBtn.classList.contains('voted')).toBe(true);
+      expect(downvoteBtn).toBeTruthy();
+      expect(downvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 });

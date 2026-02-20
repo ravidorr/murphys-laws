@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Web: bump to 3.0.11
+
 ### Fixed
 - Web: pin typescript-eslint to 8.56.0 and add overrides for ESLint 10 compatibility (scopeManager.addGlobals); bump web to 3.0.10
 - Web: ensure dist HTML passes html-validate (aria-labels on header/main, remove redundant role=main, trim SSG output to avoid trailing whitespace)

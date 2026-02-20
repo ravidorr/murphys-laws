@@ -1,11 +1,12 @@
-import { RecentlyAdded } from '@components/recently-added.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { RecentlyAdded } from '../src/components/recently-added.ts';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 
 describe('RecentlyAdded component', () => {
-  let fetchRecentlyAddedSpy;
-  let getUserVoteSpy;
-  let fetchSpy;
+  let fetchRecentlyAddedSpy: ReturnType<typeof vi.spyOn>;
+  let getUserVoteSpy: ReturnType<typeof vi.spyOn>;
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     // Clear localStorage before each test
@@ -14,7 +15,7 @@ describe('RecentlyAdded component', () => {
     fetchRecentlyAddedSpy = vi.spyOn(api, 'fetchRecentlyAdded');
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
     // Mock fetch for voting API calls
-    fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    fetchSpy = vi.spyOn(globalThis as unknown as { fetch: typeof fetch }, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({ upvotes: 11, downvotes: 2 })
@@ -40,7 +41,7 @@ describe('RecentlyAdded component', () => {
       { id: '2', title: 'Law 2', text: 'Text 2', upvotes: 5, downvotes: 1, author: 'Author 2' },
       { id: '3', title: 'Law 3', text: 'Text 3', upvotes: 3, downvotes: 0, author: 'Author 3' }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -59,7 +60,7 @@ describe('RecentlyAdded component', () => {
       upvotes: 10 - i,
       downvotes: i
     }));
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -73,7 +74,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Text without title', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -87,15 +88,17 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Law without votes' }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
       const downCount = el.querySelector('[data-vote="down"] .count-num');
-      expect(upCount.textContent).toBe('0');
-      expect(downCount.textContent).toBe('0');
+      expect(upCount).toBeTruthy();
+      expect(downCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('0');
+      expect(downCount!.textContent).toBe('0');
     });
   });
 
@@ -103,7 +106,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -124,7 +127,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -145,7 +148,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -158,7 +161,8 @@ describe('RecentlyAdded component', () => {
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
-      expect(upCount.textContent).toBe('11');
+      expect(upCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('11');
     });
   });
 
@@ -169,7 +173,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -195,7 +199,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -223,7 +227,7 @@ describe('RecentlyAdded component', () => {
   });
 
   it('handles non-array data gracefully', async () => {
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: null });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: null as unknown as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -233,7 +237,7 @@ describe('RecentlyAdded component', () => {
   });
 
   it('handles empty data array', async () => {
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: [] });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 } as import('../src/types/app.d.ts').PaginatedResponse<import('../src/types/app.d.ts').Law>);
 
     const el = RecentlyAdded();
 
@@ -247,7 +251,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -267,7 +271,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -293,7 +297,7 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2, author: 'Test Author' }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
@@ -307,13 +311,14 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
     await vi.waitFor(() => {
       const upvoteBtn = el.querySelector('[data-vote="up"]');
-      expect(upvoteBtn.classList.contains('voted')).toBe(true);
+      expect(upvoteBtn).toBeTruthy();
+      expect(upvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 
@@ -322,13 +327,14 @@ describe('RecentlyAdded component', () => {
     const laws = [
       { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 }
     ];
-    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws });
+    fetchRecentlyAddedSpy.mockResolvedValue({ data: laws as unknown as import('../src/types/app.d.ts').Law[] });
 
     const el = RecentlyAdded();
 
     await vi.waitFor(() => {
       const downvoteBtn = el.querySelector('[data-vote="down"]');
-      expect(downvoteBtn.classList.contains('voted')).toBe(true);
+      expect(downvoteBtn).toBeTruthy();
+      expect(downvoteBtn!.classList.contains('voted')).toBe(true);
     });
   });
 });

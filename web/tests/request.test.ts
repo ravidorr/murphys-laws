@@ -309,7 +309,8 @@ describe('request utilities', () => {
         })
       );
       // Verify body is not included when null
-      expect(fetchSpy.mock.calls[0][1]).not.toHaveProperty('body');
+      const firstCall = fetchSpy.mock.calls[0];
+      expect(firstCall && (firstCall as [string, RequestInit])[1]).not.toHaveProperty('body');
     });
   });
 

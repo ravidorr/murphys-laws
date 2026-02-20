@@ -1,5 +1,6 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { CleanableElement } from '../src/types/app.js';
-import { Browse } from '@views/browse.js';
+import { Browse } from '../src/views/browse.js';
 import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
@@ -96,7 +97,7 @@ describe('Browse view', () => {
     await vi.waitFor(() => {
       const resultCount = el.querySelector('#browse-result-count');
       expect(resultCount).toBeTruthy();
-      expect(resultCount.textContent).toMatch(/Showing 1-2 of 2 laws/);
+      expect(resultCount!.textContent).toMatch(/Showing 1-2 of 2 laws/);
     }, { timeout: 1000 });
   });
 
@@ -128,7 +129,8 @@ describe('Browse view', () => {
 
     await vi.waitFor(() => {
       const resultCount = el.querySelector('#browse-result-count');
-      expect(resultCount.textContent).toMatch(/Showing 26-50 of 50 laws/);
+      expect(resultCount).toBeTruthy();
+      expect(resultCount!.textContent).toMatch(/Showing 26-50 of 50 laws/);
     }, { timeout: 1000 });
   });
 
@@ -281,14 +283,14 @@ describe('Browse view', () => {
 
     expect(upvoteBtn).toBeTruthy();
     expect(downvoteBtn).toBeTruthy();
-    expect(upvoteBtn.getAttribute('data-law-id')).toBe('1');
-    expect(downvoteBtn.getAttribute('data-law-id')).toBe('1');
+    expect(upvoteBtn!.getAttribute('data-law-id')).toBe('1');
+    expect(downvoteBtn!.getAttribute('data-law-id')).toBe('1');
 
     // Verify vote counts are displayed
-    const upCount = upvoteBtn.querySelector('.count-num');
-    const downCount = downvoteBtn.querySelector('.count-num');
-    expect(upCount.textContent).toBe('10');
-    expect(downCount.textContent).toBe('2');
+    const upCount = upvoteBtn!.querySelector('.count-num');
+    const downCount = downvoteBtn!.querySelector('.count-num');
+    expect(upCount!.textContent).toBe('10');
+    expect(downCount!.textContent).toBe('2');
 
     // Verify button is clickable (doesn't throw)
     expect(() => (upvoteBtn as HTMLElement).click()).not.toThrow();
@@ -402,12 +404,12 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     const lawCard = el.querySelector('.law-card-mini');
-    
+    expect(lawCard).toBeTruthy();
     // Check accessibility attributes (WCAG 2.1.1, 4.1.2)
-    expect(lawCard?.tagName).toBe('ARTICLE');
-    expect(lawCard.getAttribute('tabindex')).toBe('0');
-    expect(lawCard.getAttribute('role')).toBe('article');
-    expect(lawCard.getAttribute('aria-label')).toBeTruthy();
+    expect(lawCard!.tagName).toBe('ARTICLE');
+    expect(lawCard!.getAttribute('tabindex')).toBe('0');
+    expect(lawCard!.getAttribute('role')).toBe('article');
+    expect(lawCard!.getAttribute('aria-label')).toBeTruthy();
   });
 
   it('renders search query and laws with search results', async () => {
@@ -479,7 +481,7 @@ describe('Browse view', () => {
   });
 
   it('disables pagination buttons during loading', async () => {
-    let resolveFirstFetch: (value: unknown) => void;
+    let resolveFirstFetch!: (value: unknown) => void;
     const firstFetchPromise = new Promise(resolve => { resolveFirstFetch = resolve; });
 
     fetchLawsSpy.mockImplementation(() => firstFetchPromise);
@@ -505,7 +507,7 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
 
     // Mock second page fetch to be slow
-    let resolveSecondFetch: (value: unknown) => void;
+    let resolveSecondFetch!: (value: unknown) => void;
     const secondFetchPromise = new Promise(resolve => { resolveSecondFetch = resolve; });
     fetchLawsSpy.mockImplementation(() => secondFetchPromise);
 
@@ -770,7 +772,7 @@ describe('Browse view', () => {
       const widgetsContainer = el.querySelector('[data-widgets]');
       expect(widgetsContainer).toBeTruthy();
       // Widgets should be hidden when there's a search query
-      expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+      expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
     }, { timeout: 1000 });
   });
 
@@ -781,7 +783,7 @@ describe('Browse view', () => {
       const widgetsContainer = el.querySelector('[data-widgets]');
       expect(widgetsContainer).toBeTruthy();
       // Widgets should be visible when there's no search
-      expect(widgetsContainer.hasAttribute('hidden')).toBe(false);
+      expect(widgetsContainer!.hasAttribute('hidden')).toBe(false);
     }, { timeout: 1000 });
   });
 
@@ -792,7 +794,7 @@ describe('Browse view', () => {
     await vi.waitFor(() => {
       const widgetsContainer = el.querySelector('[data-widgets]');
       expect(widgetsContainer).toBeTruthy();
-      expect(widgetsContainer.hasAttribute('hidden')).toBe(false);
+      expect(widgetsContainer!.hasAttribute('hidden')).toBe(false);
     }, { timeout: 1000 });
 
     // Perform a search
@@ -806,7 +808,7 @@ describe('Browse view', () => {
       // Widgets should now be hidden
       await vi.waitFor(() => {
         const widgetsContainer = el.querySelector('[data-widgets]');
-        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+        expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
       }, { timeout: 1000 });
     }
   });
@@ -818,7 +820,7 @@ describe('Browse view', () => {
     await vi.waitFor(() => {
       const widgetsContainer = el.querySelector('[data-widgets]');
       expect(widgetsContainer).toBeTruthy();
-      expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+      expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
     }, { timeout: 1000 });
 
     // Clear the search
@@ -830,7 +832,7 @@ describe('Browse view', () => {
       // Widgets should now be visible again
       await vi.waitFor(() => {
         const widgetsContainer = el.querySelector('[data-widgets]');
-        expect(widgetsContainer.hasAttribute('hidden')).toBe(false);
+        expect(widgetsContainer!.hasAttribute('hidden')).toBe(false);
       }, { timeout: 1000 });
     }
   });
@@ -869,7 +871,7 @@ describe('Browse view', () => {
       // Widgets should now be hidden
       await vi.waitFor(() => {
         const widgetsContainer = el.querySelector('[data-widgets]');
-        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+        expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
       }, { timeout: 1000 });
     }
   });
@@ -908,7 +910,7 @@ describe('Browse view', () => {
       // Widgets should now be hidden
       await vi.waitFor(() => {
         const widgetsContainer = el.querySelector('[data-widgets]');
-        expect(widgetsContainer.hasAttribute('hidden')).toBe(true);
+        expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
       }, { timeout: 1000 });
     }
   });

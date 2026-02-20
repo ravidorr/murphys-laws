@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, beforeEach, it, expect, describe } from 'vitest';
 
 /** HTMLElement with optional cleanup used by the router */
 interface ElementWithCleanup extends HTMLElement {
@@ -268,7 +268,8 @@ describe('Router', () => {
 
     // Main element should have tabindex for programmatic focus
     const main = rootEl.querySelector('main');
-    expect(main.getAttribute('tabindex')).toBe('-1');
+    expect(main).toBeTruthy();
+    expect(main!.getAttribute('tabindex')).toBe('-1');
 
     document.body.removeChild(rootEl);
   });
@@ -290,7 +291,8 @@ describe('Router', () => {
     startRouter(rootEl);
 
     const mainDiv = rootEl.querySelector('[role="main"]');
-    expect(mainDiv.getAttribute('tabindex')).toBe('-1');
+    expect(mainDiv).toBeTruthy();
+    expect(mainDiv!.getAttribute('tabindex')).toBe('-1');
 
     document.body.removeChild(rootEl);
   });

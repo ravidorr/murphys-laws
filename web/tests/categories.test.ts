@@ -59,7 +59,7 @@ describe('Categories view', () => {
           id: 3, 
           slug: 'murphys-alarm-clock-laws', 
           title: "Murphy's Alarm Clock Laws", 
-          description: null,
+          description: undefined,
           law_count: 5
         }
       ]
@@ -130,9 +130,9 @@ describe('Categories view', () => {
     expect(cards.length).toBe(3);
     
     // Should be alphabetically sorted: Alarm Clock, Computer, Love
-    expect(cards[0].textContent).toContain("Murphy's Alarm Clock Laws");
-    expect(cards[1].textContent).toContain("Murphy's Computer Laws");
-    expect(cards[2].textContent).toContain("Murphy's Love Laws");
+    expect(cards[0]!.textContent).toContain("Murphy's Alarm Clock Laws");
+    expect(cards[1]!.textContent).toContain("Murphy's Computer Laws");
+    expect(cards[2]!.textContent).toContain("Murphy's Love Laws");
   });
 
   it('navigates to category on card click', async () => {
@@ -142,7 +142,7 @@ describe('Categories view', () => {
     const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
     expect(card).toBeTruthy();
     
-    (card as HTMLElement).click();
+    (card as HTMLElement)!.click();
     expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
   });
 
@@ -154,7 +154,7 @@ describe('Categories view', () => {
     expect(card).toBeTruthy();
     
     const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-    card.dispatchEvent(enterEvent);
+    card!.dispatchEvent(enterEvent);
     
     expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-love-laws');
   });
@@ -167,7 +167,7 @@ describe('Categories view', () => {
     expect(card).toBeTruthy();
     
     const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
-    card.dispatchEvent(spaceEvent);
+    card!.dispatchEvent(spaceEvent);
     
     expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-alarm-clock-laws');
   });
@@ -177,9 +177,10 @@ describe('Categories view', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const card = el.querySelector('.category-card');
-    expect(card.getAttribute('tabindex')).toBe('0');
-    expect(card.getAttribute('role')).toBe('link');
-    expect(card.getAttribute('aria-label')).toContain('laws');
+    expect(card).toBeTruthy();
+    expect(card!.getAttribute('tabindex')).toBe('0');
+    expect(card!.getAttribute('role')).toBe('link');
+    expect(card!.getAttribute('aria-label')).toContain('laws');
   });
 
   it('displays empty state when no categories', async () => {
@@ -243,12 +244,13 @@ describe('Categories view', () => {
     
     // Initially has loading class
     const grid = el.querySelector('#categories-grid');
-    expect(grid.classList.contains('loading-placeholder')).toBe(true);
+    expect(grid).toBeTruthy();
+    expect(grid!.classList.contains('loading-placeholder')).toBe(true);
     
     await new Promise(resolve => setTimeout(resolve, 10));
     
     // After load, should not have loading class
-    expect(grid.classList.contains('loading-placeholder')).toBe(false);
+    expect(grid!.classList.contains('loading-placeholder')).toBe(false);
   });
 
   it('handles category with law_count of 0', async () => {

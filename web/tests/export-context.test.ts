@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   setExportContent,
   getExportContent,
@@ -72,19 +73,19 @@ describe('Export Context', () => {
       const callback = vi.fn();
       subscribeToExportContent(callback);
 
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       expect(callback).toHaveBeenCalledWith(localThis.mockLawsContent);
       expect(getExportContent()).toEqual(localThis.mockLawsContent);
     });
 
     it('overwrites previous content', () => {
-      setExportContent(localThis.mockLawsContent);
-      expect(getExportContent().type).toBe(ContentType.LAWS);
+      setExportContent(localThis.mockLawsContent!);
+      expect(getExportContent()!.type).toBe(ContentType.LAWS);
 
-      setExportContent(localThis.mockSingleLawContent);
-      expect(getExportContent().type).toBe(ContentType.SINGLE_LAW);
-      expect(getExportContent().title).toBe("Murphy's Law");
+      setExportContent(localThis.mockSingleLawContent!);
+      expect(getExportContent()!.type).toBe(ContentType.SINGLE_LAW);
+      expect(getExportContent()!.title).toBe("Murphy's Law");
     });
 
     it('handles content with minimal fields', () => {
@@ -97,22 +98,26 @@ describe('Export Context', () => {
       setExportContent(minimalContent);
 
       const result = getExportContent();
-      expect(result.type).toBe(ContentType.CONTENT);
-      expect(result.title).toBe('Minimal');
-      expect(result.data).toBe('Some content');
-      expect(result.metadata).toEqual({});
+      expect(result).toBeTruthy();
+      expect(result!.type).toBe(ContentType.CONTENT);
+      expect(result!.title).toBe('Minimal');
+      expect(result!.data).toBe('Some content');
+      expect(result!.metadata).toEqual({});
     });
 
     it('handles content with all optional metadata', () => {
       const contentWithMetadata = {
-        ...localThis.mockLawsContent,
+        type: ContentType.LAWS,
+        title: (localThis.mockLawsContent!).title,
+        data: (localThis.mockLawsContent!).data,
         metadata: { total: 100, filters: { q: 'test' }, page: 2, extra: 'data' }
       };
 
       setExportContent(contentWithMetadata);
 
       const result = getExportContent();
-      expect(result?.metadata).toEqual({ total: 100, filters: { q: 'test' }, page: 2, extra: 'data' });
+      expect(result).toBeTruthy();
+      expect(result!.metadata).toEqual({ total: 100, filters: { q: 'test' }, page: 2, extra: 'data' });
     });
   });
 
@@ -122,16 +127,16 @@ describe('Export Context', () => {
     });
 
     it('returns current content after setExportContent', () => {
-      setExportContent(localThis.mockSingleLawContent);
+      setExportContent(localThis.mockSingleLawContent!);
 
       const content = getExportContent();
       expect(content).not.toBeNull();
-      expect(content.type).toBe(ContentType.SINGLE_LAW);
-      expect(content.title).toBe("Murphy's Law");
+      expect(content!.type).toBe(ContentType.SINGLE_LAW);
+      expect(content!.title).toBe("Murphy's Law");
     });
 
     it('returns null after clearExportContent', () => {
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
       expect(getExportContent()).not.toBeNull();
 
       clearExportContent();
@@ -141,7 +146,7 @@ describe('Export Context', () => {
 
   describe('clearExportContent', () => {
     it('clears stored content', () => {
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
       expect(getExportContent()).not.toBeNull();
 
       clearExportContent();
@@ -150,7 +155,7 @@ describe('Export Context', () => {
 
     it('notifies subscribers with null', () => {
       const callback = vi.fn();
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
       subscribeToExportContent(callback);
 
       clearExportContent();
@@ -172,7 +177,7 @@ describe('Export Context', () => {
       const callback = vi.fn();
       subscribeToExportContent(callback);
 
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith(localThis.mockLawsContent);
@@ -180,7 +185,7 @@ describe('Export Context', () => {
 
     it('calls callback when content is cleared', () => {
       const callback = vi.fn();
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
       subscribeToExportContent(callback);
 
       clearExportContent();
@@ -199,12 +204,12 @@ describe('Export Context', () => {
       const callback = vi.fn();
       const unsubscribe = subscribeToExportContent(callback);
 
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
       expect(callback).toHaveBeenCalledTimes(1);
 
       unsubscribe();
 
-      setExportContent(localThis.mockSingleLawContent);
+      setExportContent(localThis.mockSingleLawContent!);
       expect(callback).toHaveBeenCalledTimes(1); // Still 1, not called again
     });
 
@@ -217,7 +222,7 @@ describe('Export Context', () => {
       subscribeToExportContent(callback2);
       subscribeToExportContent(callback3);
 
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       expect(callback1).toHaveBeenCalledTimes(1);
       expect(callback2).toHaveBeenCalledTimes(1);
@@ -232,7 +237,7 @@ describe('Export Context', () => {
       subscribeToExportContent(callback2);
 
       unsubscribe1();
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       expect(callback1).toHaveBeenCalledTimes(0);
       expect(callback2).toHaveBeenCalledTimes(1);
@@ -245,7 +250,7 @@ describe('Export Context', () => {
     });
 
     it('returns [pdf, csv, md, txt] for LAWS type', () => {
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       const formats = getAvailableFormats();
       expect(formats).toContain('pdf');
@@ -256,7 +261,7 @@ describe('Export Context', () => {
     });
 
     it('returns [pdf, csv, md, txt] for SINGLE_LAW type', () => {
-      setExportContent(localThis.mockSingleLawContent);
+      setExportContent(localThis.mockSingleLawContent!);
 
       const formats = getAvailableFormats();
       expect(formats).toContain('pdf');
@@ -267,7 +272,7 @@ describe('Export Context', () => {
     });
 
     it('returns [pdf, md, txt] for CONTENT type (no CSV)', () => {
-      setExportContent(localThis.mockContentContent);
+      setExportContent(localThis.mockContentContent!);
 
       const formats = getAvailableFormats();
       expect(formats).toContain('pdf');
@@ -278,7 +283,7 @@ describe('Export Context', () => {
     });
 
     it('returns [pdf, csv, md, txt] for CATEGORIES type', () => {
-      setExportContent(localThis.mockCategoriesContent);
+      setExportContent(localThis.mockCategoriesContent!);
 
       const formats = getAvailableFormats();
       expect(formats).toContain('pdf');
@@ -289,7 +294,7 @@ describe('Export Context', () => {
     });
 
     it('returns formats in correct order (pdf first, then csv if applicable)', () => {
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       const formats = getAvailableFormats();
       expect(formats[0]).toBe('pdf');
@@ -299,7 +304,7 @@ describe('Export Context', () => {
     });
 
     it('returns formats in correct order for CONTENT type', () => {
-      setExportContent(localThis.mockContentContent);
+      setExportContent(localThis.mockContentContent!);
 
       const formats = getAvailableFormats();
       expect(formats[0]).toBe('pdf');
@@ -310,7 +315,7 @@ describe('Export Context', () => {
 
   describe('resetExportContext', () => {
     it('clears content', () => {
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
       expect(getExportContent()).not.toBeNull();
 
       resetExportContext();
@@ -322,7 +327,7 @@ describe('Export Context', () => {
       subscribeToExportContent(callback);
 
       resetExportContext();
-      setExportContent(localThis.mockLawsContent);
+      setExportContent(localThis.mockLawsContent!);
 
       // Callback should not be called after reset
       expect(callback).toHaveBeenCalledTimes(0);

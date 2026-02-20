@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   setJsonLd,
   removeJsonLd,
@@ -32,9 +33,9 @@ describe('Structured Data module', () => {
 
       const el = document.head.querySelector('#jsonld-test');
       expect(el).toBeTruthy();
-      expect((el as HTMLScriptElement).type).toBe('application/ld+json');
+      expect((el! as HTMLScriptElement).type).toBe('application/ld+json');
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('WebSite');
       expect(data.name).toBe('Test');
     });
@@ -46,7 +47,7 @@ describe('Structured Data module', () => {
       const elements = document.head.querySelectorAll('#jsonld-test');
       expect(elements.length).toBe(1);
 
-      const data = JSON.parse(elements[0].textContent);
+      const data = JSON.parse(elements[0]!.textContent!);
       expect(data.name).toBe('Second');
     });
 
@@ -79,7 +80,7 @@ describe('Structured Data module', () => {
       });
 
       const el = document.head.querySelector('#jsonld-test');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.name).toBe('Test');
       expect(data.url).toBe('https://example.com');
@@ -94,7 +95,7 @@ describe('Structured Data module', () => {
       });
 
       const el = document.head.querySelector('#jsonld-test');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.name).toBe('Test');
       expect(data.url).toBe('https://example.com');
@@ -112,7 +113,7 @@ describe('Structured Data module', () => {
       });
 
       const el = document.head.querySelector('#jsonld-test');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.author.name).toBe('John');
       expect(data.author.email).toBeUndefined();
@@ -125,7 +126,7 @@ describe('Structured Data module', () => {
       });
 
       const el = document.head.querySelector('#jsonld-test');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.items).toEqual(['one', 'two', 'three']);
     });
@@ -137,7 +138,7 @@ describe('Structured Data module', () => {
       });
 
       const el = document.head.querySelector('#jsonld-test');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.value).toBeUndefined();
     });
@@ -161,7 +162,7 @@ describe('Structured Data module', () => {
     });
 
     it('does nothing if id is null', () => {
-      expect(() => removeJsonLd(null)).not.toThrow();
+      expect(() => removeJsonLd(null as unknown as string)).not.toThrow();
     });
   });
 
@@ -204,7 +205,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-website');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('WebSite');
       expect(data.name).toBeTruthy();
       expect(data.url).toBeTruthy();
@@ -217,7 +218,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-organization');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('Organization');
       expect(data.name).toBeTruthy();
       expect(data.url).toBeTruthy();
@@ -227,7 +228,7 @@ describe('Structured Data module', () => {
       setSiteStructuredData();
 
       const el = document.head.querySelector('#jsonld-website');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.potentialAction).toBeTruthy();
       expect(data.potentialAction['@type']).toBe('SearchAction');
@@ -237,7 +238,7 @@ describe('Structured Data module', () => {
       setSiteStructuredData();
 
       const el = document.head.querySelector('#jsonld-website');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.publisher).toBeTruthy();
       expect(data.publisher['@type']).toBe('Person');
@@ -252,7 +253,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-home-page');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('CollectionPage');
       expect(data.name).toMatch(/Murphy's Laws/);
     });
@@ -261,7 +262,7 @@ describe('Structured Data module', () => {
       setHomeStructuredData();
 
       const el = document.head.querySelector('#jsonld-home-page');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.hasPart).toBeTruthy();
       expect(data.hasPart.length).toBe(2);
@@ -284,7 +285,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-browse-page');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('CollectionPage');
       expect(data.name).toMatch(/Browse Murphy's Laws/);
     });
@@ -293,7 +294,7 @@ describe('Structured Data module', () => {
       setBrowseStructuredData();
 
       const el = document.head.querySelector('#jsonld-browse-page');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.isPartOf).toBeTruthy();
       expect(data.isPartOf['@id']).toBeTruthy();
@@ -322,7 +323,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-law-article');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toEqual(['Article', 'Quotation']);
       expect(data.headline).toBe('Murphy\'s Law');
       expect(data.description).toBe('Anything that can go wrong, will.');
@@ -338,7 +339,7 @@ describe('Structured Data module', () => {
       setLawStructuredData(law);
 
       const el = document.head.querySelector('#jsonld-law-article');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.headline).toBe(law.text.slice(0, 120));
     });
@@ -354,7 +355,7 @@ describe('Structured Data module', () => {
       setLawStructuredData(law);
 
       const el = document.head.querySelector('#jsonld-law-article');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.author).toBeTruthy();
       expect(data.author.name).toBe('Edward Murphy');
@@ -370,13 +371,13 @@ describe('Structured Data module', () => {
       setLawStructuredData(law);
 
       const el = document.head.querySelector('#jsonld-law-article');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.author).toBeUndefined();
     });
 
     it('does nothing if law is null', () => {
-      setLawStructuredData(null);
+      setLawStructuredData(null as unknown as import('../src/types/app.d.ts').Law);
 
       const el = document.head.querySelector('#jsonld-law-article');
       expect(el).toBeFalsy();
@@ -401,7 +402,7 @@ describe('Structured Data module', () => {
       setLawStructuredData(law);
 
       const el = document.head.querySelector('#jsonld-law-article');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.dateModified).toBe('2024-01-01');
     });
@@ -417,7 +418,7 @@ describe('Structured Data module', () => {
       setLawStructuredData(law);
 
       const el = document.head.querySelector('#jsonld-law-article');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.speakable).toBeTruthy();
       expect(data.speakable['@type']).toBe('SpeakableSpecification');
@@ -443,7 +444,7 @@ describe('Structured Data module', () => {
 
       const el = document.head.querySelector('#jsonld-category-detail-itemlist');
       expect(el).toBeTruthy();
-      const data = JSON.parse((el as HTMLScriptElement).textContent);
+      const data = JSON.parse((el as HTMLScriptElement).textContent!);
       expect(data['@type']).toBe('ItemList');
       expect(data.name).toMatch(/Computers/);
       expect(data.numberOfItems).toBe(2);
@@ -459,7 +460,7 @@ describe('Structured Data module', () => {
       setCategoryItemListSchema({ categoryTitle: 'Test', categorySlug: 'test', laws });
 
       const el = document.head.querySelector('#jsonld-category-detail-itemlist');
-      const data = JSON.parse((el as HTMLScriptElement).textContent);
+      const data = JSON.parse((el as HTMLScriptElement).textContent!);
       expect(data.itemListElement[0].item.name).toMatch(/Murphy's Law #1/);
     });
   });
@@ -471,7 +472,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-calculator-sod');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('WebApplication');
       expect(data.applicationCategory).toBe('CalculatorApplication');
       expect(data.name).toMatch(/Sod's Law/);
@@ -481,7 +482,7 @@ describe('Structured Data module', () => {
       setSodCalculatorStructuredData();
 
       const el = document.head.querySelector('#jsonld-calculator-sod');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.description).toBeTruthy();
       expect(data.description).toMatch(/probability/);
@@ -498,7 +499,7 @@ describe('Structured Data module', () => {
       setSodCalculatorStructuredData();
 
       const el = document.head.querySelector('#jsonld-calculator-sod');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.speakable).toBeTruthy();
       expect(data.speakable['@type']).toBe('SpeakableSpecification');
@@ -511,7 +512,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-calculator-sod-howto');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('HowTo');
       expect(data.name).toMatch(/Sod's Law Calculator/);
       expect(data.step).toBeInstanceOf(Array);
@@ -528,7 +529,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-calculator-toast');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('WebApplication');
       expect(data.applicationCategory).toBe('CalculatorApplication');
       expect(data.name).toMatch(/Buttered Toast/);
@@ -538,7 +539,7 @@ describe('Structured Data module', () => {
       setToastCalculatorStructuredData();
 
       const el = document.head.querySelector('#jsonld-calculator-toast');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.description).toBeTruthy();
       expect(data.description).toMatch(/height|gravity|butter/);
@@ -555,7 +556,7 @@ describe('Structured Data module', () => {
       setToastCalculatorStructuredData();
 
       const el = document.head.querySelector('#jsonld-calculator-toast');
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
 
       expect(data.speakable).toBeTruthy();
       expect(data.speakable['@type']).toBe('SpeakableSpecification');
@@ -568,7 +569,7 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-calculator-toast-howto');
       expect(el).toBeTruthy();
 
-      const data = JSON.parse(el.textContent);
+      const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('HowTo');
       expect(data.name).toMatch(/Buttered Toast/);
       expect(data.step).toBeInstanceOf(Array);

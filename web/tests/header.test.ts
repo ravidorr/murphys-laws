@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Header } from '../src/components/header.js';
 import type { CleanableElement } from '../src/types/app.js';
 
@@ -104,9 +105,9 @@ describe('Header component', () => {
     document.body.appendChild(el);
     const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
-
+    expect(searchForm).toBeTruthy();
     searchInput.value = 'gravity';
-    searchForm.dispatchEvent(new Event('submit'));
+    searchForm!.dispatchEvent(new Event('submit'));
 
     expect(searchQuery).toEqual({ q: 'gravity' });
     document.body.removeChild(el);
@@ -121,7 +122,7 @@ describe('Header component', () => {
 
     const menuToggle = el.querySelector('#nav-menu-toggle');
     expect(menuToggle).toBeTruthy();
-    expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(menuToggle!.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('toggles navigation dropdown when clicking menu button', () => {
@@ -135,19 +136,19 @@ describe('Header component', () => {
 
     const menuToggle = el.querySelector('#nav-menu-toggle') as HTMLElement;
     const navDropdown = el.querySelector('#nav-dropdown');
-
+    expect(navDropdown).toBeTruthy();
     // Initially closed
-    expect(navDropdown.classList.contains('open')).toBe(false);
+    expect(navDropdown!.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
     // Click to open
     menuToggle.click();
-    expect(navDropdown.classList.contains('open')).toBe(true);
+    expect(navDropdown!.classList.contains('open')).toBe(true);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('true');
 
     // Click to close
     menuToggle.click();
-    expect(navDropdown.classList.contains('open')).toBe(false);
+    expect(navDropdown!.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
     if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
@@ -165,17 +166,17 @@ describe('Header component', () => {
 
     const menuToggle = el.querySelector('#nav-menu-toggle') as HTMLElement;
     const navDropdown = el.querySelector('#nav-dropdown');
-
+    expect(navDropdown).toBeTruthy();
     // Open the dropdown
     menuToggle.click();
-    expect(navDropdown.classList.contains('open')).toBe(true);
+    expect(navDropdown!.classList.contains('open')).toBe(true);
 
     // Click outside (on document body)
     const outsideDiv = document.createElement('div');
     document.body.appendChild(outsideDiv);
     outsideDiv.click();
 
-    expect(navDropdown.classList.contains('open')).toBe(false);
+    expect(navDropdown!.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
     if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
@@ -198,12 +199,12 @@ describe('Header component', () => {
 
     // Open the dropdown
     menuToggle.click();
-    expect(navDropdown.classList.contains('open')).toBe(true);
+    expect(navDropdown!.classList.contains('open')).toBe(true);
 
     // Click a nav item
     navItem.click();
 
-    expect(navDropdown.classList.contains('open')).toBe(false);
+    expect(navDropdown!.classList.contains('open')).toBe(false);
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
 
     if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
@@ -234,7 +235,7 @@ describe('Header component', () => {
     outsideDiv.click();
 
     // Dropdown should still be open since event listener was removed
-    expect(navDropdown.classList.contains('open')).toBe(true);
+    expect(navDropdown!.classList.contains('open')).toBe(true);
 
     document.body.removeChild(outsideDiv);
     document.body.removeChild(el);
@@ -251,9 +252,9 @@ describe('Header component', () => {
     document.body.appendChild(el);
     const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
-
+    expect(searchForm).toBeTruthy();
     searchInput.value = '  test query  ';
-    searchForm.dispatchEvent(new Event('submit'));
+    searchForm!.dispatchEvent(new Event('submit'));
 
     expect(searchQuery).toEqual({ q: 'test query' });
     document.body.removeChild(el);
@@ -270,9 +271,9 @@ describe('Header component', () => {
     document.body.appendChild(el);
     const searchInput = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
     const searchForm = el.querySelector('form[role="search"]');
-
+    expect(searchForm).toBeTruthy();
     searchInput.value = '   ';
-    searchForm.dispatchEvent(new Event('submit'));
+    searchForm!.dispatchEvent(new Event('submit'));
 
     expect(searchQuery).toEqual({ q: '' });
     document.body.removeChild(el);
@@ -294,7 +295,7 @@ describe('Header component', () => {
     searchInput.removeAttribute('aria-label');
 
     searchInput.value = 'test';
-    searchForm.dispatchEvent(new Event('submit'));
+    searchForm!.dispatchEvent(new Event('submit'));
 
     expect(searchQuery).toEqual({ q: 'test' });
     document.body.removeChild(el);
@@ -310,12 +311,13 @@ describe('Header component', () => {
 
     document.body.appendChild(el);
     const searchForm = el.querySelector('form[role="search"]');
+    expect(searchForm).toBeTruthy();
     const searchInput = el.querySelector('input') as HTMLInputElement | null;
 
     // Remove the input element
     searchInput!.remove();
 
-    searchForm.dispatchEvent(new Event('submit'));
+    searchForm!.dispatchEvent(new Event('submit'));
 
     expect(searchQuery).toEqual({ q: '' });
     document.body.removeChild(el);
@@ -348,7 +350,7 @@ describe('Header component', () => {
 
       const themeToggle = el.querySelector('#theme-toggle');
       expect(themeToggle).toBeTruthy();
-      expect(themeToggle.classList.contains('theme-toggle')).toBe(true);
+      expect(themeToggle!.classList.contains('theme-toggle')).toBe(true);
     });
 
     it('initializes theme on mount', () => {
@@ -369,7 +371,7 @@ describe('Header component', () => {
       });
 
       const themeToggle = el.querySelector('#theme-toggle');
-      expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Auto. Click for light mode');
+      expect(themeToggle!.getAttribute('aria-label')).toBe('Theme: Auto. Click for light mode');
     });
 
     it('sets initial tooltip based on current theme', () => {
@@ -380,8 +382,8 @@ describe('Header component', () => {
       });
 
       const themeToggle = el.querySelector('#theme-toggle');
-      expect(themeToggle.getAttribute('data-tooltip')).toBe('Auto mode');
-      expect(themeToggle.getAttribute('data-tooltip-pos')).toBe('bottom');
+      expect(themeToggle!.getAttribute('data-tooltip')).toBe('Auto mode');
+      expect(themeToggle!.getAttribute('data-tooltip-pos')).toBe('bottom');
     });
 
     it('cycles theme when toggle is clicked', () => {
@@ -394,7 +396,7 @@ describe('Header component', () => {
       document.body.appendChild(el);
       const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
-      themeToggle.click();
+      themeToggle!.click();
 
       expect(cycleTheme).toHaveBeenCalled();
 
@@ -419,9 +421,9 @@ describe('Header component', () => {
       document.body.appendChild(el);
       const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
-      themeToggle.click();
+      themeToggle!.click();
 
-      expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Light. Click for dark mode');
+      expect(themeToggle!.getAttribute('aria-label')).toBe('Theme: Light. Click for dark mode');
 
       if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
@@ -444,9 +446,9 @@ describe('Header component', () => {
       document.body.appendChild(el);
       const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
-      themeToggle.click();
+      themeToggle!.click();
 
-      expect(themeToggle.getAttribute('data-tooltip')).toBe('Light mode');
+      expect(themeToggle!.getAttribute('data-tooltip')).toBe('Light mode');
 
       if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
@@ -469,8 +471,8 @@ describe('Header component', () => {
         detail: { theme: 'dark', effectiveTheme: 'dark' }
       }));
 
-      expect(themeToggle.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
-      expect(themeToggle.getAttribute('data-tooltip')).toBe('Dark mode');
+      expect(themeToggle!.getAttribute('aria-label')).toBe('Theme: Dark. Click for system preference');
+      expect(themeToggle!.getAttribute('data-tooltip')).toBe('Dark mode');
 
       if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
@@ -492,7 +494,7 @@ describe('Header component', () => {
         detail: { theme: 'light', effectiveTheme: 'light' }
       }));
 
-      expect(themeToggle.getAttribute('data-tooltip')).toBe('Light mode');
+      expect(themeToggle!.getAttribute('data-tooltip')).toBe('Light mode');
 
       if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
@@ -509,7 +511,7 @@ describe('Header component', () => {
       const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       // Get initial label
-      const initialLabel = themeToggle.getAttribute('aria-label');
+      const initialLabel = themeToggle!.getAttribute('aria-label');
 
       // Call cleanup
       (el as CleanableElement).cleanup!();
@@ -521,7 +523,7 @@ describe('Header component', () => {
       }));
 
       // Label should not have changed since listener was removed
-      expect(themeToggle.getAttribute('aria-label')).toBe(initialLabel);
+      expect(themeToggle!.getAttribute('aria-label')).toBe(initialLabel);
 
       document.body.removeChild(el);
     });
@@ -537,11 +539,11 @@ describe('Header component', () => {
       const themeToggle = el.querySelector('#theme-toggle') as HTMLElement;
 
       // Remove the icon element
-      const icon = themeToggle.querySelector('.icon');
+      const icon = themeToggle!.querySelector('.icon');
       if (icon) icon.remove();
 
       // Should not throw when clicking
-      expect(() => themeToggle.click()).not.toThrow();
+      expect(() => themeToggle!.click()).not.toThrow();
 
       if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
@@ -550,7 +552,7 @@ describe('Header component', () => {
     it('handles missing theme toggle element gracefully', () => {
       // Mock querySelector to return null for #theme-toggle
       const originalQuerySelector = Element.prototype.querySelector;
-      Element.prototype.querySelector = function(selector) {
+      Element.prototype.querySelector = function(selector: string) {
         if (selector === '#theme-toggle') {
           return null;
         }
@@ -641,9 +643,9 @@ describe('Header component', () => {
         onNavigate: mockOnNavigate
       });
 
-      // Simulate suggestion selection
+      // Simulate suggestion selection (callback is set when SearchAutocomplete is invoked)
       if (onSelectCallback) {
-        onSelectCallback({ id: 123 });
+        (onSelectCallback as (suggestion: { id: number }) => void)({ id: 123 });
       }
 
       expect(mockOnNavigate).toHaveBeenCalledWith('law', '123');
@@ -684,7 +686,8 @@ describe('Header component', () => {
       });
 
       const favoritesLink = el.querySelector('[data-nav="favorites"]');
-      expect(favoritesLink.textContent.trim()).toBe('Browse My Favorites Laws');
+      expect(favoritesLink).toBeTruthy();
+      expect(favoritesLink!.textContent!.trim()).toBe('Browse My Favorites Laws');
     });
 
     it('favorites link appears after "Browse Laws by Category"', () => {
@@ -694,7 +697,7 @@ describe('Header component', () => {
       });
 
       const navItems = el.querySelectorAll('#nav-dropdown li');
-      const navTexts = Array.from(navItems).map((li) => li.textContent.trim());
+      const navTexts = Array.from(navItems).map((li) => (li.textContent ?? '').trim());
 
       const categoriesIndex = navTexts.findIndex((text) => text === 'Browse Laws by Category');
       const favoritesIndex = navTexts.findIndex((text) => text === 'Browse My Favorites Laws');
@@ -711,7 +714,8 @@ describe('Header component', () => {
       });
 
       const favoritesLink = el.querySelector('[data-nav="favorites"]');
-      expect(favoritesLink.getAttribute('href')).toBe('/favorites');
+      expect(favoritesLink).toBeTruthy();
+      expect(favoritesLink!.getAttribute('href')).toBe('/favorites');
     });
 
     it('clicking favorites link triggers onNavigate with "favorites"', () => {

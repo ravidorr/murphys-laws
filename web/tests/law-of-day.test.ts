@@ -1,4 +1,5 @@
-import { LawOfTheDay } from '@components/law-of-day.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { LawOfTheDay } from '../src/components/law-of-day.ts';
 import type { Law } from '../src/types/app.d.ts';
 import * as voting from '../src/utils/voting.js';
 import * as featureFlags from '../src/utils/feature-flags.js';
@@ -28,7 +29,7 @@ function createLocalThis(): () => LawOfTheDayContext {
 
   beforeEach(() => {
     Object.keys(context).forEach((key) => {
-      delete context[key];
+      delete (context as Record<string, unknown>)[key];
     });
   });
 
@@ -37,8 +38,8 @@ function createLocalThis(): () => LawOfTheDayContext {
 
 describe('LawOfTheDay component', () => {
   const local = createLocalThis();
-  let getUserVoteSpy;
-  let toggleVoteSpy;
+  let getUserVoteSpy: ReturnType<typeof vi.spyOn>;
+  let toggleVoteSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     getUserVoteSpy = vi.spyOn(voting, 'getUserVote').mockReturnValue(null);
@@ -71,12 +72,12 @@ describe('LawOfTheDay component', () => {
 
     const loading = el.querySelector('.loading-placeholder');
     expect(loading).toBeTruthy();
-    expect(loading.getAttribute('role')).toBe('status');
-    expect(loading.getAttribute('aria-label')).toBe('Loading Law of the Day');
+    expect(loading!.getAttribute('role')).toBe('status');
+    expect(loading!.getAttribute('aria-label')).toBe('Loading Law of the Day');
   });
 
   it('renders loading placeholder when law is undefined', () => {
-    const el = mountLaw(undefined);
+    const el = mountLaw(undefined as unknown as null);
 
     expect(el.querySelector('.loading-placeholder')).toBeTruthy();
   });
@@ -108,14 +109,14 @@ describe('LawOfTheDay component', () => {
     // Check for social share popover
     const shareWrapper = el.querySelector('.share-wrapper');
     expect(shareWrapper).toBeTruthy();
-    expect(shareWrapper.querySelector('.share-trigger')).toBeTruthy();
-    const popover = shareWrapper.querySelector('.share-popover');
+    expect(shareWrapper!.querySelector('.share-trigger')).toBeTruthy();
+    const popover = shareWrapper!.querySelector('.share-popover');
     expect(popover).toBeTruthy();
     // Check popover has share links
-    expect(popover.querySelector('[href*="facebook"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="linkedin"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="reddit"]')).toBeTruthy();
-    expect(popover.querySelector('[href*="mailto"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="facebook"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="linkedin"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="reddit"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
   it('handles upvote button click', async () => {
@@ -154,7 +155,8 @@ describe('LawOfTheDay component', () => {
 
     await vi.waitFor(() => {
       const upCount = el.querySelector('[data-vote="up"] .count-num');
-      expect(upCount.textContent).toBe('11');
+      expect(upCount).toBeTruthy();
+      expect(upCount!.textContent).toBe('11');
     });
   });
 
@@ -195,14 +197,14 @@ describe('LawOfTheDay component', () => {
     // Law of the Day should have data-law-id attribute on the link
     const lawLink = el.querySelector('[data-law-id]');
     expect(lawLink).toBeTruthy();
-    expect(lawLink.getAttribute('data-law-id')).toBe('1');
+    expect(lawLink!.getAttribute('data-law-id')).toBe('1');
   });
 
   it('navigates to law detail when clicking law link', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
-    let navigatedTo = null;
-    let navigatedParam = null;
-    const onNavigate = (page, param) => {
+    let navigatedTo: string | null = null;
+    let navigatedParam: string | undefined = undefined;
+    const onNavigate = (page: string, param?: string) => {
       navigatedTo = page;
       navigatedParam = param;
     };
@@ -236,8 +238,8 @@ describe('LawOfTheDay component', () => {
 
   it('navigates to browse when Browse All Laws button is clicked', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
-    let navigatedTo = null;
-    const onNavigate = (page) => {
+    let navigatedTo: string | null = null;
+    const onNavigate = (page: string) => {
       navigatedTo = page;
     };
 
@@ -270,7 +272,8 @@ describe('LawOfTheDay component', () => {
     const el = mountLaw(law);
 
     const upvoteBtn = el.querySelector('[data-vote="up"]');
-    expect(upvoteBtn.classList.contains('voted')).toBe(true);
+    expect(upvoteBtn).toBeTruthy();
+    expect(upvoteBtn!.classList.contains('voted')).toBe(true);
   });
 
   it('shows downvote state with voted class', () => {
@@ -280,7 +283,8 @@ describe('LawOfTheDay component', () => {
     const el = mountLaw(law);
 
     const downvoteBtn = el.querySelector('[data-vote="down"]');
-    expect(downvoteBtn.classList.contains('voted')).toBe(true);
+    expect(downvoteBtn).toBeTruthy();
+    expect(downvoteBtn!.classList.contains('voted')).toBe(true);
   });
 
   it('handles missing upvotes and downvotes gracefully', () => {
@@ -289,9 +293,10 @@ describe('LawOfTheDay component', () => {
 
     const upCount = el.querySelector('[data-vote="up"] .count-num');
     const downCount = el.querySelector('[data-vote="down"] .count-num');
-
-    expect(upCount.textContent).toBe('0');
-    expect(downCount.textContent).toBe('0');
+    expect(upCount).toBeTruthy();
+    expect(downCount).toBeTruthy();
+    expect(upCount!.textContent).toBe('0');
+    expect(downCount!.textContent).toBe('0');
   });
 
   it('stops event propagation when voting', async () => {
@@ -542,9 +547,9 @@ describe('LawOfTheDay component', () => {
 
   describe('favorites functionality', () => {
     const localThis = createLocalThis();
-    let isFavoritesEnabledSpy;
-    let isFavoriteSpy;
-    let toggleFavoriteSpy;
+    let isFavoritesEnabledSpy: ReturnType<typeof vi.spyOn>;
+    let isFavoriteSpy: ReturnType<typeof vi.spyOn>;
+    let toggleFavoriteSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
       isFavoritesEnabledSpy = vi.spyOn(featureFlags, 'isFavoritesEnabled').mockReturnValue(true);
@@ -579,7 +584,7 @@ describe('LawOfTheDay component', () => {
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
       expect(favoriteBtn).toBeTruthy();
-      expect(favoriteBtn.hasAttribute('hidden')).toBe(false);
+      expect(favoriteBtn!.hasAttribute('hidden')).toBe(false);
     });
 
     it('hides favorite button when feature is disabled', () => {
@@ -588,7 +593,8 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law);
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      expect(favoriteBtn.hasAttribute('hidden')).toBe(true);
+      expect(favoriteBtn).toBeTruthy();
+      expect(favoriteBtn!.hasAttribute('hidden')).toBe(true);
     });
 
     it('sets law-id attribute on favorite button', () => {
@@ -597,7 +603,8 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law);
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      expect(favoriteBtn.getAttribute('data-law-id')).toBe('42');
+      expect(favoriteBtn).toBeTruthy();
+      expect(favoriteBtn!.getAttribute('data-law-id')).toBe('42');
     });
 
     it('shows favorited state when law is already favorited', () => {
@@ -607,8 +614,9 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law);
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      expect(favoriteBtn.classList.contains('favorited')).toBe(true);
-      expect(favoriteBtn.getAttribute('aria-label')).toBe('Remove from favorites');
+      expect(favoriteBtn).toBeTruthy();
+      expect(favoriteBtn!.classList.contains('favorited')).toBe(true);
+      expect(favoriteBtn!.getAttribute('aria-label')).toBe('Remove from favorites');
     });
 
     it('shows filled heart icon when law is already favorited on init', () => {
@@ -618,9 +626,10 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law);
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      const icon = favoriteBtn.querySelector('svg[data-icon-name]');
+      expect(favoriteBtn).toBeTruthy();
+      const icon = favoriteBtn!.querySelector('svg[data-icon-name]');
       expect(icon).toBeTruthy();
-      expect(icon.getAttribute('data-icon-name')).toBe('heartFilled');
+      expect(icon!.getAttribute('data-icon-name')).toBe('heartFilled');
     });
 
     it('shows unfavorited state when law is not favorited', () => {
@@ -630,8 +639,9 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law);
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
-      expect(favoriteBtn.classList.contains('favorited')).toBe(false);
-      expect(favoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
+      expect(favoriteBtn).toBeTruthy();
+      expect(favoriteBtn!.classList.contains('favorited')).toBe(false);
+      expect(favoriteBtn!.getAttribute('aria-label')).toBe('Add to favorites');
     });
 
     it('toggles favorite when button is clicked', async () => {
@@ -642,7 +652,8 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law, { append: true });
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
-      favoriteBtn?.click();
+      expect(favoriteBtn).toBeTruthy();
+      favoriteBtn!.click();
 
       await vi.waitFor(() => {
         expect(toggleFavoriteSpy).toHaveBeenCalledWith({
@@ -661,11 +672,13 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law, { append: true });
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
-      favoriteBtn?.click();
+      expect(favoriteBtn).toBeTruthy();
+      favoriteBtn!.click();
 
       await vi.waitFor(() => {
-        expect(favoriteBtn?.classList.contains('favorited')).toBe(true);
-        expect(favoriteBtn.getAttribute('aria-label')).toBe('Remove from favorites');
+        expect(favoriteBtn).toBeTruthy();
+        expect(favoriteBtn!.classList.contains('favorited')).toBe(true);
+        expect(favoriteBtn!.getAttribute('aria-label')).toBe('Remove from favorites');
       });
     });
 
@@ -677,11 +690,13 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law, { append: true });
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
-      favoriteBtn?.click();
+      expect(favoriteBtn).toBeTruthy();
+      favoriteBtn!.click();
 
       await vi.waitFor(() => {
-        expect(favoriteBtn?.classList.contains('favorited')).toBe(false);
-        expect(favoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
+        expect(favoriteBtn).toBeTruthy();
+        expect(favoriteBtn!.classList.contains('favorited')).toBe(false);
+        expect(favoriteBtn!.getAttribute('aria-label')).toBe('Add to favorites');
       });
     });
 
@@ -693,7 +708,8 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law, { onNavigate, append: true });
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
-      favoriteBtn?.click();
+      expect(favoriteBtn).toBeTruthy();
+      favoriteBtn!.click();
 
       await new Promise(r => setTimeout(r, 10));
 
@@ -707,8 +723,9 @@ describe('LawOfTheDay component', () => {
       const el = mountLawForFavorites(law, { append: true });
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
-      favoriteBtn?.removeAttribute('data-law-id');
-      favoriteBtn?.click();
+      expect(favoriteBtn).toBeTruthy();
+      favoriteBtn!.removeAttribute('data-law-id');
+      favoriteBtn!.click();
 
       await new Promise(r => setTimeout(r, 10));
 

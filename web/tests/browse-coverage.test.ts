@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Browse } from '../src/views/browse.js';
 
 describe('Browse view - Coverage', () => {
-  let container;
+  let container: HTMLDivElement;
 
   beforeEach(() => {
     container = document.createElement('div');
@@ -35,7 +35,8 @@ describe('Browse view - Coverage', () => {
     
     // Widgets should be hidden because currentFilters.q is 'test'
     const widgets = el.querySelector('[data-widgets]');
-    expect(widgets.hasAttribute('hidden')).toBe(true);
+    expect(widgets).toBeTruthy();
+    expect(widgets!.hasAttribute('hidden')).toBe(true);
   });
 
   it('handles empty laws array in loadPage', async () => {
@@ -64,6 +65,7 @@ describe('Browse view - Coverage', () => {
     
     // Check if error state is shown in the correct list container
     const list = el.querySelector('#browse-laws-list');
-    expect(list.innerHTML).toContain('Ironically');
+    expect(list).toBeTruthy();
+    expect(list!.innerHTML).toContain('Ironically');
   });
 });

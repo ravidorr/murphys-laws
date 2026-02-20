@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
 describe('Footer component - Coverage', () => {
-  let originalReadyState;
-  let mainElement;
+  let originalReadyState: string;
+  let mainElement: HTMLElement;
 
   beforeEach(() => {
     originalReadyState = document.readyState;
@@ -148,10 +148,12 @@ describe('Footer component - Coverage', () => {
       configurable: true
     });
 
-    const originalIntersectionObserver = globalThis.IntersectionObserver;
-    const originalRequestIdleCallback = window.requestIdleCallback;
-    delete (window as Partial<Window>).requestIdleCallback;
-    delete globalThis.IntersectionObserver;
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const win = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
+    const originalIntersectionObserver = g.IntersectionObserver;
+    const originalRequestIdleCallback = win.requestIdleCallback;
+    win.requestIdleCallback = undefined;
+    g.IntersectionObserver = undefined;
 
     try {
       const el = Footer({ onNavigate: () => {} });
@@ -159,9 +161,9 @@ describe('Footer component - Coverage', () => {
       // which then uses setTimeout when requestIdleCallback is missing
       expect(el).toBeTruthy();
     } finally {
-      globalThis.IntersectionObserver = originalIntersectionObserver;
+      g.IntersectionObserver = originalIntersectionObserver;
       if (originalRequestIdleCallback !== undefined) {
-        window.requestIdleCallback = originalRequestIdleCallback;
+        win.requestIdleCallback = originalRequestIdleCallback;
       }
     }
   });
@@ -173,10 +175,12 @@ describe('Footer component - Coverage', () => {
       configurable: true
     });
 
-    const originalIntersectionObserver = globalThis.IntersectionObserver;
-    const originalRequestIdleCallback = window.requestIdleCallback;
-    delete (window as Partial<Window>).requestIdleCallback;
-    delete globalThis.IntersectionObserver;
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const win = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
+    const originalIntersectionObserver = g.IntersectionObserver;
+    const originalRequestIdleCallback = win.requestIdleCallback;
+    win.requestIdleCallback = undefined;
+    g.IntersectionObserver = undefined;
 
     vi.useFakeTimers();
     try {
@@ -186,9 +190,9 @@ describe('Footer component - Coverage', () => {
       expect(adSlot?.dataset.loaded).toBe('true');
     } finally {
       vi.useRealTimers();
-      globalThis.IntersectionObserver = originalIntersectionObserver;
+      g.IntersectionObserver = originalIntersectionObserver;
       if (originalRequestIdleCallback !== undefined) {
-        window.requestIdleCallback = originalRequestIdleCallback;
+        win.requestIdleCallback = originalRequestIdleCallback;
       }
     }
   });
@@ -212,8 +216,8 @@ describe('Footer component - Coverage', () => {
 
     Footer({ onNavigate: () => {} });
     
-    // Trigger with multiple entries
-    callback(
+    // Trigger with multiple entries (callback is assigned by IntersectionObserver constructor)
+    callback!(
       [
         { isIntersecting: false } as IntersectionObserverEntry,
         { isIntersecting: true } as IntersectionObserverEntry

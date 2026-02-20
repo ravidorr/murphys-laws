@@ -102,7 +102,7 @@ describe('AdSense Integration', () => {
 
   it('uses setTimeout fallback when requestIdleCallback is not available', () => {
     const originalRequestIdleCallback = window.requestIdleCallback;
-    delete window.requestIdleCallback;
+    (window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback }).requestIdleCallback = undefined;
 
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
 
@@ -166,7 +166,7 @@ describe('hasMinimumContent', () => {
     el.innerHTML = '<p>Text</p><div><span>More text</span></div>'.repeat(50);
 
     // Should count only "Text" and "More text" repeated, not the HTML tags
-    const textLength = el.textContent.replace(/\s+/g, ' ').trim().length;
+    const textLength = (el.textContent ?? '').replace(/\s+/g, ' ').trim().length;
     expect(hasMinimumContent(el)).toBe(textLength >= 500);
   });
 });

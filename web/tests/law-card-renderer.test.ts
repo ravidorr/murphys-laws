@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderLawCards, renderLawCard } from '../src/utils/law-card-renderer.js';
 import type { Law } from '../src/types/app.d.ts';
 
@@ -63,7 +64,7 @@ describe('law-card-renderer', () => {
     });
 
     it('handles law with null text', () => {
-      const law = { id: 1, title: 'Title Only', text: null, upvotes: 0, downvotes: 0 };
+      const law = { id: 1, title: 'Title Only', text: null, upvotes: 0, downvotes: 0 } as unknown as Law;
       const html = renderLawCard(law);
       
       expect(html).toContain('Title Only');
@@ -92,7 +93,7 @@ describe('law-card-renderer', () => {
     });
 
     it('handles search query with no title', () => {
-      const law = { id: 1, title: null, text: 'Something wrong here', upvotes: 0, downvotes: 0 };
+      const law = { id: 1, title: undefined, text: 'Something wrong here', upvotes: 0, downvotes: 0 };
       const html = renderLawCard(law, { searchQuery: 'wrong' });
       
       expect(html).toContain('mark');
@@ -201,19 +202,18 @@ describe('law-card-renderer', () => {
     });
 
     it('returns empty string for null input', () => {
-      const html = renderLawCards(null);
+      const html = renderLawCards(null as unknown as Law[]);
       expect(html).toBe('');
     });
 
     it('returns empty string for undefined input', () => {
-      const html = renderLawCards(undefined);
+      const html = renderLawCards(undefined as unknown as Law[]);
       expect(html).toBe('');
     });
 
     it('returns empty string for non-array input', () => {
-      const html = renderLawCards('not an array');
+      const html = renderLawCards('not an array' as unknown as Law[]);
       expect(html).toBe('');
     });
   });
 });
-

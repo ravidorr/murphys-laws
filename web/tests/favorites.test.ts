@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   isFavorite,
   getFavorites,
@@ -64,24 +65,24 @@ describe('Favorites Service', () => {
     });
 
     it('returns true when law is favorited', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(isFavorite(123)).toBe(true);
     });
 
     it('returns false for non-favorited law', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(isFavorite(999)).toBe(false);
     });
 
     it('handles string and number law IDs', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(isFavorite(123)).toBe(true);
       expect(isFavorite('123')).toBe(true);
     });
 
     it('returns false when feature is disabled', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(isFavorite(123)).toBe(false);
     });
   });
@@ -92,8 +93,8 @@ describe('Favorites Service', () => {
     });
 
     it('returns array of favorited laws', () => {
-      addFavorite(localThis.mockLaw);
-      addFavorite(localThis.mockLaw2);
+      addFavorite(localThis.mockLaw!);
+      addFavorite(localThis.mockLaw2!);
 
       const favorites = getFavorites();
       expect(favorites).toHaveLength(2);
@@ -111,12 +112,12 @@ describe('Favorites Service', () => {
 
       const favorites = getFavorites();
       // Second added (higher timestamp) should be first (newest)
-      expect(favorites[0].id).toBe(456);
-      expect(favorites[1].id).toBe(123);
+      expect(favorites[0]!.id).toBe(456);
+      expect(favorites[1]!.id).toBe(123);
     });
 
     it('returns empty array when feature is disabled', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       expect(getFavorites()).toEqual([]);
     });
@@ -141,15 +142,15 @@ describe('Favorites Service', () => {
     });
 
     it('returns correct count', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(getFavoritesCount()).toBe(1);
 
-      addFavorite(localThis.mockLaw2);
+      addFavorite(localThis.mockLaw2!);
       expect(getFavoritesCount()).toBe(2);
     });
 
     it('returns 0 when feature is disabled', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       expect(getFavoritesCount()).toBe(0);
     });
@@ -157,14 +158,14 @@ describe('Favorites Service', () => {
 
   describe('addFavorite', () => {
     it('adds law to favorites', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(isFavorite(123)).toBe(true);
     });
 
     it('stores law data correctly', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       const favorites = getFavorites();
-      expect(favorites[0]).toMatchObject({
+      expect(favorites[0]!).toMatchObject({
         id: 123,
         text: 'Test law text',
         title: 'Test Law',
@@ -172,7 +173,7 @@ describe('Favorites Service', () => {
         category_id: 1,
         category_slug: 'test-category',
       });
-      expect(favorites[0].savedAt).toBeDefined();
+      expect(favorites[0]!.savedAt).toBeDefined();
     });
 
     it('does nothing when law has no id', () => {
@@ -182,7 +183,7 @@ describe('Favorites Service', () => {
 
     it('does nothing when feature is disabled', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       // Re-enable to check storage
       vi.mocked(isFavoritesEnabled).mockReturnValue(true);
       expect(getFavoritesCount()).toBe(0);
@@ -194,28 +195,28 @@ describe('Favorites Service', () => {
       });
 
       // Should not throw
-      expect(() => addFavorite(localThis.mockLaw)).not.toThrow();
+      expect(() => addFavorite(localThis.mockLaw!)).not.toThrow();
 
       setItemSpy.mockRestore();
     });
 
     it('updates existing favorite if added again', () => {
-      addFavorite(localThis.mockLaw);
-      const originalSavedAt = getFavorites()[0].savedAt;
+      addFavorite(localThis.mockLaw!);
+      const originalSavedAt = getFavorites()[0]!.savedAt;
 
       // Wait a bit and add again
-      addFavorite({ ...localThis.mockLaw, text: 'Updated text' });
+      addFavorite({ ...localThis.mockLaw!, text: 'Updated text' });
 
       const favorites = getFavorites();
       expect(favorites).toHaveLength(1);
-      expect(favorites[0].text).toBe('Updated text');
-      expect(favorites[0].savedAt).toBeGreaterThanOrEqual(originalSavedAt);
+      expect(favorites[0]!.text).toBe('Updated text');
+      expect(favorites[0]!.savedAt).toBeGreaterThanOrEqual(originalSavedAt);
     });
   });
 
   describe('removeFavorite', () => {
     it('removes law from favorites', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       expect(isFavorite(123)).toBe(true);
 
       removeFavorite(123);
@@ -228,13 +229,13 @@ describe('Favorites Service', () => {
     });
 
     it('handles string and number law IDs', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       removeFavorite('123');
       expect(isFavorite(123)).toBe(false);
     });
 
     it('does nothing when feature is disabled', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       removeFavorite(123);
       // Re-enable to check storage
@@ -245,14 +246,14 @@ describe('Favorites Service', () => {
 
   describe('toggleFavorite', () => {
     it('adds favorite when not favorited and returns true', () => {
-      const result = toggleFavorite(localThis.mockLaw);
+      const result = toggleFavorite(localThis.mockLaw!);
       expect(result).toBe(true);
       expect(isFavorite(123)).toBe(true);
     });
 
     it('removes favorite when already favorited and returns false', () => {
-      addFavorite(localThis.mockLaw);
-      const result = toggleFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
+      const result = toggleFavorite(localThis.mockLaw!);
       expect(result).toBe(false);
       expect(isFavorite(123)).toBe(false);
     });
@@ -264,15 +265,15 @@ describe('Favorites Service', () => {
 
     it('returns false when feature is disabled', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
-      const result = toggleFavorite(localThis.mockLaw);
+      const result = toggleFavorite(localThis.mockLaw!);
       expect(result).toBe(false);
     });
   });
 
   describe('clearAllFavorites', () => {
     it('removes all favorites', () => {
-      addFavorite(localThis.mockLaw);
-      addFavorite(localThis.mockLaw2);
+      addFavorite(localThis.mockLaw!);
+      addFavorite(localThis.mockLaw2!);
       expect(getFavoritesCount()).toBe(2);
 
       clearAllFavorites();
@@ -280,7 +281,7 @@ describe('Favorites Service', () => {
     });
 
     it('does nothing when feature is disabled', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       clearAllFavorites();
       // Re-enable to check storage
@@ -301,13 +302,13 @@ describe('Favorites Service', () => {
 
   describe('exportFavorites', () => {
     it('returns JSON string of favorites', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       const exported = exportFavorites();
       const parsed = JSON.parse(exported);
 
       expect(Array.isArray(parsed)).toBe(true);
       expect(parsed).toHaveLength(1);
-      expect(parsed[0].id).toBe(123);
+      expect(parsed[0]!.id).toBe(123);
     });
 
     it('returns empty array JSON when no favorites', () => {
@@ -316,7 +317,7 @@ describe('Favorites Service', () => {
     });
 
     it('returns empty array JSON when feature is disabled', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       expect(exportFavorites()).toBe('[]');
     });
@@ -336,7 +337,7 @@ describe('Favorites Service', () => {
     });
 
     it('preserves existing favorites', () => {
-      addFavorite(localThis.mockLaw);
+      addFavorite(localThis.mockLaw!);
 
       const json = JSON.stringify([{ id: 100, text: 'Imported law' }]);
       importFavorites(json);

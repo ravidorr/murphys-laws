@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { Theme } from '../src/types/app.d.ts';
 import {
   getTheme,
@@ -130,7 +131,7 @@ describe('Theme utilities', () => {
     });
 
     it('returns "light" when auto and matchMedia is undefined', () => {
-      window.matchMedia = undefined;
+      (window as unknown as { matchMedia?: typeof window.matchMedia }).matchMedia = undefined;
       expect(getEffectiveTheme('auto')).toBe('light');
     });
   });
@@ -165,7 +166,7 @@ describe('Theme utilities', () => {
       applyTheme('dark');
 
       expect(handler).toHaveBeenCalled();
-      expect(handler.mock.calls[0][0].detail.theme).toBe('dark');
+      expect(handler.mock.calls[0]![0].detail.theme).toBe('dark');
 
       document.removeEventListener('themechange', handler);
     });
@@ -183,8 +184,8 @@ describe('Theme utilities', () => {
 
       applyTheme('auto');
 
-      expect(handler.mock.calls[0][0].detail.theme).toBe('auto');
-      expect(handler.mock.calls[0][0].detail.effectiveTheme).toBe('dark');
+      expect(handler.mock.calls[0]![0].detail.theme).toBe('auto');
+      expect(handler.mock.calls[0]![0].detail.effectiveTheme).toBe('dark');
 
       document.removeEventListener('themechange', handler);
     });
@@ -300,11 +301,11 @@ describe('Theme utilities', () => {
     });
 
     it('dispatches event when system preference changes to dark in auto mode', () => {
-      let changeHandler;
-      window.matchMedia = vi.fn().mockImplementation((query) => ({
+      let changeHandler: (() => void) | undefined;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
         matches: true, // System prefers dark
         media: query,
-        addEventListener: (event, handler) => { changeHandler = handler; },
+        addEventListener: (_event: string, handler: () => void) => { changeHandler = handler; },
         removeEventListener: vi.fn()
       }));
 
@@ -315,20 +316,20 @@ describe('Theme utilities', () => {
       document.addEventListener('themechange', eventHandler);
 
       // Simulate system preference change
-      changeHandler();
+      changeHandler!();
 
       expect(eventHandler).toHaveBeenCalled();
-      expect(eventHandler.mock.calls[0][0].detail.effectiveTheme).toBe('dark');
+      expect(eventHandler.mock.calls[0]![0].detail.effectiveTheme).toBe('dark');
 
       document.removeEventListener('themechange', eventHandler);
     });
 
     it('dispatches event when system preference changes to light in auto mode', () => {
-      let changeHandler;
-      window.matchMedia = vi.fn().mockImplementation((query) => ({
+      let changeHandler: (() => void) | undefined;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
         matches: false, // System prefers light
         media: query,
-        addEventListener: (event, handler) => { changeHandler = handler; },
+        addEventListener: (_event: string, handler: () => void) => { changeHandler = handler; },
         removeEventListener: vi.fn()
       }));
 
@@ -339,20 +340,20 @@ describe('Theme utilities', () => {
       document.addEventListener('themechange', eventHandler);
 
       // Simulate system preference change
-      changeHandler();
+      changeHandler!();
 
       expect(eventHandler).toHaveBeenCalled();
-      expect(eventHandler.mock.calls[0][0].detail.effectiveTheme).toBe('light');
+      expect(eventHandler.mock.calls[0]![0].detail.effectiveTheme).toBe('light');
 
       document.removeEventListener('themechange', eventHandler);
     });
 
     it('does not dispatch event when system preference changes but not in auto mode', () => {
-      let changeHandler;
-      window.matchMedia = vi.fn().mockImplementation((query) => ({
+      let changeHandler: (() => void) | undefined;
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
         matches: true,
         media: query,
-        addEventListener: (event, handler) => { changeHandler = handler; },
+        addEventListener: (_event: string, handler: () => void) => { changeHandler = handler; },
         removeEventListener: vi.fn()
       }));
 
@@ -366,7 +367,7 @@ describe('Theme utilities', () => {
       eventHandler.mockClear();
 
       // Simulate system preference change
-      changeHandler();
+      changeHandler!();
 
       // Should not have been called again since we're in dark mode, not auto
       expect(eventHandler).not.toHaveBeenCalled();

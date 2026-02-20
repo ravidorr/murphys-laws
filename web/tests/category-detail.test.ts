@@ -20,7 +20,7 @@ vi.mock('../src/utils/api.js', () => ({
   fetchAPI: vi.fn()
 }));
 vi.mock('../src/utils/law-card-renderer.js', () => ({
-  renderLawCards: vi.fn((laws) => laws.map(l => `<div>${l.title}</div>`).join(''))
+  renderLawCards: vi.fn((laws: { title?: string }[]) => laws.map((l: { title?: string }) => `<div>${l.title}</div>`).join(''))
 }));
 vi.mock('../src/modules/structured-data.js');
 vi.mock('../src/utils/icons.js', () => ({
@@ -88,7 +88,7 @@ describe('CategoryDetail view', () => {
     vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
         { id: 1, slug: 'technology', title: 'Technology', description: 'Tech truths: to err is human, to really foul things up requires a computer.' },
-        { id: 2, slug: 'work', title: 'Work', description: null }
+        { id: 2, slug: 'work', title: 'Work', description: undefined }
       ]
     });
   });
@@ -135,14 +135,14 @@ describe('CategoryDetail view', () => {
 
     const descEl = el.querySelector('#category-description');
     expect(descEl).toBeTruthy();
-    expect(descEl.textContent).toBe('Tech truths: to err is human, to really foul things up requires a computer.');
+    expect(descEl!.textContent).toBe('Tech truths: to err is human, to really foul things up requires a computer.');
   });
 
   it('displays fallback description when description is null', async () => {
     vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [
-        { id: 1, slug: 'technology', title: 'Technology', description: null },
-        { id: 2, slug: 'work', title: 'Work', description: null }
+        { id: 1, slug: 'technology', title: 'Technology', description: undefined },
+        { id: 2, slug: 'work', title: 'Work', description: undefined }
       ]
     });
 
@@ -151,7 +151,7 @@ describe('CategoryDetail view', () => {
 
     const descEl = el.querySelector('#category-description');
     expect(descEl).toBeTruthy();
-    expect(descEl.textContent).toBe('All laws within this category.');
+    expect(descEl!.textContent).toBe('All laws within this category.');
   });
 
   it('renders empty state when no laws found', async () => {
@@ -400,7 +400,8 @@ describe('CategoryDetail view', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const descEl = el.querySelector('#category-description');
-    expect(descEl.textContent).toBe('Digital doom: programs are obsolete when running.');
+    expect(descEl).toBeTruthy();
+    expect(descEl!.textContent).toBe('Digital doom: programs are obsolete when running.');
   });
 
   describe('sort controls', () => {
@@ -498,7 +499,7 @@ describe('CategoryDetail view', () => {
 
       const searchContainer = el.querySelector('#advanced-search-container');
       expect(searchContainer).toBeTruthy();
-      expect(searchContainer.querySelector('.test-advanced-search')).toBeTruthy();
+      expect(searchContainer!.querySelector('.test-advanced-search')).toBeTruthy();
     });
 
     it('initializes search with category pre-selected', async () => {
@@ -525,7 +526,7 @@ describe('CategoryDetail view', () => {
 
       // Simulate search with keyword
       const localThis = getLocalThis();
-      localThis.onSearch({ q: 'test', category_id: 1 });
+      localThis.onSearch!({ q: 'test', category_id: 1 });
 
       expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
         q: 'test',
@@ -544,7 +545,7 @@ describe('CategoryDetail view', () => {
 
       // Simulate clearing search
       const localThis = getLocalThis();
-      localThis.onSearch({});
+      localThis.onSearch!({});
 
       // Should still include the category_id
       expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
@@ -580,7 +581,7 @@ describe('CategoryDetail view', () => {
 
       // Simulate search with keyword
       const localThis = getLocalThis();
-      localThis.onSearch({ q: 'test keyword', category_id: 1 });
+      localThis.onSearch!({ q: 'test keyword', category_id: 1 });
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(renderLawCards).toHaveBeenCalledWith(
@@ -636,11 +637,12 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
+      expect(titleEl).toBeTruthy();
       // Only "Murphy's" should be in the accent span
-      expect(titleEl.innerHTML).toContain('<span class="accent-text">Murphy\'s</span>');
-      expect(titleEl.innerHTML).toContain('Alarm Clock Laws');
+      expect(titleEl!.innerHTML).toContain('<span class="accent-text">Murphy\'s</span>');
+      expect(titleEl!.innerHTML).toContain('Alarm Clock Laws');
       // Should NOT have the entire title wrapped
-      expect(titleEl.innerHTML).not.toContain('accent-text">Murphy\'s Alarm Clock');
+      expect(titleEl!.innerHTML).not.toContain('accent-text">Murphy\'s Alarm Clock');
     });
 
     it('wraps only first word in accent for titles NOT ending with Laws', async () => {
@@ -654,11 +656,12 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
+      expect(titleEl).toBeTruthy();
       // Only "Murphy's" should be in the accent span, and "'s Laws" should be appended
-      expect(titleEl.innerHTML).toContain('<span class="accent-text">Murphy\'s</span>');
-      expect(titleEl.innerHTML).toContain("4X4 Car Laws Section's Laws");
+      expect(titleEl!.innerHTML).toContain('<span class="accent-text">Murphy\'s</span>');
+      expect(titleEl!.innerHTML).toContain("4X4 Car Laws Section's Laws");
       // Should NOT have the entire original title wrapped in accent
-      expect(titleEl.innerHTML).not.toContain('accent-text">Murphy\'s 4X4 Car Laws Section\'s');
+      expect(titleEl!.innerHTML).not.toContain('accent-text">Murphy\'s 4X4 Car Laws Section\'s');
     });
 
     it('handles single word title ending with Laws', async () => {
@@ -672,8 +675,9 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
+      expect(titleEl).toBeTruthy();
       // Single word should be wrapped entirely
-      expect(titleEl.innerHTML).toContain('<span class="accent-text">Laws</span>');
+      expect(titleEl!.innerHTML).toContain('<span class="accent-text">Laws</span>');
     });
 
     it('handles single word title NOT ending with Laws', async () => {
@@ -687,9 +691,10 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const titleEl = el.querySelector('#category-detail-title');
+      expect(titleEl).toBeTruthy();
       // Single word should be wrapped with "'s Laws" appended
-      expect(titleEl.innerHTML).toContain('<span class="accent-text">Technology</span>');
-      expect(titleEl.innerHTML).toContain("'s Laws");
+      expect(titleEl!.innerHTML).toContain('<span class="accent-text">Technology</span>');
+      expect(titleEl!.innerHTML).toContain("'s Laws");
     });
   });
 

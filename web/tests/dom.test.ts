@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createErrorState, updateSocialMetaTags, updateMetaDescription } from '../src/utils/dom.ts';
 
 describe('DOM utilities', () => {
@@ -48,14 +49,14 @@ describe('DOM utilities', () => {
         image: 'https://test.com/image.png'
       });
 
-      expect(document.querySelector('meta[property="og:title"]').getAttribute('content')).toBe('Test Title');
-      expect(document.querySelector('meta[property="og:description"]').getAttribute('content')).toBe('Test Description');
-      expect(document.querySelector('meta[property="og:url"]').getAttribute('content')).toBe('https://test.com');
-      expect(document.querySelector('meta[property="og:image"]').getAttribute('content')).toBe('https://test.com/image.png');
-      expect(document.querySelector('meta[property="twitter:title"]').getAttribute('content')).toBe('Test Title');
-      expect(document.querySelector('meta[property="twitter:description"]').getAttribute('content')).toBe('Test Description');
-      expect(document.querySelector('meta[property="twitter:url"]').getAttribute('content')).toBe('https://test.com');
-      expect(document.querySelector('meta[property="twitter:image"]').getAttribute('content')).toBe('https://test.com/image.png');
+      expect(document.querySelector('meta[property="og:title"]')!.getAttribute('content')).toBe('Test Title');
+      expect(document.querySelector('meta[property="og:description"]')!.getAttribute('content')).toBe('Test Description');
+      expect(document.querySelector('meta[property="og:url"]')!.getAttribute('content')).toBe('https://test.com');
+      expect(document.querySelector('meta[property="og:image"]')!.getAttribute('content')).toBe('https://test.com/image.png');
+      expect(document.querySelector('meta[property="twitter:title"]')!.getAttribute('content')).toBe('Test Title');
+      expect(document.querySelector('meta[property="twitter:description"]')!.getAttribute('content')).toBe('Test Description');
+      expect(document.querySelector('meta[property="twitter:url"]')!.getAttribute('content')).toBe('https://test.com');
+      expect(document.querySelector('meta[property="twitter:image"]')!.getAttribute('content')).toBe('https://test.com/image.png');
       expect(document.title).toBe('Test Title');
     });
 
@@ -66,8 +67,8 @@ describe('DOM utilities', () => {
         description: 'New Description'
       });
 
-      expect(document.querySelector('meta[property="og:title"]').getAttribute('content')).toBe('New Title');
-      expect(document.querySelector('meta[property="og:description"]').getAttribute('content')).toBe('New Description');
+      expect(document.querySelector('meta[property="og:title"]')!.getAttribute('content')).toBe('New Title');
+      expect(document.querySelector('meta[property="og:description"]')!.getAttribute('content')).toBe('New Description');
       expect(document.title).toBe('New Title');
     });
 
@@ -85,8 +86,9 @@ describe('DOM utilities', () => {
     });
 
     it('does nothing when document is undefined (SSR)', () => {
-      const savedDocument = globalThis.document;
-      delete globalThis.document;
+      const g = globalThis as unknown as { document?: Document };
+      const savedDocument = g.document;
+      g.document = undefined;
 
       expect(() => {
         updateSocialMetaTags({
@@ -94,18 +96,18 @@ describe('DOM utilities', () => {
         });
       }).not.toThrow();
 
-      globalThis.document = savedDocument;
+      g.document = savedDocument;
     });
 
     it('skips updating when value is missing', () => {
       document.head.innerHTML = '<meta property="og:title" content="Original">';
       
       updateSocialMetaTags({
-        title: null,
+        title: undefined,
         description: undefined
       });
 
-      expect(document.querySelector('meta[property="og:title"]').getAttribute('content')).toBe('Original');
+      expect(document.querySelector('meta[property="og:title"]')!.getAttribute('content')).toBe('Original');
     });
   });
 
@@ -121,7 +123,7 @@ describe('DOM utilities', () => {
     it('updates the meta description content', () => {
       updateMetaDescription('New description');
 
-      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('New description');
+      expect(document.querySelector('meta[name="description"]')!.getAttribute('content')).toBe('New description');
     });
 
     it('handles missing meta tag gracefully', () => {
@@ -135,30 +137,31 @@ describe('DOM utilities', () => {
     it('does nothing when description is empty', () => {
       updateMetaDescription('');
 
-      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('Original description');
+      expect(document.querySelector('meta[name="description"]')!.getAttribute('content')).toBe('Original description');
     });
 
     it('does nothing when description is null', () => {
-      updateMetaDescription(null);
+      updateMetaDescription(null as unknown as string);
 
-      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('Original description');
+      expect(document.querySelector('meta[name="description"]')!.getAttribute('content')).toBe('Original description');
     });
 
     it('does nothing when description is undefined', () => {
-      updateMetaDescription(undefined);
+      updateMetaDescription(undefined as unknown as string);
 
-      expect(document.querySelector('meta[name="description"]').getAttribute('content')).toBe('Original description');
+      expect(document.querySelector('meta[name="description"]')!.getAttribute('content')).toBe('Original description');
     });
 
     it('does nothing when document is undefined (SSR)', () => {
-      const savedDocument = globalThis.document;
-      delete globalThis.document;
+      const g = globalThis as unknown as { document?: Document };
+      const savedDocument = g.document;
+      g.document = undefined;
 
       expect(() => {
         updateMetaDescription('Test description');
       }).not.toThrow();
 
-      globalThis.document = savedDocument;
+      g.document = savedDocument;
     });
   });
 });

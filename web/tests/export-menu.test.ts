@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock export context
 vi.mock('../src/utils/export-context.js', () => ({
@@ -32,6 +32,7 @@ vi.mock('../src/utils/icons.js', () => ({
 }));
 
 import type { CleanableElement } from '../src/types/app.js';
+import type { ExportContent } from '../src/utils/export-context.js';
 import { ExportMenu } from '../src/components/export-menu.js';
 import {
   getExportContent,
@@ -45,8 +46,14 @@ import {
   exportToText
 } from '../src/utils/export.js';
 
+interface ExportMenuLocalThis {
+  container: HTMLDivElement | null;
+  mockContent: ExportContent | null;
+  subscribeCallback: ((content: ExportContent | null) => void) | null;
+}
+
 describe('Export Menu Component', () => {
-  const localThis = {
+  const localThis: ExportMenuLocalThis = {
     container: null,
     mockContent: null,
     subscribeCallback: null,
@@ -60,8 +67,8 @@ describe('Export Menu Component', () => {
       type: 'laws',
       title: 'Test Laws',
       data: [{ id: 1, text: 'Test law' }]
-    };
-    
+    } as ExportContent;
+
     vi.mocked(getExportContent).mockReturnValue(localThis.mockContent);
     vi.mocked(getAvailableFormats).mockReturnValue(['pdf', 'csv', 'md', 'txt']);
     vi.mocked(subscribeToExportContent).mockImplementation((callback) => {
@@ -75,8 +82,8 @@ describe('Export Menu Component', () => {
   });
 
   afterEach(() => {
-    if (localThis.container && localThis.container.parentNode) {
-      document.body.removeChild(localThis.container);
+    if (localThis.container?.parentNode) {
+      document.body.removeChild(localThis.container!);
     }
     localThis.subscribeCallback = null;
   });
@@ -84,7 +91,8 @@ describe('Export Menu Component', () => {
   describe('Rendering', () => {
     it('renders export button with download icon', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      expect(localThis.container).toBeTruthy();
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
       expect(button).toBeTruthy();
@@ -93,7 +101,7 @@ describe('Export Menu Component', () => {
 
     it('renders dropdown menu (hidden by default)', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
       expect(dropdown).toBeTruthy();
@@ -104,7 +112,7 @@ describe('Export Menu Component', () => {
       vi.mocked(getAvailableFormats).mockReturnValue(['pdf', 'csv', 'md', 'txt']);
 
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const items = menu.querySelectorAll('.export-dropdown-item');
       expect(items).toHaveLength(4);
@@ -114,7 +122,7 @@ describe('Export Menu Component', () => {
       vi.mocked(getAvailableFormats).mockReturnValue(['pdf', 'md', 'txt']);
 
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const items = menu.querySelectorAll('.export-dropdown-item');
       expect(items).toHaveLength(3);
@@ -126,7 +134,7 @@ describe('Export Menu Component', () => {
       vi.mocked(getAvailableFormats).mockReturnValue([]);
 
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       expect(button).toBeTruthy();
@@ -135,7 +143,7 @@ describe('Export Menu Component', () => {
 
     it('enables button when export content available', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       expect(button).toBeTruthy();
@@ -146,7 +154,7 @@ describe('Export Menu Component', () => {
   describe('Dropdown behavior', () => {
     it('opens dropdown on button click', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -160,7 +168,7 @@ describe('Export Menu Component', () => {
 
     it('closes dropdown on outside click', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -179,7 +187,7 @@ describe('Export Menu Component', () => {
 
     it('closes dropdown on Escape key', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -198,7 +206,7 @@ describe('Export Menu Component', () => {
 
     it('sets aria-expanded correctly', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       expect(button).toBeTruthy();
@@ -216,7 +224,7 @@ describe('Export Menu Component', () => {
   describe('Format selection', () => {
     it('calls exportToPDF when PDF option clicked', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const pdfOption = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
@@ -230,7 +238,7 @@ describe('Export Menu Component', () => {
 
     it('calls exportToCSV when CSV option clicked', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const csvOption = menu.querySelector('[data-format="csv"]') as HTMLElement | null;
@@ -244,7 +252,7 @@ describe('Export Menu Component', () => {
 
     it('calls exportToMarkdown when Markdown option clicked', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const mdOption = menu.querySelector('[data-format="md"]') as HTMLElement | null;
@@ -258,7 +266,7 @@ describe('Export Menu Component', () => {
 
     it('calls exportToText when Text option clicked', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const txtOption = menu.querySelector('[data-format="txt"]') as HTMLElement | null;
@@ -272,7 +280,7 @@ describe('Export Menu Component', () => {
 
     it('does not export when content is null', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const pdfOption = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
@@ -291,7 +299,7 @@ describe('Export Menu Component', () => {
 
     it('closes dropdown after selection', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -312,7 +320,7 @@ describe('Export Menu Component', () => {
   describe('Keyboard navigation', () => {
     it('moves focus with Arrow Down', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -331,7 +339,7 @@ describe('Export Menu Component', () => {
 
     it('moves focus with Arrow Up', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -350,7 +358,7 @@ describe('Export Menu Component', () => {
 
     it('wraps focus at boundaries (down)', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -369,7 +377,7 @@ describe('Export Menu Component', () => {
 
     it('wraps focus at boundaries (up)', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -388,7 +396,7 @@ describe('Export Menu Component', () => {
 
     it('selects item on Enter', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -407,7 +415,7 @@ describe('Export Menu Component', () => {
 
     it('selects item on Space', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -426,7 +434,7 @@ describe('Export Menu Component', () => {
 
     it('closes dropdown on Escape and focuses toggle', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -446,7 +454,7 @@ describe('Export Menu Component', () => {
 
     it('closes dropdown on Tab key', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
@@ -475,7 +483,7 @@ describe('Export Menu Component', () => {
 
     it('updates available formats when content changes', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       // Initially 4 formats
       expect(menu.querySelectorAll('.export-dropdown-item')).toHaveLength(4);
@@ -490,7 +498,7 @@ describe('Export Menu Component', () => {
 
       // Trigger the callback
       if (localThis.subscribeCallback) {
-        localThis.subscribeCallback({ type: 'content', title: 'About', data: 'Markdown' });
+        localThis.subscribeCallback!({ type: 'content', title: 'About', data: 'Markdown' });
       }
 
       expect(menu.querySelectorAll('.export-dropdown-item')).toHaveLength(3);
@@ -498,7 +506,7 @@ describe('Export Menu Component', () => {
 
     it('disables when content cleared', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
       expect(button).toBeTruthy();
@@ -509,7 +517,7 @@ describe('Export Menu Component', () => {
       vi.mocked(getExportContent).mockReturnValue(null);
 
       if (localThis.subscribeCallback) {
-        localThis.subscribeCallback(null);
+        localThis.subscribeCallback!(null);
       }
 
       expect(button!.disabled).toBe(true);
@@ -519,7 +527,7 @@ describe('Export Menu Component', () => {
   describe('Accessibility', () => {
     it('button has aria-label', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
       expect(button).toBeTruthy();
@@ -528,7 +536,7 @@ describe('Export Menu Component', () => {
 
     it('button has aria-haspopup="true"', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
       expect(button).toBeTruthy();
@@ -537,7 +545,7 @@ describe('Export Menu Component', () => {
 
     it('button has aria-expanded attribute', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const button = menu.querySelector('#export-toggle');
       expect(button).toBeTruthy();
@@ -546,7 +554,7 @@ describe('Export Menu Component', () => {
 
     it('dropdown has role="menu"', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const dropdown = menu.querySelector('#export-dropdown');
       expect(dropdown).toBeTruthy();
@@ -555,7 +563,7 @@ describe('Export Menu Component', () => {
 
     it('menu items have role="menuitem"', () => {
       const menu = ExportMenu();
-      localThis.container.appendChild(menu);
+      localThis.container!.appendChild(menu);
 
       const items = menu.querySelectorAll('.export-dropdown-item');
       items.forEach(item => {

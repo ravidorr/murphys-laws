@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest';
+import type { Attribution } from '../src/types/app.d.ts';
 import { firstAttributionLine, renderAttribution, renderAttributionsList } from '../src/utils/attribution.ts';
 
 describe('Attribution utilities', () => {
@@ -11,21 +13,21 @@ describe('Attribution utilities', () => {
     });
 
     it('renders email link', () => {
-      const att = { name: 'John', contact_type: 'email', contact_value: 'john@example.com' };
+      const att: Attribution = { name: 'John', contact_type: 'email', contact_value: 'john@example.com' };
       const result = renderAttribution(att);
       expect(result).toContain('mailto:john@example.com');
       expect(result).toContain('John');
     });
 
     it('renders URL link', () => {
-      const att = { name: 'John', contact_type: 'url', contact_value: 'https://example.com' };
+      const att: Attribution = { name: 'John', contact_type: 'url', contact_value: 'https://example.com' };
       const result = renderAttribution(att);
       expect(result).toContain('href="https://example.com"');
       expect(result).toContain('John');
     });
 
     it('falls back to name only for invalid URL', () => {
-      const att = { name: 'John', contact_type: 'url', contact_value: 'javascript:alert(1)' };
+      const att: Attribution = { name: 'John', contact_type: 'url', contact_value: 'javascript:alert(1)' };
       const result = renderAttribution(att);
       expect(result).toBe('John');
       expect(result).not.toContain('href');
@@ -89,7 +91,7 @@ describe('Attribution utilities', () => {
 
     it('formats name with email', () => {
       const law = {
-        attributions: [{ name: 'John Doe', contact_type: 'email', contact_value: 'john@example.com' }]
+        attributions: [{ name: 'John Doe', contact_type: 'email' as const, contact_value: 'john@example.com' }]
       };
       const result = firstAttributionLine(law);
       expect(result).toContain('Sent by');
@@ -99,7 +101,7 @@ describe('Attribution utilities', () => {
 
     it('formats name with URL', () => {
       const law = {
-        attributions: [{ name: 'John Doe', contact_type: 'url', contact_value: 'https://example.com' }]
+        attributions: [{ name: 'John Doe', contact_type: 'url' as const, contact_value: 'https://example.com' }]
       };
       const result = firstAttributionLine(law);
       expect(result).toContain('John Doe');

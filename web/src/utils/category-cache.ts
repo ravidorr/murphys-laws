@@ -57,16 +57,19 @@ export function setCachedCategories(categories: Category[]): void {
   }
 }
 
+/** Attribution cache entry: string (name), legacy object with name, or null (filtered out) */
+export type CachedAttribution = string | { name?: string } | null;
+
 /**
  * Get cached attributions from localStorage
  * @returns {Array|null} Cached attributions or null if expired/missing/outdated
  */
-export function getCachedAttributions(): string[] | null {
+export function getCachedAttributions(): CachedAttribution[] | null {
   try {
     const cached = localStorage.getItem(ATTRIBUTION_CACHE_KEY);
     if (!cached) return null;
 
-    const { version, data, timestamp } = JSON.parse(cached) as { version?: number; data: string[]; timestamp: number };
+    const { version, data, timestamp } = JSON.parse(cached) as { version?: number; data: CachedAttribution[]; timestamp: number };
     const cacheVersion = version ?? 0; // Backward compatibility for old caches
     const now = Date.now();
 
@@ -90,9 +93,9 @@ export function getCachedAttributions(): string[] | null {
 
 /**
  * Cache attributions in localStorage
- * @param {Array} attributions - Attributions array to cache
+ * @param {Array} attributions - Attributions array (strings or objects with name)
  */
-export function setCachedAttributions(attributions: string[]): void {
+export function setCachedAttributions(attributions: CachedAttribution[]): void {
   try {
     const cacheData = {
       version: CACHE_VERSION,
@@ -119,4 +122,3 @@ export function deferUntilIdle(callback: () => void, timeout = 2000): void {
     setTimeout(callback, 0);
   }
 }
-

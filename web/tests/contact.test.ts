@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { Contact } from '../src/views/contact.js';
 
 describe('Contact page', () => {
@@ -83,7 +84,8 @@ describe('Contact page', () => {
     });
 
     const article = el.querySelector('article');
-    article.click();
+    expect(article).toBeTruthy();
+    article!.click();
     expect(navigated).toBe('');
   });
 

@@ -1,16 +1,17 @@
-import { Examples } from '@views/examples.js';
-import * as markdownContent from '@utils/markdown-content.js';
-import * as structuredData from '@modules/structured-data.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Examples } from '../src/views/examples.js';
+import * as markdownContent from '../src/utils/markdown-content.js';
+import * as structuredData from '../src/modules/structured-data.js';
 import * as ads from '../src/utils/ads.js';
 import * as exportContext from '../src/utils/export-context.js';
-import * as dom from '@utils/dom.js';
+import * as dom from '../src/utils/dom.js';
 
-vi.mock('@utils/markdown-content.js', () => ({
+vi.mock('../src/utils/markdown-content.js', () => ({
   getPageContent: vi.fn().mockReturnValue('<article><h1>Examples</h1><p>Content</p></article>'),
   getRawMarkdownContent: vi.fn().mockReturnValue('# Examples\n\nContent')
 }));
 
-vi.mock('@modules/structured-data.js', () => ({
+vi.mock('../src/modules/structured-data.js', () => ({
   setJsonLd: vi.fn()
 }));
 
@@ -24,14 +25,14 @@ vi.mock('../src/utils/export-context.js', () => ({
   ContentType: { CONTENT: 'CONTENT' }
 }));
 
-vi.mock('@utils/dom.js', () => ({
+vi.mock('../src/utils/dom.js', () => ({
   updateMetaDescription: vi.fn()
 }));
 
 describe('Examples view', () => {
-  const localThis = {
+  const localThis: { el: HTMLDivElement | null; originalTitle: string } = {
     el: null,
-    originalTitle: null,
+    originalTitle: ''
   };
 
   beforeEach(() => {
@@ -43,8 +44,8 @@ describe('Examples view', () => {
     if (localThis.el?.parentNode) {
       localThis.el.parentNode.removeChild(localThis.el);
     }
-    if (localThis.el?.cleanup) {
-      localThis.el.cleanup();
+    if (localThis.el && 'cleanup' in localThis.el && typeof (localThis.el as unknown as { cleanup: () => void }).cleanup === 'function') {
+      (localThis.el as unknown as { cleanup: () => void }).cleanup();
     }
     localThis.el = null;
     document.title = localThis.originalTitle;
@@ -54,8 +55,8 @@ describe('Examples view', () => {
     localThis.el = Examples();
 
     expect(localThis.el).toBeTruthy();
-    expect(localThis.el.className).toContain('container');
-    expect(localThis.el.className).toContain('content-page');
+    expect(localThis.el!.className).toContain('container');
+    expect(localThis.el!.className).toContain('content-page');
   });
 
   it('sets the page title', () => {
@@ -77,13 +78,13 @@ describe('Examples view', () => {
     localThis.el = Examples();
 
     expect(markdownContent.getPageContent).toHaveBeenCalledWith('examples');
-    expect(localThis.el.innerHTML).toContain('Examples');
+    expect(localThis.el!.innerHTML).toContain('Examples');
   });
 
   it('triggers AdSense', () => {
     localThis.el = Examples();
 
-    expect(ads.triggerAdSense).toHaveBeenCalledWith(localThis.el);
+    expect(ads.triggerAdSense).toHaveBeenCalledWith(localThis.el!);
   });
 
   it('sets export content', () => {
@@ -116,13 +117,13 @@ describe('Examples view', () => {
   it('handles navigation clicks', () => {
     const onNavigateMock = vi.fn();
     localThis.el = Examples({ onNavigate: onNavigateMock });
-    document.body.appendChild(localThis.el);
+    document.body.appendChild(localThis.el!);
 
     // Create a navigation element
     const navLink = document.createElement('a');
     navLink.setAttribute('data-nav', 'home');
     navLink.textContent = 'Home';
-    localThis.el.appendChild(navLink);
+    localThis.el!.appendChild(navLink);
 
     // Click the navigation link
     navLink.click();
@@ -132,11 +133,11 @@ describe('Examples view', () => {
 
   it('does not navigate when onNavigate is not provided', () => {
     localThis.el = Examples(); // No onNavigate
-    document.body.appendChild(localThis.el);
+    document.body.appendChild(localThis.el!);
 
     const navLink = document.createElement('a');
     navLink.setAttribute('data-nav', 'home');
-    localThis.el.appendChild(navLink);
+    localThis.el!.appendChild(navLink);
 
     // Should not throw
     expect(() => navLink.click()).not.toThrow();
@@ -145,10 +146,10 @@ describe('Examples view', () => {
   it('does not navigate when clicking non-nav elements', () => {
     const onNavigateMock = vi.fn();
     localThis.el = Examples({ onNavigate: onNavigateMock });
-    document.body.appendChild(localThis.el);
+    document.body.appendChild(localThis.el!);
 
     // Click directly on the container (not a nav element)
-    localThis.el.click();
+    localThis.el!.click();
 
     expect(onNavigateMock).not.toHaveBeenCalled();
   });
@@ -161,7 +162,7 @@ describe('Examples view', () => {
     const textNode = document.createTextNode('text');
     const event = new MouseEvent('click', { bubbles: true });
     Object.defineProperty(event, 'target', { value: textNode });
-    localThis.el.dispatchEvent(event);
+    localThis.el!.dispatchEvent(event);
 
     expect(onNavigateMock).not.toHaveBeenCalled();
   });
@@ -169,8 +170,9 @@ describe('Examples view', () => {
   it('clears export content on cleanup', () => {
     localThis.el = Examples();
 
-    expect(localThis.el.cleanup).toBeDefined();
-    localThis.el.cleanup();
+    expect(localThis.el).toBeTruthy();
+    expect((localThis.el as { cleanup?: () => void }).cleanup).toBeDefined();
+    (localThis.el as unknown as { cleanup: () => void }).cleanup();
 
     expect(exportContext.clearExportContent).toHaveBeenCalled();
   });
@@ -178,12 +180,12 @@ describe('Examples view', () => {
   it('does not navigate when navTarget is empty', () => {
     const onNavigateMock = vi.fn();
     localThis.el = Examples({ onNavigate: onNavigateMock });
-    document.body.appendChild(localThis.el);
+    document.body.appendChild(localThis.el!);
 
     // Create nav element with empty data-nav
     const navLink = document.createElement('a');
     navLink.setAttribute('data-nav', '');
-    localThis.el.appendChild(navLink);
+    localThis.el!.appendChild(navLink);
 
     navLink.click();
 

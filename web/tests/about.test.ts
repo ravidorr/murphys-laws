@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { About } from '../src/views/about.js';
 
 describe('About page', () => {
@@ -108,8 +109,8 @@ describe('About page', () => {
 
     const ccLink = el.querySelector('a[href*="creativecommons.org"]');
     expect(ccLink).toBeTruthy();
-    expect(ccLink.getAttribute('target')).toBe('_blank');
-    expect(ccLink.getAttribute('rel')).toBe('noopener');
+    expect(ccLink!.getAttribute('target')).toBe('_blank');
+    expect(ccLink!.getAttribute('rel')).toBe('noopener');
   });
 
   it('prevents default behavior when clicking nav links', () => {
@@ -118,6 +119,7 @@ describe('About page', () => {
     });
 
     const contactLink = el.querySelector('[data-nav="contact"]');
+    expect(contactLink).toBeTruthy();
     const event = new MouseEvent('click', { bubbles: true, cancelable: true });
     const preventDefaultSpy = { called: false };
 
@@ -125,7 +127,7 @@ describe('About page', () => {
       value: () => { preventDefaultSpy.called = true; }
     });
 
-    contactLink.dispatchEvent(event);
+    contactLink!.dispatchEvent(event);
     expect(preventDefaultSpy.called).toBe(true);
   });
 
@@ -136,7 +138,8 @@ describe('About page', () => {
     });
 
     const article = el.querySelector('article');
-    article.click();
+    expect(article).toBeTruthy();
+    article!.click();
     expect(navigated).toBe('');
   });
 
@@ -157,7 +160,7 @@ describe('About page', () => {
 
     const blockquote = el.querySelector('blockquote');
     expect(blockquote).toBeTruthy();
-    expect(blockquote.textContent).toMatch(/Anything that can go wrong/);
+    expect(blockquote!.textContent).toMatch(/Anything that can go wrong/);
   });
 
   it('does not trigger onNavigate when clicking non-HTMLElement target', () => {

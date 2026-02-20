@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { Privacy } from '../src/views/privacy.js';
 
 describe('Privacy page', () => {
@@ -137,7 +138,8 @@ describe('Privacy page', () => {
       value: () => { preventDefaultSpy.called = true; }
     });
 
-    contactLink.dispatchEvent(event);
+    expect(contactLink).toBeTruthy();
+    contactLink!.dispatchEvent(event);
     expect(preventDefaultSpy.called).toBe(true);
   });
 
@@ -148,7 +150,8 @@ describe('Privacy page', () => {
     });
 
     const article = el.querySelector('article');
-    article.click();
+    expect(article).toBeTruthy();
+    article!.click();
     expect(navigated).toBe('');
   });
 

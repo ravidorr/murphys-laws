@@ -19,19 +19,18 @@ describe('third-party utils coverage', () => {
   });
 
   it('handles loadScript when document is undefined (SSR)', async () => {
-    // Simulate SSR by temporarily hiding document/window
-    const originalDoc = globalThis.document;
-    const originalWin = globalThis.window;
-    
-    delete globalThis.document;
-    delete globalThis.window;
-    
+    const g = globalThis as unknown as { document?: Document; window?: Window };
+    const originalDoc = g.document;
+    const originalWin = g.window;
+    g.document = undefined;
+    g.window = undefined;
+
     try {
       const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
       expect(() => initAnalyticsBootstrap()).not.toThrow();
     } finally {
-      globalThis.document = originalDoc;
-      globalThis.window = originalWin;
+      g.document = originalDoc;
+      g.window = originalWin;
     }
   });
 
@@ -124,7 +123,7 @@ describe('third-party utils coverage', () => {
       const script = document.querySelector('script[src*="googletagmanager"]');
       expect(script).toBeTruthy();
     } finally {
-      delete globalThis.window.requestIdleCallback;
+      (globalThis.window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback }).requestIdleCallback = undefined;
     }
   });
 
@@ -134,8 +133,8 @@ describe('third-party utils coverage', () => {
     
     const promise = ensureAdsense();
     await expect(promise).resolves.toBeUndefined();
-    
-    delete globalThis.window.adsbygoogle;
+
+    (globalThis.window as unknown as { adsbygoogle?: unknown }).adsbygoogle = undefined;
   });
 
   it('ensureAdsense resolves after timeout if script does not load', async () => {
@@ -165,7 +164,7 @@ describe('third-party utils coverage', () => {
     
     await expect(promise).resolves.toBeUndefined();
     vi.useRealTimers();
-    delete globalThis.window.adsbygoogle;
+    (globalThis.window as unknown as { adsbygoogle?: unknown }).adsbygoogle = undefined;
   });
 
   // Direct tests for exported utilities
@@ -185,26 +184,28 @@ describe('third-party utils coverage', () => {
   });
 
   it('toAbsoluteUrl returns src when document is undefined', async () => {
-    const originalDoc = globalThis.document;
-    delete globalThis.document;
-    
+    const g = globalThis as unknown as { document?: Document };
+    const originalDoc = g.document;
+    g.document = undefined;
+
     try {
       const { toAbsoluteUrl } = await import('../src/utils/third-party.ts');
       expect(toAbsoluteUrl('/script.js')).toBe('/script.js');
     } finally {
-      globalThis.document = originalDoc;
+      g.document = originalDoc;
     }
   });
 
   it('loadScript returns resolved promise when document is undefined', async () => {
-    const originalDoc = globalThis.document;
-    delete globalThis.document;
-    
+    const g = globalThis as unknown as { document?: Document };
+    const originalDoc = g.document;
+    g.document = undefined;
+
     try {
       const { loadScript } = await import('../src/utils/third-party.ts');
       await expect(loadScript('src')).resolves.toBeUndefined();
     } finally {
-      globalThis.document = originalDoc;
+      g.document = originalDoc;
     }
   });
 
@@ -214,18 +215,18 @@ describe('third-party utils coverage', () => {
     // Should skip null/undefined props
     const promise = loadScript('https://example.com/script.js', {
       'data-test': 'value',
-      'data-null': null,
+      'data-null': undefined,
       'data-undefined': undefined
     });
-    
+
     // Simulate load
     const script = document.head.querySelector('script[src="https://example.com/script.js"]');
     expect(script).toBeTruthy();
-    expect(script.getAttribute('data-test')).toBe('value');
-    expect(script.hasAttribute('data-null')).toBe(false);
-    expect(script.hasAttribute('data-undefined')).toBe(false);
-    
-    script.dispatchEvent(new Event('load'));
+    expect(script!.getAttribute('data-test')).toBe('value');
+    expect(script!.hasAttribute('data-null')).toBe(false);
+    expect(script!.hasAttribute('data-undefined')).toBe(false);
+
+    script!.dispatchEvent(new Event('load'));
     await expect(promise).resolves.toBeUndefined();
   });
 
@@ -235,7 +236,7 @@ describe('third-party utils coverage', () => {
     
     // First load
     const p1 = loadScript(src);
-    document.head.querySelector(`script[src="${src}"]`).dispatchEvent(new Event('load'));
+    document.head.querySelector(`script[src="${src}"]`)!.dispatchEvent(new Event('load'));
     await p1;
     
     // Second load - should be immediate
@@ -272,8 +273,8 @@ describe('third-party utils coverage', () => {
     
     const promise = loadScript(src);
     const script = document.head.querySelector(`script[src="${src}"]`);
-    
-    script.dispatchEvent(new Event('error'));
+    expect(script).toBeTruthy();
+    script!.dispatchEvent(new Event('error'));
     
     await expect(promise).rejects.toThrow('Failed to load script');
   });
@@ -306,7 +307,7 @@ describe('third-party utils coverage', () => {
     expect(script).toBeTruthy();
     
     // Simulate script error - should not throw unhandled rejection
-    script.dispatchEvent(new Event('error'));
+    script!.dispatchEvent(new Event('error'));
     
     // Give promise time to settle
     await new Promise(r => setTimeout(r, 10));

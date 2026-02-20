@@ -1,6 +1,8 @@
-import { SubmitLawSection } from '@components/submit-law.js';
-import * as api from '@utils/api.js';
-import * as cacheUtils from '@utils/category-cache.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { MockInstance } from 'vitest';
+import { SubmitLawSection } from '../src/components/submit-law.ts';
+import * as api from '../src/utils/api.ts';
+import * as cacheUtils from '../src/utils/category-cache.ts';
 
 interface SubmitLawContext {
   el?: HTMLElement | null;
@@ -18,7 +20,7 @@ function createLocalThis(): () => SubmitLawContext {
   const context: SubmitLawContext = {};
 
   beforeEach(() => {
-    Object.keys(context).forEach((key) => {
+    (Object.keys(context) as (keyof SubmitLawContext)[]).forEach((key) => {
       delete context[key];
     });
   });
@@ -28,7 +30,7 @@ function createLocalThis(): () => SubmitLawContext {
 
 describe('SubmitLawSection component', () => {
   const local = createLocalThis();
-  let deferUntilIdleSpy;
+  let deferUntilIdleSpy: MockInstance;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -82,64 +84,66 @@ describe('SubmitLawSection component', () => {
 
   it('submit button is disabled initially', () => {
     const el = mountSection();
-    const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null as HTMLButtonElement | null;
-
-    expect(submitBtn.disabled).toBe(true);
+    const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null;
+    expect(submitBtn).toBeTruthy();
+    expect(submitBtn!.disabled).toBe(true);
   });
 
   it('submit button has tooltip when disabled', () => {
     const localThis: SubmitLawTestLocal = {};
     localThis.el = mountSection();
-    localThis.submitBtn = localThis.el.querySelector('#submit-btn') as HTMLButtonElement | null as HTMLButtonElement | null;
-
-    expect(localThis.submitBtn.disabled).toBe(true);
-    expect(localThis.submitBtn.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
+    localThis.submitBtn = localThis.el!.querySelector('#submit-btn') as HTMLButtonElement | null;
+    expect(localThis.submitBtn).toBeTruthy();
+    expect(localThis.submitBtn!.disabled).toBe(true);
+    expect(localThis.submitBtn!.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
   });
 
   it('submit button tooltip is removed when enabled', () => {
     const localThis: SubmitLawTestLocal = {};
     localThis.el = mountSection({ append: true });
-    localThis.textarea = localThis.el.querySelector('#submit-text') as HTMLTextAreaElement | null as HTMLTextAreaElement | null;
-    localThis.termsCheckbox = localThis.el.querySelector('#submit-terms') as HTMLInputElement | null as HTMLInputElement | null;
-    localThis.submitBtn = localThis.el.querySelector('#submit-btn') as HTMLButtonElement | null as HTMLButtonElement | null;
-
+    localThis.textarea = localThis.el!.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    localThis.termsCheckbox = localThis.el!.querySelector('#submit-terms') as HTMLInputElement | null;
+    localThis.submitBtn = localThis.el!.querySelector('#submit-btn') as HTMLButtonElement | null;
+    expect(localThis.submitBtn).toBeTruthy();
+    expect(localThis.textarea).toBeTruthy();
+    expect(localThis.termsCheckbox).toBeTruthy();
     // Initially has tooltip
-    expect(localThis.submitBtn.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
+    expect(localThis.submitBtn!.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
 
     // Fill requirements
-    localThis.textarea.value = 'This is a valid law text with enough characters';
-    localThis.textarea.dispatchEvent(new Event('input'));
-    localThis.termsCheckbox.checked = true;
-    localThis.termsCheckbox.dispatchEvent(new Event('change'));
+    localThis.textarea!.value = 'This is a valid law text with enough characters';
+    localThis.textarea!.dispatchEvent(new Event('input'));
+    localThis.termsCheckbox!.checked = true;
+    localThis.termsCheckbox!.dispatchEvent(new Event('change'));
 
     // Tooltip should be removed when enabled
-    expect(localThis.submitBtn.disabled).toBe(false);
-    expect(localThis.submitBtn.hasAttribute('data-tooltip')).toBe(false);
+    expect(localThis.submitBtn!.disabled).toBe(false);
+    expect(localThis.submitBtn!.hasAttribute('data-tooltip')).toBe(false);
   });
 
   it('submit button tooltip returns when disabled again', () => {
     const localThis: SubmitLawTestLocal = {};
     localThis.el = mountSection({ append: true });
-    localThis.textarea = localThis.el.querySelector('#submit-text') as HTMLTextAreaElement | null as HTMLTextAreaElement | null;
-    localThis.termsCheckbox = localThis.el.querySelector('#submit-terms') as HTMLInputElement | null as HTMLInputElement | null;
-    localThis.submitBtn = localThis.el.querySelector('#submit-btn') as HTMLButtonElement | null as HTMLButtonElement | null;
+    localThis.textarea = localThis.el!.querySelector('#submit-text') as HTMLTextAreaElement | null as HTMLTextAreaElement | null;
+    localThis.termsCheckbox = localThis.el!.querySelector('#submit-terms') as HTMLInputElement | null as HTMLInputElement | null;
+    localThis.submitBtn = localThis.el!.querySelector('#submit-btn') as HTMLButtonElement | null as HTMLButtonElement | null;
 
     // Enable the button
-    localThis.textarea.value = 'This is a valid law text with enough characters';
-    localThis.textarea.dispatchEvent(new Event('input'));
-    localThis.termsCheckbox.checked = true;
-    localThis.termsCheckbox.dispatchEvent(new Event('change'));
+    localThis.textarea!.value = 'This is a valid law text with enough characters';
+    localThis.textarea!.dispatchEvent(new Event('input'));
+    localThis.termsCheckbox!.checked = true;
+    localThis.termsCheckbox!.dispatchEvent(new Event('change'));
 
-    expect(localThis.submitBtn.disabled).toBe(false);
-    expect(localThis.submitBtn.hasAttribute('data-tooltip')).toBe(false);
+    expect(localThis.submitBtn!.disabled).toBe(false);
+    expect(localThis.submitBtn!.hasAttribute('data-tooltip')).toBe(false);
 
     // Disable by unchecking terms
-    localThis.termsCheckbox.checked = false;
-    localThis.termsCheckbox.dispatchEvent(new Event('change'));
+    localThis.termsCheckbox!.checked = false;
+    localThis.termsCheckbox!.dispatchEvent(new Event('change'));
 
     // Tooltip should return
-    expect(localThis.submitBtn.disabled).toBe(true);
-    expect(localThis.submitBtn.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
+    expect(localThis.submitBtn!.disabled).toBe(true);
+    expect(localThis.submitBtn!.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
   });
 
   it('renders validation requirements display', () => {
@@ -161,13 +165,13 @@ describe('SubmitLawSection component', () => {
     const textRequirement = el.querySelector('[data-requirement="text"]') as HTMLElement | null;
 
     // Initially not met
-    expect(textRequirement.classList.contains('requirement-met')).toBe(false);
+    expect(textRequirement!.classList.contains('requirement-met')).toBe(false);
 
     // Add valid text
-    textarea.value = 'This is a valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'This is a valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
 
-    expect(textRequirement.classList.contains('requirement-met')).toBe(true);
+    expect(textRequirement!.classList.contains('requirement-met')).toBe(true);
   });
 
   it('marks terms requirement as met when terms are checked', () => {
@@ -177,13 +181,13 @@ describe('SubmitLawSection component', () => {
     const termsRequirement = el.querySelector('[data-requirement="terms"]') as HTMLElement | null;
 
     // Initially not met
-    expect(termsRequirement.classList.contains('requirement-met')).toBe(false);
+    expect(termsRequirement!.classList.contains('requirement-met')).toBe(false);
 
     // Check terms
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    expect(termsRequirement.classList.contains('requirement-met')).toBe(true);
+    expect(termsRequirement!.classList.contains('requirement-met')).toBe(true);
   });
 
   it('adds all-requirements-met class when all requirements are satisfied', () => {
@@ -194,15 +198,15 @@ describe('SubmitLawSection component', () => {
     const requirementsDiv = el.querySelector('.submit-requirements') as HTMLElement | null;
 
     // Initially not all met
-    expect(requirementsDiv.classList.contains('all-requirements-met')).toBe(false);
+    expect(requirementsDiv!.classList.contains('all-requirements-met')).toBe(false);
 
     // Satisfy all requirements
-    textarea.value = 'This is a valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'This is a valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    expect(requirementsDiv.classList.contains('all-requirements-met')).toBe(true);
+    expect(requirementsDiv!.classList.contains('all-requirements-met')).toBe(true);
   });
 
   it('updates character counter on text input', () => {
@@ -211,10 +215,10 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const counter = el.querySelector('.submit-char-counter') as HTMLElement | null;
 
-    textarea.value = 'Test text';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'Test text';
+    textarea!.dispatchEvent(new Event('input'));
 
-    expect(counter.textContent).toContain('9');
+    expect(counter!.textContent).toContain('9');
 
   });
 
@@ -225,13 +229,13 @@ describe('SubmitLawSection component', () => {
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
     const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null;
 
-    textarea.value = 'This is a valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'This is a valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
 
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    expect(submitBtn.disabled).toBe(false);
+    expect(submitBtn!.disabled).toBe(false);
 
   });
 
@@ -242,13 +246,13 @@ describe('SubmitLawSection component', () => {
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
     const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null;
 
-    textarea.value = 'Short';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'Short';
+    textarea!.dispatchEvent(new Event('input'));
 
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    expect(submitBtn.disabled).toBe(true);
+    expect(submitBtn!.disabled).toBe(true);
 
   });
 
@@ -265,7 +269,7 @@ describe('SubmitLawSection component', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
-    const options = categorySelect.querySelectorAll('option');
+    const options = categorySelect!.querySelectorAll('option');
 
     expect(options.length).toBeGreaterThan(1);
     expect(deferUntilIdleSpy).toHaveBeenCalled();
@@ -273,8 +277,8 @@ describe('SubmitLawSection component', () => {
 
   it('populates categories from cache immediately', () => {
     const categories = [
-      { id: 1, title: 'General' },
-      { id: 2, title: 'Technology' }
+      { id: 1, title: 'General', slug: 'general' },
+      { id: 2, title: 'Technology', slug: 'technology' }
     ];
 
     // Set cache before mounting
@@ -284,11 +288,11 @@ describe('SubmitLawSection component', () => {
 
     // Should populate immediately from cache
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
-    const options = categorySelect.querySelectorAll('option');
+    const options = categorySelect!.querySelectorAll('option');
 
     expect(options.length).toBeGreaterThan(1);
-    expect(categorySelect.textContent).toMatch(/General/);
-    expect(categorySelect.textContent).toMatch(/Technology/);
+    expect(categorySelect!.textContent).toMatch(/General/);
+    expect(categorySelect!.textContent).toMatch(/Technology/);
   });
 
   it('loads categories on focus if not loaded yet', async () => {
@@ -307,10 +311,10 @@ describe('SubmitLawSection component', () => {
 
     // Trigger focus event to lazy load
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
-    categorySelect.dispatchEvent(new Event('focus', { bubbles: true }));
+    categorySelect!.dispatchEvent(new Event('focus', { bubbles: true }));
 
     await vi.waitFor(() => {
-      expect(categorySelect.textContent).toMatch(/General/);
+      expect(categorySelect!.textContent).toMatch(/General/);
     });
   });
 
@@ -328,7 +332,7 @@ describe('SubmitLawSection component', () => {
 
     // Trigger focus again to try to load categories again
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
-    categorySelect.dispatchEvent(new Event('focus', { bubbles: true }));
+    categorySelect!.dispatchEvent(new Event('focus', { bubbles: true }));
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -354,10 +358,10 @@ describe('SubmitLawSection component', () => {
     const anonymousCheckbox = el.querySelector('#submit-anonymous') as HTMLInputElement | null;
 
     expect(anonymousCheckbox).toBeTruthy();
-    expect(anonymousCheckbox.type).toBe('checkbox');
+    expect(anonymousCheckbox!.type).toBe('checkbox');
 
-    anonymousCheckbox.checked = true;
-    expect(anonymousCheckbox.checked).toBe(true);
+    anonymousCheckbox!.checked = true;
+    expect(anonymousCheckbox!.checked).toBe(true);
 
   });
 
@@ -373,15 +377,15 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'This is a valid law text with more than ten characters';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'This is a valid law text with more than ten characters';
+    textarea!.dispatchEvent(new Event('input'));
 
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -400,15 +404,15 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'This is a valid law text with more than ten characters';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'This is a valid law text with more than ten characters';
+    textarea!.dispatchEvent(new Event('input'));
 
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -419,11 +423,11 @@ describe('SubmitLawSection component', () => {
 
     const emailInput = el.querySelector('#submit-email') as HTMLInputElement | null;
 
-    emailInput.value = 'invalid-email';
-    emailInput.dispatchEvent(new Event('input'));
+    emailInput!.value = 'invalid-email';
+    emailInput!.dispatchEvent(new Event('input'));
 
     // HTML5 validation should apply
-    expect(emailInput.type).toBe('email');
+    expect(emailInput!.type).toBe('email');
 
   });
 
@@ -433,10 +437,10 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const counter = el.querySelector('.submit-char-counter') as HTMLElement | null;
 
-    textarea.value = 'Short';
-    textarea.dispatchEvent(new Event('input'));
+    textarea!.value = 'Short';
+    textarea!.dispatchEvent(new Event('input'));
 
-    expect(counter.classList.contains('submit-char-counter-error')).toBe(true);
+    expect(counter!.classList.contains('submit-char-counter-error')).toBe(true);
 
   });
 
@@ -447,14 +451,14 @@ describe('SubmitLawSection component', () => {
     const counter = el.querySelector('.submit-char-counter') as HTMLElement | null;
 
     // First add error
-    textarea.value = 'Short';
-    textarea.dispatchEvent(new Event('input'));
-    expect(counter.classList.contains('submit-char-counter-error')).toBe(true);
+    textarea!.value = 'Short';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(counter!.classList.contains('submit-char-counter-error')).toBe(true);
 
     // Then fix it
-    textarea.value = 'This is now valid text';
-    textarea.dispatchEvent(new Event('input'));
-    expect(counter.classList.contains('submit-char-counter-error')).toBe(false);
+    textarea!.value = 'This is now valid text';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(counter!.classList.contains('submit-char-counter-error')).toBe(false);
 
   });
 
@@ -464,8 +468,8 @@ describe('SubmitLawSection component', () => {
     const messageDiv = el.querySelector('.submit-message') as HTMLElement | null;
 
     // Message div should be hidden initially
-    expect(messageDiv.style.display).toBe('');
-    expect(messageDiv.textContent).toBe('');
+    expect(messageDiv!.style.display).toBe('');
+    expect(messageDiv!.textContent).toBe('');
 
   });
 
@@ -482,12 +486,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -506,12 +510,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -530,12 +534,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -560,12 +564,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -589,12 +593,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -616,12 +620,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -643,12 +647,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -670,12 +674,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -704,14 +708,14 @@ describe('SubmitLawSection component', () => {
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    title.value = 'Test Title';
-    textarea.value = 'Valid law text with enough characters';
-    author.value = 'John Doe';
-    categorySelect.value = '1';
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    title!.value = 'Test Title';
+    textarea!.value = 'Valid law text with enough characters';
+    author!.value = 'John Doe';
+    categorySelect!.value = '1';
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -734,14 +738,14 @@ describe('SubmitLawSection component', () => {
     const anonymous = el.querySelector('#submit-anonymous') as HTMLInputElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    author.value = 'John Doe';
-    email.value = 'john@example.com';
-    anonymous.checked = true;
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    author!.value = 'John Doe';
+    email!.value = 'john@example.com';
+    anonymous!.checked = true;
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -764,23 +768,23 @@ describe('SubmitLawSection component', () => {
     const email = el.querySelector('#submit-email') as HTMLInputElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    title.value = 'Test Title';
-    textarea.value = 'Valid law text with enough characters';
-    author.value = 'John Doe';
-    email.value = 'john@example.com';
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    title!.value = 'Test Title';
+    textarea!.value = 'Valid law text with enough characters';
+    author!.value = 'John Doe';
+    email!.value = 'john@example.com';
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 400));
 
     // Fields should be cleared
-    expect(title.value).toBe('');
-    expect(textarea.value).toBe('');
-    expect(author.value).toBe('');
-    expect(email.value).toBe('');
-    expect(termsCheckbox.checked).toBe(false);
+    expect(title!.value).toBe('');
+    expect(textarea!.value).toBe('');
+    expect(author!.value).toBe('');
+    expect(email!.value).toBe('');
+    expect(termsCheckbox!.checked).toBe(false);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
@@ -795,7 +799,7 @@ describe('SubmitLawSection component', () => {
 
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
     // Should only have the default option
-    expect(categorySelect.options.length).toBe(1);
+    expect(categorySelect!.options.length).toBe(1);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
@@ -810,7 +814,7 @@ describe('SubmitLawSection component', () => {
 
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
     // Should only have the default option
-    expect(categorySelect.options.length).toBe(1);
+    expect(categorySelect!.options.length).toBe(1);
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
@@ -828,10 +832,10 @@ describe('SubmitLawSection component', () => {
     const form = el.querySelector('.submit-form') as HTMLFormElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -854,9 +858,9 @@ describe('SubmitLawSection component', () => {
     const form = el.querySelector('.submit-form') as HTMLFormElement | null;
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
+    textarea!.value = 'Valid law text with enough characters';
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -885,12 +889,12 @@ describe('SubmitLawSection component', () => {
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
 
-    textarea.value = 'Valid law text with enough characters';
-    textarea.dispatchEvent(new Event('input'));
-    termsCheckbox.checked = true;
-    termsCheckbox.dispatchEvent(new Event('change'));
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
 
-    form.dispatchEvent(new Event('submit'));
+    form!.dispatchEvent(new Event('submit'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -908,7 +912,7 @@ describe('SubmitLawSection component', () => {
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
 
     // First focus should trigger category loading
-    categorySelect.dispatchEvent(new FocusEvent('focus'));
+    categorySelect!.dispatchEvent(new FocusEvent('focus'));
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const callsAfterFirstFocus = fetchAPISpy.mock.calls.filter(
@@ -916,7 +920,7 @@ describe('SubmitLawSection component', () => {
     ).length;
 
     // Second focus should NOT reload categories (early return)
-    categorySelect.dispatchEvent(new FocusEvent('focus'));
+    categorySelect!.dispatchEvent(new FocusEvent('focus'));
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const callsAfterSecondFocus = fetchAPISpy.mock.calls.filter(

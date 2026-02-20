@@ -1,24 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { lazyLoad, lazyImage, batchLazyLoad } from '../src/utils/lazy-loader.ts';
 
+interface LazyLoaderLocalThis {
+  mockFactory: ReturnType<typeof vi.fn>;
+  mockOnVisible: ReturnType<typeof vi.fn>;
+  mockObserver: { observe: ReturnType<typeof vi.fn>; unobserve: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> };
+  observedElements: Element[];
+  intersectionCallback: IntersectionObserverCallback | null;
+}
+
 describe('Lazy Loader Utilities', () => {
-  /** @type {typeof globalThis} */
-  let localThis;
+  let localThis: LazyLoaderLocalThis;
 
   beforeEach(() => {
+    const observedElements: Element[] = [];
+    const mockObserver = {
+      observe: vi.fn((el: Element) => observedElements.push(el)),
+      unobserve: vi.fn(),
+      disconnect: vi.fn()
+    };
     localThis = {
       mockFactory: vi.fn(),
       mockOnVisible: vi.fn(),
-      mockObserver: null,
-      observedElements: [],
+      mockObserver,
+      observedElements,
       intersectionCallback: null
-    };
-
-    // Mock IntersectionObserver
-    localThis.mockObserver = {
-      observe: vi.fn((el) => localThis.observedElements.push(el)),
-      unobserve: vi.fn(),
-      disconnect: vi.fn()
     };
 
     vi.stubGlobal('IntersectionObserver', vi.fn(function (this: unknown, callback: IntersectionObserverCallback) {
@@ -26,8 +32,7 @@ describe('Lazy Loader Utilities', () => {
       return localThis.mockObserver;
     }) as unknown as typeof IntersectionObserver);
 
-    // Mock requestAnimationFrame
-    vi.stubGlobal('requestAnimationFrame', (cb) => setTimeout(cb, 0));
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(cb as () => void, 0) as unknown as number);
   });
 
   afterEach(() => {
@@ -38,7 +43,7 @@ describe('Lazy Loader Utilities', () => {
   describe('lazyLoad', () => {
     it('creates a placeholder element', () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
-      const placeholder = lazyLoad(localThis.mockFactory);
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
 
       expect(placeholder).toBeInstanceOf(HTMLElement);
       expect(placeholder.classList.contains('lazy-placeholder')).toBe(true);
@@ -47,7 +52,7 @@ describe('Lazy Loader Utilities', () => {
 
     it('uses custom placeholder class', () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
-      const placeholder = lazyLoad(localThis.mockFactory, { placeholderClass: 'custom-class' });
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement, { placeholderClass: 'custom-class' });
 
       expect(placeholder.classList.contains('custom-class')).toBe(true);
     });
@@ -57,14 +62,14 @@ describe('Lazy Loader Utilities', () => {
       component.textContent = 'Loaded Component';
       localThis.mockFactory.mockReturnValue(component);
 
-      const placeholder = lazyLoad(localThis.mockFactory);
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
 
       // Attach to DOM
       document.body.appendChild(placeholder);
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Simulate intersection
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockFactory).toHaveBeenCalledTimes(1);
     });
@@ -74,14 +79,14 @@ describe('Lazy Loader Utilities', () => {
       component.textContent = 'Loaded';
       localThis.mockFactory.mockReturnValue(component);
 
-      const placeholder = lazyLoad(localThis.mockFactory);
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
       const container = document.createElement('div');
       container.appendChild(placeholder);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Simulate intersection
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(container.contains(component)).toBe(true);
       expect(container.contains(placeholder)).toBe(false);
@@ -89,26 +94,26 @@ describe('Lazy Loader Utilities', () => {
 
     it('only loads once even if intersecting multiple times', async () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
-      const placeholder = lazyLoad(localThis.mockFactory);
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
       document.body.appendChild(placeholder);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Simulate multiple intersections
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockFactory).toHaveBeenCalledTimes(1);
     });
 
     it('disconnects observer after loading', async () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
-      const placeholder = lazyLoad(localThis.mockFactory);
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
       document.body.appendChild(placeholder);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockObserver.disconnect).toHaveBeenCalled();
     });
@@ -118,39 +123,37 @@ describe('Lazy Loader Utilities', () => {
         throw new Error('Factory error');
       });
 
-      const placeholder = lazyLoad(localThis.mockFactory);
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
       document.body.appendChild(placeholder);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(placeholder.getAttribute('aria-busy')).toBe('false');
       expect(placeholder.textContent).toBe('Failed to load content');
     });
 
     it('falls back to immediate loading without IntersectionObserver', async () => {
-      // Remove IntersectionObserver from window
       const originalIO = window.IntersectionObserver;
-      delete window.IntersectionObserver;
+      (window as unknown as { IntersectionObserver?: typeof window.IntersectionObserver }).IntersectionObserver = undefined;
 
       try {
         localThis.mockFactory.mockReturnValue(document.createElement('div'));
-        const placeholder = lazyLoad(localThis.mockFactory);
+        const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
         document.body.appendChild(placeholder);
 
         await new Promise(resolve => setTimeout(resolve, 10));
 
         expect(localThis.mockFactory).toHaveBeenCalled();
       } finally {
-        // Restore IntersectionObserver
-        window.IntersectionObserver = originalIO;
+        (window as unknown as { IntersectionObserver?: typeof window.IntersectionObserver }).IntersectionObserver = originalIO;
       }
     });
 
     it('uses custom rootMargin and threshold', () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
-      lazyLoad(localThis.mockFactory, { rootMargin: '200px', threshold: 0.5 });
+      lazyLoad(localThis.mockFactory as () => HTMLElement, { rootMargin: '200px', threshold: 0.5 });
 
       expect(IntersectionObserver).toHaveBeenCalledWith(
         expect.any(Function),
@@ -160,14 +163,14 @@ describe('Lazy Loader Utilities', () => {
 
     it('adds loading class while loading', async () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
-      const placeholder = lazyLoad(localThis.mockFactory, { loadingClass: 'is-loading' });
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement, { loadingClass: 'is-loading' });
       const container = document.createElement('div');
       container.appendChild(placeholder);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Check class is added during loading
-      localThis.intersectionCallback([{ isIntersecting: true, target: placeholder }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       // Component should have replaced placeholder, so we can't check the class
       // But the factory should have been called
@@ -217,7 +220,7 @@ describe('Lazy Loader Utilities', () => {
         { element: el2, onVisible: vi.fn() }
       ];
 
-      batchLazyLoad(items);
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -231,11 +234,11 @@ describe('Lazy Loader Utilities', () => {
 
       const items = [{ element: el, onVisible: localThis.mockOnVisible }];
 
-      batchLazyLoad(items);
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      localThis.intersectionCallback([{ isIntersecting: true, target: el }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockOnVisible).toHaveBeenCalled();
     });
@@ -246,11 +249,11 @@ describe('Lazy Loader Utilities', () => {
 
       const items = [{ element: el, onVisible: localThis.mockOnVisible }];
 
-      batchLazyLoad(items);
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      localThis.intersectionCallback([{ isIntersecting: true, target: el }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockObserver.unobserve).toHaveBeenCalledWith(el);
     });
@@ -261,13 +264,13 @@ describe('Lazy Loader Utilities', () => {
 
       const items = [{ element: el, onVisible: localThis.mockOnVisible }];
 
-      batchLazyLoad(items);
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Simulate multiple intersections
-      localThis.intersectionCallback([{ isIntersecting: true, target: el }]);
-      localThis.intersectionCallback([{ isIntersecting: true, target: el }]);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
+      localThis.intersectionCallback!([{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockOnVisible).toHaveBeenCalledTimes(1);
     });
@@ -278,7 +281,7 @@ describe('Lazy Loader Utilities', () => {
 
       const items = [{ element: el, onVisible: localThis.mockOnVisible }];
 
-      const cleanup = batchLazyLoad(items);
+      const cleanup = batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       expect(typeof cleanup).toBe('function');
 
@@ -295,27 +298,25 @@ describe('Lazy Loader Utilities', () => {
     });
 
     it('handles null items', () => {
-      const cleanup = batchLazyLoad(null);
+      const cleanup = batchLazyLoad(null as unknown as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       expect(typeof cleanup).toBe('function');
     });
 
     it('falls back to immediate loading without IntersectionObserver', async () => {
-      // Remove IntersectionObserver from window
       const originalIO = window.IntersectionObserver;
-      delete window.IntersectionObserver;
+      (window as unknown as { IntersectionObserver?: typeof window.IntersectionObserver }).IntersectionObserver = undefined;
 
       try {
         const items = [
           { element: document.createElement('div'), onVisible: localThis.mockOnVisible }
         ];
 
-        batchLazyLoad(items);
+        batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
         expect(localThis.mockOnVisible).toHaveBeenCalled();
       } finally {
-        // Restore IntersectionObserver
-        window.IntersectionObserver = originalIO;
+        (window as unknown as { IntersectionObserver?: typeof window.IntersectionObserver }).IntersectionObserver = originalIO;
       }
     });
 
@@ -329,20 +330,20 @@ describe('Lazy Loader Utilities', () => {
 
       const items = [{ element: el, onVisible: errorFn }];
 
-      batchLazyLoad(items);
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
 
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should not throw
       expect(() => {
-        localThis.intersectionCallback([{ isIntersecting: true, target: el }]);
+        localThis.intersectionCallback!([{ isIntersecting: true, target: el } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
       }).not.toThrow();
     });
 
     it('handles onVisible errors in fallback mode (no IntersectionObserver)', () => {
-      // Remove IntersectionObserver to trigger fallback
-      const originalIO = globalThis.IntersectionObserver;
-      delete globalThis.IntersectionObserver;
+      const g = globalThis as unknown as { IntersectionObserver?: typeof window.IntersectionObserver };
+      const originalIO = g.IntersectionObserver;
+      g.IntersectionObserver = undefined;
 
       const el = document.createElement('div');
       const errorFn = vi.fn(() => {
@@ -356,15 +357,14 @@ describe('Lazy Loader Utilities', () => {
       ];
 
       // Should not throw even when callbacks error in fallback mode
-      expect(() => batchLazyLoad(items)).not.toThrow();
+      expect(() => batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>)).not.toThrow();
 
       // The error function was called (and threw)
       expect(errorFn).toHaveBeenCalled();
       // The success function should still be called (error handling per-item)
       expect(successFn).toHaveBeenCalled();
 
-      // Restore
-      globalThis.IntersectionObserver = originalIO;
+      g.IntersectionObserver = originalIO;
     });
   });
 });

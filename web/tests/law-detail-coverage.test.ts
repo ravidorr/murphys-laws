@@ -39,7 +39,8 @@ describe('LawDetail view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     const attribution = el.querySelector('[data-law-attribution]');
-    expect(attribution.textContent).toContain('Edward Murphy');
+    expect(attribution).toBeTruthy();
+    expect(attribution!.textContent).toContain('Edward Murphy');
   });
 
   it('handles law with a single word title', async () => {
@@ -59,8 +60,9 @@ describe('LawDetail view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     const titleEl = el.querySelector('[data-law-title]');
-    expect(titleEl.textContent).toBe('Gravity');
-    expect(titleEl.querySelector('.accent-text')).toBeNull();
+    expect(titleEl).toBeTruthy();
+    expect(titleEl!.textContent).toBe('Gravity');
+    expect(titleEl!.querySelector('.accent-text')).toBeNull();
   });
 
   it('handles law without submittedBy field', async () => {
@@ -81,7 +83,8 @@ describe('LawDetail view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     const submittedEl = el.querySelector('[data-law-submitted]');
-    expect(submittedEl.hasAttribute('hidden')).toBe(true);
+    expect(submittedEl).toBeTruthy();
+    expect(submittedEl!.hasAttribute('hidden')).toBe(true);
   });
 
   it('handles law with missing title or author', async () => {
@@ -101,7 +104,8 @@ describe('LawDetail view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     const titleEl = el.querySelector('[data-law-title]');
-    expect(titleEl.textContent).toBe('Law'); // Fallback title
+    expect(titleEl).toBeTruthy();
+    expect(titleEl!.textContent).toBe('Law'); // Fallback title
   });
 
   it('handles click events on non-element targets', () => {

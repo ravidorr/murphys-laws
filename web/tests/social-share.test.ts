@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   SocialShare,
   renderShareButtonsHTML,
@@ -236,47 +237,47 @@ describe('SocialShare component', () => {
 
       // Icon circle should still exist, just without SVG inside
       expect(twitterItem).toBeTruthy();
-      expect(twitterItem.querySelector('svg')).toBeFalsy();
+      expect(twitterItem!.querySelector('svg')).toBeFalsy();
     });
   });
 
   describe('Copy Text button', () => {
     it('creates Copy Text button with correct attributes', () => {
       const el = SocialShare({ lawText: 'Test Law Text', lawId: '123' });
-      const button = el.querySelector('[data-action="copy-text"]') as HTMLButtonElement;
-
-      expect(button.getAttribute('role')).toBe('menuitem');
-      expect(button.getAttribute('data-action')).toBe('copy-text');
-      expect(button.getAttribute('data-copy-value')).toBe('Test Law Text');
-      expect(button.getAttribute('data-law-id')).toBe('123');
-      expect(button.type).toBe('button');
+      const button = el.querySelector('[data-action="copy-text"]') as HTMLButtonElement | null;
+      expect(button).toBeTruthy();
+      expect(button!.getAttribute('role')).toBe('menuitem');
+      expect(button!.getAttribute('data-action')).toBe('copy-text');
+      expect(button!.getAttribute('data-copy-value')).toBe('Test Law Text');
+      expect(button!.getAttribute('data-law-id')).toBe('123');
+      expect(button!.type).toBe('button');
     });
 
     it('uses title as fallback for lawText', () => {
       const el = SocialShare({ title: 'Title as fallback' });
       const button = el.querySelector('[data-action="copy-text"]');
-
-      expect(button.getAttribute('data-copy-value')).toBe('Title as fallback');
+      expect(button).toBeTruthy();
+      expect(button!.getAttribute('data-copy-value')).toBe('Title as fallback');
     });
   });
 
   describe('Copy Link button', () => {
     it('creates Copy Link button with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com/law/123', lawId: '123' });
-      const button = el.querySelector('[data-action="copy-link"]') as HTMLButtonElement;
-
-      expect(button.getAttribute('role')).toBe('menuitem');
-      expect(button.getAttribute('data-action')).toBe('copy-link');
-      expect(button.getAttribute('data-copy-value')).toBe('https://test.com/law/123');
-      expect(button.getAttribute('data-law-id')).toBe('123');
-      expect(button.type).toBe('button');
+      const button = el.querySelector('[data-action="copy-link"]') as HTMLButtonElement | null;
+      expect(button).toBeTruthy();
+      expect(button!.getAttribute('role')).toBe('menuitem');
+      expect(button!.getAttribute('data-action')).toBe('copy-link');
+      expect(button!.getAttribute('data-copy-value')).toBe('https://test.com/law/123');
+      expect(button!.getAttribute('data-law-id')).toBe('123');
+      expect(button!.type).toBe('button');
     });
 
     it('uses window.location.href as fallback for url', () => {
       const el = SocialShare();
       const button = el.querySelector('[data-action="copy-link"]');
-
-      expect(button.getAttribute('data-copy-value')).toBe('https://test.com/page');
+      expect(button).toBeTruthy();
+      expect(button!.getAttribute('data-copy-value')).toBe('https://test.com/page');
     });
   });
 
@@ -286,7 +287,7 @@ describe('SocialShare component', () => {
       const feedback = el.querySelector('.share-copy-feedback');
 
       expect(feedback).toBeTruthy();
-      expect(feedback.textContent).toContain('Copied!');
+      expect(feedback!.textContent).toContain('Copied!');
     });
   });
 
@@ -1179,7 +1180,8 @@ describe('renderInlineShareButtonsHTML', () => {
     const html = renderInlineShareButtonsHTML();
     const matches = html.match(/class="share-btn-inline"/g);
     // 6 social + 2 copy = 8 buttons
-    expect(matches.length).toBe(8);
+    expect(matches).toBeTruthy();
+    expect(matches!.length).toBe(8);
   });
 
   it('includes icon circles with platform classes', () => {

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createIcon, hydrateIcons } from '../src/utils/icons.ts';
 
 describe('Icons utility', () => {
@@ -5,29 +6,31 @@ describe('Icons utility', () => {
     it('creates a valid icon element', () => {
       const icon = createIcon('home');
       expect(icon).toBeTruthy();
-      expect(icon.tagName).toBe('svg');
-      expect(icon.getAttribute('viewBox')).toBe('0 0 640 640');
-      expect(icon.getAttribute('fill')).toBe('currentColor');
-      expect(icon.getAttribute('focusable')).toBe('false');
-      expect(icon.getAttribute('data-icon-name')).toBe('home');
-      expect(icon.classList.contains('icon')).toBe(true);
+      expect(icon!.tagName).toBe('svg');
+      expect(icon!.getAttribute('viewBox')).toBe('0 0 640 640');
+      expect(icon!.getAttribute('fill')).toBe('currentColor');
+      expect(icon!.getAttribute('focusable')).toBe('false');
+      expect(icon!.getAttribute('data-icon-name')).toBe('home');
+      expect(icon!.classList.contains('icon')).toBe(true);
     });
 
     it('sets aria-hidden by default', () => {
       const icon = createIcon('search');
-      expect(icon.getAttribute('aria-hidden')).toBe('true');
+      expect(icon!.getAttribute('aria-hidden')).toBe('true');
     });
 
     it('does not set aria-hidden when labelled is true', () => {
       const icon = createIcon('search', { labelled: true });
-      expect(icon.hasAttribute('aria-hidden')).toBe(false);
+      expect(icon!.hasAttribute('aria-hidden')).toBe(false);
     });
 
     it('handles the clear alias (maps to close)', () => {
       const clearIcon = createIcon('clear');
       const closeIcon = createIcon('close');
-      expect(clearIcon.innerHTML).toBe(closeIcon.innerHTML);
-      expect(clearIcon.getAttribute('data-icon-name')).toBe('clear');
+      expect(clearIcon!).toBeTruthy();
+      expect(closeIcon).toBeTruthy();
+      expect(clearIcon!.innerHTML).toBe(closeIcon!.innerHTML);
+      expect(clearIcon!.getAttribute('data-icon-name')).toBe('clear');
     });
 
     it('returns null for invalid icon name', () => {
@@ -37,9 +40,9 @@ describe('Icons utility', () => {
 
     it('adds custom class names', () => {
       const icon = createIcon('email', { classNames: ['custom-class', 'another-class'] });
-      expect(icon.classList.contains('icon')).toBe(true);
-      expect(icon.classList.contains('custom-class')).toBe(true);
-      expect(icon.classList.contains('another-class')).toBe(true);
+      expect(icon!.classList.contains('icon')).toBe(true);
+      expect(icon!.classList.contains('custom-class')).toBe(true);
+      expect(icon!.classList.contains('another-class')).toBe(true);
     });
 
     it('creates all icon types successfully', () => {
@@ -54,8 +57,8 @@ describe('Icons utility', () => {
       iconNames.forEach(name => {
         const icon = createIcon(name);
         expect(icon).toBeTruthy();
-        expect(icon.tagName).toBe('svg');
-        expect(icon.getAttribute('data-icon-name')).toBe(name);
+        expect(icon!.tagName).toBe('svg');
+        expect(icon!.getAttribute('data-icon-name')).toBe(name);
       });
     });
 
@@ -65,37 +68,37 @@ describe('Icons utility', () => {
       const sunMoonIcon = createIcon('sunMoon');
 
       // All Lucide icons use 24x24 viewBox
-      expect(sunIcon.getAttribute('viewBox')).toBe('0 0 24 24');
-      expect(moonIcon.getAttribute('viewBox')).toBe('0 0 24 24');
-      expect(sunMoonIcon.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(sunIcon!.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(moonIcon!.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(sunMoonIcon!.getAttribute('viewBox')).toBe('0 0 24 24');
     });
 
     it('creates stroke-based icons with correct attributes (Lucide style)', () => {
       const sunIcon = createIcon('sun');
 
-      expect(sunIcon.getAttribute('fill')).toBe('none');
-      expect(sunIcon.getAttribute('stroke')).toBe('currentColor');
-      expect(sunIcon.getAttribute('stroke-width')).toBe('2');
-      expect(sunIcon.getAttribute('stroke-linecap')).toBe('round');
-      expect(sunIcon.getAttribute('stroke-linejoin')).toBe('round');
+      expect(sunIcon!.getAttribute('fill')).toBe('none');
+      expect(sunIcon!.getAttribute('stroke')).toBe('currentColor');
+      expect(sunIcon!.getAttribute('stroke-width')).toBe('2');
+      expect(sunIcon!.getAttribute('stroke-linecap')).toBe('round');
+      expect(sunIcon!.getAttribute('stroke-linejoin')).toBe('round');
     });
 
     it('creates fill-based icons with correct attributes (Font Awesome style)', () => {
       const homeIcon = createIcon('home');
 
-      expect(homeIcon.getAttribute('fill')).toBe('currentColor');
-      expect(homeIcon.hasAttribute('stroke')).toBe(false);
+      expect(homeIcon!.getAttribute('fill')).toBe('currentColor');
+      expect(homeIcon!.hasAttribute('stroke')).toBe(false);
     });
 
     it('handles empty classNames array', () => {
       const icon = createIcon('home', { classNames: [] });
-      expect(icon.classList.contains('icon')).toBe(true);
-      expect(icon.classList.length).toBe(1);
+      expect(icon!.classList.contains('icon')).toBe(true);
+      expect(icon!.classList.length).toBe(1);
     });
   });
 
   describe('hydrateIcons', () => {
-    let container;
+    let container: HTMLElement;
 
     beforeEach(() => {
       container = document.createElement('div');
@@ -112,7 +115,7 @@ describe('Icons utility', () => {
 
       const icon = container.querySelector('svg');
       expect(icon).toBeTruthy();
-      expect(icon.getAttribute('data-icon-name')).toBe('home');
+      expect(icon!.getAttribute('data-icon-name')).toBe('home');
     });
 
     it('replaces multiple icons in one pass', () => {
@@ -133,7 +136,7 @@ describe('Icons utility', () => {
 
       const icon = container.querySelector('svg');
       expect(icon).toBeTruthy();
-      expect(icon.getAttribute('data-icon-name')).toBe('clear');
+      expect(icon!.getAttribute('data-icon-name')).toBe('clear');
     });
 
     it('preserves existing classes from placeholder', () => {
@@ -141,9 +144,10 @@ describe('Icons utility', () => {
       hydrateIcons(container);
 
       const icon = container.querySelector('svg');
-      expect(icon.classList.contains('custom-class')).toBe(true);
-      expect(icon.classList.contains('another-class')).toBe(true);
-      expect(icon.classList.contains('icon')).toBe(true);
+      expect(icon).toBeTruthy();
+      expect(icon!.classList.contains('custom-class')).toBe(true);
+      expect(icon!.classList.contains('another-class')).toBe(true);
+      expect(icon!.classList.contains('icon')).toBe(true);
     });
 
     it('handles aria-label attribute', () => {
@@ -151,8 +155,9 @@ describe('Icons utility', () => {
       hydrateIcons(container);
 
       const icon = container.querySelector('svg');
-      expect(icon.getAttribute('aria-label')).toBe('Home page');
-      expect(icon.hasAttribute('aria-hidden')).toBe(false);
+      expect(icon).toBeTruthy();
+      expect(icon!.getAttribute('aria-label')).toBe('Home page');
+      expect(icon!.hasAttribute('aria-hidden')).toBe(false);
     });
 
     it('handles role attribute', () => {
@@ -160,7 +165,8 @@ describe('Icons utility', () => {
       hydrateIcons(container);
 
       const icon = container.querySelector('svg');
-      expect(icon.getAttribute('role')).toBe('img');
+      expect(icon).toBeTruthy();
+      expect(icon!.getAttribute('role')).toBe('img');
     });
 
     it('handles title attribute', () => {
@@ -168,7 +174,8 @@ describe('Icons utility', () => {
       hydrateIcons(container);
 
       const icon = container.querySelector('svg');
-      expect(icon.getAttribute('title')).toBe('Go home');
+      expect(icon).toBeTruthy();
+      expect(icon!.getAttribute('title')).toBe('Go home');
     });
 
     it('handles aria-hidden="false" on placeholder', () => {
@@ -176,7 +183,8 @@ describe('Icons utility', () => {
       hydrateIcons(container);
 
       const icon = container.querySelector('svg');
-      expect(icon.hasAttribute('aria-hidden')).toBe(false);
+      expect(icon).toBeTruthy();
+      expect(icon!.hasAttribute('aria-hidden')).toBe(false);
     });
 
     it('skips placeholders without data-icon attribute', () => {
@@ -222,21 +230,23 @@ describe('Icons utility', () => {
       hydrateIcons(container);
 
       const icon = container.querySelector('svg');
-      expect(icon.classList.contains('custom-class')).toBe(true);
-      expect(icon.getAttribute('aria-label')).toBe('Home');
-      expect(icon.getAttribute('role')).toBe('img');
-      expect(icon.getAttribute('title')).toBe('Go home');
-      expect(icon.hasAttribute('aria-hidden')).toBe(false);
+      expect(icon).toBeTruthy();
+      expect(icon!.classList.contains('custom-class')).toBe(true);
+      expect(icon!.getAttribute('aria-label')).toBe('Home');
+      expect(icon!.getAttribute('role')).toBe('img');
+      expect(icon!.getAttribute('title')).toBe('Go home');
+      expect(icon!.hasAttribute('aria-hidden')).toBe(false);
     });
 
     it('returns early when document is undefined (SSR environment)', () => {
-      const originalDocument = globalThis.document;
-      delete globalThis.document;
-      
+      const g = globalThis as unknown as { document?: Document };
+      const originalDocument = g.document;
+      g.document = undefined;
+
       // Should not throw
-      expect(() => hydrateIcons(null)).not.toThrow();
-      
-      globalThis.document = originalDocument;
+      expect(() => hydrateIcons(undefined)).not.toThrow();
+
+      g.document = originalDocument;
     });
 
     it('skips icon replacement when createIcon returns null for unknown icon', () => {
@@ -258,13 +268,14 @@ describe('Icons utility', () => {
 
   describe('createIcon SSR handling', () => {
     it('returns null when document is undefined', () => {
-      const originalDocument = globalThis.document;
-      delete globalThis.document;
-      
+      const g = globalThis as unknown as { document?: Document };
+      const originalDocument = g.document;
+      g.document = undefined;
+
       const icon = createIcon('home');
       expect(icon).toBeNull();
-      
-      globalThis.document = originalDocument;
+
+      g.document = originalDocument;
     });
   });
 });

@@ -1,20 +1,37 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // We need to reset the module between tests to clear the loaderPromise
 let ensureMathJax: typeof import('../src/utils/mathjax.ts').ensureMathJax | undefined;
+
+/** Window with optional MathJax (matches src/types/global.d.ts) */
+interface WindowWithMathJax extends Window {
+  MathJax?: {
+    typesetPromise?: (elements?: HTMLElement[]) => Promise<void>;
+    startup?: Record<string, unknown>;
+    tex?: Record<string, unknown>;
+    options?: Record<string, unknown>;
+    loader?: Record<string, unknown>;
+    chtml?: Record<string, unknown>;
+  };
+}
 
 /** Shape of renderActions.addMathTitles used by addMathTitles tests */
 interface MathJaxAddMathTitlesAction {
   addMathTitles?: [number, (doc: { math: Array<{ typesetRoot: Node | null | undefined }> }) => void];
 }
 
+function getWindow(): WindowWithMathJax {
+  return window as WindowWithMathJax;
+}
+
 describe('mathjax utility', () => {
-  let originalMathJax: typeof window.MathJax | undefined;
+  let originalMathJax: WindowWithMathJax['MathJax'] | undefined;
 
   beforeEach(async () => {
     // Save original values
-    originalMathJax = window.MathJax;
-    
+    originalMathJax = getWindow().MathJax;
+
     // Reset MathJax
-    delete window.MathJax;
+    getWindow().MathJax = undefined;
     
     // Reset the module to clear loaderPromise
     vi.resetModules();
@@ -28,9 +45,9 @@ describe('mathjax utility', () => {
   afterEach(() => {
     // Restore
     if (originalMathJax) {
-      window.MathJax = originalMathJax;
+      getWindow().MathJax = originalMathJax;
     } else {
-      delete window.MathJax;
+      getWindow().MathJax = undefined;
     }
     
     vi.restoreAllMocks();
@@ -41,27 +58,28 @@ describe('mathjax utility', () => {
       const mockMathJax = {
         typesetPromise: vi.fn().mockResolvedValue(undefined)
       };
-      window.MathJax = mockMathJax;
+      getWindow().MathJax = mockMathJax;
 
-      const result = await ensureMathJax();
+      const result = await ensureMathJax!();
       
       expect(result).toBe(mockMathJax);
     });
 
     it('returns undefined when window is undefined (SSR)', async () => {
-      const originalWindow = globalThis.window;
-      delete globalThis.window;
-      
+      const g = globalThis as unknown as { window?: Window };
+      const originalWindow = g.window;
+      g.window = undefined;
+
       try {
-        const result = await ensureMathJax();
+        const result = await ensureMathJax!();
         expect(result).toBeUndefined();
       } finally {
-        globalThis.window = originalWindow;
+        g.window = originalWindow;
       }
     });
 
     it('returns undefined if MathJax exists but without typesetPromise', async () => {
-      window.MathJax = { someOtherProp: true };
+      (window as unknown as { MathJax?: Record<string, unknown> }).MathJax = { someOtherProp: true };
       
       // Reset modules and use vi.doMock() for dynamic mocking (not hoisted like vi.mock())
       vi.resetModules();
@@ -75,12 +93,12 @@ describe('mathjax utility', () => {
 
       // The ensureMathJax will try to load mathjax, which will fail
       // It should return undefined gracefully instead of throwing
-      const result = await localEnsureMathJax();
+      const result = await localEnsureMathJax!();
       expect(result).toBeUndefined();
     });
 
     it('returns undefined and logs error when dynamic import fails', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
       
       // Reset modules and mock the mathjax import to fail
       vi.resetModules();
@@ -96,7 +114,7 @@ describe('mathjax utility', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Should return undefined gracefully, not throw
-      const result = await localEnsureMathJax();
+      const result = await localEnsureMathJax!();
       expect(result).toBeUndefined();
       
       // Should have logged the error
@@ -110,7 +128,7 @@ describe('mathjax utility', () => {
 
     it('configures MathJax window object when loading', async () => {
       // Ensure MathJax is not set
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
       
       // Reset modules and set up mock for dynamic import
       vi.resetModules();
@@ -121,20 +139,20 @@ describe('mathjax utility', () => {
       const localEnsureMathJax = module.ensureMathJax;
 
       try {
-        await localEnsureMathJax();
+        await localEnsureMathJax!();
       } catch {
         // Expected - module won't actually load
       }
 
       // MathJax config should have been set
-      expect(window.MathJax).toBeDefined();
-      expect(window.MathJax.tex).toBeDefined();
-      expect(window.MathJax.tex.inlineMath).toEqual([['\\(', '\\)']]);
+      expect(getWindow().MathJax).toBeDefined();
+      expect(getWindow().MathJax!.tex).toBeDefined();
+      expect(getWindow().MathJax!.tex!.inlineMath).toEqual([['\\(', '\\)']]);
     });
 
     it('handles MathJax with typesetPromise and app root', async () => {
       const typesetPromiseMock = vi.fn().mockResolvedValue(undefined);
-      window.MathJax = {
+      getWindow().MathJax = {
         typesetPromise: typesetPromiseMock
       };
 
@@ -142,16 +160,16 @@ describe('mathjax utility', () => {
       mockAppRoot.id = 'app';
       vi.spyOn(document, 'getElementById').mockReturnValue(mockAppRoot);
 
-      const result = await ensureMathJax();
-      
-      expect(result).toBe(window.MathJax);
+      const result = await ensureMathJax!();
+
+      expect(result).toBe(getWindow().MathJax);
     });
 
     it('handles typesetPromise errors silently', async () => {
       const typesetPromiseMock = vi.fn().mockRejectedValue(new Error('Typeset failed'));
-      
+
       // Set up MathJax config first, then add typesetPromise after "loading"
-      window.MathJax = {
+      getWindow().MathJax = {
         loader: { load: [] },
         chtml: { fontURL: 'test' },
         tex: { inlineMath: [['\\(', '\\)']] },
@@ -163,43 +181,44 @@ describe('mathjax utility', () => {
       vi.spyOn(document, 'getElementById').mockReturnValue(mockAppRoot);
 
       // Should not throw
-      const result = await ensureMathJax();
+      const result = await ensureMathJax!();
       expect(result).toBeDefined();
     });
   });
 
   describe('MathJax configuration', () => {
     it('sets up renderActions for adding titles to math elements', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
       // Check that the config was set up
-      const renderActions = (window.MathJax?.options?.renderActions) as MathJaxAddMathTitlesAction | undefined;
+      const renderActions = (getWindow().MathJax?.options?.renderActions) as MathJaxAddMathTitlesAction | undefined;
       expect(renderActions?.addMathTitles).toBeDefined();
 
       // Get the render action callback
-      const renderAction = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles!;
+      const mj = getWindow().MathJax as { options?: { renderActions?: MathJaxAddMathTitlesAction } };
+      const renderAction = mj!.options!.renderActions!.addMathTitles!;
       expect(Array.isArray(renderAction)).toBe(true);
       expect(renderAction[0]).toBe(200);
       expect(typeof renderAction[1]).toBe('function');
     });
 
     it('adds title attributes to math elements with known variables', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
       // Get the render action callback
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
+      const addTitlesCallback = (getWindow().MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       // Create mock math nodes
       const mockMi = document.createElement('mjx-mi');
@@ -224,15 +243,15 @@ describe('mathjax utility', () => {
     });
 
     it('adds title for all known variables', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
+      const addTitlesCallback = (getWindow().MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const variables = ['U', 'C', 'I', 'S', 'F', 'A'];
       const expectedTitles = {
@@ -257,20 +276,20 @@ describe('mathjax utility', () => {
 
         addTitlesCallback(mockDoc);
 
-        expect(mockMi.getAttribute('title')).toBe(expectedTitles[varName]);
+        expect(mockMi.getAttribute('title')).toBe((expectedTitles as Record<string, string>)[varName]);
       }
     });
 
     it('does not add title for unknown variables', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
+      const addTitlesCallback = (getWindow().MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockMi = document.createElement('mjx-mi');
       mockMi.textContent = 'X'; // Unknown variable
@@ -288,15 +307,15 @@ describe('mathjax utility', () => {
     });
 
     it('handles math nodes without typesetRoot', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
+      const addTitlesCallback = (getWindow().MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockDoc = {
         math: [{ typesetRoot: null }, { typesetRoot: undefined }]
@@ -307,15 +326,15 @@ describe('mathjax utility', () => {
     });
 
     it('handles mi elements without text content', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
+      const addTitlesCallback = (getWindow().MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockMi = document.createElement('mjx-mi');
       mockMi.textContent = ''; // Empty
@@ -333,15 +352,15 @@ describe('mathjax utility', () => {
     });
 
     it('handles mi elements with whitespace-only content', async () => {
-      delete window.MathJax;
+      (window as unknown as { MathJax?: unknown }).MathJax = undefined;
 
       try {
-        await ensureMathJax();
+        await ensureMathJax!();
       } catch {
         // Expected
       }
 
-      const addTitlesCallback = (window.MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
+      const addTitlesCallback = (getWindow().MathJax!.options!.renderActions as MathJaxAddMathTitlesAction).addMathTitles![1];
 
       const mockMi = document.createElement('mjx-mi');
       mockMi.textContent = '   '; // Whitespace only
@@ -358,4 +377,3 @@ describe('mathjax utility', () => {
     });
   });
 });
-

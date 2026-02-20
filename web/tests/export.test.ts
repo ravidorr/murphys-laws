@@ -1,3 +1,5 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { ExportContent } from '../src/utils/export-context.ts';
 import { ContentType } from '../src/utils/export-context.ts';
 
 // Mock Sentry
@@ -55,11 +57,12 @@ interface MockJsPDFInstance {
 
 const mockJsPDF = (jspdfModule as typeof jspdfModule & { __getMockJsPDFInstance: () => MockJsPDFInstance }).__getMockJsPDFInstance();
 
+/** Compatible with Law for export tests */
 interface MockLaw {
   id: number;
-  title: string | null;
+  title?: string;
   text: string;
-  attribution: string | null;
+  attribution?: string;
   category_slug: string;
   upvotes: number;
   downvotes: number;
@@ -164,9 +167,7 @@ describe('Export Utilities', () => {
       },
       {
         id: 2,
-        title: null,
         text: 'Nothing is as easy as it looks.',
-        attribution: null,
         category_slug: 'general',
         upvotes: 10,
         downvotes: 1
@@ -183,7 +184,7 @@ describe('Export Utilities', () => {
       upvotes: 5,
       downvotes: 0
     };
-    localThis.mockSingleLaw = localThis.mockLaws[0];
+    localThis.mockSingleLaw = localThis.mockLaws![0] ?? null;
     localThis.mockCategories = [
       { id: 1, name: 'General Laws', slug: 'general-laws', law_count: 50 },
       { id: 2, name: 'Computer Laws', slug: 'computer-laws', law_count: 30 }
@@ -243,12 +244,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test Laws',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToCSV(content);
 
-        const blobCall = vi.mocked(URL.createObjectURL).mock.calls[0][0];
+        const blobCall = vi.mocked(URL.createObjectURL).mock.calls[0]![0];
         expect(blobCall).toBeInstanceOf(Blob);
       });
 
@@ -256,25 +257,25 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test Laws',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToCSV(content);
 
-        expect(localThis.mockAnchor.download).toMatch(/\.csv$/);
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.download).toMatch(/\.csv$/);
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('uses provided filename', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test Laws',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToCSV(content, 'custom-file.csv');
 
-        expect(localThis.mockAnchor.download).toBe('custom-file.csv');
+        expect(localThis.mockAnchor!.download).toBe('custom-file.csv');
       });
 
       it('handles empty laws array', () => {
@@ -286,7 +287,7 @@ describe('Export Utilities', () => {
 
         // Should not throw
         exportToCSV(content);
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -295,12 +296,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.SINGLE_LAW,
           title: "Murphy's Law",
-          data: localThis.mockSingleLaw
+          data: localThis.mockSingleLaw!!
         };
 
         exportToCSV(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -309,12 +310,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.CATEGORIES,
           title: 'Categories',
-          data: localThis.mockCategories
+          data: localThis.mockCategories!!
         };
 
         exportToCSV(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -332,13 +333,13 @@ describe('Export Utilities', () => {
             upvotes: null,
             downvotes: null
           }]
-        };
+        } as unknown as ExportContent;
 
         exportToCSV(content);
         const text = getBlobText();
 
         // Should not throw and should produce valid CSV
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
         expect(text).toContain('"Full Text"');
       });
 
@@ -354,7 +355,7 @@ describe('Export Utilities', () => {
 
         exportToCSV(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('escapes values containing commas', () => {
@@ -396,7 +397,7 @@ describe('Export Utilities', () => {
       });
 
       it('escapes values containing double quotes', () => {
-        const content = {
+        const content: ExportContent = {
           type: ContentType.LAWS,
           title: 'Test',
           data: [{
@@ -442,11 +443,11 @@ describe('Export Utilities', () => {
             slug: null,
             law_count: null
           }]
-        };
+        } as unknown as ExportContent;
 
         exportToCSV(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('converts null values to empty strings in CSV', () => {
@@ -459,14 +460,14 @@ describe('Export Utilities', () => {
             text: 'Some text',
             attribution: null
           }]
-        };
+        } as unknown as ExportContent;
 
         exportToCSV(content);
         const text = getBlobText();
 
         // Null values should become empty strings, not "null"
         expect(text).not.toContain('"null"');
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('converts undefined values to empty strings in CSV', () => {
@@ -486,7 +487,7 @@ describe('Export Utilities', () => {
 
         // Undefined values should become empty strings, not "undefined"
         expect(text).not.toContain('"undefined"');
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
   });
@@ -497,37 +498,37 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Search Results',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('triggers file download with .md extension', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.download).toMatch(/\.md$/);
+        expect(localThis.mockAnchor!.download).toMatch(/\.md$/);
       });
 
       it('uses numbered list format', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLaws[0]]
+          data: [localThis.mockLaws![0]!]
         };
 
         exportToMarkdown(content);
 
         // Get the blob content
-        const blobCall = vi.mocked(URL.createObjectURL).mock.calls[0][0];
+        const blobCall = vi.mocked(URL.createObjectURL).mock.calls[0]![0];
         expect(blobCall).toBeInstanceOf(Blob);
       });
 
@@ -535,24 +536,24 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLawWithEscapes]
+          data: [localThis.mockLawWithEscapes!]
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('includes footer with export date and link', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -561,12 +562,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.SINGLE_LAW,
           title: "Murphy's Law",
-          data: localThis.mockSingleLaw
+          data: localThis.mockSingleLaw!
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -575,12 +576,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.CONTENT,
           title: 'About',
-          data: localThis.mockContent
+          data: localThis.mockContent!
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -589,12 +590,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.CATEGORIES,
           title: 'Categories',
-          data: localThis.mockCategories
+          data: localThis.mockCategories!
         };
 
         exportToMarkdown(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
   });
@@ -605,24 +606,24 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Search Results',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToText(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('triggers file download with .txt extension', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToText(content);
 
-        expect(localThis.mockAnchor.download).toMatch(/\.txt$/);
+        expect(localThis.mockAnchor!.download).toMatch(/\.txt$/);
       });
 
       it('handles laws without title', () => {
@@ -634,7 +635,7 @@ describe('Export Utilities', () => {
 
         // Should not throw
         exportToText(content);
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
       it('handles laws without attribution', () => {
@@ -646,7 +647,7 @@ describe('Export Utilities', () => {
 
         // Should not throw
         exportToText(content);
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -660,7 +661,7 @@ describe('Export Utilities', () => {
 
         exportToText(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
 
@@ -669,12 +670,12 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.CATEGORIES,
           title: 'Categories',
-          data: localThis.mockCategories
+          data: localThis.mockCategories!
         };
 
         exportToText(content);
 
-        expect(localThis.mockAnchor.click).toHaveBeenCalled();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
   });
@@ -685,7 +686,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test Laws',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToPDF(content);
@@ -697,7 +698,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToPDF(content);
@@ -710,7 +711,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test Laws',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToPDF(content, 'custom.pdf');
@@ -724,7 +725,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.SINGLE_LAW,
           title: "Murphy's Law",
-          data: localThis.mockSingleLaw
+          data: localThis.mockSingleLaw!
         };
 
         exportToPDF(content);
@@ -738,7 +739,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.CONTENT,
           title: 'About',
-          data: localThis.mockContent
+          data: localThis.mockContent!
         };
 
         exportToPDF(content);
@@ -752,7 +753,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.CATEGORIES,
           title: 'Categories',
-          data: localThis.mockCategories
+          data: localThis.mockCategories!
         };
 
         exportToPDF(content);
@@ -839,7 +840,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToPDF(content);
@@ -861,7 +862,7 @@ describe('Export Utilities', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       exportContent(content, 'pdf');
@@ -873,43 +874,43 @@ describe('Export Utilities', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       exportContent(content, 'csv');
 
-      expect(localThis.mockAnchor.download).toMatch(/\.csv$/);
+      expect(localThis.mockAnchor!.download).toMatch(/\.csv$/);
     });
 
     it('routes to exportToMarkdown for md format', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       exportContent(content, 'md');
 
-      expect(localThis.mockAnchor.download).toMatch(/\.md$/);
+      expect(localThis.mockAnchor!.download).toMatch(/\.md$/);
     });
 
     it('routes to exportToText for txt format', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       exportContent(content, 'txt');
 
-      expect(localThis.mockAnchor.download).toMatch(/\.txt$/);
+      expect(localThis.mockAnchor!.download).toMatch(/\.txt$/);
     });
 
     it('handles unknown format gracefully', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       // Should not throw
@@ -924,7 +925,7 @@ describe('Export Utilities', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       exportToCSV(content);
@@ -936,7 +937,7 @@ describe('Export Utilities', () => {
       const content = {
         type: ContentType.LAWS,
         title: 'Test',
-        data: localThis.mockLaws
+        data: localThis.mockLaws!
       };
 
       exportToCSV(content);
@@ -951,7 +952,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLawWithEscapes]
+          data: [localThis.mockLawWithEscapes!]
         };
 
         exportToMarkdown(content);
@@ -967,7 +968,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLawWithEscapes]
+          data: [localThis.mockLawWithEscapes!]
         };
 
         exportToText(content);
@@ -983,7 +984,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToMarkdown(content);
@@ -998,7 +999,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLaws[0]]
+          data: [localThis.mockLaws![0]!]
         };
 
         exportToMarkdown(content);
@@ -1012,7 +1013,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToMarkdown(content);
@@ -1027,7 +1028,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLaws[0]]
+          data: [localThis.mockLaws![0]!]
         };
 
         exportToMarkdown(content);
@@ -1043,7 +1044,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: localThis.mockLaws
+          data: localThis.mockLaws!
         };
 
         exportToText(content);
@@ -1060,7 +1061,7 @@ describe('Export Utilities', () => {
         const content = {
           type: ContentType.LAWS,
           title: 'Test',
-          data: [localThis.mockLaws[0]]
+          data: [localThis.mockLaws![0]!]
         };
 
         exportToCSV(content);

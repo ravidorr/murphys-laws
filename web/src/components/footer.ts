@@ -54,7 +54,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
     };
 
     const defer = (cb: () => void) => {
-      if ('requestIdleCallback' in window) {
+      if (typeof window.requestIdleCallback === 'function') {
         window.requestIdleCallback(cb, { timeout: 1500 });
       } else {
         window.setTimeout(cb, 1200);
@@ -66,7 +66,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
         return;
       }
 
-      if ('IntersectionObserver' in window) {
+      if (typeof window.IntersectionObserver === 'function') {
         observer = new IntersectionObserver((entries) => {
           for (const entry of entries) {
             if (entry.isIntersecting) {

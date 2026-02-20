@@ -1,4 +1,5 @@
-import { SodCalculatorSimple } from '@components/sod-calculator-simple.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { SodCalculatorSimple } from '../src/components/sod-calculator-simple.js';
 
 interface SodCalculatorSimpleContext {
   el?: HTMLElement;
@@ -14,7 +15,7 @@ function createLocalThis(): () => SodCalculatorSimpleContext {
   const context: SodCalculatorSimpleContext = {};
 
   beforeEach(() => {
-    Object.keys(context).forEach((key) => {
+    (Object.keys(context) as (keyof SodCalculatorSimpleContext)[]).forEach((key) => {
       delete context[key];
     });
   });
@@ -46,8 +47,8 @@ describe('SodCalculatorSimple component', () => {
   it('renders with initial values', () => {
     const el = mountCalculator();
 
-    expect(el.querySelector('#urgency-value').textContent).toBe('5');
-    expect(el.querySelector('#score-display').textContent).toBe('5.04');
+    expect(el.querySelector('#urgency-value')!.textContent).toBe('5');
+    expect(el.querySelector('#score-display')!.textContent).toBe('5.04');
   });
 
   it('updates score when sliders change', () => {
@@ -58,8 +59,8 @@ describe('SodCalculatorSimple component', () => {
     urgencySlider!.dispatchEvent(new Event('input'));
 
     const scoreDisplay = el.querySelector('#score-display');
-
-    expect(parseFloat(scoreDisplay.textContent)).toBeGreaterThan(5.25);
+    expect(scoreDisplay).toBeTruthy();
+    expect(parseFloat(scoreDisplay!.textContent!)).toBeGreaterThan(5.25);
   });
 
   it('navigates when button is clicked', () => {
@@ -81,7 +82,8 @@ describe('SodCalculatorSimple component', () => {
     skillSlider!.value = '7';
     skillSlider!.dispatchEvent(new Event('input'));
 
-    expect(skillValue.textContent).toBe('7');
+    expect(skillValue).toBeTruthy();
+    expect(skillValue!.textContent).toBe('7');
   });
 
   it('updates interpretation based on score', () => {
@@ -96,8 +98,8 @@ describe('SodCalculatorSimple component', () => {
     urgencySlider!.dispatchEvent(new Event('input'));
     skillSlider!.dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#interpretation').textContent;
-    expect(interpretation.length).toBeGreaterThan(0);
+    const interpretation = el.querySelector('#interpretation')!.textContent;
+    expect(interpretation!.length).toBeGreaterThan(0);
   });
 
   it('shows safe interpretation for low score (score < 2)', () => {
@@ -113,11 +115,11 @@ describe('SodCalculatorSimple component', () => {
     // Trigger update
     (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#interpretation').textContent;
-    const scoreDisplay = el.querySelector('#score-display').textContent;
+    const interpretation = el.querySelector('#interpretation')!.textContent;
+    const scoreDisplay = el.querySelector('#score-display')!.textContent;
 
     // Score should be very low
-    expect(parseFloat(scoreDisplay)).toBeLessThan(2);
+    expect(parseFloat(scoreDisplay!)).toBeLessThan(2);
     expect(interpretation).toContain('probably safe');
   });
 
@@ -134,7 +136,7 @@ describe('SodCalculatorSimple component', () => {
 
     (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#interpretation').textContent;
+    const interpretation = el.querySelector('#interpretation')!.textContent;
     expect(interpretation).toContain('risky');
   });
 
@@ -150,7 +152,7 @@ describe('SodCalculatorSimple component', () => {
 
     (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#interpretation').textContent;
+    const interpretation = el.querySelector('#interpretation')!.textContent;
     expect(interpretation).toContain('worrying');
   });
 
@@ -167,7 +169,7 @@ describe('SodCalculatorSimple component', () => {
 
     (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#interpretation').textContent;
+    const interpretation = el.querySelector('#interpretation')!.textContent;
     expect(interpretation).toContain('looming');
   });
 
@@ -183,7 +185,7 @@ describe('SodCalculatorSimple component', () => {
 
     (el.querySelector<HTMLInputElement>('#urgency'))!.dispatchEvent(new Event('input'));
 
-    const interpretation = el.querySelector('#interpretation').textContent;
+    const interpretation = el.querySelector('#interpretation')!.textContent;
     expect(interpretation).toContain('Catastrophe');
   });
 

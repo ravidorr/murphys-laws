@@ -3,21 +3,25 @@
  * This file covers edge cases and branches not tested in the main test files.
  */
 
-import { Breadcrumb } from '@components/breadcrumb.js';
-import { AdvancedSearch } from '@components/advanced-search.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { MockInstance } from 'vitest';
+import type { Category } from '../src/types/app.d.ts';
+import { Breadcrumb } from '../src/components/breadcrumb.ts';
+import { AdvancedSearch } from '../src/components/advanced-search.ts';
 import { addVotingListeners } from '../src/utils/voting.js';
 import * as api from '../src/utils/api.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
 
 describe('Branch Coverage Tests', () => {
   describe('Breadcrumb component', () => {
-    const localThis = {
+    const localThis: { el: Element | null } = {
       el: null,
     };
 
     afterEach(() => {
-      if (localThis.el?.parentNode) {
-        localThis.el.parentNode.removeChild(localThis.el);
+      const el = localThis.el;
+      if (el?.parentNode) {
+        el.parentNode.removeChild(el);
       }
       localThis.el = null;
     });
@@ -31,9 +35,9 @@ describe('Branch Coverage Tests', () => {
       localThis.el = Breadcrumb({ items, onNavigate: () => {} });
 
       // Find the category link (Home link is first, then our category link)
-      const categoryLink = localThis.el.querySelector('[data-nav="categories"]');
+      const categoryLink = localThis.el!.querySelector('[data-nav="categories"]');
       expect(categoryLink).toBeTruthy();
-      expect(categoryLink.getAttribute('href')).toBe('/categories');
+      expect(categoryLink!.getAttribute('href')).toBe('/categories');
     });
 
     it('falls back to "#" when href is not provided on intermediate items', () => {
@@ -45,9 +49,9 @@ describe('Branch Coverage Tests', () => {
       localThis.el = Breadcrumb({ items, onNavigate: () => {} });
 
       // Find the category link - should have href="#" as fallback
-      const categoryLink = localThis.el.querySelector('[data-nav="categories"]');
+      const categoryLink = localThis.el!.querySelector('[data-nav="categories"]');
       expect(categoryLink).toBeTruthy();
-      expect(categoryLink.getAttribute('href')).toBe('#');
+      expect(categoryLink!.getAttribute('href')).toBe('#');
     });
 
     it('handles click events on non-Element targets gracefully', () => {
@@ -63,7 +67,7 @@ describe('Branch Coverage Tests', () => {
       const textNode = document.createTextNode('text');
       const event = new MouseEvent('click', { bubbles: true });
       Object.defineProperty(event, 'target', { value: textNode });
-      localThis.el.dispatchEvent(event);
+      localThis.el!.dispatchEvent(event);
 
       // onNavigate should not be called because target is not an Element
       expect(onNavigateMock).not.toHaveBeenCalled();
@@ -78,9 +82,9 @@ describe('Branch Coverage Tests', () => {
       localThis.el = Breadcrumb({ items, onNavigate: onNavigateMock });
 
       // Click on the current page span (which has no data-nav)
-      const currentSpan = localThis.el.querySelector('.breadcrumb-current');
+      const currentSpan = localThis.el!.querySelector('.breadcrumb-current');
       if (currentSpan) {
-        currentSpan.click();
+        (currentSpan as HTMLElement).click();
       }
 
       // onNavigate should only be called if clicked on something with data-nav
@@ -99,12 +103,12 @@ describe('Branch Coverage Tests', () => {
       localThis.el = Breadcrumb({ items, onNavigate: onNavigateMock });
 
       // Find the category link (it will have no data-nav)
-      const allLinks = localThis.el.querySelectorAll('.breadcrumb-link');
+      const allLinks = localThis.el!.querySelectorAll('.breadcrumb-link');
       // First link is Home (has data-nav), second is Category (no data-nav)
       const categoryLink = allLinks[1];
       
       if (categoryLink && !categoryLink.hasAttribute('data-nav')) {
-        categoryLink.click();
+        (categoryLink as HTMLElement).click();
         // onNavigate should not be called because navTarget is falsy
         expect(onNavigateMock).not.toHaveBeenCalled();
       }
@@ -120,8 +124,9 @@ describe('Branch Coverage Tests', () => {
       localThis.el = Breadcrumb({ items, onNavigate: onNavigateMock });
       document.body.appendChild(localThis.el);
 
-      const link = localThis.el.querySelector('[data-nav="categories"]');
-      link.click();
+      const link = localThis.el!.querySelector('[data-nav="categories"]');
+      expect(link).toBeTruthy();
+      (link as HTMLElement).click();
 
       expect(onNavigateMock).toHaveBeenCalledWith('categories');
     });
@@ -136,20 +141,20 @@ describe('Branch Coverage Tests', () => {
       localThis.el = Breadcrumb({ items } as Parameters<typeof Breadcrumb>[0]);
       document.body.appendChild(localThis.el);
 
-      const link = localThis.el.querySelector('[data-nav="categories"]');
-      
+      const link = localThis.el!.querySelector('[data-nav="categories"]');
+      expect(link).toBeTruthy();
       // Should not throw when clicking
-      expect(() => link.click()).not.toThrow();
+      expect(() => (link as HTMLElement).click()).not.toThrow();
     });
   });
 
   describe('AdvancedSearch component - cache fallback branches', () => {
-    const localThis = {
+    const localThis: { el: HTMLElement | null } = {
       el: null,
     };
-    let fetchAPISpy;
-    let getCachedCategoriesSpy;
-    let getCachedAttributionsSpy;
+    let fetchAPISpy: MockInstance;
+    let getCachedCategoriesSpy: MockInstance;
+    let getCachedAttributionsSpy: MockInstance;
 
     beforeEach(() => {
       fetchAPISpy = vi.spyOn(api, 'fetchAPI');
@@ -160,8 +165,9 @@ describe('Branch Coverage Tests', () => {
     });
 
     afterEach(() => {
-      if (localThis.el?.parentNode) {
-        localThis.el.parentNode.removeChild(localThis.el);
+      const el = localThis.el;
+      if (el?.parentNode) {
+        el.parentNode.removeChild(el);
       }
       localThis.el = null;
       localStorage.clear();
@@ -180,8 +186,8 @@ describe('Branch Coverage Tests', () => {
 
       // Wait for async operations
       await vi.waitFor(() => {
-        const categorySelect = localThis.el.querySelector('#search-category');
-        expect(categorySelect.innerHTML).toContain('Error loading categories');
+        const categorySelect = localThis.el!.querySelector('#search-category');
+        expect(categorySelect!.innerHTML).toContain('Error loading categories');
       });
     });
 
@@ -199,13 +205,13 @@ describe('Branch Coverage Tests', () => {
 
       // Wait for async operations
       await vi.waitFor(() => {
-        const attributionSelect = localThis.el.querySelector('#search-attribution');
-        expect(attributionSelect.innerHTML).toContain('Error loading attributions');
+        const attributionSelect = localThis.el!.querySelector('#search-attribution');
+        expect(attributionSelect!.innerHTML).toContain('Error loading attributions');
       });
     });
 
     it('uses cached categories when fetch fails and cache exists', async () => {
-      const cachedCategories = [{ id: 1, title: 'Cached Category' }];
+      const cachedCategories: Category[] = [{ id: 1, title: 'Cached Category', slug: 'cached-category' }];
       
       // Cache exists but empty initially, then available on fallback
       getCachedCategoriesSpy
@@ -220,7 +226,7 @@ describe('Branch Coverage Tests', () => {
       localThis.el = AdvancedSearch({ onSearch: () => {} });
 
       await vi.waitFor(() => {
-        const categorySelect = localThis.el.querySelector('#search-category');
+        const categorySelect = localThis.el!.querySelector('#search-category');
         // Either shows cached data or error - both are valid
         expect(categorySelect).toBeTruthy();
       });
@@ -243,8 +249,8 @@ describe('Branch Coverage Tests', () => {
       localThis.el = AdvancedSearch({ onSearch: () => {} });
 
       await vi.waitFor(() => {
-        const attributionSelect = localThis.el.querySelector('#search-attribution');
-        expect(attributionSelect.innerHTML).toContain('Cached Author');
+        const attributionSelect = localThis.el!.querySelector('#search-attribution');
+        expect(attributionSelect!.innerHTML).toContain('Cached Author');
       });
     });
   });
@@ -283,4 +289,3 @@ describe('Branch Coverage Tests', () => {
     });
   });
 });
-
