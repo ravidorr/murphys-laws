@@ -174,11 +174,11 @@ export function exportToPDF(content: ExportContent, filename?: string): void {
       }
 
       doc.setFont('helvetica', 'bold');
-      doc.text(cat.name || '', margin, y);
+      doc.text(cat.title || cat.title || cat.name || '', margin, y);
 
       doc.setFont('helvetica', 'normal');
       const countText = ` (${cat.law_count || 0} laws)`;
-      const nameWidth = doc.getTextWidth(cat.name || '');
+      const nameWidth = doc.getTextWidth(cat.title || cat.title || cat.name || '');
       doc.text(countText, margin + nameWidth, y);
 
       y += 7;
@@ -265,7 +265,7 @@ export function exportToCSV(content: ExportContent, filename?: string): void {
     categories.forEach(cat => {
       const row = [
         escapeCSVValue(cat.id || ''),
-        escapeCSVValue(cat.name || ''),
+        escapeCSVValue(cat.title || cat.name || ''),
         escapeCSVValue(cat.slug || ''),
         escapeCSVValue(cat.law_count || 0)
       ];
@@ -326,7 +326,7 @@ export function exportToMarkdown(content: ExportContent, filename?: string): voi
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     const categories = data as Partial<Category>[];
     categories.forEach(cat => {
-      md += `- **${cat.name || ''}** (${cat.law_count || 0} laws)\n`;
+      md += `- **${cat.title || cat.name || ''}** (${cat.law_count || 0} laws)\n`;
     });
     md += '\n';
   }
@@ -377,7 +377,7 @@ export function exportToText(content: ExportContent, filename?: string): void {
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
     const categories = data as Partial<Category>[];
     categories.forEach(cat => {
-      txt += `${cat.name || ''} (${cat.law_count || 0} laws)\n`;
+      txt += `${cat.title || cat.name || ''} (${cat.law_count || 0} laws)\n`;
     });
   }
 
