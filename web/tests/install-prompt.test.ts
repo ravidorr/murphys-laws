@@ -766,6 +766,76 @@ describe('Install Prompt Component', () => {
     });
   });
 
+  describe('insecure context (localStorage throws)', () => {
+    it('does not throw when localStorage.getItem throws (e.g. SecurityError)', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('The operation is insecure.');
+      });
+
+      expect(() => trackPageView()).not.toThrow();
+
+      getItemSpy.mockRestore();
+    });
+
+    it('shows prompt when thresholds are met even if localStorage.getItem throws', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      _setEngagementForTesting({
+        pageViews: 3,
+        lawsViewed: 2,
+        timeOnSite: 31000,
+        startTime: Date.now() - 31000
+      });
+
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('The operation is insecure.');
+      });
+
+      trackPageView();
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+      getItemSpy.mockRestore();
+    });
+
+    it('dismiss does not throw when localStorage.setItem throws and prompt is hidden', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('The operation is insecure.');
+      });
+
+      const dismissBtn = document.querySelector('.install-prompt [data-action="dismiss"]') as HTMLElement | null;
+      expect(dismissBtn).toBeTruthy();
+      expect(() => dismissBtn!.click()).not.toThrow();
+
+      return new Promise<void>(r => setTimeout(r, 350)).then(() => {
+        expect(document.querySelector('.install-prompt')).toBeFalsy();
+        setItemSpy.mockRestore();
+      });
+    });
+  });
+
   describe('appinstalled event', () => {
     it('handles appinstalled event correctly', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
