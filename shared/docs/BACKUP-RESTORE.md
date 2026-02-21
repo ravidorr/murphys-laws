@@ -38,7 +38,7 @@ Complete guide for backing up and restoring the Murphy's Laws application and in
 
 ### Backup Scripts
 
-- **Main App**: `/usr/local/bin/backup-murphys.sh`
+- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy)
 - **n8n**: `/usr/local/bin/backup-n8n.sh`
 - **n8n to GitHub**: `/usr/local/bin/backup-workflows-to-github.sh`
 

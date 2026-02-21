@@ -24,7 +24,7 @@ const ROOT_DIR = join(__dirname, '..');
 const THRESHOLDS = {
   lines: 95,
   functions: 95,
-  branches: 87, // Lowered from 88 after adding ~182 strictNullChecks guards; raise to 95 when branch coverage reaches 95% (see docs/BRANCH_COVERAGE_95.md)
+  branches: 93,
   statements: 95
 };
 

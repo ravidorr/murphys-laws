@@ -108,6 +108,10 @@ async function deploy() {
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
     'Updating daily report script'
   );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-murphys.sh /usr/local/bin/backup-murphys.sh 2>/dev/null && sudo chmod +x /usr/local/bin/backup-murphys.sh || true"`,
+    'Updating backup script'
+  );
 
   // Step 4: Validate Node.js version on server
   log('\nValidating Node.js version on server...', 'blue');
