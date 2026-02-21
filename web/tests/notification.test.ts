@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { showNotification, showSuccess, showError, clearAllNotifications } from '../src/components/notification.js';
+import * as icons from '../src/utils/icons.js';
+
 describe('Notification system', () => {
   afterEach(() => {
     // Only clear notifications, don't remove the container
@@ -162,6 +164,16 @@ describe('Notification system', () => {
       const dismiss = showNotification('Test', 'info', 0);
       expect(typeof dismiss).toBe('function');
       // Just verify it returns a function - auto-dismiss behavior tested elsewhere
+    });
+
+    it('renders notification without icon when createIcon returns null', () => {
+      vi.spyOn(icons, 'createIcon').mockReturnValue(null);
+      showNotification('No icon', 'info', 0);
+      const notification = document.querySelector('.notification');
+      expect(notification).toBeTruthy();
+      expect(notification!.querySelector('.notification-icon')).toBeFalsy();
+      expect(notification!.querySelector('.notification-message')?.textContent).toBe('No icon');
+      vi.restoreAllMocks();
     });
   });
 });

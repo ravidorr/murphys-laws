@@ -199,8 +199,8 @@ function buildClassString(options: ButtonOptions): string {
 
   const classes: string[] = [];
 
-  // Base variant class
-  classes.push(VARIANT_CLASSES[variant ?? 'primary'] ?? VARIANT_CLASSES.primary ?? 'btn');
+  // VARIANT_CLASSES has primary, secondary, vote; variant defaulted to primary
+  classes.push(VARIANT_CLASSES[variant ?? 'primary']!);
 
   // Vote direction class
   if (variant === 'vote' && direction) {
@@ -580,21 +580,15 @@ export function renderLinkButtonHTML(options: LinkButtonOptions): string {
     throw new Error('iconPosition "right" only allowed for arrowForward icon (forward navigation)');
   }
 
-  // Build class list
   const classes: string[] = [];
-  classes.push(VARIANT_CLASSES[variant ?? 'primary'] ?? VARIANT_CLASSES.primary ?? 'btn');
-  if (className) {
-    classes.push(className);
-  }
+  classes.push(VARIANT_CLASSES[variant ?? 'primary']!);
+  if (className) classes.push(className);
 
-  // Build attributes array
   const attrs: string[] = [];
   attrs.push(`href="${href}"`);
   attrs.push(`class="${classes.join(' ')}"`);
 
-  if (id) {
-    attrs.push(`id="${id}"`);
-  }
+  if (id) attrs.push(`id="${id}"`);
   if (ariaLabel) {
     attrs.push(`aria-label="${ariaLabel}"`);
   }

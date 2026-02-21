@@ -50,18 +50,18 @@ export function ButteredToastCalculator(): HTMLDivElement {
   const sliders = _sliders as Record<ToastSliderKey, HTMLInputElement>;
 
   const sliderValues = {
-    height: el.querySelector('#toast-height-value'),
-    gravity: el.querySelector('#toast-gravity-value'),
-    overhang: el.querySelector('#toast-overhang-value'),
-    butter: el.querySelector('#toast-butter-value'),
-    friction: el.querySelector('#toast-friction-value'),
-    inertia: el.querySelector('#toast-inertia-value'),
+    height: el.querySelector('#toast-height-value')!,
+    gravity: el.querySelector('#toast-gravity-value')!,
+    overhang: el.querySelector('#toast-overhang-value')!,
+    butter: el.querySelector('#toast-butter-value')!,
+    friction: el.querySelector('#toast-friction-value')!,
+    inertia: el.querySelector('#toast-inertia-value')!,
   };
 
-  const probabilityDisplay = el.querySelector('#toast-probability-value');
-  const interpretationDisplay = el.querySelector('#toast-interpretation');
-  const resultDisplay = el.querySelector('#toast-result-display');
-  const formulaDisplay = el.querySelector('#toast-formula-display');
+  const probabilityDisplay = el.querySelector('#toast-probability-value')!;
+  const interpretationDisplay = el.querySelector('#toast-interpretation')!;
+  const resultDisplay = el.querySelector('#toast-result-display')!;
+  const formulaDisplay = el.querySelector('#toast-formula-display')!;
 
   // Track which variables should show values (temporarily after slider change)
   type FormulaVarKey = 'H' | 'g' | 'O' | 'B' | 'F' | 'T';
@@ -86,10 +86,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
     const formula = `\\(P_{\\text{butter-down}} = \\left(1 - \\left| \\left( \\frac{30 \\sqrt{\\frac{${hDisplay}}{${gDisplay}}} \\cdot ${oDisplay} \\cdot ${bDisplay}}{${tDisplay} + ${fDisplay}} \\bmod{1} \\right) - 0.5 \\right| \\cdot 2 \\right) \\cdot 100\\% \\)`;
 
-    if (formulaDisplay) {
-      formulaDisplay.textContent = formula;
-      // Tell MathJax to re-render this element after the browser updates the DOM
-      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    formulaDisplay.textContent = formula;
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         // Capture MathJax reference to avoid race conditions in test environments
         const mathJax = window.MathJax;
         requestAnimationFrame(() => {
@@ -148,7 +146,6 @@ export function ButteredToastCalculator(): HTMLDivElement {
             // Silently handle MathJax errors
           });
         });
-      }
     }
   }
 
@@ -180,13 +177,12 @@ export function ButteredToastCalculator(): HTMLDivElement {
     const F = parseFloat(sliders.friction.value);
     const T = parseFloat(sliders.inertia.value);
 
-    // Update display values
-    if (sliderValues.height) sliderValues.height.textContent = `${H} cm`;
-    if (sliderValues.gravity) sliderValues.gravity.textContent = `${g} cm/s²`;
-    if (sliderValues.overhang) sliderValues.overhang.textContent = `${O} cm`;
-    if (sliderValues.butter) sliderValues.butter.textContent = `${B.toFixed(2)}`;
-    if (sliderValues.friction) sliderValues.friction.textContent = `${F}`;
-    if (sliderValues.inertia) sliderValues.inertia.textContent = `${T}`;
+    sliderValues.height.textContent = `${H} cm`;
+    sliderValues.gravity.textContent = `${g} cm/s²`;
+    sliderValues.overhang.textContent = `${O} cm`;
+    sliderValues.butter.textContent = `${B.toFixed(2)}`;
+    sliderValues.friction.textContent = `${F}`;
+    sliderValues.inertia.textContent = `${T}`;
 
     // Calculate rotation factor
     const totalRotationFactor = (30 * Math.sqrt(H / g) * O * B) / (T + F);
@@ -194,7 +190,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
     const probability = (1 - Math.abs(landingOrientation - 0.5) * 2) * 100;
     const finalProbability = Math.max(0, probability);
 
-    if (probabilityDisplay) probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
+    probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
     updateInterpretation(finalProbability);
   }
 
@@ -216,11 +212,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
       interpretation = "Looking good! Toast should land safely.";
     }
 
-    if (interpretationDisplay) interpretationDisplay.textContent = interpretation;
-    if (resultDisplay) {
-      resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-      resultDisplay.classList.add(cls);
-    }
+    interpretationDisplay.textContent = interpretation;
+    resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
+    resultDisplay.classList.add(cls);
   }
 
   (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
@@ -264,8 +258,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
     butter: parseFloat(sliders.butter.value),
     friction: parseFloat(sliders.friction.value),
     inertia: parseFloat(sliders.inertia.value),
-    probability: probabilityDisplay?.textContent || '0%',
-    interpretation: interpretationDisplay?.textContent || ''
+    probability: probabilityDisplay.textContent || '0%',
+    interpretation: interpretationDisplay.textContent || ''
   };
 
   function updateState() {
@@ -275,8 +269,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
     state.butter = parseFloat(sliders.butter.value);
     state.friction = parseFloat(sliders.friction.value);
     state.inertia = parseFloat(sliders.inertia.value);
-    state.probability = probabilityDisplay?.textContent || '0%';
-    state.interpretation = interpretationDisplay?.textContent || '';
+    state.probability = probabilityDisplay.textContent || '0%';
+    state.interpretation = interpretationDisplay.textContent || '';
   }
 
   // Generate shareable URL with parameters
@@ -320,12 +314,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
     updateFormula();
   }
 
-  // Render inline share buttons
-  const shareContainer = el.querySelector('#calculator-share-container');
-  if (shareContainer) {
-    shareContainer.innerHTML = renderInlineShareButtonsHTML();
-    hydrateIcons(shareContainer);
-  }
+  const shareContainer = el.querySelector('#calculator-share-container')!;
+  shareContainer.innerHTML = renderInlineShareButtonsHTML();
+  hydrateIcons(shareContainer);
 
   // Initialize inline share buttons
   const teardownShare = initInlineShareButtons(el, {

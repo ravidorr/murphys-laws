@@ -65,23 +65,17 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
   async function render() {
     el.innerHTML = templateHtml;
 
-    // Replace static loading message with random one
-    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
-    if (loadingPlaceholder) {
-      loadingPlaceholder.textContent = getRandomLoadingMessage();
-    }
+    const loadingPlaceholder = el.querySelector('.loading-placeholder p')!;
+    loadingPlaceholder.textContent = getRandomLoadingMessage();
   }
 
-  // Update the display with fetched categories
   function updateDisplay() {
-    const grid = el.querySelector('#categories-grid');
-    if (grid) {
-      grid.classList.remove('loading-placeholder');
-      grid.removeAttribute('role');
-      grid.removeAttribute('aria-label');
-      grid.innerHTML = renderCategories(categories);
-      hydrateIcons(grid);
-    }
+    const grid = el.querySelector('#categories-grid')!;
+    grid.classList.remove('loading-placeholder');
+    grid.removeAttribute('role');
+    grid.removeAttribute('aria-label');
+    grid.innerHTML = renderCategories(categories);
+    hydrateIcons(grid);
 
     // Update page title and meta description
     document.title = `Browse Murphy's Laws by Category | Murphy's Law Archive`;
@@ -112,23 +106,20 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       }
     } catch (error) {
       Sentry.captureException(error);
-      const grid = el.querySelector('#categories-grid');
-      /* v8 ignore next - Grid element always exists from template */
-      if (grid) {
-        grid.classList.remove('loading-placeholder');
-        grid.innerHTML = `
-          <div class="empty-state">
-            <span class="icon empty-state-icon" data-icon="alertTriangle" aria-hidden="true"></span>
-            <p class="empty-state-title">Failed to load categories</p>
-            <p class="empty-state-text">Please check your connection and try again.</p>
-            <button class="btn" id="retry-categories" style="margin-top: 1rem;">
-              <span class="btn-text">Try Again</span>
-              <span class="icon" data-icon="refresh" aria-hidden="true"></span>
-            </button>
-          </div>
-        `;
-        hydrateIcons(grid);
-      }
+      const grid = el.querySelector('#categories-grid')!;
+      grid.classList.remove('loading-placeholder');
+      grid.innerHTML = `
+        <div class="empty-state">
+          <span class="icon empty-state-icon" data-icon="alertTriangle" aria-hidden="true"></span>
+          <p class="empty-state-title">Failed to load categories</p>
+          <p class="empty-state-text">Please check your connection and try again.</p>
+          <button class="btn" id="retry-categories" style="margin-top: 1rem;">
+            <span class="btn-text">Try Again</span>
+            <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+          </button>
+        </div>
+      `;
+      hydrateIcons(grid);
     }
   }
 
@@ -138,23 +129,17 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     if (!(target instanceof HTMLElement)) return;
 
     // Handle category card click
-    const card = target.closest('.category-card');
-    if (card) {
-      const slug = card.getAttribute('data-category-slug');
-      if (slug) {
-        onNavigate('category', slug);
+      const card = target.closest('.category-card');
+      if (card) {
+        const slug = card.getAttribute('data-category-slug');
+        if (slug) onNavigate('category', slug);
+        return;
       }
-      return;
-    }
 
-    // Handle retry button
     if (target.closest('#retry-categories')) {
-      const grid = el.querySelector('#categories-grid');
-      /* v8 ignore next - Grid element always exists from template */
-      if (grid) {
-        grid.classList.add('loading-placeholder');
-        grid.innerHTML = `<p class="text-center small">${getRandomLoadingMessage()}</p>`;
-      }
+      const grid = el.querySelector('#categories-grid')!;
+      grid.classList.add('loading-placeholder');
+      grid.innerHTML = `<p class="text-center small">${getRandomLoadingMessage()}</p>`;
       loadCategories();
     }
   });
@@ -169,9 +154,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       if (card) {
         e.preventDefault();
         const slug = card.getAttribute('data-category-slug');
-        if (slug) {
-          onNavigate('category', slug);
-        }
+        if (slug) onNavigate('category', slug);
       }
     }
   });

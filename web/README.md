@@ -57,6 +57,8 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
+Uncovered branches are tracked in `uncovered-branches.md`; `uncovered-branches-agent.md` describes how to work through the checklist.
+
 ## Linting
 
 ```bash

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ensureAdsense, initAnalyticsBootstrap } from '../src/utils/third-party.ts';
+import { ensureAdsense, initAnalyticsBootstrap, loadScript } from '../src/utils/third-party.ts';
 
 /** Window plus analytics globals; Vitest's globalThis.window type doesn't merge with src/types/global.d.ts */
 type WindowWithAnalytics = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
@@ -411,6 +411,40 @@ describe('third-party utilities', () => {
 
       // dataLayer should be the same reference
       expect(win.dataLayer).toBe(firstDataLayerRef);
+    });
+  });
+
+  describe('loadScript', () => {
+    it('sets script props when passed (covers L68 B0)', async () => {
+      const promise = loadScript('https://example.com/coverage.js', { async: false, defer: true });
+      const script = document.querySelector('script[src*="example.com/coverage"]') as HTMLScriptElement;
+      expect(script).toBeTruthy();
+      expect(script.async).toBe(false);
+      expect(script.defer).toBe(true);
+      script.dispatchEvent(new Event('load', { bubbles: false }));
+      await promise;
+    });
+
+    it('resolve path hits gtag init (L106); reject path hits catch (L109)', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      freshInit();
+      window.dispatchEvent(new Event('scroll'));
+      const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
+      expect(script).toBeTruthy();
+      script.dispatchEvent(new Event('load', { bubbles: false }));
+      await new Promise((r) => setTimeout(r, 0));
+      const win = window as WindowWithAnalytics;
+      expect(win.gtag).toBeDefined();
+    });
+
+    it('loadScript reject path (L109)', async () => {
+      const badUrl = 'https://invalid.example/nonexistent.js';
+      const promise = loadScript(badUrl);
+      const script = document.querySelector(`script[src="${badUrl}"]`) as HTMLScriptElement;
+      expect(script).toBeTruthy();
+      script.dispatchEvent(new Event('error', { bubbles: false }));
+      await expect(promise).rejects.toThrow(/Failed to load script/);
     });
   });
 });

@@ -9,6 +9,8 @@ import {
   clearAllFavorites,
   exportFavorites,
   importFavorites,
+  __getFavoritesFromStorageForTest,
+  __saveFavoritesToStorageForTest,
 } from '../src/utils/favorites.ts';
 
 // Mock feature flags to enable favorites by default
@@ -116,8 +118,24 @@ describe('Favorites Service', () => {
       expect(favorites[1]!.id).toBe(123);
     });
 
+    it('sorts using savedAt fallback when savedAt is missing', () => {
+      localStorage.setItem('murphys_favorites', JSON.stringify({
+        '1': { id: 1, text: 'A' },
+        '2': { id: 2, text: 'B', savedAt: 1000 },
+      }));
+      const favorites = getFavorites();
+      expect(favorites).toHaveLength(2);
+      expect(favorites[0]!.id).toBe(2);
+      expect(favorites[1]!.id).toBe(1);
+    });
+
     it('returns empty array when feature is disabled', () => {
       addFavorite(localThis.mockLaw!);
+      vi.mocked(isFavoritesEnabled).mockReturnValue(false);
+      expect(getFavorites()).toEqual([]);
+    });
+
+    it('returns empty array when feature is disabled and no favorites exist (covers getFavoritesFromStorage disabled path)', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       expect(getFavorites()).toEqual([]);
     });
@@ -154,6 +172,24 @@ describe('Favorites Service', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       expect(getFavoritesCount()).toBe(0);
     });
+
+    it('returns 0 when feature is disabled and no favorites (covers getFavoritesFromStorage disabled)', () => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(false);
+      expect(getFavoritesCount()).toBe(0);
+    });
+  });
+
+  describe('test-only storage helpers (cover L37, L54 disabled branches)', () => {
+    it('__getFavoritesFromStorageForTest returns {} when feature is disabled (L37)', () => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(false);
+      expect(__getFavoritesFromStorageForTest()).toEqual({});
+    });
+
+    it('__saveFavoritesToStorageForTest no-ops when feature is disabled (L54)', () => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(false);
+      expect(() => __saveFavoritesToStorageForTest({ '1': { id: 1, text: 'x', title: 'x', savedAt: 0 } })).not.toThrow();
+      expect(localStorage.getItem('murphys_favorites')).toBeNull();
+    });
   });
 
   describe('addFavorite', () => {
@@ -178,6 +214,11 @@ describe('Favorites Service', () => {
 
     it('does nothing when law has no id', () => {
       addFavorite({ text: 'No ID' });
+      expect(getFavoritesCount()).toBe(0);
+    });
+
+    it('does nothing when law is empty object (covers addFavorite early return branch)', () => {
+      addFavorite({});
       expect(getFavoritesCount()).toBe(0);
     });
 
@@ -211,6 +252,16 @@ describe('Favorites Service', () => {
       expect(favorites).toHaveLength(1);
       expect(favorites[0]!.text).toBe('Updated text');
       expect(favorites[0]!.savedAt).toBeGreaterThanOrEqual(originalSavedAt);
+    });
+
+    it('adds favorite with only id (covers default text/title/attribution branches)', () => {
+      addFavorite({ id: 999 });
+      const favorites = getFavorites();
+      expect(favorites).toHaveLength(1);
+      expect(favorites[0]!.id).toBe(999);
+      expect(favorites[0]!.text).toBe('');
+      expect(favorites[0]!.title).toBe('');
+      expect(favorites[0]!.attribution).toBe('');
     });
   });
 
@@ -372,6 +423,16 @@ describe('Favorites Service', () => {
       const json = JSON.stringify([{ id: 100, text: 'Test' }]);
       const count = importFavorites(json);
       expect(count).toBe(0);
+    });
+
+    it('imports item with id and uses default text/title/attribution', () => {
+      const json = JSON.stringify([{ id: 777 }]);
+      const count = importFavorites(json);
+      expect(count).toBe(1);
+      const favorites = getFavorites();
+      expect(favorites[0]!.id).toBe(777);
+      expect(favorites[0]!.text).toBe('');
+      expect(favorites[0]!.title).toBe('');
     });
   });
 });

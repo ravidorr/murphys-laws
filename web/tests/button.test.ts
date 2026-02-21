@@ -21,6 +21,36 @@ interface ButtonTestLocalThis {
 }
 
 describe('Button component', () => {
+  describe('createButton - coverage for L203 L263 L274 L276 L286', () => {
+    it('buildClassString vote+direction (L203)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ variant: 'vote', direction: 'up', count: 0 });
+      expect(localThis.btn!.className).toContain('count-up');
+    });
+    it('sets button id when provided (L263)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'X', id: 'coverage-id' });
+      expect(localThis.btn!.id).toBe('coverage-id');
+    });
+    it('vote variant with icon appends icon (L274)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ variant: 'vote', direction: 'up', icon: 'thumbUp', count: 1 });
+      expect(localThis.btn!.querySelector('svg')).toBeTruthy();
+    });
+    it('iconOnly with icon appends icon (L276)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ icon: 'close', iconOnly: true, ariaLabel: 'Close' });
+      expect(localThis.btn!.querySelector('svg')).toBeTruthy();
+    });
+    it('standard button with iconPosition right appends icon after text (L286)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'Next', icon: 'arrowForward', iconPosition: 'right' });
+      const children = Array.from(localThis.btn!.children);
+      expect(children[0]!.classList.contains('btn-text')).toBe(true);
+      expect(children[1]!.tagName).toBe('svg');
+    });
+  });
+
   describe('createButton', () => {
     describe('variants', () => {
       it('creates primary variant with .btn class', () => {
@@ -705,6 +735,44 @@ describe('Button component', () => {
         expect(localThis.link!.querySelector('.icon')).toBeTruthy();
         expect(localThis.link!.querySelector('.icon')!.getAttribute('data-icon')).toBe('info');
       });
+    });
+  });
+
+  describe('renderButtonHTML - coverage L312 L501', () => {
+    it('standard button iconPosition right (L312 L501)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderButtonHTML({ text: 'Go', icon: 'arrowForward', iconPosition: 'right' });
+      expect(localThis.html!).toContain('btn-text');
+      expect(localThis.html!.indexOf('btn-text')).toBeLessThan(localThis.html!.indexOf('data-icon="arrowForward"'));
+    });
+  });
+
+  describe('renderLinkButtonHTML - coverage L584 L608', () => {
+    it('includes id when provided (L584)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderLinkButtonHTML({ href: '/', text: 'Home', id: 'link-id' });
+      expect(localThis.html!).toContain('id="link-id"');
+    });
+    it('iconPosition right for arrowForward (L608)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderLinkButtonHTML({ href: '/', text: 'Next', icon: 'arrowForward', iconPosition: 'right' });
+      expect(localThis.html!.indexOf('btn-text')).toBeLessThan(localThis.html!.indexOf('data-icon="arrowForward"'));
+    });
+  });
+
+  describe('renderShareLinkHTML - coverage L680', () => {
+    it('includes target and rel when provided (L680)', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderShareLinkHTML({
+        href: 'https://x.com/share',
+        text: 'Share',
+        icon: 'twitter',
+        platform: 'twitter',
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      });
+      expect(localThis.html!).toContain('target="_blank"');
+      expect(localThis.html!).toContain('rel="noopener noreferrer"');
     });
   });
 

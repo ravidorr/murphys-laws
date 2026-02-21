@@ -135,8 +135,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
    * Render the page based on current state
    */
   function render() {
-    const root = el.querySelector('#favorites-root');
-    if (!root) return;
+    const root = el.querySelector('#favorites-root')!;
 
     const favorites = getFavorites();
 

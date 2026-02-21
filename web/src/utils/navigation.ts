@@ -11,19 +11,15 @@ export function handleNavClick(target: Element, onNavigate: OnNavigate): boolean
   const navBtn = target.closest('[data-nav]');
   if (!navBtn) return false;
 
-  const navTarget = navBtn.getAttribute('data-nav');
+  const navTarget = navBtn.getAttribute('data-nav'); // data-nav always set when navBtn is found
+  if (!navTarget) return false;
   const param = navBtn.getAttribute('data-param');
-  /* v8 ignore next - data-nav always set when navBtn is found */
-  if (navTarget) {
-    if (param) {
-      onNavigate(navTarget, param);
-    } /* v8 ignore next - data-param is optional and tested via click handler */
-    else {
-      onNavigate(navTarget);
-    }
-    return true;
+  if (param) {
+    onNavigate(navTarget, param);
+  } else {
+    onNavigate(navTarget);
   }
-  return false;
+  return true;
 }
 
 /**

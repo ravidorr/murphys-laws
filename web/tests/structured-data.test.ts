@@ -407,6 +407,37 @@ describe('Structured Data module', () => {
       expect(data.dateModified).toBe('2024-01-01');
     });
 
+    it('uses updated_at for dateModified when present', () => {
+      const law = {
+        id: 123,
+        text: 'Test law',
+        created_at: '2024-01-01',
+        updated_at: '2024-06-15'
+      };
+
+      setLawStructuredData(law);
+
+      const el = document.head.querySelector('#jsonld-law-article');
+      const data = JSON.parse(el!.textContent!);
+
+      expect(data.dateModified).toBe('2024-06-15');
+    });
+
+    it('uses title for headline and updated_at for dateModified (covers L181 B1, L182 B2)', () => {
+      const law = {
+        id: 456,
+        title: 'Headline Law',
+        text: 'Body text here.',
+        created_at: '2024-01-01',
+        updated_at: '2024-09-01'
+      };
+      setLawStructuredData(law);
+      const el = document.head.querySelector('#jsonld-law-article');
+      const data = JSON.parse(el!.textContent!);
+      expect(data.headline).toBe('Headline Law');
+      expect(data.dateModified).toBe('2024-09-01');
+    });
+
     it('includes speakable specification for voice search', () => {
       const law = {
         id: 123,

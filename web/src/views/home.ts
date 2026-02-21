@@ -82,8 +82,8 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
   // Add Science of Murphy's Law section (below Submit a Law)
   const scienceWrap = document.createElement('div');
   scienceWrap.innerHTML = HOME_OVERVIEW_HTML;
-  const scienceSection = scienceWrap.firstElementChild;
-  if (scienceSection) el.appendChild(scienceSection);
+  const scienceSection = scienceWrap.firstElementChild!;
+  el.appendChild(scienceSection);
 }
 
 export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {

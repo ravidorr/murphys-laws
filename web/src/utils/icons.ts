@@ -218,25 +218,19 @@ export function hydrateIcons(root?: Element | Document): void {
       classNames: Array.from(placeholder.classList),
       labelled,
     });
-
-    /* v8 ignore next 2 - Unknown icon names filtered before reaching hydrateIcons */
-    if (!svg) {
-      return;
-    }
+    // Unknown icon names filtered above (name and ICON_MARKUP check)
+    if (!svg) return;
 
     if (placeholder.hasAttribute('aria-label')) {
       svg.setAttribute('aria-label', placeholder.getAttribute('aria-label') ?? '');
       svg.removeAttribute('aria-hidden');
     }
-
     if (placeholder.hasAttribute('role')) {
       svg.setAttribute('role', placeholder.getAttribute('role') ?? '');
     }
-
     if (placeholder.hasAttribute('title')) {
       svg.setAttribute('title', placeholder.getAttribute('title') ?? '');
     }
-
     placeholder.replaceWith(svg);
   });
 }

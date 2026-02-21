@@ -18,9 +18,9 @@ interface BreadcrumbItem {
 export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[]; onNavigate: OnNavigate }) {
   const container = document.createElement('div');
   container.innerHTML = templateHtml;
-  
-  const nav = container.firstElementChild;
-  if (!nav) return container;
+
+  // Template always has a root nav element.
+  const nav = container.firstElementChild!;
   const list = nav.querySelector('.breadcrumb-list');
 
   // Add additional breadcrumb items
@@ -57,9 +57,10 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
       li.appendChild(link);
     }
     
-    list?.appendChild(li);
+    // Template always has .breadcrumb-list.
+    list!.appendChild(li);
   });
-  
+
   // Hydrate icons
   hydrateIcons(nav);
   

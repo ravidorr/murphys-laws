@@ -43,7 +43,7 @@ export function SubmitLawSection() {
   const termsRequirement = el.querySelector('[data-requirement="terms"]');
   let categoriesLoaded = false;
 
-  // Populate dropdown with cached categories
+  // Populate dropdown with cached categories (template always has categorySelect)
   function populateFromCache() {
     const cached = getCachedCategories();
     if (cached && cached.length > 0) {
@@ -51,7 +51,7 @@ export function SubmitLawSection() {
         const option = document.createElement('option');
         option.value = String(category.id);
         option.textContent = stripMarkdownFootnotes(category.title);
-        categorySelect?.appendChild(option);
+        categorySelect!.appendChild(option);
       });
     }
   }
@@ -67,16 +67,14 @@ export function SubmitLawSection() {
         const categories = response.data;
         setCachedCategories(categories);
 
-        // Clear existing options (except any that might have been cached)
-        if (categorySelect) {
-          categorySelect.innerHTML = '<option value="">Select a category (optional)</option>';
-        }
+        // Clear existing options (template always has categorySelect)
+        categorySelect!.innerHTML = '<option value="">Select a category (optional)</option>';
 
         categories.forEach((category) => {
           const option = document.createElement('option');
           option.value = String(category.id);
           option.textContent = stripMarkdownFootnotes(category.title);
-          categorySelect?.appendChild(option);
+          categorySelect!.appendChild(option);
         });
       }
     } catch {
@@ -107,37 +105,26 @@ export function SubmitLawSection() {
     const trimmedLength = text.trim().length;
     const termsChecked = termsCheckbox?.checked;
 
-    // Update character counter
-    if (charCounter) {
-      charCounter.textContent = `${textLength} / 1000`;
-      if (textLength > 0 && trimmedLength < 10) {
-        charCounter.classList.add('submit-char-counter-error');
-      } else {
-        charCounter.classList.remove('submit-char-counter-error');
-      }
+    // Update character counter (template always has charCounter)
+    charCounter!.textContent = `${textLength} / 1000`;
+    if (textLength > 0 && trimmedLength < 10) {
+      charCounter!.classList.add('submit-char-counter-error');
+    } else {
+      charCounter!.classList.remove('submit-char-counter-error');
     }
 
-    // Update requirements display
+    // Update requirements display (template always has these elements)
     const textValid = trimmedLength >= 10;
     const termsValid = termsChecked;
-    
-    if (textRequirement) {
-      textRequirement.classList.toggle('requirement-met', textValid);
-    }
-    if (termsRequirement) {
-      termsRequirement.classList.toggle('requirement-met', termsValid);
-    }
-    
-    // Show/hide requirements based on validity
-    if (requirementsDiv) {
-      const allValid = textValid && termsValid;
-      requirementsDiv.classList.toggle('all-requirements-met', allValid);
-    }
+    textRequirement!.classList.toggle('requirement-met', textValid);
+    termsRequirement!.classList.toggle('requirement-met', termsValid);
+    const allValid = textValid && termsValid;
+    requirementsDiv!.classList.toggle('all-requirements-met', allValid);
 
     // Validate text length - show inline error
     if (trimmedLength > 0 && trimmedLength < 10) {
       showMessage('Law text must be at least 10 characters', true);
-      if (submitBtn) submitBtn.disabled = true;
+      submitBtn!.disabled = true;
       return;
     }
 
@@ -146,46 +133,35 @@ export function SubmitLawSection() {
       clearMessage();
     }
 
-    // Enable button only if text is valid AND terms are checked
+    // Enable button only if text is valid AND terms are checked (template always has submitBtn)
     const isValid = textValid && termsValid;
-    if (submitBtn) {
-      submitBtn.disabled = !isValid;
-      // Update tooltip based on button state
-      if (isValid) {
-        submitBtn.removeAttribute('data-tooltip');
-      } else {
-        submitBtn.setAttribute('data-tooltip', 'Complete required fields to submit');
-      }
+    submitBtn!.disabled = !isValid;
+    if (isValid) {
+      submitBtn!.removeAttribute('data-tooltip');
+    } else {
+      submitBtn!.setAttribute('data-tooltip', 'Complete required fields to submit');
     }
   }
 
-  // Show message (success or error)
+  // Show message (success or error) (template always has messageDiv)
   function showMessage(message: string, isError = false) {
-    if (messageDiv) {
-      messageDiv.className = `submit-message ${isError ? 'error' : 'success'}`;
-      messageDiv.textContent = message;
-      messageDiv.style.display = 'block';
-    }
+    messageDiv!.className = `submit-message ${isError ? 'error' : 'success'}`;
+    messageDiv!.textContent = message;
+    messageDiv!.style.display = 'block';
   }
 
   // Clear message
   function clearMessage() {
-    if (messageDiv) {
-      messageDiv.textContent = '';
-      messageDiv.style.display = 'none';
-    }
+    messageDiv!.textContent = '';
+    messageDiv!.style.display = 'none';
   }
 
-  // Set loading state
+  // Set loading state (template always has submitBtn and .btn-text)
   function setLoading(isLoading: boolean) {
-    if (submitBtn) {
-      submitBtn.disabled = isLoading;
-      submitBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
-      const btnText = submitBtn.querySelector('.btn-text');
-      if (btnText) {
-        btnText.textContent = isLoading ? 'Submitting...' : 'Submit Law';
-      }
-    }
+    submitBtn!.disabled = isLoading;
+    submitBtn!.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+    const btnText = submitBtn!.querySelector('.btn-text')!;
+    btnText.textContent = isLoading ? 'Submitting...' : 'Submit Law';
   }
 
   // Submit law to API - Uses generic request helper (eliminates ~80 lines of duplicate code)
@@ -204,8 +180,8 @@ export function SubmitLawSection() {
     clearMessage();
   });
 
-  if (form) {
-    form.addEventListener('submit', async (e) => {
+  // Template always has .submit-form
+  form!.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const title = (el.querySelector('#submit-title') as HTMLInputElement | null)?.value.trim();
@@ -244,24 +220,16 @@ export function SubmitLawSection() {
 
         showSuccess('Thank you! Your law has been submitted successfully and is pending review.');
 
-        // Clear form after successful submission
+        // Clear form after successful submission (template always has these fields)
         setTimeout(() => {
-          const titleEl = el.querySelector('#submit-title') as HTMLInputElement | null;
-          const textEl = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
-          const authorEl = el.querySelector('#submit-author') as HTMLInputElement | null;
-          const emailEl = el.querySelector('#submit-email') as HTMLInputElement | null;
-          const categoryEl = el.querySelector('#submit-category') as HTMLSelectElement | null;
-          const anonymousEl = el.querySelector('#submit-anonymous') as HTMLInputElement | null;
-          const termsEl = el.querySelector('#submit-terms') as HTMLInputElement | null;
-          if (titleEl) titleEl.value = '';
-          if (textEl) textEl.value = '';
-          if (authorEl) authorEl.value = '';
-          if (emailEl) emailEl.value = '';
-          if (categoryEl) categoryEl.value = '';
-          if (anonymousEl) anonymousEl.checked = false;
-          if (termsEl) termsEl.checked = false;
+          (el.querySelector('#submit-title') as HTMLInputElement)!.value = '';
+          (el.querySelector('#submit-text') as HTMLTextAreaElement)!.value = '';
+          (el.querySelector('#submit-author') as HTMLInputElement)!.value = '';
+          (el.querySelector('#submit-email') as HTMLInputElement)!.value = '';
+          (el.querySelector('#submit-category') as HTMLSelectElement)!.value = '';
+          (el.querySelector('#submit-anonymous') as HTMLInputElement)!.checked = false;
+          (el.querySelector('#submit-terms') as HTMLInputElement)!.checked = false;
 
-          // Re-check validity after clearing
           checkSubmitValidity();
         }, 300);
 
@@ -271,7 +239,6 @@ export function SubmitLawSection() {
         setLoading(false);
       }
     });
-  }
 
   return el;
 }

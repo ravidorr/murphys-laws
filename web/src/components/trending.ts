@@ -27,12 +27,10 @@ export function Trending() {
     <div class="card-body"></div>
   `;
 
-  const bodyDiv = el.querySelector('.card-body');
-  /* v8 ignore next 3 - Template always provides .card-body */
-  if (bodyDiv) {
-    const loading = createLoading();
-    bodyDiv.appendChild(loading);
-  }
+  // Template always provides .card-body
+  const bodyDiv = el.querySelector('.card-body')!;
+  const loading = createLoading();
+  bodyDiv.appendChild(loading);
 
   fetchTrending(WIDGET_CARD_COUNT)
     .then(data => {
@@ -40,32 +38,26 @@ export function Trending() {
       // Ensure we only show exactly the configured number of laws
       const trending = laws.slice(0, WIDGET_CARD_COUNT);
 
-      const bodyDiv = el.querySelector('.card-body');
-      /* v8 ignore next - querySelector always finds .card-body on own element */
-      if (bodyDiv) {
-        // Use shared law card renderer (eliminates ~30 lines of duplicate HTML generation)
-        bodyDiv.innerHTML = `
+      const body = el.querySelector('.card-body')!; // same element, always present
+      body.innerHTML = `
           <div class="card-text">
             ${renderLawCards(trending)}
           </div>
         `;
-        hydrateIcons(bodyDiv);
-        initSharePopovers(bodyDiv as HTMLElement);
+      hydrateIcons(body);
+      initSharePopovers(body as HTMLElement);
 
-        // Add voting event listeners only if there are laws
-        if (trending.length > 0) {
-          addVotingListeners(el);
-        }
+      // Add voting event listeners only if there are laws
+      if (trending.length > 0) {
+        addVotingListeners(el);
       }
     })
     .catch(() => {
-      const bodyDiv = el.querySelector('.card-body');
-      if (bodyDiv) {
-        bodyDiv.innerHTML = '';
-        const errorEl = createErrorState('Failed to load trending laws.');
-        bodyDiv.appendChild(errorEl);
-        hydrateIcons(bodyDiv);
-      }
+      const body = el.querySelector('.card-body')!; // template always has .card-body
+      body.innerHTML = '';
+      const errorEl = createErrorState('Failed to load trending laws.');
+      body.appendChild(errorEl);
+      hydrateIcons(body);
     });
 
   return el;

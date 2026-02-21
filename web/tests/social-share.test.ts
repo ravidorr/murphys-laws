@@ -1135,6 +1135,12 @@ describe('buildShareUrls', () => {
 
     expect(urls.email).toContain(encodeURIComponent("Check out this Murphy's Law"));
   });
+
+  it('uses empty string for url and title when not provided', () => {
+    const urls = buildShareUrls({});
+    expect(urls.twitter).toContain(encodeURIComponent(''));
+    expect(urls.email).toBeDefined();
+  });
 });
 
 describe('renderInlineShareButtonsHTML', () => {

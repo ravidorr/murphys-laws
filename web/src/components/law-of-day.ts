@@ -45,36 +45,25 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
   // Hydrate icons
   hydrateIcons(el);
 
-  const dateEl = el.querySelector('#lod-date');
-  if (dateEl) {
-    dateEl.setAttribute('datetime', iso);
-    dateEl.textContent = dateText;
-  }
+  const dateEl = el.querySelector('#lod-date')!;
+  dateEl.setAttribute('datetime', iso);
+  dateEl.textContent = dateText;
 
-  const bodyEl = el.querySelector('#lod-body');
-  if (bodyEl) {
-    bodyEl.innerHTML = `
+  const bodyEl = el.querySelector('#lod-body')!;
+  bodyEl.innerHTML = `
       <a href="/law/${law.id}" class="lod-link" data-law-id="${law.id}" aria-label="Read full law details">
         <blockquote class="lod-quote-large">${lawDisplay}</blockquote>
       </a>
       <p class="lod-attrib">${attribution}</p>
     `;
-  }
 
-  const upBtn = el.querySelector('[data-vote="up"]');
-  const downBtn = el.querySelector('[data-vote="down"]');
+  const upBtn = el.querySelector('[data-vote="up"]')!;
+  upBtn.classList.toggle('voted', userVote === 'up');
+  upBtn.querySelector('.count-num')!.textContent = String(upvotes);
 
-  if (upBtn) {
-    upBtn.classList.toggle('voted', userVote === 'up');
-    const upCount = upBtn.querySelector('.count-num');
-    if (upCount) upCount.textContent = String(upvotes);
-  }
-
-  if (downBtn) {
-    downBtn.classList.toggle('voted', userVote === 'down');
-    const downCount = downBtn.querySelector('.count-num');
-    if (downCount) downCount.textContent = String(downvotes);
-  }
+  const downBtn = el.querySelector('[data-vote="down"]')!;
+  downBtn.classList.toggle('voted', userVote === 'down');
+  downBtn.querySelector('.count-num')!.textContent = String(downvotes);
 
   // Initialize favorite button if feature is enabled
   const favoriteBtn = el.querySelector('[data-favorite-btn]');
@@ -100,31 +89,25 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
   }
 
   // Add social share buttons to the footer
-  const footer = el.querySelector('.section-footer .right');
-  if (footer) {
-    // Remove the old share button
-    const oldShareBtn = footer.querySelector('[data-action="share"]');
-    if (oldShareBtn) {
-      oldShareBtn.remove();
-    }
+  const footer = el.querySelector('.section-footer .right')!;
+  const oldShareBtn = footer.querySelector('[data-action="share"]')!;
+  oldShareBtn.remove();
 
-    const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
-    const lawText = law.text || '';
+  const lawUrl = `${window.location.origin}${window.location.pathname}?law=${law.id}`;
+  const lawText = law.text || '';
 
-    // Create engaging Twitter text with the actual law
-    const twitterText = `I'm on Murphy's Law Site and I've seen this law: "${lawText}". See it for yourself:`;
+  const twitterText = `I'm on Murphy's Law Site and I've seen this law: "${lawText}". See it for yourself:`;
 
-    const socialShare = SocialShare({
-      url: lawUrl,
-      title: twitterText,
-      description: lawText,
-      lawText: lawText,
-      lawId: String(law.id)
-    });
+  const socialShare = SocialShare({
+    url: lawUrl,
+    title: twitterText,
+    description: lawText,
+    lawText: lawText,
+    lawId: String(law.id)
+  });
 
-    footer.appendChild(socialShare);
-    hydrateIcons(footer);
-  }
+  footer.appendChild(socialShare);
+  hydrateIcons(footer);
 
   // Handle voting, navigation, sharing, and copy actions
   el.addEventListener('click', async (e) => {
@@ -220,19 +203,17 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       try {
         const result = await toggleVote(law.id, voteType);
 
-        // Update vote counts in UI
-        const upBtn = el.querySelector('[data-vote="up"]');
-        const downBtn = el.querySelector('[data-vote="down"]');
-        const upCount = upBtn?.querySelector('.count-num');
-        const downCount = downBtn?.querySelector('.count-num');
+        const upBtn = el.querySelector('[data-vote="up"]')!;
+        const downBtn = el.querySelector('[data-vote="down"]')!;
+        const upCount = upBtn.querySelector('.count-num')!;
+        const downCount = downBtn.querySelector('.count-num')!;
 
-        if (upCount) upCount.textContent = String(result.upvotes);
-        if (downCount) downCount.textContent = String(result.downvotes);
+        upCount.textContent = String(result.upvotes);
+        downCount.textContent = String(result.downvotes);
 
-        // Update active state
         const newUserVote = getUserVote(law.id);
-        upBtn?.classList.toggle('voted', newUserVote === 'up');
-        downBtn?.classList.toggle('voted', newUserVote === 'down');
+        upBtn.classList.toggle('voted', newUserVote === 'up');
+        downBtn.classList.toggle('voted', newUserVote === 'down');
       } catch (error) {
         showError(error instanceof Error ? error.message : 'Failed to vote. Please try again.');
       }

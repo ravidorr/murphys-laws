@@ -29,10 +29,8 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   let dropdown: HTMLDivElement | null = null;
   let dropdownOpen = false;
 
-  // Create dropdown container
+  // Create dropdown container (only called when dropdown is null: init or first render)
   function createDropdown() {
-    if (dropdown) return dropdown;
-
     dropdown = document.createElement('div');
     dropdown.className = 'search-autocomplete';
     dropdown.setAttribute('role', 'listbox');
@@ -100,25 +98,21 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     dropdownOpen = true;
   }
 
-  // Select a suggestion by index
+  // Select a suggestion by index (suggestions from API always have valid law per index)
   function selectSuggestion(index: number) {
     if (index < 0 || index >= suggestions.length) return;
 
-    const law = suggestions[index];
-    if (law && onSelect) {
-      onSelect(law);
-    }
+    const law = suggestions[index]!;
+    onSelect(law);
     closeDropdown();
   }
 
-  // Close dropdown
+  // Close dropdown (dropdown always set after init)
   function closeDropdown() {
     suggestions = [];
     selectedIndex = -1;
-    if (dropdown) {
-      dropdown.innerHTML = '';
-      dropdown.setAttribute('aria-hidden', 'true');
-    }
+    dropdown!.innerHTML = '';
+    dropdown!.setAttribute('aria-hidden', 'true');
     inputElement.setAttribute('aria-expanded', 'false');
     dropdownOpen = false;
   }
@@ -219,10 +213,10 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     }
   }
 
-  // Handle clicks outside dropdown
+  // Handle clicks outside dropdown (dropdown always set after init)
   function handleDocumentClick(event: Event) {
     if (!inputElement.contains(event.target as Node) &&
-        (!dropdown || !dropdown.contains(event.target as Node))) {
+        !dropdown!.contains(event.target as Node)) {
       closeDropdown();
     }
   }
@@ -241,15 +235,13 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   activeDropdown.addEventListener('click', handleDropdownClick);
   document.addEventListener('click', handleDocumentClick);
 
-  // Cleanup function
+  // Cleanup function (dropdown always set after init)
   return {
     cleanup() {
       inputElement.removeEventListener('input', handleInput);
       inputElement.removeEventListener('keydown', handleKeydown);
-      if (dropdown) {
-        dropdown.removeEventListener('click', handleDropdownClick);
-        dropdown.remove();
-      }
+      dropdown!.removeEventListener('click', handleDropdownClick);
+      dropdown!.remove();
       document.removeEventListener('click', handleDocumentClick);
     },
     isOpen() {

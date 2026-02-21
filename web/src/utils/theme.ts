@@ -95,7 +95,8 @@ export function cycleTheme(): Theme {
   const current = getTheme();
   const order: Theme[] = ['auto', 'light', 'dark'];
   const currentIndex = order.indexOf(current);
-  const nextTheme = order[(currentIndex + 1) % order.length] ?? 'auto';
+  // order has 3 elements, index always valid
+  const nextTheme = order[(currentIndex + 1) % order.length]!;
   setTheme(nextTheme);
   return nextTheme;
 }
@@ -164,21 +165,13 @@ export function initTheme(): void {
   // Listen for system preference changes (only matters when in 'auto' mode)
   if (typeof window !== 'undefined' && window.matchMedia) {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
     const handleChange = () => {
-      // Only react if we're in auto mode
       if (getTheme() === 'auto') {
-        // Dispatch event so UI can update if needed
-        document.dispatchEvent(new CustomEvent('themechange', { 
-          detail: { 
-            theme: 'auto',
-            effectiveTheme: mediaQuery.matches ? 'dark' : 'light'
-          } 
+        document.dispatchEvent(new CustomEvent('themechange', {
+          detail: { theme: 'auto', effectiveTheme: mediaQuery.matches ? 'dark' : 'light' }
         }));
       }
     };
-    
-    // Modern browsers
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener('change', handleChange);
     }

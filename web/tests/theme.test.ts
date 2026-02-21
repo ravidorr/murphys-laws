@@ -374,6 +374,19 @@ describe('Theme utilities', () => {
 
       document.removeEventListener('themechange', eventHandler);
     });
+
+    it('registers change listener when mediaQuery.addEventListener is present (covers L175 B1)', () => {
+      const addEventListenerMock = vi.fn();
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: addEventListenerMock,
+        removeEventListener: vi.fn()
+      }));
+      localStorage.setItem('murphys_theme', 'auto');
+      initTheme();
+      expect(addEventListenerMock).toHaveBeenCalledWith('change', expect.any(Function));
+    });
   });
 
   describe('localStorage unavailable', () => {

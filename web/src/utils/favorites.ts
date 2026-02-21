@@ -62,6 +62,16 @@ function saveFavoritesToStorage(favorites: Record<string, FavoriteLaw>): void {
   }
 }
 
+/** Test-only: call getFavoritesFromStorage to cover disabled branch (L37). */
+export function __getFavoritesFromStorageForTest(): Record<string, FavoriteLaw> {
+  return getFavoritesFromStorage();
+}
+
+/** Test-only: call saveFavoritesToStorage to cover disabled branch (L54). */
+export function __saveFavoritesToStorageForTest(favorites: Record<string, FavoriteLaw>): void {
+  saveFavoritesToStorage(favorites);
+}
+
 /**
  * Check if a law is favorited
  * @param {number|string} lawId - Law ID

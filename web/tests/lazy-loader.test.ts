@@ -151,6 +151,18 @@ describe('Lazy Loader Utilities', () => {
       }
     });
 
+    it('observes placeholder in setTimeout when not connected at RAF time (L93)', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      document.body.appendChild(placeholder);
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
+    });
+
     it('uses custom rootMargin and threshold', () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
       lazyLoad(localThis.mockFactory as () => HTMLElement, { rootMargin: '200px', threshold: 0.5 });
@@ -159,6 +171,18 @@ describe('Lazy Loader Utilities', () => {
         expect.any(Function),
         { rootMargin: '200px', threshold: 0.5 }
       );
+    });
+
+    it('observes after setTimeout when placeholder not connected in rAF', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+      expect(placeholder.isConnected).toBe(false);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+      document.body.appendChild(placeholder);
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
     });
 
     it('adds loading class while loading', async () => {

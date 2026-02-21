@@ -33,7 +33,8 @@ describe('Feature Flags', () => {
       expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
     });
 
-    it('respects environment variable when set to true', () => {
+    it('respects environment variable when set to true (covers L46 env branch)', () => {
+      localStorage.clear();
       import.meta.env.VITE_FEATURE_FAVORITES = 'true';
       expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
     });
@@ -129,6 +130,13 @@ describe('Feature Flags', () => {
       import.meta.env.VITE_FEATURE_FAVORITES = 'false';
       const state = getFeatureState('FAVORITES_ENABLED');
       expect(state).toEqual({ enabled: false, source: 'environment' });
+    });
+
+    it('returns environment source when env is set and localStorage has no override (covers L97 B1)', () => {
+      localStorage.clear();
+      import.meta.env.VITE_FEATURE_FAVORITES = 'true';
+      const state = getFeatureState('FAVORITES_ENABLED');
+      expect(state).toEqual({ enabled: true, source: 'environment' });
     });
 
     it('localStorage takes priority over environment in getFeatureState', () => {

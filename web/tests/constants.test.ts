@@ -60,63 +60,37 @@ describe('Constants', () => {
 
   describe('getEnvVar function', () => {
     it('returns Vite env var when available', () => {
-      // In Vitest, import.meta.env can be extended
-      // Set a test value directly
+      // In Vitest, import.meta.env can be extended (covers L27 T0 B1 - Vite branch)
       import.meta.env.VITE_TEST_COVERAGE_KEY = 'vite-test-value';
 
       const result = getEnvVar('VITE_TEST_COVERAGE_KEY', 'TEST_KEY', 'default-value');
       expect(result).toBe('vite-test-value');
 
-      // Cleanup
       delete import.meta.env.VITE_TEST_COVERAGE_KEY;
     });
 
-    it('returns process.env var when available', () => {
-      // Try to mock process.env
+    it('returns process.env var when available (covers L32 T3 B1)', () => {
       const g = globalThis as unknown as Record<string, unknown>;
       const originalProcess = g.process as { env?: Record<string, string | undefined> } | undefined;
       const originalEnv = originalProcess?.env;
 
+      const mockProcess = {
+        ...originalProcess,
+        env: {
+          ...(originalEnv && typeof originalEnv === 'object' ? originalEnv : {}),
+          TEST_NODE_KEY: 'node-value'
+        }
+      };
+
+      const prevProcess = g.process;
+      g.process = mockProcess;
+
       try {
-        // Create a mock process.env with our test value
-        const mockProcess = {
-          ...originalProcess,
-          env: {
-            ...originalEnv,
-            TEST_NODE_KEY: 'node-value'
-          }
-        };
-
-        // Temporarily replace global process
-        const g = globalThis as unknown as Record<string, unknown>;
-        if (typeof g.process === 'undefined') {
-          g.process = mockProcess;
-        } else {
-          Object.defineProperty(globalThis, 'process', {
-            value: mockProcess,
-            writable: true,
-            configurable: true
-          });
-        }
-
-        const result = getEnvVar('VITE_NONEXISTENT', 'TEST_NODE_KEY', 'default-value');
+        // Use vite key that does not exist so we fall through to process.env
+        const result = getEnvVar('VITE_NONEXISTENT_FOR_NODE_TEST', 'TEST_NODE_KEY', 'default-value');
         expect(result).toBe('node-value');
-
-        // Restore original process
-        if (originalProcess) {
-          Object.defineProperty(globalThis, 'process', {
-            value: originalProcess,
-            writable: true,
-            configurable: true
-          });
-        } else {
-          delete g.process;
-        }
-      } catch {
-        // If we can't mock process.env, skip this test
-        // The branch is still tested in Node.js environments
-        const result = getEnvVar('VITE_NONEXISTENT', 'TEST_NODE_KEY', 'default-value');
-        expect(typeof result).toBe('string');
+      } finally {
+        g.process = prevProcess;
       }
     });
 

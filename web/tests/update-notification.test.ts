@@ -95,6 +95,13 @@ describe('Update Notification Component', () => {
       expect(localThis.notifications.length).toBe(1);
     });
 
+    it('does not schedule auto-dismiss for update type', () => {
+      showUpdateNotification({ type: 'update' });
+      vi.advanceTimersByTime(6000);
+      const notification = document.querySelector('.pwa-notification');
+      expect(notification).toBeTruthy();
+    });
+
     it('calls onUpdate callback when Refresh button is clicked', () => {
       const localThis: UpdateNotificationTestContext = {};
       localThis.onUpdate = vi.fn<() => void>() as Mock<() => void>;
@@ -186,6 +193,13 @@ describe('Update Notification Component', () => {
       if (localThis.notification) {
         expect(localThis.notification.style.animation).toContain('reverse');
       }
+    });
+
+    it('setTimeout callback sets animation when notification has parentNode (L77)', () => {
+      const notification = showUpdateNotification({ type: 'offline' });
+      expect(notification.parentNode).toBe(document.body);
+      vi.advanceTimersByTime(5000);
+      expect(notification.style.animation).toContain('reverse');
     });
 
     it('does not auto-dismiss update notification', () => {

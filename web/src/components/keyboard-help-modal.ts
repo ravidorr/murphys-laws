@@ -36,9 +36,9 @@ function getOrCreateModal() {
   
   // Handle focus trap
   modalElement.addEventListener('keydown', handleModalKeydown);
-  
+
   document.body.appendChild(modalElement);
-  
+
   return modalElement;
 }
 
@@ -47,17 +47,14 @@ function getOrCreateModal() {
  */
 function updateFocusableElements() {
   const modal = getOrCreateModal();
-  const container = modal.querySelector('.modal-container');
-  
-  /* v8 ignore next - Container always exists in modal DOM */
-  focusableElements = container?.querySelectorAll<HTMLElement>(
+  const container = modal.querySelector('.modal-container')!;
+  // Template always has .modal-container with at least one focusable (close button).
+  focusableElements = container.querySelectorAll<HTMLElement>(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  ) ?? [];
-
-  /* v8 ignore next - Focusable elements always exist */
-  firstFocusable = focusableElements[0] ?? null;
-  /* v8 ignore next - Focusable elements always exist */
-  lastFocusable = focusableElements[focusableElements.length - 1] ?? null;
+  );
+  // Template always has at least one focusable (close button).
+  firstFocusable = focusableElements[0]!;
+  lastFocusable = focusableElements[focusableElements.length - 1]!;
 }
 
 /**
@@ -71,16 +68,15 @@ function handleModalKeydown(event: KeyboardEvent) {
   
   if (event.shiftKey) {
     // Shift + Tab: if on first element, go to last
-    /* v8 ignore next 3 - Focus trap: shift+tab on first element goes to last */
     if (document.activeElement === firstFocusable) {
       event.preventDefault();
-      lastFocusable?.focus();
+      lastFocusable!.focus();
     }
   } else {
     // Tab: if on last element, go to first
     if (document.activeElement === lastFocusable) {
       event.preventDefault();
-      firstFocusable?.focus();
+      firstFocusable!.focus();
     }
   }
 }

@@ -247,7 +247,7 @@ describe('request utilities', () => {
       expect(result).toEqual(mockData);
     });
 
-    it('passes query parameters', async () => {
+    it('passes query parameters as object', async () => {
       fetchSpy.mockResolvedValue(asResponse({
         ok: true,
         status: 200,
@@ -261,6 +261,37 @@ describe('request utilities', () => {
         expect.objectContaining({
           method: 'GET'
         })
+      );
+    });
+
+    it('passes URLSearchParams instance as params', async () => {
+      fetchSpy.mockResolvedValue(asResponse({
+        ok: true,
+        status: 200,
+        json: async () => ({})
+      }));
+
+      const params = new URLSearchParams({ page: '2', limit: '5' });
+      await apiGet('/api/test', params);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${API_BASE_URL}/api/test?page=2&limit=5`,
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+
+    it('uses endpoint without query string when params are empty', async () => {
+      fetchSpy.mockResolvedValue(asResponse({
+        ok: true,
+        status: 200,
+        json: async () => ({})
+      }));
+
+      await apiGet('/api/test', {});
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${API_BASE_URL}/api/test`,
+        expect.any(Object)
       );
     });
   });
