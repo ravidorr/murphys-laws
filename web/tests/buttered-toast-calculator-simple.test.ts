@@ -201,6 +201,18 @@ describe('ButteredToastCalculatorSimple component', () => {
     expect(navigated).toBe(false);
   });
 
+  it('ignores click when target is not an Element', () => {
+    let navigated = false;
+    const onNavigate = () => { navigated = true; };
+
+    const el = ButteredToastCalculatorSimple({ onNavigate });
+    const ev = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(ev, 'target', { value: document.createTextNode('x'), configurable: true });
+    el.dispatchEvent(ev);
+
+    expect(navigated).toBe(false);
+  });
+
   it('uses correct constant values in calculation', () => {
     const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
 
@@ -338,5 +350,26 @@ describe('ButteredToastCalculatorSimple component', () => {
     el.dispatchEvent(event);
 
     expect(navigated).toBe(false);
+  });
+
+  it('sets aria-describedby for both height and overhang sliders', () => {
+    const el = ButteredToastCalculatorSimple({ onNavigate: () => {} });
+
+    const heightSlider = el.querySelector('#toast-height-simple');
+    const overhangSlider = el.querySelector('#toast-overhang-simple');
+
+    expect(heightSlider?.getAttribute('aria-describedby')).toBe('toast-height-simple-value');
+    expect(overhangSlider?.getAttribute('aria-describedby')).toBe('toast-overhang-simple-value');
+  });
+
+  it('ignores click when target is Text node and does not call onNavigate', () => {
+    let navigated: string | null = null;
+    const el = ButteredToastCalculatorSimple({ onNavigate: (target: string) => { navigated = target; } });
+
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: document.createTextNode('x'), writable: false });
+    el.dispatchEvent(event);
+
+    expect(navigated).toBeNull();
   });
 });

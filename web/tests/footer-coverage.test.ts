@@ -66,6 +66,18 @@ describe('Footer component - Coverage', () => {
     expect(disconnectMock).toHaveBeenCalled();
   });
 
+  it('primeAd returns early when main has insufficient content (L86 B0)', () => {
+    mainElement.parentNode!.removeChild(mainElement);
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = Footer({ onNavigate: () => {} });
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).not.toBe('true');
+  });
+
   it('does not load ad if content becomes insufficient between prime and trigger', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -248,6 +260,48 @@ describe('Footer component - Coverage', () => {
     
     // Should still be loaded (no double loading)
     expect(adSlot?.dataset.loaded).toBe('true');
+  });
+
+  it('does not throw when adsbygoogle.push throws (L50)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const origPush = Array.prototype.push;
+    (window.adsbygoogle as unknown[]) = [];
+    vi.spyOn((window.adsbygoogle as unknown[]), 'push').mockImplementation(() => {
+      throw new Error('AdSense blocked');
+    });
+    expect(() => Footer({ onNavigate: () => {} })).not.toThrow();
+    vi.restoreAllMocks();
+  });
+
+  it('triggerOnce runs loadAd when main has sufficient content (L126)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = Footer({ onNavigate: () => {} });
+    window.dispatchEvent(new Event('pointerdown'));
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).toBe('true');
+  });
+
+  it('primeAd runs on window load when readyState was not complete (L132)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    const el = Footer({ onNavigate: () => {} });
+    const loadCalls = addSpy.mock.calls.filter((c) => c[0] === 'load');
+    expect(loadCalls.length).toBeGreaterThanOrEqual(1);
+    window.dispatchEvent(new Event('load'));
+    expect(el.querySelector('[data-ad-slot]')).toBeTruthy();
+    addSpy.mockRestore();
   });
 
   it('skips scheduleAd when adHost is null', () => {

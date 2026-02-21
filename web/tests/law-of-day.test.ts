@@ -4,6 +4,8 @@ import type { Law } from '../src/types/app.d.ts';
 import * as voting from '../src/utils/voting.js';
 import * as featureFlags from '../src/utils/feature-flags.js';
 import * as favorites from '../src/utils/favorites.js';
+import * as notification from '../src/components/notification.js';
+import * as icons from '../src/utils/icons.js';
 
 // Mock notification module to avoid unhandled rejections
 vi.mock('../src/components/notification.js', () => ({
@@ -316,7 +318,7 @@ describe('LawOfTheDay component', () => {
   });
 
   it('handles vote error without message property', async () => {
-    toggleVoteSpy.mockRejectedValue({ code: 'NETWORK_ERROR' }); // Error without message
+    toggleVoteSpy.mockRejectedValue({ code: 'NETWORK_ERROR' });
 
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
@@ -325,8 +327,8 @@ describe('LawOfTheDay component', () => {
     upvoteBtn?.click();
 
     await vi.waitFor(() => {
+      expect(notification.showError).toHaveBeenCalledWith('Failed to vote. Please try again.');
     });
-
   });
 
   it('renders law with title and combines title with text', () => {
@@ -630,6 +632,36 @@ describe('LawOfTheDay component', () => {
       const icon = favoriteBtn!.querySelector('svg[data-icon-name]');
       expect(icon).toBeTruthy();
       expect(icon!.getAttribute('data-icon-name')).toBe('heartFilled');
+    });
+
+    it('renders without replacing icon when createIcon returns null on favorited init', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(true);
+      const createIconSpy = vi.spyOn(icons, 'createIcon').mockReturnValue(null);
+
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+
+      expect(createIconSpy).toHaveBeenCalledWith('heartFilled');
+      expect(el.querySelector('[data-favorite-btn].favorited')).toBeTruthy();
+    });
+
+    it('does not throw when createIcon returns null on favorite toggle', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(false);
+      toggleFavoriteSpy.mockReturnValue(true);
+      vi.spyOn(icons, 'createIcon').mockReturnValue(null);
+
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law, { append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      expect(favoriteBtn).toBeTruthy();
+      favoriteBtn!.click();
+
+      await vi.waitFor(() => {
+        expect(toggleFavoriteSpy).toHaveBeenCalled();
+      });
     });
 
     it('shows unfavorited state when law is not favorited', () => {

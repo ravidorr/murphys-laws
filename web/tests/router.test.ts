@@ -94,6 +94,17 @@ describe('Router', () => {
     expect(route.param).toBeNull();
   });
 
+  it('returns home when pathname does not match any route pattern', () => {
+    const savedLocation = window.location;
+    try {
+      (window as unknown as { location: { pathname: string } }).location = { pathname: '' };
+      const route = currentRoute();
+      expect(route).toEqual({ name: 'home', param: null });
+    } finally {
+      (window as unknown as { location: Location }).location = savedLocation;
+    }
+  });
+
   it('navigates to home route by clearing path', () => {
     history.replaceState(null, '', '/browse');
     navigate('home');
@@ -301,7 +312,6 @@ describe('Router', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);
 
-
     defineRoute('home', () => {
       const el = document.createElement('div');
       el.textContent = 'Home';
@@ -323,6 +333,63 @@ describe('Router', () => {
     // Should still navigate despite cleanup error
     expect(rootEl.textContent).toBe('Browse');
 
+    document.body.removeChild(rootEl);
+  });
+
+  it('catch block runs when child cleanup throws (L81 B1)', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    const el = document.createElement('div');
+    el.textContent = 'Home';
+    const child = document.createElement('span');
+    child.textContent = 'x';
+    (child as ElementWithCleanup).cleanup = () => { throw new Error('Child cleanup'); };
+    el.appendChild(child);
+
+    defineRoute('home', () => el);
+    defineRoute('browse', () => {
+      const div = document.createElement('div');
+      div.textContent = 'Browse';
+      return div;
+    });
+
+    history.replaceState(null, '', '/');
+    startRouter(rootEl);
+    navigate('browse');
+
+    expect(rootEl.textContent).toBe('Browse');
+    document.body.removeChild(rootEl);
+  });
+
+  it('catches cleanup errors and continues (covers router L81 catch B1)', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    let safeCleanupCalled = false;
+
+    defineRoute('home', () => {
+      const el = document.createElement('div');
+      el.textContent = 'Home';
+      const child = document.createElement('span');
+      (child as ElementWithCleanup).cleanup = () => { throw new Error('Fail'); };
+      const ok = document.createElement('span');
+      (ok as ElementWithCleanup).cleanup = () => { safeCleanupCalled = true; };
+      el.appendChild(child);
+      el.appendChild(ok);
+      return el;
+    });
+
+    defineRoute('browse', () => {
+      const el = document.createElement('div');
+      el.textContent = 'Browse';
+      return el;
+    });
+
+    history.replaceState(null, '', '/');
+    startRouter(rootEl);
+    navigate('browse');
+
+    expect(rootEl.textContent).toBe('Browse');
+    expect(safeCleanupCalled).toBe(true);
     document.body.removeChild(rootEl);
   });
 
@@ -470,5 +537,12 @@ describe('Router', () => {
       'navigate() called before startRouter() was initialized. Navigation will not render.',
       'warning'
     );
+  });
+
+  it('forceRender does nothing when startRouter was never called', async () => {
+    vi.resetModules();
+    vi.doMock('@sentry/browser', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
+    const { forceRender: freshForceRender } = await import('../src/router.ts');
+    expect(() => freshForceRender()).not.toThrow();
   });
 });

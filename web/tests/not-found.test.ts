@@ -26,6 +26,17 @@ describe('NotFound view', () => {
     expect(el.textContent).toMatch(/Murphy/i);
   });
 
+  it('ignores click when target is not HTMLElement', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: document.createTextNode('x'), writable: false });
+    el.dispatchEvent(event);
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('navigates back home when button is clicked', () => {
     const onNavigate = vi.fn();
     el = NotFound({ onNavigate });
@@ -54,6 +65,17 @@ describe('NotFound view', () => {
     categoryBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(onNavigate).toHaveBeenCalledWith('category', expect.any(String));
+  });
+
+  it('click on element with data-nav calls onNavigate with navTarget (L30)', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+
+    const homeBtn = el.querySelector('[data-nav="home"]') as HTMLElement;
+    expect(homeBtn).toBeTruthy();
+    homeBtn.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('home', undefined);
   });
 
   it('has search form', () => {

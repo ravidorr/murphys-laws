@@ -101,6 +101,16 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
   });
 
+  it('renders breadcrumb in container after initial render (L66)', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    const breadcrumbContainer = el.querySelector('#browse-breadcrumb');
+    expect(breadcrumbContainer).toBeTruthy();
+    await vi.waitFor(() => {
+      expect(breadcrumbContainer!.children.length).toBeGreaterThan(0);
+    }, { timeout: 1000 });
+  });
+
   it('updates result count on pagination', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: Array(25).fill(null).map((_, i) => ({

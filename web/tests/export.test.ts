@@ -289,6 +289,29 @@ describe('Export Utilities', () => {
         exportToCSV(content);
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
+
+      it('escapes CSV value with comma (covers L214 B1)', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, title: 'Law, with comma', text: 'Text', attribution: 'Author', category_slug: 'x', upvotes: 0, downvotes: 0 }]
+        };
+        exportToCSV(content);
+        expect(getBlobText()).toContain('"Law, with comma"');
+      });
+
+      it('exports CSV with simple values without wrapping (L214 B0)', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, title: 'SimpleTitle', text: 'SimpleText', attribution: 'Author', category_slug: 'x', upvotes: 0, downvotes: 0 }]
+        };
+        exportToCSV(content);
+        const text = getBlobText();
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+        expect(text).toContain('SimpleTitle');
+        expect(text).toContain('SimpleText');
+      });
     });
 
     describe('with SINGLE_LAW content type', () => {
@@ -555,6 +578,17 @@ describe('Export Utilities', () => {
 
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
+
+      it('includes attribution when law has attribution (L329)', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, title: 'Law', text: 'Text', attribution: 'Edward Murphy', category_slug: 'x', upvotes: 0, downvotes: 0 }]
+        };
+        exportToMarkdown(content);
+        expect(getBlobText()).toContain('Edward Murphy');
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
     });
 
     describe('with SINGLE_LAW content type', () => {
@@ -647,6 +681,18 @@ describe('Export Utilities', () => {
 
         // Should not throw
         exportToText(content);
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('handles law with title only (getLawDisplayText title-only branch)', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, title: 'Title Only', text: '' }]
+        };
+
+        exportToText(content);
+        expect(getBlobText()).toContain('Title Only');
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });

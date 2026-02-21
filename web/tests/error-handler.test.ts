@@ -162,6 +162,14 @@ describe('Error Handler Utilities', () => {
       expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(1);
     });
 
+    it('wraps non-Error thrown value in Error', async () => {
+      vi.mocked(localThis.mockFn).mockRejectedValueOnce('string error');
+      const resultPromise = withRetry(localThis.mockFn, { maxRetries: 0 });
+      const expectReject = expect(resultPromise).rejects.toThrow('string error');
+      await vi.runAllTimersAsync();
+      await expectReject;
+    });
+
     it('calls onRetry callback before each retry', async () => {
       vi.mocked(localThis.mockFn)
         .mockRejectedValueOnce(new Error('Network error'))
@@ -402,6 +410,14 @@ describe('Error Handler Utilities', () => {
 
     it('returns fallback for error with technical message', () => {
       expect(formatErrorMessage(new Error('TypeError: Cannot read property'))).toBe('An unexpected error occurred.');
+    });
+
+    it('returns message from non-Error object with message property', () => {
+      expect(formatErrorMessage({ message: 'Custom user message' })).toBe('Custom user message');
+    });
+
+    it('returns fallback when non-Error has no string message', () => {
+      expect(formatErrorMessage({ message: 123 })).toBe('An unexpected error occurred.');
     });
   });
 });

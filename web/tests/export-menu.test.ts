@@ -99,6 +99,18 @@ describe('Export Menu Component', () => {
       expect(button!.querySelector('svg')).toBeTruthy();
     });
 
+    it('renders button when createIcon returns null', async () => {
+      const icons = await import('../src/utils/icons.js');
+      vi.mocked(icons.createIcon).mockReturnValueOnce(null as unknown as SVGSVGElement);
+
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle');
+      expect(button).toBeTruthy();
+      expect(button!.querySelector('svg')).toBeFalsy();
+    });
+
     it('renders dropdown menu (hidden by default)', () => {
       const menu = ExportMenu();
       localThis.container!.appendChild(menu);
@@ -116,6 +128,17 @@ describe('Export Menu Component', () => {
 
       const items = menu.querySelectorAll('.export-dropdown-item');
       expect(items).toHaveLength(4);
+    });
+
+    it('uses format.toUpperCase() for unknown format label (L108)', () => {
+      vi.mocked(getAvailableFormats).mockReturnValue(['pdf', 'custom']);
+
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const customItem = menu.querySelector('[data-format="custom"]');
+      expect(customItem).toBeTruthy();
+      expect(customItem!.textContent).toBe('CUSTOM');
     });
 
     it('hides CSV option for CONTENT type', () => {
@@ -149,6 +172,20 @@ describe('Export Menu Component', () => {
       expect(button).toBeTruthy();
       expect(button!.disabled).toBe(false);
     });
+
+    it('does not open dropdown when button is disabled', () => {
+      vi.mocked(getAvailableFormats).mockReturnValue([]);
+      vi.mocked(getExportContent).mockReturnValue(null);
+
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button!.disabled).toBe(true);
+      button!.click();
+      expect(dropdown!.hidden).toBe(true);
+    });
   });
 
   describe('Dropdown behavior', () => {
@@ -164,6 +201,60 @@ describe('Export Menu Component', () => {
       button!.click();
 
       expect(dropdown!.hidden).toBe(false);
+    });
+
+    it('focuses first menuitem when opening dropdown (L122)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const firstItem = menu.querySelector('[role="menuitem"]') as HTMLElement | null;
+      const focusSpy = vi.spyOn(firstItem!, 'focus');
+
+      button!.click();
+
+      expect(focusSpy).toHaveBeenCalled();
+      focusSpy.mockRestore();
+    });
+
+    it('handles Enter on focused menuitem (L208 L209)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const pdfItem = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
+      button!.click();
+      pdfItem!.focus();
+      pdfItem!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(exportToPDF).toHaveBeenCalled();
+    });
+
+    it('handles Space on focused menuitem', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const csvItem = menu.querySelector('[data-format="csv"]') as HTMLElement | null;
+      button!.click();
+      csvItem!.focus();
+      csvItem!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+
+      expect(exportToCSV).toHaveBeenCalled();
+    });
+
+    it('calls handleExport when clicking a format menuitem (L237 L238)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      button!.click();
+
+      const mdItem = menu.querySelector('[data-format="md"]') as HTMLElement | null;
+      expect(mdItem).toBeTruthy();
+      mdItem!.click();
+
+      expect(exportToMarkdown).toHaveBeenCalled();
     });
 
     it('closes dropdown on outside click', () => {

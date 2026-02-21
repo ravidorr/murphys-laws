@@ -28,10 +28,8 @@ export function renderPagination(currentPage: number, totalItems: number, itemsP
     pages.push('...');
   }
 
-  // Always show last page if there's more than one page
-  if (totalPages > 1) {
-    pages.push(totalPages);
-  }
+  // totalPages > 1 already (we return above when totalPages <= 1)
+  pages.push(totalPages);
 
   const pageButtons = pages.map(p => {
     if (p === '...') {

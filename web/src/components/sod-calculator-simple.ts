@@ -23,11 +23,7 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     frequency: el.querySelector<HTMLInputElement>('#frequency'),
   };
 
-  // Verify all sliders exist
-  for (const [name, slider] of Object.entries(_sliders)) {
-    /* v8 ignore next - Template always contains these elements */
-    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
-  }
+  // Template always contains these elements
   const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
 
   const sliderValues = {
@@ -52,10 +48,8 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
     const displayScore = Math.min(score, 8.6);
 
-    /* v8 ignore next - Template always provides score display */
-    if (scoreDisplay) {
-      scoreDisplay.textContent = displayScore.toFixed(2);
-    }
+    // Template always provides score display
+    scoreDisplay!.textContent = displayScore.toFixed(2);
     updateInterpretation(displayScore);
   }
 
@@ -80,36 +74,29 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
       cls = 'calc-dark';
     }
 
-    /* v8 ignore next - Template always provides interpretation display */
-    if (interpretationDisplay) {
-      interpretationDisplay.textContent = interpretation;
-    }
+    // Template always provides interpretation display
+    interpretationDisplay!.textContent = interpretation;
 
-    /* v8 ignore next 4 - Template always provides score section */
-    const scoreSection = el.querySelector('.sod-simple-score');
-    if (scoreSection) {
-      scoreSection.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-      scoreSection.classList.add(cls);
-    }
+    // Template always provides score section
+    const scoreSection = el.querySelector('.sod-simple-score')!;
+    scoreSection.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
+    scoreSection.classList.add(cls);
   }
 
   (Object.keys(sliders) as SliderKey[]).forEach((k) => {
-    /* v8 ignore next - Sliders verified above */
-    if (!sliders[k]) return;
+    // Sliders always present (template)
+    const slider = sliders[k]!;
+    slider.setAttribute('aria-valuenow', slider.value);
+    slider.setAttribute('aria-valuetext', slider.value);
+    slider.setAttribute('aria-describedby', `${k}-value`);
 
-    // Initial value setup
-    sliders[k].setAttribute('aria-valuenow', sliders[k].value);
-    sliders[k].setAttribute('aria-valuetext', sliders[k].value);
-    sliders[k].setAttribute('aria-describedby', `${k}-value`);
+    slider.addEventListener('input', () => {
+      const val = slider.value;
+      // Template always has value elements
+      (sliderValues[k] as HTMLElement)!.textContent = val;
 
-    sliders[k].addEventListener('input', () => {
-      const val = sliders[k].value;
-      /* v8 ignore next - Always has slider values in template */
-      if (sliderValues[k]) sliderValues[k]!.textContent = val;
-
-      // Update ARIA attributes
-      sliders[k].setAttribute('aria-valuenow', val);
-      sliders[k].setAttribute('aria-valuetext', val);
+      slider.setAttribute('aria-valuenow', val);
+      slider.setAttribute('aria-valuetext', val);
 
       calculateScore();
     });
@@ -126,9 +113,8 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     // Check if clicked element or any parent has data-nav
     const navElement = t.closest('[data-nav]');
     if (navElement) {
-      const nav = (navElement as HTMLElement).dataset.nav;
-      /* v8 ignore next - data-nav always has a value in the template */
-      if (nav) onNavigate(nav);
+      const nav = (navElement as HTMLElement).dataset.nav!; // data-nav always has value in template
+      onNavigate(nav);
     }
   });
 

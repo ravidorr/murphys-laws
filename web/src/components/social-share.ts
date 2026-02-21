@@ -214,10 +214,8 @@ export function SocialShare({ url, title, description, lawText, lawId }: SocialS
       if (p !== popover) {
         p.classList.remove('open');
         p.classList.remove('popover-above');
-        const otherTrigger = p.previousElementSibling;
-        if (otherTrigger) {
-          otherTrigger.setAttribute('aria-expanded', 'false');
-        }
+        const otherTrigger = p.previousElementSibling; // template always has trigger before popover
+        otherTrigger!.setAttribute('aria-expanded', 'false');
       }
     });
 
@@ -351,10 +349,8 @@ export function initSharePopovers(container: Document | HTMLElement = document) 
         if (p !== popover) {
           p.classList.remove('open');
           p.classList.remove('popover-above');
-          const otherTrigger = p.previousElementSibling;
-          if (otherTrigger) {
-            otherTrigger.setAttribute('aria-expanded', 'false');
-          }
+          const otherTrigger = p.previousElementSibling; // template always has trigger before popover
+          otherTrigger!.setAttribute('aria-expanded', 'false');
         }
       });
 
@@ -367,13 +363,13 @@ export function initSharePopovers(container: Document | HTMLElement = document) 
         const triggerRect = trigger.getBoundingClientRect();
         const popoverHeight = 320; // Approximate height of popover
         const spaceBelow = window.innerHeight - triggerRect.bottom;
-        
+
         if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {
           popover.classList.add('popover-above');
         } else {
           popover.classList.remove('popover-above');
         }
-        
+
         popover.classList.add('open');
         trigger.setAttribute('aria-expanded', 'true');
       }
@@ -460,10 +456,10 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
   const feedback = wrapper.querySelector('.share-copy-feedback');
   const listeners: (() => void)[] = [];
 
+  // Only called with wrapper (truthy) in this module
   function addListener(target: EventTarget | null, event: string, handler: EventListener) {
-    if (!target) return;
-    target.addEventListener(event, handler);
-    listeners.push(() => target.removeEventListener(event, handler));
+    target!.addEventListener(event, handler);
+    listeners.push(() => target!.removeEventListener(event, handler));
   }
 
   // Show copy feedback
@@ -486,11 +482,11 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
       emailSubject,
     });
 
-    // Update all social share links
+    // Update all social share links (wrapper truthy after guard; shareUrls has all ids)
     SHARE_PLATFORMS.social.forEach(({ id }) => {
-      const link = wrapper?.querySelector(`[data-share="${id}"]`) as HTMLAnchorElement | null;
+      const link = wrapper!.querySelector(`[data-share="${id}"]`) as HTMLAnchorElement | null;
       if (link && shareUrls[id]) {
-        link.href = shareUrls[id];
+        link.href = shareUrls[id]!;
       }
     });
   }

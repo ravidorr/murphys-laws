@@ -51,17 +51,17 @@ export function Calculator(): HTMLDivElement {
   const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
 
   const sliderValues = {
-    urgency: el.querySelector('#urgency-value'),
-    complexity: el.querySelector('#complexity-value'),
-    importance: el.querySelector('#importance-value'),
-    skill: el.querySelector('#skill-value'),
-    frequency: el.querySelector('#frequency-value'),
+    urgency: el.querySelector('#urgency-value')!,
+    complexity: el.querySelector('#complexity-value')!,
+    importance: el.querySelector('#importance-value')!,
+    skill: el.querySelector('#skill-value')!,
+    frequency: el.querySelector('#frequency-value')!,
   };
 
-  const scoreValueDisplay = el.querySelector('#score-value');
-  const scoreInterpretationDisplay = el.querySelector('#score-interpretation');
-  const resultDisplay = el.querySelector('#result-display');
-  const formulaDisplay = el.querySelector('#formula-display');
+  const scoreValueDisplay = el.querySelector('#score-value')!;
+  const scoreInterpretationDisplay = el.querySelector('#score-interpretation')!;
+  const resultDisplay = el.querySelector('#result-display')!;
+  const formulaDisplay = el.querySelector('#formula-display')!;
 
   // Track which variables should show values (temporarily after slider change)
   type FormulaVarKey = 'U' | 'C' | 'I' | 'S' | 'F';
@@ -81,8 +81,7 @@ export function Calculator(): HTMLDivElement {
     const displayScore = Math.min(score, 8.6);
     const scoreText = displayScore.toFixed(2);
 
-    // Update score display
-    if (scoreValueDisplay) scoreValueDisplay.textContent = scoreText;
+    scoreValueDisplay.textContent = scoreText;
     updateResultInterpretation(displayScore);
 
     // Generate LaTeX formula - show variable name or value based on showValues
@@ -96,10 +95,8 @@ export function Calculator(): HTMLDivElement {
 
     const formula = `\\(${pFormula}=\\frac{((${uDisplay}+${cDisplay}+${iDisplay})\\times (10-${sDisplay}))}{20}\\times ${aDisplay}\\times \\frac{1}{(1-\\sin (\\frac{${fDisplay}}{10}))}\\)`;
 
-    if (formulaDisplay) {
-      formulaDisplay.textContent = formula;
-      // Tell MathJax to re-render this element after the browser updates the DOM
-      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    formulaDisplay.textContent = formula;
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         // Capture MathJax reference to avoid race conditions in test environments
         const mathJax = window.MathJax;
         requestAnimationFrame(() => {
@@ -157,7 +154,6 @@ export function Calculator(): HTMLDivElement {
             // Silently handle MathJax errors
           });
         });
-      }
     }
   }
 
@@ -182,9 +178,9 @@ export function Calculator(): HTMLDivElement {
   }
 
   (Object.keys(sliders) as SliderKey[]).forEach((k) => {
-    sliders[k]?.addEventListener('input', () => {
+    sliders[k].addEventListener('input', () => {
       const val = sliders[k].value;
-      if (sliderValues[k]) sliderValues[k]!.textContent = val;
+      sliderValues[k].textContent = val;
 
       // Update ARIA attributes
       sliders[k].setAttribute('aria-valuenow', val);
@@ -225,11 +221,9 @@ export function Calculator(): HTMLDivElement {
       cls = 'calc-dark';
     }
 
-    if (scoreInterpretationDisplay) scoreInterpretationDisplay.textContent = interpretation;
-    if (resultDisplay) {
-      resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-      resultDisplay.classList.add(cls);
-    }
+    scoreInterpretationDisplay.textContent = interpretation;
+    resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
+    resultDisplay.classList.add(cls);
   }
 
   const state = {
@@ -238,8 +232,8 @@ export function Calculator(): HTMLDivElement {
     importance: parseFloat(sliders.importance.value),
     skill: parseFloat(sliders.skill.value),
     frequency: parseFloat(sliders.frequency.value),
-    probability: scoreValueDisplay?.textContent || '0.00',
-    interpretation: scoreInterpretationDisplay?.textContent || ''
+    probability: scoreValueDisplay.textContent || '0.00',
+    interpretation: scoreInterpretationDisplay.textContent || ''
   };
 
   function updateState() {
@@ -248,8 +242,8 @@ export function Calculator(): HTMLDivElement {
     state.importance = parseFloat(sliders.importance.value);
     state.skill = parseFloat(sliders.skill.value);
     state.frequency = parseFloat(sliders.frequency.value);
-    state.probability = scoreValueDisplay?.textContent || '0.00';
-    state.interpretation = scoreInterpretationDisplay?.textContent || '';
+    state.probability = scoreValueDisplay.textContent || '0.00';
+    state.interpretation = scoreInterpretationDisplay.textContent || '';
   }
 
   // Generate shareable URL with parameters
@@ -280,19 +274,14 @@ export function Calculator(): HTMLDivElement {
       const numValue = parseFloat(value);
       if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
         sliders[slider].value = String(numValue);
-        if (sliderValues[slider]) {
-          sliderValues[slider]!.textContent = String(numValue);
-        }
+        sliderValues[slider].textContent = String(numValue);
       }
     }
   });
 
-  // Render inline share buttons
-  const shareContainer = el.querySelector('#calculator-share-container');
-  if (shareContainer) {
-    shareContainer.innerHTML = renderInlineShareButtonsHTML();
-    hydrateIcons(shareContainer);
-  }
+  const shareContainer = el.querySelector('#calculator-share-container')!;
+  shareContainer.innerHTML = renderInlineShareButtonsHTML();
+  hydrateIcons(shareContainer);
 
   // Initialize inline share buttons
   const teardownShare = initInlineShareButtons(el, {

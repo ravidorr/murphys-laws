@@ -10,23 +10,17 @@ export function NotFound({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEle
   // Hydrate icons
   hydrateIcons(el);
 
-  // Handle search form
-  const searchForm = el.querySelector('#not-found-search-form');
-  const searchInput = el.querySelector('#not-found-search-input');
-  
-  /* v8 ignore next - Template always provides search form and input */
-  if (searchForm && searchInput) {
-    searchForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const query = (searchInput as HTMLInputElement).value.trim();
-      if (query) {
-        // Navigate to browse with search query
-        onNavigate('browse');
-        // Store query for browse page to pick up
-        sessionStorage.setItem('searchQuery', query);
-      }
-    });
-  }
+  // Template always provides search form and input
+  const searchForm = el.querySelector('#not-found-search-form')!;
+  const searchInput = el.querySelector('#not-found-search-input')!;
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const query = (searchInput as HTMLInputElement).value.trim();
+    if (query) {
+      onNavigate('browse');
+      sessionStorage.setItem('searchQuery', query);
+    }
+  });
 
   el.addEventListener('click', (e) => {
     const t = e.target;
@@ -36,7 +30,6 @@ export function NotFound({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEle
     if (navBtn) {
       const navTarget = navBtn.getAttribute('data-nav');
       const navParam = navBtn.getAttribute('data-param');
-      /* v8 ignore next - data-nav always has a value in template */
       if (navTarget) {
         onNavigate(navTarget, navParam || undefined);
       }

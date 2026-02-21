@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Web: update components, utils, and views (calculators, trending, keyboard help, categories, favorites, not-found, copy/nav/voting/icons/content)
-- Web: bump to 3.0.11
+- Docs: CHANGELOG and web README point to uncovered-branches docs (replace stale BRANCH_COVERAGE_95 reference); bump to 2.0.8 / 3.0.12
 
 ### Fixed
 - Web: pin typescript-eslint to 8.56.0 and add overrides for ESLint 10 compatibility (scopeManager.addGlobals); bump web to 3.0.10
@@ -62,10 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Branch coverage tests: header ExportMenu cleanup, trending/browse/voting/home/categories cleanup and copy-text, structured-data setCategoryItemListSchema
-- docs/BRANCH_COVERAGE_95.md with steps to reach 95% branch coverage
+- Branch coverage checklist in `web/uncovered-branches.md`; process and format rules in `web/uncovered-branches-agent.md`
 
 ### Changed
-- Web coverage branch threshold set to 88% (see docs/BRANCH_COVERAGE_95.md to raise to 95%)
+- Web coverage branch threshold set to 88%; use `web/uncovered-branches.md` and `web/uncovered-branches-agent.md` to work through uncovered branches
 
 ## [2.0.5] - 2026-02-19
 

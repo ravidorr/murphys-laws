@@ -20,20 +20,19 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
     overhang: el.querySelector<HTMLInputElement>('#toast-overhang-simple'),
   };
 
-  // Verify all sliders exist
+  // Template always contains these elements; throw if template breaks.
   for (const [name, slider] of Object.entries(_sliders)) {
-    /* v8 ignore next - Template always contains these elements */
     if (!slider) throw new Error(`Calculator slider "${name}" not found`);
   }
   const sliders = _sliders as Record<ToastSimpleSliderKey, HTMLInputElement>;
 
   const sliderValues = {
-    height: el.querySelector('#toast-height-simple-value'),
-    overhang: el.querySelector('#toast-overhang-simple-value'),
+    height: el.querySelector('#toast-height-simple-value')!,
+    overhang: el.querySelector('#toast-overhang-simple-value')!,
   };
 
-  const probabilityDisplay = el.querySelector('#toast-probability-simple');
-  const interpretationDisplay = el.querySelector('#toast-interpretation-simple');
+  const probabilityDisplay = el.querySelector('#toast-probability-simple')!;
+  const interpretationDisplay = el.querySelector('#toast-interpretation-simple')!;
 
   // Constants
   const GRAVITY = 980; // cm/s²
@@ -42,10 +41,8 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
   const TOAST_INERTIA = 250;
 
   function updateDisplayValues() {
-    /* v8 ignore next - Template always provides value display elements */
-    if (sliderValues.height) sliderValues.height.textContent = `${sliders.height.value} cm`;
-    /* v8 ignore next - Template always provides value display elements */
-    if (sliderValues.overhang) sliderValues.overhang.textContent = `${sliders.overhang.value} cm`;
+    sliderValues.height.textContent = `${sliders.height.value} cm`;
+    sliderValues.overhang.textContent = `${sliders.overhang.value} cm`;
   }
 
   function calculateLanding() {
@@ -62,8 +59,7 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
     const probability = (1 - Math.abs(landingOrientation - 0.5) * 2) * 100;
     const finalProbability = Math.max(0, probability);
 
-    /* v8 ignore next - Template always provides probability display */
-    if (probabilityDisplay) probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
+    probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
     updateInterpretation(finalProbability);
   }
 
@@ -85,36 +81,27 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
       interpretation = "Looking good! Toast should land safely.";
     }
 
-    /* v8 ignore next - Template always provides interpretation display */
-    if (interpretationDisplay) interpretationDisplay.textContent = interpretation;
+    interpretationDisplay.textContent = interpretation;
 
-    /* v8 ignore next 4 - Template always provides score section */
-    const scoreSection = el.querySelector('.sod-simple-score');
-    if (scoreSection) {
-      scoreSection.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-      scoreSection.classList.add(cls);
-    }
+    const scoreSection = el.querySelector('.sod-simple-score')!;
+    scoreSection.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
+    scoreSection.classList.add(cls);
   }
 
   (Object.keys(sliders) as ToastSimpleSliderKey[]).forEach((k) => {
-    /* v8 ignore next - Sliders verified above */
-    if (!sliders[k]) return;
+    const slider = sliders[k]!;
 
-    // Initial setup
-    const initialVal = sliders[k].value;
-    sliders[k].setAttribute('aria-valuenow', initialVal);
-    sliders[k].setAttribute('aria-valuetext', `${initialVal} cm`);
+    const initialVal = slider.value;
+    slider.setAttribute('aria-valuenow', initialVal);
+    slider.setAttribute('aria-valuetext', `${initialVal} cm`);
     const descId = k === 'height' ? 'toast-height-simple-value' : 'toast-overhang-simple-value';
-    sliders[k].setAttribute('aria-describedby', descId);
+    slider.setAttribute('aria-describedby', descId);
 
-    sliders[k].addEventListener('input', () => {
-      const val = sliders[k].value;
+    slider.addEventListener('input', () => {
+      const val = slider.value;
       updateDisplayValues();
-
-      // Update ARIA attributes
-      sliders[k].setAttribute('aria-valuenow', val);
-      sliders[k].setAttribute('aria-valuetext', `${val} cm`);
-
+      slider.setAttribute('aria-valuenow', val);
+      slider.setAttribute('aria-valuetext', `${val} cm`);
       calculateLanding();
     });
   });
@@ -130,9 +117,8 @@ export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNa
 
     const navElement = t.closest('[data-nav]');
     if (navElement) {
-      const nav = (navElement as HTMLElement).dataset.nav;
-      /* v8 ignore next - data-nav always has a value in the template */
-      if (nav) onNavigate(nav);
+      const nav = (navElement as HTMLElement).dataset.nav!;
+      onNavigate(nav);
     }
   });
 

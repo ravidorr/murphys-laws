@@ -123,6 +123,23 @@ describe('SearchAutocomplete', () => {
     expect(items[1]!.getAttribute('data-law-id')).toBe('2');
   });
 
+  it('should render empty dropdown when API returns no suggestions (L66)', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    expect(dropdown).toBeTruthy();
+    expect(dropdown!.getAttribute('aria-hidden')).toBe('true');
+    expect(dropdown!.innerHTML).toBe('');
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('should highlight matching text in suggestions', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 
@@ -308,6 +325,31 @@ describe('SearchAutocomplete', () => {
     expect(item!.textContent).toContain('Law text');
   });
 
+  it('handles suggestion with empty text (highlightMatch L63 L66)', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: '', title: '' }]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'ab';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown!.querySelector('.search-suggestion-item');
+    expect(item).toBeTruthy();
+    expect(item!.getAttribute('data-law-id')).toBe('1');
+  });
+
+  it('closes dropdown on document click outside (L122)', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test', title: undefined }]));
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'te';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+    expect(document.querySelector('.search-suggestion-item')).toBeTruthy();
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(document.querySelector('.search-autocomplete')!.getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('should create dropdown as sibling when input has no form parent', () => {
     // Remove form and create input directly in body
     document.body.innerHTML = '';
@@ -354,6 +396,61 @@ describe('SearchAutocomplete', () => {
     const item = dropdown!.querySelector('.search-suggestion-item');
     // Should not throw, item should exist
     expect(item).toBeTruthy();
+  });
+
+  it('should return text unchanged when query does not match', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'No match here', title: undefined }]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'xyz';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown!.querySelector('.search-suggestion-item');
+    expect(item!.innerHTML).not.toContain('<mark');
+    expect(item!.textContent).toContain('No match here');
+  });
+
+  it('should call scrollIntoView when selecting with keyboard', async () => {
+    const scrollIntoView = vi.fn();
+    const orig = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' });
+    Element.prototype.scrollIntoView = orig;
+  });
+
+  it('should close dropdown for query that is only whitespace', async () => {
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = '   ';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    expect(api.fetchSuggestions).not.toHaveBeenCalled();
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('should use empty array when API returns undefined data', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue({ data: undefined, total: 0, limit: 10, offset: 0 } as PaginatedResponse<Law>);
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    expect(inputElement.getAttribute('aria-expanded')).toBe('false');
+    const dropdown = document.querySelector('.search-autocomplete');
+    expect(dropdown!.innerHTML).toBe('');
   });
 
   it('should not call onSelect for invalid suggestion index (negative)', async () => {

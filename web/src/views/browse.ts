@@ -58,52 +58,38 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     el.innerHTML = templateHtml;
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
 
-    // Render breadcrumb navigation
-    const breadcrumbContainer = el.querySelector('#browse-breadcrumb');
-    if (breadcrumbContainer) {
-      const breadcrumb = Breadcrumb({
-        items: [
-          { label: 'Browse All Murphy\'s Laws' }
-        ],
-        onNavigate
-      });
-      if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
-    }
+    const breadcrumbContainer = el.querySelector('#browse-breadcrumb')!;
+    const breadcrumb = Breadcrumb({
+      items: [{ label: 'Browse All Murphy\'s Laws' }],
+      onNavigate
+    });
+    if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
 
-    // Replace static loading message with random one
-    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
-    if (loadingPlaceholder) {
-      loadingPlaceholder.textContent = getRandomLoadingMessage();
-    }
+    const loadingPlaceholder = el.querySelector('.loading-placeholder p')!;
+    loadingPlaceholder.textContent = getRandomLoadingMessage();
   }
 
-  // Update the display with fetched laws
   async function updateDisplay() {
-    const cardText = el.querySelector('#browse-laws-list');
-    if (cardText) {
-      cardText.setAttribute('aria-busy', 'false');
-      cardText.innerHTML = `
-        ${renderLaws(laws, currentFilters.q)}
-        ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
-      `;
-      hydrateIcons(cardText);
-      initSharePopovers(cardText as HTMLElement);
+    const cardText = el.querySelector('#browse-laws-list')!;
+    cardText.setAttribute('aria-busy', 'false');
+    cardText.innerHTML = `
+      ${renderLaws(laws, currentFilters.q)}
+      ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
+    `;
+    hydrateIcons(cardText);
+    initSharePopovers(cardText as HTMLElement);
+
+    const resultCountEl = el.querySelector('#browse-result-count') as HTMLElement;
+    if (totalLaws > 0) {
+      const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
+      const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
+      resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
+      resultCountEl.style.display = '';
+    } else {
+      resultCountEl.textContent = '';
+      resultCountEl.style.display = 'none';
     }
-    
-    // Update result count
-    const resultCountEl = el.querySelector('#browse-result-count') as HTMLElement | null;
-    if (resultCountEl) {
-      if (totalLaws > 0) {
-        const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
-        const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
-        resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
-        resultCountEl.style.display = '';
-      } else {
-        resultCountEl.textContent = '';
-        resultCountEl.style.display = 'none';
-      }
-    }
-    
+
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
   }
 
@@ -111,18 +97,13 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   async function loadPage(page: number) {
     currentPage = page;
 
-    // Show loading state
-    const cardText = el.querySelector('#browse-laws-list');
-    if (cardText) {
-      cardText.setAttribute('aria-busy', 'true');
-      cardText.innerHTML = renderLoadingHTML();
-
-      // Disable pagination buttons during load
-      /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
-      el.querySelectorAll('.pagination button').forEach(btn => {
-        btn.setAttribute('disabled', 'true');
-      });
-    }
+    const cardText = el.querySelector('#browse-laws-list')!;
+    cardText.setAttribute('aria-busy', 'true');
+    cardText.innerHTML = renderLoadingHTML();
+    /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
+    el.querySelectorAll('.pagination button').forEach(btn => {
+      btn.setAttribute('disabled', 'true');
+    });
 
     try {
       const offset = (page - 1) * LAWS_PER_PAGE;
@@ -150,22 +131,17 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
         clearExportContent();
       }
 
-      // Only trigger ads if we actually have content - validate before triggering
-      if (laws.length > 0 && cardText) {
-        triggerAdSense(cardText as HTMLElement);
-      }
+      if (laws.length > 0) triggerAdSense(cardText as HTMLElement);
     } catch {
-      if (cardText) {
-        cardText.setAttribute('aria-busy', 'false');
-        cardText.innerHTML = `
-          <div class="empty-state">
-            <span class="icon empty-state-icon" data-icon="error" aria-hidden="true"></span>
-            <p class="empty-state-title">Of course something went wrong</p>
-            <p class="empty-state-text">Ironically, Murphy's Laws couldn't be loaded right now. Please try again.</p>
-          </div>
-        `;
-        hydrateIcons(cardText);
-      }
+      cardText.setAttribute('aria-busy', 'false');
+      cardText.innerHTML = `
+        <div class="empty-state">
+          <span class="icon empty-state-icon" data-icon="error" aria-hidden="true"></span>
+          <p class="empty-state-title">Of course something went wrong</p>
+          <p class="empty-state-text">Ironically, Murphy's Laws couldn't be loaded right now. Please try again.</p>
+        </div>
+      `;
+      hydrateIcons(cardText);
     }
   }
 
@@ -225,47 +201,31 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     }
   }
 
-  // Create and insert advanced search component
   const searchComponent = AdvancedSearch({
     initialFilters: currentFilters,
     onSearch: (filters) => {
       currentFilters = filters;
-      updateWidgetsVisibility(); // Update widget visibility when search changes
-      loadPage(1); // Reset to page 1 when filters change
+      updateWidgetsVisibility();
+      loadPage(1);
     }
   });
+  el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
 
-  const searchContainer = el.querySelector('#advanced-search-container');
-  if (searchContainer) {
-    searchContainer.appendChild(searchComponent);
-  }
+  const widgetsContainer = el.querySelector('[data-widgets]')!;
+  widgetsContainer.appendChild(TopVoted());
+  widgetsContainer.appendChild(Trending());
+  widgetsContainer.appendChild(RecentlyAdded());
 
-  // Add widgets after search
-  const widgetsContainer = el.querySelector('[data-widgets]');
-  if (widgetsContainer) {
-    const topVotedWidget = TopVoted();
-    const trendingWidget = Trending();
-    const recentlyAddedWidget = RecentlyAdded();
-
-    widgetsContainer.appendChild(topVotedWidget);
-    widgetsContainer.appendChild(trendingWidget);
-    widgetsContainer.appendChild(recentlyAddedWidget);
-  }
-
-  // Set initial widget visibility
   updateWidgetsVisibility();
 
-  // Add sort select handler
-  const sortSelect = el.querySelector('#sort-select');
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      const value = (e.target as HTMLSelectElement).value;
-      const [sort, order] = value.split('-');
-      currentSort = sort ?? '';
-      currentOrder = order ?? '';
-      loadPage(1); // Reset to page 1 when sort changes
-    });
-  }
+  const sortSelect = el.querySelector('#sort-select')!;
+  sortSelect.addEventListener('change', (e) => {
+    const value = (e.target as HTMLSelectElement).value;
+    const [sort, order] = value.split('-');
+    currentSort = sort ?? '';
+    currentOrder = order ?? '';
+    loadPage(1);
+  });
 
   loadPage(1);
 

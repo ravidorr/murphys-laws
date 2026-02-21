@@ -31,12 +31,10 @@ export function createLawListSection({ accentText, remainderText }: { accentText
     <div class="card-body"></div>
   `;
 
-  const bodyDiv = el.querySelector('.card-body');
-
-  if (bodyDiv) {
-    const loadingEl = createLoading();
-    bodyDiv.appendChild(loadingEl);
-  }
+  const bodyDiv = el.querySelector('.card-body')!;
+  // Template above always includes .card-body.
+  const loadingEl = createLoading();
+  bodyDiv.appendChild(loadingEl);
 
   function renderLaws(laws: Law[] = [], { skip = 0, limit = Infinity, rankOffset = null as number | null } = {}) {
     const body = el.querySelector('.card-body');

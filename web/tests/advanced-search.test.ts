@@ -17,6 +17,7 @@ interface MountSearchOptions {
   append?: boolean;
   onSearch?: (filters: SearchFilters) => void;
   initialFilters?: { q?: string; category_id?: string; attribution?: string };
+  _testLoadFiltersRef?: (loadFilters: (force?: boolean) => Promise<void>) => void;
 }
 
 function createLocalThis(): () => AdvancedSearchTestContext {
@@ -277,9 +278,9 @@ describe('AdvancedSearch component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
-    // When fetch fails and no cache exists, dropdown keeps "Loading..." text
-    // This is expected behavior - user can still use the dropdown
+    // When fetch fails and no cache exists, show error option in category dropdown
     expect(categorySelect).toBeTruthy();
+    expect(categorySelect.innerHTML).toContain('Error loading categories');
     // When there's no cache, loadFilters() is called immediately (not deferred)
     expect(deferUntilIdleSpy).not.toHaveBeenCalled();
   });
@@ -334,6 +335,47 @@ describe('AdvancedSearch component', () => {
     await vi.waitFor(() => {
       expect(categorySelect.textContent).toMatch(/General/);
     });
+  });
+
+  it('loads attributions on attribution select focus when not loaded yet', async () => {
+    const attributions = [{ name: 'Alice' }, { name: 'Bob' }];
+
+    fetchAPISpy.mockImplementation((url: string) => {
+      if (url.includes('attributions')) return Promise.resolve({ data: attributions });
+      return Promise.resolve({ data: [] });
+    });
+
+    deferUntilIdleSpy.mockImplementation(() => {});
+
+    const el = mountSearch();
+
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
+    attributionSelect.dispatchEvent(new Event('focus', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(attributionSelect.textContent).toMatch(/Alice/);
+      expect(attributionSelect.textContent).toMatch(/Bob/);
+    });
+  });
+
+  it('early-returns when loadFilters(false) called after filters already loaded', async () => {
+    fetchAPISpy.mockImplementation((url: string) => {
+      if (url.includes('attributions')) return Promise.resolve({ data: [{ name: 'A' }] });
+      return Promise.resolve({ data: [{ id: 1, title: 'Cat', slug: 'cat' }] });
+    });
+    deferUntilIdleSpy.mockImplementation((cb) => cb());
+
+    let loadFiltersRef: ((force?: boolean) => Promise<void>) | null = null;
+    mountSearch({
+      _testLoadFiltersRef: (fn) => { loadFiltersRef = fn; },
+    });
+
+    await vi.waitFor(() => expect(fetchAPISpy).toHaveBeenCalled());
+    const callCountAfterFirstLoad = fetchAPISpy.mock.calls.length;
+
+    await loadFiltersRef!(false);
+
+    expect(fetchAPISpy.mock.calls.length).toBe(callCountAfterFirstLoad);
   });
 
   it('calls onSearch with filters when search button is clicked', async () => {
@@ -819,6 +861,36 @@ describe('AdvancedSearch component', () => {
         const options = attributionSelect.querySelectorAll('option');
         expect(options.length).toBe(2); // "All Submitters" + "Valid Author"
       });
+    });
+  });
+
+  it('sets keyword input from initialFilters.q (covers L53 B1)', () => {
+    fetchAPISpy.mockResolvedValue({ data: [] });
+    const el = mountSearch({ initialFilters: { q: 'keyword' } });
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
+    expect(keywordInput).toBeTruthy();
+    expect(keywordInput.value).toBe('keyword');
+  });
+
+  it('lazy-loads categories on category select focus when empty (covers L172 B1)', async () => {
+    fetchAPISpy.mockResolvedValue({ data: [{ id: 1, title: 'Cat', slug: 'cat' }] });
+    const el = mountSearch({ append: true });
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    expect(categorySelect).toBeTruthy();
+    categorySelect.focus();
+    await vi.waitFor(() => {
+      expect(fetchAPISpy).toHaveBeenCalled();
+    });
+  });
+
+  it('lazy-loads attributions on attribution select focus when empty (covers L179 B1)', async () => {
+    fetchAPISpy.mockResolvedValue({ data: ['Author A'] });
+    const el = mountSearch({ append: true });
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
+    expect(attributionSelect).toBeTruthy();
+    attributionSelect.focus();
+    await vi.waitFor(() => {
+      expect(fetchAPISpy).toHaveBeenCalled();
     });
   });
 });

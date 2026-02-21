@@ -146,10 +146,9 @@ function enhanceMarkdownHtml(html: string): string {
     });
   }
 
-  // Replace h2 tags from end to start to preserve indices
+  // Replace h2 tags from end to start to preserve indices (regex has 3 groups, indices valid)
   for (let i = h2Matches.length - 1; i >= 0; i--) {
-    const h2Match = h2Matches[i];
-    if (!h2Match) continue;
+    const h2Match = h2Matches[i]!;
     const replacement = `<section class="content-section">\n      ${h2Match.open}${wrapFirstWordWithAccent(h2Match.content)}${h2Match.close}`;
     html = html.substring(0, h2Match.index) + replacement + html.substring(h2Match.index + h2Match.fullMatch.length);
   }
@@ -157,10 +156,9 @@ function enhanceMarkdownHtml(html: string): string {
   // Close sections properly - find each section and close it before the next section or at the end
   const sections = html.split('<section class="content-section">');
   if (sections.length > 1) {
-    html = sections[0] ?? ''; // Content before first section
+    html = sections[0] ?? '';
     for (let i = 1; i < sections.length; i++) {
-      const sectionContent = sections[i];
-      if (sectionContent === undefined) continue;
+      const sectionContent = sections[i]!;
       // Find where this section should end (before next section or at end)
       const nextSectionIndex = sectionContent.indexOf('<section class="content-section">');
 

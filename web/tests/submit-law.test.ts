@@ -3,6 +3,8 @@ import type { MockInstance } from 'vitest';
 import { SubmitLawSection } from '../src/components/submit-law.ts';
 import * as api from '../src/utils/api.ts';
 import * as cacheUtils from '../src/utils/category-cache.ts';
+import * as request from '../src/utils/request.ts';
+import * as notification from '../src/components/notification.ts';
 
 interface SubmitLawContext {
   el?: HTMLElement | null;
@@ -236,7 +238,24 @@ describe('SubmitLawSection component', () => {
     termsCheckbox!.dispatchEvent(new Event('change'));
 
     expect(submitBtn!.disabled).toBe(false);
+    expect(submitBtn!.getAttribute('data-tooltip')).toBeNull();
+  });
 
+  it('removes data-tooltip from submit button when valid (L132 L148)', () => {
+    const el = mountSection({ append: true });
+
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
+    const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null;
+
+    expect(submitBtn!.getAttribute('data-tooltip')).toBeTruthy();
+
+    textarea!.value = 'Valid law text with at least ten chars';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
+
+    expect(submitBtn!.getAttribute('data-tooltip')).toBeNull();
   });
 
   it('disables submit button if text is too short', () => {
@@ -902,6 +921,29 @@ describe('SubmitLawSection component', () => {
 
     document.body.removeChild(el);
     vi.restoreAllMocks();
+  });
+
+  it('shows fallback error message when submit throws non-Error', async () => {
+    vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+    vi.spyOn(request, 'apiPost').mockRejectedValue('network failure');
+    const showErrorSpy = vi.spyOn(notification, 'showError');
+
+    const el = mountSection({ append: true });
+
+    const form = el.querySelector('.submit-form') as HTMLFormElement | null;
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
+
+    textarea!.value = 'Valid law text with enough characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
+
+    form!.dispatchEvent(new Event('submit'));
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(showErrorSpy).toHaveBeenCalledWith('Failed to submit law. Please try again.');
   });
 
   it('does not reload categories on second focus', async () => {

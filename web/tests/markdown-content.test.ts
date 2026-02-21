@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getPageContent, getPageMetadata, markdownToHtml, type ContentPage } from '../src/utils/markdown-content.ts';
+import { getPageContent, getPageMetadata, getRawMarkdownContent, markdownToHtml, type ContentPage } from '../src/utils/markdown-content.ts';
 import { marked } from 'marked';
 
 describe('markdown-content.js', () => {
@@ -106,6 +106,14 @@ describe('markdown-content.js', () => {
     it('wraps h2 sections properly', () => {
       const html = getPageContent('about');
       expect(html).toContain('<section class="content-section">');
+    });
+
+    it('enhanceMarkdownHtml closes sections and handles nextSectionIndex branches (L143-L165)', () => {
+      const html = getPageContent('about');
+      expect(html).toContain('<section class="content-section">');
+      expect(html).toContain('</section>');
+      const sectionCount = (html.match(/<section class="content-section">/g) || []).length;
+      expect(sectionCount).toBeGreaterThanOrEqual(1);
     });
 
     it('includes lead paragraph in header for privacy page', () => {
@@ -249,6 +257,29 @@ describe('markdown-content.js', () => {
       expect(() => {
         getPageContent('invalid-page-name' as ContentPage);
       }).toThrow();
+    });
+
+    it('enhanceMarkdownHtml closes section before next section when nextSectionIndex !== -1', () => {
+      vi.spyOn(marked, 'parse').mockReturnValueOnce(
+        '<h1>T</h1><h2>A</h2><p>X</p><section class="content-section"><h2>B</h2><p>Y</p>'
+      );
+      const html = getPageContent('about');
+      expect(html).toContain('</section>');
+      vi.restoreAllMocks();
+    });
+  });
+
+  describe('getRawMarkdownContent', () => {
+    it('returns raw markdown for known page', () => {
+      const raw = getRawMarkdownContent('about');
+      expect(typeof raw).toBe('string');
+      expect(raw.length).toBeGreaterThan(0);
+      expect(raw).toContain('Murphy');
+    });
+
+    it('returns empty string for unknown page', () => {
+      const raw = getRawMarkdownContent('unknown-page' as ContentPage);
+      expect(raw).toBe('');
     });
   });
 });

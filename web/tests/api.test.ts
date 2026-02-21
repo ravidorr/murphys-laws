@@ -86,6 +86,42 @@ describe('API utilities', () => {
 
       await expect(fetchLaw(1)).rejects.toThrow('API returned non-JSON response');
     });
+
+    it('succeeds when response has no headers.get (e.g. test mocks)', async () => {
+      const mockLaw = { id: 1, title: 'Test', text: 'Text' };
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        headers: {},
+        json: async () => mockLaw
+      });
+
+      const result = await fetchLaw(1);
+      expect(result).toEqual(mockLaw);
+    });
+
+    it('succeeds when response has Headers with content-type application/json', async () => {
+      const mockLaw = { id: 1, title: 'Test', text: 'Text' };
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => mockLaw
+      });
+
+      const result = await fetchLaw(1);
+      expect(result).toEqual(mockLaw);
+    });
+
+    it('enters content-type check when headers.get exists and returns empty (covers L57 B1)', async () => {
+      const mockLaw = { id: 1, title: 'Test', text: 'Text' };
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        headers: { get: (): string => '' },
+        json: async () => mockLaw
+      });
+
+      const result = await fetchLaw(1);
+      expect(result).toEqual(mockLaw);
+    });
   });
 
   describe('fetchRelatedLaws', () => {

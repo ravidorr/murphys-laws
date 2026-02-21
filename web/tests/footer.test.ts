@@ -125,6 +125,31 @@ describe('Footer component', () => {
     expect(window.adsbygoogle.length).toBe(1);
   });
 
+  it('defer uses setTimeout when requestIdleCallback is undefined (L65 B0)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const win = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
+    const origIO = g.IntersectionObserver;
+    const origRIC = win.requestIdleCallback;
+    g.IntersectionObserver = undefined;
+    win.requestIdleCallback = undefined;
+    vi.useFakeTimers();
+    try {
+      const el = Footer({ onNavigate: () => {} });
+      vi.advanceTimersByTime(1500);
+      const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+      expect(adSlot?.dataset.loaded).toBe('true');
+    } finally {
+      vi.useRealTimers();
+      g.IntersectionObserver = origIO;
+      if (origRIC !== undefined) win.requestIdleCallback = origRIC;
+    }
+  });
+
   it('handles AdSense errors gracefully', () => {
     window.adsbygoogle = {
       push: () => {
@@ -255,6 +280,33 @@ describe('Footer component', () => {
       configurable: true
     });
     addEventListenerSpy.mockRestore();
+  });
+
+  it('runs primeAd when load event fires after document was not complete', () => {
+    window.adsbygoogle = [];
+    const originalReadyState = document.readyState;
+    const observeMock = vi.fn();
+    globalThis.IntersectionObserver = vi.fn(function () {
+      return { observe: observeMock, disconnect: vi.fn() };
+    }) as unknown as typeof IntersectionObserver;
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({ onNavigate: () => { } });
+
+    expect(observeMock).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event('load'));
+    expect(observeMock).toHaveBeenCalled();
+
+    Object.defineProperty(document, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
   });
 
   it('uses IntersectionObserver when available to load ads', () => {

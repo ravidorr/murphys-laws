@@ -23,12 +23,12 @@ export const HOME_HERO_TITLE = "Murphy's Law Archive";
 
 // Environment variable helper for Vite and Node.js
 export const getEnvVar = (viteKey: string, nodeKey: string, defaultValue: string): string => {
-  // Try Vite environment first
+  // Try Vite environment first (always defined in Vite builds)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const value = import.meta.env[viteKey];
     if (value !== undefined) return value;
   }
-  // Try Node.js environment
+  // Try Node.js environment (always defined in Node/SSR)
   if (typeof process !== 'undefined' && process.env) {
     const value = process.env[nodeKey];
     if (value !== undefined) return value;
@@ -85,6 +85,6 @@ export const LOADING_MESSAGES = [
  * @returns {string} A random loading message
  */
 export function getRandomLoadingMessage(): string {
-  /* v8 ignore next - Index always valid via Math.floor on non-empty const array */
-  return LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)] ?? '';
+  // Index always valid: non-empty const array
+  return LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)]!;
 }

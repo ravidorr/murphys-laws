@@ -215,6 +215,49 @@ describe('Home view', () => {
     expect(navCalled).toBe(false);
   });
 
+  it('keydown Enter on law card calls onNavigate with law id (L168)', async () => {
+    const lawOfTheDay = { id: 99, text: 'Test law', upvotes: 10, downvotes: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    let navParam: string | undefined = '';
+    const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    const lawBlock = el.querySelector('[data-law-id="99"]');
+    expect(lawBlock).toBeTruthy();
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    lawBlock!.dispatchEvent(enterEvent);
+
+    expect(navTarget).toBe('law');
+    expect(navParam).toBe('99');
+  });
+
+  it('click on law card (not button) calls onNavigate (L148)', async () => {
+    const lawOfTheDay = { id: 7, text: 'Test law', upvotes: 10, downvotes: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+
+    let navTarget = '';
+    let navParam: string | undefined = '';
+    const el = Home({ onNavigate: (target, param) => { navTarget = target; navParam = param; } });
+
+    await new Promise(r => setTimeout(r, 0));
+
+    const lawBlock = el.querySelector('[data-law-id="7"]');
+    expect(lawBlock).toBeTruthy();
+    (lawBlock as HTMLElement).click();
+
+    expect(navTarget).toBe('law');
+    expect(navParam).toBe('7');
+  });
+
   it('renders with no law of the day widget when data array is empty', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,

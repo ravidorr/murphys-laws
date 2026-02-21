@@ -89,50 +89,35 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     el.innerHTML = templateHtml;
     await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
 
-    const titleEl = el.querySelector('#category-detail-title');
-    if (titleEl) {
-      titleEl.innerHTML = formatPageTitle(categoryTitle);
-    }
+    el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
 
-    // Replace static loading message with random one
-    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
-    if (loadingPlaceholder) {
-      loadingPlaceholder.textContent = getRandomLoadingMessage();
-    }
+    const loadingPlaceholder = el.querySelector('.loading-placeholder p')!;
+    loadingPlaceholder.textContent = getRandomLoadingMessage();
   }
 
-  // Update the display with fetched laws
   async function updateDisplay() {
-    const cardText = el.querySelector('#category-laws-list');
-    if (cardText) {
-      cardText.setAttribute('aria-busy', 'false');
-      cardText.innerHTML = `
-        ${renderLaws(laws, currentFilters.q)}
-        ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
-      `;
-      hydrateIcons(cardText);
-      initSharePopovers(cardText as HTMLElement);
+    const cardText = el.querySelector('#category-laws-list')!;
+    cardText.setAttribute('aria-busy', 'false');
+    cardText.innerHTML = `
+      ${renderLaws(laws, currentFilters.q)}
+      ${renderPagination(currentPage, totalLaws, LAWS_PER_PAGE)}
+    `;
+    hydrateIcons(cardText);
+    initSharePopovers(cardText as HTMLElement);
 
-      // Only trigger ads if we have laws with content
-      if (laws.length > 0) {
-        triggerAdSense(el);
-      }
+    if (laws.length > 0) triggerAdSense(el);
+
+    const resultCountEl = el.querySelector('#category-result-count') as HTMLElement;
+    if (totalLaws > 0) {
+      const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
+      const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
+      resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
+      resultCountEl.style.display = '';
+    } else {
+      resultCountEl.textContent = '';
+      resultCountEl.style.display = 'none';
     }
 
-    // Update result count
-    const resultCountEl = el.querySelector('#category-result-count') as HTMLElement | null;
-    if (resultCountEl) {
-      if (totalLaws > 0) {
-        const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
-        const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
-        resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
-        resultCountEl.style.display = '';
-      } else {
-        resultCountEl.textContent = '';
-        resultCountEl.style.display = 'none';
-      }
-    }
-    
     await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
     // Update breadcrumbs and structured data after category title is loaded
     updateStructuredData();
@@ -142,18 +127,13 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   async function loadPage(page: number) {
     currentPage = page;
 
-    // Show loading state
-    const cardText = el.querySelector('#category-laws-list');
-    if (cardText) {
-      cardText.setAttribute('aria-busy', 'true');
-      cardText.innerHTML = renderLoadingHTML();
-
-      // Disable pagination buttons during load
-      /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
-      el.querySelectorAll('.pagination button').forEach(btn => {
-        btn.setAttribute('disabled', 'true');
-      });
-    }
+    const cardText = el.querySelector('#category-laws-list')!;
+    cardText.setAttribute('aria-busy', 'true');
+    cardText.innerHTML = renderLoadingHTML();
+    /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
+    el.querySelectorAll('.pagination button').forEach(btn => {
+      btn.setAttribute('disabled', 'true');
+    });
 
     try {
       const offset = (page - 1) * LAWS_PER_PAGE;
@@ -196,17 +176,15 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         clearExportContent();
       }
     } catch {
-      if (cardText) {
-        cardText.setAttribute('aria-busy', 'false');
-        cardText.innerHTML = `
-          <div class="empty-state">
-            <span class="icon empty-state-icon" data-icon="error" aria-hidden="true"></span>
-            <p class="empty-state-title">Of course something went wrong</p>
-            <p class="empty-state-text">Ironically, Murphy's Laws for this category couldn't be loaded right now. Please try again.</p>
-          </div>
-        `;
-        hydrateIcons(cardText);
-      }
+      cardText.setAttribute('aria-busy', 'false');
+      cardText.innerHTML = `
+        <div class="empty-state">
+          <span class="icon empty-state-icon" data-icon="error" aria-hidden="true"></span>
+          <p class="empty-state-title">Of course something went wrong</p>
+          <p class="empty-state-text">Ironically, Murphy's Laws for this category couldn't be loaded right now. Please try again.</p>
+        </div>
+      `;
+      hydrateIcons(cardText);
     }
   }
 
@@ -226,51 +204,35 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       if (category) {
         categoryTitle = stripMarkdownFootnotes(category.title);
         categoryDescription = category.description || '';
-        categoryNumericId = category.id; // Store the numeric ID for API calls
-        
-        // Update filters with the numeric ID
+        categoryNumericId = category.id;
+
         currentFilters.category_id = category.id;
-        
-        const titleEl = el.querySelector('#category-detail-title');
-        if (titleEl) {
-          titleEl.innerHTML = formatPageTitle(categoryTitle);
-        }
-        // Update description element
-        const descEl = el.querySelector('#category-description');
-        if (descEl) {
-          descEl.textContent = categoryDescription || 'All laws within this category.';
-        }
-        // Update browser page title and meta description
+
+        el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
+        const descEl = el.querySelector('#category-description')!;
+        descEl.textContent = categoryDescription || 'All laws within this category.';
+
         document.title = `${categoryTitle} | ${SITE_NAME}`;
         updateMetaDescription(categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}. Discover witty observations and corollaries in this category.`);
-        
-        // Render breadcrumb navigation
-        const breadcrumbContainer = el.querySelector('#category-breadcrumb');
-        if (breadcrumbContainer) {
-          const breadcrumb = Breadcrumb({
-            items: [
-              { label: 'Categories', nav: 'categories', href: '/categories' },
-              { label: categoryTitle }
-            ],
-            onNavigate
-          });
-          if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
-        }
-        
-        // Create and insert advanced search component with category pre-selected
+
+        const breadcrumbContainer = el.querySelector('#category-breadcrumb')!;
+        const breadcrumb = Breadcrumb({
+          items: [
+            { label: 'Categories', nav: 'categories', href: '/categories' },
+            { label: categoryTitle }
+          ],
+          onNavigate
+        });
+        if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
+
         const searchComponent = AdvancedSearch({
           initialFilters: { category_id: category.id },
           onSearch: (filters) => {
-            // Always keep the category_id in filters for this page
             currentFilters = { ...filters, category_id: category.id };
-            loadPage(1); // Reset to page 1 when filters change
+            loadPage(1);
           }
         });
-
-        const searchContainer = el.querySelector('#advanced-search-container');
-        if (searchContainer) {
-          searchContainer.appendChild(searchComponent);
-        }
+        el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
       }
     } catch (error) {
       Sentry.captureException(error);
@@ -370,17 +332,14 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   // Add voting listeners using shared utility
   addVotingListeners(el);
 
-  // Add sort select handler
-  const sortSelect = el.querySelector('#sort-select');
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      const value = (e.target as HTMLSelectElement).value;
-      const [sort, order] = value.split('-');
-      currentSort = sort ?? '';
-      currentOrder = order ?? '';
-      loadPage(1); // Reset to page 1 when sort changes
-    });
-  }
+  const sortSelect = el.querySelector('#sort-select')!;
+  sortSelect.addEventListener('change', (e) => {
+    const value = (e.target as HTMLSelectElement).value;
+    const [sort, order] = value.split('-');
+    currentSort = sort ?? '';
+    currentOrder = order ?? '';
+    loadPage(1);
+  });
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {

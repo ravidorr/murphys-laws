@@ -288,6 +288,64 @@ describe('Install Prompt Component', () => {
         expect(document.querySelector('.install-prompt')).toBeFalsy();
       });
     });
+
+    it('does not show when isInstalled is true', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      _setIsInstalledForTesting(true);
+
+      showIOSInstallInstructions();
+
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('does not show when running standalone', () => {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('standalone'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn()
+      }));
+
+      showIOSInstallInstructions();
+
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('does not show when promptDismissedThisSession is true', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+      const dismissBtn = document.querySelector('.install-prompt [data-action="dismiss"]') as HTMLElement | null;
+      dismissBtn?.click();
+      await new Promise(r => setTimeout(r, 350));
+
+      showIOSInstallInstructions();
+
+      expect(document.querySelector('.install-prompt-ios')).toBeFalsy();
+    });
+
+    it('clicking iOS prompt outside dismiss button does not remove prompt', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+
+      const title = document.querySelector('#install-prompt-title') as HTMLElement | null;
+      expect(title).toBeTruthy();
+      title!.click();
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
   });
 
   describe('hideInstallPrompt', () => {
@@ -384,6 +442,49 @@ describe('Install Prompt Component', () => {
 
       // Should not create prompt without deferredPrompt
       expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('does not show prompt when promptDismissedThisSession is true', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      const dismissBtn = document.querySelector('[data-action="dismiss"]') as HTMLElement | null;
+      dismissBtn?.click();
+      await new Promise(r => setTimeout(r, 350));
+
+      showInstallPrompt();
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('calls hideInstallPrompt before showing when existing prompt is present', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const stale = document.createElement('div');
+      stale.className = 'install-prompt';
+      stale.id = 'install-prompt';
+      document.body.appendChild(stale);
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      await new Promise(r => setTimeout(r, 350));
+      const prompts = document.querySelectorAll('#install-prompt');
+      expect(prompts.length).toBe(1);
+      expect(prompts[0].querySelector('[data-action="install"]')).toBeTruthy();
     });
   });
 
@@ -488,6 +589,46 @@ describe('Install Prompt Component', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(localThis.mockPromptEvent.prompt).toHaveBeenCalled();
+    });
+
+    it('dismisses prompt when Not now button is clicked', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      const dismissBtn = document.querySelector('.install-prompt [data-action="dismiss"]') as HTMLElement | null;
+      expect(dismissBtn).toBeTruthy();
+      dismissBtn!.click();
+
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('adds install-prompt-visible class after requestAnimationFrame', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      const prompt = document.querySelector('.install-prompt');
+      expect(prompt).toBeTruthy();
+      expect(prompt!.classList.contains('install-prompt-visible')).toBe(true);
     });
   });
 

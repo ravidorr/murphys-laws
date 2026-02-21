@@ -19,7 +19,14 @@ interface AdvancedSearchFilters {
   attribution?: string;
 }
 
-export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearchFilters }: { onSearch: (filters: AdvancedSearchFilters) => void; initialFilters?: AdvancedSearchFilters }): HTMLElement {
+export interface AdvancedSearchOptions {
+  onSearch: (filters: AdvancedSearchFilters) => void;
+  initialFilters?: AdvancedSearchFilters;
+  /** Test hook: called with loadFilters so tests can trigger loadFilters(forceReload). */
+  _testLoadFiltersRef?: (loadFilters: (forceReload?: boolean) => Promise<void>) => void;
+}
+
+export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearchFilters, _testLoadFiltersRef }: AdvancedSearchOptions): HTMLElement {
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
@@ -153,23 +160,24 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     }
   }
 
-  // Lazy load on user interaction (fallback if idle callback doesn't fire)
+  _testLoadFiltersRef?.(loadFilters);
+
+  // Lazy load on user interaction (fallback if idle callback doesn't fire).
+  // Template always provides #search-category and #search-attribution.
   function setupLazyLoad() {
     let categoryLoadAttempted = false;
     let attributionLoadAttempted = false;
 
-    categorySelect?.addEventListener('focus', () => {
+    categorySelect!.addEventListener('focus', () => {
       if (!categoryLoadAttempted && categories.length === 0) {
         categoryLoadAttempted = true;
-        // Force reload if categories are empty (whether filters were loaded or not)
         loadFilters(true);
       }
     }, { once: true });
 
-    attributionSelect?.addEventListener('focus', () => {
+    attributionSelect!.addEventListener('focus', () => {
       if (!attributionLoadAttempted && attributions.length === 0) {
         attributionLoadAttempted = true;
-        // Force reload if attributions are empty (whether filters were loaded or not)
         loadFilters(true);
       }
     }, { once: true });
