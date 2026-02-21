@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
+### Fixed
+- Web: filter Sentry noise "feature named `performanceMetrics` was not found" (Sentry SDK/third-party, not app code); extract ignore patterns to `sentry-ignore-patterns.ts` and add tests
+
 ### Changed
-- Bump root 2.0.11, backend 2.0.4, web 3.0.15
+- Bump root 2.0.11, backend 2.0.4, web 3.0.16
 
 ## [2.0.10] - 2026-02-21
 
