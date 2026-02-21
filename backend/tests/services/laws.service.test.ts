@@ -73,6 +73,12 @@ describe('LawService', () => {
     expect(result.total).toBe(1);
   });
 
+  it('should return total 0 and empty data when no laws match', async () => {
+    const result = await lawService.listLaws({ limit: 10, offset: 0 });
+    expect(result.data).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+
   it('should filter laws by search query', async () => {
     db.prepare("INSERT INTO laws (text, status) VALUES ('Apple', 'published')").run();
     db.prepare("INSERT INTO laws (text, status) VALUES ('Banana', 'published')").run();
@@ -185,7 +191,23 @@ describe('LawService', () => {
     expect(rel.category_id).toBe(categoryId);
   });
 
-  it('should submit law without author', async () => {
+  it('should submit law with author only (no email) and set contact_type text', async () => {
+    const lawId = await lawService.submitLaw({
+      title: 'T',
+      text: 'Author only law',
+      author: 'Anonymous Human',
+      email: '',
+      categoryId: null
+    });
+
+    const attribution = db.prepare('SELECT * FROM attributions WHERE law_id = ?').get(lawId) as { name: string; contact_type: string; contact_value: string | null };
+    expect(attribution).toBeDefined();
+    expect(attribution.name).toBe('Anonymous Human');
+    expect(attribution.contact_type).toBe('text');
+    expect(attribution.contact_value).toBeNull();
+  });
+
+  it('should submit law without author and without categoryId', async () => {
     const lawId = await lawService.submitLaw({
       title: '',
       text: 'Anon Law',
@@ -193,12 +215,15 @@ describe('LawService', () => {
       email: '',
       categoryId: null
     });
-    
+
     const law = db.prepare('SELECT * FROM laws WHERE id = ?').get(lawId) as { text: string };
     expect(law.text).toBe('Anon Law');
-    
+
     const attribution = db.prepare('SELECT * FROM attributions WHERE law_id = ?').get(lawId);
     expect(attribution).toBeUndefined();
+
+    const category = db.prepare('SELECT * FROM law_categories WHERE law_id = ?').get(lawId);
+    expect(category).toBeUndefined();
   });
 
   it('should fallback to recently featured law if no fresh laws available', async () => {

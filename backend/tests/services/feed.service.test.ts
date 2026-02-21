@@ -208,6 +208,20 @@ describe('FeedService', () => {
       expect(xml).toContain('<author>John Doe</author>');
     });
 
+    it('should include multiple RSS items with one having author when attribution exists', async () => {
+      const localThis = { db, feedService };
+      localThis.db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Law A', 'published', '2024-01-01T00:00:00Z')").run();
+      const lawB = localThis.db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Law B', 'published', '2024-01-02T00:00:00Z')").run();
+      localThis.db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Law C', 'published', '2024-01-03T00:00:00Z')").run();
+      localThis.db.prepare("INSERT INTO attributions (law_id, name, contact_type) VALUES (?, 'Attributed Author', 'email')").run(lawB.lastInsertRowid);
+
+      const xml = await localThis.feedService.generateRss();
+
+      const itemCount = (xml.match(/<item>/g) || []).length;
+      expect(itemCount).toBeGreaterThanOrEqual(2);
+      expect(xml).toContain('<author>Attributed Author</author>');
+    });
+
     it('should escape XML special characters', async () => {
       const localThis = { db, feedService };
       localThis.db.prepare("INSERT INTO laws (text, status, title) VALUES ('Law with <special> & \"chars\"', 'published', 'Title & <More>')").run();

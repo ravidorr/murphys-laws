@@ -215,11 +215,12 @@ describe('OgImageService', () => {
 
       mockLawService.getLaw.mockResolvedValue(localThis.law);
 
-      // Initial stats
+      // Initial stats (no requests yet)
       let stats = ogImageService.getCacheStats();
       expect(stats.size).toBe(0);
       expect(stats.hits).toBe(0);
       expect(stats.misses).toBe(0);
+      expect(stats.hitRate).toBe('N/A');
 
       // First request (miss)
       await ogImageService.generateLawImage(1);
@@ -227,6 +228,7 @@ describe('OgImageService', () => {
       expect(stats.size).toBe(1);
       expect(stats.hits).toBe(0);
       expect(stats.misses).toBe(1);
+      expect(stats.hitRate).toBe('0.00%');
 
       // Second request (hit)
       await ogImageService.generateLawImage(1);
