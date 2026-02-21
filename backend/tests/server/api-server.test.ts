@@ -245,6 +245,20 @@ describe('api-server', () => {
       const { isRunAsMain } = await import('../../src/server/api-server.ts');
       expect(isRunAsMain()).toBe(false);
     });
+
+    it('should call startApiServer when run as main (argv[1] resolves to module)', async () => {
+      const path = await import('node:path');
+      const url = await import('node:url');
+      const testDir = path.dirname(url.fileURLToPath(import.meta.url));
+      const apiServerPath = path.resolve(testDir, '../../src/server/api-server.ts');
+      const origArgv1 = process.argv[1];
+      process.argv[1] = apiServerPath;
+      vi.resetModules();
+      mockListen.mockClear();
+      await import('../../src/server/api-server.ts');
+      expect(mockListen).toHaveBeenCalled();
+      process.argv[1] = origArgv1;
+    });
   });
 
   describe('createRequestListener', () => {
