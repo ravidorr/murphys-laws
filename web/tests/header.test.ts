@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Header } from '../src/components/header.js';
-import type { CleanableElement } from '../src/types/app.js';
+import type { CleanableElement, Law } from '../src/types/app.js';
 
 // Mock feature flags
 vi.mock('../src/utils/feature-flags.js', () => ({
@@ -51,7 +51,19 @@ vi.mock('../src/components/export-menu.js', () => ({
 import { ExportMenu } from '../src/components/export-menu.js';
 import { SearchAutocomplete } from '../src/components/search-autocomplete.js';
 
+interface HeaderLocalThis {
+  navigated: string;
+  searchQuery: { q: string } | null;
+  el: HTMLElement | null;
+}
+
 describe('Header component', () => {
+  const localThis: HeaderLocalThis = {
+    navigated: '',
+    searchQuery: null,
+    el: null
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -338,6 +350,143 @@ describe('Header component', () => {
 
     // Should not navigate
     expect(navigated).toBe('');
+  });
+
+  it('does not call onNavigate when clicking element without data-nav', () => {
+    const onNavigateMock = vi.fn();
+    const el = Header({
+      onSearch: () => {},
+      onNavigate: onNavigateMock,
+      currentPage: 'home'
+    });
+
+    const searchInput = el.querySelector('input[aria-label="Search"]') || el.querySelector('input');
+    expect(searchInput).toBeTruthy();
+    (searchInput as HTMLElement).click();
+
+    expect(onNavigateMock).not.toHaveBeenCalled();
+  });
+
+  it('cleanup does not throw when #export-menu-container was missing (L38 L169)', () => {
+    const originalQ = Element.prototype.querySelector;
+    vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+      if (selector === '#export-menu-container') return null;
+      return originalQ.call(this, selector);
+    });
+    const el = Header({
+      onSearch: () => {},
+      onNavigate: () => {},
+      currentPage: 'home'
+    });
+    vi.restoreAllMocks();
+    expect(ExportMenu).not.toHaveBeenCalled();
+    expect(() => (el as CleanableElement).cleanup!()).not.toThrow();
+  });
+
+  it('does not attach search or autocomplete when form is missing (L137 L155)', () => {
+    const originalQ = Element.prototype.querySelector;
+    vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+      if (selector === 'form[role="search"]') return null;
+      return originalQ.call(this, selector);
+    });
+    const onSearchMock = vi.fn();
+    const el = Header({
+      onSearch: onSearchMock,
+      onNavigate: () => {},
+      currentPage: 'home'
+    });
+    vi.restoreAllMocks();
+    expect(SearchAutocomplete).not.toHaveBeenCalled();
+    const form = el.querySelector('form[role="search"]');
+    if (form) form.dispatchEvent(new Event('submit'));
+    expect(onSearchMock).not.toHaveBeenCalled();
+  });
+
+  it('cleanup calls originalCleanup, autocompleteCleanup, and exportMenuCleanup when all present (L163 L166 L169)', () => {
+    const exportCleanup = vi.fn();
+    vi.mocked(ExportMenu).mockReturnValue({ cleanup: exportCleanup } as unknown as ReturnType<typeof ExportMenu>);
+    const autoCleanup = vi.fn();
+    vi.mocked(SearchAutocomplete).mockReturnValue({ cleanup: autoCleanup, isOpen: () => false });
+
+    const el = Header({ onSearch: () => {}, onNavigate: () => {} });
+    (el as CleanableElement).cleanup!();
+
+    expect(exportCleanup).toHaveBeenCalled();
+    expect(autoCleanup).toHaveBeenCalled();
+  });
+
+  it('nav click with navTarget calls onNavigate (L128)', () => {
+    localThis.el = Header({ onSearch: () => {}, onNavigate: (page) => { localThis.navigated = page; }, currentPage: 'home' });
+    document.body.appendChild(localThis.el);
+
+    (localThis.el.querySelector('[data-nav="browse"]') as HTMLElement).click();
+    expect(localThis.navigated).toBe('browse');
+
+    document.body.removeChild(localThis.el);
+  });
+
+  it('form and input present when search is used (L138 L141)', () => {
+    localThis.el = Header({ onSearch: () => {}, onNavigate: () => {}, currentPage: 'home' });
+    const form = localThis.el.querySelector('form[role="search"]');
+    const input = localThis.el.querySelector('input[aria-label="Search"]') || localThis.el.querySelector('input');
+    expect(form).toBeTruthy();
+    expect(input).toBeTruthy();
+  });
+
+  it('submit uses input.value and calls onSearch (L155)', () => {
+    localThis.searchQuery = null;
+    localThis.el = Header({
+      onSearch: (q) => { localThis.searchQuery = q; },
+      onNavigate: () => {},
+      currentPage: 'home'
+    });
+    document.body.appendChild(localThis.el);
+    const input = localThis.el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
+    const form = localThis.el.querySelector('form[role="search"]');
+    input.value = 'gravity';
+    form!.dispatchEvent(new Event('submit'));
+    expect(localThis.searchQuery).toEqual({ q: 'gravity' });
+    document.body.removeChild(localThis.el);
+  });
+
+  it('cleanup calls originalCleanup, autocompleteCleanup, exportMenuCleanup (L163 L166)', () => {
+    const exportCleanup = vi.fn();
+    const autoCleanup = vi.fn();
+    vi.mocked(ExportMenu).mockReturnValue({ cleanup: exportCleanup } as unknown as ReturnType<typeof ExportMenu>);
+    vi.mocked(SearchAutocomplete).mockReturnValue({ cleanup: autoCleanup, isOpen: () => false });
+
+    localThis.el = Header({ onSearch: () => {}, onNavigate: () => {} });
+    (localThis.el as CleanableElement).cleanup!();
+
+    expect(exportCleanup).toHaveBeenCalled();
+    expect(autoCleanup).toHaveBeenCalled();
+  });
+
+  it('hits navTarget, form/input, submit value, and cleanup branches in one flow (L128 L138 L141 L155 L163 L166)', () => {
+    const onNavigateMock = vi.fn();
+    const onSearchMock = vi.fn();
+    const exportCleanup = vi.fn();
+    const autoCleanup = vi.fn();
+    vi.mocked(ExportMenu).mockReturnValue({ cleanup: exportCleanup } as unknown as ReturnType<typeof ExportMenu>);
+    vi.mocked(SearchAutocomplete).mockReturnValue({ cleanup: autoCleanup, isOpen: () => false });
+
+    const el = Header({ onSearch: onSearchMock, onNavigate: onNavigateMock });
+    document.body.appendChild(el);
+
+    (el.querySelector('[data-nav="browse"]') as HTMLElement).click();
+    expect(onNavigateMock).toHaveBeenCalledWith('browse');
+
+    const input = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
+    const form = el.querySelector('form[role="search"]');
+    input.value = 'test query';
+    form!.dispatchEvent(new Event('submit'));
+    expect(onSearchMock).toHaveBeenCalledWith({ q: 'test query' });
+
+    (el as CleanableElement).cleanup!();
+    expect(exportCleanup).toHaveBeenCalled();
+    expect(autoCleanup).toHaveBeenCalled();
+
+    document.body.removeChild(el);
   });
 
   describe('Theme toggle', () => {
@@ -650,6 +799,27 @@ describe('Header component', () => {
 
       expect(mockOnNavigate).toHaveBeenCalledWith('law', '123');
     });
+
+    it('should not call onNavigate when suggestion has no id', () => {
+      const mockOnNavigate = vi.fn();
+      let onSelectCallback: ((law: Law) => void) | null = null;
+
+      vi.mocked(SearchAutocomplete).mockImplementation(({ onSelect }) => {
+        onSelectCallback = onSelect as (law: Law) => void;
+        return { cleanup: vi.fn(), isOpen: () => false };
+      });
+
+      Header({
+        onSearch: () => {},
+        onNavigate: mockOnNavigate
+      });
+
+      if (onSelectCallback) {
+        (onSelectCallback as (law: Law) => void)({} as Law);
+      }
+
+      expect(mockOnNavigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('Favorites navigation link', () => {
@@ -716,6 +886,26 @@ describe('Header component', () => {
       const favoritesLink = el.querySelector('[data-nav="favorites"]');
       expect(favoritesLink).toBeTruthy();
       expect(favoritesLink!.getAttribute('href')).toBe('/favorites');
+    });
+
+    it('does not throw when #nav-dropdown ul or categories item is missing', () => {
+      vi.mocked(isFavoritesEnabled).mockReturnValue(true);
+      const origQSA = Element.prototype.querySelector;
+      let callCount = 0;
+      vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+        if (selector === '#nav-dropdown ul' && callCount++ < 1) {
+          return null;
+        }
+        return origQSA.call(this, selector);
+      });
+
+      const el = Header({
+        onSearch: () => {},
+        onNavigate: () => {},
+      });
+
+      expect(el.querySelector('[data-nav="favorites"]')).toBeFalsy();
+      vi.restoreAllMocks();
     });
 
     it('clicking favorites link triggers onNavigate with "favorites"', () => {

@@ -148,6 +148,26 @@ describe('SubmitLawSection component', () => {
     expect(localThis.submitBtn!.getAttribute('data-tooltip')).toBe('Complete required fields to submit');
   });
 
+  it('clears message when text becomes valid or empty (L132)', () => {
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const messageDiv = el.querySelector('.submit-message') as HTMLElement | null;
+    expect(textarea).toBeTruthy();
+    expect(messageDiv).toBeTruthy();
+
+    textarea!.value = 'Short';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(messageDiv!.classList.contains('error')).toBe(true);
+
+    textarea!.value = 'Valid law text with enough characters here';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(messageDiv!.style.display).toBe('none');
+
+    textarea!.value = '';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(messageDiv!.style.display).toBe('none');
+  });
+
   it('renders validation requirements display', () => {
     const el = mountSection();
     

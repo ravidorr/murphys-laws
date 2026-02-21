@@ -745,6 +745,13 @@ describe('Button component', () => {
       expect(localThis.html!).toContain('btn-text');
       expect(localThis.html!.indexOf('btn-text')).toBeLessThan(localThis.html!.indexOf('data-icon="arrowForward"'));
     });
+
+    it('L501: renders loadingText when loading is true', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderButtonHTML({ text: 'Submit', loading: true, loadingText: 'Saving...' });
+      expect(localThis.html!).toContain('Saving...');
+      expect(localThis.html!).not.toContain('>Submit<');
+    });
   });
 
   describe('renderLinkButtonHTML - coverage L584 L608', () => {

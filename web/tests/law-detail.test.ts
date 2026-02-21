@@ -126,6 +126,20 @@ describe('LawDetail view', () => {
     expect(el.textContent).toMatch(/Test text without title/);
   });
 
+  it('renders law with single-word title (title branch else)', async () => {
+    const law = { id: '8', title: 'Murphy', text: 'Single word title.', score: 0 };
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(el.textContent).toMatch(/Murphy/);
+    expect(el.textContent).toMatch(/Single word title/);
+  });
+
   it('renders law without author or submittedBy', async () => {
     const law = { id: '7', text: 'Anonymous law', score: 3 };
 
@@ -559,6 +573,34 @@ describe('LawDetail view', () => {
     expect(writeTextMock).toHaveBeenCalled();
   });
 
+  it('uses data-copy-value when set on copy text button (L305)', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Body text', upvotes: 5, downvotes: 2 };
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock
+      }
+    });
+
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const copyTextBtn = document.createElement('button');
+    copyTextBtn.setAttribute('data-action', 'copy-text');
+    copyTextBtn.setAttribute('data-copy-value', 'Custom text to copy');
+    el.appendChild(copyTextBtn);
+
+    copyTextBtn.click();
+    await new Promise(r => setTimeout(r, 10));
+
+    expect(writeTextMock).toHaveBeenCalledWith('Custom text to copy');
+  });
+
   it('navigates to related law card when clicked', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
 
@@ -584,6 +626,30 @@ describe('LawDetail view', () => {
 
     expect(navTarget).toBe('law');
     expect(navParam).toBe('42');
+  });
+
+  it('does not navigate when clicking button inside related law card (L394 B0)', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const onNavigate = vi.fn();
+    const el = LawDetail({ lawId: law.id, onNavigate });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    const relatedCard = document.createElement('div');
+    relatedCard.className = 'law-card-mini';
+    relatedCard.dataset.lawId = '99';
+    const btn = document.createElement('button');
+    btn.textContent = 'Vote';
+    relatedCard.appendChild(btn);
+    el.appendChild(relatedCard);
+
+    btn.click();
+
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
   it('fetches related laws using dedicated endpoint', async () => {

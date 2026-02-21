@@ -315,4 +315,24 @@ describe('third-party utils coverage', () => {
     // Test passes if no unhandled rejection occurred
     expect(true).toBe(true);
   });
+
+  it('calls window.gtag when script loads successfully (L106 L109)', async () => {
+    vi.resetModules();
+    document.head.innerHTML = '';
+    const win = window as unknown as { gtag?: (...args: unknown[]) => void };
+    win.gtag = undefined;
+
+    const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
+    initAnalyticsBootstrap();
+    window.dispatchEvent(new Event('scroll'));
+
+    const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement | null;
+    expect(script).toBeTruthy();
+    win.gtag = vi.fn();
+    script!.dispatchEvent(new Event('load'));
+
+    await new Promise(r => setTimeout(r, 20));
+    expect(win.gtag).toHaveBeenCalledWith('js', expect.any(Date));
+    expect(win.gtag).toHaveBeenCalledWith('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
+  });
 });

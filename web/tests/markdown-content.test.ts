@@ -63,6 +63,12 @@ describe('markdown-content.js', () => {
       expect(html).toContain('Contact');
     });
 
+    it('returns HTML content for examples page (L199)', () => {
+      const html = getPageContent('examples');
+      expect(html).toBeDefined();
+      expect(html).toContain('<article class="card content-card">');
+    });
+
     it('includes last updated date for privacy page', () => {
       const html = getPageContent('privacy');
       expect(html).toContain('Last updated:');
@@ -265,6 +271,27 @@ describe('markdown-content.js', () => {
       );
       const html = getPageContent('about');
       expect(html).toContain('</section>');
+      vi.restoreAllMocks();
+    });
+
+    it('enhanceMarkdownHtml h2 match groups and nextSectionIndex branch (L143 L144 L145 L159)', () => {
+      vi.spyOn(marked, 'parse').mockReturnValueOnce(
+        '<h1>Title</h1><h2>First</h2><p>P1</p><h2>Second</h2><p>P2</p>'
+      );
+      const html = getPageContent('about');
+      expect(html).toContain('<section class="content-section">');
+      expect(html).toContain('</section>');
+      expect(html).toContain('Second');
+      vi.restoreAllMocks();
+    });
+
+    it('enhanceMarkdownHtml closes last section when no nested section (L165)', () => {
+      vi.spyOn(marked, 'parse').mockReturnValueOnce(
+        '<h1>T</h1><h2>Only Section</h2><p>Content</p>'
+      );
+      const html = getPageContent('about');
+      expect(html).toContain('</section>');
+      expect(html).toContain('Content');
       vi.restoreAllMocks();
     });
   });

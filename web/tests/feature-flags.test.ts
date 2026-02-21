@@ -139,6 +139,13 @@ describe('Feature Flags', () => {
       expect(state).toEqual({ enabled: true, source: 'environment' });
     });
 
+    it('returns default when env key is undefined (L97 default branch)', () => {
+      localStorage.clear();
+      delete (import.meta.env as Record<string, unknown>).VITE_FEATURE_FAVORITES;
+      const state = getFeatureState('FAVORITES_ENABLED');
+      expect(state).toEqual({ enabled: true, source: 'default' });
+    });
+
     it('localStorage takes priority over environment in getFeatureState', () => {
       import.meta.env.VITE_FEATURE_FAVORITES = 'false';
       localStorage.setItem('murphys_ff_favorites', 'true');

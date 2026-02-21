@@ -177,8 +177,9 @@ describe('LawOfTheDay component', () => {
     });
   });
 
-  it('handles vote error gracefully', async () => {
+  it('handles vote error gracefully (L201 catch showError)', async () => {
     toggleVoteSpy.mockRejectedValue(new Error('Vote failed'));
+    const showErrorSpy = vi.spyOn(notification, 'showError');
 
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
@@ -187,8 +188,8 @@ describe('LawOfTheDay component', () => {
     upvoteBtn?.click();
 
     await vi.waitFor(() => {
+      expect(showErrorSpy).toHaveBeenCalledWith('Vote failed');
     });
-
   });
 
   it('has clickable law link with data-law-id', () => {
@@ -252,6 +253,25 @@ describe('LawOfTheDay component', () => {
 
     await vi.waitFor(() => {
       expect(navigatedTo).toBe('browse');
+    });
+  });
+
+  it('nav button click calls onNavigate with navTarget (L236 L239)', async () => {
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const local = createLocalThis();
+    let navTarget: string | null = null;
+    const onNavigate = (page: string) => { navTarget = page; };
+
+    const el = mountLaw(law, { onNavigate });
+    const self = local();
+    self.el = el;
+
+    const navBtn = el.querySelector('[data-nav="browse"]') as HTMLElement | null;
+    expect(navBtn).toBeTruthy();
+    navBtn!.click();
+
+    await vi.waitFor(() => {
+      expect(navTarget).toBe('browse');
     });
   });
 
@@ -621,7 +641,7 @@ describe('LawOfTheDay component', () => {
       expect(favoriteBtn!.getAttribute('aria-label')).toBe('Remove from favorites');
     });
 
-    it('shows filled heart icon when law is already favorited on init', () => {
+    it('shows filled heart icon when law is already favorited on init (L80)', () => {
       isFavoritesEnabledSpy.mockReturnValue(true);
       isFavoriteSpy.mockReturnValue(true);
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
@@ -629,6 +649,7 @@ describe('LawOfTheDay component', () => {
 
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
       expect(favoriteBtn).toBeTruthy();
+      expect(favoriteBtn!.classList.contains('favorited')).toBe(true);
       const icon = favoriteBtn!.querySelector('svg[data-icon-name]');
       expect(icon).toBeTruthy();
       expect(icon!.getAttribute('data-icon-name')).toBe('heartFilled');
@@ -644,6 +665,28 @@ describe('LawOfTheDay component', () => {
 
       expect(createIconSpy).toHaveBeenCalledWith('heartFilled');
       expect(el.querySelector('[data-favorite-btn].favorited')).toBeTruthy();
+    });
+
+    it('replaces icon on favorite toggle when newIcon is truthy (L174)', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(false);
+      toggleFavoriteSpy.mockReturnValue(true);
+
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law, { append: true });
+
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      expect(favoriteBtn).toBeTruthy();
+      const iconBefore = favoriteBtn!.querySelector('svg[data-icon-name]');
+      expect(iconBefore!.getAttribute('data-icon-name')).toBe('heart');
+
+      favoriteBtn!.click();
+
+      await vi.waitFor(() => {
+        const iconAfter = favoriteBtn!.querySelector('svg[data-icon-name]');
+        expect(iconAfter).toBeTruthy();
+        expect(iconAfter!.getAttribute('data-icon-name')).toBe('heartFilled');
+      });
     });
 
     it('does not throw when createIcon returns null on favorite toggle', async () => {

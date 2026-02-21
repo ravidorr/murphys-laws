@@ -21,21 +21,25 @@ export const SITE_NAME = "Murphy's Law Archive";
 export const HOME_HERO_ACCENT = 'The';
 export const HOME_HERO_TITLE = "Murphy's Law Archive";
 
-// Environment variable helper for Vite and Node.js
-export const getEnvVar = (viteKey: string, nodeKey: string, defaultValue: string): string => {
-  // Try Vite environment first (always defined in Vite builds)
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const value = import.meta.env[viteKey];
+// Environment variable helper for Vite and Node.js (opts for testing)
+export function getEnvVar(
+  viteKey: string,
+  nodeKey: string,
+  defaultValue: string,
+  opts?: { viteEnv?: Record<string, string | undefined>; nodeEnv?: Record<string, string | undefined> }
+): string {
+  const viteEnv = opts?.viteEnv ?? (typeof import.meta !== 'undefined' && import.meta.env ? (import.meta.env as Record<string, string | undefined>) : undefined);
+  if (viteEnv) {
+    const value = viteEnv[viteKey];
     if (value !== undefined) return value;
   }
-  // Try Node.js environment (always defined in Node/SSR)
-  if (typeof process !== 'undefined' && process.env) {
-    const value = process.env[nodeKey];
+  const nodeEnv = opts?.nodeEnv ?? (typeof process !== 'undefined' && process.env ? process.env : undefined);
+  if (nodeEnv) {
+    const value = nodeEnv[nodeKey];
     if (value !== undefined) return value;
   }
-  // Return default
   return defaultValue;
-};
+}
 
 export const SITE_URL = getEnvVar('VITE_SITE_URL', 'SITE_URL', 'https://murphys-laws.com');
 export const SITE_DEFAULT_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";

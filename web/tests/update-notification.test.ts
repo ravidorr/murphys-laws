@@ -202,6 +202,14 @@ describe('Update Notification Component', () => {
       expect(notification.style.animation).toContain('reverse');
     });
 
+    it('setTimeout callback does nothing when notification already removed (L77 false branch)', () => {
+      const notification = showUpdateNotification({ type: 'offline' });
+      notification.remove();
+      expect(notification.parentNode).toBeNull();
+      vi.advanceTimersByTime(5000);
+      expect(notification.style.animation).toBe('');
+    });
+
     it('does not auto-dismiss update notification', () => {
       showUpdateNotification({ type: 'update' });
 
