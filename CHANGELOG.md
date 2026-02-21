@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.10] - 2026-02-21
+
+### Fixed
+- Web build: Sentry Vite plugin no longer throws "Cannot read properties of undefined (reading 'ignore')" by only enabling the plugin when SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT are all set, and by passing explicit `include: ['./dist']`
+- Deploy: add diagnostics (set -e, echo markers, trap) and safer .env heredoc delimiter; remove duplicate nginx block
+
 ### Changed
-- Web: update components, utils, and views (calculators, trending, keyboard help, categories, favorites, not-found, copy/nav/voting/icons/content)
-- Docs: CHANGELOG and web README point to uncovered-branches docs (replace stale BRANCH_COVERAGE_95 reference); bump to 2.0.8 / 3.0.12
+- CI: use fetch-depth: 0 on checkout in backend-ci and web-ci to avoid git exit 128 when tools need full history
+- Bump root 2.0.10, backend 2.0.3, web 3.0.14
 
 ## [2.0.9] - 2026-02-21
 
