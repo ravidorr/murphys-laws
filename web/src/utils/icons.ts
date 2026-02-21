@@ -197,7 +197,12 @@ export function createIcon(name: string, { classNames = [], labelled = false }: 
   return svg;
 }
 
-export function hydrateIcons(root?: Element | Document): void {
+export type CreateIconFn = (name: string, options?: CreateIconOptions) => SVGSVGElement | null;
+
+export function hydrateIcons(
+  root?: Element | Document,
+  createIconFn: CreateIconFn = createIcon
+): void {
   if (typeof document === 'undefined') {
     return;
   }
@@ -214,7 +219,7 @@ export function hydrateIcons(root?: Element | Document): void {
     }
 
     const labelled = placeholder.getAttribute('aria-hidden') === 'false' || placeholder.hasAttribute('aria-label');
-    const svg = createIcon(name, {
+    const svg = createIconFn(name, {
       classNames: Array.from(placeholder.classList),
       labelled,
     });

@@ -1,7 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
+interface FooterLocalThis {
+  originalReadyState: string;
+  mainElement: HTMLElement;
+  navigated: string;
+  el: ReturnType<typeof Footer> | null;
+}
+
 describe('Footer component', () => {
+  const localThis: FooterLocalThis = {
+    originalReadyState: '',
+    mainElement: document.createElement('main'),
+    navigated: '',
+    el: null
+  };
   let originalReadyState: string;
   let mainElement: HTMLElement;
 
@@ -100,6 +113,17 @@ describe('Footer component', () => {
     expect(navigated).toBe('contact');
   });
 
+  it('does not call onNavigate when clicking element without data-nav', () => {
+    const onNavigateMock = vi.fn();
+    const el = Footer({ onNavigate: onNavigateMock });
+
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
+    expect(adSlot).toBeTruthy();
+    adSlot!.click();
+
+    expect(onNavigateMock).not.toHaveBeenCalled();
+  });
+
   it('contains ad slot placeholder', () => {
     const el = Footer({
       onNavigate: () => { }
@@ -123,6 +147,30 @@ describe('Footer component', () => {
     expect(adsenseEl).toBeTruthy();
     expect(adsenseEl!.getAttribute('data-ad-client')).toBe('ca-pub-3615614508734124');
     expect(window.adsbygoogle.length).toBe(1);
+  });
+
+  it('does not load ad when main is missing (L87)', () => {
+    if (mainElement.parentNode) mainElement.parentNode.removeChild(mainElement);
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const origIO = g.IntersectionObserver;
+    g.IntersectionObserver = class MockIO {
+      observe = vi.fn();
+      disconnect = vi.fn();
+    } as unknown as typeof IntersectionObserver;
+
+    const el = Footer({ onNavigate: () => {} });
+    document.body.appendChild(el);
+
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+    expect(adSlot?.dataset.loaded).not.toBe('true');
+
+    g.IntersectionObserver = origIO;
+    document.body.appendChild(mainElement);
   });
 
   it('defer uses setTimeout when requestIdleCallback is undefined (L65 B0)', () => {
@@ -150,18 +198,122 @@ describe('Footer component', () => {
     }
   });
 
-  it('handles AdSense errors gracefully', () => {
-    window.adsbygoogle = {
-      push: () => {
-        throw new Error('AdSense error');
-      }
-    } as unknown as typeof window.adsbygoogle;
+  it('defer uses requestIdleCallback when available (L65 B1)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const win = window as unknown as { requestIdleCallback?: (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number };
+    const origIO = g.IntersectionObserver;
+    const origRIC = win.requestIdleCallback;
+    const idleCallback = vi.fn((cb: IdleRequestCallback) => setTimeout(cb as () => void, 0) as unknown as number);
+    win.requestIdleCallback = idleCallback;
+    g.IntersectionObserver = undefined;
+    vi.useFakeTimers();
+    try {
+      Footer({ onNavigate: () => {} });
+      expect(idleCallback).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+      g.IntersectionObserver = origIO;
+      if (origRIC !== undefined) win.requestIdleCallback = origRIC;
+    }
+  });
 
-    const el = Footer({ onNavigate: () => { } });
+  it('handles AdSense errors gracefully (L50 catch when push throws)', () => {
+    const throwingPush = vi.fn(() => {
+      throw new Error('AdSense error');
+    });
+    window.adsbygoogle = { push: throwingPush } as unknown as typeof window.adsbygoogle;
+
+    localThis.el = Footer({ onNavigate: () => { } });
 
     expect(() => {
-      el.dispatchEvent(new Event('adslot:init'));
+      localThis.el!.dispatchEvent(new Event('adslot:init'));
     }).not.toThrow();
+    expect(throwingPush).toHaveBeenCalled();
+  });
+
+  it('uses setTimeout when requestIdleCallback is not available (L65)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const win = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
+    const origIO = g.IntersectionObserver;
+    const origRIC = win.requestIdleCallback;
+    g.IntersectionObserver = undefined;
+    win.requestIdleCallback = undefined;
+    vi.useFakeTimers();
+    try {
+      localThis.el = Footer({ onNavigate: () => {} });
+      vi.advanceTimersByTime(1200);
+      const adSlot = localThis.el!.querySelector<HTMLElement>('[data-ad-slot]');
+      expect(adSlot?.dataset.loaded).toBe('true');
+    } finally {
+      vi.useRealTimers();
+      g.IntersectionObserver = origIO;
+      if (origRIC !== undefined) win.requestIdleCallback = origRIC;
+    }
+  });
+
+  it('defers loadAd when IntersectionObserver is not available (L86)', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const origIO = g.IntersectionObserver;
+    g.IntersectionObserver = undefined;
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    (window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback }).requestIdleCallback = undefined;
+    try {
+      Footer({ onNavigate: () => {} });
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+    } finally {
+      g.IntersectionObserver = origIO;
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
+  it('adds load listener when readyState is not complete (L126)', () => {
+    window.adsbygoogle = [];
+    localThis.originalReadyState = document.readyState;
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+
+    Footer({ onNavigate: () => { } });
+
+    expect(addEventListenerSpy).toHaveBeenCalledWith('load', expect.any(Function), { once: true });
+
+    addEventListenerSpy.mockRestore();
+    Object.defineProperty(document, 'readyState', {
+      value: localThis.originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
+
+  it('calls onNavigate with navTarget when clicking nav button (L132)', () => {
+    localThis.navigated = '';
+    localThis.el = Footer({
+      onNavigate: (page) => { localThis.navigated = page; }
+    });
+
+    const aboutLink = localThis.el!.querySelector('[data-nav="about"]') as HTMLElement | null;
+    expect(aboutLink).toBeTruthy();
+    aboutLink!.click();
+    expect(localThis.navigated).toBe('about');
   });
 
   it('shows CC0 license information', () => {

@@ -346,6 +346,61 @@ describe('Install Prompt Component', () => {
 
       expect(document.querySelector('.install-prompt')).toBeTruthy();
     });
+
+    it('clicking iOS prompt dismiss button calls dismissPrompt (L277 L283)', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+
+      const dismissBtn = document.querySelector('.install-prompt [data-action="dismiss"]') as HTMLElement | null;
+      expect(dismissBtn).toBeTruthy();
+      dismissBtn!.click();
+
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+  });
+
+  describe('showInstallPrompt click branches', () => {
+    it('dismiss click on standard prompt calls dismissPrompt (L226 L228)', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      localThis.dismissBtn = document.querySelector('.install-prompt [data-action="dismiss"]') as HTMLElement | null;
+      expect(localThis.dismissBtn).toBeTruthy();
+      localThis.dismissBtn!.click();
+
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('clicking standard prompt outside buttons does not install or dismiss (L226 B0)', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      const content = document.querySelector('.install-prompt-content') as HTMLElement | null;
+      expect(content).toBeTruthy();
+      content!.click();
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+      expect(localThis.mockPromptEvent!.prompt).not.toHaveBeenCalled();
+    });
   });
 
   describe('hideInstallPrompt', () => {
@@ -937,6 +992,50 @@ describe('Install Prompt Component', () => {
   });
 
   describe('userChoice outcomes', () => {
+    it('triggerInstall logs when userChoice outcome is accepted (L374)', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      localThis.installBtn = document.querySelector('[data-action="install"]');
+      (localThis.installBtn as HTMLElement | null)?.click();
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(logSpy).toHaveBeenCalledWith('User accepted the install prompt');
+      logSpy.mockRestore();
+    });
+
+    it('triggerInstall logs when userChoice outcome is dismissed (L355 else)', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      localThis.installBtn = document.querySelector('[data-action="install"]');
+      (localThis.installBtn as HTMLElement | null)?.click();
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(logSpy).toHaveBeenCalledWith('User dismissed the install prompt');
+      logSpy.mockRestore();
+    });
+
     it('handles dismissed outcome from userChoice', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 

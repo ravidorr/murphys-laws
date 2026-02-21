@@ -329,6 +329,21 @@ describe('Structured Data module', () => {
       expect(data.description).toBe('Anything that can go wrong, will.');
     });
 
+    it('L181 L182: uses law.title for headline and law.author for author when both present', () => {
+      const law = {
+        id: 1,
+        title: 'Exact Title',
+        text: 'Body',
+        author: 'Author Name',
+        created_at: '2024-01-01'
+      };
+      setLawStructuredData(law);
+      const el = document.head.querySelector('#jsonld-law-article');
+      const data = JSON.parse(el!.textContent!);
+      expect(data.headline).toBe(law.title);
+      expect(data.author).toEqual({ '@type': 'Person', name: law.author });
+    });
+
     it('uses text slice as headline if no title', () => {
       const law = {
         id: 123,

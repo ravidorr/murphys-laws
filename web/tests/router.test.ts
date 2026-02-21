@@ -12,7 +12,7 @@ vi.mock('@sentry/browser', () => ({
 }));
 
 import * as Sentry from '@sentry/browser';
-import { defineRoute, navigate, currentRoute, routes, startRouter, forceRender } from '../src/router.ts';
+import { defineRoute, navigate, currentRoute, routes, startRouter, forceRender, __injectCleanupForTesting } from '../src/router.ts';
 
 describe('Router', () => {
   beforeEach(() => {
@@ -447,6 +447,26 @@ describe('Router', () => {
 
     // Should still navigate successfully
     expect(rootEl.textContent).toBe('Browse');
+    document.body.removeChild(rootEl);
+  });
+
+  it('skips non-function entries in cleanup array (L81 T16 B1)', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+
+    defineRoute('home', () => {
+      const el = document.createElement('div');
+      el.textContent = 'Home';
+      return el;
+    });
+
+    history.replaceState(null, '', '/');
+    startRouter(rootEl);
+
+    __injectCleanupForTesting('not a function');
+    forceRender();
+
+    expect(rootEl.textContent).toBe('Home');
     document.body.removeChild(rootEl);
   });
 
