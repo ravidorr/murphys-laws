@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -23,6 +23,9 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\"",
     "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\"",
     "lint": "npm run lint:web && npm run lint:md",
+    "ci:backend": "cd backend && npm run typecheck && npm run lint && npm run build:db && npm run test:coverage",
+    "ci:web": "cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html && npm test && npm run build",
+    "ci": "npm run ci:backend && npm run ci:web",
     "deploy": "node backend/scripts/deploy.mjs",
     "validate:node": "cd backend && npm run validate:node",
     "validate:node-server": "cd backend && npm run validate:node-server",

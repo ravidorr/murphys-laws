@@ -23,7 +23,7 @@ function getSql(sql) {
   try {
     return execFileSync('sqlite3', [DB_PATH, '-json', sql], { encoding: 'utf8' }).trim();
   } catch (err) {
-    throw new Error(`SQL Error: ${err.message}`);
+    throw new Error(`SQL Error: ${err.message}`, { cause: err });
   }
 }
 

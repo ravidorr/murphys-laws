@@ -97,63 +97,63 @@ export function Calculator(): HTMLDivElement {
 
     formulaDisplay.textContent = formula;
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        // Capture MathJax reference to avoid race conditions in test environments
-        const mathJax = window.MathJax;
-        requestAnimationFrame(() => {
-          /* v8 ignore next 3 - MathJax defensive check for race conditions */
-          if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
-            return;
-          }
+      // Capture MathJax reference to avoid race conditions in test environments
+      const mathJax = window.MathJax;
+      requestAnimationFrame(() => {
+        /* v8 ignore next 3 - MathJax defensive check for race conditions */
+        if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
+          return;
+        }
 
-          mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
-            // Add title attributes to variables after MathJax renders
-            const titles: Record<string, string> = {
-              'U': 'Urgency (1-9)',
-              'C': 'Complexity (1-9)',
-              'I': 'Importance (1-9)',
-              'S': 'Skill (1-9)',
-              'F': 'Frequency (1-9)',
-              'A': 'Activity constant (0.7)',
-              'P': 'Probability'
+        mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
+          // Add title attributes to variables after MathJax renders
+          const titles: Record<string, string> = {
+            'U': 'Urgency (1-9)',
+            'C': 'Complexity (1-9)',
+            'I': 'Importance (1-9)',
+            'S': 'Skill (1-9)',
+            'F': 'Frequency (1-9)',
+            'A': 'Activity constant (0.7)',
+            'P': 'Probability'
+          };
+
+          const variables = formulaDisplay.querySelectorAll('mjx-mi');
+
+          /* v8 ignore start - MathJax CHTML DOM only exists in real browser, not jsdom */
+          variables.forEach((mi) => {
+            // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
+            // Map Unicode Math Italic characters to regular letters
+            const unicodeMap: Record<string, string> = {
+              '1D443': 'P', // 𝑃
+              '1D448': 'U', // 𝑈
+              '1D436': 'C', // 𝐶
+              '1D43C': 'I', // 𝐼
+              '1D446': 'S', // 𝑆
+              '1D439': 'F', // 𝐹
+              '1D434': 'A'  // 𝐴
             };
 
-            const variables = formulaDisplay.querySelectorAll('mjx-mi');
+            // Get the first mjx-c child to identify the variable
+            const mjxC = mi.querySelector('mjx-c');
+            if (mjxC) {
+              const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
+              if (classMatch) {
+                const unicodeHex = classMatch[1] as string | undefined;
+                if (unicodeHex) {
+                  const letter = unicodeMap[unicodeHex];
 
-            /* v8 ignore start - MathJax CHTML DOM only exists in real browser, not jsdom */
-            variables.forEach((mi) => {
-              // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
-              // Map Unicode Math Italic characters to regular letters
-              const unicodeMap: Record<string, string> = {
-                '1D443': 'P', // 𝑃
-                '1D448': 'U', // 𝑈
-                '1D436': 'C', // 𝐶
-                '1D43C': 'I', // 𝐼
-                '1D446': 'S', // 𝑆
-                '1D439': 'F', // 𝐹
-                '1D434': 'A'  // 𝐴
-              };
-
-              // Get the first mjx-c child to identify the variable
-              const mjxC = mi.querySelector('mjx-c');
-              if (mjxC) {
-                const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
-                if (classMatch) {
-                  const unicodeHex = classMatch[1] as string | undefined;
-                  if (unicodeHex) {
-                    const letter = unicodeMap[unicodeHex];
-
-                    if (letter && titles[letter]) {
-                      mi.setAttribute('data-tooltip', titles[letter]);
-                    }
+                  if (letter && titles[letter]) {
+                    mi.setAttribute('data-tooltip', titles[letter]);
                   }
                 }
               }
-            });
-            /* v8 ignore stop */
-          }).catch(() => {
-            // Silently handle MathJax errors
+            }
           });
+          /* v8 ignore stop */
+        }).catch(() => {
+          // Silently handle MathJax errors
         });
+      });
     }
   }
 

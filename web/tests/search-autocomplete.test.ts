@@ -441,7 +441,7 @@ describe('SearchAutocomplete', () => {
   });
 
   it('should use empty array when API returns undefined data', async () => {
-    vi.mocked(api.fetchSuggestions).mockResolvedValue({ data: undefined, total: 0, limit: 10, offset: 0 } as PaginatedResponse<Law>);
+    vi.mocked(api.fetchSuggestions).mockResolvedValue({ data: undefined, total: 0, limit: 10, offset: 0 } as unknown as PaginatedResponse<Law>);
 
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
     inputElement.value = 'test';

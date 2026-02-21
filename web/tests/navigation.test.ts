@@ -185,7 +185,7 @@ describe('navigation utils', () => {
       const result = handleLawCardKeydown(e, onNavigate);
 
       expect(result).toBe(true);
-      expect(ctx.calls![0].param).toBe('1');
+      expect(ctx.calls?.[0]?.param).toBe('1');
     });
   });
 
@@ -208,7 +208,7 @@ describe('navigation utils', () => {
       el.dispatchEvent(e);
 
       expect(ctx.calls).toHaveLength(1);
-      expect(ctx.calls![0].param).toBe('7');
+      expect(ctx.calls?.[0]?.param).toBe('7');
     });
   });
 });

@@ -129,12 +129,12 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     if (!(target instanceof HTMLElement)) return;
 
     // Handle category card click
-      const card = target.closest('.category-card');
-      if (card) {
-        const slug = card.getAttribute('data-category-slug');
-        if (slug) onNavigate('category', slug);
-        return;
-      }
+    const card = target.closest('.category-card');
+    if (card) {
+      const slug = card.getAttribute('data-category-slug');
+      if (slug) onNavigate('category', slug);
+      return;
+    }
 
     if (target.closest('#retry-categories')) {
       const grid = el.querySelector('#categories-grid')!;
