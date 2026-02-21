@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
+### Fixed
+- Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
+
 ### Changed
-- Bump root 2.0.11, backend 2.0.4, web 3.0.15
+- Bump root 2.0.11, backend 2.0.4, web 3.0.16
 
 ## [2.0.10] - 2026-02-21
 
