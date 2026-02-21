@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump root 2.0.11, backend 2.0.4, web 3.0.15
+
 ## [2.0.10] - 2026-02-21
 
 ### Fixed

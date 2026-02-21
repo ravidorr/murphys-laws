@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-
+import type Database from 'better-sqlite3';
 import { DatabaseService } from '../services/database.service.ts';
 import { EmailService } from '../services/email.service.ts';
 import { LawService } from '../services/laws.service.ts';
@@ -22,6 +22,13 @@ import { FeedController } from '../controllers/feed.controller.ts';
 import { OgImageController } from '../controllers/og-image.controller.ts';
 
 import { Router } from '../routes/router.ts';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+
+type Db = InstanceType<typeof Database>;
+
+export function createRequestListener(router: Router): (req: IncomingMessage, res: ServerResponse) => void {
+  return (req, res) => router.handle(req, res);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +38,7 @@ const backendEnvPath = resolve(__dirname, '..', '..', '.env');
 dotenv.config({ path: rootEnvPath });
 dotenv.config({ path: backendEnvPath });
 
-function initSentry() {
+export function initSentry(): void {
   if (!process.env.SENTRY_DSN) {
     return;
   }
@@ -43,16 +50,26 @@ function initSentry() {
   });
 }
 
-export function createApiServer() {
+export interface CreateApiServerOptions {
+  db?: Db;
+  emailService?: EmailService;
+  lawService?: LawService;
+  voteService?: VoteService;
+  categoryService?: CategoryService;
+  attributionService?: AttributionService;
+  feedService?: FeedService;
+  ogImageService?: OgImageService;
+}
+
+export function createApiServer(options?: CreateApiServerOptions) {
   initSentry();
 
   const dbPath = resolve(__dirname, '..', '..', 'murphys.db');
   const host = process.env.HOST || '127.0.0.1';
   const port = Number(process.env.PORT || 8787);
 
-  const dbService = new DatabaseService(dbPath);
-  const db = (dbService as any).db;
-  const emailService = new EmailService({
+  const db = options?.db ?? (new DatabaseService(dbPath) as unknown as { db: Db }).db;
+  const emailService = options?.emailService ?? new EmailService({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
     user: process.env.SMTP_USER,
@@ -61,12 +78,12 @@ export function createApiServer() {
     to: process.env.EMAIL_TO || 'admin@murphys-laws.com',
   });
 
-  const lawService = new LawService(db);
-  const voteService = new VoteService(db);
-  const categoryService = new CategoryService(db);
-  const attributionService = new AttributionService(db);
-  const feedService = new FeedService(lawService);
-  const ogImageService = new OgImageService(lawService);
+  const lawService = options?.lawService ?? new LawService(db);
+  const voteService = options?.voteService ?? new VoteService(db);
+  const categoryService = options?.categoryService ?? new CategoryService(db);
+  const attributionService = options?.attributionService ?? new AttributionService(db);
+  const feedService = options?.feedService ?? new FeedService(lawService);
+  const ogImageService = options?.ogImageService ?? new OgImageService(lawService);
 
   const lawController = new LawController(lawService, emailService);
   const voteController = new VoteController(voteService, lawService);
@@ -100,7 +117,7 @@ export function createApiServer() {
 
   router.get('/api/v1/og/law/:id.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
 
-  const server = http.createServer((req, res) => router.handle(req, res));
+  const server = http.createServer(createRequestListener(router));
 
   return {
     host,
@@ -120,6 +137,10 @@ export function startApiServer() {
   return server;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === __filename) {
+export function isRunAsMain(): boolean {
+  return !!(process.argv[1] && resolve(process.argv[1]) === __filename);
+}
+
+if (isRunAsMain()) {
   startApiServer();
 }
