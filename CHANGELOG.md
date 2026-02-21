@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: update components, utils, and views (calculators, trending, keyboard help, categories, favorites, not-found, copy/nav/voting/icons/content)
 - Docs: CHANGELOG and web README point to uncovered-branches docs (replace stale BRANCH_COVERAGE_95 reference); bump to 2.0.8 / 3.0.12
 
+## [2.0.9] - 2026-02-21
+
+### Changed
+- Bump root 2.0.9, backend 2.0.2, web 3.0.13
+- CI: attach `cause` to wrapped errors (backend email.service, scripts); fix web indentation and TypeScript (submit-law, search-autocomplete, navigation, install-prompt); deploy checkout fetch-depth: 0
+- Pre-commit: run typecheck and lint (backend + web) before tests; add SKIP_CI_CHECK=1 bypass
+- Root: add npm run ci, ci:backend, ci:web to match CI locally
+
 ### Fixed
 - Web: pin typescript-eslint to 8.56.0 and add overrides for ESLint 10 compatibility (scopeManager.addGlobals); bump web to 3.0.10
 - Web: ensure dist HTML passes html-validate (aria-labels on header/main, remove redundant role=main, trim SSG output to avoid trailing whitespace)

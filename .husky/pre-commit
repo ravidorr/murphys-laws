@@ -41,6 +41,32 @@ if git diff --cached --name-only | grep -q "^murphys\.db$"; then
   exit 1
 fi
 
+# Same checks as CI (typecheck, lint, build:db) so commit is blocked if they would fail in CI
+# Bypass with SKIP_CI_CHECK=1 for emergency commits
+if [ "$SKIP_CI_CHECK" != "1" ]; then
+  echo "Backend: typecheck, lint, build:db..."
+  cd backend && npm run typecheck && npm run lint && npm run build:db
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "Backend typecheck/lint/build failed! Commit blocked."
+    echo "Bypass with: SKIP_CI_CHECK=1 git commit ..."
+    exit 1
+  fi
+  cd ..
+
+  echo ""
+  echo "Web: typecheck, lint, lint:css, lint:html..."
+  cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "Web typecheck/lint failed! Commit blocked."
+    echo "Bypass with: SKIP_CI_CHECK=1 git commit ..."
+    exit 1
+  fi
+  cd ..
+
+  echo ""
+fi
 # Run tests before allowing commit
 # Run backend tests (no coverage needed)
 echo "Running backend tests..."

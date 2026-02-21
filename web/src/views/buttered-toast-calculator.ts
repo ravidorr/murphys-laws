@@ -88,64 +88,64 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
     formulaDisplay.textContent = formula;
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        // Capture MathJax reference to avoid race conditions in test environments
-        const mathJax = window.MathJax;
-        requestAnimationFrame(() => {
-          // Defensive check: MathJax might become undefined in test environments
-          if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
-            return;
-          }
+      // Capture MathJax reference to avoid race conditions in test environments
+      const mathJax = window.MathJax;
+      requestAnimationFrame(() => {
+        // Defensive check: MathJax might become undefined in test environments
+        if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
+          return;
+        }
 
-          mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
-            // Add title attributes to variables after MathJax renders
-            const titles: Record<string, string> = {
-              'H': 'Height of Fall (30-200 cm)',
-              'g': 'Gravity (162-2479 cm/s²)',
-              'O': 'Initial Overhang / Push (1-20 cm)',
-              'B': 'Butter Factor (1.0-2.0)',
-              'F': 'Air Friction / Drag (0-100)',
-              'T': 'Toast Inertia (250-500)',
-              'P': 'Probability of Butter-Side Down'
+        mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
+          // Add title attributes to variables after MathJax renders
+          const titles: Record<string, string> = {
+            'H': 'Height of Fall (30-200 cm)',
+            'g': 'Gravity (162-2479 cm/s²)',
+            'O': 'Initial Overhang / Push (1-20 cm)',
+            'B': 'Butter Factor (1.0-2.0)',
+            'F': 'Air Friction / Drag (0-100)',
+            'T': 'Toast Inertia (250-500)',
+            'P': 'Probability of Butter-Side Down'
+          };
+
+          const variables = formulaDisplay.querySelectorAll('mjx-mi');
+
+          /* v8 ignore start - MathJax CHTML DOM only exists in real browser, not jsdom */
+          variables.forEach((mi) => {
+            // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
+            // Map Unicode Math Italic characters to regular letters
+            const unicodeMap: Record<string, string> = {
+              '1D443': 'P', // 𝑃
+              '1D43B': 'H', // 𝐸
+              '1D434': 'A', // 𝐴 (not used but included)
+              '1D435': 'B', // 𝐵
+              '1D43F': 'F', // 𝐹
+              '1D447': 'T', // 𝑇
+              '1D442': 'O', // 𝑂
+              '1D454': 'g'  // 𝑔
             };
 
-            const variables = formulaDisplay.querySelectorAll('mjx-mi');
+            // Get the first mjx-c child to identify the variable
+            const mjxC = mi.querySelector('mjx-c');
+            if (mjxC) {
+              const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
+              if (classMatch) {
+                const unicodeHex = classMatch[1] as string | undefined;
+                if (unicodeHex) {
+                  const letter = unicodeMap[unicodeHex];
 
-            /* v8 ignore start - MathJax CHTML DOM only exists in real browser, not jsdom */
-            variables.forEach((mi) => {
-              // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
-              // Map Unicode Math Italic characters to regular letters
-              const unicodeMap: Record<string, string> = {
-                '1D443': 'P', // 𝑃
-                '1D43B': 'H', // 𝐸
-                '1D434': 'A', // 𝐴 (not used but included)
-                '1D435': 'B', // 𝐵
-                '1D43F': 'F', // 𝐹
-                '1D447': 'T', // 𝑇
-                '1D442': 'O', // 𝑂
-                '1D454': 'g'  // 𝑔
-              };
-
-              // Get the first mjx-c child to identify the variable
-              const mjxC = mi.querySelector('mjx-c');
-              if (mjxC) {
-                const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
-                if (classMatch) {
-                  const unicodeHex = classMatch[1] as string | undefined;
-                  if (unicodeHex) {
-                    const letter = unicodeMap[unicodeHex];
-
-                    if (letter && titles[letter]) {
-                      mi.setAttribute('data-tooltip', titles[letter]);
-                    }
+                  if (letter && titles[letter]) {
+                    mi.setAttribute('data-tooltip', titles[letter]);
                   }
                 }
               }
-            });
-            /* v8 ignore stop */
-          }).catch(() => {
-            // Silently handle MathJax errors
+            }
           });
+          /* v8 ignore stop */
+        }).catch(() => {
+          // Silently handle MathJax errors
         });
+      });
     }
   }
 

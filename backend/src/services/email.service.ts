@@ -137,7 +137,8 @@ export class EmailService {
       await this.transporter.sendMail(mailOptions);
       return { success: true };
     } catch (error: unknown) {
-      throw new Error(`Failed to send calculation email: ${error instanceof Error ? error.message : String(error)}`);
+      const message = `Failed to send calculation email: ${error instanceof Error ? error.message : String(error)}`;
+      throw new Error(message, { cause: error });
     }
   }
 }

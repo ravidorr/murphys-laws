@@ -484,7 +484,7 @@ describe('Install Prompt Component', () => {
       await new Promise(r => setTimeout(r, 350));
       const prompts = document.querySelectorAll('#install-prompt');
       expect(prompts.length).toBe(1);
-      expect(prompts[0].querySelector('[data-action="install"]')).toBeTruthy();
+      expect(prompts[0]?.querySelector('[data-action="install"]')).toBeTruthy();
     });
   });
 

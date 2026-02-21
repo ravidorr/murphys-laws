@@ -182,63 +182,63 @@ export function SubmitLawSection() {
 
   // Template always has .submit-form
   form!.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    e.preventDefault();
 
-      const title = (el.querySelector('#submit-title') as HTMLInputElement | null)?.value.trim();
-      const text = (el.querySelector('#submit-text') as HTMLTextAreaElement | null)?.value.trim();
-      const author = (el.querySelector('#submit-author') as HTMLInputElement | null)?.value.trim();
-      const email = (el.querySelector('#submit-email') as HTMLInputElement | null)?.value.trim();
-      const anonymous = (el.querySelector('#submit-anonymous') as HTMLInputElement | null)?.checked;
-      const categoryId = (el.querySelector('#submit-category') as HTMLSelectElement | null)?.value;
+    const title = (el.querySelector('#submit-title') as HTMLInputElement | null)?.value.trim();
+    const text = (el.querySelector('#submit-text') as HTMLTextAreaElement | null)?.value.trim();
+    const author = (el.querySelector('#submit-author') as HTMLInputElement | null)?.value.trim();
+    const email = (el.querySelector('#submit-email') as HTMLInputElement | null)?.value.trim();
+    const anonymous = (el.querySelector('#submit-anonymous') as HTMLInputElement | null)?.checked;
+    const categoryId = (el.querySelector('#submit-category') as HTMLSelectElement | null)?.value;
 
-      if (!text) {
-        showError('Please enter law text');
-        return;
-      }
+    if (!text) {
+      showError('Please enter law text');
+      return;
+    }
 
-      if (!termsCheckbox?.checked) {
-        showError('Please accept the terms to submit');
-        return;
-      }
+    if (!termsCheckbox?.checked) {
+      showError('Please accept the terms to submit');
+      return;
+    }
 
-      // Prepare submission data
-      const lawData = {
-        text,
-        title: title || undefined,
-        author: anonymous ? undefined : (author || undefined),
-        email: anonymous ? undefined : (email || undefined),
-        anonymous,
-        category_id: categoryId || undefined
-      };
+    // Prepare submission data
+    const lawData = {
+      text,
+      title: title || undefined,
+      author: anonymous ? undefined : (author || undefined),
+      email: anonymous ? undefined : (email || undefined),
+      anonymous,
+      category_id: categoryId || undefined
+    };
 
-      // Submit to API
-      setLoading(true);
-      clearMessage();
+    // Submit to API
+    setLoading(true);
+    clearMessage();
 
-      try {
-        await submitLaw(lawData);
+    try {
+      await submitLaw(lawData);
 
-        showSuccess('Thank you! Your law has been submitted successfully and is pending review.');
+      showSuccess('Thank you! Your law has been submitted successfully and is pending review.');
 
-        // Clear form after successful submission (template always has these fields)
-        setTimeout(() => {
-          (el.querySelector('#submit-title') as HTMLInputElement)!.value = '';
-          (el.querySelector('#submit-text') as HTMLTextAreaElement)!.value = '';
-          (el.querySelector('#submit-author') as HTMLInputElement)!.value = '';
-          (el.querySelector('#submit-email') as HTMLInputElement)!.value = '';
-          (el.querySelector('#submit-category') as HTMLSelectElement)!.value = '';
-          (el.querySelector('#submit-anonymous') as HTMLInputElement)!.checked = false;
-          (el.querySelector('#submit-terms') as HTMLInputElement)!.checked = false;
+      // Clear form after successful submission (template always has these fields)
+      setTimeout(() => {
+        (el.querySelector('#submit-title') as HTMLInputElement)!.value = '';
+        (el.querySelector('#submit-text') as HTMLTextAreaElement)!.value = '';
+        (el.querySelector('#submit-author') as HTMLInputElement)!.value = '';
+        (el.querySelector('#submit-email') as HTMLInputElement)!.value = '';
+        (el.querySelector('#submit-category') as HTMLSelectElement)!.value = '';
+        (el.querySelector('#submit-anonymous') as HTMLInputElement)!.checked = false;
+        (el.querySelector('#submit-terms') as HTMLInputElement)!.checked = false;
 
-          checkSubmitValidity();
-        }, 300);
+        checkSubmitValidity();
+      }, 300);
 
-      } catch (error) {
-        showError(error instanceof Error ? error.message : 'Failed to submit law. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    });
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Failed to submit law. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  });
 
   return el;
 }
