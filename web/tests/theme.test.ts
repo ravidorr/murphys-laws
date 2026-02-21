@@ -387,6 +387,16 @@ describe('Theme utilities', () => {
       initTheme();
       expect(addEventListenerMock).toHaveBeenCalledWith('change', expect.any(Function));
     });
+
+    it('does not add change listener when mediaQuery.addEventListener is absent (L175 B0)', () => {
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query
+        // no addEventListener - e.g. older browsers
+      }));
+      localStorage.setItem('murphys_theme', 'auto');
+      expect(() => initTheme()).not.toThrow();
+    });
   });
 
   describe('localStorage unavailable', () => {

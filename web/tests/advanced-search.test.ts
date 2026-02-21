@@ -893,4 +893,25 @@ describe('AdvancedSearch component', () => {
       expect(fetchAPISpy).toHaveBeenCalled();
     });
   });
+
+  it('does not load filters on category focus when categories already populated (L172 false branch)', () => {
+    const initialCategories = [{ id: 1, title: 'Cached', slug: 'cached' }];
+    vi.spyOn(cacheUtils, 'getCachedCategories').mockReturnValue(initialCategories);
+    fetchAPISpy.mockResolvedValue({ data: [] });
+    const el = mountSearch({ append: true });
+    const callCountBefore = fetchAPISpy.mock.calls.length;
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.focus();
+    expect(fetchAPISpy.mock.calls.length).toBe(callCountBefore);
+  });
+
+  it('does not load filters on attribution focus when attributions already populated (L179 false branch)', () => {
+    vi.spyOn(cacheUtils, 'getCachedAttributions').mockReturnValue([{ name: 'Cached' }]);
+    fetchAPISpy.mockResolvedValue({ data: [] });
+    const el = mountSearch({ append: true });
+    const callCountBefore = fetchAPISpy.mock.calls.length;
+    const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
+    attributionSelect.focus();
+    expect(fetchAPISpy.mock.calls.length).toBe(callCountBefore);
+  });
 });

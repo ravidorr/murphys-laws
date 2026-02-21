@@ -111,6 +111,16 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
   });
 
+  it('does not replace breadcrumb container when Breadcrumb returns null (L66 falsy branch)', async () => {
+    vi.doMock('../src/components/breadcrumb.js', () => ({ Breadcrumb: () => null }));
+    const { Browse: BrowseWithMock } = await import('../src/views/browse.js');
+    const el = BrowseWithMock({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.querySelector('#browse-breadcrumb')).toBeTruthy();
+    }, { timeout: 500 });
+    vi.unmock('../src/components/breadcrumb.js');
+  });
+
   it('updates result count on pagination', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: Array(25).fill(null).map((_, i) => ({

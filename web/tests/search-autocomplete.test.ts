@@ -20,7 +20,20 @@ vi.mock('../src/utils/api.js', () => ({
   fetchSuggestions: vi.fn()
 }));
 
+interface SearchAutocompleteLocalThis {
+  inputElement: HTMLInputElement;
+  onSelect: (law: Law) => void;
+  autocomplete: { cleanup(): void; isOpen(): boolean } | undefined;
+  dropdown: Element | null;
+}
+
 describe('SearchAutocomplete', () => {
+  const localThis: SearchAutocompleteLocalThis = {
+    inputElement: document.createElement('input'),
+    onSelect: () => {},
+    autocomplete: undefined,
+    dropdown: null
+  };
   let inputElement: HTMLInputElement;
   let onSelect: (law: Law) => void;
   let autocomplete: { cleanup(): void; isOpen(): boolean } | undefined;
@@ -123,6 +136,26 @@ describe('SearchAutocomplete', () => {
     expect(items[1]!.getAttribute('data-law-id')).toBe('2');
   });
 
+  it('renderSuggestions creates dropdown and sets content when suggestions exist (L63)', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
+    ]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    localThis.dropdown = document.querySelector('.search-autocomplete');
+    expect(localThis.dropdown).toBeTruthy();
+    expect(localThis.dropdown!.getAttribute('aria-hidden')).toBe('false');
+    const items = localThis.dropdown!.querySelectorAll('.search-suggestion-item');
+    expect(items.length).toBe(2);
+  });
+
   it('should render empty dropdown when API returns no suggestions (L66)', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([]));
 
@@ -196,6 +229,50 @@ describe('SearchAutocomplete', () => {
     const dropdown = document.querySelector('.search-autocomplete');
     const items = dropdown!.querySelectorAll('.search-suggestion-item');
     expect(items[1]!.classList.contains('selected')).toBe(true);
+  });
+
+  it('scrollIntoView branch when selectedIndex >= 0 (L122)', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Test law 1', title: undefined },
+      { id: 2, text: 'Test law 2', title: undefined }
+    ]));
+
+    const scrollSpy = vi.fn();
+    const origScroll = (Element.prototype as unknown as { scrollIntoView?: (arg?: ScrollIntoViewOptions) => void }).scrollIntoView;
+    (Element.prototype as unknown as { scrollIntoView: (arg?: ScrollIntoViewOptions) => void }).scrollIntoView = scrollSpy;
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' });
+
+    if (origScroll !== undefined) {
+      (Element.prototype as unknown as { scrollIntoView: (arg?: ScrollIntoViewOptions) => void }).scrollIntoView = origScroll;
+    } else {
+      delete (Element.prototype as unknown as { scrollIntoView?: (arg?: ScrollIntoViewOptions) => void }).scrollIntoView;
+    }
+  });
+
+  it('click on suggestion item calls selectSuggestion (L209)', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 42, text: 'Clicked law', title: undefined }
+    ]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'click';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown!.querySelector('.search-suggestion-item') as HTMLElement;
+    expect(item).toBeTruthy();
+    item.click();
+
+    expect(onSelect).toHaveBeenCalledWith({ id: 42, text: 'Clicked law', title: undefined });
   });
 
   it('should select suggestion with Enter key', async () => {

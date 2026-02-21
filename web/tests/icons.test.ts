@@ -90,6 +90,19 @@ describe('Icons utility', () => {
       expect(homeIcon!.hasAttribute('stroke')).toBe(false);
     });
 
+    it('uses stroke branch and iconData.content for Lucide-style icons (L185)', () => {
+      const sunIcon = createIcon('sun');
+      expect(sunIcon!.getAttribute('stroke')).toBe('currentColor');
+      expect(sunIcon!.getAttribute('fill')).toBe('none');
+      expect(sunIcon!.innerHTML.length).toBeGreaterThan(0);
+    });
+
+    it('uses fill branch and iconData.path for Font Awesome-style icons (L188)', () => {
+      const homeIcon = createIcon('home');
+      expect(homeIcon!.getAttribute('fill')).toBe('currentColor');
+      expect(homeIcon!.innerHTML).toContain('path');
+    });
+
     it('handles empty classNames array', () => {
       const icon = createIcon('home', { classNames: [] });
       expect(icon!.classList.contains('icon')).toBe(true);
@@ -213,6 +226,13 @@ describe('Icons utility', () => {
       expect(container.querySelector('span')).toBeTruthy();
     });
 
+    it('skips placeholder when data-icon is empty string (L230)', () => {
+      container.innerHTML = '<span data-icon=""></span>';
+      hydrateIcons(container);
+      expect(container.querySelector('svg')).toBeNull();
+      expect(container.querySelector('span[data-icon=""]')).toBeTruthy();
+    });
+
     it('works when called without a root element (uses document)', () => {
       document.body.innerHTML = '<span data-icon="home" id="test-icon"></span>';
       hydrateIcons();
@@ -276,7 +296,14 @@ describe('Icons utility', () => {
       expect(container.querySelector('svg')).toBeNull();
     });
 
-    it('copies aria-label to svg when placeholder has aria-label (L225 L229)', () => {
+    it('skips replaceWith when createIconFn returns null (L222)', () => {
+      container.innerHTML = '<span data-icon="home"></span>';
+      hydrateIcons(container, () => null);
+      expect(container.querySelector('svg')).toBeNull();
+      expect(container.querySelector('span[data-icon="home"]')).toBeTruthy();
+    });
+
+    it('copies aria-label to svg when placeholder has aria-label (L225 L229 L234)', () => {
       container.innerHTML = '<span data-icon="home" aria-label="Go home"></span>';
       hydrateIcons(container);
       const svg = container.querySelector('svg');
@@ -284,13 +311,13 @@ describe('Icons utility', () => {
       expect(svg?.hasAttribute('aria-hidden')).toBe(false);
     });
 
-    it('copies role to svg when placeholder has role (L232)', () => {
+    it('copies role to svg when placeholder has role (L232 L237)', () => {
       container.innerHTML = '<span data-icon="home" role="img"></span>';
       hydrateIcons(container);
       expect(container.querySelector('svg')?.getAttribute('role')).toBe('img');
     });
 
-    it('copies title to svg when placeholder has title (L232)', () => {
+    it('copies title to svg when placeholder has title (L235 L237)', () => {
       container.innerHTML = '<span data-icon="home" title="Home icon"></span>';
       hydrateIcons(container);
       expect(container.querySelector('svg')?.getAttribute('title')).toBe('Home icon');

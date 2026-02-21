@@ -74,6 +74,11 @@ export function currentRoute(): RouteInfo {
 let renderFn: (() => void) | null = null;
 let currentCleanup: (() => void)[] = [];
 
+/** Injects a value into currentCleanup for the next render. Used only in tests to cover the L81 non-function branch. */
+export function __injectCleanupForTesting(value: unknown): void {
+  currentCleanup.push(value as () => void);
+}
+
 export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn | null = null): void {
   function render() {
     // Call cleanup functions from previous render

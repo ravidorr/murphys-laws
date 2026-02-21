@@ -78,6 +78,18 @@ describe('NotFound view', () => {
     expect(onNavigate).toHaveBeenCalledWith('home', undefined);
   });
 
+  it('calls onNavigate with navTarget and navParam when nav has data-param (L30 L33)', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+
+    const categoryBtn = el.querySelector('[data-nav="category"]') as HTMLElement;
+    expect(categoryBtn).toBeTruthy();
+    const param = categoryBtn.getAttribute('data-param');
+    categoryBtn.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('category', param || undefined);
+  });
+
   it('has search form', () => {
     el = NotFound({ onNavigate: () => {} });
 
