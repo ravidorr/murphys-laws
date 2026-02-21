@@ -55,6 +55,8 @@ jobs:
         working-directory: backend
 
       - name: Run tests with coverage
+        env:
+          SENTRY_DSN: ''
         run: npm run test:coverage
         working-directory: backend
 
