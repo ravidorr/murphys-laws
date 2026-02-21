@@ -56,6 +56,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GITHUB_SHA,GITHUB_ACTOR
           script: |
+            set -e
+            echo "==> Deploy: creating directories"
             STAGING_DIR="$HOME/deploy/murphys-laws"
             TARGET_DIR="/root/murphys-laws"
 
@@ -83,22 +85,21 @@ jobs:
             sudo install -m 644 "$STAGING_DIR/backend/ecosystem.config.cjs" "$TARGET_DIR/backend/ecosystem.config.cjs"
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
             sudo install -m 644 "$STAGING_DIR/.nvmrc" "$TARGET_DIR/.nvmrc"
-            
-            # Update Nginx config and reload
-            sudo cp "$TARGET_DIR/nginx.conf" /etc/nginx/sites-available/murphys-laws
-            sudo nginx -t && sudo systemctl reload nginx
-            
             sudo install -m 644 "$STAGING_DIR/backend/package.json" "$TARGET_DIR/backend/package.json"
             sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"
 
             sudo chown -R root:root "$TARGET_DIR"
 
+            echo "==> Deploy: testing nginx and reloading"
+            sudo cp "$TARGET_DIR/nginx.conf" /etc/nginx/sites-available/murphys-laws
+            sudo nginx -t && sudo systemctl reload nginx
+
             sudo --preserve-env=GITHUB_SHA,GITHUB_ACTOR bash <<'INNER'
             set -e
-
+            trap 'echo "==> Script failed at line $LINENO"' ERR
             TARGET_DIR="/root/murphys-laws"
 
-            # Load nvm and use Node version from .nvmrc
+            echo "==> Loading nvm and checking Node"
             export NVM_DIR="/root/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             cd "$TARGET_DIR"
@@ -131,8 +132,8 @@ jobs:
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
 
-            # Create .env file with secrets
-            cat > .env << EOF
+            # Create .env file with secrets (delimiter chosen to avoid secrets breaking heredoc)
+            cat > .env << '__ENV_END__'
             HOST=127.0.0.1
             PORT=8787
             NODE_ENV=production
@@ -144,9 +145,9 @@ jobs:
             EMAIL_TO=${{ secrets.EMAIL_TO }}
             ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
             SENTRY_DSN=${{ secrets.SENTRY_DSN }}
-            EOF
+            __ENV_END__
 
-            echo "Contents of $TARGET_DIR/backend:"
+            echo "==> Contents of $TARGET_DIR/backend:"
             ls -la
 
             if [ ! -f package.json ]; then
@@ -154,11 +155,10 @@ jobs:
               exit 1
             fi
 
-            # Run migrations using staged migrations
-            # Use npm install (monorepo doesn't have individual lock files)
-            # Native modules like better-sqlite3 are automatically built during npm install
+            echo "==> Running npm install in backend"
             npm install
 
+            echo "==> Running migrations"
             npm run migrate
 
             # Update server maintenance scripts
@@ -177,7 +177,7 @@ jobs:
             sudo crontab -l | grep -v "vulnerability-scanner.sh" | sudo crontab - || true
             echo "✓ Standalone vulnerability scanner cron job disabled"
 
-            # Restart services (delete and recreate to ensure config changes are loaded)
+            echo "==> Restarting PM2"
             cd "$TARGET_DIR/backend"
             pm2 delete all || true
             pm2 start ecosystem.config.cjs
@@ -220,8 +220,7 @@ jobs:
               echo "⚠️  WARNING: Errors detected in logs"
             fi
 
-            # Health check - verify API is responding
-            echo "Testing API endpoints..."
+            echo "==> Health check: testing API endpoints"
             if ! curl -f http://127.0.0.1:8787/api/v1/law-of-day > /dev/null 2>&1; then
               echo "ERROR: API health check failed after deployment!"
               echo "PM2 Status:"

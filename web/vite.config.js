@@ -177,18 +177,22 @@ export default defineConfig({
         enabled: false // Disable in development to avoid caching issues
       }
     }),
-    // Sentry plugin for source map uploads (only in production builds)
-    process.env.SENTRY_AUTH_TOKEN && sentryVitePlugin({
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      sourcemaps: {
-        filesToDeleteAfterUpload: ['./dist/**/*.map'], // Don't serve source maps publicly
-      },
-      release: {
-        name: process.env.VITE_APP_VERSION || `murphys-laws-web@${Date.now()}`,
-      },
-    }),
+    // Sentry plugin for source map uploads (only when all required env vars are set)
+    // If any of org/project/authToken are missing, the plugin can throw in normalizeIncludeEntry (reading 'ignore' of undefined)
+    (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)
+      ? sentryVitePlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        include: ['./dist'],
+        sourcemaps: {
+          filesToDeleteAfterUpload: ['./dist/**/*.map'],
+        },
+        release: {
+          name: process.env.VITE_APP_VERSION || `murphys-laws-web@${Date.now()}`,
+        },
+      })
+      : undefined,
   ].filter(Boolean),
   server: {
     host: '0.0.0.0',
