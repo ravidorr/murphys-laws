@@ -20,7 +20,8 @@ const IGNORED_ERROR_PATTERNS = [
   /newestWorker is null/i,
 ];
 
-// Initialize Sentry for production error tracking
+// Initialize Sentry for production error tracking. Metrics are automatically
+// enabled (SDK 10.25+); use the metrics API for count/gauge/distribution.
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -128,6 +129,7 @@ import {
 import { hydrateIcons } from '@utils/icons.ts';
 import { initAnalyticsBootstrap } from '@utils/third-party.ts';
 import { initKeyboardShortcuts } from './utils/keyboard-shortcuts.ts';
+import { count as metricsCount, distribution as metricsDistribution } from './utils/metrics.ts';
 import {
   initInstallPrompt,
   trackPageView,
@@ -382,6 +384,12 @@ const notFoundRoute = () => {
 };
 
 startRouter(app, notFoundRoute);
+// Send metrics for verification (visible in Sentry when DSN is set and PROD)
+metricsCount('app_loaded', 1);
+const loadTimeMs = typeof performance !== 'undefined' && performance.now ? performance.now() : 0;
+if (loadTimeMs > 0) {
+  metricsDistribution('page_load_time', loadTimeMs, { unit: 'millisecond' });
+}
 initAnalyticsBootstrap();
 initKeyboardShortcuts();
 initInstallPrompt();
