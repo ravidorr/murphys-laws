@@ -197,14 +197,18 @@ function checkAndShowPrompt() {
   }
 
   // Check if user has previously dismissed (stored in localStorage)
-  const lastDismissed = localStorage.getItem('pwa_install_dismissed');
-  if (lastDismissed) {
-    const dismissedDate = new Date(lastDismissed);
-    const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
-    // Don't show again for 7 days after dismissal
-    if (daysSinceDismissed < 7) {
-      return;
+  try {
+    const lastDismissed = localStorage.getItem('pwa_install_dismissed');
+    if (lastDismissed) {
+      const dismissedDate = new Date(lastDismissed);
+      const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+      // Don't show again for 7 days after dismissal
+      if (daysSinceDismissed < 7) {
+        return;
+      }
     }
+  } catch {
+    // localStorage unavailable (insecure context, private mode, etc.)
   }
 
   // Update time on site
@@ -398,7 +402,11 @@ async function triggerInstall() {
  */
 function dismissPrompt() {
   promptDismissedThisSession = true;
-  localStorage.setItem('pwa_install_dismissed', new Date().toISOString());
+  try {
+    localStorage.setItem('pwa_install_dismissed', new Date().toISOString());
+  } catch {
+    // localStorage unavailable (insecure context, private mode, etc.)
+  }
   hideInstallPrompt();
 }
 

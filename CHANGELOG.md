@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Web: filter Sentry noise "feature named `performanceMetrics` was not found" (Sentry SDK/third-party, not app code); extract ignore patterns to `sentry-ignore-patterns.ts` and add tests
+- Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
 - Bump root 2.0.11, backend 2.0.4, web 3.0.16
