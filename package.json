@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.0.11",
+  "version": "2.0.12",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
