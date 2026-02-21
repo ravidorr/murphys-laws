@@ -407,6 +407,25 @@ describe('LawController', () => {
             expect(res.writeHead).toHaveBeenCalledWith(201, expect.any(Object));
         });
 
+        it('should return 201 when sendNewLawEmail rejects (email failure does not fail request)', async () => {
+            vi.mocked(httpHelpers.readBody).mockResolvedValue({
+                title: 'T',
+                text: 'Valid law text here.',
+                author: 'A',
+                email: 'a@example.com'
+            });
+            lawService.submitLaw.mockResolvedValue(456);
+            emailService.sendNewLawEmail.mockRejectedValue(new Error('SMTP failed'));
+
+            await lawController.submit(req, res);
+
+            expect(res.writeHead).toHaveBeenCalledWith(201, expect.any(Object));
+            const body = JSON.parse(res.end.mock.calls[0][0]);
+            expect(body.id).toBe(456);
+            expect(body.status).toBe('in_review');
+            expect(body.message).toContain('successfully');
+        });
+
         it('should return 400 if service throws error', async () => {
             vi.mocked(httpHelpers.readBody).mockResolvedValue({ text: 'Valid length text' });
             lawService.submitLaw.mockRejectedValue(new Error('DB Error'));
