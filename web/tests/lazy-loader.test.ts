@@ -57,6 +57,17 @@ describe('Lazy Loader Utilities', () => {
       expect(placeholder.classList.contains('custom-class')).toBe(true);
     });
 
+    it('does not call factory when entry is not intersecting (L81)', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+      document.body.appendChild(placeholder);
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      localThis.intersectionCallback!([{ isIntersecting: false, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
+
+      expect(localThis.mockFactory).not.toHaveBeenCalled();
+    });
+
     it('calls factory when element becomes visible', async () => {
       const component = document.createElement('div');
       component.textContent = 'Loaded Component';
@@ -73,6 +84,7 @@ describe('Lazy Loader Utilities', () => {
 
       expect(localThis.mockFactory).toHaveBeenCalledTimes(1);
     });
+
 
     it('replaces placeholder with component when visible', async () => {
       const component = document.createElement('div');
@@ -104,6 +116,16 @@ describe('Lazy Loader Utilities', () => {
       localThis.intersectionCallback!([{ isIntersecting: true, target: placeholder } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
 
       expect(localThis.mockFactory).toHaveBeenCalledTimes(1);
+    });
+
+    it('observes placeholder when not connected at rAF then connected later (L93)', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+      // Do not append yet so placeholder.isConnected is false when rAF runs
+      await new Promise(resolve => setTimeout(resolve, 0));
+      document.body.appendChild(placeholder);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
     });
 
     it('disconnects observer after loading', async () => {
@@ -250,6 +272,28 @@ describe('Lazy Loader Utilities', () => {
 
       expect(localThis.mockObserver.observe).toHaveBeenCalledWith(el1);
       expect(localThis.mockObserver.observe).toHaveBeenCalledWith(el2);
+    });
+
+    it('does not call onVisible when entry is not intersecting (L182)', async () => {
+      const el = document.createElement('div');
+      document.body.appendChild(el);
+      const items = [{ element: el, onVisible: localThis.mockOnVisible }];
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      localThis.intersectionCallback!([{ isIntersecting: false, target: el } as unknown as IntersectionObserverEntry], localThis.mockObserver as unknown as IntersectionObserver);
+
+      expect(localThis.mockOnVisible).not.toHaveBeenCalled();
+    });
+
+    it('does not observe element not in DOM (L201)', async () => {
+      const el = document.createElement('div');
+      // Do not append el to document
+      const items = [{ element: el, onVisible: localThis.mockOnVisible }];
+      batchLazyLoad(items as Array<{ element: HTMLElement; onVisible: () => void }>);
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(localThis.mockObserver.observe).not.toHaveBeenCalledWith(el);
     });
 
     it('calls onVisible when element intersects', async () => {

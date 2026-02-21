@@ -30,19 +30,19 @@ jobs:
           # Use production API during SSG to fetch all laws for pre-rendering
           API_BASE_URL: https://murphys-laws.com
           # Sentry configuration for frontend error tracking and source map upload
-          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          VITE_SENTRY_DSN: ${{ secrets['SENTRY_DSN'] }}
+          SENTRY_AUTH_TOKEN: ${{ secrets['SENTRY_AUTH_TOKEN'] }}
+          SENTRY_ORG: ${{ secrets['SENTRY_ORG'] }}
+          SENTRY_PROJECT: ${{ secrets['SENTRY_PROJECT'] }}
 
       - name: Upload build artifacts
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets['SERVER_HOST'] }}
+          username: ${{ secrets['SERVER_USER'] }}
+          key: ${{ secrets['SSH_PRIVATE_KEY'] }}
           source: "web/dist/,backend/src/,backend/scripts/,backend/db/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,shared/modules/,nginx.conf,web/vite.config.js,.nvmrc"
-          target: "/home/${{ secrets.SERVER_USER }}/deploy/murphys-laws/"
+          target: "/home/${{ secrets['SERVER_USER'] }}/deploy/murphys-laws/"
           overwrite: true
 
       - name: Deploy and restart services
@@ -51,9 +51,9 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_ACTOR: ${{ github.actor }}
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets['SERVER_HOST'] }}
+          username: ${{ secrets['SERVER_USER'] }}
+          key: ${{ secrets['SSH_PRIVATE_KEY'] }}
           envs: GITHUB_SHA,GITHUB_ACTOR
           script: |
             set -e
@@ -137,14 +137,14 @@ jobs:
             HOST=127.0.0.1
             PORT=8787
             NODE_ENV=production
-            SMTP_HOST=${{ secrets.SMTP_HOST }}
-            SMTP_PORT=${{ secrets.SMTP_PORT }}
-            SMTP_USER=${{ secrets.SMTP_USER }}
-            SMTP_PASS=${{ secrets.SMTP_PASS }}
-            EMAIL_FROM=${{ secrets.EMAIL_FROM }}
-            EMAIL_TO=${{ secrets.EMAIL_TO }}
-            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
-            SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+            SMTP_HOST=${{ secrets['SMTP_HOST'] }}
+            SMTP_PORT=${{ secrets['SMTP_PORT'] }}
+            SMTP_USER=${{ secrets['SMTP_USER'] }}
+            SMTP_PASS=${{ secrets['SMTP_PASS'] }}
+            EMAIL_FROM=${{ secrets['EMAIL_FROM'] }}
+            EMAIL_TO=${{ secrets['EMAIL_TO'] }}
+            ALLOWED_ORIGINS=${{ secrets['ALLOWED_ORIGINS'] }}
+            SENTRY_DSN=${{ secrets['SENTRY_DSN'] }}
             __ENV_END__
 
             echo "==> Contents of $TARGET_DIR/backend:"

@@ -217,6 +217,61 @@ describe('Export Menu Component', () => {
       focusSpy.mockRestore();
     });
 
+    it('opens dropdown without focusing when no menuitems (L122 false branch)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      dropdown!.innerHTML = '';
+      expect(dropdown!.querySelector('[role="menuitem"]')).toBeNull();
+
+      button!.click();
+
+      expect(dropdown!.hidden).toBe(false);
+    });
+
+    it('first dropdown item has tabindex 0, rest have -1 (L106 L122)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const items = menu.querySelectorAll('.export-dropdown-item');
+      expect(items.length).toBeGreaterThanOrEqual(2);
+      expect(items[0]!.getAttribute('tabindex')).toBe('0');
+      for (let i = 1; i < items.length; i++) {
+        expect(items[i]!.getAttribute('tabindex')).toBe('-1');
+      }
+    });
+
+    it('keydown with non-handled key does not close dropdown', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      button!.click();
+      (dropdown!.querySelector('[role="menuitem"]') as HTMLElement).focus();
+
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+
+      expect(dropdown!.hidden).toBe(false);
+    });
+
+    it('keydown Enter when focus not on menuitem does not call handleExport (L207)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      button!.click();
+      button!.focus();
+
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(exportToPDF).not.toHaveBeenCalled();
+      expect(exportToCSV).not.toHaveBeenCalled();
+    });
+
     it('handles Enter on focused menuitem (L208 L209)', () => {
       const menu = ExportMenu();
       localThis.container!.appendChild(menu);
@@ -243,7 +298,36 @@ describe('Export Menu Component', () => {
       expect(exportToCSV).toHaveBeenCalled();
     });
 
-    it('calls handleExport when clicking a format menuitem (L237 L238)', () => {
+    it('keydown Enter on focused menuitem uses data-format and handleExport (L209)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const txtItem = menu.querySelector('[data-format="txt"]') as HTMLElement | null;
+      button!.click();
+      txtItem!.focus();
+      txtItem!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(exportToText).toHaveBeenCalled();
+    });
+
+    it('ArrowUp on first menuitem wraps focus to last item (L230)', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      button!.click();
+
+      const items = dropdown!.querySelectorAll('[role="menuitem"]');
+      (items[0] as HTMLElement).focus();
+
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+
+      expect(document.activeElement).toBe(items[items.length - 1]);
+    });
+
+    it('dropdown click on item with data-format calls handleExport (L237 L238)', () => {
       const menu = ExportMenu();
       localThis.container!.appendChild(menu);
 

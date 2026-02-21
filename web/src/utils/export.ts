@@ -207,10 +207,11 @@ export function exportToPDF(content: ExportContent, filename?: string): void {
 
 /**
  * Escape a value for CSV (handle quotes and special characters).
+ * Exported for testing branch coverage (null/undefined).
  * @param {*} value - Value to escape
  * @returns {string} Escaped value
  */
-function escapeCSVValue(value: unknown): string {
+export function escapeCSVValue(value: unknown): string {
   if (value === null || value === undefined) {
     return '';
   }

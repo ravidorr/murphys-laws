@@ -446,5 +446,44 @@ describe('third-party utilities', () => {
       script.dispatchEvent(new Event('error', { bubbles: false }));
       await expect(promise).rejects.toThrow(/Failed to load script/);
     });
+
+    it('gtag loadScript catch path (L106-109): script error is ignored', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      freshInit();
+      window.dispatchEvent(new Event('scroll'));
+      const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
+      expect(script).toBeTruthy();
+      script.dispatchEvent(new Event('error', { bubbles: false }));
+      await new Promise((r) => setTimeout(r, 0));
+      const win = window as WindowWithAnalytics;
+      expect(win.gtag).toBeDefined();
+    });
+
+    it('L106: sets window.gtag when undefined on first interaction', async () => {
+      const localThis: { win?: WindowWithAnalytics } = {};
+      vi.resetModules();
+      localThis.win = globalThis.window as WindowWithAnalytics;
+      localThis.win.gtag = undefined;
+      localThis.win.dataLayer = undefined;
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      freshInit();
+      globalThis.window.dispatchEvent(new Event('pointerdown'));
+      expect(localThis.win.gtag).toBeDefined();
+      expect(typeof localThis.win.gtag).toBe('function');
+    });
+
+    it('L109: loadScript reject is caught silently (ad blocker path)', async () => {
+      const localThis: { script?: HTMLScriptElement } = {};
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      freshInit();
+      globalThis.window.dispatchEvent(new Event('keydown'));
+      localThis.script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
+      expect(localThis.script).toBeTruthy();
+      localThis.script.dispatchEvent(new Event('error', { bubbles: false }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect((globalThis.window as WindowWithAnalytics).gtag).toBeDefined();
+    });
   });
 });

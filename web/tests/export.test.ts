@@ -39,7 +39,8 @@ import {
   exportToMarkdown,
   exportToText,
   exportContent,
-  generateFilename
+  generateFilename,
+  escapeCSVValue
 } from '../src/utils/export.ts';
 
 interface MockJsPDFInstance {
@@ -238,6 +239,36 @@ describe('Export Utilities', () => {
     });
   });
 
+  describe('escapeCSVValue', () => {
+    it('returns empty string for null (L214)', () => {
+      expect(escapeCSVValue(null)).toBe('');
+    });
+
+    it('returns empty string for undefined (L214)', () => {
+      expect(escapeCSVValue(undefined)).toBe('');
+    });
+
+    it('wraps value in quotes when it contains comma (L220-222)', () => {
+      expect(escapeCSVValue('a,b')).toBe('"a,b"');
+    });
+
+    it('wraps value in quotes when it contains newline (L220)', () => {
+      expect(escapeCSVValue('a\nb')).toBe('"a\nb"');
+    });
+
+    it('wraps value in quotes when it contains double quote (L220)', () => {
+      expect(escapeCSVValue('say "hi"')).toBe('"say ""hi"""');
+    });
+
+    it('wraps value in quotes when it contains carriage return (L220)', () => {
+      expect(escapeCSVValue('a\rb')).toBe('"a\rb"');
+    });
+
+    it('returns value unchanged when no special characters', () => {
+      expect(escapeCSVValue('simple')).toBe('simple');
+    });
+  });
+
   describe('exportToCSV', () => {
     describe('with LAWS content type', () => {
       it('generates CSV with correct headers', () => {
@@ -338,6 +369,25 @@ describe('Export Utilities', () => {
 
         exportToCSV(content);
 
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('uses cat.name when title missing and law_count 0 (L177 L180 L181)', () => {
+        const categoriesEdge = [
+          { id: 1, name: 'Name Only', slug: 'n', law_count: 0 },
+          { id: 2, title: 'With Title', slug: 't', law_count: 5 }
+        ];
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Cat',
+          data: categoriesEdge
+        };
+        exportToCSV(content);
+        const csv = getBlobText();
+        expect(csv).toContain('Name Only');
+        expect(csv).toContain('0');
+        expect(csv).toContain('With Title');
+        expect(csv).toContain('5');
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
     });
@@ -617,6 +667,19 @@ describe('Export Utilities', () => {
 
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
+
+      it('handles CONTENT with empty data (L260)', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Empty',
+          data: ''
+        };
+
+        exportToMarkdown(content);
+
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+        expect(getBlobText()).toContain('# Empty');
+      });
     });
 
     describe('with CATEGORIES content type', () => {
@@ -630,6 +693,21 @@ describe('Export Utilities', () => {
         exportToMarkdown(content);
 
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('uses cat.title when present else cat.name (L330)', () => {
+        const categoriesMixed = [
+          { id: 1, name: 'Name Only', slug: 'n', law_count: 5 },
+          { id: 2, name: 'Fallback', title: 'Display Title', slug: 't', law_count: 10 }
+        ];
+        exportToMarkdown({
+          type: ContentType.CATEGORIES,
+          title: 'Cat',
+          data: categoriesMixed
+        });
+        const md = getBlobText();
+        expect(md).toMatch(/Name Only/);
+        expect(md).toMatch(/Display Title/);
       });
     });
   });
@@ -709,6 +787,34 @@ describe('Export Utilities', () => {
 
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
+
+      it('strips underscore italic (L327)', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Test',
+          data: 'Text with _italic_ word'
+        };
+
+        exportToText(content);
+
+        expect(getBlobText()).toContain('italic');
+        expect(getBlobText()).not.toContain('_italic_');
+      });
+
+      it('strips blockquote markers (L330)', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Test',
+          data: '> Blockquote line one\n> Blockquote line two'
+        };
+
+        exportToText(content);
+
+        const txt = getBlobText();
+        expect(txt).toContain('Blockquote line one');
+        expect(txt).toContain('Blockquote line two');
+        expect(txt).not.toMatch(/>\s*Blockquote/);
+      });
     });
 
     describe('with CATEGORIES content type', () => {
@@ -722,6 +828,48 @@ describe('Export Utilities', () => {
         exportToText(content);
 
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('uses cat.title when present else cat.name (L381)', () => {
+        const categoriesMixed = [
+          { id: 1, name: 'Name Only', slug: 'n', law_count: 5 },
+          { id: 2, name: 'Fallback', title: 'Display Title', slug: 't', law_count: 10 }
+        ];
+        exportToText({
+          type: ContentType.CATEGORIES,
+          title: 'Cat',
+          data: categoriesMixed
+        });
+        const txt = getBlobText();
+        expect(txt).toMatch(/Name Only/);
+        expect(txt).toMatch(/Display Title/);
+      });
+
+      it('includes law attribution in plain text (L367)', () => {
+        const content = {
+          type: ContentType.LAWS,
+          title: 'Test',
+          data: [{ id: 1, title: 'Law', text: 'Text', attribution: 'Attributed Author', category_slug: 'x', upvotes: 0, downvotes: 0 }]
+        };
+        exportToText(content);
+        expect(getBlobText()).toContain('Attributed Author');
+      });
+
+      it('formats categories with name and law_count 0 (L355 L378 L381)', () => {
+        const categoriesEdge = [
+          { id: 1, name: 'Name Only', slug: 'n', law_count: 0 },
+          { id: 2, title: 'With Title', slug: 't', law_count: 5 }
+        ];
+        exportToText({
+          type: ContentType.CATEGORIES,
+          title: 'Cat',
+          data: categoriesEdge
+        });
+        const txt = getBlobText();
+        expect(txt).toContain('Name Only');
+        expect(txt).toContain('0 laws');
+        expect(txt).toContain('With Title');
+        expect(txt).toContain('5 laws');
       });
     });
   });
@@ -792,6 +940,18 @@ describe('Export Utilities', () => {
 
         expect(mockJsPDF.save).toHaveBeenCalled();
       });
+
+      it('handles CONTENT with empty data (L146)', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Empty',
+          data: ''
+        };
+
+        exportToPDF(content);
+
+        expect(mockJsPDF.save).toHaveBeenCalled();
+      });
     });
 
     describe('with CATEGORIES content type', () => {
@@ -805,6 +965,36 @@ describe('Export Utilities', () => {
         exportToPDF(content);
 
         expect(mockJsPDF.save).toHaveBeenCalled();
+      });
+
+      it('uses cat.title when present, else cat.name (L176 L180)', () => {
+        const categoriesWithTitle = [
+          { id: 1, name: 'Name Only', slug: 'name-only', law_count: 5 },
+          { id: 2, name: 'Display Name', title: 'Category Title', slug: 'cat', law_count: 10 }
+        ];
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: categoriesWithTitle
+        };
+        exportToPDF(content);
+        expect(mockJsPDF.text).toHaveBeenCalled();
+        const textCalls = mockJsPDF.text.mock.calls.map((c: unknown[]) => String(c[0]));
+        expect(textCalls.some((t: string) => t.includes('Name Only') || t.includes('Category Title'))).toBe(true);
+      });
+
+      it('uses cat.name when title missing and law_count 0 (L165 L180 L181)', () => {
+        const categoriesEdge = [
+          { id: 1, name: 'Name Only', slug: 'n', law_count: 0 },
+          { id: 2, title: 'With Title', slug: 't', law_count: 5 }
+        ];
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Cat',
+          data: categoriesEdge
+        };
+        exportToPDF(content);
+        expect(mockJsPDF.text).toHaveBeenCalled();
       });
     });
 

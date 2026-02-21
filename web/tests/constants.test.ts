@@ -69,6 +69,61 @@ describe('Constants', () => {
       delete import.meta.env.VITE_TEST_COVERAGE_KEY;
     });
 
+    it('returns value from opts.viteEnv when provided (covers Vite return branch L27)', () => {
+      const result = getEnvVar('VITE_K', 'NODE_K', 'default', {
+        viteEnv: { VITE_K: 'from-vite' }
+      });
+      expect(result).toBe('from-vite');
+    });
+
+    it('returns value from opts.nodeEnv when provided (covers Node return branch L32)', () => {
+      const result = getEnvVar('VITE_K', 'NODE_K', 'default', {
+        nodeEnv: { NODE_K: 'from-node' }
+      });
+      expect(result).toBe('from-node');
+    });
+
+    it('falls through to opts.nodeEnv when opts.viteEnv is present but key missing (L31 L36)', () => {
+      const result = getEnvVar('MISSING', 'NODE_K', 'default', {
+        viteEnv: {},
+        nodeEnv: { NODE_K: 'from-node' }
+      });
+      expect(result).toBe('from-node');
+    });
+
+    it('returns default when opts.viteEnv and opts.nodeEnv both missing key (L36)', () => {
+      const result = getEnvVar('A', 'B', 'fallback', {
+        viteEnv: {},
+        nodeEnv: {}
+      });
+      expect(result).toBe('fallback');
+    });
+
+    it('uses real env when opts is undefined (L31 L36)', () => {
+      const result = getEnvVar('VITE_NONEXISTENT_XYZ', 'NONEXISTENT_XYZ', 'default', undefined);
+      expect(result).toBe('default');
+    });
+
+    it('returns default when opts is empty object (L31 L32 L36)', () => {
+      const result = getEnvVar('VITE_X', 'NODE_X', 'default', {});
+      expect(result).toBe('default');
+    });
+
+    it('uses opts.nodeEnv when opts.viteEnv is omitted (L31 B1)', () => {
+      const result = getEnvVar('VITE_MISSING', 'NODE_K', 'default', {
+        nodeEnv: { NODE_K: 'from-opts-node' }
+      });
+      expect(result).toBe('from-opts-node');
+    });
+
+    it('uses opts.nodeEnv when opts.viteEnv is empty and key missing (L32 return)', () => {
+      const result = getEnvVar('VITE_X', 'NODE_Y', 'default', {
+        viteEnv: {},
+        nodeEnv: { NODE_Y: 'node-y-val' }
+      });
+      expect(result).toBe('node-y-val');
+    });
+
     it('returns process.env var when available (covers L32 T3 B1)', () => {
       const g = globalThis as unknown as Record<string, unknown>;
       const originalProcess = g.process as { env?: Record<string, string | undefined> } | undefined;
@@ -99,6 +154,22 @@ describe('Constants', () => {
       // This tests the branch where value !== undefined is false (line 24)
       const result = getEnvVar('VITE_NONEXISTENT_KEY', 'NONEXISTENT_KEY', 'default-value');
       expect(result).toBe('default-value');
+    });
+
+    it('falls through L32 when opts.viteEnv key is undefined and uses nodeEnv (L31 L32 L36)', () => {
+      const result = getEnvVar('MISSING', 'NODE_K', 'default', {
+        viteEnv: { MISSING: undefined },
+        nodeEnv: { NODE_K: 'from-node' }
+      });
+      expect(result).toBe('from-node');
+    });
+
+    it('falls through L39 when opts.nodeEnv key is undefined and returns default (L36 L39)', () => {
+      const result = getEnvVar('V', 'N', 'fallback', {
+        viteEnv: {},
+        nodeEnv: { N: undefined }
+      });
+      expect(result).toBe('fallback');
     });
 
     it('returns default when process.env var is undefined', () => {

@@ -283,6 +283,16 @@ describe('Favorites View Component', () => {
 
       expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('law', '123');
     });
+
+    it('supports Space key on law card for keyboard navigation (L273)', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const lawCard = el.querySelector('.law-card-mini');
+
+      lawCard!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('law', '123');
+    });
   });
 
   describe('Clear All Favorites', () => {

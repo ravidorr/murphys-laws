@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bump root 2.0.11, backend 2.0.4, web 3.0.16
+- Web: branch coverage tests (export-menu, install-prompt, law-of-day, not-found, browse, structured-data) and uncovered-branches checklist
 
 ## [2.0.10] - 2026-02-21
 
