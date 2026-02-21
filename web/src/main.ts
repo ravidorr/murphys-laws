@@ -1,24 +1,6 @@
 // Initialize Sentry first to capture all errors
 import * as Sentry from '@sentry/browser';
-
-// Patterns to filter out from Sentry - these are not application bugs
-const IGNORED_ERROR_PATTERNS = [
-  // Browser extension errors (not our code)
-  /runtime\.sendMessage/i,
-  /chrome-extension:\/\//i,
-  /moz-extension:\/\//i,
-  /safari-extension:\/\//i,
-  /Object Not Found Matching Id/i, // LastPass, Grammarly, and similar extensions
-  // Module import failures (transient network/cache issues)
-  /Importing a module script failed/i,
-  // Service worker errors (transient browser state issues, crawlers, network)
-  /Service worker registration failed/i,
-  /Failed to register a ServiceWorker/i,
-  /Failed to update a ServiceWorker/i,
-  /error occurred when fetching the script/i,
-  /The object is in an invalid state/i,
-  /newestWorker is null/i,
-];
+import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
 
 // Initialize Sentry for production error tracking
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -37,12 +19,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     beforeSend(event) {
       const errorMessage = event.exception?.values?.[0]?.value || '';
       const stackTrace = event.exception?.values?.[0]?.stacktrace?.frames || [];
-      
-      // Check if error message matches any ignored pattern
-      for (const pattern of IGNORED_ERROR_PATTERNS) {
-        if (pattern.test(errorMessage)) {
-          return null; // Drop the event
-        }
+
+      if (isSentryErrorIgnored(errorMessage)) {
+        return null;
       }
       
       // Check if stack trace contains browser extension URLs
