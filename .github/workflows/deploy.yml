@@ -162,6 +162,7 @@ jobs:
             npm run migrate
 
             # Update server maintenance scripts
+            sudo cp "$TARGET_DIR/backend/scripts/backup-murphys.sh" /usr/local/bin/backup-murphys.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/daily-report.sh" /usr/local/bin/daily-report.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/vulnerability-scanner.sh" /usr/local/bin/vulnerability-scanner.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/cost-optimization-report.sh" /usr/local/bin/cost-optimization-report.sh 2>/dev/null || true
