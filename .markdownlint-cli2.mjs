@@ -1,3 +1,8 @@
+/**
+ * Markdownlint-cli2 config. This file is intentionally .mjs, not TypeScript.
+ * The tool only supports .jsonc, .yaml, .cjs, and .mjs configs and does not
+ * run TypeScript or Node TS loaders. See docs/DEPENDENCY_MAJOR_UPGRADES.md.
+ */
 import searchReplace from 'markdownlint-rule-search-replace';
 
 // Emoji rule using Unicode properties for comprehensive matching
