@@ -39,11 +39,11 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "tests/**/*.ts",
-    "e2e/**/*.ts"
+    "e2e/**/*.ts",
+    "scripts/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "scripts"
+    "dist"
   ]
 }

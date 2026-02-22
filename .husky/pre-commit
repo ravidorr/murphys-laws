@@ -99,7 +99,7 @@ echo "All tests passed!"
 # Can be bypassed with SKIP_COVERAGE_CHECK=1 for emergency commits
 echo ""
 echo "Checking coverage thresholds..."
-node web/scripts/check-coverage.mjs --skip-test-run
+npx tsx web/scripts/check-coverage.ts --skip-test-run
 if [ $? -ne 0 ]; then
   echo ""
   echo "Coverage check failed! Commit blocked."
@@ -109,5 +109,5 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-node web/scripts/sanitize-husky-hooks.mjs
+npx tsx web/scripts/sanitize-husky-hooks.ts
 npx lint-staged
