@@ -13,36 +13,42 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = resolve(__dirname, '..', 'murphys.db');
 
-function runSqlJson(sql, params = []) {
-  // Build the complete SQL with parameter binding
+function runSqlJson(sql: string, params: (string | number | null)[] = []): unknown[] {
   let completeSql = sql;
-  params.forEach((param) => {
-    const value = typeof param === 'number' ? String(param) :
-      param === null ? 'NULL' :
-        `'${String(param).replace(/'/g, "''")}'`;
+  for (const param of params) {
+    const value =
+      typeof param === 'number'
+        ? String(param)
+        : param === null
+          ? 'NULL'
+          : `'${String(param).replace(/'/g, "''")}'`;
     completeSql = completeSql.replace('?', value);
-  });
+  }
 
   try {
     const stdout = execFileSync('sqlite3', [DB_PATH, '-json', completeSql], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    return JSON.parse(stdout.trim() || '[]');
+    return JSON.parse(stdout.trim() || '[]') as unknown[];
   } catch (error) {
-    console.error('SQL Error:', error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('SQL Error:', message);
     throw error;
   }
 }
 
-function runSql(sql, params = []) {
+function runSql(sql: string, params: (string | number | null)[] = []): void {
   let completeSql = sql;
-  params.forEach((param) => {
-    const value = typeof param === 'number' ? String(param) :
-      param === null ? 'NULL' :
-        `'${String(param).replace(/'/g, "''")}'`;
+  for (const param of params) {
+    const value =
+      typeof param === 'number'
+        ? String(param)
+        : param === null
+          ? 'NULL'
+          : `'${String(param).replace(/'/g, "''")}'`;
     completeSql = completeSql.replace('?', value);
-  });
+  }
 
   try {
     execFileSync('sqlite3', [DB_PATH, completeSql], {
@@ -50,34 +56,39 @@ function runSql(sql, params = []) {
       stdio: ['pipe', 'pipe', 'pipe']
     });
   } catch (error) {
-    console.error('SQL Error:', error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('SQL Error:', message);
     throw error;
   }
 }
 
-async function selectLawOfDay() {
+interface LawRow {
+  id: number;
+  text: string;
+  upvotes?: number;
+}
+
+async function selectLawOfDay(): Promise<void> {
   console.log('[Law of the Day] Starting selection process...');
 
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
   console.log(`[Law of the Day] Date: ${today}`);
 
-  // Check if we already have a law of the day for today
-  const existingLaw = runSqlJson(`
+  const existingLaw = runSqlJson(
+    `
     SELECT law_id
     FROM law_of_the_day_history
     WHERE featured_date = ?
     LIMIT 1
-  `, [today]);
+  `,
+    [today]
+  ) as Array<{ law_id: number }>;
 
   if (existingLaw.length > 0) {
     console.log(`[Law of the Day] Already selected: Law ID ${existingLaw[0].law_id}`);
     return;
   }
 
-  // Select a new law of the day
-  // 1. Get laws not featured in last 365 days
-  // 2. Order by upvotes DESC, then text ASC (alphabetically)
-  // 3. Take the first one
   const candidates = runSqlJson(`
     SELECT l.id,
            l.text,
@@ -91,15 +102,14 @@ async function selectLawOfDay() {
       )
     ORDER BY upvotes DESC, l.text ASC
     LIMIT 1
-  `);
+  `) as LawRow[];
 
-  let lawId;
-  let lawText;
+  let lawId: number;
+  let lawText: string;
 
   if (candidates.length === 0) {
     console.log('[Law of the Day] All laws featured in last 365 days, using fallback...');
 
-    // Fallback: if all laws have been featured in last 365 days, pick any
     const fallbackCandidates = runSqlJson(`
       SELECT l.id,
              l.text,
@@ -108,7 +118,7 @@ async function selectLawOfDay() {
       WHERE l.status = 'published'
       ORDER BY upvotes DESC, l.text ASC
       LIMIT 1
-    `);
+    `) as LawRow[];
 
     if (fallbackCandidates.length === 0) {
       console.error('[Law of the Day] ERROR: No published laws available!');
@@ -122,17 +132,18 @@ async function selectLawOfDay() {
     lawText = candidates[0].text;
   }
 
-  // Store this as today's law of the day
-  runSql(`
+  runSql(
+    `
     INSERT INTO law_of_the_day_history (law_id, featured_date)
     VALUES (?, ?)
-  `, [lawId, today]);
+  `,
+    [lawId, today]
+  );
 
   console.log(`[Law of the Day] Selected Law ID ${lawId} for ${today}`);
   console.log(`[Law of the Day] Text: "${lawText.substring(0, 80)}..."`);
 }
 
-// Run the selection
 selectLawOfDay().catch((error) => {
   console.error('[Law of the Day] ERROR:', error);
   process.exit(1);

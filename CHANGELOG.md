@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Backend: convert six remaining scripts to TypeScript (log-manager, export-law-updates, select-law-of-day, review-laws, show-recent-updates, deploy); root deploy uses npx tsx; deploy runs from repo root and syncs vite.config.ts; bump backend to 2.0.9
 - Backend: convert five DB scripts to TypeScript (build-sqlite, migrate, migration-safety-check, generate-add-laws-migration, generate-populate-categories-migration); parse-attributions test imports from build-sqlite.ts; remove build-sqlite.d.mts; bump backend to 2.0.8
 - Backend: convert five infra scripts to TypeScript (validate-node-version, cleanup-ports, validate-ports, sanitize-husky-hooks, health-check); root and backend package.json use tsx; bump backend to 2.0.7
 - Backend: move parse-attributions test from web to backend (parse-attributions.test.ts), assert parseAttributions from build-sqlite; bump backend to 2.0.6
