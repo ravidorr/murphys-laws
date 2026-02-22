@@ -7,16 +7,22 @@
  * 2. Syncs web dist and backend source/runtime files to the server
  * 3. Restarts PM2 services safely
  *
- * Usage: npm run deploy
+ * Usage: npm run deploy (from repo root)
  */
 
 import { execSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const BACKEND_ROOT = resolve(__dirname, '..');
+const REPO_ROOT = resolve(BACKEND_ROOT, '..');
 
 const DROPLET_HOST = 'ravidor@167.99.53.90';
 const DROPLET_PATH = '/root/murphys-laws';
 
-// Colors for output
-const colors = {
+const colors: Record<string, string> = {
   reset: '\x1b[0m',
   green: '\x1b[32m',
   blue: '\x1b[34m',
@@ -24,14 +30,14 @@ const colors = {
   red: '\x1b[31m'
 };
 
-function log(msg, color = 'reset') {
+function log(msg: string, color: string = 'reset'): void {
   console.log(`${colors[color]}${msg}${colors.reset}`);
 }
 
-function exec(cmd, description) {
+function exec(cmd: string, description: string): void {
   log(`\n${description}...`, 'blue');
   try {
-    execSync(cmd, { stdio: 'inherit' });
+    execSync(cmd, { stdio: 'inherit', cwd: REPO_ROOT });
     log(`${description} complete`, 'green');
   } catch (error) {
     log(`${description} failed`, 'red');
@@ -39,70 +45,63 @@ function exec(cmd, description) {
   }
 }
 
-async function deploy() {
+async function deploy(): Promise<void> {
   log('\nStarting deployment to production droplet\n', 'blue');
 
-  // Step 1: Build locally (from root of monorepo)
-  exec('cd .. && npm run build', 'Building project locally');
+  exec('npm run build', 'Building project locally');
 
-  // Step 2: Sync web/dist/ folder to droplet
   log('\nSyncing web/dist/ folder to droplet...', 'blue');
   exec(
-    `rsync -avz --delete ../web/dist/ ${DROPLET_HOST}:${DROPLET_PATH}/web/dist/`,
+    `rsync -avz --delete web/dist/ ${DROPLET_HOST}:${DROPLET_PATH}/web/dist/`,
     'Syncing web dist folder'
   );
 
-  // Step 3: Sync backend runtime artifacts
   log('\nSyncing backend runtime artifacts...', 'blue');
   exec(
-    `rsync -avz --delete src/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/src/`,
+    `rsync -avz --delete backend/src/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/src/`,
     'Syncing backend src'
   );
   exec(
-    `rsync -avz --delete scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
+    `rsync -avz --delete backend/scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
     'Syncing backend scripts'
   );
   exec(
-    `rsync -avz --delete db/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/db/`,
+    `rsync -avz --delete backend/db/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/db/`,
     'Syncing backend db'
   );
   exec(
-    `rsync -avz --delete config/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/config/`,
+    `rsync -avz --delete backend/config/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/config/`,
     'Syncing backend config'
   );
   exec(
-    `rsync -avz --delete ../shared/modules/ ${DROPLET_HOST}:${DROPLET_PATH}/shared/modules/`,
+    `rsync -avz --delete shared/modules/ ${DROPLET_HOST}:${DROPLET_PATH}/shared/modules/`,
     'Syncing shared modules'
   );
   exec(
-    `rsync -avz ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
+    `rsync -avz backend/ecosystem.config.cjs ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
     'Syncing PM2 config'
   );
   exec(
-    `rsync -avz package.json package-lock.json ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
+    `rsync -avz backend/package.json backend/package-lock.json ${DROPLET_HOST}:${DROPLET_PATH}/backend/`,
     'Syncing backend package files'
   );
 
-  // Step 3.5: Sync web config
   exec(
-    `rsync -avz ../web/vite.config.js ${DROPLET_HOST}:${DROPLET_PATH}/web/`,
+    `rsync -avz web/vite.config.ts ${DROPLET_HOST}:${DROPLET_PATH}/web/`,
     'Syncing web vite config'
   );
 
-  // Step 3.6: Sync nginx config
   exec(
-    `rsync -avz ../nginx.conf ${DROPLET_HOST}:${DROPLET_PATH}/`,
+    `rsync -avz nginx.conf ${DROPLET_HOST}:${DROPLET_PATH}/`,
     'Syncing nginx config'
   );
 
-  // Step 3.7: Update nginx configuration on server
   log('\nUpdating nginx configuration...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/nginx.conf /etc/nginx/sites-available/murphys-laws && sudo nginx -t && sudo systemctl reload nginx"`,
     'Updating and reloading nginx'
   );
 
-  // Step 3.8: Update server maintenance scripts in /usr/local/bin/
   log('\nUpdating server maintenance scripts...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
@@ -113,46 +112,42 @@ async function deploy() {
     'Updating backup script'
   );
 
-  // Step 4: Validate Node.js version on server
   log('\nValidating Node.js version on server...', 'blue');
-  exec(
-    `node scripts/validate-node-version.mjs --server`,
-    'Validating Node.js version'
-  );
+  execSync(`tsx backend/scripts/validate-node-version.ts --server`, {
+    stdio: 'inherit',
+    cwd: REPO_ROOT
+  });
+  log('Validating Node.js version complete', 'green');
 
-  // Step 5: Install dependencies and rebuild native modules
   log('\nInstalling dependencies and rebuilding native modules...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'cd ${DROPLET_PATH}/backend && source ~/.nvm/nvm.sh && npm ci && npm rebuild better-sqlite3'"`,
     'Installing dependencies and rebuilding native modules'
   );
 
-  // Step 6: Restart PM2 services
   log('\nRestarting PM2 services...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && pm2 restart ecosystem.config.cjs'"`,
     'Restarting PM2 services'
   );
 
-  // Step 7: Check status
   log('\nChecking service status...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && pm2 list'"`,
     'Service status check'
   );
 
-  // Step 8: Final validation - verify Node.js configuration after deployment
   log('\nRunning post-deployment validation...', 'blue');
-  exec(
-    `node scripts/validate-node-version.mjs --server`,
-    'Post-deployment validation'
-  );
+  execSync(`tsx backend/scripts/validate-node-version.ts --server`, {
+    stdio: 'inherit',
+    cwd: REPO_ROOT
+  });
+  log('Post-deployment validation complete', 'green');
 
   log('\nDeployment complete!\n', 'green');
   log(`Visit: https://murphys-laws.com\n`, 'blue');
 }
 
-// Run deployment
 deploy().catch((error) => {
   log('\nDeployment failed!', 'red');
   console.error(error);

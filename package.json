@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -26,7 +26,7 @@
     "ci:backend": "cd backend && npm run typecheck && npm run lint && npm run build:db && npm run test:coverage",
     "ci:web": "cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html && npm test && npm run build",
     "ci": "npm run ci:backend && npm run ci:web",
-    "deploy": "node backend/scripts/deploy.mjs",
+    "deploy": "npx tsx backend/scripts/deploy.ts",
     "validate:node": "cd backend && npm run validate:node",
     "validate:node-server": "cd backend && npm run validate:node-server",
     "validate-ports": "npx tsx backend/scripts/validate-ports.ts",
