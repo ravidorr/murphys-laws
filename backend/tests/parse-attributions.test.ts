@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAttributions } from '../scripts/build-sqlite.mjs';
+import { parseAttributions } from '../scripts/build-sqlite.ts';
 
 describe('parseAttributions', () => {
   it('parses mailto simple', () => {

@@ -9,24 +9,25 @@ const __dirname = dirname(__filename);
 const DB_PATH = resolve(__dirname, '..', 'murphys.db');
 const MIGRATIONS_DIR = resolve(__dirname, '..', 'db', 'migrations');
 
-function runSql(sql) {
+function runSql(sql: string): void {
   try {
     execFileSync('sqlite3', [DB_PATH, sql], { encoding: 'utf8' });
   } catch (err) {
-    throw new Error(`SQL Error: ${err.message}`, { cause: err });
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`SQL Error: ${message}`, { cause: err });
   }
 }
 
-function getSql(sql) {
+function getSql(sql: string): string {
   try {
     return execFileSync('sqlite3', [DB_PATH, sql], { encoding: 'utf8' }).trim();
   } catch (err) {
-    throw new Error(`SQL Error: ${err.message}`, { cause: err });
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`SQL Error: ${message}`, { cause: err });
   }
 }
 
-// Create migrations table if it doesn't exist
-function initMigrationsTable() {
+function initMigrationsTable(): void {
   runSql(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,51 +37,43 @@ function initMigrationsTable() {
   `);
 }
 
-// Get list of applied migrations
-function getAppliedMigrations() {
+function getAppliedMigrations(): string[] {
   const result = getSql('SELECT filename FROM schema_migrations ORDER BY filename;');
   return result ? result.split('\n').filter(Boolean) : [];
 }
 
-// Apply a migration file
-function applyMigration(filename) {
+function applyMigration(filename: string): void {
   const filepath = join(MIGRATIONS_DIR, filename);
   const sql = readFileSync(filepath, 'utf8');
 
   console.log(`Applying migration: ${filename}`);
 
-  // Run the migration SQL
   try {
     execFileSync('sqlite3', [DB_PATH], { input: sql, encoding: 'utf8' });
   } catch (err) {
-    throw new Error(`Failed to apply ${filename}: ${err.message}`, { cause: err });
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to apply ${filename}: ${message}`, { cause: err });
   }
 
-  // Record that this migration was applied
   runSql(`INSERT INTO schema_migrations (filename) VALUES ('${filename}');`);
 
   console.log(`Applied: ${filename}`);
 }
 
-// Main migration runner
-function migrate() {
+function migrate(): void {
   console.log('Running database migrations...\n');
 
-  // Initialize migrations tracking table
   initMigrationsTable();
 
-  // Get already applied migrations
   const applied = getAppliedMigrations();
   console.log(`Applied migrations: ${applied.length}`);
 
-  // Get all migration files
   const files = readdirSync(MIGRATIONS_DIR)
-    .filter(f => f.endsWith('.sql'))
+    .filter((f) => f.endsWith('.sql'))
     .sort();
 
   console.log(`Total migration files: ${files.length}\n`);
 
-  // Apply pending migrations
   let appliedCount = 0;
   for (const file of files) {
     if (!applied.includes(file)) {
@@ -90,9 +83,9 @@ function migrate() {
   }
 
   if (appliedCount === 0) {
-    console.log('\n✓ Database is up to date. No migrations to apply.');
+    console.log('\nDatabase is up to date. No migrations to apply.');
   } else {
-    console.log(`\n✓ Applied ${appliedCount} migration(s).`);
+    console.log(`\nApplied ${appliedCount} migration(s).`);
   }
 }
 

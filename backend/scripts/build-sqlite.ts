@@ -5,14 +5,26 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 
-// Config - use __dirname equivalent for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ROOT = path.resolve(__dirname, '..');  // backend/ directory
+const ROOT = path.resolve(__dirname, '..');
 const SOURCE_DIR = path.join(ROOT, '../shared/data/murphys-laws');
 const DB_PATH = path.join(ROOT, 'murphys.db');
 
-function slugify(s) {
+export interface Attribution {
+  name: string;
+  contact_type: string;
+  contact_value: string;
+  source_fragment: string;
+  note?: string;
+}
+
+export interface ParseAttributionsResult {
+  cleanText: string;
+  attributions: Attribution[];
+}
+
+function slugify(s: string): string {
   return String(s)
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -21,9 +33,9 @@ function slugify(s) {
     .replace(/-+/g, '-');
 }
 
-async function listMarkdownFiles(dir) {
-  const out = [];
-  async function walk(d) {
+async function listMarkdownFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  async function walk(d: string): Promise<void> {
     const entries = await fs.readdir(d, { withFileTypes: true });
     for (const e of entries) {
       const p = path.join(d, e.name);
@@ -35,8 +47,8 @@ async function listMarkdownFiles(dir) {
   return out.sort();
 }
 
-function parseAttributions(text) {
-  const attrs = [];
+export function parseAttributions(text: string): ParseAttributionsResult {
+  const attrs: Attribution[] = [];
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/gs;
   const matches = [...text.matchAll(linkRegex)];
 
@@ -64,11 +76,11 @@ function parseAttributions(text) {
     });
   }
 
-  const cleanText = text.replace(linkRegex, (match, linkText) => linkText).trim();
+  const cleanText = text.replace(linkRegex, (_match, linkText: string) => linkText).trim();
   return { cleanText, attributions: attrs };
 }
 
-function normalizeText(txt) {
+function normalizeText(txt: string): string {
   let result = txt
     .replace(/[""]/g, '"')
     .replace(/['']/g, "'")
@@ -80,9 +92,15 @@ function normalizeText(txt) {
   return result.trim();
 }
 
-async function buildSQL() {
+function q(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return 'NULL';
+  const s = String(v).replace(/'/g, "''");
+  return `'${s}'`;
+}
+
+async function buildSQL(): Promise<string> {
   const files = await listMarkdownFiles(SOURCE_DIR);
-  const statements = ['BEGIN TRANSACTION;'];
+  const statements: string[] = ['BEGIN TRANSACTION;'];
 
   for (const file of files) {
     const basename = path.basename(file, '.md');
@@ -91,19 +109,18 @@ async function buildSQL() {
     const content = await fs.readFile(file, 'utf8');
     const lines = content.split('\n');
 
-    const titleLine = lines.find(l => l.trim().startsWith('#'));
-    const title = titleLine ? titleLine.replace(/^#\s+/, '').trim() : basename;
+    const titleLine = lines.find((l) => l.trim().startsWith('#'));
+    const categoryTitle = titleLine ? titleLine.replace(/^#\s+/, '').trim() : basename;
 
-    // category
     statements.push(
-      `INSERT INTO categories (slug, title, source_file_path) VALUES (${q(slug)}, ${q(title)}, ${q(rel)})\n` +
+      `INSERT INTO categories (slug, title, source_file_path) VALUES (${q(slug)}, ${q(categoryTitle)}, ${q(rel)})\n` +
       `ON CONFLICT(slug) DO UPDATE SET title=excluded.title;`
     );
 
-    function isTopBullet(line) {
+    function isTopBullet(line: string): boolean {
       return /^\*\s+/.test(line);
     }
-    function isSubBullet(line) {
+    function isSubBullet(line: string): boolean {
       return /^\s+\*\s+/.test(line);
     }
 
@@ -114,8 +131,7 @@ async function buildSQL() {
       const position = i + 1;
       let stripped = line.replace(/^\*\s+/, '').trim();
 
-      // continuation lines (not bullets)
-      const continuation = [];
+      const continuation: string[] = [];
       let j = i + 1;
       while (j < lines.length && !isTopBullet(lines[j].trim()) && !isSubBullet(lines[j]) && lines[j].trim() !== '') {
         continuation.push(lines[j].trim());
@@ -123,10 +139,9 @@ async function buildSQL() {
       }
 
       let rawMd = [stripped, ...continuation].join(' ');
-      let { cleanText, attributions } = parseAttributions(rawMd);
+      const { cleanText, attributions } = parseAttributions(rawMd);
 
-      // detect corollary/comment
-      let title = null;
+      let lawTitle: string | null = null;
       let body = cleanText;
 
       const colonM = /^([^:]{3,}?)\s*:\s*(.+)$/.exec(cleanText);
@@ -139,13 +154,12 @@ async function buildSQL() {
           /(murphy|cole|law|rule|principle|theory|paradox)\b/i.test(possibleTitle) ||
           possibleTitle.length > 12
         ) {
-          title = possibleTitle;
+          lawTitle = possibleTitle;
         } else {
-          body = cleanText; // fallback if the ':' is just mid-sentence
+          body = cleanText;
         }
       }
 
-      // fix double-space after colon if we see a link structure
       const linkM = /\[([^\]]+)\]\(([^)]+)\)/s.exec(body);
       if (linkM && body.indexOf(linkM[0]) < body.length * 0.7) {
         const splitter = /^(.*?)(?:\s*[-–—:,;()]+\s*|\s{2,})(.+)$/.exec(body);
@@ -153,7 +167,7 @@ async function buildSQL() {
           const partA = splitter[1].trim();
           const partB = splitter[2].trim();
           if (partB.includes(linkM[0])) {
-            title = partA;
+            lawTitle = partA;
             body = partB;
           }
         }
@@ -161,37 +175,32 @@ async function buildSQL() {
 
       body = normalizeText(body);
 
-      // law insertion
       statements.push(
         `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
-        `VALUES (NULL, ${q(title)}, ${q(body)}, ${q(rawMd)}, NULL, ${q(rel)}, ${position})\n` +
+        `VALUES (NULL, ${q(lawTitle)}, ${q(body)}, ${q(rawMd)}, NULL, ${q(rel)}, ${position})\n` +
         `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
       );
 
-      // link to category
       statements.push(
         `INSERT OR IGNORE INTO law_categories (law_id, category_id, position)\n` +
         `SELECT laws.id, categories.id, ${position} FROM laws, categories\n` +
         `WHERE laws.first_seen_file_path=${q(rel)} AND laws.first_seen_line_number=${position} AND categories.slug=${q(slug)};`
       );
 
-      // attributions
       for (const att of attributions) {
         statements.push(
           `INSERT INTO attributions (law_id, name, contact_type, contact_value, note, source_fragment)\n` +
-          `SELECT laws.id, ${q(att.name)}, ${q(att.contact_type)}, ${q(att.contact_value)}, ${q(att.note || null)}, ${q(att.source_fragment)} FROM laws\n` +
+          `SELECT laws.id, ${q(att.name)}, ${q(att.contact_type)}, ${q(att.contact_value)}, ${q(att.note ?? null)}, ${q(att.source_fragment)} FROM laws\n` +
           `WHERE laws.first_seen_file_path=${q(rel)} AND laws.first_seen_line_number=${position};`
         );
       }
 
-      // sub-bullets
       while (j < lines.length && isSubBullet(lines[j])) {
         const subLine = lines[j];
         const subPos = j + 1;
 
-        // collect continuation lines for sub-bullet (indented more, not starting with "*")
         let t = j + 1;
-        const subCont = [];
+        const subCont: string[] = [];
         while (t < lines.length && !isTopBullet(lines[t].trim()) && !isSubBullet(lines[t]) && lines[t].trim() !== '') {
           subCont.push(lines[t].trim());
           t++;
@@ -201,7 +210,7 @@ async function buildSQL() {
         const { cleanText: subCleaned, attributions: subAtts } = parseAttributions(subRaw);
         const isCor = /^([A-Za-z][^:]{0,60})?\s*Corollary\s*:\s*/i.test(subCleaned) || /^Corollary\s*:\s*/i.test(subCleaned);
         const labelM = /^([^:]{3,}?)\s*:\s*(.+)$/.exec(subCleaned);
-        let subTitle = null;
+        let subTitle: string | null = null;
         let subText = subCleaned;
         if (labelM) {
           subTitle = labelM[1].trim();
@@ -209,23 +218,20 @@ async function buildSQL() {
         }
         subText = normalizeText(subText);
 
-        // Insert sub-law
         statements.push(
           `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
           `VALUES (NULL, ${q(subTitle)}, ${q(subText)}, ${q(subRaw)}, NULL, ${q(rel)}, ${subPos})\n` +
           `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
         );
 
-        // Link attribution(s)
         for (const att of subAtts) {
           statements.push(
             `INSERT INTO attributions (law_id, name, contact_type, contact_value, note, source_fragment)\n` +
-            `SELECT laws.id, ${q(att.name)}, ${q(att.contact_type)}, ${q(att.contact_value)}, ${q(att.note || null)}, ${q(att.source_fragment)} FROM laws\n` +
+            `SELECT laws.id, ${q(att.name)}, ${q(att.contact_type)}, ${q(att.contact_value)}, ${q(att.note ?? null)}, ${q(att.source_fragment)} FROM laws\n` +
             `WHERE laws.first_seen_file_path=${q(rel)} AND laws.first_seen_line_number=${subPos};`
           );
         }
 
-        // Relation to parent
         const relationType = isCor ? 'COROLLARY_OF' : 'COMMENT_ON';
         statements.push(
           `INSERT INTO law_relations (from_law_id, to_law_id, relation_type, note)\n` +
@@ -238,8 +244,7 @@ async function buildSQL() {
         j = t;
       }
 
-      // advance i to last processed sub-bullet or continuation
-      i = Math.max(i, (j - 1));
+      i = Math.max(i, j - 1);
     }
   }
 
@@ -247,24 +252,15 @@ async function buildSQL() {
   return statements.join('\n');
 }
 
-function q(v) {
-  if (v === null || v === undefined) return 'NULL';
-  const s = String(v).replace(/'/g, "''");
-  return `'${s}'`;
-}
-
-// Run
 buildSQL()
-  .then(async sql => {
-    // Create database file and execute SQL
+  .then(async (sql) => {
     console.log(`Creating database at: ${DB_PATH}`);
     const db = new Database(DB_PATH);
 
-    // Run all migrations in order (these create the schema)
     const migrationsDir = path.join(ROOT, 'db', 'migrations');
     const migrationFiles = (await fs.readdir(migrationsDir))
-      .filter(f => f.endsWith('.sql'))
-      .sort();  // Sort to run in order: 001_, 002_, etc.
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
 
     console.log(`Running ${migrationFiles.length} migrations...`);
     for (const file of migrationFiles) {
@@ -274,17 +270,13 @@ buildSQL()
       db.exec(migration);
     }
 
-    // Then execute the generated SQL to insert data
     console.log('Inserting data...');
     db.exec(sql);
 
     db.close();
-    console.log(`✅ Database created successfully with all migrations`);
+    console.log('Database created successfully with all migrations');
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('Error building SQL:', err);
     process.exit(1);
   });
-
-// Export for tests
-export { parseAttributions };
