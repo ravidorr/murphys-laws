@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Backend + web: convert ESLint configs to TypeScript (eslint.config.ts, eslint.config.test.ts); add jiti for .ts config loading; bump backend to 2.0.5, web to 3.0.18
 - Web: convert vite.config.js to TypeScript (vite.config.ts); bump web to 3.0.17
 - Bump root 2.0.14, backend 2.0.4, web 3.0.16
 - Web: branch coverage tests (export-menu, install-prompt, law-of-day, not-found, browse, structured-data) and uncovered-branches checklist
