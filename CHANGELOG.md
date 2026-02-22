@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Backend: move parse-attributions test from web to backend (parse-attributions.test.ts), assert parseAttributions from build-sqlite; bump backend to 2.0.6
 - Web: convert all five scripts to TypeScript (sanitize-husky-hooks, check-coverage, uncovered-branches-from-lcov, optimize-images, ssg); add scripts to tsconfig; husky and root use npx tsx; bump web to 3.0.19, add tsx to root devDependencies
 - Backend + web: convert ESLint configs to TypeScript (eslint.config.ts, eslint.config.test.ts); add jiti for .ts config loading; bump backend to 2.0.5, web to 3.0.18
 - Web: convert vite.config.js to TypeScript (vite.config.ts); bump web to 3.0.17
