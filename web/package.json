@@ -1,12 +1,12 @@
 {
   "name": "murphys-laws-web",
-  "version": "3.0.18",
+  "version": "3.0.19",
   "description": "Murphy's Laws Web Application",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run ssg",
-    "ssg": "tsx scripts/ssg.mjs",
+    "ssg": "tsx scripts/ssg.ts",
     "preview": "vite preview",
     "preview:build": "npm run build && npm run preview",
     "test": "vitest run",
@@ -20,8 +20,8 @@
     "lint:css": "stylelint \"styles/**/*.css\"",
     "lint:css:fix": "stylelint \"styles/**/*.css\" --fix",
     "lint:html": "html-validate \"**/*.html\"",
-    "optimize:images": "node scripts/optimize-images.mjs",
-    "optimize:images:dry-run": "node scripts/optimize-images.mjs --dry-run"
+    "optimize:images": "tsx scripts/optimize-images.ts",
+    "optimize:images:dry-run": "tsx scripts/optimize-images.ts --dry-run"
   },
   "keywords": [
     "murphys-law",

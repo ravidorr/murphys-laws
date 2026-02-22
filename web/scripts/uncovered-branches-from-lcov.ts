@@ -1,32 +1,40 @@
 #!/usr/bin/env node
 /**
  * Reads web/coverage/lcov.info and prints uncovered branches in uncovered-branches.md format.
- * Run from repo root: node web/scripts/uncovered-branches-from-lcov.mjs
- * Option: node web/scripts/uncovered-branches-from-lcov.mjs --update
+ * Run from repo root: tsx web/scripts/uncovered-branches-from-lcov.ts
+ * Option: tsx web/scripts/uncovered-branches-from-lcov.ts --update
  *   Updates web/uncovered-branches.md: moves any branch that is now covered from Uncovered to Completed.
  * Requires: npm run test:coverage has been run so coverage/lcov.info exists.
  */
 
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const repoRoot = process.cwd();
 const lcovPath = join(repoRoot, 'web/coverage/lcov.info');
 const mdPath = join(repoRoot, 'web/uncovered-branches.md');
 
-function sourcePathToTestFile(sf) {
+function sourcePathToTestFile(sf: string): string {
   const base = sf.replace(/^src\//, '').replace(/\.(ts|js)$/, '');
   const parts = base.split('/');
-  const name = parts[parts.length - 1];
+  const name = parts[parts.length - 1] ?? '';
   if (parts[0] === 'views' && name === 'favorites') return 'favorites-view';
   return name;
+}
+
+interface UncoveredBranch {
+  line: string;
+  block: string;
+  branch: string;
+  file: string;
+  testFile: string;
 }
 
 const lcov = readFileSync(lcovPath, 'utf8');
 
 const lines = lcov.split('\n');
-let currentFile = null;
-const uncovered = [];
+let currentFile: string | null = null;
+const uncovered: UncoveredBranch[] = [];
 let totalBranches = 0;
 
 for (const line of lines) {
@@ -42,9 +50,9 @@ for (const line of lines) {
     if (isUncovered && currentFile) {
       const testBase = sourcePathToTestFile(currentFile);
       uncovered.push({
-        line: lineNum,
-        block,
-        branch,
+        line: lineNum ?? '',
+        block: block ?? '',
+        branch: branch ?? '',
         file: currentFile,
         testFile: `tests/${testBase}.test.ts`,
       });

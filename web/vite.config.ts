@@ -234,7 +234,7 @@ export default defineConfig({
       '@modules': path.resolve(__dirname, 'src/modules'),
       '@utils': path.resolve(__dirname, 'src/utils'),
       '@shared': path.resolve(__dirname, '../shared'),
-      '@scripts/ssg': path.resolve(__dirname, 'scripts/ssg.mjs'),
+      '@scripts/ssg': path.resolve(__dirname, 'scripts/ssg.ts'),
     }
   },
   test: {

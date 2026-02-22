@@ -6,6 +6,23 @@ import { generateCategoryDescription } from '../src/utils/content-generator.ts';
 import { truncateTitle } from '../src/utils/seo.ts';
 import { HOME_HERO_ACCENT, HOME_HERO_TITLE } from '../src/utils/constants.ts';
 
+interface LawAttribution { name: string }
+interface Law {
+  id: number;
+  title?: string;
+  text?: string;
+  attributions?: LawAttribution[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ContentPageMeta {
+  slug: string;
+  file: string;
+  title: string;
+  description: string;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DIST_DIR = path.resolve(__dirname, '../dist');
@@ -17,7 +34,7 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
 const SITE_URL = 'https://murphys-laws.com';
 
 // Content pages metadata for SSG
-const CONTENT_PAGES = [
+const CONTENT_PAGES: ContentPageMeta[] = [
   { 
     slug: 'about', 
     file: 'about.md',
@@ -58,10 +75,9 @@ const CONTENT_PAGES = [
 
 /**
  * Fetch all published laws from the API
- * @returns {Promise<Array>} Array of law objects
  */
-async function fetchAllLaws() {
-  const laws = [];
+async function fetchAllLaws(): Promise<Law[]> {
+  const laws: Law[] = [];
   let offset = 0;
   const limit = 100; // Request up to 100, but API may return fewer
   
@@ -86,7 +102,8 @@ async function fetchAllLaws() {
     console.log(`Fetched ${laws.length} laws from API.`);
     return laws;
   } catch (error) {
-    console.warn(`Warning: Could not fetch laws from API: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Warning: Could not fetch laws from API: ${message}`);
     return [];
   }
 }
@@ -94,7 +111,7 @@ async function fetchAllLaws() {
 /**
  * Escape HTML special characters for safe embedding
  */
-function escapeHtml(text) {
+function escapeHtml(text: string): string {
   if (!text) return '';
   return text
     .replace(/&/g, '&amp;')
@@ -106,11 +123,8 @@ function escapeHtml(text) {
 
 /**
  * Update hreflang tags to point to the correct URL
- * @param {string} html - HTML content
- * @param {string} url - Target URL
- * @returns {string} Updated HTML
  */
-function updateHreflang(html, url) {
+function updateHreflang(html: string, url: string): string {
   html = html.replace(
     /<link rel="alternate" hreflang="en" href=".*?">/,
     `<link rel="alternate" hreflang="en" href="${url}">`
@@ -129,30 +143,22 @@ function updateHreflang(html, url) {
  */
 /**
  * Generate JSON-LD script tag
- * @param {Object} data - Structured data object
- * @returns {string} Script tag HTML
  */
-function generateJsonLd(data) {
+function generateJsonLd(data: object): string {
   return `<script type="application/ld+json">${JSON.stringify(data, null, 2)}</script>`;
 }
 
 /**
  * Inject JSON-LD into HTML head
- * @param {string} html - HTML content
- * @param {string} jsonLd - JSON-LD script tag(s)
- * @returns {string} Updated HTML
  */
-function injectJsonLd(html, jsonLd) {
+function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
 /**
  * Generate HTML page for a single law with correct OG meta tags
- * @param {Object} law - Law object
- * @param {string} template - HTML template
- * @returns {string} Generated HTML
  */
-function generateLawPage(law, template) {
+function generateLawPage(law: Law, template: string): string {
   let pageHtml = template;
   
   const title = law.title || "Murphy's Law";
@@ -214,15 +220,16 @@ function generateLawPage(law, template) {
   );
   
   // Get attribution name
-  const attributionName = law.attributions && law.attributions.length > 0 
-    ? law.attributions[0].name 
+  const attributionName = law.attributions && law.attributions.length > 0
+    ? (law.attributions[0]?.name ?? null)
     : null;
   
   // Split title for accent styling
-  const titleWords = title.split(' ');
+  const safeTitle = title ?? "Murphy's Law";
+  const titleWords = safeTitle.split(' ');
   const accentTitle = titleWords.length > 1
-    ? `<span class="accent-text">${escapeHtml(titleWords[0])}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
-    : `<span class="accent-text">${escapeHtml(title)}</span>`;
+    ? `<span class="accent-text">${escapeHtml(titleWords[0] ?? '')}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
+    : `<span class="accent-text">${escapeHtml(safeTitle)}</span>`;
   
   // Build static content for law detail page
   const staticContent = `
@@ -283,7 +290,7 @@ function generateLawPage(law, template) {
 /**
  * Wrap the first word of a heading with accent-text span
  */
-function wrapFirstWordWithAccent(text) {
+function wrapFirstWordWithAccent(text: string): string {
   const words = text.split(' ');
   if (words.length > 1) {
     return `<span class="accent-text">${words[0]}</span> ${words.slice(1).join(' ')}`;
@@ -294,7 +301,7 @@ function wrapFirstWordWithAccent(text) {
 /**
  * Process markdown HTML to add styling classes similar to the web app
  */
-function enhanceMarkdownHtml(html) {
+function enhanceMarkdownHtml(html: string): string {
   // Process h1 tags - wrap first word with accent-text
   html = html.replace(/<h1>([^<]+)<\/h1>/g, (match, content) => {
     return `<h1>${wrapFirstWordWithAccent(content)}</h1>`;
@@ -324,13 +331,8 @@ function enhanceMarkdownHtml(html) {
 
 /**
  * Wrap enhanced HTML in card structure with header/body separation
- * Extracts h1 and first paragraph into card-header, rest into card-body
- * @param {string} html - Enhanced HTML from enhanceMarkdownHtml
- * @param {Object} options - Options
- * @param {string} options.lastUpdated - Last updated date (for privacy/terms)
- * @returns {string} - HTML wrapped in card structure
  */
-function wrapInCardStructure(html, options = {}) {
+function wrapInCardStructure(html: string, options: { lastUpdated?: string | null } = {}): string {
   // Extract h1 and first paragraph for header
   const h1Match = html.match(/<h1>([\s\S]*?)<\/h1>/);
   
@@ -384,7 +386,7 @@ ${headerHtml}
         </article>`;
 }
 
-async function main() {
+async function main(): Promise<void> {
   console.log('Starting Static Site Generation (SSG)...');
 
   // Ensure dist exists (it should after build)
@@ -418,8 +420,8 @@ async function main() {
     
     // Parse Markdown
     const tokens = marked.lexer(content);
-    const titleToken = tokens.find(t => t.type === 'heading' && t.depth === 1);
-    const title = titleToken ? titleToken.text : slug.replace(/-/g, ' ');
+    const titleToken = tokens.find((t): t is import('marked').Tokens.Heading => t.type === 'heading' && t.depth === 1);
+    const title = titleToken && 'text' in titleToken ? titleToken.text : slug.replace(/-/g, ' ');
     
     // Convert to HTML
     const htmlContent = marked.parser(tokens);
@@ -443,7 +445,10 @@ async function main() {
     pageHtml = pageHtml.replace(/<title>.*?<\/title>/, titleTag);
     
     // Update Description (first 160 chars of text)
-    const firstText = tokens.find(t => t.type === 'list')?.items[0]?.text || '';
+    const listToken = tokens.find((t): t is import('marked').Tokens.List => t.type === 'list');
+    const firstText = (listToken && 'items' in listToken && listToken.items?.[0] && 'text' in listToken.items[0])
+      ? listToken.items[0].text
+      : '';
     const description = firstText.substring(0, 160).replace(/"/g, '&quot;') || `Read ${title} at Murphy's Law Archive.`;
     pageHtml = pageHtml.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${description}">`);
     
@@ -591,7 +596,7 @@ ${categoryCardsHtml.trim()}
       const mdContent = await fs.readFile(mdPath, 'utf-8');
       
       // Convert to HTML
-      let htmlContent = marked.parse(mdContent);
+      let htmlContent = await marked.parse(mdContent);
       
       // Apply styling enhancements
       htmlContent = enhanceMarkdownHtml(htmlContent);
@@ -675,7 +680,8 @@ ${cardHtml.trim()}
       
       await fs.writeFile(path.join(routeDir, 'index.html'), pageHtml);
     } catch (err) {
-      console.warn(`Warning: Could not pre-render ${page.slug}, using SPA fallback:`, err.message);
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`Warning: Could not pre-render ${page.slug}, using SPA fallback:`, message);
       // Fallback: copy the main index.html
       await fs.copyFile(path.join(DIST_DIR, 'index.html'), path.join(routeDir, 'index.html'));
     }

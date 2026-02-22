@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * Coverage check script for pre-commit hook
- * 
+ *
  * Checks if test coverage meets thresholds (96% functions, 95.5% branches min, 95% lines/statements)
  * Can be bypassed with SKIP_COVERAGE_CHECK=1 environment variable
- * 
+ *
  * Usage:
- *   node scripts/check-coverage.mjs                    # Runs tests with coverage, then checks
- *   node scripts/check-coverage.mjs --skip-test-run   # Only checks existing coverage report
+ *   tsx scripts/check-coverage.ts                    # Runs tests with coverage, then checks
+ *   tsx scripts/check-coverage.ts --skip-test-run   # Only checks existing coverage report
  *   SKIP_COVERAGE_CHECK=1 git commit  # Emergency bypass
  */
 
@@ -20,7 +20,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
-// Coverage thresholds (must match vite.config.js)
 const THRESHOLDS = {
   lines: 95,
   functions: 95,
@@ -28,10 +27,19 @@ const THRESHOLDS = {
   statements: 95
 };
 
-// Check for --skip-test-run flag
+interface CoveragePct { pct: number }
+interface CoverageTotal {
+  lines: CoveragePct;
+  functions: CoveragePct;
+  branches: CoveragePct;
+  statements: CoveragePct;
+}
+interface CoverageSummary {
+  total: CoverageTotal;
+}
+
 const skipTestRun = process.argv.includes('--skip-test-run');
 
-// Emergency bypass
 if (process.env.SKIP_COVERAGE_CHECK === '1') {
   console.log('WARN: SKIP_COVERAGE_CHECK=1 detected - skipping coverage check');
   console.log('WARN: This should only be used for emergency commits!');
@@ -43,14 +51,12 @@ console.log('Thresholds:', THRESHOLDS);
 console.log('');
 
 try {
-  // Run coverage test (unless skipped)
   if (!skipTestRun) {
     execSync('npm run test:coverage', {
       stdio: 'inherit',
       cwd: ROOT_DIR
     });
   } else {
-    // Verify coverage report exists
     const coveragePath = join(ROOT_DIR, 'coverage', 'coverage-summary.json');
     if (!existsSync(coveragePath)) {
       console.error('ERROR: Coverage report not found!');
@@ -59,13 +65,11 @@ try {
     }
   }
 
-  // Parse coverage summary
   const coveragePath = join(ROOT_DIR, 'coverage', 'coverage-summary.json');
-  const coverageData = JSON.parse(readFileSync(coveragePath, 'utf8'));
+  const coverageData = JSON.parse(readFileSync(coveragePath, 'utf8')) as CoverageSummary;
   const totals = coverageData.total;
 
-  // Check thresholds
-  const failures = [];
+  const failures: string[] = [];
 
   if (totals.lines.pct < THRESHOLDS.lines) {
     failures.push(`Lines: ${totals.lines.pct.toFixed(2)}% < ${THRESHOLDS.lines}%`);
@@ -85,7 +89,7 @@ try {
     console.error('ERROR: Coverage check FAILED!');
     console.error('');
     console.error('The following metrics are below the required threshold:');
-    failures.forEach(f => console.error(`  - ${f}`));
+    failures.forEach((f) => console.error(`  - ${f}`));
     console.error('');
     console.error('Current coverage:');
     console.error(`  Lines:      ${totals.lines.pct.toFixed(2)}% (required: ${THRESHOLDS.lines}%)`);
@@ -109,10 +113,7 @@ try {
   console.log(`  Branches:   ${totals.branches.pct.toFixed(2)}%`);
   console.log(`  Statements: ${totals.statements.pct.toFixed(2)}%`);
   console.log('');
-
 } catch {
-  // If test:coverage fails, the error was already shown
-  // Just exit with error code
   console.error('');
   console.error('ERROR: Coverage check failed - tests did not pass');
   console.error('');
@@ -121,4 +122,3 @@ try {
   console.error('');
   process.exit(1);
 }
-
