@@ -9,7 +9,7 @@
  * - Preserves all existing data in the database
  *
  * Usage:
- *   node scripts/generate-populate-categories-migration.mjs
+ *   tsx scripts/generate-populate-categories-migration.ts
  */
 
 import fs from 'node:fs/promises';
@@ -20,11 +20,11 @@ import { execFileSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ROOT = resolve(__dirname, '..');  // backend/ directory
+const ROOT = resolve(__dirname, '..');
 const SOURCE_DIR = path.join(ROOT, '../shared/data/murphys-laws');
 const MIGRATIONS_DIR = resolve(__dirname, '..', 'db', 'migrations');
 
-function slugify(s) {
+function slugify(s: string): string {
   return String(s)
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -33,14 +33,14 @@ function slugify(s) {
     .replace(/-+/g, '-');
 }
 
-function escapeSql(value) {
+function escapeSql(value: string | null | undefined): string {
   if (value === null || value === undefined) return 'NULL';
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
-async function listMarkdownFiles(dir) {
-  const out = [];
-  async function walk(d) {
+async function listMarkdownFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  async function walk(d: string): Promise<void> {
     const entries = await fs.readdir(d, { withFileTypes: true });
     for (const e of entries) {
       const p = path.join(d, e.name);
@@ -52,30 +52,36 @@ async function listMarkdownFiles(dir) {
   return out.sort();
 }
 
-function getNextMigrationNumber() {
+function getNextMigrationNumber(): string {
   try {
     const files = execFileSync('ls', [MIGRATIONS_DIR], { encoding: 'utf8' })
       .split('\n')
-      .filter(f => f.endsWith('.sql'))
+      .filter((f) => f.endsWith('.sql'))
       .sort();
-    
+
     if (files.length === 0) return '009';
-    
+
     const lastFile = files[files.length - 1];
     const match = /^(\d+)_/.exec(lastFile);
-    
+
     if (match) {
       const num = parseInt(match[1], 10);
       return String(num + 1).padStart(3, '0');
     }
-    
+
     return '009';
   } catch {
     return '009';
   }
 }
 
-function generateMigration(categories) {
+interface CategoryRow {
+  slug: string;
+  title: string;
+  source_file_path: string;
+}
+
+function generateMigration(categories: CategoryRow[]): string {
   const timestamp = new Date().toISOString();
   const lines = [
     '-- Populate categories table from markdown files',
@@ -101,42 +107,37 @@ function generateMigration(categories) {
   return lines.join('\n');
 }
 
-async function main() {
+async function main(): Promise<void> {
   console.log(`Reading markdown files from: ${SOURCE_DIR}`);
   const files = await listMarkdownFiles(SOURCE_DIR);
   console.log(`Found ${files.length} markdown files`);
 
-  // Read all files and extract category info
   const categories = await Promise.all(
     files.map(async (file) => {
       const basename = path.basename(file, '.md');
       const rel = path.relative(ROOT, file);
       const slug = slugify(basename);
-      
-      // Read file to get title from first # heading
+
       const content = await fs.readFile(file, 'utf8');
       const lines = content.split('\n');
-      const titleLine = lines.find(l => l.trim().startsWith('#'));
-      const title = titleLine 
-        ? titleLine.replace(/^#\s+/, '').trim() 
+      const titleLine = lines.find((l) => l.trim().startsWith('#'));
+      const title = titleLine
+        ? titleLine.replace(/^#\s+/, '').trim()
         : basename;
 
       return { slug, title, source_file_path: rel };
     })
   );
 
-  // Generate migration SQL
   const migrationSql = generateMigration(categories);
-  
-  // Determine next migration number
+
   const migrationNumber = getNextMigrationNumber();
   const filename = `${migrationNumber}_populate_categories.sql`;
   const filepath = path.join(MIGRATIONS_DIR, filename);
 
-  // Write migration file
   await fs.writeFile(filepath, migrationSql, 'utf8');
-  
-  console.log(`\n✅ Migration file generated: ${filename}`);
+
+  console.log(`\nMigration file generated: ${filename}`);
   console.log(`   Location: ${filepath}`);
   console.log(`   Categories: ${categories.length}`);
   console.log(`\nTo apply this migration, run:`);
@@ -144,8 +145,7 @@ async function main() {
   console.log(`\nOr it will run automatically when you push to main via GitHub Actions.`);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Error generating migration:', err);
   process.exit(1);
 });
-
