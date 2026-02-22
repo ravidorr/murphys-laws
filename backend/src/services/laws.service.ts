@@ -224,13 +224,23 @@ export class LawService {
     if (law) {
       law.attributions = safeParseJsonArray(law.attributions);
 
-      // Add category IDs
+      // Add category IDs and primary category slug/title for context copy
       const categoriesStmt = this.db.prepare(`
-        SELECT category_id FROM law_categories WHERE law_id = ?
+        SELECT category_id FROM law_categories WHERE law_id = ? ORDER BY category_id ASC
       `);
       const categories = categoriesStmt.all(id) as LawCategoryRow[];
       law.category_ids = categories.map((c: LawCategoryRow) => c.category_id);
-      law.category_id = law.category_ids[0] ?? null; // Primary category for backward compatibility
+      const primaryCategoryId = law.category_ids[0] ?? null;
+      law.category_id = primaryCategoryId;
+
+      if (primaryCategoryId !== null) {
+        const catStmt = this.db.prepare('SELECT slug, title FROM categories WHERE id = ?');
+        const cat = catStmt.get(primaryCategoryId) as { slug: string; title: string } | undefined;
+        if (cat) {
+          law.category_slug = cat.slug;
+          law.category_name = cat.title;
+        }
+      }
     }
 
     return law as LawRow | undefined;
