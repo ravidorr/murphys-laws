@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
 ### Fixed
+- Backup: apply 30-day retention to env_*backup files (find now matches murphys_* and env_*); bump backend to 2.0.10
 - Backend: add test for isRunAsMain() true branch so branch coverage meets 95% threshold
 - Backend CI: avoid Sentry/git in test step (global Sentry mock in Vitest setup, SENTRY_DSN unset in workflow)
 - Web: filter Sentry noise "feature named `performanceMetrics` was not found" (Sentry SDK/third-party, not app code); extract ignore patterns to `sentry-ignore-patterns.ts` and add tests

@@ -28,8 +28,8 @@ tar -czf $BACKUP_DIR/murphys_app_$DATE.tar.gz \
     --exclude='murphys-laws/.git' \
     murphys-laws
 
-# Remove backups older than retention period
-find $BACKUP_DIR -name 'murphys_*' -mtime +$RETENTION_DAYS -delete
+# Remove backups older than retention period (murphys_* and env_*)
+find $BACKUP_DIR \( -name 'murphys_*' -o -name 'env_*' \) -mtime +$RETENTION_DAYS -delete
 
 # Get backup size and count
 BACKUP_SIZE=$(du -sh $BACKUP_DIR | cut -f1)
