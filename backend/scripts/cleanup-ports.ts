@@ -3,22 +3,21 @@
  * Port Cleanup Script
  *
  * Finds and optionally kills processes using the development ports.
- * This prevents EADDRINUSE errors when starting dev servers.
  *
  * Usage:
  *   npm run cleanup-ports        # Check ports and prompt to kill
- *   npm run cleanup-ports --kill # Auto-kill without prompting
+ *   npm run cleanup-ports -- --kill # Auto-kill without prompting
  */
 
 import { execSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 
-const PORTS = {
+const PORTS: Record<string, number> = {
   api: 8787,
   frontend: 5175
 };
 
-const colors = {
+const colors: Record<string, string> = {
   reset: '\x1b[0m',
   red: '\x1b[31m',
   green: '\x1b[32m',
@@ -26,21 +25,20 @@ const colors = {
   blue: '\x1b[34m'
 };
 
-function log(msg, color = 'reset') {
+function log(msg: string, color: string = 'reset'): void {
   console.log(`${colors[color]}${msg}${colors.reset}`);
 }
 
-function findProcessOnPort(port) {
+function findProcessOnPort(port: number): string[] {
   try {
     const output = execSync(`lsof -ti :${port}`, { encoding: 'utf-8' });
     return output.trim().split('\n').filter(Boolean);
   } catch {
-    // lsof returns exit code 1 if no processes found
     return [];
   }
 }
 
-function getProcessInfo(pid) {
+function getProcessInfo(pid: string): string {
   try {
     const cmd = execSync(`ps -p ${pid} -o command=`, { encoding: 'utf-8' });
     return cmd.trim();
@@ -49,17 +47,18 @@ function getProcessInfo(pid) {
   }
 }
 
-function killProcess(pid) {
+function killProcess(pid: string): boolean {
   try {
     execSync(`kill ${pid}`, { encoding: 'utf-8' });
     return true;
   } catch (error) {
-    log(`Failed to kill process ${pid}: ${error.message}`, 'red');
+    const message = error instanceof Error ? error.message : String(error);
+    log(`Failed to kill process ${pid}: ${message}`, 'red');
     return false;
   }
 }
 
-async function promptUser(question) {
+function promptUser(question: string): Promise<boolean> {
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout
@@ -73,13 +72,13 @@ async function promptUser(question) {
   });
 }
 
-async function main() {
+async function main(): Promise<void> {
   const autoKill = process.argv.includes('--kill');
 
   log('\nChecking for processes using development ports...\n', 'blue');
 
   let foundProcesses = false;
-  const processesToKill = [];
+  const processesToKill: Array<{ pid: string; port: number; name: string; cmd: string }> = [];
 
   for (const [name, port] of Object.entries(PORTS)) {
     const pids = findProcessOnPort(port);
@@ -102,7 +101,6 @@ async function main() {
     process.exit(0);
   }
 
-  // Ask user or auto-kill
   let shouldKill = autoKill;
 
   if (!autoKill) {
@@ -130,6 +128,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  log(`\nError: ${error.message}`, 'red');
+  const message = error instanceof Error ? error.message : String(error);
+  log(`\nError: ${message}`, 'red');
   process.exit(1);
 });
