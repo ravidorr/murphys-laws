@@ -8,7 +8,7 @@ Concrete version targets and migration checklist for major upgrades. Do these in
 
 | Package               | Current | Target  | Notes |
 |-----------------------|---------|---------|--------|
-| markdownlint-cli2     | ^0.21.0 | ^0.21.x | Already on 0.21 (safe bump done). No further major planned. |
+| markdownlint-cli2     | ^0.21.0 | ^0.21.x | Already on 0.21 (safe bump done). No further major planned. Config stays in `.markdownlint-cli2.mjs` (tool does not support .ts). |
 | Optional: @esbuild/darwin-x64, @rollup/rollup-darwin-x64 | ^0.25.x / ^4.52.x | Latest optional | Optional; bump when updating Vite/esbuild elsewhere. |
 
 ---
