@@ -22,7 +22,7 @@
     "esModuleInterop": true,
     "allowJs": false,
 
-    /* Path Aliases (must match vite.config.js) */
+    /* Path Aliases (must match vite.config.ts) */
     "baseUrl": ".",
     "paths": {
       "@src/*": ["src/*"],
