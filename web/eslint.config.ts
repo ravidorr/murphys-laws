@@ -20,7 +20,7 @@ export default [
   {
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "module",
+      sourceType: 'module',
       globals: {
         ...globals.browser,
         ...globals.node,
@@ -50,7 +50,7 @@ export default [
       parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 2022,
-        sourceType: "module",
+        sourceType: 'module',
       },
     },
     plugins: {
@@ -70,7 +70,7 @@ export default [
     files: ['tests/**/*.ts', 'tests/**/*.test.ts'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "module",
+      sourceType: 'module',
       globals: {
         describe: true,
         it: true,

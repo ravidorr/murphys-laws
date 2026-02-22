@@ -1,9 +1,9 @@
 {
   "web/**/!(*.test).{js,mjs,ts}": [
-    "eslint --config web/eslint.config.js --fix"
+    "eslint --config web/eslint.config.ts --fix"
   ],
   "web/**/*.test.{js,ts}": [
-    "eslint --config web/eslint.config.test.js --fix"
+    "eslint --config web/eslint.config.test.ts --fix"
   ],
   "web/styles/**/*.css": [
     "stylelint --config web/.stylelintrc.json --fix"
@@ -12,7 +12,7 @@
     "npx html-validate --config web/.htmlvalidate.json"
   ],
   "backend/**/*.{js,mjs}": [
-    "eslint --config backend/eslint.config.js --fix"
+    "eslint --config backend/eslint.config.ts --fix"
   ],
   "shared/**/*.{js,mjs}": [
     "eslint --fix || echo 'Linting skipped: shared eslint not configured yet'"
