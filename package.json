@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.0.14",
+  "version": "2.0.15",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -8,7 +8,7 @@
     "web"
   ],
   "scripts": {
-    "predev": "node backend/scripts/cleanup-ports.mjs --kill",
+    "predev": "npx tsx backend/scripts/cleanup-ports.ts --kill",
     "dev:backend": "cd backend && npm run dev",
     "dev:web": "cd web && npm run dev",
     "dev": "npm run dev:backend & npm run dev:web",
@@ -29,8 +29,8 @@
     "deploy": "node backend/scripts/deploy.mjs",
     "validate:node": "cd backend && npm run validate:node",
     "validate:node-server": "cd backend && npm run validate:node-server",
-    "validate-ports": "node backend/scripts/validate-ports.mjs",
-    "cleanup-ports": "node backend/scripts/cleanup-ports.mjs",
+    "validate-ports": "npx tsx backend/scripts/validate-ports.ts",
+    "cleanup-ports": "npx tsx backend/scripts/cleanup-ports.ts",
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install"
   },
   "keywords": [

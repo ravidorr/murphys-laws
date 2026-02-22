@@ -4,24 +4,19 @@ import path from 'node:path';
 const HUSKY_DIR = path.resolve('.husky');
 const INTERNAL_DIR = '_';
 
-function stripDeprecated(content) {
-  // Remove shebang
+function stripDeprecated(content: string): string {
   let out = content.replace(/^#!\/usr\/bin\/env sh\s*\n/gm, '');
-  // Remove sourcing of husky.sh
   out = out.replace(/^\.\s+"\$\(dirname -- "\$0"\)\/_\/husky\.sh"\s*\n/gm, '');
-  // Also handle any variant that references _/husky.sh
   out = out
     .split('\n')
-    .filter(line => !line.includes('_/husky.sh'))
+    .filter((line) => !line.includes('_/husky.sh'))
     .join('\n');
-  // Trim leading blank lines
   out = out.replace(/^\s*\n+/, '');
-  // Ensure trailing newline
   if (!out.endsWith('\n')) out += '\n';
   return out;
 }
 
-async function sanitizeFile(filePath) {
+async function sanitizeFile(filePath: string): Promise<boolean> {
   const before = await readFile(filePath, 'utf8');
   const after = stripDeprecated(before);
   if (after !== before) {
@@ -31,7 +26,7 @@ async function sanitizeFile(filePath) {
   return false;
 }
 
-async function main() {
+async function main(): Promise<void> {
   try {
     const entries = await readdir(HUSKY_DIR, { withFileTypes: true });
     let changed = 0;
@@ -49,8 +44,8 @@ async function main() {
       console.log(`Sanitized ${changed} Husky hook(s).`);
     }
   } catch (err) {
-    // Non-fatal: only warn
-    console.warn('Husky sanitize warning:', err?.message || err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn('Husky sanitize warning:', message);
   }
 }
 

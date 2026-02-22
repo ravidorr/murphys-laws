@@ -1,27 +1,24 @@
 #!/usr/bin/env node
 import { config } from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import nodemailer from 'nodemailer';
 
-// Load .env from backend directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const backendDir = join(__dirname, '..');
 config({ path: join(backendDir, '.env') });
 
-// Configuration
-const FRONTEND_URL = process.env.HEALTH_CHECK_FRONTEND_URL || 'https://murphys-laws.com';
-const API_URL = process.env.HEALTH_CHECK_API_URL || 'https://murphys-laws.com/api/health';
-const EMAIL_TO = process.env.HEALTH_CHECK_EMAIL_TO || 'ravidor@gmail.com';
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@murphys-laws.com';
+const FRONTEND_URL = process.env.HEALTH_CHECK_FRONTEND_URL ?? 'https://murphys-laws.com';
+const API_URL = process.env.HEALTH_CHECK_API_URL ?? 'https://murphys-laws.com/api/health';
+const EMAIL_TO = process.env.HEALTH_CHECK_EMAIL_TO ?? 'ravidor@gmail.com';
+const EMAIL_FROM = process.env.EMAIL_FROM ?? 'noreply@murphys-laws.com';
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 
-// Create email transporter if SMTP is configured
-let emailTransporter = null;
+let emailTransporter: nodemailer.Transporter;
 if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
   emailTransporter = nodemailer.createTransport({
     host: SMTP_HOST,
@@ -37,8 +34,15 @@ if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
   process.exit(1);
 }
 
-// Send alert email
-async function sendAlert(subject, message) {
+interface CheckResult {
+  success: boolean;
+  error?: string;
+  url: string;
+  responseTime: number | null;
+  dbQueryTime?: number;
+}
+
+async function sendAlert(subject: string, message: string): Promise<void> {
   try {
     await emailTransporter.sendMail({
       from: EMAIL_FROM,
@@ -78,15 +82,15 @@ async function sendAlert(subject, message) {
     });
     console.log(`Alert email sent: ${subject}`);
   } catch (error) {
-    console.error('Failed to send alert email:', error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Failed to send alert email:', message);
   }
 }
 
-// Check frontend health
-async function checkFrontend() {
+async function checkFrontend(): Promise<CheckResult> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const startTime = Date.now();
     const response = await fetch(FRONTEND_URL, {
@@ -117,20 +121,20 @@ async function checkFrontend() {
 
     return { success: true, url: FRONTEND_URL, responseTime };
   } catch (error) {
+    const err = error as Error & { name?: string };
     return {
       success: false,
-      error: error.name === 'AbortError' ? 'Request timeout (10s)' : error.message,
+      error: err.name === 'AbortError' ? 'Request timeout (10s)' : err.message,
       url: FRONTEND_URL,
-      responseTime: error.name === 'AbortError' ? 10000 : null
+      responseTime: err.name === 'AbortError' ? 10000 : null
     };
   }
 }
 
-// Check API health
-async function checkAPI() {
+async function checkAPI(): Promise<CheckResult> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const startTime = Date.now();
     const response = await fetch(API_URL, {
@@ -149,7 +153,7 @@ async function checkAPI() {
       };
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { ok?: boolean; dbQueryTime?: number };
     if (!data.ok) {
       return {
         success: false,
@@ -161,17 +165,19 @@ async function checkAPI() {
 
     return { success: true, url: API_URL, responseTime, dbQueryTime: data.dbQueryTime };
   } catch (error) {
+    const err = error as Error & { name?: string };
     return {
       success: false,
-      error: error.name === 'AbortError' ? 'Request timeout (10s)' : error.message,
+      error: err.name === 'AbortError' ? 'Request timeout (10s)' : err.message,
       url: API_URL,
-      responseTime: error.name === 'AbortError' ? 10000 : null
+      responseTime: err.name === 'AbortError' ? 10000 : null
     };
   }
 }
 
-// Main health check function
-async function runHealthCheck() {
+const SLOW_THRESHOLD_MS = 5000;
+
+async function runHealthCheck(): Promise<void> {
   console.log('Running health check...');
   console.log(`Frontend URL: ${FRONTEND_URL}`);
   console.log(`API URL: ${API_URL}`);
@@ -182,11 +188,9 @@ async function runHealthCheck() {
     checkAPI()
   ]);
 
-  const failures = [];
-  const warnings = [];
-  const SLOW_THRESHOLD_MS = 5000; // 5 seconds
+  const failures: string[] = [];
+  const warnings: string[] = [];
 
-  // Check frontend results
   if (!frontendResult.success) {
     console.error(`Frontend check failed: ${frontendResult.error}`);
     if (frontendResult.responseTime) {
@@ -196,14 +200,12 @@ async function runHealthCheck() {
   } else {
     console.log(`Frontend is healthy: ${frontendResult.url}`);
     console.log(`   Response time: ${frontendResult.responseTime}ms`);
-
-    if (frontendResult.responseTime > SLOW_THRESHOLD_MS) {
+    if (frontendResult.responseTime !== null && frontendResult.responseTime > SLOW_THRESHOLD_MS) {
       console.warn(`Frontend response time is slow (${frontendResult.responseTime}ms > ${SLOW_THRESHOLD_MS}ms)`);
       warnings.push(`Frontend is responding slowly: ${frontendResult.responseTime}ms`);
     }
   }
 
-  // Check API results
   if (!apiResult.success) {
     console.error(`API check failed: ${apiResult.error}`);
     if (apiResult.responseTime) {
@@ -215,33 +217,29 @@ async function runHealthCheck() {
     console.log(`   Response time: ${apiResult.responseTime}ms`);
     if (apiResult.dbQueryTime) {
       console.log(`   Database query time: ${apiResult.dbQueryTime}ms`);
-
       if (apiResult.dbQueryTime > 1000) {
         console.warn(`Database query time is slow (${apiResult.dbQueryTime}ms > 1000ms)`);
         warnings.push(`Database queries are slow: ${apiResult.dbQueryTime}ms`);
       }
     }
-
-    if (apiResult.responseTime > SLOW_THRESHOLD_MS) {
+    if (apiResult.responseTime !== null && apiResult.responseTime > SLOW_THRESHOLD_MS) {
       console.warn(`API response time is slow (${apiResult.responseTime}ms > ${SLOW_THRESHOLD_MS}ms)`);
       warnings.push(`API is responding slowly: ${apiResult.responseTime}ms`);
     }
   }
 
-  // Send alert if any checks failed
   if (failures.length > 0) {
     const subject = 'Health Check Failed';
-    const message = `The following health checks failed:\n\n${failures.map(f => `• ${f}`).join('\n')}\n\nPlease investigate immediately.`;
+    const message = `The following health checks failed:\n\n${failures.map((f) => `• ${f}`).join('\n')}\n\nPlease investigate immediately.`;
     await sendAlert(subject, message);
     console.log('---');
     console.error('Health check FAILED. Alert email sent.');
     process.exit(1);
   }
 
-  // Send warning if performance is degraded
   if (warnings.length > 0) {
     const subject = 'Health Check Warning - Performance Degraded';
-    const message = `The health checks passed but performance issues were detected:\n\n${warnings.map(w => `• ${w}`).join('\n')}\n\nConsider investigating to prevent future issues.`;
+    const message = `The health checks passed but performance issues were detected:\n\n${warnings.map((w) => `• ${w}`).join('\n')}\n\nConsider investigating to prevent future issues.`;
     await sendAlert(subject, message);
     console.log('---');
     console.warn('Health check passed with WARNINGS. Alert email sent.');
@@ -253,8 +251,7 @@ async function runHealthCheck() {
   process.exit(0);
 }
 
-// Run the health check
-runHealthCheck().catch(error => {
+runHealthCheck().catch((error) => {
   console.error('Health check script error:', error);
   process.exit(1);
 });
