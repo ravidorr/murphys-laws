@@ -56,6 +56,23 @@ describe('LawDetail view', () => {
     expect(el.textContent).toMatch(/Test Law/);
   });
 
+  it('renders In context section with editorial copy after law loads', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, category_slug: 'murphys-computers-laws' };
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-law-context]')).toBeTruthy();
+      expect(el.querySelector('[data-law-context-text]')?.textContent).toBeTruthy();
+    }, { timeout: 500 });
+
+    const contextText = el.querySelector('[data-law-context-text]')?.textContent ?? '';
+    expect(contextText).toContain('Computer');
+  });
+
   it('handles navigation button clicks', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
 

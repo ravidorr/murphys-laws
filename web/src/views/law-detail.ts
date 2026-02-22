@@ -17,6 +17,7 @@ import { isFavoritesEnabled } from '../utils/feature-flags.ts';
 import { isFavorite, toggleFavorite } from '../utils/favorites.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
+import { getContextForCategory } from '../utils/law-context-copy.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
 
 interface LawDetailProps {
@@ -245,6 +246,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         // Signal content is ready - validate content before triggering ads
         triggerAdSense(lawCardContainer as HTMLElement);
       }
+    }
+
+    // Add "In context" editorial copy for substantial per-page content (AdSense / thin-content)
+    const contextSection = el.querySelector('[data-law-context]');
+    const contextTextEl = el.querySelector('[data-law-context-text]');
+    if (contextSection && contextTextEl) {
+      const contextText = getContextForCategory(law.category_slug);
+      contextTextEl.textContent = contextText;
     }
 
     // Fetch and render related laws

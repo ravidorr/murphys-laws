@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Law detail pages: "In context" editorial block with category-specific copy to add substantial content per page (AdSense / thin-content); backend returns category_slug and category_name with single-law API; law-context-copy utility and tests
 - Backup script in repo: `backend/scripts/backup-murphys.sh` (excludes backend/web node_modules to reduce backup size); deployed to `/usr/local/bin` via deploy and CI
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
