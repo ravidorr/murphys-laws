@@ -67,19 +67,19 @@ if [ "$SKIP_CI_CHECK" != "1" ]; then
 
   echo ""
 fi
-# Run tests before allowing commit
-# Run backend tests (no coverage needed)
-echo "Running backend tests..."
-npm run test:backend
+# Run tests before allowing commit (same as CI: backend and web with coverage)
+echo "Running backend tests with coverage..."
+cd backend && npm run test:coverage
 if [ $? -ne 0 ]; then
   echo ""
-  echo "Backend tests failed! Commit blocked."
+  echo "Backend tests or coverage failed! Commit blocked."
   echo ""
-  echo "Please fix the failing tests before committing."
+  echo "Please fix the failing tests or add tests to meet coverage (95%)."
   exit 1
 fi
+cd ..
 
-# Run web tests with coverage (avoids running tests twice)
+# Run web tests with coverage
 echo ""
 echo "Running web tests with coverage..."
 cd web && npm run test:coverage
