@@ -154,6 +154,26 @@ describe('CategoryDetail view', () => {
     expect(descEl!.textContent).toBe('All laws within this category.');
   });
 
+  it('renders category description inside category-laws-card before search info', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const lawsCard = el.querySelector('#category-laws-card');
+    expect(lawsCard).toBeTruthy();
+    const descEl = lawsCard!.querySelector('#category-description');
+    const searchInfoEl = lawsCard!.querySelector('#category-search-info');
+    expect(descEl).toBeTruthy();
+    expect(searchInfoEl).toBeTruthy();
+    const cardHeader = lawsCard!.querySelector('.card-header');
+    expect(cardHeader).toBeTruthy();
+    const nodes = Array.from(cardHeader!.childNodes).filter((n): n is Element => n.nodeType === Node.ELEMENT_NODE);
+    const descIndex = nodes.indexOf(descEl as Element);
+    const searchInfoIndex = nodes.indexOf(searchInfoEl as Element);
+    expect(descIndex).toBeGreaterThanOrEqual(0);
+    expect(searchInfoIndex).toBeGreaterThanOrEqual(0);
+    expect(descIndex).toBeLessThan(searchInfoIndex);
+  });
+
   it('renders empty state when no laws found', async () => {
     vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
     const el = CategoryDetail({ categoryId, onNavigate });
