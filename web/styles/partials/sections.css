@@ -123,6 +123,32 @@
   line-height: 1.4;
 }
 
+/* Category detail: prominent intro with full description */
+.category-intro {
+  margin: 0;
+}
+
+.category-intro-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted-fg);
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+.category-intro .lead {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: color-mix(in oklab, var(--fg) 85%, var(--muted-fg) 15%);
+  margin: 0;
+}
+
+@media (width <= 600px) {
+  .category-intro .lead {
+    font-size: 1.05rem;
+  }
+}
+
 /* Law of the Day widget (scoped) */
 .section-card {
   border: 2px solid var(--border);
