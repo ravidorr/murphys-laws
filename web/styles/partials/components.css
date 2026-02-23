@@ -1522,7 +1522,8 @@ kbd {
   display: flex;
   align-items: center;
   color: var(--muted-fg);
-  opacity: 0.5;
+  opacity: 0.8;
+  margin: 0 0.15rem;
 }
 
 .breadcrumb-separator .icon {
