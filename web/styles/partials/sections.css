@@ -176,6 +176,10 @@
   padding: 1.25rem;
 }
 
+.section-card .section-body {
+  min-width: 0;
+}
+
 /* Static content pages (about, privacy, terms, etc.) */
 .content-page {
   padding-top: 3rem;
@@ -232,6 +236,7 @@
   line-height: 1.2;
   margin: 0;
   padding-bottom: var(--space-4);
+  overflow-wrap: break-word;
 }
 
 /* Hero variant for home page */
@@ -359,6 +364,8 @@
   border-left: none;
   padding-left: 0;
   margin: .25rem 0 .5rem;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .lod-attrib {
@@ -1048,6 +1055,11 @@
 
 .related-laws-list .law-card-mini:last-child {
   border-bottom: none;
+}
+
+.law-context-text {
+  line-height: 1.7;
+  margin: 0;
 }
 
 /* Advanced Search */
