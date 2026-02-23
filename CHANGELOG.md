@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Category detail: merge intro into laws card; description appears in card header before search info; remove redundant category-intro-card and its CSS; add test for description order
 - Category detail: breadcrumb shows chevron separators between all items; category intro moved into a card below Advanced Search with category name as card title and H1
 - Document markdownlint-cli2 .mjs exception (tool does not support .ts config) in `.markdownlint-cli2.mjs` and docs/DEPENDENCY_MAJOR_UPGRADES.md; bump root to 2.0.18
 - Backend: convert six remaining scripts to TypeScript (log-manager, export-law-updates, select-law-of-day, review-laws, show-recent-updates, deploy); root deploy uses npx tsx; deploy runs from repo root and syncs vite.config.ts; bump backend to 2.0.9

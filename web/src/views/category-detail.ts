@@ -209,8 +209,6 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         currentFilters.category_id = category.id;
 
         el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
-        el.querySelector('#category-page-title')!.innerHTML = formatPageTitle(categoryTitle);
-        el.querySelector('#category-intro-title')!.innerHTML = formatPageTitle(categoryTitle);
         const descEl = el.querySelector('#category-description')!;
         descEl.textContent = categoryDescription || 'All laws within this category.';
 

@@ -123,24 +123,16 @@
   line-height: 1.4;
 }
 
-/* Category detail: intro card below Advanced Search */
-.category-intro-card .category-intro-subheading {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--muted-fg);
-  margin: 0 0 0.5rem;
-  line-height: 1.4;
-}
-
-.category-intro-card .card-body .lead {
+/* Category detail: description in card header (before search info) */
+#category-laws-card .category-detail-description {
   font-size: 1.1rem;
   line-height: 1.8;
   color: color-mix(in oklab, var(--fg) 85%, var(--muted-fg) 15%);
-  margin: 0;
+  margin: 0.5rem 0 0;
 }
 
 @media (width <= 600px) {
-  .category-intro-card .card-body .lead {
+  #category-laws-card .category-detail-description {
     font-size: 1.05rem;
   }
 }
