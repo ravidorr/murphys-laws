@@ -34,4 +34,21 @@ export class CategoryService {
     `);
     return stmt.get(id);
   }
+
+  async getCategoryBySlug(slug: string) {
+    const stmt = this.db.prepare(`
+      SELECT
+        c.id,
+        c.slug,
+        c.title,
+        c.description,
+        COUNT(l.id) as law_count
+      FROM categories c
+      LEFT JOIN law_categories lc ON c.id = lc.category_id
+      LEFT JOIN laws l ON lc.law_id = l.id AND l.status = 'published'
+      WHERE c.slug = ?
+      GROUP BY c.id;
+    `);
+    return stmt.get(slug) as { id: number; slug: string; title: string; description: string | null; law_count: number } | undefined;
+  }
 }

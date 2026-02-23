@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Server-side HTML injection for /law/:id and /category/:slug (AdSense first-paint content): HtmlInjectionService, SpaController, getCategoryBySlug; nginx proxies those paths to backend; initial response includes law/category title and description in main, with title and meta description in head
 - Category pages: expanded descriptions (migration 013) to 2-4 sentences of unique copy per category; category detail view shows full description in a prominent intro section with "About the laws in this category" heading (AdSense / strengthen category pages)
 - Law detail pages: "In context" editorial block with category-specific copy to add substantial content per page (AdSense / thin-content); backend returns category_slug and category_name with single-law API; law-context-copy utility and tests
 - Categories table: law_context column and migration 012 with per-category "In context" copy; single-law API returns category_context from primary category; frontend uses API value with default fallback

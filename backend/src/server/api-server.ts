@@ -12,6 +12,7 @@ import { CategoryService } from '../services/categories.service.ts';
 import { AttributionService } from '../services/attributions.service.ts';
 import { FeedService } from '../services/feed.service.ts';
 import { OgImageService } from '../services/og-image.service.ts';
+import { HtmlInjectionService } from '../services/html-injection.service.ts';
 
 import { LawController } from '../controllers/laws.controller.ts';
 import { VoteController } from '../controllers/votes.controller.ts';
@@ -20,6 +21,7 @@ import { AttributionController } from '../controllers/attributions.controller.ts
 import { HealthController } from '../controllers/health.controller.ts';
 import { FeedController } from '../controllers/feed.controller.ts';
 import { OgImageController } from '../controllers/og-image.controller.ts';
+import { SpaController } from '../controllers/spa.controller.ts';
 
 import { Router } from '../routes/router.ts';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -92,8 +94,13 @@ export function createApiServer(options?: CreateApiServerOptions) {
   const healthController = new HealthController(db);
   const feedController = new FeedController(feedService);
   const ogImageController = new OgImageController(ogImageService);
+  const htmlInjection = new HtmlInjectionService({ lawService, categoryService });
+  const spaController = new SpaController(htmlInjection);
 
   const router = new Router();
+
+  router.get(/^\/law\/(\d+)\/?$/, (req, res, lawId) => spaController.serveLaw(req, res, lawId));
+  router.get(/^\/category\/([^/]+)\/?$/, (req, res, slug) => spaController.serveCategory(req, res, slug));
 
   router.get('/api/health', (req, res) => healthController.check(req, res));
 
