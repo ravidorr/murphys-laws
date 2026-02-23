@@ -28,7 +28,7 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
     const sep = document.createElement('span');
     sep.className = 'breadcrumb-separator';
     sep.setAttribute('aria-hidden', 'true');
-    sep.innerHTML = '<span class="icon" data-icon="chevronRight"></span>';
+    sep.textContent = ' \u203A ';
     return sep;
   }
 
