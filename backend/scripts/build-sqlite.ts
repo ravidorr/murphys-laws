@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import { existsSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -254,6 +255,9 @@ async function buildSQL(): Promise<string> {
 
 buildSQL()
   .then(async (sql) => {
+    if (existsSync(DB_PATH)) {
+      unlinkSync(DB_PATH);
+    }
     console.log(`Creating database at: ${DB_PATH}`);
     const db = new Database(DB_PATH);
 

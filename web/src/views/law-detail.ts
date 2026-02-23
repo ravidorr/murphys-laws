@@ -17,7 +17,7 @@ import { isFavoritesEnabled } from '../utils/feature-flags.ts';
 import { isFavorite, toggleFavorite } from '../utils/favorites.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
-import { getContextForCategory } from '../utils/law-context-copy.ts';
+import { getDefaultLawContext } from '../utils/law-context-copy.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
 
 interface LawDetailProps {
@@ -248,11 +248,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       }
     }
 
-    // Add "In context" editorial copy for substantial per-page content (AdSense / thin-content)
+    // Add "In context" editorial copy from primary category (DB) or default (AdSense / thin-content)
     const contextSection = el.querySelector('[data-law-context]');
     const contextTextEl = el.querySelector('[data-law-context-text]');
     if (contextSection && contextTextEl) {
-      const contextText = getContextForCategory(law.category_slug);
+      const contextText = (law.category_context !== undefined && law.category_context !== null && law.category_context !== '')
+        ? law.category_context
+        : getDefaultLawContext();
       contextTextEl.textContent = contextText;
     }
 

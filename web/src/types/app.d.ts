@@ -8,6 +8,8 @@ export interface Law {
   category_ids?: number[];
   category_slug?: string;
   category_name?: string;
+  /** Editorial "In context" copy from the law's primary category (categories.law_context). */
+  category_context?: string | null;
   slug?: string;
   upvotes?: number;
   downvotes?: number;
