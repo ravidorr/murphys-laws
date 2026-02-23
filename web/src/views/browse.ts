@@ -20,7 +20,12 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { handleCopyAction } from '../utils/copy-actions.ts';
 import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
+import { updateMetaDescription } from '../utils/dom.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
+
+const BROWSE_TITLE = "Browse All Murphy's Laws | Murphy's Law Archive";
+const BROWSE_DESCRIPTION =
+  "Search and filter the complete collection of Murphy's Laws. Find corollaries, technology laws, and everyday observations about the perversity of the universe.";
 
 export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
@@ -55,6 +60,8 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
 
   // Render the page
   async function render() {
+    document.title = BROWSE_TITLE;
+    updateMetaDescription(BROWSE_DESCRIPTION);
     el.innerHTML = templateHtml;
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
 
