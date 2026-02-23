@@ -22,18 +22,26 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
   // Template always has a root nav element.
   const nav = container.firstElementChild!;
   const list = nav.querySelector('.breadcrumb-list');
+  const firstLi = list?.querySelector('.breadcrumb-item');
+
+  function createSeparator(): HTMLSpanElement {
+    const sep = document.createElement('span');
+    sep.className = 'breadcrumb-separator';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.innerHTML = '<span class="icon" data-icon="chevronRight"></span>';
+    return sep;
+  }
+
+  // Add separator after "Home" when there are more items
+  if (firstLi && items.length > 0) {
+    firstLi.appendChild(createSeparator());
+  }
 
   // Add additional breadcrumb items
   items.forEach((item, index) => {
     const li = document.createElement('li');
     li.className = 'breadcrumb-item';
-    
-    // Add separator
-    const separator = document.createElement('span');
-    separator.className = 'breadcrumb-separator';
-    separator.setAttribute('aria-hidden', 'true');
-    separator.innerHTML = '<span class="icon" data-icon="chevronRight"></span>';
-    li.appendChild(separator);
+    li.appendChild(createSeparator());
     
     // Check if this is the last item (current page)
     const isLast = index === items.length - 1;

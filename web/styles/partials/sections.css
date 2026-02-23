@@ -123,12 +123,8 @@
   line-height: 1.4;
 }
 
-/* Category detail: prominent intro with full description */
-.category-intro {
-  margin: 0;
-}
-
-.category-intro-heading {
+/* Category detail: intro card below Advanced Search */
+.category-intro-card .category-intro-subheading {
   font-size: 1rem;
   font-weight: 600;
   color: var(--muted-fg);
@@ -136,7 +132,7 @@
   line-height: 1.4;
 }
 
-.category-intro .lead {
+.category-intro-card .card-body .lead {
   font-size: 1.1rem;
   line-height: 1.8;
   color: color-mix(in oklab, var(--fg) 85%, var(--muted-fg) 15%);
@@ -144,7 +140,7 @@
 }
 
 @media (width <= 600px) {
-  .category-intro .lead {
+  .category-intro-card .card-body .lead {
     font-size: 1.05rem;
   }
 }
