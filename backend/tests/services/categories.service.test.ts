@@ -111,4 +111,24 @@ describe('CategoryService', () => {
         expect(category.title).toBe('Life');
         expect(category.description).toBeNull();
     });
+
+    it('should get category by slug with law_count', async () => {
+        db.prepare("INSERT INTO categories (title, slug) VALUES ('Tech', 'tech')").run();
+        const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
+        const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 2', 'published')").run();
+        const catRow = db.prepare("SELECT id FROM categories WHERE slug = 'tech'").get() as { id: number };
+        db.prepare("INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)").run(law1.lastInsertRowid, catRow.id);
+        db.prepare("INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)").run(law2.lastInsertRowid, catRow.id);
+
+        const category = (await categoryService.getCategoryBySlug('tech')) as CategoryWithCount;
+        expect(category).toBeDefined();
+        expect(category.title).toBe('Tech');
+        expect(category.slug).toBe('tech');
+        expect(category.law_count).toBe(2);
+    });
+
+    it('should return undefined for unknown slug', async () => {
+        const category = await categoryService.getCategoryBySlug('nonexistent');
+        expect(category).toBeUndefined();
+    });
 });
