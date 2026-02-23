@@ -69,6 +69,20 @@ describe('markdown-content.js', () => {
       expect(html).toContain('<article class="card content-card">');
     });
 
+    it('returns HTML content for why-murphys-law-feels-true page', () => {
+      const html = getPageContent('why-murphys-law-feels-true');
+      expect(html).toBeDefined();
+      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('Universe');
+    });
+
+    it('returns HTML content for murphys-law-project-management page', () => {
+      const html = getPageContent('murphys-law-project-management');
+      expect(html).toBeDefined();
+      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('Survival Guide');
+    });
+
     it('includes last updated date for privacy page', () => {
       const html = getPageContent('privacy');
       expect(html).toContain('Last updated:');
@@ -302,6 +316,16 @@ describe('markdown-content.js', () => {
       expect(typeof raw).toBe('string');
       expect(raw.length).toBeGreaterThan(0);
       expect(raw).toContain('Murphy');
+    });
+
+    it('returns raw markdown for article pages why-murphys-law-feels-true and murphys-law-project-management', () => {
+      const raw1 = getRawMarkdownContent('why-murphys-law-feels-true');
+      expect(raw1.length).toBeGreaterThan(0);
+      expect(raw1).toMatch(/^# /);
+
+      const raw2 = getRawMarkdownContent('murphys-law-project-management');
+      expect(raw2.length).toBeGreaterThan(0);
+      expect(raw2).toMatch(/^# /);
     });
 
     it('returns empty string for unknown page', () => {

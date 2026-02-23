@@ -70,6 +70,18 @@ const CONTENT_PAGES: ContentPageMeta[] = [
     file: 'examples.md',
     title: 'Murphy\'s Law Examples',
     description: 'Real-life Murphy\'s Law examples from technology, work, travel, and everyday situations. See how anything that can go wrong, will go wrong.'
+  },
+  {
+    slug: 'why-murphys-law-feels-true',
+    file: 'why-murphys-law-feels-true.md',
+    title: 'Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)',
+    description: 'Why Murphy\'s Law feels true: negativity bias, the availability heuristic, and confirmation bias. Design for the inevitable instead of taking the universe\'s pranks personally.'
+  },
+  {
+    slug: 'murphys-law-project-management',
+    file: 'murphys-law-project-management.md',
+    title: 'Project Management vs. The Universe: A Survival Guide',
+    description: 'Plan for failure, tame scope creep, and assume you are being misunderstood. A survival guide to applying Murphy\'s Law in project management.'
   }
 ];
 
@@ -582,7 +594,7 @@ ${categoryCardsHtml.trim()}
   await fs.writeFile(path.join(categoriesDir, 'index.html'), categoriesHtml);
   console.log('Generated categories page.');
 
-  // 3. Generate Content Pages (About, Privacy, Terms, Origin Story, Contact)
+  // 3. Generate Content Pages (About, Privacy, Terms, Origin Story, Contact, Examples, long-form articles)
   // Pre-render these with actual markdown content for SEO and AdSense compliance
   console.log('Generating content pages...');
   

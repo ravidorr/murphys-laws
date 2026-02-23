@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
 
-    /* Type Checking — full strict mode */
+    /* Type Checking - full strict mode */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,

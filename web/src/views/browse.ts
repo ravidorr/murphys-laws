@@ -158,7 +158,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     const t = e.target;
     if (!(t instanceof Element)) return;
 
-    // Handle copy text/link actions (shared utility) — sync guard, async clipboard
+    // Handle copy text/link actions (shared utility) - sync guard, async clipboard
     if (t.closest('[data-action="copy-text"]') || t.closest('[data-action="copy-link"]')) {
       void handleCopyAction(e, t);
       return;
@@ -187,7 +187,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     }
   });
 
-  // Keyboard navigation for law cards (WCAG 2.1.1) — shared utility
+  // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
   addNavigationListener(el, onNavigate);
 
   // Initial render and load

@@ -59,7 +59,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [ ] **Internal Linking Improvements:** Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.
 - [ ] **Visual Content:** Add historical photos (Edward Murphy, Dr. John Stapp, rocket sled experiments), infographics showing Murphy's Law variations, and embedded video explaining the origin story.
 - [ ] **Glossary/Index Page:** Create a page listing all law authors/attributions with links, targeting long-tail "who said [law name]" queries.
-- [ ] **Educational Content:** Add articles like "Why does Murphy's Law feel so true?" (psychology/cognitive bias) and "How to use Murphy's Law in project management".
+- [x] **Educational Content:** ~~Add articles like "Why does Murphy's Law feel so true?" (psychology/cognitive bias) and "How to use Murphy's Law in project management".~~ Done - added long-form articles "Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)" and "Project Management vs. The Universe: A Survival Guide" in `shared/content/`, with web routes and home page links.
 - [ ] **User Stories Section:** Implement user-submitted stories with moderation for fresh user-generated content and social proof.
 
 ## UX Improvements (Require Backend Work)

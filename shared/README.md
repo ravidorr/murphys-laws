@@ -6,6 +6,9 @@ This directory contains resources shared across all platforms (web, iOS, Android
 
 ```
 shared/
+├── content/ # Web content pages (markdown)
+│   # about, origin-story, privacy, terms, contact, examples,
+│   # why-murphys-law-feels-true, murphys-law-project-management
 ├── docs/ # Documentation
 ├── data/ # Shared data files
 │ └── murphys-laws/ # Law markdown files
@@ -23,6 +26,14 @@ shared/
 - [Android PRD](docs/MOBILE-ANDROID-PRD.md)
 - [Repository Structure](docs/MOBILE-REPOSITORY-STRUCTURE.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+
+## Web Content (markdown)
+
+The `content/` directory holds markdown for static and long-form web pages. Each file has a corresponding entry in `content/metadata.json` (version, lastUpdated, description). The web app renders these via `getPageContent()` in `web/src/utils/markdown-content.ts`.
+
+**Pages:** about, origin-story, privacy, terms, contact, examples, why-murphys-law-feels-true, murphys-law-project-management.
+
+To add a new content page: add the `.md` file, add metadata, extend the `ContentPage` type and content map in `markdown-content.ts`, add a view and route in the web app, and link from the home page or nav as needed.
 
 ## Law Data
 

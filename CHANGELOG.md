@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Articles: refreshed long-form copy and titles – "Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)" and "Project Management vs. The Universe: A Survival Guide"; home links and view meta updated; bump root to 2.0.23, web to 3.0.20
+- Comment style in browse and category-detail: use hyphen instead of em-dash
 - Browse view: set document.title and meta description on load (AdSense per-page metadata)
 - Breadcrumb: use text separator (›) between items for reliable visibility; category detail description: vertical margin and horizontal padding for spacing
 - Category detail: merge intro into laws card; description appears in card header before search info; remove redundant category-intro-card and its CSS; add test for description order

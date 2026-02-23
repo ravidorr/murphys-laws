@@ -24,6 +24,16 @@
     "lastUpdated": "2025-11-07",
     "description": "Contact information and support channels"
   },
+  "why-murphys-law-feels-true": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-02-22",
+    "description": "Why Murphy's Law feels true - psychology, cognitive bias, and selective memory"
+  },
+  "murphys-law-project-management": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-02-22",
+    "description": "How to use Murphy's Law in project management - planning, scope, and communication"
+  },
   "schema": {
     "version": "1.0.0",
     "description": "This metadata tracks versions and last-updated dates for all legal content files. Update the lastUpdated field whenever content changes to ensure consistency across all platforms."

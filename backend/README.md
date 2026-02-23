@@ -112,8 +112,10 @@ npm run test:watch
 npm run test:coverage
 ```
 
+Coverage thresholds (lines, functions, branches, statements) are 95%. The same run is used in pre-commit and in CI. Coverage can vary slightly between local and CI (e.g. Node/v8 version), so keeping branch coverage clearly above 95% avoids CI-only failures.
+
 **Test Structure:**
-- 18 test files covering all layers (221 tests)
+- 25 test files covering all layers (321 tests)
 - Services: `laws`, `categories`, `votes`, `attributions`, `feed`, `og-image`
 - Controllers: `laws`, `categories`, `votes`, `health`, `attributions`, `feed`, `og-image`
 - Middleware: `cors`, `rate-limit`
