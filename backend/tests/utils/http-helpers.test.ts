@@ -30,7 +30,7 @@ describe('HTTP Helpers', () => {
       writeHead: vi.fn(),
       end: vi.fn(),
     };
-    process.env.ALLOWED_ORIGINS = ''; // Default
+    delete process.env.ALLOWED_ORIGINS;
   });
 
   afterEach(() => {
@@ -73,6 +73,16 @@ describe('HTTP Helpers', () => {
 
       await expect(httpHelpers.readBody(asReq(req))).rejects.toThrow('Stream error');
     });
+
+    it('should handle chunk as string by converting to Buffer', async () => {
+      req.on.mockImplementation((event, cb) => {
+        if (event === 'data') cb(JSON.stringify({ a: 1 }));
+        if (event === 'end') cb();
+      });
+
+      const body = await httpHelpers.readBody(asReq(req));
+      expect(body).toEqual({ a: 1 });
+    });
   });
 
   describe('getVoterIdentifier', () => {
@@ -103,6 +113,11 @@ describe('HTTP Helpers', () => {
     it('should use first element when x-real-ip is array', () => {
       req.headers['x-real-ip'] = ['10.0.0.3'];
       expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('10.0.0.3');
+    });
+
+    it('should fallback to socket when x-forwarded-for trims to empty', () => {
+      req.headers['x-forwarded-for'] = '  ,  ';
+      expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('127.0.0.1');
     });
   });
 
