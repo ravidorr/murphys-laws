@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
 ### Fixed
+- Law detail: prevent law title/quote truncation (overflow-wrap, min-width); In context same card style as Related Laws; increase law context text line-height
 - Backup: apply 30-day retention to env_*backup files (find now matches murphys_* and env_*); bump backend to 2.0.10
 - Backend: add test for isRunAsMain() true branch so branch coverage meets 95% threshold
 - Backend: add getLaw tests for category_context (law_context set vs empty) so branch coverage meets 95% in CI

@@ -480,12 +480,6 @@ select:hover {
   box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
 }
 
-.law-detail h2 {
-  margin: 0 0 .5rem;
-  font-size: 1rem;
-  color: var(--muted-fg);
-}
-
 .law-detail .blockquote {
   font-size: clamp(1.5rem, 2.5vw + 1rem, 2rem);
   font-weight: 700;
