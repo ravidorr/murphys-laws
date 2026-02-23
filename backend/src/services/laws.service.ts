@@ -234,11 +234,14 @@ export class LawService {
       law.category_id = primaryCategoryId;
 
       if (primaryCategoryId !== null) {
-        const catStmt = this.db.prepare('SELECT slug, title FROM categories WHERE id = ?');
-        const cat = catStmt.get(primaryCategoryId) as { slug: string; title: string } | undefined;
+        const catStmt = this.db.prepare('SELECT slug, title, law_context FROM categories WHERE id = ?');
+        const cat = catStmt.get(primaryCategoryId) as { slug: string; title: string; law_context?: string | null } | undefined;
         if (cat) {
           law.category_slug = cat.slug;
           law.category_name = cat.title;
+          if (cat.law_context !== undefined && cat.law_context !== null && cat.law_context !== '') {
+            law.category_context = cat.law_context;
+          }
         }
       }
     }

@@ -56,8 +56,8 @@ describe('LawDetail view', () => {
     expect(el.textContent).toMatch(/Test Law/);
   });
 
-  it('renders In context section with editorial copy after law loads', async () => {
-    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, category_slug: 'murphys-computers-laws' };
+  it('renders In context section with category_context from API when present', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3, category_context: 'Custom context from category table.' };
 
     globalThis.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => law });
@@ -66,11 +66,22 @@ describe('LawDetail view', () => {
 
     await vi.waitFor(() => {
       expect(el.querySelector('[data-law-context]')).toBeTruthy();
-      expect(el.querySelector('[data-law-context-text]')?.textContent).toBeTruthy();
+      expect(el.querySelector('[data-law-context-text]')?.textContent).toBe('Custom context from category table.');
     }, { timeout: 500 });
+  });
 
-    const contextText = el.querySelector('[data-law-context-text]')?.textContent ?? '';
-    expect(contextText).toContain('Computer');
+  it('renders In context section with default copy when category_context is empty', async () => {
+    const law = { id: '7', title: 'Test Law', text: 'Test text', score: 3 };
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law });
+
+    const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-law-context-text]')?.textContent).toBeTruthy();
+      expect(el.querySelector('[data-law-context-text]')?.textContent).toContain("Murphy's");
+    }, { timeout: 500 });
   });
 
   it('handles navigation button clicks', async () => {

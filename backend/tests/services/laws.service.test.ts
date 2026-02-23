@@ -44,7 +44,8 @@ describe('LawService', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         slug TEXT UNIQUE,
         title TEXT,
-        description TEXT
+        description TEXT,
+        law_context TEXT
       );
       
       CREATE TABLE law_categories (
@@ -463,6 +464,35 @@ describe('LawService', () => {
       expect(law).toBeDefined();
       expect(law!.category_id).toBeNull();
       expect(law!.category_ids).toEqual([]);
+    });
+
+    it('should return category_context when category has law_context', async () => {
+      const catInfo = db.prepare(
+        "INSERT INTO categories (slug, title, law_context) VALUES ('tech', 'Technology', 'In tech, things break when you need them most.')"
+      ).run();
+      const categoryId = Number(catInfo.lastInsertRowid);
+
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Law', 'published')").run();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, categoryId);
+
+      const law = await lawService.getLaw(Number(lawInfo.lastInsertRowid));
+      expect(law).toBeDefined();
+      expect(law!.category_slug).toBe('tech');
+      expect(law!.category_name).toBe('Technology');
+      expect(law!.category_context).toBe('In tech, things break when you need them most.');
+    });
+
+    it('should not set category_context when category law_context is empty', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title, law_context) VALUES ('tech', 'Technology', '')").run();
+      const categoryId = Number(catInfo.lastInsertRowid);
+
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Law', 'published')").run();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, categoryId);
+
+      const law = await lawService.getLaw(Number(lawInfo.lastInsertRowid));
+      expect(law).toBeDefined();
+      expect(law!.category_slug).toBe('tech');
+      expect(law!.category_context).toBeUndefined();
     });
   });
 

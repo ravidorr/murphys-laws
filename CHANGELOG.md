@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Law detail pages: "In context" editorial block with category-specific copy to add substantial content per page (AdSense / thin-content); backend returns category_slug and category_name with single-law API; law-context-copy utility and tests
+- Categories table: law_context column and migration 012 with per-category "In context" copy; single-law API returns category_context from primary category; frontend uses API value with default fallback
 - Backup script in repo: `backend/scripts/backup-murphys.sh` (excludes backend/web node_modules to reduce backup size); deployed to `/usr/local/bin` via deploy and CI
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
 ### Fixed
 - Backup: apply 30-day retention to env_*backup files (find now matches murphys_* and env_*); bump backend to 2.0.10
 - Backend: add test for isRunAsMain() true branch so branch coverage meets 95% threshold
+- Backend: add getLaw tests for category_context (law_context set vs empty) so branch coverage meets 95% in CI
 - Backend CI: avoid Sentry/git in test step (global Sentry mock in Vitest setup, SENTRY_DSN unset in workflow)
 - Web: filter Sentry noise "feature named `performanceMetrics` was not found" (Sentry SDK/third-party, not app code); extract ignore patterns to `sentry-ignore-patterns.ts` and add tests
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)

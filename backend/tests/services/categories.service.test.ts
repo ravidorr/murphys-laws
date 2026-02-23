@@ -28,7 +28,8 @@ describe('CategoryService', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         slug TEXT UNIQUE,
         title TEXT,
-        description TEXT
+        description TEXT,
+        law_context TEXT
       );
       CREATE TABLE laws (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

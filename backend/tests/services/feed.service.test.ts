@@ -46,7 +46,8 @@ describe('FeedService', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         slug TEXT UNIQUE,
         title TEXT,
-        description TEXT
+        description TEXT,
+        law_context TEXT
       );
       
       CREATE TABLE law_categories (
