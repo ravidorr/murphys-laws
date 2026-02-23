@@ -17,6 +17,8 @@ const PAGE_IDS = new Set([
   'category-detail-itemlist',
   'origin-story-article',
   'examples-article',
+  'why-murphys-law-feels-true-article',
+  'murphys-law-project-management-article',
   'speakable'
 ]);
 

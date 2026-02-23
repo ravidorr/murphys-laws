@@ -149,6 +149,18 @@ describe('Router', () => {
     expect(location.pathname).toBe('/origin-story');
   });
 
+  it('parses multi-hyphen article routes', () => {
+    history.replaceState(null, '', '/why-murphys-law-feels-true');
+    const r1 = currentRoute();
+    expect(r1.name).toBe('why-murphys-law-feels-true');
+    expect(r1.param).toBeNull();
+
+    history.replaceState(null, '', '/murphys-law-project-management');
+    const r2 = currentRoute();
+    expect(r2.name).toBe('murphys-law-project-management');
+    expect(r2.param).toBeNull();
+  });
+
   it('starts router and renders initial route', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);

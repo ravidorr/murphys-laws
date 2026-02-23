@@ -81,6 +81,19 @@ describe('HtmlInjectionService', () => {
       expect(html).toContain('Murphy\'s Law Archive');
     });
 
+    it('uses law text as title when law title is null', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 7,
+        title: null,
+        text: 'When in doubt, it will go wrong.',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('7');
+      expect(html).not.toBeNull();
+      expect(html).toContain('When in doubt, it will go wrong.');
+    });
+
     it('includes attribution when present', async () => {
       mockLawService.getLaw.mockResolvedValue({
         id: 2,

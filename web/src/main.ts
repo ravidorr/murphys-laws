@@ -93,6 +93,8 @@ import { Privacy } from './views/privacy.ts';
 import { Terms } from './views/terms.ts';
 import { Contact } from './views/contact.ts';
 import { Examples } from './views/examples.ts';
+import { WhyMurphysLawFeelsTrue } from './views/why-murphys-law-feels-true.ts';
+import { MurphysLawProjectManagement } from './views/murphys-law-project-management.ts';
 import { NotFound } from './views/not-found.ts';
 import { isFavoritesEnabled } from './utils/feature-flags.ts';
 import { toggleFavorite } from './utils/favorites.ts';
@@ -350,6 +352,16 @@ const routesMap = {
     trackPageView();
     clearPageStructuredData();
     return layout(Examples({ onNavigate }));
+  },
+  'why-murphys-law-feels-true': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(WhyMurphysLawFeelsTrue({ onNavigate }));
+  },
+  'murphys-law-project-management': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(MurphysLawProjectManagement({ onNavigate }));
   },
 };
 

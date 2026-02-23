@@ -494,6 +494,19 @@ describe('LawService', () => {
       expect(law!.category_slug).toBe('tech');
       expect(law!.category_context).toBeUndefined();
     });
+
+    it('should not set category_context when category law_context is null', async () => {
+      const catInfo = db.prepare("INSERT INTO categories (slug, title, law_context) VALUES ('tech', 'Technology', NULL)").run();
+      const categoryId = Number(catInfo.lastInsertRowid);
+
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('Tech Law', 'published')").run();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, categoryId);
+
+      const law = await lawService.getLaw(Number(lawInfo.lastInsertRowid));
+      expect(law).toBeDefined();
+      expect(law!.category_slug).toBe('tech');
+      expect(law!.category_context).toBeUndefined();
+    });
   });
 
   describe('getRelatedLaws', () => {

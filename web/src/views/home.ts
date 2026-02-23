@@ -51,6 +51,14 @@ const HOME_OVERVIEW_HTML = `
         <p class="text-center mt-4">
           <em>Don't just wait for things to go wrong. Understand why they do.</em>
         </p>
+
+        <h3>Articles</h3>
+        <p>Dive deeper with long-form reads on the history, psychology, and practical use of Murphy's Law:</p>
+        <ul>
+          <li><a href="#/origin-story" data-nav="origin-story">The True Origin of Murphy's Law</a> – Captain Murphy, Project MX981, and the birth of the maxim.</li>
+          <li><a href="#/why-murphys-law-feels-true" data-nav="why-murphys-law-feels-true">Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)</a> – Negativity bias, availability heuristic, and confirmation bias.</li>
+          <li><a href="#/murphys-law-project-management" data-nav="murphys-law-project-management">Project Management vs. The Universe: A Survival Guide</a> – Plan for failure, scope creep, and communication.</li>
+        </ul>
       </div>
     </div>
   </section>

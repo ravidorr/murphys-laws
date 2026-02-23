@@ -204,4 +204,30 @@ describe('EmailService', () => {
       expect(e.cause.message).toBe('Network error');
     }
   });
+
+  it('should use String(error) when sendCalculationEmail sendMail rejects with non-Error', async () => {
+    mockSendMail.mockRejectedValueOnce('plain string rejection');
+    const service = new EmailService({
+      host: 'h',
+      user: 'u',
+      pass: 'p',
+    });
+
+    await expect(
+      service.sendCalculationEmail({
+        to: 't@t.com',
+        taskDescription: 'T',
+        senderName: 'S',
+        senderEmail: 's@s.com',
+        recipientName: 'R',
+        urgency: 'u',
+        complexity: 'c',
+        importance: 'i',
+        skill: 'sk',
+        frequency: 'f',
+        probability: 0.5,
+        interpretation: 'i',
+      })
+    ).rejects.toThrow(/Failed to send calculation email.*plain string rejection/);
+  });
 });

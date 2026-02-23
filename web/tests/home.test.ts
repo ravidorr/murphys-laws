@@ -507,6 +507,15 @@ describe('renderHome function', () => {
     expect(subtitle!.textContent).toMatch(/Anything that can go wrong, will go wrong/);
   });
 
+  it('renders Articles section with links to origin-story and new long-form articles', () => {
+    const el = document.createElement('div');
+    renderHome(el, null, [], vi.fn());
+
+    expect(el.querySelector('[data-nav="origin-story"]')).toBeTruthy();
+    expect(el.querySelector('[data-nav="why-murphys-law-feels-true"]')).toBeTruthy();
+    expect(el.querySelector('[data-nav="murphys-law-project-management"]')).toBeTruthy();
+    expect(el.textContent).toMatch(/Articles/);
+  });
 });
 
 describe('Home view keyboard navigation for law cards', () => {

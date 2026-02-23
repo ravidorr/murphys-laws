@@ -7,6 +7,8 @@ import privacyMd from '../../../shared/content/privacy.md?raw';
 import termsMd from '../../../shared/content/terms.md?raw';
 import contactMd from '../../../shared/content/contact.md?raw';
 import examplesMd from '../../../shared/content/examples.md?raw';
+import whyMurphysLawFeelsTrueMd from '../../../shared/content/why-murphys-law-feels-true.md?raw';
+import murphysLawProjectManagementMd from '../../../shared/content/murphys-law-project-management.md?raw';
 import metadata from '../../../shared/content/metadata.json';
 
 /** Metadata entry for a single content page */
@@ -24,11 +26,13 @@ interface ContentMetadata {
   terms: PageMeta;
   contact: PageMeta;
   examples?: PageMeta;
+  'why-murphys-law-feels-true': PageMeta;
+  'murphys-law-project-management': PageMeta;
   schema: { version: string; description: string };
 }
 
 /** Valid page identifiers for content pages */
-export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples';
+export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples' | 'why-murphys-law-feels-true' | 'murphys-law-project-management';
 
 const typedMetadata = metadata as ContentMetadata;
 
@@ -190,7 +194,9 @@ export function getPageContent(page: ContentPage): string {
     privacy: { markdown: privacyMd, meta: typedMetadata.privacy },
     terms: { markdown: termsMd, meta: typedMetadata.terms },
     contact: { markdown: contactMd, meta: typedMetadata.contact },
-    examples: { markdown: examplesMd, meta: typedMetadata.examples || { version: '1.0.0', description: '' } }
+    examples: { markdown: examplesMd, meta: typedMetadata.examples || { version: '1.0.0', description: '' } },
+    'why-murphys-law-feels-true': { markdown: whyMurphysLawFeelsTrueMd, meta: typedMetadata['why-murphys-law-feels-true'] },
+    'murphys-law-project-management': { markdown: murphysLawProjectManagementMd, meta: typedMetadata['murphys-law-project-management'] }
   };
 
   const entry = contentMap[page];
@@ -293,7 +299,9 @@ export function getRawMarkdownContent(page: ContentPage): string {
     privacy: privacyMd,
     terms: termsMd,
     contact: contactMd,
-    examples: examplesMd
+    examples: examplesMd,
+    'why-murphys-law-feels-true': whyMurphysLawFeelsTrueMd,
+    'murphys-law-project-management': murphysLawProjectManagementMd
   };
 
   return contentMap[page] || '';

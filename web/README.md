@@ -32,7 +32,7 @@ npm run preview
 
 The build process runs `npm run ssg` which pre-renders pages for SEO and social sharing:
 - Category pages (`/category/{slug}`)
-- Content pages (About, Privacy, Terms, etc.)
+- Content pages (About, Origin Story, Privacy, Terms, Contact, Examples, and long-form articles)
 - Individual law pages (`/law/{id}`) with correct Open Graph meta tags
 - Sitemap.xml generation
 
@@ -171,7 +171,7 @@ The application includes a universal export feature accessible from the header (
 | Category Laws | Yes | Yes | Yes | Yes |
 | Single Law | Yes | Yes | Yes | Yes |
 | Categories List | Yes | Yes | Yes | Yes |
-| Content Pages (About, etc.) | Yes | No | Yes | Yes |
+| Content pages (About, Origin Story, articles, etc.) | Yes | No | Yes | Yes |
 | Calculators | - | - | - | - |
 | 404 Page | - | - | - | - |
 
