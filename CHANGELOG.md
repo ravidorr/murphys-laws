@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Breadcrumb: use text separator (›) between items for reliable visibility; category detail description: vertical margin and horizontal padding for spacing
 - Category detail: merge intro into laws card; description appears in card header before search info; remove redundant category-intro-card and its CSS; add test for description order
 - Category detail: breadcrumb shows chevron separators between all items; category intro moved into a card below Advanced Search with category name as card title and H1
 - Document markdownlint-cli2 .mjs exception (tool does not support .ts config) in `.markdownlint-cli2.mjs` and docs/DEPENDENCY_MAJOR_UPGRADES.md; bump root to 2.0.18
