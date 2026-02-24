@@ -160,6 +160,17 @@
   padding-bottom: 1.25rem;
 }
 
+/* Science section details: summary shows title + subtitle stacked (two-line heading) */
+.science-details .science-summary {
+  cursor: pointer;
+  list-style: none;
+  display: block;
+}
+
+.science-details .science-summary::-webkit-details-marker {
+  display: none;
+}
+
 .section-title {
   font-size: 1.25rem;
   margin: 0;
