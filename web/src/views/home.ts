@@ -28,13 +28,11 @@ const BROWSE_CTA_HTML = `
 `;
 
 const HOME_OVERVIEW_HTML = `
-  <section class="section section-card mb-12">
-    <details class="science-details">
-      <summary class="section-header" style="cursor: pointer; list-style: none;">
-        <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
-        <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.</p>
-        <span class="small text-muted-fg">Click to expand</span>
-      </summary>
+  <section class="section section-card mb-12" aria-labelledby="science-section-heading">
+    <div class="section-header">
+      <h2 id="science-section-heading" class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
+      <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.</p>
+    </div>
     <div class="section-body">
       <div class="content-section">
         <h3>Why Murphy's Law Still Matters</h3>
@@ -72,7 +70,6 @@ const HOME_OVERVIEW_HTML = `
         </ul>
       </div>
     </div>
-    </details>
   </section>
 `;
 
