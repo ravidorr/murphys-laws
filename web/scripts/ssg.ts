@@ -4,8 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
 import { truncateTitle } from '../src/utils/seo.ts';
-import { HOME_HERO_ACCENT, HOME_HERO_TITLE } from '../src/utils/constants.ts';
-
 interface LawAttribution { name: string }
 interface Law {
   id: number;
@@ -736,16 +734,7 @@ ${cardHtml.trim()}
   
   let homeHtml = template;
   
-  const homeContent = `
-    <div class="container page pt-0">
-      <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
-        <span class="accent-text">${HOME_HERO_ACCENT}</span> ${HOME_HERO_TITLE}
-      </h1>
-      <p class="text-center mb-12 text-lg text-muted-fg max-w-2xl mx-auto">
-        "If anything can go wrong, it will." Explore the complete collection of laws, corollaries, and observations about the perversity of the universe.
-      </p>
-    </div>
-`;
+  const homeContent = '';
 
   // Inject into main
   homeHtml = homeHtml.replace(
