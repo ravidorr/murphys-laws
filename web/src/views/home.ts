@@ -9,12 +9,7 @@ import { createErrorState } from '../utils/dom.ts';
 import { renderLoadingHTML } from '../components/loading.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
-import { HOME_HERO_ACCENT, HOME_HERO_TITLE } from '../utils/constants.ts';
 import type { CleanableElement, OnNavigate, Law } from '../types/app.d.ts';
-
-const HERO_HTML = `
-  <h1 class="page-title page-title-hero text-primary mb-4"><span class="accent-text">${HOME_HERO_ACCENT}</span> ${HOME_HERO_TITLE}</h1>
-`;
 
 const HOME_OVERVIEW_HTML = `
   <section class="section section-card mb-12">
@@ -67,8 +62,7 @@ const HOME_OVERVIEW_HTML = `
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
 export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories: unknown, onNavigate: OnNavigate): void {
-  // Clear loading indicator but preserve the hero H1
-  el.innerHTML = HERO_HTML;
+  el.innerHTML = '';
 
   if (lawOfTheDay) {
     const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
@@ -99,7 +93,7 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
   el.className = 'container page pt-0 min-h-400';
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = `${HERO_HTML}${renderLoadingHTML({ size: 'large' })}`;
+  el.innerHTML = renderLoadingHTML({ size: 'large' });
 
   function fetchAndRender() {
     fetchLawOfTheDay()

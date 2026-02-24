@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Home: remove hero section (h1 + tagline) from SPA and SSG; bump web to 3.0.21
 - Articles: refreshed long-form copy and titles – "Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)" and "Project Management vs. The Universe: A Survival Guide"; home links and view meta updated; bump root to 2.0.23, web to 3.0.20
 - Comment style in browse and category-detail: use hyphen instead of em-dash
 - Browse view: set document.title and meta description on load (AdSense per-page metadata)

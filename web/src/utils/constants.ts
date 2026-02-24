@@ -17,10 +17,6 @@ export const MATHJAX_MAX_ATTEMPTS = 200; // Maximum attempts to wait for MathJax
 // Site metadata
 export const SITE_NAME = "Murphy's Law Archive";
 
-// Home hero - single source of truth for SPA and SSG
-export const HOME_HERO_ACCENT = 'The';
-export const HOME_HERO_TITLE = "Murphy's Law Archive";
-
 // Environment variable helper for Vite and Node.js (opts for testing)
 export function getEnvVar(
   viteKey: string,
