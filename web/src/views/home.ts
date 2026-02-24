@@ -16,6 +16,8 @@ const BROWSE_CTA_HTML = `
   <section class="section section-card mb-12 browse-cta" aria-labelledby="browse-cta-heading">
     <div class="section-header">
       <h2 id="browse-cta-heading" class="section-title"><span class="accent-text">Browse</span> the Archive</h2>
+    </div>
+    <div class="section-subheader">
       <p class="section-subtitle">Search and filter the complete collection of Murphy's Laws by category, theme, or keyword.</p>
     </div>
     <div class="section-body">
@@ -30,10 +32,14 @@ const BROWSE_CTA_HTML = `
 const HOME_OVERVIEW_HTML = `
   <section class="section section-card mb-12">
     <details class="science-details">
-      <summary class="section-header" style="cursor: pointer; list-style: none;">
-        <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
-        <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.</p>
-        <span class="small text-muted-fg">Click to expand</span>
+      <summary class="science-summary">
+        <div class="section-header">
+          <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
+        </div>
+        <div class="section-subheader">
+          <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.</p>
+          <span class="small text-muted-fg">Click to expand</span>
+        </div>
       </summary>
     <div class="section-body">
       <div class="content-section">
