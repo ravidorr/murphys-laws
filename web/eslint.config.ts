@@ -1,5 +1,8 @@
 // ESLint flat config for a Vite vanilla JS/TS project
 // More: https://eslint.org/docs/latest/use/configure/configuration-files-new
+//
+// Inline styles: Do not use style="..." in HTML templates. This is enforced by
+// html-validate (web/.htmlvalidate.json rule "no-inline-style": "error") on built/output HTML.
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';

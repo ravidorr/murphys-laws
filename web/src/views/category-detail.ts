@@ -90,7 +90,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">No laws found</p>
           <p class="empty-state-text">No laws have been submitted for this category yet. Try adjusting your search filters.</p>
-          <button class="btn" data-nav="submit" style="margin-top: 1rem;">
+          <button class="btn mt-4" data-nav="submit">
             <span class="btn-text">Submit a Murphy's Law</span>
             <span class="icon" data-icon="send" aria-hidden="true"></span>
           </button>
