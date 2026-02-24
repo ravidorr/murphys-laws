@@ -28,8 +28,13 @@
     <input id="submit-author" type="text" placeholder="How should we credit you?" class="form-control">
   </div>
   <div class="form-group">
-    <label for="submit-email" class="form-label">Email address</label>
-    <input id="submit-email" type="email" placeholder="Where should we reply?" class="form-control">
+    <label for="submit-email" class="form-label">Email (optional)</label>
+    <input id="submit-email" type="email" placeholder="Only if you want us to contact you about this submission" class="form-control" aria-describedby="submit-email-helper">
+    <p id="submit-email-helper" class="form-helper text-muted-fg small">Used only to contact you about your submission (e.g. verification). Not published. Leave blank if you stay anonymous.</p>
+  </div>
+  <div class="form-group visually-hidden" aria-hidden="true">
+    <label for="submit-website">Website</label>
+    <input id="submit-website" type="text" name="website" tabindex="-1" autocomplete="off">
   </div>
   <div class="submit-checkbox-group">
     <label class="checkbox-label">

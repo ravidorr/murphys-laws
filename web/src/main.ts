@@ -456,3 +456,34 @@ import { setupAdSense } from './utils/ads.ts';
 
 // Initialize the listener. Ads will only load when a view triggers 'murphys-laws-content-ready'
 setupAdSense();
+
+// User-visible error boundary for unhandled errors (hydration failures, etc.)
+let errorBannerShown = false;
+function showErrorBanner(): void {
+  if (errorBannerShown || !document.body) return;
+  errorBannerShown = true;
+  const banner = document.createElement('div');
+  banner.className = 'error-boundary-banner';
+  banner.setAttribute('role', 'alert');
+  banner.setAttribute('aria-live', 'assertive');
+  banner.innerHTML = `
+    <p class="error-boundary-text">Something went wrong. Try refreshing the page.</p>
+    <a href="${location.pathname}${location.search}" class="btn outline btn-sm">Refresh</a>
+  `;
+  document.body.appendChild(banner);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    if (import.meta.env.PROD && typeof Sentry !== 'undefined') {
+      Sentry.captureException(event.error || new Error(event.message), { extra: { filename: event.filename, lineno: event.lineno } });
+    }
+    showErrorBanner();
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    if (import.meta.env.PROD && typeof Sentry !== 'undefined') {
+      Sentry.captureException(event.reason);
+    }
+    showErrorBanner();
+  });
+}

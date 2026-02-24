@@ -211,6 +211,8 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
         upCount.textContent = String(result.upvotes);
         downCount.textContent = String(result.downvotes);
 
+        showSuccess('Vote recorded.');
+
         const newUserVote = getUserVote(law.id);
         upBtn.classList.toggle('voted', newUserVote === 'up');
         downBtn.classList.toggle('voted', newUserVote === 'down');

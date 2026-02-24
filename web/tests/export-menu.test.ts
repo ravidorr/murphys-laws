@@ -472,7 +472,7 @@ describe('Export Menu Component', () => {
       expect(exportToPDF).not.toHaveBeenCalled();
     });
 
-    it('closes dropdown after selection', () => {
+    it('closes dropdown after selection', async () => {
       const menu = ExportMenu();
       localThis.container!.appendChild(menu);
 
@@ -487,6 +487,8 @@ describe('Export Menu Component', () => {
       expect(dropdown!.hidden).toBe(false);
 
       pdfOption!.click();
+      // handleExport is async (PDF); allow it to complete and close dropdown
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(dropdown!.hidden).toBe(true);
     });

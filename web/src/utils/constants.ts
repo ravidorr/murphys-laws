@@ -17,6 +17,17 @@ export const MATHJAX_MAX_ATTEMPTS = 200; // Maximum attempts to wait for MathJax
 // Site metadata
 export const SITE_NAME = "Murphy's Law Archive";
 
+/** Editorial display-name overrides for category slugs (cleaner titles without changing URLs) */
+export const CATEGORY_DISPLAY_NAME_OVERRIDES: Record<string, string> = {
+  'murphys-cars-4x4-laws': "Murphy's 4x4 & Off-Road Laws",
+  'murphys-helicopters-war-laws': "Murphy's Helicopter & Warfare Laws",
+  'murphys-unformatted-character-sheets-laws': "Murphy's RPG Character Sheet Laws",
+};
+
+export function getCategoryDisplayName(slug: string, apiTitle: string): string {
+  return CATEGORY_DISPLAY_NAME_OVERRIDES[slug] ?? apiTitle;
+}
+
 // Environment variable helper for Vite and Node.js (opts for testing)
 export function getEnvVar(
   viteKey: string,

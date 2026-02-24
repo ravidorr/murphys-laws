@@ -49,6 +49,39 @@ mark {
   min-height: 600px;
 }
 
+/* Noscript fallback (index.html) - no inline styles for html-validate */
+.noscript-fallback {
+  padding: 2rem;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.noscript-fallback ul {
+  list-style: none;
+  padding: 0;
+}
+
+.noscript-fallback li {
+  margin-bottom: 0.5rem;
+}
+
+/* Error boundary banner (main.ts) - no inline styles for html-validate */
+.error-boundary-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 9999;
+  font-size: 0.875rem;
+}
+
 /* Creative Commons license icons */
 .cc-icon {
   max-width: 1em;

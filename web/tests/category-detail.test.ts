@@ -35,7 +35,8 @@ vi.mock('../src/utils/constants.js', () => ({
   SITE_URL: 'https://murphys-laws.com',
   SITE_NAME: "Murphy's Law Archive",
   LAWS_PER_PAGE: 10,
-  getRandomLoadingMessage: () => 'Loading...'
+  getRandomLoadingMessage: () => 'Loading...',
+  getCategoryDisplayName: (_slug: string, apiTitle: string) => apiTitle
 }));
 vi.mock('../src/utils/voting.js', () => ({
   addVotingListeners: vi.fn()

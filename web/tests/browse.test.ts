@@ -27,6 +27,14 @@ describe('Browse view', () => {
   let getUserVoteSpy: ReturnType<typeof vi.fn>;
   let toggleVoteSpy: ReturnType<typeof vi.fn>;
   beforeEach(() => {
+    // Ensure URL state is clean so parseBrowseParams gets page=1, no filters
+    if (typeof location !== 'undefined') {
+      const url = new URL(location.href);
+      url.search = '';
+      url.pathname = '/browse';
+      window.history.replaceState({}, '', url.toString());
+    }
+
     // Mock API responses
     fetchLawsSpy = vi.spyOn(api, 'fetchLaws').mockResolvedValue({
       data: [

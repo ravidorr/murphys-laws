@@ -22,7 +22,8 @@ vi.mock('../src/utils/icons.js', () => ({
   createIcon: vi.fn(() => document.createElement('span'))
 }));
 vi.mock('../src/utils/constants.js', () => ({
-  getRandomLoadingMessage: () => 'Loading...'
+  getRandomLoadingMessage: () => 'Loading...',
+  getCategoryDisplayName: (_slug: string, apiTitle: string) => apiTitle
 }));
 vi.mock('../src/utils/sanitize.js', () => ({
   stripMarkdownFootnotes: vi.fn((text) => text)
