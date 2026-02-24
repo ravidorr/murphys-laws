@@ -113,7 +113,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
           <span class="icon empty-state-icon" data-icon="alertTriangle" aria-hidden="true"></span>
           <p class="empty-state-title">Failed to load categories</p>
           <p class="empty-state-text">Please check your connection and try again.</p>
-          <button class="btn" id="retry-categories" style="margin-top: 1rem;">
+          <button class="btn mt-4" id="retry-categories">
             <span class="btn-text">Try Again</span>
             <span class="icon" data-icon="refresh" aria-hidden="true"></span>
           </button>

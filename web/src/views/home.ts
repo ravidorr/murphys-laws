@@ -78,7 +78,6 @@ const HOME_OVERVIEW_HTML = `
         </ul>
       </div>
     </div>
-    </details>
   </section>
 `;
 
