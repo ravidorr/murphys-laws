@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
 import { truncateTitle } from '../src/utils/seo.ts';
-interface LawAttribution { name: string }
+interface LawAttribution { name?: string; contact_type?: string; contact_value?: string; note?: string }
 interface Law {
   id: number;
   title?: string;
   text?: string;
   attributions?: LawAttribution[];
+  upvotes?: number;
+  downvotes?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -90,17 +92,17 @@ async function fetchAllLaws(): Promise<Law[]> {
   const laws: Law[] = [];
   let offset = 0;
   const limit = 100; // Request up to 100, but API may return fewer
-  
+
   try {
     while (true) {
       const response = await fetch(`${API_BASE_URL}/api/v1/laws?limit=${limit}&offset=${offset}`);
       if (!response.ok) {
         throw new Error(`API returned ${response.status}`);
       }
-      
+
       const data = await response.json();
       laws.push(...data.data);
-      
+
       // Stop if we got no data or have all items
       // Note: API may return fewer items than limit (e.g., max 25 per request)
       if (data.data.length === 0 || laws.length >= data.total) {
@@ -108,7 +110,7 @@ async function fetchAllLaws(): Promise<Law[]> {
       }
       offset += data.data.length; // Use actual count returned, not requested limit
     }
-    
+
     console.log(`Fetched ${laws.length} laws from API.`);
     return laws;
   } catch (error) {
@@ -116,6 +118,59 @@ async function fetchAllLaws(): Promise<Law[]> {
     console.warn(`Warning: Could not fetch laws from API: ${message}`);
     return [];
   }
+}
+
+/**
+ * Fetch first page of laws for SSG pre-render (browse, category)
+ */
+async function fetchFirstPageOfLaws(params: { limit: number; offset?: number; category_id?: number; category_slug?: string }): Promise<{ data: Law[]; total: number }> {
+  const { limit, offset = 0, category_id, category_slug } = params;
+  const searchParams = new URLSearchParams({ limit: String(limit), offset: String(offset), sort: 'score', order: 'desc' });
+  if (category_id !== undefined) searchParams.set('category_id', String(category_id));
+  if (category_slug) searchParams.set('category_slug', category_slug);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/laws?${searchParams.toString()}`);
+    if (!response.ok) throw new Error(`API returned ${response.status}`);
+    const json = await response.json();
+    return { data: json.data ?? [], total: Number.isFinite(json.total) ? json.total : 0 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Warning: Could not fetch first page of laws: ${message}`);
+    return { data: [], total: 0 };
+  }
+}
+
+/**
+ * Render static law cards HTML for SSG (no client JS; same structure as client cards for SEO and no-JS users)
+ */
+function renderStaticLawCards(laws: Law[], baseUrl: string = SITE_URL): string {
+  if (!laws || laws.length === 0) return '';
+  return laws.map((law) => {
+    const safeId = escapeHtml(String(law.id));
+    const title = law.title ? escapeHtml(law.title) : '';
+    const text = escapeHtml(law.text || '');
+    const titleText = title ? `<strong>${title}:</strong> ${text}` : text;
+    const attribution = law.attributions?.[0]?.name
+      ? `- ${escapeHtml(law.attributions[0].name)}`
+      : '';
+    const up = Number.isFinite(law.upvotes) ? law.upvotes : 0;
+    const down = Number.isFinite(law.downvotes) ? law.downvotes : 0;
+    const lawUrl = `${baseUrl}/law/${law.id}`;
+    const ariaLabel = title ? `${title}: ${text}` : text;
+    return `
+    <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
+      <p class="law-card-text">
+        <a href="${lawUrl}">${titleText}</a>
+      </p>
+      ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
+      <div class="law-card-footer">
+        <div class="law-card-footer-left">
+          <span class="vote-count" aria-hidden="true">${up} up</span>
+          <span class="vote-count" aria-hidden="true">${down} down</span>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
 }
 
 /**
@@ -173,7 +228,7 @@ function generateLawPage(law: Law, template: string): string {
   
   const title = law.title || "Murphy's Law";
   const description = (law.text || '').substring(0, 160);
-  const lawUrl = `${SITE_URL}/law/${law.id}/`;
+  const lawUrl = `${SITE_URL}/law/${law.id}`;
   const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
   
   // Update page title
@@ -469,7 +524,15 @@ async function main(): Promise<void> {
     // Inject Content
     // We replace the loading content in <main>
     const descriptionText = generateCategoryDescription(title, law_count);
-    
+
+    // Pre-render first page of laws from API for SEO and no-JS users
+    const CATEGORY_LAWS_PER_PAGE = 25;
+    const { data: categoryLaws } = await fetchFirstPageOfLaws({ limit: CATEGORY_LAWS_PER_PAGE, category_slug: slug });
+    const categoryLawCardsHtml = renderStaticLawCards(categoryLaws);
+    const ssgLawCardsSection = categoryLawCardsHtml
+      ? `<div class="ssg-law-cards mt-8"><h2 class="text-xl font-semibold mb-4">Laws in this category</h2><section class="card-text">${categoryLawCardsHtml}</section></div>`
+      : '';
+
     const staticContent = `
       <div class="container page pt-0">
         <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
@@ -479,6 +542,7 @@ async function main(): Promise<void> {
         <div class="static-content prose mx-auto">
           ${htmlContent}
         </div>
+        ${ssgLawCardsSection}
       </div>
 `;
     
@@ -512,10 +576,17 @@ async function main(): Promise<void> {
   }
   console.log(`Generated ${mdFiles.length} category pages.`);
 
-  // 2. Generate Browse Page (Index of Categories)
+  // 2. Generate Browse Page (first page of laws pre-rendered for SEO and no-JS)
   console.log('Generating browse page...');
   const browseDir = path.join(DIST_DIR, 'browse');
   await fs.mkdir(browseDir, { recursive: true });
+
+  const LAWS_PER_PAGE = 25;
+  const { data: browseLaws, total: browseTotal } = await fetchFirstPageOfLaws({ limit: LAWS_PER_PAGE });
+  const staticLawCardsHtml = renderStaticLawCards(browseLaws);
+  const showCount = browseTotal > 0
+    ? `<p class="text-center text-muted-fg mb-6" aria-live="polite">Showing 1&ndash;${Math.min(LAWS_PER_PAGE, browseTotal)} of ${browseTotal} laws.</p>`
+    : '';
 
   let browseHtml = template;
   browseHtml = browseHtml.replace(/<title>.*?<\/title>/, `<title>Browse All Murphy's Laws - Murphy's Law Archive</title>`);
@@ -530,11 +601,15 @@ async function main(): Promise<void> {
       <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
         Search and filter through our complete collection of Murphy's Laws.
       </p>
+      ${showCount}
+      <section class="card-text" id="browse-laws-list" aria-live="polite">
+        ${staticLawCardsHtml || '<p class="text-muted-fg">No laws available. Enable JavaScript to search and filter.</p>'}
+      </section>
     </div>
 `;
 
   browseHtml = browseHtml.replace(
-    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
+    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
     `<main id="main-content" class="flex-1 container page">${browseContent}</main>`
   );
 

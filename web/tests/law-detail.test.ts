@@ -405,11 +405,12 @@ describe('LawDetail view', () => {
 
     const popover = shareWrapper!.querySelector('.share-popover');
     expect(popover).toBeTruthy();
-    expect(popover!.querySelector('[href*="twitter"]')).toBeTruthy();
+    // Twitter/Email are in top channels; Facebook/LinkedIn etc. in popover
+    expect(shareWrapper!.querySelector('[href*="twitter"]')).toBeTruthy();
     expect(popover!.querySelector('[href*="facebook"]')).toBeTruthy();
     expect(popover!.querySelector('[href*="linkedin"]')).toBeTruthy();
     expect(popover!.querySelector('[href*="reddit"]')).toBeTruthy();
-    expect(popover!.querySelector('[href*="mailto"]')).toBeTruthy();
+    expect(shareWrapper!.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
   it('calls onStructuredData callback when provided', async () => {

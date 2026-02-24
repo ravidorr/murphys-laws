@@ -9,16 +9,32 @@ import { createErrorState } from '../utils/dom.ts';
 import { renderLoadingHTML } from '../components/loading.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
+import { hydrateIcons } from '@utils/icons.ts';
 import type { CleanableElement, OnNavigate, Law } from '../types/app.d.ts';
+
+const BROWSE_CTA_HTML = `
+  <section class="section section-card mb-12 browse-cta" aria-labelledby="browse-cta-heading">
+    <div class="section-header">
+      <h2 id="browse-cta-heading" class="section-title"><span class="accent-text">Browse</span> the Archive</h2>
+      <p class="section-subtitle">Search and filter the complete collection of Murphy's Laws by category, theme, or keyword.</p>
+    </div>
+    <div class="section-body">
+      <a href="/browse" class="btn primary" data-nav="browse">
+        <span class="btn-text">Browse All Laws</span>
+        <span class="icon" data-icon="list" aria-hidden="true"></span>
+      </a>
+    </div>
+  </section>
+`;
 
 const HOME_OVERVIEW_HTML = `
   <section class="section section-card mb-12">
-    <div class="section-header">
-      <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
-    </div>
-    <div class="section-subheader">
-      <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base, this observation revolutionized how we approach safety, engineering, and human error.</p>
-    </div>
+    <details class="science-details">
+      <summary class="section-header" style="cursor: pointer; list-style: none;">
+        <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
+        <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.</p>
+        <span class="small text-muted-fg">Click to expand</span>
+      </summary>
     <div class="section-body">
       <div class="content-section">
         <h3>Why Murphy's Law Still Matters</h3>
@@ -56,6 +72,7 @@ const HOME_OVERVIEW_HTML = `
         </ul>
       </div>
     </div>
+    </details>
   </section>
 `;
 
@@ -68,6 +85,13 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
     const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
     el.appendChild(widget);
   }
+
+  // Elevated Browse CTA
+  const browseWrap = document.createElement('div');
+  browseWrap.innerHTML = BROWSE_CTA_HTML;
+  const browseCta = browseWrap.firstElementChild!;
+  hydrateIcons(browseCta as HTMLElement);
+  el.appendChild(browseCta);
 
   // Add Sod's Law Calculator widget
   const calcWidget = SodCalculatorSimple({ onNavigate });
@@ -120,6 +144,11 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
       .catch(() => {
         el.innerHTML = '';
         const errorEl = createErrorState('Ironically, something went wrong while loading Murphy\'s Laws. Please try again.');
+        const retryBtn = errorEl.querySelector('button.btn.outline');
+        if (retryBtn) {
+          retryBtn.removeAttribute('onclick');
+          retryBtn.setAttribute('data-action', 'retry');
+        }
         el.appendChild(errorEl);
       });
     /* v8 ignore stop */
@@ -131,6 +160,11 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
   el.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
+
+    if (t.closest('[data-action="retry"]')) {
+      fetchAndRender();
+      return;
+    }
 
     const navBtn = t.closest('[data-nav]');
     if (navBtn) {

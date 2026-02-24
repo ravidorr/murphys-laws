@@ -2,6 +2,7 @@
 // Refactored to use generic API request helper (eliminates ~120 lines of duplicate code)
 
 import { apiPost, apiDelete } from './request.ts';
+import { showSuccess } from '../components/notification.ts';
 import type { VoteType, VoteResponse } from '../types/app.d.ts';
 
 const VOTES_KEY = 'murphy_votes';
@@ -133,6 +134,7 @@ export function addVotingListeners(el: HTMLElement): void {
           upBtn?.classList.toggle('voted', newUserVote === 'up');
           downBtn?.classList.toggle('voted', newUserVote === 'down');
         }
+        showSuccess('Vote recorded.');
       } catch {
         // Silently handle voting errors
       }

@@ -2,7 +2,7 @@
 // Refactored to use generic API request helper
 
 import templateHtml from '@views/templates/submit-law-section.html?raw';
-import { showSuccess, showError } from './notification.ts';
+import { showError } from './notification.ts';
 import { fetchAPI } from '../utils/api.ts';
 import { apiPost } from '../utils/request.ts';
 import { hydrateIcons } from '@utils/icons.ts';
@@ -148,6 +148,8 @@ export function SubmitLawSection() {
     messageDiv!.className = `submit-message ${isError ? 'error' : 'success'}`;
     messageDiv!.textContent = message;
     messageDiv!.style.display = 'block';
+    messageDiv!.setAttribute('role', isError ? 'alert' : 'status');
+    messageDiv!.setAttribute('aria-live', isError ? 'assertive' : 'polite');
   }
 
   // Clear message
@@ -190,6 +192,13 @@ export function SubmitLawSection() {
     const email = (el.querySelector('#submit-email') as HTMLInputElement | null)?.value.trim();
     const anonymous = (el.querySelector('#submit-anonymous') as HTMLInputElement | null)?.checked;
     const categoryId = (el.querySelector('#submit-category') as HTMLSelectElement | null)?.value;
+    const honeypot = (el.querySelector('#submit-website') as HTMLInputElement | null)?.value?.trim();
+
+    if (honeypot) {
+      showError('Submission rejected.');
+      setLoading(false);
+      return;
+    }
 
     if (!text) {
       showError('Please enter law text');
@@ -218,7 +227,10 @@ export function SubmitLawSection() {
     try {
       await submitLaw(lawData);
 
-      showSuccess('Thank you! Your law has been submitted successfully and is pending review.');
+      showMessage(
+        'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
+        false
+      );
 
       // Clear form after successful submission (template always has these fields)
       setTimeout(() => {
@@ -229,6 +241,7 @@ export function SubmitLawSection() {
         (el.querySelector('#submit-category') as HTMLSelectElement)!.value = '';
         (el.querySelector('#submit-anonymous') as HTMLInputElement)!.checked = false;
         (el.querySelector('#submit-terms') as HTMLInputElement)!.checked = false;
+        (el.querySelector('#submit-website') as HTMLInputElement)!.value = '';
 
         checkSubmitValidity();
       }, 300);

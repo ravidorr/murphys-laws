@@ -460,6 +460,10 @@
 .count-up .icon { color: var(--success); }
 .count-down .icon { color: var(--error); }
 
+.vote-hint {
+  margin: 0 0 0.25rem;
+}
+
 /* Vote buttons */
 .vote-btn {
   background: none;
@@ -1038,6 +1042,25 @@
   font-size: 0.75rem;
   color: var(--muted-fg);
   margin: 0 0 0.5rem;
+}
+
+.law-card-categories {
+  margin: 0 0 0.5rem;
+}
+
+.law-card-category {
+  display: inline-block;
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--btn-primary-bg) 18%, transparent);
+  color: var(--btn-primary-bg);
+  text-decoration: none;
+  margin-right: 0.25rem;
+}
+
+.law-card-category:hover {
+  background: color-mix(in oklab, var(--btn-primary-bg) 28%, transparent);
 }
 
 .law-card-footer {

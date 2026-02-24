@@ -1,0 +1,3 @@
+# Canonical host: redirect www to non-www (Netlify / Cloudflare Pages)
+# Deploy with this file in the publish root (e.g. dist/) so the host applies it.
+https://www.murphys-laws.com/*  https://murphys-laws.com/:splat  301

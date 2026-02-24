@@ -5,14 +5,17 @@
 <div class="section-body" id="lod-body"></div>
 <div class="section-footer" id="lod-footer">
   <div class="left">
-    <button type="button" class="vote-btn count-up" data-vote="up" aria-label="Upvote this law">
-      <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
-      <span class="count-num">0</span>
-    </button>
-    <button type="button" class="vote-btn count-down" data-vote="down" aria-label="Downvote this law">
-      <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
-      <span class="count-num">0</span>
-    </button>
+    <div class="vote-group" role="group" aria-labelledby="lod-vote-hint">
+      <p id="lod-vote-hint" class="small text-muted-fg vote-hint">Votes are anonymous; no login required.</p>
+      <button type="button" class="vote-btn count-up" data-vote="up" aria-label="Upvote this law" title="Upvote (anonymous)">
+        <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
+        <span class="count-num">0</span>
+      </button>
+      <button type="button" class="vote-btn count-down" data-vote="down" aria-label="Downvote this law" title="Downvote (anonymous)">
+        <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
+        <span class="count-num">0</span>
+      </button>
+    </div>
     <button type="button" class="vote-btn" data-action="favorite" data-law-id="" data-favorite-btn aria-label="Add to favorites" data-tooltip="Add to favorites" hidden>
       <span class="icon" data-icon="heart" aria-hidden="true"></span>
     </button>

@@ -128,7 +128,7 @@ describe('Branch Coverage Tests', () => {
       expect(link).toBeTruthy();
       (link as HTMLElement).click();
 
-      expect(onNavigateMock).toHaveBeenCalledWith('categories');
+      expect(onNavigateMock).toHaveBeenCalledWith('categories', undefined);
     });
 
     it('handles navigation when onNavigate is not provided', () => {

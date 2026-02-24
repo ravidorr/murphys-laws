@@ -37,6 +37,10 @@
         <p class="empty-state-text">The law you're looking for doesn't exist or may have been removed. But don't worry, there are plenty more laws where that came from.</p>
         <p class="not-found-quote">"If anything can go wrong, it will... including this link."</p>
         <div class="not-found-actions">
+          <button type="button" class="btn" data-action="retry-law" aria-label="Try loading this law again">
+            <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+            <span class="btn-text">Try Again</span>
+          </button>
           <a href="/" class="btn outline" data-nav="home">
             <span class="icon" data-icon="home" aria-hidden="true"></span>
             <span class="btn-text">Go Home</span>
@@ -77,6 +81,10 @@
         </button>
       </div>
       <div class="right">
+        <button type="button" class="btn outline" data-action="random-law" aria-label="Open a random law">
+          <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+          <span class="btn-text">Random law</span>
+        </button>
         <button type="button" class="btn" data-nav="browse">
           <span class="icon" data-icon="list" aria-hidden="true"></span>
           <span class="btn-text">Browse All Laws</span>

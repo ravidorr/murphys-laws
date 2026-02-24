@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/browser';
 import templateHtml from '@views/templates/categories.html?raw';
 import { fetchCategories } from '../utils/api.ts';
 import { hydrateIcons } from '@utils/icons.ts';
-import { getRandomLoadingMessage } from '../utils/constants.ts';
+import { getRandomLoadingMessage, getCategoryDisplayName } from '../utils/constants.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
@@ -19,7 +19,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
 
   // Render a single category card
   function renderCategoryCard(category: Category) {
-    const title = stripMarkdownFootnotes(category.title);
+    const title = getCategoryDisplayName(category.slug, stripMarkdownFootnotes(category.title));
     const description = category.description || 'Explore laws in this category.';
     const lawCount = category.law_count || 0;
     const lawText = lawCount === 1 ? 'law' : 'laws';

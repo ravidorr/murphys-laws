@@ -5,6 +5,7 @@ import type { OnNavigate } from '../types/app.d.ts';
 interface BreadcrumbItem {
   label: string;
   nav?: string;
+  param?: string;
   href?: string;
 }
 
@@ -61,6 +62,9 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
       if (item.nav) {
         link.setAttribute('data-nav', item.nav);
       }
+      if (item.param) {
+        link.setAttribute('data-param', item.param);
+      }
       link.textContent = item.label;
       li.appendChild(link);
     }
@@ -81,8 +85,9 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
     if (link) {
       e.preventDefault();
       const navTarget = link.getAttribute('data-nav');
+      const param = link.getAttribute('data-param');
       if (navTarget && onNavigate) {
-        onNavigate(navTarget);
+        onNavigate(navTarget, param ?? undefined);
       }
     }
   });

@@ -11,7 +11,7 @@ import { renderLawCards } from '../utils/law-card-renderer.ts';
 import { initSharePopovers } from '../components/social-share.ts';
 import { renderPagination } from '../utils/pagination.ts';
 import { setJsonLd, setCategoryItemListSchema } from '@modules/structured-data.ts';
-import { SITE_URL, SITE_NAME } from '@utils/constants.ts';
+import { SITE_URL, SITE_NAME, getCategoryDisplayName } from '@utils/constants.ts';
 import { fetchCategories } from '../utils/api.ts'; // To get category title for structured data
 import { triggerAdSense } from '../utils/ads.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
@@ -24,19 +24,37 @@ import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
+function parseCategoryParams(search: string): { page: number; sort: string; order: string } {
+  const params = new URLSearchParams(search);
+  const page = Math.max(1, parseInt(params.get('page') ?? '1', 10) || 1);
+  const sort = params.get('sort') ?? 'score';
+  const order = params.get('order') ?? 'desc';
+  return { page, sort, order };
+}
+
+function buildCategorySearch(page: number, sort: string, order: string): string {
+  const params = new URLSearchParams();
+  if (page > 1) params.set('page', String(page));
+  if (sort && sort !== 'score') params.set('sort', sort);
+  if (order && order !== 'desc') params.set('order', order);
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
 export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string; onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
   el.setAttribute('aria-live', 'polite');
 
-  let currentPage = 1;
+  const initialParams = typeof location !== 'undefined' ? parseCategoryParams(location.search) : { page: 1, sort: 'score', order: 'desc' };
+  let currentPage = initialParams.page;
   let totalLaws = 0;
   let laws: Law[] = [];
   let categoryTitle = 'Category'; // Default title
   let categoryDescription = ''; // Category description
   let currentFilters: SearchFilters = { category_id: categoryId };
-  let currentSort = 'score';
-  let currentOrder = 'desc';
+  let currentSort = initialParams.sort;
+  let currentOrder = initialParams.order;
   let categoryNumericId: number | null = null; // Will be set after fetching category details
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
@@ -91,8 +109,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
     el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
 
-    const loadingPlaceholder = el.querySelector('.loading-placeholder p')!;
-    loadingPlaceholder.textContent = getRandomLoadingMessage();
+    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
+    if (loadingPlaceholder) loadingPlaceholder.textContent = getRandomLoadingMessage();
   }
 
   async function updateDisplay() {
@@ -175,6 +193,11 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       } else {
         clearExportContent();
       }
+
+      if (typeof history !== 'undefined' && history.replaceState) {
+        const search = buildCategorySearch(currentPage, currentSort, currentOrder);
+        history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
+      }
     } catch {
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
@@ -182,6 +205,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
           <span class="icon empty-state-icon" data-icon="error" aria-hidden="true"></span>
           <p class="empty-state-title">Of course something went wrong</p>
           <p class="empty-state-text">Ironically, Murphy's Laws for this category couldn't be loaded right now. Please try again.</p>
+          <button type="button" class="btn" data-action="retry">
+            <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+            <span class="btn-text">Try Again</span>
+          </button>
         </div>
       `;
       hydrateIcons(cardText);
@@ -202,7 +229,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       }
 
       if (category) {
-        categoryTitle = stripMarkdownFootnotes(category.title);
+        categoryTitle = getCategoryDisplayName(category.slug, stripMarkdownFootnotes(category.title));
         categoryDescription = category.description || '';
         categoryNumericId = category.id;
 
@@ -292,6 +319,11 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
 
+    if (t.closest('[data-action="retry"]')) {
+      loadPage(currentPage);
+      return;
+    }
+
     // Handle copy text/link actions (shared utility) - sync guard, async clipboard
     if (t.closest('[data-action="copy-text"]') || t.closest('[data-action="copy-link"]')) {
       void handleCopyAction(e, t);
@@ -326,18 +358,24 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   // Initial render and load
   render();
   fetchCategoryDetails().then(() => {
-    loadPage(1); // Load laws after category details are fetched
+    loadPage(currentPage); // Load laws after category details are fetched (page from URL)
   });
 
   // Add voting listeners using shared utility
   addVotingListeners(el);
 
-  const sortSelect = el.querySelector('#sort-select')!;
-  sortSelect.addEventListener('change', (e) => {
+  const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+  const sortValue = `${currentSort}-${currentOrder}`;
+  if (sortSelect && sortValue) {
+    const option = sortSelect.querySelector(`option[value="${sortValue}"]`);
+    if (option) (option as HTMLOptionElement).selected = true;
+  }
+  sortSelect?.addEventListener('change', (e) => {
     const value = (e.target as HTMLSelectElement).value;
     const [sort, order] = value.split('-');
     currentSort = sort ?? '';
     currentOrder = order ?? '';
+    currentPage = 1;
     loadPage(1);
   });
 

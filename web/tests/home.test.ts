@@ -498,11 +498,7 @@ describe('renderHome function', () => {
     const header = sectionCard!.querySelector('.section-header');
     expect(header).toBeTruthy();
     expect(header!.querySelector('.section-title')).toBeTruthy();
-    expect(header!.querySelector('p')).toBeNull();
-
-    const subheader = sectionCard!.querySelector('.section-subheader');
-    expect(subheader).toBeTruthy();
-    const subtitle = subheader!.querySelector('.section-subtitle');
+    const subtitle = sectionCard!.querySelector('.section-subtitle');
     expect(subtitle).toBeTruthy();
     expect(subtitle!.textContent).toMatch(/Anything that can go wrong, will go wrong/);
   });

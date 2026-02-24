@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- QA teardown: SSG pre-render first page of laws on Browse and Category detail pages; retry buttons on all error states (browse, category, home, law-detail); noscript fallback in index.html; URL-addressable filters and pagination on browse and category; share popover (top channels visible, rest in popover); random law navigation on law detail; category tag chips and deep links on cards and law detail; category display-name overrides for editorial consistency; submission flow improvements (email help text, honeypot, success copy); origin story tl;dr and source notes; user-visible error boundary and Sentry context for unhandled errors; lazy-load jsPDF for PDF export
 - Pre-commit: run backend tests with coverage (same as CI) so coverage threshold failures are caught locally
 - Backend: SpaController and HtmlInjectionService tests; http-helpers and html-injection branch coverage tests to meet 95% threshold
 - Server-side HTML injection for /law/:id and /category/:slug (AdSense first-paint content): HtmlInjectionService, SpaController, getCategoryBySlug; nginx proxies those paths to backend; initial response includes law/category title and description in main, with title and meta description in head
@@ -27,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: PWA install prompt no longer throws SecurityError in insecure contexts; guard localStorage getItem/setItem in try/catch (HTTP, file://, cross-origin iframes)
 
 ### Changed
+- Trailing slash: standardize to no trailing slash (SSG, router, law URLs); router normalizes URL on load; www to non-www redirect in _redirects; bump web to 3.1.0
+- Home: declutter (Browse CTA elevated, Science section in collapsible details); voting tooltips and "anonymous, no login" copy; form errors and success use ARIA live regions
 - Home: remove hero section (h1 + tagline) from SPA and SSG; bump web to 3.0.21
 - Articles: refreshed long-form copy and titles – "Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)" and "Project Management vs. The Universe: A Survival Guide"; home links and view meta updated; bump root to 2.0.23, web to 3.0.20
 - Comment style in browse and category-detail: use hyphen instead of em-dash

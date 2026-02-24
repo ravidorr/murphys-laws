@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-web",
-  "version": "3.0.21",
+  "version": "3.1.0",
   "description": "Murphy's Laws Web Application",
   "type": "module",
   "scripts": {
@@ -19,7 +19,7 @@
     "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"styles/**/*.css\"",
     "lint:css:fix": "stylelint \"styles/**/*.css\" --fix",
-    "lint:html": "html-validate \"**/*.html\"",
+    "lint:html": "html-validate \"index.html\" \"src/**/*.html\" \"e2e/**/*.html\"",
     "optimize:images": "tsx scripts/optimize-images.ts",
     "optimize:images:dry-run": "tsx scripts/optimize-images.ts --dry-run"
   },

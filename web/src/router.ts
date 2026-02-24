@@ -79,8 +79,22 @@ export function __injectCleanupForTesting(value: unknown): void {
   currentCleanup.push(value as () => void);
 }
 
+/**
+ * Normalize pathname: no trailing slash except for "/"
+ */
+function normalizeTrailingSlash(): void {
+  const path = location.pathname;
+  if (path.length > 1 && path.endsWith('/')) {
+    const normalized = path.slice(0, -1) + location.search + location.hash;
+    history.replaceState(history.state, '', normalized);
+  }
+}
+
 export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn | null = null): void {
+  normalizeTrailingSlash();
+
   function render() {
+    normalizeTrailingSlash();
     // Call cleanup functions from previous render
     currentCleanup.forEach(fn => {
       if (typeof fn === 'function') {

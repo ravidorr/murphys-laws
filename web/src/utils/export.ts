@@ -21,7 +21,6 @@
  */
 
 import * as Sentry from '@sentry/browser';
-import { jsPDF } from 'jspdf';
 import { SITE_NAME, SITE_URL } from './constants.ts';
 import { ContentType } from './export-context.ts';
 import type { ExportContent } from './export-context.ts';
@@ -80,7 +79,8 @@ export function generateFilename(title: string, extension: string): string {
  * @param {Object} content - Export content from context
  * @param {string} [filename] - Optional filename (auto-generated if not provided)
  */
-export function exportToPDF(content: ExportContent, filename?: string): void {
+export async function exportToPDF(content: ExportContent, filename?: string): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const { type, title, data } = content;
 
@@ -400,10 +400,10 @@ export function exportToText(content: ExportContent, filename?: string): void {
  * @param {string} format - Format identifier ('pdf', 'csv', 'md', 'txt')
  * @param {string} [filename] - Optional filename
  */
-export function exportContent(content: ExportContent, format: string, filename?: string): void {
+export async function exportContent(content: ExportContent, format: string, filename?: string): Promise<void> {
   switch (format) {
     case 'pdf':
-      exportToPDF(content, filename);
+      await exportToPDF(content, filename);
       break;
     case 'csv':
       exportToCSV(content, filename);

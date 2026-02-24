@@ -1,5 +1,5 @@
 import templateHtml from '@views/templates/law-detail.html?raw';
-import { fetchLaw, fetchRelatedLaws as fetchRelatedLawsAPI } from '../utils/api.ts';
+import { fetchLaw, fetchLaws, fetchRelatedLaws as fetchRelatedLawsAPI } from '../utils/api.ts';
 import { renderAttributionsList } from '../utils/attribution.ts';
 import { escapeHtml } from '../utils/sanitize.ts';
 import { toggleVote, getUserVote } from '../utils/voting.ts';
@@ -183,7 +183,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     }
 
     // Update meta tags for social sharing
-    const lawUrl = `${window.location.origin}/law/${law.id}/`;
+    const lawUrl = `${window.location.origin}/law/${law.id}`;
     const lawTitle = law.title || 'Murphy\'s Law';
     const lawText = law.text || '';
     const ogImageUrl = `${window.location.origin}/api/v1/og/law/${law.id}.png`;
@@ -202,14 +202,18 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       data: law
     });
 
-    // Render breadcrumb navigation
+    // Render breadcrumb navigation (include category when present)
     const breadcrumbContainer = el.querySelector('#law-breadcrumb');
     if (breadcrumbContainer) {
+      const items: { label: string; nav?: string; param?: string; href?: string }[] = [
+        { label: 'Browse', nav: 'browse', href: '/browse' }
+      ];
+      if (law.category_slug && law.category_name) {
+        items.push({ label: law.category_name, nav: 'category', param: law.category_slug, href: `/category/${law.category_slug}` });
+      }
+      items.push({ label: lawTitle });
       const breadcrumb = Breadcrumb({
-        items: [
-          { label: 'Browse', nav: 'browse', href: '/browse' },
-          { label: lawTitle }
-        ],
+        items,
         onNavigate
       });
       if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
@@ -306,6 +310,49 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   el.addEventListener('click', async (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
+
+    if (t.closest('[data-action="retry-law"]')) {
+      if (!lawId) return;
+      showLoading();
+      el.setAttribute('aria-busy', 'true');
+      fetchLaw(lawId)
+        .then((data) => {
+          el.setAttribute('aria-busy', 'false');
+          renderLaw(data);
+        })
+        .catch(() => {
+          el.setAttribute('aria-busy', 'false');
+          showNotFound();
+          clearExportContent();
+        });
+      return;
+    }
+
+    if (t.closest('[data-action="random-law"]')) {
+      e.preventDefault();
+      fetchLaws({ limit: 1, offset: 0 })
+        .then((res) => {
+          const total = res?.total ?? 0;
+          if (total <= 0) {
+            onNavigate('browse');
+            return;
+          }
+          const offset = Math.min(Math.floor(Math.random() * total), Math.max(0, total - 1));
+          return fetchLaws({ limit: 1, offset });
+        })
+        .then((res) => {
+          const law = res?.data?.[0];
+          if (law?.id) {
+            onNavigate('law', String(law.id));
+          } else {
+            onNavigate('browse');
+          }
+        })
+        .catch(() => {
+          onNavigate('browse');
+        });
+      return;
+    }
 
     // Handle copy text action (both old and new button formats)
     const copyTextBtn = t.closest('[data-action="copy-text"]');

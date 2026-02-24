@@ -95,6 +95,10 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     })
     : '';
 
+  const categoryChip = law.category_slug && law.category_name
+    ? `<a href="/category/${escapeHtml(law.category_slug)}" class="law-card-category" data-nav="category" data-param="${escapeHtml(law.category_slug)}">${escapeHtml(law.category_name)}</a>`
+    : '';
+
   // Return HTML string with keyboard accessibility (WCAG 2.1.1)
   return `
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
@@ -103,6 +107,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
         ${titleText}
       </p>
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
+      ${categoryChip ? `<div class="law-card-categories">${categoryChip}</div>` : ''}
       <div class="law-card-footer">
         <div class="law-card-footer-left">
           ${renderButtonHTML({
@@ -114,6 +119,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     lawId: safeId,
     className: userVote === 'up' ? 'voted' : null,
     ariaLabel: 'Upvote this law',
+    tooltip: 'Upvote (anonymous; no login)',
   })}
           ${renderButtonHTML({
     variant: 'vote',
@@ -124,6 +130,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     lawId: safeId,
     className: userVote === 'down' ? 'voted' : null,
     ariaLabel: 'Downvote this law',
+    tooltip: 'Downvote (anonymous; no login)',
   })}
           ${favoriteButtonHtml}
         </div>

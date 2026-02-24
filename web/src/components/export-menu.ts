@@ -147,7 +147,7 @@ export function ExportMenu(): HTMLDivElement {
    * Handle format selection
    * @param {string} format - Format identifier
    */
-  function handleExport(format: string) {
+  async function handleExport(format: string) {
     const content = getExportContent();
     if (!content) {
       return;
@@ -157,7 +157,7 @@ export function ExportMenu(): HTMLDivElement {
 
     switch (format) {
       case 'pdf':
-        exportToPDF(content, filename);
+        await exportToPDF(content, filename);
         break;
       case 'csv':
         exportToCSV(content, filename);

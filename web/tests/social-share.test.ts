@@ -51,16 +51,17 @@ describe('SocialShare component', () => {
     expect(popover).toBeTruthy();
     expect(popover.getAttribute('role')).toBe('menu');
     
-    // Should have 6 social links + 2 copy buttons = 8 items
+    // Popover: 4 social (Facebook, LinkedIn, Reddit, WhatsApp) + 1 copy text = 5 items
     const items = popover.querySelectorAll('.share-popover-item');
-    expect(items.length).toBe(8);
+    expect(items.length).toBe(5);
   });
 
   it('uses default values when no options provided', () => {
     document.title = 'Test Page Title';
     const el = SocialShare();
 
-    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
+    const twitterLink = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+    expect(twitterLink).toBeTruthy();
     expect(twitterLink.href).toContain(encodeURIComponent('https://test.com/page'));
     expect(twitterLink.href).toContain(encodeURIComponent('Test Page Title'));
   });
@@ -68,14 +69,16 @@ describe('SocialShare component', () => {
   it('uses provided url instead of window.location.href', () => {
     const el = SocialShare({ url: 'https://custom.com/law/123' });
 
-    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
+    const twitterLink = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+    expect(twitterLink).toBeTruthy();
     expect(twitterLink.href).toContain(encodeURIComponent('https://custom.com/law/123'));
   });
 
   it('uses provided title instead of document.title', () => {
     const el = SocialShare({ title: 'Custom Law Title' });
 
-    const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
+    const twitterLink = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+    expect(twitterLink).toBeTruthy();
     expect(twitterLink.href).toContain(encodeURIComponent('Custom Law Title'));
   });
 
@@ -93,9 +96,8 @@ describe('SocialShare component', () => {
   describe('Twitter button', () => {
     it('creates Twitter share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
-
-      expect(link.getAttribute('role')).toBe('menuitem');
+      const link = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
       expect(link.getAttribute('target')).toBe('_blank');
       expect(link.href).toContain('twitter.com/intent/tweet');
@@ -177,9 +179,8 @@ describe('SocialShare component', () => {
   describe('Email button', () => {
     it('creates Email share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
-
-      expect(link.getAttribute('role')).toBe('menuitem');
+      const link = el.querySelector('a[href*="mailto"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
       expect(link.href).toContain('mailto:');
     });
 
@@ -188,8 +189,8 @@ describe('SocialShare component', () => {
         url: 'https://test.com/law/123',
         title: 'Murphy\'s Original Law'
       });
-      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
-
+      const link = el.querySelector('a[href*="mailto"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
       expect(link.href).toContain('subject=');
       expect(link.href).toContain(encodeURIComponent('Check out this Murphy\'s Law'));
       expect(link.href).toContain('body=');
@@ -199,10 +200,10 @@ describe('SocialShare component', () => {
 
     it('uses _self target for email link', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
-
-      expect(link.getAttribute('target')).toBe('_self');
-      // Email should not have rel="noopener noreferrer"
+      const link = el.querySelector('a[href*="mailto"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
+      // Top-channel email link: no target or _self; no rel (mailto opens in client)
+      expect(link.getAttribute('target')).toBeFalsy();
       expect(link.getAttribute('rel')).toBeNull();
     });
   });
@@ -219,25 +220,25 @@ describe('SocialShare component', () => {
     it('includes icon circles for each platform in popover', () => {
       const el = SocialShare();
       const iconCircles = el.querySelectorAll('.icon-circle');
-      
-      // 6 social platforms + 2 copy buttons = 8 icon circles
-      expect(iconCircles.length).toBe(8);
+
+      // Popover: 4 social (Facebook, LinkedIn, Reddit, WhatsApp) + 1 copy text = 5 icon circles
+      expect(iconCircles.length).toBe(5);
     });
 
     it('handles missing icon gracefully', () => {
-      // Mock createIcon to return null for one icon
+      // Mock createIcon to return null for one icon (use a popover platform, e.g. facebook)
       const createIconSpy = vi.spyOn(icons, 'createIcon');
       createIconSpy.mockImplementation((name) => {
-        if (name === 'twitter') return null;
+        if (name === 'facebook') return null;
         return document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       });
 
       const el = SocialShare();
-      const twitterItem = el.querySelector('.icon-circle.twitter');
+      const facebookItem = el.querySelector('.icon-circle.facebook');
 
       // Icon circle should still exist, just without SVG inside
-      expect(twitterItem).toBeTruthy();
-      expect(twitterItem!.querySelector('svg')).toBeFalsy();
+      expect(facebookItem).toBeTruthy();
+      expect(facebookItem!.querySelector('svg')).toBeFalsy();
     });
   });
 
@@ -266,7 +267,6 @@ describe('SocialShare component', () => {
       const el = SocialShare({ url: 'https://test.com/law/123', lawId: '123' });
       const button = el.querySelector('[data-action="copy-link"]') as HTMLButtonElement | null;
       expect(button).toBeTruthy();
-      expect(button!.getAttribute('role')).toBe('menuitem');
       expect(button!.getAttribute('data-action')).toBe('copy-link');
       expect(button!.getAttribute('data-copy-value')).toBe('https://test.com/law/123');
       expect(button!.getAttribute('data-law-id')).toBe('123');
@@ -481,7 +481,8 @@ describe('SocialShare component', () => {
         title: 'Law with & and = chars'
       });
 
-      const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
+      const twitterLink = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+      expect(twitterLink).toBeTruthy();
       expect(twitterLink.href).toContain(encodeURIComponent('https://test.com/law?id=123&sort=votes'));
     });
 
@@ -491,7 +492,8 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law: "Everything fails"'
       });
 
-      const twitterLink = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
+      const twitterLink = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+      expect(twitterLink).toBeTruthy();
       // Check that special characters are present (browser may encode ' as %27)
       expect(twitterLink.href).toContain('Murphy');
       expect(twitterLink.href).toContain('Law');
@@ -518,7 +520,8 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
+      const link = el.querySelector('a[href*="twitter"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
       expect(link.href).toContain('https://twitter.com/intent/tweet?url=');
       expect(link.href).toContain(encodeURIComponent('https://murphys-laws.com/law/42'));
       expect(link.href).toContain('&text=');
@@ -583,7 +586,8 @@ describe('SocialShare component', () => {
         title: 'Murphy\'s Law'
       });
 
-      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
+      const link = el.querySelector('a[href*="mailto"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
       expect(link.href).toContain('mailto:?subject=');
       expect(link.href).toContain('&body=');
     });
@@ -797,9 +801,9 @@ describe('initSharePopovers', () => {
     trigger.click(); // Open popover
     expect(popover.classList.contains('open')).toBe(true);
 
-    // Click a social link
-    const twitterLink = localThis.container.querySelector('.share-popover-item[href*="twitter"]') as HTMLAnchorElement;
-    twitterLink.click();
+    // Click a social link that is in the popover (Facebook; Twitter/Email are now top channels)
+    const facebookLink = localThis.container.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
+    facebookLink.click();
 
     // Wait for setTimeout to close popover
     vi.advanceTimersByTime(150);
