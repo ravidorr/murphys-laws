@@ -73,7 +73,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">Murphy spared these results</p>
           <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
-          <button class="btn" data-nav="submit" style="margin-top: 1rem;">
+          <button class="btn mt-4" data-nav="submit">
             <span class="btn-text">Submit a Law</span>
             <span class="icon" data-icon="send" aria-hidden="true"></span>
           </button>
