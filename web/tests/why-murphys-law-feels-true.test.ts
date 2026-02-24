@@ -30,6 +30,16 @@ describe('WhyMurphysLawFeelsTrue view', () => {
     expect(el.innerHTML).toContain('Universe');
   });
 
+  it('L54 B1: navTarget truthy calls onNavigate', () => {
+    const onNavigate = vi.fn();
+    const el = WhyMurphysLawFeelsTrue({ onNavigate });
+    const navBtn = document.createElement('a');
+    navBtn.setAttribute('data-nav', 'about');
+    el.appendChild(navBtn);
+    navBtn.click();
+    expect(onNavigate).toHaveBeenCalledWith('about');
+  });
+
   it('handles navigation click with data-nav attribute', () => {
     const onNavigate = vi.fn();
     const el = WhyMurphysLawFeelsTrue({ onNavigate });

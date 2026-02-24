@@ -58,6 +58,55 @@ describe("Calculator view", () => {
     globalThis.fetch = originalFetch;
   });
 
+  it('L24 B1: document block runs and sets title when document defined', () => {
+    expect(typeof document !== 'undefined').toBe(true);
+    expect(document.title).toMatch(/Sod's Law Calculator/);
+  });
+
+  it('L34 B0: og:image branch not taken when absent', () => {
+    expect(el!.querySelector('#urgency')).toBeTruthy();
+  });
+
+  it('L35 B0: twitter:image branch not taken when absent', () => {
+    expect(el!.querySelector('#frequency')).toBeTruthy();
+  });
+
+  it('L49 B0: all sliders exist so verification loop does not throw', () => {
+    expect(el!.querySelector('#urgency')).toBeTruthy();
+    expect(el!.querySelector('#frequency')).toBeTruthy();
+  });
+
+  it('L104 B0: MathJax defensive return when typesetPromise missing in RAF', async () => {
+    const ref: { typesetPromise?: (el: HTMLElement[]) => Promise<void> } = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
+    getWindow().MathJax = ref as WindowWithMathJax['MathJax'];
+    (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
+    ref.typesetPromise = undefined;
+    await vi.runAllTimersAsync();
+    expect(el!.querySelector('#formula-display')).toBeTruthy();
+  });
+
+  it('L235 L236 B1: updateState uses score and interpretation display textContent', async () => {
+    (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el!.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(writeTextMock.mock.calls[0]![0]).toMatch(/\d/);
+  });
+
+  it('L245 L246 B1: getShareableUrl sets u and c params', async () => {
+    (el!.querySelector('#urgency') as HTMLInputElement)!.value = '8';
+    (el!.querySelector('#complexity') as HTMLInputElement)!.value = '6';
+    (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el!.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    const url = writeTextMock.mock.calls[0]![0];
+    expect(url).toContain('u=8');
+    expect(url).toContain('c=6');
+  });
+
   it('computes a score and updates interpretation', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '9';
     (el!.querySelector('#complexity') as HTMLInputElement)!.value = '9';

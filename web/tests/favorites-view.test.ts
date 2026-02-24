@@ -255,6 +255,57 @@ describe('Favorites View Component', () => {
       expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('browse', undefined);
     });
 
+    it('L243 B1: favorite button with data-law-id calls handleUnfavorite', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      vi.mocked(renderLawCards).mockReturnValue(
+        `<article class="law-card-mini" data-law-id="123"><button data-action="favorite" data-law-id="123">Fav</button></article>`
+      );
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      el.querySelector('[data-action="favorite"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(removeFavorite).toHaveBeenCalledWith('123');
+    });
+
+    it('L253 B1: law card click with data-law-id navigates to law', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const lawCard = el.querySelector('.law-card-mini') as HTMLElement;
+      lawCard.click();
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+    });
+
+    it('L261 B1: nav link with data-nav triggers onNavigate', () => {
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      (el.querySelector('[data-nav="browse"]') as HTMLElement).click();
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('browse', undefined);
+    });
+
+    it('L265 B1: nav link with data-param passes param to onNavigate', () => {
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      (el.querySelector('[data-param="murphys-computer-laws"]') as HTMLElement).click();
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+    });
+
+    it('L273 B1: keydown on law card with lawId calls onNavigate', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      el.querySelector('.law-card-mini')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+    });
+
+    it('L279 B1: keydown Enter on law card not on button enters branch', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      el.querySelector('.law-card-mini')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+    });
+
+    it('L283 B1: keydown handler uses lawId when present', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      el.querySelector('.law-card-mini')!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+    });
+
     it('navigates to category with param when category link is clicked', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       const categoryLink = el.querySelector('[data-param="murphys-computer-laws"]') as HTMLElement | null;

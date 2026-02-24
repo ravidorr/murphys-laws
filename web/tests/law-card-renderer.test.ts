@@ -173,6 +173,24 @@ describe('law-card-renderer', () => {
       expect(html).not.toContain('favorited');
       expect(html).toContain('Add to favorites');
     });
+
+    it('renders category chip when law has category_slug and category_name (L98 L110)', () => {
+      const law = {
+        id: 1,
+        title: 'Test',
+        text: 'Text',
+        upvotes: 0,
+        downvotes: 0,
+        category_slug: 'tech-laws',
+        category_name: 'Technology'
+      };
+      const html = renderLawCard(law);
+      expect(html).toContain('law-card-category');
+      expect(html).toContain('data-nav="category"');
+      expect(html).toContain('data-param="tech-laws"');
+      expect(html).toContain('Technology');
+      expect(html).toContain('/category/tech-laws');
+    });
   });
 
   describe('renderLawCards', () => {

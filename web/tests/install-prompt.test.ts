@@ -347,6 +347,15 @@ describe('Install Prompt Component', () => {
       expect(document.querySelector('.install-prompt')).toBeTruthy();
     });
 
+    it('L359 B0 L378 B0: iOS prompt click on HTMLElement without data-action dismiss does not call dismissPrompt', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      showIOSInstallInstructions();
+      const content = document.querySelector('.install-prompt-text') as HTMLElement | null;
+      expect(content).toBeTruthy();
+      content!.click();
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
     it('clicking iOS prompt dismiss button calls dismissPrompt (L277 L283)', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
@@ -646,6 +655,20 @@ describe('Install Prompt Component', () => {
       expect(localThis.mockPromptEvent.prompt).toHaveBeenCalled();
     });
 
+    it('L281 B0: click on Install button does not enter dismiss branch', async () => {
+      const mockPrompt = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(mockPrompt as unknown as DeferredPrompt);
+      showInstallPrompt();
+      const installBtn = document.querySelector('.install-prompt [data-action="install"]') as HTMLElement | null;
+      installBtn!.click();
+      await new Promise(r => setTimeout(r, 10));
+      expect(mockPrompt.prompt).toHaveBeenCalled();
+    });
+
     it('dismisses prompt when Not now button is clicked', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
@@ -765,6 +788,41 @@ describe('Install Prompt Component', () => {
       trackCalculatorUse();
 
       expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
+    it('L230 B0: shouldShow true but no deferredPrompt skips showInstallPrompt', () => {
+      _setDeferredPromptForTesting(null);
+      _setEngagementForTesting({
+        pageViews: 0,
+        lawsViewed: 0,
+        timeOnSite: 0,
+        calculatorUsed: true,
+        startTime: Date.now()
+      });
+      trackCalculatorUse();
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('L232 B1: shouldShow true and iOS Safari shows iOS install instructions', () => {
+      const origUA = navigator.userAgent;
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
+        configurable: true
+      });
+      _setDeferredPromptForTesting(null);
+      _setEngagementForTesting({
+        pageViews: 0,
+        lawsViewed: 0,
+        timeOnSite: 0,
+        calculatorUsed: true,
+        startTime: Date.now()
+      });
+      try {
+        trackCalculatorUse();
+        expect(document.querySelector('.install-prompt.install-prompt-ios')).toBeTruthy();
+      } finally {
+        Object.defineProperty(navigator, 'userAgent', { value: origUA, configurable: true });
+      }
     });
 
     it('respects 7-day cooldown after dismissal', () => {

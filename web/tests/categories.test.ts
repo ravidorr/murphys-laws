@@ -136,6 +136,15 @@ describe('Categories view', () => {
     expect(cards[2]!.textContent).toContain("Murphy's Love Laws");
   });
 
+  it('L139 B1: click on category card triggers onNavigate with slug', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
+    expect(card).toBeTruthy();
+    (card as HTMLElement)!.click();
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+  });
+
   it('navigates to category on card click', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -145,6 +154,24 @@ describe('Categories view', () => {
     
     (card as HTMLElement)!.click();
     expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+  });
+
+  it('L149 B1: keydown on category card enters card branch', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const card = el.querySelector('.category-card[data-category-slug="murphys-love-laws"]');
+    expect(card).toBeTruthy();
+    card!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-love-laws');
+  });
+
+  it('L154 B1: keydown on card with slug calls onNavigate', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const card = el.querySelector('.category-card[data-category-slug="murphys-alarm-clock-laws"]');
+    expect(card).toBeTruthy();
+    card!.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-alarm-clock-laws');
   });
 
   it('navigates to category on Enter key press', async () => {

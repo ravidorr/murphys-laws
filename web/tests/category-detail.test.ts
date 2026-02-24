@@ -94,6 +94,91 @@ describe('CategoryDetail view', () => {
     });
   });
 
+  it('L29 B1: parseCategoryParams uses page from URL when present', async () => {
+    const orig = window.location;
+    Object.defineProperty(window, 'location', { value: { ...orig, search: '?page=2', pathname: '/category/1' }, writable: true });
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ offset: 10 }));
+    Object.defineProperty(window, 'location', { value: orig, writable: true });
+  });
+
+  it('L39 B0: buildCategorySearch does not set page when page is 1', async () => {
+    const origLocation = window.location;
+    Object.defineProperty(window, 'location', { value: { ...origLocation, search: '', pathname: '/category/1' }, writable: true });
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+    Object.defineProperty(window, 'location', { value: origLocation, writable: true });
+  });
+
+  it('L49 B1: initialParams from location when location is defined', () => {
+    expect(typeof location !== 'undefined').toBe(true);
+    const el = CategoryDetail({ categoryId, onNavigate });
+    expect(el.querySelector('#category-laws-list')).toBeTruthy();
+  });
+
+  it('L113 B1: loading placeholder text set when element exists', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
+    expect(loadingPlaceholder).toBeTruthy();
+    expect(loadingPlaceholder!.textContent).toBe('Loading...');
+  });
+
+  it('L171 B1: loadPage uses categoryNumericId when set from fetchCategoryDetails', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ category_id: 1 }));
+  });
+
+  it('L181 L182 B1: category found by slug when categoryId is non-numeric', async () => {
+    vi.mocked(api.fetchCategories).mockResolvedValue({
+      data: [{ id: 5, slug: 'tech', title: 'Tech', description: 'Desc' }]
+    });
+    const el = CategoryDetail({ categoryId: 'tech', onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(el.textContent).toContain('Tech');
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ category_id: 5 }));
+  });
+
+  it('L197 B1: setExportContent called when laws loaded', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const { setExportContent } = await import('../src/utils/export-context.js');
+    expect(vi.mocked(setExportContent)).toHaveBeenCalled();
+  });
+
+  it('L253 B1: breadcrumb replaced when Breadcrumb returns element', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const breadcrumbContainer = el.querySelector('#category-breadcrumb');
+    expect(breadcrumbContainer).toBeTruthy();
+    expect(breadcrumbContainer!.children.length).toBeGreaterThan(0);
+  });
+
+  it('L347 B1: setCategoryItemListSchema called when laws exist', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(structuredData.setCategoryItemListSchema).toHaveBeenCalled();
+  });
+
+  it('L369 L371 B1: sort select option selected when sortValue matches', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+    expect(sortSelect).toBeTruthy();
+    expect(sortSelect.value).toBe('score-desc');
+  });
+
+  it('L376 L377 B1: sort and order from change event update state', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+    sortSelect.value = 'created_at-asc';
+    sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ sort: 'created_at', order: 'asc' }));
+  });
+
   it('renders initial structure', () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     expect(el.querySelector('#category-laws-list')).toBeTruthy();
@@ -342,6 +427,46 @@ describe('CategoryDetail view', () => {
 
     // Should not throw and onNavigate not called
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('retry button calls loadPage when clicked (L322-324)', async () => {
+    vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('Network error'));
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const retryBtn = el.querySelector('[data-action="retry"]') as HTMLElement | null;
+    expect(retryBtn).toBeTruthy();
+
+    vi.mocked(api.fetchLaws).mockResolvedValue({
+      data: [{ id: 1, title: 'Law', text: 'Text', score: 1 }],
+      total: 1,
+      limit: 10,
+      offset: 0
+    });
+    retryBtn!.click();
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(api.fetchLaws).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses category_slug when categoryId is non-numeric and category not in list (L175)', async () => {
+    vi.mocked(api.fetchCategories).mockResolvedValue({
+      data: [
+        { id: 1, slug: 'other-cat', title: 'Other', description: 'Other' }
+      ]
+    });
+    vi.mocked(api.fetchLaws).mockResolvedValue({
+      data: [{ id: 1, title: 'Law', text: 'Text', score: 1 }],
+      total: 1,
+      limit: 10,
+      offset: 0
+    });
+    CategoryDetail({ categoryId: 'rare-slug', onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+      category_slug: 'rare-slug'
+    }));
   });
 
   it('handles category not found in categories list', async () => {

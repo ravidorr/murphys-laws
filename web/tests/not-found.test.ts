@@ -67,6 +67,15 @@ describe('NotFound view', () => {
     expect(onNavigate).toHaveBeenCalledWith('category', expect.any(String));
   });
 
+  it('L30 B1: navTarget truthy so onNavigate called with param', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+    const categoryBtn = el.querySelector('[data-nav="category"]') as HTMLElement;
+    expect(categoryBtn).toBeTruthy();
+    categoryBtn.click();
+    expect(onNavigate).toHaveBeenCalledWith('category', expect.any(String));
+  });
+
   it('click on element with data-nav calls onNavigate with navTarget (L30)', () => {
     const onNavigate = vi.fn();
     el = NotFound({ onNavigate });

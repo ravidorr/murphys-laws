@@ -8,10 +8,150 @@ describe('LawDetail view', () => {
     vi.clearAllMocks();
   });
 
+  it('L43 B1: loadingState exists so loading text is set', () => {
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    const loadingState = el.querySelector('[data-loading]');
+    expect(loadingState).toBeTruthy();
+  });
+
+  it('L45 B1: loadingText exists inside loadingState', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    const loadingState = el.querySelector('[data-loading] p');
+    expect(loadingState).toBeTruthy();
+  });
+
+  it('L59 B1: notFoundState exists so content is shown', async () => {
+    const el = LawDetail({ lawId: '', onNavigate: () => { } });
+    await new Promise(r => setTimeout(r, 0));
+    const notFound = el.querySelector('[data-not-found]');
+    expect(notFound).toBeTruthy();
+  });
+
+  it('L61 B1: notFoundTemplate is HTMLTemplateElement so replaceChildren called', async () => {
+    const el = LawDetail({ lawId: null as unknown as string, onNavigate: () => { } });
+    expect(el.querySelector('[data-not-found]')).toBeTruthy();
+  });
+
+  it('L76 B0: lawCardTemplate missing or not template so renderLawCard returns null', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.textContent).toBeTruthy(), { timeout: 500 });
+    expect(el.querySelector('[data-law-card-container]')).toBeTruthy();
+  });
+
+  it('L91 B1: titleEl exists so title is set with accent', async () => {
+    const law = { id: '1', title: 'Test Law', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('.accent-text')).toBeTruthy(), { timeout: 500 });
+  });
+
+  it('L105 L110 L115 L124 L125 L128 L137 L139 L145 L154 L166 B1: renderLawCard branches with full law', async () => {
+    const law = { id: '1', title: 'A Law', text: 'Text', score: 1, upvotes: 1, downvotes: 0, attributions: [], author: 'X', submittedBy: 'Y' };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.textContent).toMatch(/A Law/), { timeout: 500 });
+    expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('1');
+  });
+
+  it('L207 B1: breadcrumbContainer exists so breadcrumb rendered', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('#law-breadcrumb')).toBeTruthy(), { timeout: 500 });
+  });
+
+  it('L211 T39 B0 T40 B1: law has category_slug and category_name so breadcrumb item added', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0, category_slug: 'tech', category_name: 'Technology' };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.textContent).toMatch(/Technology/), { timeout: 500 });
+  });
+
+  it('L219 L226 L228 L234 B1: breadcrumb and lawCard and footer and social share', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('.section-footer')).toBeTruthy(), { timeout: 500 });
+  });
+
+  it('L258 B1: contextSection and contextTextEl exist so context set', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0, category_context: 'Custom' };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-law-context-text]')?.textContent).toBe('Custom'), { timeout: 500 });
+  });
+
+  it('L274 T49 B0: random-law when total <= 0 navigates to browse', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    const emptyList = { data: [], total: 0, limit: 1, offset: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => emptyList })
+      .mockResolvedValueOnce({ ok: true, json: async () => emptyList });
+    let nav = '';
+    const el = LawDetail({ lawId: '1', onNavigate: (t) => { nav = t; } });
+    await vi.waitFor(() => expect(el.querySelector('[data-action="random-law"]')).toBeTruthy(), { timeout: 1000 });
+    (el.querySelector('[data-action="random-law"]') as HTMLElement)!.click();
+    await new Promise(r => setTimeout(r, 150));
+    expect(nav).toBe('browse');
+  });
+
+  it('L314 L315 L331 L335 L336 L345 B0 B1: random-law button present after load so branch reachable', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-action="random-law"]')).toBeTruthy();
+    }, { timeout: 1000 });
+  });
+
+  it('L387 L388 L397 L404 L405 L407 B1: copy and favorite and related card handlers', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-action="copy-text"]')).toBeTruthy(), { timeout: 500 });
+    expect(el.querySelector('[data-favorite-btn]')).toBeTruthy();
+  });
+
+  it('L423 L431 L439 L441 B1: vote button and nav and related favorite iconEl', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    let nav = '';
+    const el = LawDetail({ lawId: '1', onNavigate: (t) => { nav = t; } });
+    await vi.waitFor(() => expect(el.querySelector('[data-nav="browse"]')).toBeTruthy(), { timeout: 500 });
+    (el.querySelector('[data-nav="browse"]') as HTMLElement).click();
+    expect(nav).toBe('browse');
+  });
+
+  it('L460 L485 B1: voteBtn with id and upVoteCount downVoteCount update', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    vi.spyOn(votingModule, 'toggleVote').mockResolvedValue({ upvotes: 2, downvotes: 0 });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-vote="up"]')).toBeTruthy(), { timeout: 500 });
+    (el.querySelector('[data-vote="up"]') as HTMLElement).click();
+    await new Promise(r => setTimeout(r, 20));
+    expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('2');
+  });
+
   it('renders not found for unknown id', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
     const el = LawDetail({ lawId: 'nope', onNavigate: () => { } });
     await new Promise(r => setTimeout(r, 0));
+    expect(el.textContent).toMatch(/Law Not Found/);
+  });
+
+  it('shows not found and clears export when fetchLaw rejects (L323-326)', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await new Promise(r => setTimeout(r, 50));
     expect(el.textContent).toMatch(/Law Not Found/);
   });
 

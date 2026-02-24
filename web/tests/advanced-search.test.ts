@@ -98,6 +98,14 @@ describe('AdvancedSearch component', () => {
     expect(keywordInput.value).toBe('murphy');
   });
 
+  it('L53 B1: sets keywordInput.value when keywordInput exists and initialFilters.q is provided', () => {
+    fetchAPISpy.mockResolvedValue({ data: [] });
+    const el = mountSearch({ initialFilters: { q: 'L53-B1' } });
+    const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
+    expect(keywordInput).toBeTruthy();
+    expect(keywordInput.value).toBe('L53-B1');
+  });
+
   it('loads categories successfully', async () => {
     const categories: Category[] = [
       { id: 1, title: 'General', slug: 'general' },

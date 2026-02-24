@@ -168,6 +168,42 @@ describe('SubmitLawSection component', () => {
     expect(messageDiv!.style.display).toBe('none');
   });
 
+  it('L132 B1: clearMessage when trimmedLength 0 or >= 10', () => {
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const messageDiv = el.querySelector('.submit-message') as HTMLElement | null;
+    textarea!.value = 'Valid law text with enough characters here';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(messageDiv!.style.display).toBe('none');
+    textarea!.value = '';
+    textarea!.dispatchEvent(new Event('input'));
+    expect(messageDiv!.style.display).toBe('none');
+  });
+
+  it('L197 B0: honeypot filled rejects submission', async () => {
+    const showErrorSpy = vi.spyOn(notification, 'showError');
+    vi.spyOn(request, 'apiPost').mockResolvedValue({ id: 1 });
+
+    const el = mountSection({ append: true });
+    const form = el.querySelector('.submit-form') as HTMLFormElement | null;
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
+    const honeypot = el.querySelector('#submit-website') as HTMLInputElement | null;
+
+    textarea!.value = 'Valid law text with more than ten characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
+    honeypot!.value = 'spam';
+    honeypot!.dispatchEvent(new Event('input'));
+
+    form!.dispatchEvent(new Event('submit'));
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(showErrorSpy).toHaveBeenCalledWith('Submission rejected.');
+    expect(request.apiPost).not.toHaveBeenCalled();
+  });
+
   it('renders validation requirements display', () => {
     const el = mountSection();
     
@@ -377,6 +413,25 @@ describe('SubmitLawSection component', () => {
 
     // Should not have made additional API calls (categories already loaded)
     expect(fetchSpy.mock.calls.length).toBe(firstCallCount);
+  });
+
+  it('loadCategories returns early when already loaded (L61)', async () => {
+    const fetchSpy = vi.spyOn(api, 'fetchAPI').mockResolvedValue({
+      data: [{ id: 1, title: 'General' }]
+    });
+    let savedCallback: (() => void) | null = null;
+    deferUntilIdleSpy.mockImplementation((cb: () => void) => {
+      savedCallback = cb;
+    });
+
+    const el = mountSection({ append: true });
+    expect(savedCallback).toBeTruthy();
+    savedCallback!();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const firstCount = fetchSpy.mock.calls.length;
+    savedCallback!();
+    await new Promise(resolve => setTimeout(resolve, 5));
+    expect(fetchSpy.mock.calls.length).toBe(firstCount);
   });
 
   it('handles category loading error gracefully', async () => {

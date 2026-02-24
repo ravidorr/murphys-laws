@@ -210,6 +210,20 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
+  it('normalizes trailing slash on path (L87)', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    defineRoute('home', () => document.createElement('div'));
+
+    history.replaceState(null, '', '/browse/');
+    const replaceSpy = vi.spyOn(history, 'replaceState');
+    startRouter(rootEl);
+
+    expect(replaceSpy).toHaveBeenCalledWith(null, '', '/browse');
+    replaceSpy.mockRestore();
+    document.body.removeChild(rootEl);
+  });
+
   it('forceRender re-renders current route', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);

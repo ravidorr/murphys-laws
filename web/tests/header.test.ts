@@ -433,6 +433,25 @@ describe('Header component', () => {
     expect(input).toBeTruthy();
   });
 
+  it('L138 B1: form and input present so SearchAutocomplete is initialized', () => {
+    const el = Header({ onSearch: () => {}, onNavigate: () => {} });
+    const form = el.querySelector('form[role="search"]');
+    const input = form?.querySelector('input[aria-label="Search"]') || form?.querySelector('input');
+    expect(form).toBeTruthy();
+    expect(input).toBeTruthy();
+    expect(SearchAutocomplete).toHaveBeenCalled();
+  });
+
+  it('L155 B1: form submit passes input value to onSearch', () => {
+    const onSearchMock = vi.fn();
+    const el = Header({ onSearch: onSearchMock, onNavigate: () => {} });
+    const input = el.querySelector('input[aria-label="Search"]') as HTMLInputElement;
+    const form = el.querySelector('form[role="search"]');
+    input.value = 'query';
+    form!.dispatchEvent(new Event('submit'));
+    expect(onSearchMock).toHaveBeenCalledWith({ q: 'query' });
+  });
+
   it('submit uses input.value and calls onSearch (L155)', () => {
     localThis.searchQuery = null;
     localThis.el = Header({
@@ -449,6 +468,14 @@ describe('Header component', () => {
     document.body.removeChild(localThis.el);
   });
 
+  it('L163 B1 L166 B1: cleanup invokes originalCleanup and autocompleteCleanup', () => {
+    const autoCleanup = vi.fn();
+    vi.mocked(SearchAutocomplete).mockReturnValue({ cleanup: autoCleanup, isOpen: () => false });
+    const el = Header({ onSearch: () => {}, onNavigate: () => {} });
+    (el as CleanableElement).cleanup!();
+    expect(autoCleanup).toHaveBeenCalled();
+  });
+
   it('cleanup calls originalCleanup, autocompleteCleanup, exportMenuCleanup (L163 L166)', () => {
     const exportCleanup = vi.fn();
     const autoCleanup = vi.fn();
@@ -460,6 +487,16 @@ describe('Header component', () => {
 
     expect(exportCleanup).toHaveBeenCalled();
     expect(autoCleanup).toHaveBeenCalled();
+  });
+
+  it('does not call onNavigate when data-nav is empty (L128)', () => {
+    const onNavigateMock = vi.fn();
+    const el = Header({ onSearch: () => {}, onNavigate: onNavigateMock });
+    const emptyNavBtn = document.createElement('button');
+    emptyNavBtn.setAttribute('data-nav', '');
+    el.appendChild(emptyNavBtn);
+    emptyNavBtn.click();
+    expect(onNavigateMock).not.toHaveBeenCalled();
   });
 
   it('hits navTarget, form/input, submit value, and cleanup branches in one flow (L128 L138 L141 L155 L163 L166)', () => {
@@ -798,6 +835,19 @@ describe('Header component', () => {
       }
 
       expect(mockOnNavigate).toHaveBeenCalledWith('law', '123');
+    });
+
+    it('L141 B1: onSelect with law.id calls onNavigate', () => {
+      const onNavigateMock = vi.fn();
+      let onSelect: ((law: Law) => void) | null = null;
+      vi.mocked(SearchAutocomplete).mockImplementation((opts) => {
+        onSelect = opts.onSelect;
+        return { cleanup: vi.fn(), isOpen: () => false };
+      });
+      Header({ onSearch: () => {}, onNavigate: onNavigateMock });
+      expect(onSelect).toBeTruthy();
+      onSelect!({ id: 42, text: '' });
+      expect(onNavigateMock).toHaveBeenCalledWith('law', '42');
     });
 
     it('should not call onNavigate when suggestion has no id', () => {

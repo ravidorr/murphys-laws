@@ -453,6 +453,19 @@ describe('Structured Data module', () => {
       expect(data.dateModified).toBe('2024-09-01');
     });
 
+    it('omits datePublished and dateModified when law has no created_at or updated_at (L181 L182)', () => {
+      const law = {
+        id: 789,
+        title: 'No dates',
+        text: 'Law without dates.'
+      };
+      setLawStructuredData(law);
+      const el = document.head.querySelector('#jsonld-law-article');
+      const data = JSON.parse(el!.textContent!);
+      expect(data.datePublished).toBeUndefined();
+      expect(data.dateModified).toBeUndefined();
+    });
+
     it('includes speakable specification for voice search', () => {
       const law = {
         id: 123,

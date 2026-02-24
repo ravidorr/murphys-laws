@@ -97,6 +97,18 @@ describe('Icons utility', () => {
       expect(sunIcon!.innerHTML.length).toBeGreaterThan(0);
     });
 
+    it('L185 B1: createIcon uses stroke branch and content for stroke-based icon', () => {
+      const icon = createIcon('sun');
+      expect(icon!.getAttribute('stroke')).toBe('currentColor');
+      expect(icon!.innerHTML).toBeDefined();
+    });
+
+    it('L188 B1: createIcon uses fill branch and path for fill-based icon', () => {
+      const icon = createIcon('home');
+      expect(icon!.getAttribute('fill')).toBe('currentColor');
+      expect(icon!.innerHTML).toContain('path');
+    });
+
     it('uses fill branch and iconData.path for Font Awesome-style icons (L188)', () => {
       const homeIcon = createIcon('home');
       expect(homeIcon!.getAttribute('fill')).toBe('currentColor');
@@ -231,6 +243,26 @@ describe('Icons utility', () => {
       hydrateIcons(container);
       expect(container.querySelector('svg')).toBeNull();
       expect(container.querySelector('span[data-icon=""]')).toBeTruthy();
+    });
+
+    it('L230 B1: hydrateIcons skips when name is empty or invalid', () => {
+      container.innerHTML = '<span data-icon=""></span>';
+      hydrateIcons(container);
+      expect(container.querySelector('svg')).toBeNull();
+    });
+
+    it('L234 B1: hydrateIcons copies role from placeholder to svg', () => {
+      container.innerHTML = '<span data-icon="home" role="img"></span>';
+      hydrateIcons(container);
+      const icon = container.querySelector('svg');
+      expect(icon!.getAttribute('role')).toBe('img');
+    });
+
+    it('L237 B1: hydrateIcons copies title from placeholder to svg', () => {
+      container.innerHTML = '<span data-icon="home" title="Go home"></span>';
+      hydrateIcons(container);
+      const icon = container.querySelector('svg');
+      expect(icon!.getAttribute('title')).toBe('Go home');
     });
 
     it('works when called without a root element (uses document)', () => {

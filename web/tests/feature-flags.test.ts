@@ -39,6 +39,12 @@ describe('Feature Flags', () => {
       expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
     });
 
+    it('L46 B1: isFeatureEnabled uses env when import.meta.env has flag', () => {
+      localStorage.clear();
+      import.meta.env.VITE_FEATURE_FAVORITES = 'true';
+      expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(true);
+    });
+
     it('respects environment variable when set to false', () => {
       import.meta.env.VITE_FEATURE_FAVORITES = 'false';
       expect(isFeatureEnabled('FAVORITES_ENABLED')).toBe(false);
@@ -137,6 +143,13 @@ describe('Feature Flags', () => {
       import.meta.env.VITE_FEATURE_FAVORITES = 'true';
       const state = getFeatureState('FAVORITES_ENABLED');
       expect(state).toEqual({ enabled: true, source: 'environment' });
+    });
+
+    it('L97 B1: getFeatureState returns source environment when env set', () => {
+      localStorage.clear();
+      import.meta.env.VITE_FEATURE_FAVORITES = 'false';
+      const state = getFeatureState('FAVORITES_ENABLED');
+      expect(state).toEqual({ enabled: false, source: 'environment' });
     });
 
     it('returns default when env key is undefined (L97 default branch)', () => {

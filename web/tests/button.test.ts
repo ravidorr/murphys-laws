@@ -27,10 +27,25 @@ describe('Button component', () => {
       localThis.btn = createButton({ variant: 'vote', direction: 'up', count: 0 });
       expect(localThis.btn!.className).toContain('count-up');
     });
+    it('L203 B1: vote variant with direction adds count-direction class', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ variant: 'vote', direction: 'down', count: 0 });
+      expect(localThis.btn!.className).toContain('count-down');
+    });
     it('sets button id when provided (L263)', () => {
       const localThis: ButtonTestLocalThis = {};
       localThis.btn = createButton({ text: 'X', id: 'coverage-id' });
       expect(localThis.btn!.id).toBe('coverage-id');
+    });
+    it('L263 B1: default type is button when type not provided', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'Click' });
+      expect(localThis.btn!.type).toBe('button');
+    });
+    it('L276 B1: sets id when id option provided', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'Test', id: 'my-id' });
+      expect(localThis.btn!.id).toBe('my-id');
     });
     it('vote variant with icon appends icon (L274)', () => {
       const localThis: ButtonTestLocalThis = {};
@@ -48,6 +63,17 @@ describe('Button component', () => {
       const children = Array.from(localThis.btn!.children);
       expect(children[0]!.classList.contains('btn-text')).toBe(true);
       expect(children[1]!.tagName).toBe('svg');
+    });
+    it('L286 B1: standard button branch when not vote and not iconOnly', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'Save' });
+      expect(localThis.btn!.querySelector('.btn-text')!.textContent).toBe('Save');
+    });
+    it('L312 B1: icon on right for standard button', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'Next', icon: 'arrowForward', iconPosition: 'right' });
+      expect(localThis.btn!.querySelector('svg')).toBeTruthy();
+      expect(localThis.btn!.querySelector('.btn-text')!.nextElementSibling!.tagName).toBe('svg');
     });
   });
 
@@ -375,6 +401,12 @@ describe('Button component', () => {
         expect(localThis.textIndex!).toBeLessThan(localThis.iconIndex);
       });
 
+      it('L501 B1: renderButtonHTML iconPosition right puts text before icon', () => {
+        const localThis: ButtonTestLocalThis = {};
+        localThis.html = renderButtonHTML({ text: 'Next', icon: 'arrowForward', iconPosition: 'right' });
+        expect(localThis.html!.indexOf('btn-text')).toBeLessThan(localThis.html!.indexOf('data-icon="arrowForward"'));
+      });
+
       it('renders icon-only button', () => {
         const localThis: ButtonTestLocalThis = {};
         localThis.html = renderButtonHTML({ icon: 'close', iconOnly: true, ariaLabel: 'Close' });
@@ -613,6 +645,12 @@ describe('Button component', () => {
         expect(localThis.html!).toContain('class="btn"');
       });
 
+      it('L584 B1: renderLinkButtonHTML uses primary when variant omitted', () => {
+        const localThis: ButtonTestLocalThis = {};
+        localThis.html = renderLinkButtonHTML({ href: '/', text: 'Link' });
+        expect(localThis.html!).toContain('class="btn"');
+      });
+
       it('renders secondary variant with outline class', () => {
         const localThis: ButtonTestLocalThis = {};
         localThis.html = renderLinkButtonHTML({ href: '/', text: 'Cancel', variant: 'secondary' });
@@ -701,6 +739,12 @@ describe('Button component', () => {
         });
         expect(localThis.html!).toContain('btn my-custom-class');
       });
+
+      it('L608 B1: renderLinkButtonHTML adds className when provided', () => {
+        const localThis: ButtonTestLocalThis = {};
+        localThis.html = renderLinkButtonHTML({ href: '/', text: 'X', className: 'extra' });
+        expect(localThis.html!).toContain('extra');
+      });
     });
 
     describe('validation', () => {
@@ -780,6 +824,17 @@ describe('Button component', () => {
       });
       expect(localThis.html!).toContain('target="_blank"');
       expect(localThis.html!).toContain('rel="noopener noreferrer"');
+    });
+
+    it('L680 B1: platform email uses target _self by default', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderShareLinkHTML({
+        href: 'mailto:?body=test',
+        text: 'Email',
+        icon: 'email',
+        platform: 'email',
+      });
+      expect(localThis.html!).toContain('target="_self"');
     });
   });
 

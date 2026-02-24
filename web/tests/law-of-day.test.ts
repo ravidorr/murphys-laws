@@ -84,6 +84,18 @@ describe('LawOfTheDay component', () => {
     expect(el.querySelector('.loading-placeholder')).toBeTruthy();
   });
 
+  it('renders law with text only (no title) and uses empty string for title in favorites (L174)', () => {
+    const law = { id: '1', text: 'Anything that can go wrong', upvotes: 0, downvotes: 0 };
+    const el = mountLaw(law);
+
+    expect(el.textContent).toContain('Anything that can go wrong');
+    const favoriteBtn = el.querySelector('[data-action="favorite"]') as HTMLElement | null;
+    if (favoriteBtn) {
+      favoriteBtn.click();
+      expect(el.querySelector('[data-tooltip="Add to favorites"], [data-tooltip="Remove from favorites"]')).toBeTruthy();
+    }
+  });
+
   it('renders law with all content', () => {
     const law = {
       id: '1',
@@ -193,6 +205,17 @@ describe('LawOfTheDay component', () => {
     });
   });
 
+  it('L201 B0: vote handler catch calls showError when toggleVote throws', async () => {
+    toggleVoteSpy.mockRejectedValue(new Error('Network error'));
+    const showErrorSpy = vi.spyOn(notification, 'showError');
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const el = mountLaw(law);
+    (el.querySelector('[data-vote="down"]') as HTMLElement).click();
+    await vi.waitFor(() => {
+      expect(showErrorSpy).toHaveBeenCalled();
+    });
+  });
+
   it('has clickable law link with data-law-id', () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
 
@@ -202,6 +225,17 @@ describe('LawOfTheDay component', () => {
     const lawLink = el.querySelector('[data-law-id]');
     expect(lawLink).toBeTruthy();
     expect(lawLink!.getAttribute('data-law-id')).toBe('1');
+  });
+
+  it('L238 B1: click on element with data-law-id calls onNavigate with law and id', () => {
+    let navPage: string | null = null;
+    let navParam: string | undefined;
+    const law = { id: '42', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const el = mountLaw(law, { onNavigate: (page, param) => { navPage = page; navParam = param; } });
+    const lawLink = el.querySelector('[data-law-id]') as HTMLElement;
+    lawLink.click();
+    expect(navPage).toBe('law');
+    expect(navParam).toBe('42');
   });
 
   it('navigates to law detail when clicking law link', async () => {
@@ -222,6 +256,16 @@ describe('LawOfTheDay component', () => {
       expect(navigatedTo).toBe('law');
       expect(navigatedParam).toBe('1');
     });
+  });
+
+  it('L241 B1: click nav button with data-nav calls onNavigate with navTarget', () => {
+    let navTarget: string | null = null;
+    const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+    const el = mountLaw(law, { onNavigate: (page) => { navTarget = page; } });
+    const browseBtn = el.querySelector('[data-nav="browse"]') as HTMLElement;
+    expect(browseBtn).toBeTruthy();
+    browseBtn.click();
+    expect(navTarget).toBe('browse');
   });
 
   it('does not navigate when law-id is empty', () => {
@@ -642,6 +686,18 @@ describe('LawOfTheDay component', () => {
       expect(favoriteBtn!.getAttribute('aria-label')).toBe('Remove from favorites');
     });
 
+    it('L80 B1: favorited law with svg icon replaces icon with heartFilled', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(true);
+      const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
+      const el = mountLawForFavorites(law);
+      const favoriteBtn = el.querySelector('[data-favorite-btn]');
+      const icon = favoriteBtn?.querySelector('svg[data-icon-name]');
+      expect(icon).toBeTruthy();
+      expect(icon!.getAttribute('data-icon-name')).toBe('heartFilled');
+      expect(favoriteBtn?.classList.contains('favorited')).toBe(true);
+    });
+
     it('shows filled heart icon when law is already favorited on init (L80)', () => {
       isFavoritesEnabledSpy.mockReturnValue(true);
       isFavoriteSpy.mockReturnValue(true);
@@ -666,6 +722,19 @@ describe('LawOfTheDay component', () => {
 
       expect(createIconSpy).toHaveBeenCalledWith('heartFilled');
       expect(el.querySelector('[data-favorite-btn].favorited')).toBeTruthy();
+    });
+
+    it('L174 B1: click favorite button with data-law-id calls toggleFavorite and updates icon', async () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(false);
+      toggleFavoriteSpy.mockReturnValue(true);
+      const el = mountLawForFavorites({ id: '99', text: 'L', upvotes: 0, downvotes: 0 } as LawOfTheDayLaw, { append: true });
+      const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
+      expect(favoriteBtn?.getAttribute('data-law-id')).toBe('99');
+      favoriteBtn!.click();
+      await vi.waitFor(() => {
+        expect(toggleFavoriteSpy).toHaveBeenCalledWith(expect.objectContaining({ id: '99' }));
+      });
     });
 
     it('replaces icon on favorite toggle when newIcon is truthy (L174)', async () => {
