@@ -257,6 +257,69 @@ describe('SearchAutocomplete', () => {
     }
   });
 
+  it('L66 B0: renderSuggestions with no dropdown creates it via createDropdown', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Only', title: undefined }]));
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'on';
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 250));
+    expect(document.querySelector('.search-autocomplete')).toBeTruthy();
+  });
+
+  it('L122 B0: ArrowDown past last suggestion wraps to no selection', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'One', title: undefined },
+      { id: 2, text: 'Two', title: undefined }
+    ]));
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'tw';
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 250));
+    await vi.waitFor(() => {
+      const dd = document.querySelector('.search-autocomplete');
+      expect(dd?.querySelectorAll('.search-suggestion-item').length).toBe(2);
+    });
+    const dropdown = document.querySelector('.search-autocomplete')!;
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    expect(dropdown.querySelector('.search-suggestion-item.selected')).toBeTruthy();
+    inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    expect(dropdown.querySelector('.search-suggestion-item.selected')).toBeFalsy();
+  });
+
+  it('L63 B0: second renderSuggestions uses existing dropdown', async () => {
+    vi.mocked(api.fetchSuggestions)
+      .mockResolvedValueOnce(suggestionsResponse([{ id: 1, text: 'First', title: undefined }]))
+      .mockResolvedValueOnce(suggestionsResponse([{ id: 2, text: 'Second', title: undefined }]));
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'fi';
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 250));
+    const dropdownFirst = document.querySelector('.search-autocomplete');
+    expect(dropdownFirst).toBeTruthy();
+    inputElement.value = 'se';
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 250));
+    const dropdownSecond = document.querySelector('.search-autocomplete');
+    expect(dropdownSecond).toBe(dropdownFirst);
+    expect(dropdownSecond!.querySelectorAll('.search-suggestion-item').length).toBe(1);
+  });
+
+  it('L209 B1: click on suggestion item triggers onSelect with law', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 99, text: 'L209 law', title: undefined }
+    ]));
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'L209';
+    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 250));
+    const dropdown = document.querySelector('.search-autocomplete');
+    const item = dropdown!.querySelector('.search-suggestion-item') as HTMLElement;
+    expect(item).toBeTruthy();
+    item.click();
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 99, text: 'L209 law' }));
+  });
+
   it('click on suggestion item calls selectSuggestion (L209)', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
       { id: 42, text: 'Clicked law', title: undefined }

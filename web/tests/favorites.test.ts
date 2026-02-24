@@ -118,6 +118,16 @@ describe('Favorites Service', () => {
       expect(favorites[1]!.id).toBe(123);
     });
 
+    it('L101 B1: getFavorites sort uses 0 fallback for missing savedAt', () => {
+      localStorage.setItem('murphys_favorites', JSON.stringify({
+        '1': { id: 1, text: 'A' },
+        '2': { id: 2, text: 'B' },
+      }));
+      const favorites = getFavorites();
+      expect(favorites).toHaveLength(2);
+      expect(favorites.map(f => f.id).sort()).toEqual([1, 2]);
+    });
+
     it('sorts using savedAt fallback when savedAt is missing', () => {
       localStorage.setItem('murphys_favorites', JSON.stringify({
         '1': { id: 1, text: 'A' },

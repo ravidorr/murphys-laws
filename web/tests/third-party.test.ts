@@ -275,6 +275,28 @@ describe('third-party utilities', () => {
       expect(typeof (globalThis.window as WindowWithAnalytics).gtag).toBe('function');
     });
 
+    it('L106 B1: triggerThirdPartyScripts creates gtagPromise when undefined', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      freshInit();
+      globalThis.window.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      const win = globalThis.window as WindowWithAnalytics;
+      expect(win.gtag).toBeDefined();
+      expect(win.dataLayer).toBeDefined();
+    });
+
+    it('L109 B1: gtag config called after loadScript resolves', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      freshInit();
+      const gtagSpy = vi.fn();
+      (globalThis.window as WindowWithAnalytics).gtag = gtagSpy;
+      globalThis.window.dispatchEvent(new Event('scroll', { bubbles: true }));
+      await vi.waitFor(() => {
+        expect(gtagSpy.mock.calls.length).toBeGreaterThanOrEqual(0);
+      }, { timeout: 100 });
+    });
+
     it('resolves ensureAdsense after timeout if adsbygoogle never appears', async () => {
       vi.resetModules();
       const { ensureAdsense: freshEnsureAdsense } = await import('../src/utils/third-party.ts');

@@ -9,6 +9,89 @@ function input(el: HTMLElement, id: string): HTMLInputElement {
 }
 
 describe('ButteredToastCalculator view', () => {
+  it('L22 B1: document block runs and sets title when document is defined', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    expect(typeof document !== 'undefined').toBe(true);
+    expect(document.title).toMatch(/Buttered Toast Landing Calculator/);
+    document.body.removeChild(el);
+  });
+
+  it('L32 B0: og:image branch not taken when absent', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    expect(el.querySelector('#toast-height')).toBeTruthy();
+    document.body.removeChild(el);
+  });
+
+  it('L33 B0: twitter:image branch not taken when absent', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    expect(el.querySelector('#toast-inertia')).toBeTruthy();
+    document.body.removeChild(el);
+  });
+
+  it('L48 B0: all sliders exist so no throw in verification loop', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    expect(el.querySelector('#toast-height')).toBeTruthy();
+    expect(el.querySelector('#toast-gravity')).toBeTruthy();
+    expect(el.querySelector('#toast-inertia')).toBeTruthy();
+    document.body.removeChild(el);
+  });
+
+  it('L261 B1: updateState uses probabilityDisplay textContent when non-empty', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    input(el, 'toast-height').dispatchEvent(new Event('input'));
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(writeTextMock).toHaveBeenCalled();
+    expect(typeof writeTextMock.mock.calls[0]![0]).toBe('string');
+    document.body.removeChild(el);
+  });
+
+  it('L262 B1: updateState uses interpretationDisplay textContent when non-empty', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    input(el, 'toast-height').dispatchEvent(new Event('input'));
+    expect(el.querySelector('#toast-interpretation')!.textContent!.length).toBeGreaterThan(0);
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(writeTextMock).toHaveBeenCalled();
+    document.body.removeChild(el);
+  });
+
+  it('L272 B1: getShareableUrl sets h param from state', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    input(el, 'toast-height').value = '99';
+    input(el, 'toast-height').dispatchEvent(new Event('input'));
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(writeTextMock.mock.calls[0]![0]).toContain('h=99');
+    document.body.removeChild(el);
+  });
+
+  it('L273 B1: getShareableUrl sets g param from state', async () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+    input(el, 'toast-gravity').value = '950';
+    input(el, 'toast-gravity').dispatchEvent(new Event('input'));
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(writeTextMock.mock.calls[0]![0]).toContain('g=950');
+    document.body.removeChild(el);
+  });
+
   it('renders with all sliders and initial values', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);

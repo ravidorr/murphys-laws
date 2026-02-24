@@ -308,6 +308,67 @@ describe('markdown-content.js', () => {
       expect(html).toContain('Content');
       vi.restoreAllMocks();
     });
+
+    it('L147 B1: enhanceMarkdownHtml h2 regex open group used in replacement', () => {
+      const spy = vi.spyOn(marked, 'parse').mockReturnValue('<h1>T</h1><p>Lead</p><h2>X</h2><p>P</p>');
+      try {
+        const html = getPageContent('about');
+        expect(html).toContain('<section class="content-section">');
+        expect(html).toContain('<h2>');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('L148 B1: enhanceMarkdownHtml h2 regex content group used in replacement', () => {
+      const spy = vi.spyOn(marked, 'parse').mockReturnValue('<h1>T</h1><p>Lead</p><h2>Content</h2><p>P</p>');
+      try {
+        const html = getPageContent('about');
+        expect(html).toContain('Content');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('L149 B1: enhanceMarkdownHtml h2 regex close group used in replacement', () => {
+      const spy = vi.spyOn(marked, 'parse').mockReturnValue('<h1>T</h1><p>Lead</p><h2>Y</h2><p>P</p>');
+      try {
+        const html = getPageContent('about');
+        expect(html).toContain('</h2>');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('L163 B1: enhanceMarkdownHtml closes before next section when nextSectionIndex !== -1', () => {
+      const spy = vi.spyOn(marked, 'parse').mockReturnValue(
+        '<h1>T</h1><p>Lead</p><h2>A</h2><p>X</p><h2>B</h2><p>Y</p>'
+      );
+      try {
+        const html = getPageContent('about');
+        expect(html).toContain('</section>');
+        expect(html).toContain('B');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('L169 B0: enhanceMarkdownHtml closes last section at end', () => {
+      const spy = vi.spyOn(marked, 'parse').mockReturnValue('<h1>T</h1><p>Lead</p><h2>Only</h2><p>P</p>');
+      try {
+        const html = getPageContent('about');
+        expect(html).toContain('</section>');
+        expect(html).toContain('Only');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('L205 B0: getPageContent throws for unknown page when markdown missing', () => {
+      expect(() => {
+        getPageContent('unknown-page' as ContentPage);
+      }).toThrow();
+    });
   });
 
   describe('getRawMarkdownContent', () => {

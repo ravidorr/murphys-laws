@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Web: branch coverage tests across components and views; mathjax test uses setLoaderForTesting to avoid vi.doMock stderr; uncovered-branches.md regenerated from lcov; bump web to 3.1.1
+
 ### Added
 - QA teardown: SSG pre-render first page of laws on Browse and Category detail pages; retry buttons on all error states (browse, category, home, law-detail); noscript fallback in index.html; URL-addressable filters and pagination on browse and category; share popover (top channels visible, rest in popover); random law navigation on law detail; category tag chips and deep links on cards and law detail; category display-name overrides for editorial consistency; submission flow improvements (email help text, honeypot, success copy); origin story tl;dr and source notes; user-visible error boundary and Sentry context for unhandled errors; lazy-load jsPDF for PDF export
 - Pre-commit: run backend tests with coverage (same as CI) so coverage threshold failures are caught locally

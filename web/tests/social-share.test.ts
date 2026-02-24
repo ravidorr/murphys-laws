@@ -47,13 +47,20 @@ describe('SocialShare component', () => {
   it('creates a popover with menu items', () => {
     const el = SocialShare();
     const popover = el.querySelector('.share-popover') as HTMLElement;
-    
+
     expect(popover).toBeTruthy();
     expect(popover.getAttribute('role')).toBe('menu');
-    
+
     // Popover: 4 social (Facebook, LinkedIn, Reddit, WhatsApp) + 1 copy text = 5 items
     const items = popover.querySelectorAll('.share-popover-item');
     expect(items.length).toBe(5);
+  });
+
+  it('L184 B0: popover non-email link uses target _blank', () => {
+    const el = SocialShare();
+    const link = el.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
+    expect(link).toBeTruthy();
+    expect(link.getAttribute('target')).toBe('_blank');
   });
 
   it('uses default values when no options provided', () => {
@@ -93,6 +100,13 @@ describe('SocialShare component', () => {
     expect(linkedinLink.href).toContain(encodeURIComponent('Custom description here'));
   });
 
+  it('L146 B1: top row email link has aria-label Share via Email', () => {
+    const el = SocialShare({ url: 'https://test.com', title: 'Test' });
+    const emailLink = el.querySelector('a.share-btn-top[href^="mailto"]') as HTMLAnchorElement;
+    expect(emailLink).toBeTruthy();
+    expect(emailLink.getAttribute('aria-label')).toBe('Share via Email');
+  });
+
   describe('Twitter button', () => {
     it('creates Twitter share link with correct attributes', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
@@ -113,6 +127,31 @@ describe('SocialShare component', () => {
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
       expect(link.getAttribute('target')).toBe('_blank');
       expect(link.href).toContain('facebook.com/sharer');
+    });
+
+    it('L182 B1: popover item has empty href when share URL for platform is missing', () => {
+      const el = SocialShare({
+        url: 'https://test.com',
+        title: 'Test',
+        getShareUrls: () => ({
+          twitter: 'https://twitter.com/',
+          email: 'mailto:?subject=',
+          linkedin: 'https://linkedin.com/',
+          reddit: 'https://reddit.com/',
+          whatsapp: 'https://whatsapp.com/'
+          // facebook omitted so shareUrls[id] is undefined and ?? '' is used
+        })
+      });
+      const facebookLink = el.querySelector('.icon-circle.facebook')?.closest('a.share-popover-item') as HTMLAnchorElement;
+      expect(facebookLink).toBeTruthy();
+      expect(facebookLink.getAttribute('href')).toBe('');
+    });
+
+    it('L185 B1: popover non-email link has rel noopener noreferrer', () => {
+      const el = SocialShare({ url: 'https://test.com', title: 'Test' });
+      const link = el.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
+      expect(link).toBeTruthy();
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
     });
   });
 
@@ -662,6 +701,39 @@ describe('renderShareButtonsHTML', () => {
     const html = renderShareButtonsHTML({ lawId: '789', lawText: 'Test' });
     expect(html).toContain('/law/789');
   });
+
+  it('L272 T29 B0: top channel with no matching condition yields empty string in map', () => {
+    const originalTopChannels = [...SHARE_PLATFORMS.topChannels];
+    try {
+      (SHARE_PLATFORMS.topChannels as Array<{ id: string }>).push({ id: 'unknown' });
+      const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
+      expect(html).toContain('data-action="copy-link"');
+      expect(html).toContain('twitter.com/intent/tweet');
+      expect(html).toContain('mailto:');
+      expect(html).not.toContain('data-share="unknown"');
+    } finally {
+      SHARE_PLATFORMS.topChannels.length = 0;
+      originalTopChannels.forEach(ch => SHARE_PLATFORMS.topChannels.push(ch));
+    }
+  });
+
+  it('L321 B1: top buttons HTML includes copy-link button', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
+    expect(html).toContain('data-action="copy-link"');
+    expect(html).toContain('aria-label="Copy link"');
+  });
+
+  it('L323 B1: top buttons HTML includes twitter share link', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
+    expect(html).toContain('twitter.com/intent/tweet');
+    expect(html).toContain('Share on X');
+  });
+
+  it('L324 B1: top buttons HTML includes email share link', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
+    expect(html).toContain('mailto:');
+    expect(html).toContain('Share via Email');
+  });
 });
 
 describe('initSharePopovers', () => {
@@ -842,6 +914,21 @@ describe('initSharePopovers', () => {
     // Trigger should not be marked as initialized
     expect(trigger.dataset.initialized).toBeUndefined();
   });
+
+  it('L385 B0: single open popover skipped in close-others forEach when clicking its trigger', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
+
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(false);
+  });
 });
 
 describe('Global event handlers', () => {
@@ -896,6 +983,23 @@ describe('Global event handlers', () => {
 
     expect(popover.classList.contains('open')).toBe(false);
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('L591 B1: Escape keydown closes open popover', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+
+    initSharePopovers(localThis.container);
+
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
+
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(popover.classList.contains('open')).toBe(false);
   });
 
   it('does not close popovers on other key presses', () => {
@@ -960,6 +1064,28 @@ describe('Global event handlers', () => {
 
     expect(popover.classList.contains('open')).toBe(false);
     expect(popover.classList.contains('popover-above')).toBe(false);
+  });
+
+  it('L600 B1: global listener block runs when initSharePopovers first called', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+    initSharePopovers(localThis.container);
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    trigger.click();
+    document.body.click();
+    expect(localThis.container.querySelector('.share-popover.open')).toBeNull();
+  });
+
+  it('L613 B1: Escape keydown handler closes open popovers', () => {
+    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    localThis.container.innerHTML = html;
+    initSharePopovers(localThis.container);
+    const trigger = localThis.container.querySelector('.share-trigger') as HTMLElement;
+    const popover = localThis.container.querySelector('.share-popover') as HTMLElement;
+    trigger.click();
+    expect(popover.classList.contains('open')).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(popover.classList.contains('open')).toBe(false);
   });
 
   it('toggles popover closed when clicking trigger while open', () => {
@@ -1488,6 +1614,199 @@ describe('initInlineShareButtons', () => {
     await Promise.resolve();
 
     // writeText should not be called
+    expect(writeTextMock).not.toHaveBeenCalled();
+
+    teardown();
+  });
+
+  it('L503 B0: handleCopyAction returns early for unknown data-action', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Test'
+    });
+
+    const wrapper = localThis.container.querySelector('.share-buttons-inline') as HTMLElement;
+    const otherBtn = document.createElement('button');
+    otherBtn.type = 'button';
+    otherBtn.setAttribute('data-action', 'other');
+    otherBtn.textContent = 'Other';
+    wrapper.appendChild(otherBtn);
+
+    otherBtn.click();
+    await Promise.resolve();
+
+    expect(writeTextMock).not.toHaveBeenCalled();
+
+    teardown();
+  });
+
+  it('L512 B1: copy-text uses getShareText', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Share this text'
+    });
+
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement;
+    copyTextBtn.click();
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalledWith('Share this text');
+
+    teardown();
+  });
+
+  it('L513 B1: copy-link uses getShareableUrl', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/copy-link-url',
+      getShareText: () => 'Text'
+    });
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
+    copyLinkBtn.click();
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalledWith('https://test.com/copy-link-url');
+
+    teardown();
+  });
+
+  it('L524 B1: updateShareLinks sets href when shareUrls[id] is truthy', () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/page',
+      getShareText: () => 'Title'
+    });
+
+    const twitterLink = localThis.container.querySelector('[data-share="twitter"]') as HTMLAnchorElement;
+    expect(twitterLink.href).toBeTruthy();
+    expect(twitterLink.href).toContain('twitter.com');
+
+    teardown();
+  });
+
+  it('L533 B0: clipboard failure uses execCommand fallback', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockRejectedValue(new Error('Clipboard unavailable'))
+      }
+    });
+    const execCommandMock = vi.fn();
+    document.execCommand = execCommandMock;
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Fallback text'
+    });
+
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement;
+    copyTextBtn.click();
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(execCommandMock).toHaveBeenCalledWith('copy');
+
+    teardown();
+  });
+
+  it('L539 B1: copy-text branch sets textToCopy from getShareText', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Text from getShareText'
+    });
+
+    const copyTextBtn = localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement;
+    copyTextBtn.click();
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalledWith('Text from getShareText');
+
+    teardown();
+  });
+
+  it('L540 B1: copy-link branch sets textToCopy from getShareableUrl', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/url-from-getter',
+      getShareText: () => 'Text'
+    });
+
+    const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
+    copyLinkBtn.click();
+    await Promise.resolve();
+
+    expect(writeTextMock).toHaveBeenCalledWith('https://test.com/url-from-getter');
+
+    teardown();
+  });
+
+  it('L541 B1: handleCopyAction returns without copying for non copy-text/copy-link action', async () => {
+    const html = renderInlineShareButtonsHTML();
+    localThis.container.innerHTML = html;
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock }
+    });
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com',
+      getShareText: () => 'Test'
+    });
+
+    const wrapper = localThis.container.querySelector('.share-buttons-inline') as HTMLElement;
+    const otherBtn = document.createElement('button');
+    otherBtn.type = 'button';
+    otherBtn.setAttribute('data-action', 'custom');
+    wrapper.appendChild(otherBtn);
+
+    otherBtn.click();
+    await Promise.resolve();
+
     expect(writeTextMock).not.toHaveBeenCalled();
 
     teardown();

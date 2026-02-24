@@ -133,11 +133,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
 
     const cardText = el.querySelector('#browse-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
-    cardText.innerHTML = renderLoadingHTML();
-    /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
+    /* Disable pagination buttons before replacing content so they are still in DOM */
     el.querySelectorAll('.pagination button').forEach(btn => {
       btn.setAttribute('disabled', 'true');
     });
+    cardText.innerHTML = renderLoadingHTML();
 
     try {
       const offset = (page - 1) * LAWS_PER_PAGE;

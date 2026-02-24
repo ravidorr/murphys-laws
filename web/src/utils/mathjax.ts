@@ -1,5 +1,12 @@
 let loaderPromise: Promise<unknown> | undefined;
 
+/** Test-only: inject a custom loader so tests can simulate import failure without vi.mock. */
+let loaderForTesting: (() => Promise<unknown>) | undefined;
+
+export function setLoaderForTesting(loader: (() => Promise<unknown>) | undefined): void {
+  loaderForTesting = loader;
+}
+
 const MATHJAX_FONT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2';
 
 function configureMathJax(): void {
@@ -67,7 +74,11 @@ export async function ensureMathJax(): Promise<unknown> {
       configureMathJax();
 
       try {
-        await import('mathjax/es5/tex-chtml.js');
+        if (loaderForTesting) {
+          await loaderForTesting();
+        } else {
+          await import('mathjax/es5/tex-chtml.js');
+        }
       } catch (error) {
         loaderPromise = undefined;
         // Module import failures are typically caused by:

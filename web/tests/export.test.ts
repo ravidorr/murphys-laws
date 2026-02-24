@@ -321,6 +321,17 @@ describe('Export Utilities', () => {
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
+      it('L177 B3 L181 B3: exportToCSV SINGLE_LAW with non-array data', () => {
+        const content = {
+          type: ContentType.SINGLE_LAW,
+          title: 'One Law',
+          data: localThis.mockSingleLaw!
+        };
+        exportToCSV(content);
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+        expect(getBlobText()).toContain('Full Text');
+      });
+
       it('escapes CSV value with comma (covers L214 B1)', () => {
         const content = {
           type: ContentType.LAWS,
@@ -369,6 +380,17 @@ describe('Export Utilities', () => {
 
         exportToCSV(content);
 
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('L260 B1: exportToCSV categories branch', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Cats',
+          data: localThis.mockCategories!
+        };
+        exportToCSV(content);
+        expect(getBlobText()).toContain('Law Count');
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
@@ -668,6 +690,38 @@ describe('Export Utilities', () => {
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
+      it('L327 B1: exportToMarkdown CONTENT branch', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Doc',
+          data: localThis.mockContent!
+        };
+        exportToMarkdown(content);
+        expect(getBlobText()).toContain('**markdown**');
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('L330 B2: exportToMarkdown CONTENT with truthy data', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'T',
+          data: 'Some markdown body'
+        };
+        exportToMarkdown(content);
+        expect(getBlobText()).toContain('Some markdown body');
+      });
+
+      it('L330 B1: exportToMarkdown CONTENT with falsy data', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'Empty',
+          data: ''
+        };
+        exportToMarkdown(content);
+        expect(getBlobText()).toContain('# Empty');
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
       it('handles CONTENT with empty data (L260)', () => {
         const content = {
           type: ContentType.CONTENT,
@@ -776,6 +830,31 @@ describe('Export Utilities', () => {
     });
 
     describe('with CONTENT content type', () => {
+      it('handles null or undefined data (L366)', () => {
+        exportToText({
+          type: ContentType.CONTENT,
+          title: 'Empty',
+          data: null as unknown as string
+        });
+        exportToText({
+          type: ContentType.CONTENT,
+          title: 'Empty2',
+          data: undefined as unknown as string
+        });
+        expect(localThis.mockAnchor!.click).toHaveBeenCalledTimes(2);
+      });
+
+      it('L355 B1: exportToText CONTENT branch', () => {
+        const content = {
+          type: ContentType.CONTENT,
+          title: 'About',
+          data: 'Plain text body'
+        };
+        exportToText(content);
+        expect(getBlobText()).toContain('Plain text body');
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
       it('strips markdown formatting', () => {
         const content = {
           type: ContentType.CONTENT,
@@ -830,6 +909,34 @@ describe('Export Utilities', () => {
         expect(localThis.mockAnchor!.click).toHaveBeenCalled();
       });
 
+      it('L378 B1: exportToText CATEGORIES branch', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Cats',
+          data: localThis.mockCategories!
+        };
+        exportToText(content);
+        expect(getBlobText()).toContain('General Laws');
+        expect(localThis.mockAnchor!.click).toHaveBeenCalled();
+      });
+
+      it('uses cat.name when cat.title missing (L381)', () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Cats',
+          data: [
+            { id: 1, name: 'Name Only', slug: 'n', law_count: 0 },
+            { id: 2, title: 'With Title', name: 'Fallback', slug: 't', law_count: 5 }
+          ]
+        };
+        exportToText(content);
+        const txt = getBlobText();
+        expect(txt).toContain('Name Only');
+        expect(txt).toContain('With Title');
+        expect(txt).toContain('0 laws');
+        expect(txt).toContain('5 laws');
+      });
+
       it('uses cat.title when present else cat.name (L381)', () => {
         const categoriesMixed = [
           { id: 1, name: 'Name Only', slug: 'n', law_count: 5 },
@@ -870,6 +977,19 @@ describe('Export Utilities', () => {
         expect(txt).toContain('0 laws');
         expect(txt).toContain('With Title');
         expect(txt).toContain('5 laws');
+      });
+
+      it('L381 B2: categories export uses empty title/name and law_count 0 fallback', () => {
+        const categoriesPartial = [
+          { id: 1, slug: 'x' } as Partial<{ id: number; title?: string; name?: string; slug: string; law_count?: number }>
+        ];
+        exportToText({
+          type: ContentType.CATEGORIES,
+          title: 'Cat',
+          data: categoriesPartial
+        });
+        const txt = getBlobText();
+        expect(txt).toContain(' (0 laws)');
       });
     });
   });
@@ -995,6 +1115,16 @@ describe('Export Utilities', () => {
         };
         await exportToPDF(content);
         expect(mockJsPDF.text).toHaveBeenCalled();
+      });
+
+      it('L165 B1: exportToPDF categories branch', async () => {
+        const content = {
+          type: ContentType.CATEGORIES,
+          title: 'Categories',
+          data: localThis.mockCategories!
+        };
+        await exportToPDF(content);
+        expect(mockJsPDF.save).toHaveBeenCalled();
       });
     });
 

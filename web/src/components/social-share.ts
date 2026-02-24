@@ -21,6 +21,8 @@ interface SocialShareOptions {
   description?: string;
   lawText?: string;
   lawId?: string;
+  /** Optional URL builder for tests; when provided, used instead of buildShareUrls. */
+  getShareUrls?: (opts: BuildShareUrlsOptions) => Record<string, string>;
 }
 
 interface RenderShareButtonsOptions {
@@ -106,7 +108,7 @@ export function buildShareUrls({ url, title, description = '', lawText, emailSub
  * @param {string} options.lawId - The law ID for data attributes
  * @returns {HTMLElement} - Social share popover container
  */
-export function SocialShare({ url, title, description, lawText, lawId }: SocialShareOptions = {}) {
+export function SocialShare({ url, title, description, lawText, lawId, getShareUrls }: SocialShareOptions = {}) {
   const wrapper = document.createElement('div');
   wrapper.className = 'share-wrapper';
 
@@ -116,13 +118,15 @@ export function SocialShare({ url, title, description, lawText, lawId }: SocialS
   const shareDescription = description || '';
   const textToCopy = lawText || shareTitle;
 
-  // Build share URLs using the centralized function
-  const shareUrls = buildShareUrls({
-    url: shareUrl,
-    title: shareTitle,
-    description: shareDescription,
-    lawText: textToCopy,
-  });
+  // Build share URLs using the centralized function or optional injector (for tests)
+  const shareUrls = getShareUrls
+    ? getShareUrls({ url: shareUrl, title: shareTitle, description: shareDescription, lawText: textToCopy })
+    : buildShareUrls({
+      url: shareUrl,
+      title: shareTitle,
+      description: shareDescription,
+      lawText: textToCopy,
+    });
 
   // Top channels: Copy link, X, Email (always visible)
   const topRow = document.createElement('div');

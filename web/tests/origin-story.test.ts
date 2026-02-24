@@ -33,6 +33,16 @@ describe('OriginStory view', () => {
     expect(el.innerHTML).toContain('True Origin of Murphy');
   });
 
+  it('L66 B1: navTarget truthy calls onNavigate', () => {
+    const onNavigate = vi.fn();
+    const el = OriginStory({ onNavigate });
+    const navBtn = document.createElement('a');
+    navBtn.setAttribute('data-nav', 'about');
+    el.appendChild(navBtn);
+    navBtn.click();
+    expect(onNavigate).toHaveBeenCalledWith('about');
+  });
+
   it('handles navigation click with data-nav attribute', () => {
     const onNavigate = vi.fn();
     const el = OriginStory({ onNavigate });

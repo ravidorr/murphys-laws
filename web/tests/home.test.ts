@@ -75,6 +75,71 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
+  it('L164 B0: click not on retry does not trigger fetchAndRender', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' })
+    });
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 0));
+    const other = document.createElement('span');
+    el.appendChild(other);
+    other.click();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('L172 B1: nav button with data-nav triggers onNavigate', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ law: { id: 1, text: 'T' }, featured_date: '2025-10-29' }) });
+    let navTarget = '';
+    const el = Home({ onNavigate: (t) => { navTarget = t; } });
+    await new Promise(r => setTimeout(r, 0));
+    const btn = document.createElement('button');
+    btn.setAttribute('data-nav', 'browse');
+    el.appendChild(btn);
+    btn.click();
+    expect(navTarget).toBe('browse');
+  });
+
+  it('L184 B1: click on law host not button with id navigates', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: { id: 99, text: 'T', upvotes: 0, downvotes: 0 }, featured_date: '2025-10-29' })
+    });
+    let navLawId = '';
+    const el = Home({ onNavigate: (_t, id) => { navLawId = id ?? ''; } });
+    await new Promise(r => setTimeout(r, 0));
+    const lawBlock = el.querySelector('[data-law-id="99"]');
+    expect(lawBlock).toBeTruthy();
+    (lawBlock as HTMLElement).click();
+    expect(navLawId).toBe('99');
+  });
+
+  it('L204 B1: keydown on law host with id navigates', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: { id: 88, text: 'T', upvotes: 0, downvotes: 0 }, featured_date: '2025-10-29' })
+    });
+    let navLawId = '';
+    const el = Home({ onNavigate: (_t, id) => { navLawId = id ?? ''; } });
+    await new Promise(r => setTimeout(r, 0));
+    const lawBlock = el.querySelector('[data-law-id="88"]');
+    lawBlock!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(navLawId).toBe('88');
+  });
+
+  it('L215 B1: keydown on nav button with navTarget calls onNavigate', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ law: { id: 1, text: 'T' }, featured_date: '2025-10-29' }) });
+    let navTarget = '';
+    const el = Home({ onNavigate: (t) => { navTarget = t; } });
+    await new Promise(r => setTimeout(r, 0));
+    const btn = document.createElement('button');
+    btn.setAttribute('data-nav', 'submit');
+    el.appendChild(btn);
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(navTarget).toBe('submit');
+  });
+
   it('navigates to category when clicking category:id nav button', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
     globalThis.fetch = vi.fn().mockResolvedValue({

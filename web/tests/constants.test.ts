@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { describe, it, expect } from 'vitest';
-import { getRandomLoadingMessage, getEnvVar, SITE_URL, API_BASE_URL, LOADING_MESSAGES } from '../src/utils/constants.ts';
+import { getRandomLoadingMessage, getEnvVar, getCategoryDisplayName, CATEGORY_DISPLAY_NAME_OVERRIDES, SITE_URL, API_BASE_URL, LOADING_MESSAGES } from '../src/utils/constants.ts';
 
 
 
@@ -76,11 +76,26 @@ describe('Constants', () => {
       expect(result).toBe('from-vite');
     });
 
+    it('L38 B1: getEnvVar enters viteEnv branch when opts.viteEnv provided', () => {
+      const result = getEnvVar('K', 'N', 'def', { viteEnv: { K: 'v' } });
+      expect(result).toBe('v');
+    });
+
+    it('L39 B1: getEnvVar returns value when viteEnv key is defined', () => {
+      const result = getEnvVar('KEY', 'N', 'default', { viteEnv: { KEY: 'defined' } });
+      expect(result).toBe('defined');
+    });
+
     it('returns value from opts.nodeEnv when provided (covers Node return branch L32)', () => {
       const result = getEnvVar('VITE_K', 'NODE_K', 'default', {
         nodeEnv: { NODE_K: 'from-node' }
       });
       expect(result).toBe('from-node');
+    });
+
+    it('L43 B1: getEnvVar enters nodeEnv branch when opts.nodeEnv provided', () => {
+      const result = getEnvVar('X', 'Y', 'def', { nodeEnv: { Y: 'node-val' } });
+      expect(result).toBe('node-val');
     });
 
     it('falls through to opts.nodeEnv when opts.viteEnv is present but key missing (L31 L36)', () => {
@@ -107,6 +122,14 @@ describe('Constants', () => {
     it('returns default when opts is empty object (L31 L32 L36)', () => {
       const result = getEnvVar('VITE_X', 'NODE_X', 'default', {});
       expect(result).toBe('default');
+    });
+
+    it('uses fallback when opts.viteEnv is explicitly undefined (L38 L39 L43)', () => {
+      const result = getEnvVar('VITE_MISSING', 'NODE_K', 'default', {
+        viteEnv: undefined,
+        nodeEnv: { NODE_K: 'from-node' }
+      });
+      expect(result).toBe('from-node');
     });
 
     it('uses opts.nodeEnv when opts.viteEnv is omitted (L31 B1)', () => {
@@ -220,6 +243,20 @@ describe('Constants', () => {
       // Use a key that definitely doesn't exist
       const result = getEnvVar('VITE_NONEXISTENT_XYZ', 'NONEXISTENT_XYZ', 'default');
       expect(result).toBe('default');
+    });
+  });
+
+  describe('getCategoryDisplayName', () => {
+    it('returns override when slug is in CATEGORY_DISPLAY_NAME_OVERRIDES', () => {
+      const slug = 'murphys-cars-4x4-laws';
+      const result = getCategoryDisplayName(slug, "Murphy's 4X4 Car Laws Section");
+      expect(result).toBe(CATEGORY_DISPLAY_NAME_OVERRIDES[slug]);
+      expect(result).toBe("Murphy's 4x4 & Off-Road Laws");
+    });
+
+    it('returns apiTitle when slug is not in overrides', () => {
+      const result = getCategoryDisplayName('some-other-slug', 'API Title Here');
+      expect(result).toBe('API Title Here');
     });
   });
 });

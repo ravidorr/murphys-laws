@@ -77,6 +77,14 @@ describe('Footer component', () => {
     expect(navigated).toBe('about');
   });
 
+  it('L132 B1: click on nav link with data-nav calls onNavigate', () => {
+    let navigated = '';
+    const el = Footer({ onNavigate: (target) => { navigated = target; } });
+    const privacyLink = el.querySelector('[data-nav="privacy"]') as HTMLElement | null;
+    privacyLink!.click();
+    expect(navigated).toBe('privacy');
+  });
+
   it('triggers onNavigate for privacy link', () => {
     let navigated = '';
     const el = Footer({
@@ -147,6 +155,14 @@ describe('Footer component', () => {
     expect(adsenseEl).toBeTruthy();
     expect(adsenseEl!.getAttribute('data-ad-client')).toBe('ca-pub-3615614508734124');
     expect(window.adsbygoogle.length).toBe(1);
+  });
+
+  it('L50 B1: loadAd uses empty array when adsbygoogle is falsy', () => {
+    (window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle = undefined;
+    const el = Footer({ onNavigate: () => {} });
+    el.dispatchEvent(new Event('adslot:init'));
+    expect(Array.isArray(window.adsbygoogle)).toBe(true);
+    expect(window.adsbygoogle!.length).toBe(1);
   });
 
   it('does not load ad when main is missing (L87)', () => {
@@ -278,6 +294,63 @@ describe('Footer component', () => {
     } finally {
       g.IntersectionObserver = origIO;
       setTimeoutSpy.mockRestore();
+    }
+  });
+
+  it('L65 B0: defer uses setTimeout when requestIdleCallback is not available', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const origIO = g.IntersectionObserver;
+    g.IntersectionObserver = undefined;
+    const win = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
+    const origRIC = win.requestIdleCallback;
+    win.requestIdleCallback = undefined;
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    try {
+      Footer({ onNavigate: () => {} });
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+    } finally {
+      g.IntersectionObserver = origIO;
+      if (origRIC !== undefined) win.requestIdleCallback = origRIC;
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
+  it('L86 B0: scheduleAd calls defer when IntersectionObserver is not available', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const origIO = g.IntersectionObserver;
+    g.IntersectionObserver = undefined;
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    try {
+      Footer({ onNavigate: () => {} });
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+    } finally {
+      g.IntersectionObserver = origIO;
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
+  it('L126 B0: registers load listener when readyState is not complete', () => {
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+    try {
+      Footer({ onNavigate: () => {} });
+      expect(addEventListenerSpy).toHaveBeenCalledWith('load', expect.any(Function), { once: true });
+    } finally {
+      addEventListenerSpy.mockRestore();
     }
   });
 
@@ -799,5 +872,29 @@ describe('Footer component', () => {
 
     // Cleanup
     emptyMain.remove();
+  });
+
+  it('loadAd catch when push throws (L49)', () => {
+    window.adsbygoogle = [];
+    const badPush = vi.fn().mockImplementation(() => {
+      throw new Error('Ad blocked');
+    });
+    Object.defineProperty(window, 'adsbygoogle', {
+      value: { push: badPush },
+      writable: true,
+      configurable: true
+    });
+
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({ onNavigate: () => { } });
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(badPush).toHaveBeenCalled();
+    window.adsbygoogle = [];
   });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-// We need to reset the module between tests to clear the loaderPromise
+import { setLoaderForTesting, resetMathJaxStateForTesting } from '../src/utils/mathjax.ts';
+
 let ensureMathJax: typeof import('../src/utils/mathjax.ts').ensureMathJax | undefined;
 
 /** Window with optional MathJax (matches src/types/global.d.ts) */
@@ -30,26 +31,25 @@ describe('mathjax utility', () => {
     // Save original values
     originalMathJax = getWindow().MathJax;
 
-    // Reset MathJax
+    // Reset MathJax and loader state
     getWindow().MathJax = undefined;
-    
-    // Reset the module to clear loaderPromise
+    setLoaderForTesting(undefined);
+    resetMathJaxStateForTesting();
+
     vi.resetModules();
     const module = await import('../src/utils/mathjax.ts');
     ensureMathJax = module.ensureMathJax;
-    
-    // Mock document.getElementById
+
     vi.spyOn(document, 'getElementById').mockReturnValue(null);
   });
 
   afterEach(() => {
-    // Restore
+    setLoaderForTesting(undefined);
     if (originalMathJax) {
       getWindow().MathJax = originalMathJax;
     } else {
       getWindow().MathJax = undefined;
     }
-    
     vi.restoreAllMocks();
   });
 
@@ -78,73 +78,67 @@ describe('mathjax utility', () => {
       }
     });
 
-    it('returns undefined if MathJax exists but without typesetPromise', async () => {
-      (window as unknown as { MathJax?: Record<string, unknown> }).MathJax = { someOtherProp: true };
-      
-      // Reset modules and use vi.doMock() for dynamic mocking (not hoisted like vi.mock())
-      vi.resetModules();
-      vi.doMock('mathjax/es5/tex-chtml.js', () => {
-        throw new Error('Module not found');
-      });
+    it('L7 B0: ensureMathJax does not configure when window undefined (SSR)', async () => {
+      const g = globalThis as unknown as { window?: Window };
+      const originalWindow = g.window;
+      g.window = undefined;
+      try {
+        const result = await ensureMathJax!();
+        expect(result).toBeUndefined();
+      } finally {
+        g.window = originalWindow;
+      }
+    });
 
-      // Re-import to use the mocked module
+    it('L86 B0: ensureMathJax does not call typesetPromise when appRoot is null', async () => {
+      vi.resetModules();
       const module = await import('../src/utils/mathjax.ts');
       const localEnsureMathJax = module.ensureMathJax;
-
-      // The ensureMathJax will try to load mathjax, which will fail
-      // It should return undefined gracefully instead of throwing
+      getWindow().MathJax = undefined;
+      vi.spyOn(document, 'getElementById').mockReturnValue(null);
       const result = await localEnsureMathJax!();
+      expect(result).toBeDefined();
+    });
+
+    it('returns undefined if MathJax exists but without typesetPromise', async () => {
+      (window as unknown as { MathJax?: Record<string, unknown> }).MathJax = { someOtherProp: true };
+      resetMathJaxStateForTesting();
+      vi.resetModules();
+      const module = await import('../src/utils/mathjax.ts');
+      module.setLoaderForTesting(() => Promise.reject(new Error('Module not found')));
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await module.ensureMathJax();
       expect(result).toBeUndefined();
+      consoleErrorSpy.mockRestore();
     });
 
     it('returns undefined and logs error when dynamic import fails', async () => {
       (window as unknown as { MathJax?: unknown }).MathJax = undefined;
-      
-      // Reset modules and mock the mathjax import to fail
+      resetMathJaxStateForTesting();
       vi.resetModules();
-      vi.doMock('mathjax/es5/tex-chtml.js', () => {
-        throw new Error('Importing a module script failed');
-      });
-
-      // Re-import to use the mocked module
       const module = await import('../src/utils/mathjax.ts');
-      const localEnsureMathJax = module.ensureMathJax;
-
-      // Spy on console.error
+      module.setLoaderForTesting(() => Promise.reject(new Error('Importing a module script failed')));
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      // Should return undefined gracefully, not throw
-      const result = await localEnsureMathJax!();
+      const result = await module.ensureMathJax();
       expect(result).toBeUndefined();
-      
-      // Should have logged the error
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Failed to load MathJax:',
         expect.any(Error)
       );
-
       consoleErrorSpy.mockRestore();
     });
 
     it('configures MathJax window object when loading', async () => {
-      // Ensure MathJax is not set
       (window as unknown as { MathJax?: unknown }).MathJax = undefined;
-      
-      // Reset modules and set up mock for dynamic import
+      resetMathJaxStateForTesting();
       vi.resetModules();
-      vi.doMock('mathjax/es5/tex-chtml.js', () => ({}));
-
-      // Re-import to use the mocked module
       const module = await import('../src/utils/mathjax.ts');
-      const localEnsureMathJax = module.ensureMathJax;
+      module.setLoaderForTesting(() => Promise.resolve({}));
 
-      try {
-        await localEnsureMathJax!();
-      } catch {
-        // Expected - module won't actually load
-      }
+      await module.ensureMathJax();
 
-      // MathJax config should have been set
       expect(getWindow().MathJax).toBeDefined();
       expect(getWindow().MathJax!.tex).toBeDefined();
       expect(getWindow().MathJax!.tex!.inlineMath).toEqual([['\\(', '\\)']]);

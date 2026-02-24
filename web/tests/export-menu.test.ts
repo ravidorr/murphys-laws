@@ -231,6 +231,32 @@ describe('Export Menu Component', () => {
       expect(dropdown!.hidden).toBe(false);
     });
 
+    it('does not open dropdown when toggle button is disabled (L230)', () => {
+      vi.mocked(getExportContent).mockReturnValue(null);
+      vi.mocked(getAvailableFormats).mockReturnValue([]);
+
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button!.disabled).toBe(true);
+
+      button!.click();
+
+      expect(dropdown!.hidden).toBe(true);
+    });
+
+    it('L230 B1: click toggle when not disabled opens dropdown', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      expect(button!.disabled).toBe(false);
+      button!.click();
+      expect(dropdown!.hidden).toBe(false);
+    });
+
     it('first dropdown item has tabindex 0, rest have -1 (L106 L122)', () => {
       const menu = ExportMenu();
       localThis.container!.appendChild(menu);
@@ -311,6 +337,18 @@ describe('Export Menu Component', () => {
       expect(exportToText).toHaveBeenCalled();
     });
 
+    it('L209 B1: Enter on menuitem reads data-format and calls handleExport', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement | null;
+      button!.click();
+      const pdfItem = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
+      pdfItem!.focus();
+      dropdown!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(exportToPDF).toHaveBeenCalled();
+    });
+
     it('ArrowUp on first menuitem wraps focus to last item (L230)', () => {
       const menu = ExportMenu();
       localThis.container!.appendChild(menu);
@@ -339,6 +377,16 @@ describe('Export Menu Component', () => {
       mdItem!.click();
 
       expect(exportToMarkdown).toHaveBeenCalled();
+    });
+
+    it('L237 B1 L238 B1: click on format item triggers handleExport with format', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement | null;
+      button!.click();
+      const pdfItem = menu.querySelector('[data-format="pdf"]') as HTMLElement | null;
+      pdfItem!.click();
+      expect(exportToPDF).toHaveBeenCalled();
     });
 
     it('closes dropdown on outside click', () => {

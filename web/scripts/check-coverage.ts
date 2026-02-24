@@ -23,7 +23,7 @@ const ROOT_DIR = join(__dirname, '..');
 const THRESHOLDS = {
   lines: 95,
   functions: 95,
-  branches: 92,
+  branches: 93,
   statements: 95
 };
 

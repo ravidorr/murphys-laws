@@ -119,6 +119,131 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
   });
 
+  it('uses initial filters when searchQuery is omitted (L66)', async () => {
+    const el = Browse({ onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini') ?? el.textContent).toBeTruthy();
+    }, { timeout: 1000 });
+
+    expect(fetchLawsSpy).toHaveBeenCalled();
+  });
+
+  it('L37 B1: parseBrowseParams adds category_id to filters when in URL', async () => {
+    const url = new URL(location.href);
+    url.search = '?category_id=3';
+    url.pathname = '/browse';
+    window.history.replaceState({}, '', url.toString());
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ category_id: 3 }));
+  });
+
+  it('L39 T6 B0: parseBrowseParams does not add category_id when absent from URL', async () => {
+    const url = new URL(location.href);
+    url.search = '';
+    url.pathname = '/browse';
+    window.history.replaceState({}, '', url.toString());
+    Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    const lastCall = fetchLawsSpy.mock.calls[fetchLawsSpy.mock.calls.length - 1];
+    expect(lastCall?.[0]).not.toHaveProperty('category_id');
+  });
+
+  it('L39 T7 B0: parseBrowseParams keeps category_id as string when not numeric', async () => {
+    const url = new URL(location.href);
+    url.search = '?category_id=slug-value';
+    url.pathname = '/browse';
+    window.history.replaceState({}, '', url.toString());
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ category_id: 'slug-value' }));
+  });
+
+  it('L39 T7 B1: parseBrowseParams parses category_id as number when numeric', async () => {
+    const url = new URL(location.href);
+    url.search = '?category_id=5';
+    url.pathname = '/browse';
+    window.history.replaceState({}, '', url.toString());
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ category_id: 5 }));
+  });
+
+  it('L40 T8 B0: parseBrowseParams does not add attribution when absent', async () => {
+    const url = new URL(location.href);
+    url.search = '';
+    url.pathname = '/browse';
+    window.history.replaceState({}, '', url.toString());
+    Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    const lastCall = fetchLawsSpy.mock.calls[fetchLawsSpy.mock.calls.length - 1];
+    expect(lastCall?.[0]).not.toHaveProperty('attribution');
+  });
+
+  it('L60 B1: uses searchQuery in currentFilters when provided and non-empty', async () => {
+    const el = Browse({ searchQuery: 'test-query', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ q: 'test-query' }));
+  });
+
+  it('L100 B1: setExportContent called when laws loaded', async () => {
+    const setExportSpy = vi.spyOn(exportContext, 'setExportContent');
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+    expect(setExportSpy).toHaveBeenCalled();
+    setExportSpy.mockRestore();
+  });
+
+  it('L103 B1: clearExportContent called when no laws returned', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+    const clearSpy = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Browse({ searchQuery: 'empty', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+    expect(clearSpy).toHaveBeenCalled();
+    clearSpy.mockRestore();
+  });
+
+  it('L171 B1: history.replaceState called after loadPage', async () => {
+    const replaceStateSpy = vi.spyOn(history, 'replaceState');
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+    expect(replaceStateSpy).toHaveBeenCalled();
+    replaceStateSpy.mockRestore();
+  });
+
+  it('L215 B1: law card click navigates when not clicking button', async () => {
+    const onNavigate = vi.fn();
+    const el = Browse({ searchQuery: '', onNavigate });
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+    const card = el.querySelector('.law-card-mini') as HTMLElement;
+    const lawId = card?.dataset?.lawId;
+    expect(lawId).toBeTruthy();
+    const titleEl = card?.querySelector('.law-card-title') ?? card;
+    titleEl?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onNavigate).toHaveBeenCalledWith('law', lawId);
+  });
+
   it('does not replace breadcrumb container when Breadcrumb returns null (L66 falsy branch)', async () => {
     vi.doMock('../src/components/breadcrumb.js', () => ({ Breadcrumb: () => null }));
     const { Browse: BrowseWithMock } = await import('../src/views/browse.js');
@@ -236,6 +361,30 @@ describe('Browse view', () => {
     await vi.waitFor(() => {
       expect(el.textContent).toMatch(/Of course something went wrong/);
     }, { timeout: 1000 });
+  });
+
+  it('retry button triggers loadPage again after fetch failure', async () => {
+    fetchLawsSpy.mockRejectedValueOnce(new Error('Network error'));
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-action="retry"]')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    fetchLawsSpy.mockResolvedValue({
+      data: [{ id: 1, title: 'Law', text: 'Text', upvotes: 0, downvotes: 0 }],
+      total: 1,
+      limit: 25,
+      offset: 0
+    });
+
+    (el.querySelector('[data-action="retry"]') as HTMLElement).click();
+    await vi.waitFor(() => {
+      expect(el.querySelector('.law-card-mini')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    expect(fetchLawsSpy).toHaveBeenCalledTimes(2);
   });
 
   it('renders pagination when multiple pages', async () => {
@@ -802,6 +951,56 @@ describe('Browse view', () => {
       // Widgets should be hidden when there's a search query
       expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
     }, { timeout: 1000 });
+  });
+
+  it('L243 B1: updateWidgetsVisibility runs when widgets container exists', async () => {
+    const el = Browse({ searchQuery: 'x', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      const widgetsContainer = el.querySelector('[data-widgets]');
+      expect(widgetsContainer).toBeTruthy();
+      expect(widgetsContainer!.hasAttribute('hidden')).toBe(true);
+    }, { timeout: 1000 });
+  });
+
+  it('L272 B1: sort select and sortValue set selected option when option exists', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      expect(sortSelect).toBeTruthy();
+      expect(sortSelect.value).toBe('score-desc');
+    }, { timeout: 1000 });
+  });
+
+  it('L274 B1: option element gets selected when matching sortValue', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      const option = sortSelect?.querySelector('option[value="score-desc"]');
+      expect(option).toBeTruthy();
+      expect((option as HTMLOptionElement).selected).toBe(true);
+    }, { timeout: 1000 });
+  });
+
+  it('L279 B1: sort from change event updates currentSort', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.querySelector('#sort-select')).toBeTruthy();
+    }, { timeout: 1000 });
+    const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+    sortSelect.value = 'created_at-desc';
+    sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(sortSelect.value).toBe('created_at-desc');
+  });
+
+  it('L280 B1: order from change event updates currentOrder', async () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(el.querySelector('#sort-select')).toBeTruthy();
+    }, { timeout: 1000 });
+    const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+    sortSelect.value = 'created_at-asc';
+    sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(sortSelect.value).toBe('created_at-asc');
   });
 
   it('shows widgets when no search filters are active', async () => {

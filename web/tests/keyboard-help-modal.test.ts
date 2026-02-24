@@ -235,6 +235,23 @@ describe('keyboard-help-modal', () => {
       expect(localThis.event.preventDefault).toHaveBeenCalled();
     });
 
+    it('L71 B1: Shift+Tab on first focusable moves focus to last and prevents default', () => {
+      openKeyboardHelpModal();
+      const modal = document.getElementById('keyboard-help-modal')!;
+      const container = modal.querySelector('.modal-container')!;
+      const focusables = container.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      first.focus();
+      const ev = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true });
+      ev.preventDefault = vi.fn();
+      modal.dispatchEvent(ev);
+      expect(ev.preventDefault).toHaveBeenCalled();
+      expect(document.activeElement).toBe(last);
+    });
+
     it('traps Shift+Tab to first focusable when on last', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();

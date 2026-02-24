@@ -30,6 +30,16 @@ describe('MurphysLawProjectManagement view', () => {
     expect(el.innerHTML).toContain('Survival Guide');
   });
 
+  it('L54 B1: navTarget truthy calls onNavigate', () => {
+    const onNavigate = vi.fn();
+    const el = MurphysLawProjectManagement({ onNavigate });
+    const navBtn = document.createElement('a');
+    navBtn.setAttribute('data-nav', 'origin-story');
+    el.appendChild(navBtn);
+    navBtn.click();
+    expect(onNavigate).toHaveBeenCalledWith('origin-story');
+  });
+
   it('handles navigation click with data-nav attribute', () => {
     const onNavigate = vi.fn();
     const el = MurphysLawProjectManagement({ onNavigate });

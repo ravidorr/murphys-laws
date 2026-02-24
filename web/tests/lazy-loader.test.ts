@@ -128,6 +128,14 @@ describe('Lazy Loader Utilities', () => {
       expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
     });
 
+    it('L93 B12: lazyLoad observes placeholder when connected at rAF', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+      document.body.appendChild(placeholder);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
+    });
+
     it('disconnects observer after loading', async () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
       const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
@@ -205,6 +213,18 @@ describe('Lazy Loader Utilities', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
+    });
+
+    it('does not call observe when placeholder still not connected after setTimeout (L96)', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+      expect(placeholder.isConnected).toBe(false);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(placeholder.isConnected).toBe(false);
+      expect(localThis.mockObserver.observe).not.toHaveBeenCalledWith(placeholder);
     });
 
     it('adds loading class while loading', async () => {
