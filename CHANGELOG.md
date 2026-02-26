@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Web CI: install Rollup Linux native binary after npm ci (same fix as backend); bump root to 2.0.28
 - Backend CI: install Rollup Linux native binary after npm ci to fix optional deps bug on ubuntu-latest; bump root to 2.0.27
 - npm audit fix (lockfile)
 - Remove all v8 ignore comments from web and backend (coverage now counts previously excluded branches); backend branch threshold 95% -> 93%, web branch threshold 93% -> 92% after excluded code no longer ignored; bump root to 2.0.26, web to 3.1.3
