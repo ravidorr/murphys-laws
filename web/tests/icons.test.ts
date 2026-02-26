@@ -73,11 +73,11 @@ describe('Icons utility', () => {
       expect(sunMoonIcon!.getAttribute('viewBox')).toBe('0 0 24 24');
     });
 
-    it('creates bookmark icons with viewBox -24 -24 72 72', () => {
+    it('creates bookmark icons with viewBox 0 0 24 24 for consistent size with other vote icons', () => {
       const bookmarkIcon = createIcon('bookmark');
       const bookmarkFilledIcon = createIcon('bookmarkFilled');
-      expect(bookmarkIcon!.getAttribute('viewBox')).toBe('-24 -24 72 72');
-      expect(bookmarkFilledIcon!.getAttribute('viewBox')).toBe('-24 -24 72 72');
+      expect(bookmarkIcon!.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(bookmarkFilledIcon!.getAttribute('viewBox')).toBe('0 0 24 24');
     });
 
     it('creates stroke-based icons with correct attributes (Lucide style)', () => {
