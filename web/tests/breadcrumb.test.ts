@@ -19,18 +19,18 @@ describe('Breadcrumb component', () => {
     expect(navigated).toBe('category:general');
   });
 
-  it('L37 B1: appends separator after Home when items.length > 0', () => {
+  it('renders one separator before each item after Home (not after Home)', () => {
     const el = Breadcrumb({
       items: [{ label: 'Only', href: '/' }],
       onNavigate: () => {}
     });
-    const firstLi = el.querySelector('.breadcrumb-list .breadcrumb-item');
-    expect(firstLi).toBeTruthy();
-    const sep = firstLi!.querySelector('.breadcrumb-separator');
-    expect(sep).toBeTruthy();
+    const items = el.querySelectorAll('.breadcrumb-item');
+    expect(items.length).toBe(2);
+    expect(items[0]!.querySelector('.breadcrumb-separator')).toBeNull();
+    expect(items[1]!.querySelector('.breadcrumb-separator')).toBeTruthy();
   });
 
-  it('L37 B0: does not append separator when items is empty', () => {
+  it('does not render separators when items is empty', () => {
     const el = Breadcrumb({
       items: [],
       onNavigate: () => {}

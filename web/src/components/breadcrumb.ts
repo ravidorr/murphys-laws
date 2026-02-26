@@ -23,7 +23,6 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
   // Template always has a root nav element.
   const nav = container.firstElementChild!;
   const list = nav.querySelector('.breadcrumb-list');
-  const firstLi = list?.querySelector('.breadcrumb-item');
 
   function createSeparator(): HTMLSpanElement {
     const sep = document.createElement('span');
@@ -33,12 +32,7 @@ export function Breadcrumb({ items = [], onNavigate }: { items?: BreadcrumbItem[
     return sep;
   }
 
-  // Add separator after "Home" when there are more items
-  if (firstLi && items.length > 0) {
-    firstLi.appendChild(createSeparator());
-  }
-
-  // Add additional breadcrumb items
+  // Add additional breadcrumb items (separator is before each item, not after Home)
   items.forEach((item, index) => {
     const li = document.createElement('li');
     li.className = 'breadcrumb-item';

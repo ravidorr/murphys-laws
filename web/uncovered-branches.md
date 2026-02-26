@@ -29,7 +29,6 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [x] L476 T49 B1 | src/components/social-share.ts:476 | tests/social-share.test.ts
 - [x] L477 T50 B1 | src/components/social-share.ts:477 | tests/social-share.test.ts
 - [x] L53 T4 B1 | src/components/advanced-search.ts:53 | tests/advanced-search.test.ts
-- [x] L37 T1 B1 | src/components/breadcrumb.ts:37 | tests/breadcrumb.test.ts
 - [x] L209 T13 B1 | src/components/export-menu.ts:209 | tests/export-menu.test.ts
 - [x] L230 T14 B1 | src/components/export-menu.ts:230 | tests/export-menu.test.ts
 - [x] L237 T15 B1 | src/components/export-menu.ts:237 | tests/export-menu.test.ts
@@ -398,7 +397,6 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [x] L236 T21 B1 | src/views/sods-calculator.ts:236 | tests/sods-calculator.test.ts
 - [x] L245 T22 B1 | src/views/sods-calculator.ts:245 | tests/sods-calculator.test.ts
 - [x] L246 T23 B1 | src/views/sods-calculator.ts:246 | tests/sods-calculator.test.ts
-- [x] L37 T1 B1 | src/components/breadcrumb.ts:37 | tests/breadcrumb.test.ts
 - [x] L315 T56 B0 | src/views/law-detail.ts:315 | tests/law-detail.test.ts
 - [x] L316 T57 B1 | src/views/law-detail.ts:316 | tests/law-detail.test.ts
 - [x] L337 T60 B1 | src/views/law-detail.ts:337 | tests/law-detail.test.ts
