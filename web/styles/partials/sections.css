@@ -460,10 +460,6 @@
 .count-up .icon { color: var(--success); }
 .count-down .icon { color: var(--error); }
 
-.vote-hint {
-  margin: 0 0 0.25rem;
-}
-
 /* Vote group: up/down buttons in a single visual unit */
 .vote-group {
   display: inline-flex;

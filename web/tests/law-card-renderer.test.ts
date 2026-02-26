@@ -123,6 +123,15 @@ describe('law-card-renderer', () => {
       expect(html).toContain('data-vote="down"');
     });
 
+    it('renders vote-group with anonymous tooltip and vote buttons with data-tooltip', () => {
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      expect(html).toContain('data-tooltip="Votes are anonymous; no login required."');
+      expect(html).toContain('aria-label="Vote. Votes are anonymous; no login required."');
+      expect(html).toContain('data-tooltip="Upvote (anonymous; no login)"');
+      expect(html).toContain('data-tooltip="Downvote (anonymous; no login)"');
+    });
+
     it('renders favorite button with tooltip when feature enabled', () => {
       const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
       const html = renderLawCard(law);

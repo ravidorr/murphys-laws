@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Vote UX: move "Votes are anonymous; no login required." to tooltip on vote-group; use data-tooltip on up/down vote buttons (Law of the Day, law detail, law cards); remove .vote-hint; bump root to 2.0.36, web to 3.1.10
 - AdSense: scope footer ad CSS to .footer-ad-shell so Google-injected side-rail ads do not get width: 100% and block clicks on main content; bump root to 2.0.35, web to 3.1.9
 - Law detail: when law has no title, show "Murphy's Law" with "Murphy's" in accent-text instead of plain "Law"; bump root to 2.0.34, web to 3.1.8
 - Favorite: bookmark-with-star icon (outline/filled) instead of heart; vote-group container for up/down buttons; law card title h3.section-title; backend/api fixes; bump root to 2.0.33, web to 3.1.7

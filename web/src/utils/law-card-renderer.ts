@@ -110,7 +110,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
       ${categoryChip ? `<div class="law-card-categories">${categoryChip}</div>` : ''}
       <div class="law-card-footer">
         <div class="law-card-footer-left">
-          <div class="vote-group" role="group" aria-label="Vote">
+          <div class="vote-group" role="group" aria-label="Vote. Votes are anonymous; no login required." data-tooltip="Votes are anonymous; no login required.">
             ${renderButtonHTML({
     variant: 'vote',
     direction: 'up',
