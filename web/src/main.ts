@@ -267,7 +267,7 @@ const routesMap = {
   browse: () => {
     trackPageView();
     setBrowseStructuredData();
-    return layout(Browse({ searchQuery: state.searchQuery, onNavigate }), { hideAds: true });
+    return layout(Browse({ searchQuery: state.searchQuery, onNavigate }));
   },
   categories: () => {
     trackPageView();
@@ -302,7 +302,7 @@ const routesMap = {
     const submitSection = SubmitLawSection();
     container.appendChild(submitSection);
     clearPageStructuredData();
-    return layout(container, { hideAds: true });
+    return layout(container);
   },
   calculator: ({ param }: { param?: string | null }) => {
     trackPageView();
@@ -310,18 +310,18 @@ const routesMap = {
     // Handle /calculator/sods-law and /calculator/buttered-toast
     if (param === 'buttered-toast') {
       setToastCalculatorStructuredData();
-      return layout(ButteredToastCalculator(), { hideAds: true });
+      return layout(ButteredToastCalculator());
     }
     // Default to Sod's Law Calculator (handles /calculator/sods-law and legacy /calculator)
     setSodCalculatorStructuredData();
-    return layout(Calculator(), { hideAds: true });
+    return layout(Calculator());
   },
   // Keep legacy routes for backward compatibility
   toastcalculator: () => {
     trackPageView();
     trackCalculatorUse();
     setToastCalculatorStructuredData();
-    return layout(ButteredToastCalculator(), { hideAds: true });
+    return layout(ButteredToastCalculator());
   },
   'origin-story': () => {
     trackPageView();
@@ -346,7 +346,7 @@ const routesMap = {
   contact: () => {
     trackPageView();
     clearPageStructuredData();
-    return layout(Contact({ onNavigate }), { hideAds: true });
+    return layout(Contact({ onNavigate }));
   },
   examples: () => {
     trackPageView();
