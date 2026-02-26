@@ -12,6 +12,8 @@ export interface ListLawsParams {
   attribution?: string;
   sort?: string;
   order?: string;
+  /** When true, exclude laws that are corollaries (from_law_id in law_relations with COROLLARY_OF) */
+  excludeCorollaries?: boolean;
 }
 
 /** Law shape returned by getLaw / getLawOfTheDay; compatible with IFeedLawService */
@@ -89,7 +91,7 @@ export class LawService {
     this.db = db;
   }
 
-  async listLaws({ limit, offset, q = '', categoryId = null, categorySlug = null, attribution = '', sort = 'score', order = 'desc' }: ListLawsParams) {
+  async listLaws({ limit, offset, q = '', categoryId = null, categorySlug = null, attribution = '', sort = 'score', order = 'desc', excludeCorollaries = false }: ListLawsParams) {
     const baseSelect = `
       SELECT
         l.id,
@@ -120,12 +122,15 @@ export class LawService {
     const like = `%${q}%`;
     const attributionLike = `%${attribution}%`;
 
+    // Exclude corollaries: laws that are the "from" side of a COROLLARY_OF relation
+    const noCorollaryCondition = " AND NOT EXISTS (SELECT 1 FROM law_relations r WHERE r.from_law_id = l.id AND r.relation_type = 'COROLLARY_OF')";
+
     // Build parameter arrays
     const countParams = [];
     const listParams = [];
 
-    let where = '';
-    let countWhere = "WHERE l.status = 'published'";
+    let where = excludeCorollaries ? noCorollaryCondition : '';
+    let countWhere = "WHERE l.status = 'published'" + (excludeCorollaries ? noCorollaryCondition : '');
 
     if (hasQ) {
       where += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";

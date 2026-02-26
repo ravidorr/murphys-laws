@@ -75,10 +75,10 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
     const favoriteTooltip = isFav ? 'Remove from favorites' : 'Add to favorites';
     if (isFav) {
       favoriteBtn.classList.add('favorited');
-      // Replace icon with filled heart
+      // Replace icon with filled bookmark
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIcon = createIcon('heartFilled');
+        const newIcon = createIcon('bookmarkFilled');
         if (newIcon) {
           iconEl.replaceWith(newIcon);
         }
@@ -184,7 +184,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       // Update icon
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
+        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
         const newIcon = createIcon(newIconName);
         if (newIcon) {
           iconEl.replaceWith(newIcon);

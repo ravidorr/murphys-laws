@@ -85,7 +85,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     ? renderButtonHTML({
       variant: 'vote',
       direction: 'up', // Required for vote variant
-      icon: isFav ? 'heartFilled' : 'heart',
+      icon: isFav ? 'bookmarkFilled' : 'bookmark',
       count: 0, // No count for favorites
       lawId: safeId,
       action: 'favorite',
@@ -110,7 +110,8 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
       ${categoryChip ? `<div class="law-card-categories">${categoryChip}</div>` : ''}
       <div class="law-card-footer">
         <div class="law-card-footer-left">
-          ${renderButtonHTML({
+          <div class="vote-group" role="group" aria-label="Vote">
+            ${renderButtonHTML({
     variant: 'vote',
     direction: 'up',
     icon: 'thumbUp',
@@ -121,7 +122,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     ariaLabel: 'Upvote this law',
     tooltip: 'Upvote (anonymous; no login)',
   })}
-          ${renderButtonHTML({
+            ${renderButtonHTML({
     variant: 'vote',
     direction: 'down',
     icon: 'thumbDown',
@@ -132,6 +133,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     ariaLabel: 'Downvote this law',
     tooltip: 'Downvote (anonymous; no login)',
   })}
+          </div>
           ${favoriteButtonHtml}
         </div>
         ${shareButtonsHtml}

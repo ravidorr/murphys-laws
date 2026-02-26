@@ -161,10 +161,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         favoriteBtn.classList.add('favorited');
         favoriteBtn.setAttribute('aria-label', favoriteTooltip);
         favoriteBtn.setAttribute('data-tooltip', favoriteTooltip);
-        // Replace icon with filled heart
+        // Replace icon with filled bookmark
         const iconEl = favoriteBtn.querySelector('[data-icon]');
         if (iconEl) {
-          iconEl.setAttribute('data-icon', 'heartFilled');
+          iconEl.setAttribute('data-icon', 'bookmarkFilled');
         }
       }
       
@@ -330,7 +330,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
 
     if (t.closest('[data-action="random-law"]')) {
       e.preventDefault();
-      fetchLaws({ limit: 1, offset: 0 })
+      fetchLaws({ limit: 1, offset: 0, exclude_corollaries: true })
         .then((res) => {
           const total = res?.total ?? 0;
           if (total <= 0) {
@@ -338,7 +338,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
             return;
           }
           const offset = Math.min(Math.floor(Math.random() * total), Math.max(0, total - 1));
-          return fetchLaws({ limit: 1, offset });
+          return fetchLaws({ limit: 1, offset, exclude_corollaries: true });
         })
         .then((res) => {
           const law = res?.data?.[0];
@@ -402,7 +402,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       // Update icon
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
+        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
         const newIcon = createIcon(newIconName);
         if (newIcon) {
           iconEl.replaceWith(newIcon);
@@ -436,7 +436,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       // Update icon
       const iconEl = relatedFavoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
+        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
         const newIcon = createIcon(newIconName);
         if (newIcon) {
           iconEl.replaceWith(newIcon);

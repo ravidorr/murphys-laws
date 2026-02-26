@@ -150,21 +150,21 @@ describe('law-card-renderer', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(true);
     });
 
-    it('renders favorited state with filled heart icon when law is favorited', () => {
+    it('renders favorited state with filled bookmark icon when law is favorited', () => {
       vi.mocked(isFavorite).mockReturnValue(true);
       
       const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
       const html = renderLawCard(law);
       
       expect(html).toContain('favorited');
-      expect(html).toContain('heartFilled');
+      expect(html).toContain('bookmarkFilled');
       expect(html).toContain('Remove from favorites');
       
       // Reset mock
       vi.mocked(isFavorite).mockReturnValue(false);
     });
 
-    it('renders non-favorited state with outline heart icon', () => {
+    it('renders non-favorited state with outline bookmark icon', () => {
       vi.mocked(isFavorite).mockReturnValue(false);
       
       const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };

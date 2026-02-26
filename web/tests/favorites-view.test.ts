@@ -443,7 +443,7 @@ describe('Favorites View Component', () => {
       document.body.appendChild(el);
 
       try {
-        // Click on the SVG path element (simulates clicking the heart icon)
+        // Click on the SVG path element (simulates clicking the bookmark icon)
         path.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         // Should still call removeFavorite via event delegation

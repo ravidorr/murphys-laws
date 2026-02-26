@@ -37,7 +37,9 @@ export class LawController {
     const sort = allowedSortFields.includes(sortCandidate) ? sortCandidate : 'score';
     const order = query.order === 'asc' ? 'asc' : 'desc';
 
-    const result = await this.lawService.listLaws({ limit, offset, q, categoryId, categorySlug, attribution, sort, order });
+    const excludeCorollaries = query.exclude_corollaries === '1' || query.exclude_corollaries === 'true';
+
+    const result = await this.lawService.listLaws({ limit, offset, q, categoryId, categorySlug, attribution, sort, order, excludeCorollaries });
     
     return sendJson(res, 200, { 
       data: result.data, 

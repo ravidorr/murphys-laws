@@ -47,7 +47,7 @@ describe('Icons utility', () => {
 
     it('creates all icon types successfully', () => {
       const iconNames = [
-        'arrowForward', 'checkCircle', 'close', 'copy', 'email', 'error',
+        'arrowForward', 'bookmark', 'bookmarkFilled', 'checkCircle', 'close', 'copy', 'email', 'error',
         'facebook', 'home', 'link', 'linkedin', 'list', 'preview',
         'reddit', 'refresh', 'rss', 'search', 'searchOff', 'send',
         'share', 'thumbDown', 'thumbUp', 'twitter', 'warning',

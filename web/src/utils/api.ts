@@ -105,9 +105,11 @@ interface FetchLawsOptions {
   category_id?: number | string;
   category_slug?: string;
   attribution?: string;
+  /** When true, exclude corollaries (only return laws that are not COROLLARY_OF another) */
+  exclude_corollaries?: boolean;
 }
 
-export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order = 'desc', q = '', category_id, category_slug, attribution }: FetchLawsOptions = {}): Promise<PaginatedResponse<Law>> {
+export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order = 'desc', q = '', category_id, category_slug, attribution, exclude_corollaries }: FetchLawsOptions = {}): Promise<PaginatedResponse<Law>> {
   const params: Record<string, string> = {
     limit: String(limit),
     offset: String(offset),
@@ -129,6 +131,10 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
 
   if (attribution && attribution.trim()) {
     params.attribution = attribution.trim();
+  }
+
+  if (exclude_corollaries) {
+    params.exclude_corollaries = '1';
   }
 
   return await fetchAPI('/api/v1/laws', params) as PaginatedResponse<Law>;
