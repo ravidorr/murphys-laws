@@ -132,7 +132,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     ariaLabel: 'Downvote this law',
   })}
           </div>
-          ${favoriteButtonHtml}
+          ${favoriteButtonHtml ? `<div class="vote-group" role="group" aria-label="Add to favorites">${favoriteButtonHtml}</div>` : ''}
         </div>
         ${shareButtonsHtml}
       </div>

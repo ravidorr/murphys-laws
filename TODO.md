@@ -71,7 +71,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - ~~**Advanced Filtering:** Add filters for date range, minimum votes, and exclude categories.~~ (Cancelled)
 
 ## UX Improvements (Frontend Only)
-- [x] **User Favorites/Bookmarks:** ~~Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.~~ Done - added heart button to law cards (toggles favorite state), dedicated `/favorites` page with empty state, localStorage persistence. Feature controlled by `VITE_FEATURE_FAVORITES` env var or localStorage admin override (`murphys_ff_favorites`).
+- [x] **User Favorites/Bookmarks:** ~~Allow users to save favorite laws using localStorage. Show favorites count and a dedicated favorites page.~~ Done - added bookmark button to law cards (toggles favorite state), dedicated `/favorites` page with empty state, localStorage persistence. Feature controlled by `VITE_FEATURE_FAVORITES` env var or localStorage admin override (`murphys_ff_favorites`).
 - ~~**Copy as Image:** Add "copy as image" feature to share buttons.~~ (Cancelled)
 
 ## User Engagement (Require Backend Work)

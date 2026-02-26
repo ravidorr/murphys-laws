@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PWA install prompt: safe localStorage get/set helpers to avoid SecurityError in insecure contexts (Safari). Sentry: only ignore browser extension errors; remove SW/SDK/module patterns so we don't hide app errors. README: note only extension errors filtered. Bump root to 2.0.43, web to 3.1.17.
 
 ### Changed
+- Web: favorite button in its own vote-group (border matches up/down); bookmark icon viewBox -24 -24 72 72; tests for viewBox and vote-group wrapper; TODO bookmark not heart. Bump root to 2.0.46, web to 3.1.20.
 - Web: hide footer ad shell until ad load is triggered (footer in view or user interaction); no empty "Advertisement" placeholder until then. Observe footer for intersection; add test and README. Bump root to 2.0.45, web to 3.1.19.
 - Vote tooltip: single combined tooltip on vote-group ("Upvote or downvote. Votes are anonymous; no login required."); remove per-button tooltips so they do not hide each other; bump root to 2.0.38, web to 3.1.12
 - Print: hide all ads in print with broader selectors ([id*="google_ads"], div:has(> iframe) for ad iframe wrappers); docs/print-ads-debug-console-script.js for production DOM inspection
