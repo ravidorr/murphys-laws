@@ -145,7 +145,6 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
           clearExportContent();
         }
       })
-      /* v8 ignore start - Error path only reachable if renderHome throws, tested via integration tests */
       .catch(() => {
         el.innerHTML = '';
         const errorEl = createErrorState('Ironically, something went wrong while loading Murphy\'s Laws. Please try again.');
@@ -156,7 +155,6 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
         }
         el.appendChild(errorEl);
       });
-    /* v8 ignore stop */
   }
 
   // Initial render: loading, then fetch
@@ -190,7 +188,6 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
       if (t.closest('button')) return;
       const id = lawHost.getAttribute('data-law-id');
-      /* v8 ignore next - Truthy check for navigation, tested via integration tests */
       if (id) onNavigate('law', id);
     }
   });

@@ -69,7 +69,6 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     
     if (words.length === 1) {
       // Single word title
-      /* v8 ignore next - Single word category title fallback */
       return endsWithLaws ? accentPart : `${accentPart}'s Laws`;
     }
     
@@ -148,7 +147,6 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     const cardText = el.querySelector('#category-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
     cardText.innerHTML = renderLoadingHTML();
-    /* v8 ignore next 3 - forEach callback coverage varies by v8 version */
     el.querySelectorAll('.pagination button').forEach(btn => {
       btn.setAttribute('disabled', 'true');
     });
@@ -171,7 +169,6 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         if (!isNaN(numericId) && numericId > 0) {
           params.category_id = numericId;
         } else {
-          /* v8 ignore next - Non-numeric slug path is valid but rare */
           params.category_slug = categoryId;
         }
       }

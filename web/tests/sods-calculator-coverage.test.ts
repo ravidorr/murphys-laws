@@ -26,6 +26,38 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     vi.restoreAllMocks();
   });
 
+  it('L25 L35 L36: document block runs and sets og:image and twitter:image when meta tags exist', () => {
+    const ogImage = document.createElement('meta');
+    ogImage.setAttribute('property', 'og:image');
+    ogImage.setAttribute('content', '');
+    const twitterImage = document.createElement('meta');
+    twitterImage.setAttribute('property', 'twitter:image');
+    twitterImage.setAttribute('content', '');
+    document.head.appendChild(ogImage);
+    document.head.appendChild(twitterImage);
+
+    const el = Calculator();
+    container.appendChild(el);
+
+    expect(ogImage.getAttribute('content')).toMatch(/social\/sods-calculator/);
+    expect(twitterImage.getAttribute('content')).toMatch(/social\/sods-calculator/);
+
+    document.head.removeChild(ogImage);
+    document.head.removeChild(twitterImage);
+  });
+
+  it('L243 L244 L253 L254: updateState and getShareableUrl use probability and interpretation from display', () => {
+    const el = Calculator();
+    container.appendChild(el);
+    (el.querySelector('#urgency') as HTMLInputElement).value = '5';
+    (el.querySelector('#urgency') as HTMLInputElement).dispatchEvent(new Event('input'));
+    const shareLink = el.querySelector('[data-share="twitter"]') as HTMLAnchorElement;
+    expect(shareLink).toBeTruthy();
+    expect(decodeURIComponent(shareLink.href)).toMatch(/u=5/);
+    const scoreDisplay = el.querySelector('#score-value');
+    expect(scoreDisplay?.textContent).toBeDefined();
+  });
+
   it('handles MathJax being undefined during formula update', async () => {
     const originalRAF = window.requestAnimationFrame;
     window.requestAnimationFrame = (cb) => { cb(0); return 0; };
@@ -223,7 +255,8 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     
     Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
     
-    expect(parseFloat(scoreValue?.textContent ?? '0')).toBeGreaterThan(8);
+    const displayPercent = parseFloat(scoreValue?.textContent?.replace('%', '') ?? '0');
+    expect(displayPercent).toBeGreaterThan(90);
     expect(interpretation?.textContent).toMatch(/Catastrophe/i);
     
     // Set for low probability
@@ -468,10 +501,10 @@ describe('Sod\'s Law Calculator - Coverage', () => {
 
     await Promise.resolve();
 
-    // The copied text should contain the high probability (8.60 is max due to capping)
+    // The copied text should contain the high probability (displayed as 100% for max on 0-8.6 scale)
     expect(writeTextMock).toHaveBeenCalled();
     const text = writeTextMock.mock.calls[0]![0];
-    expect(text).toContain('8.');
+    expect(text).toContain('100');
   });
 
   it('Twitter share link includes probability and interpretation', () => {

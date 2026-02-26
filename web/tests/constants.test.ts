@@ -81,9 +81,37 @@ describe('Constants', () => {
       expect(result).toBe('v');
     });
 
+    it('L38 T2 B1: opts.viteEnv is provided so use it', () => {
+      const result = getEnvVar('VK', 'NK', 'default', { viteEnv: { VK: 'from-vite-opts' } });
+      expect(result).toBe('from-vite-opts');
+    });
+
+    it('L39 T4 B1: viteEnv key exists and value is defined so return it', () => {
+      const result = getEnvVar('KEY', 'N', 'def', { viteEnv: { KEY: 'value' } });
+      expect(result).toBe('value');
+    });
+
+    it('L43 T7 B1: opts.nodeEnv is provided so use it', () => {
+      const result = getEnvVar('X', 'Y', 'def', { nodeEnv: { Y: 'from-node-opts' } });
+      expect(result).toBe('from-node-opts');
+    });
+
+    it('L38: uses RHS when opts.viteEnv is omitted (opts defined)', () => {
+      const result = getEnvVar('MISSING_VITE', 'NODE_K', 'def', { nodeEnv: { NODE_K: 'from-node' } });
+      expect(result).toBe('from-node');
+    });
+
     it('L39 B1: getEnvVar returns value when viteEnv key is defined', () => {
       const result = getEnvVar('KEY', 'N', 'default', { viteEnv: { KEY: 'defined' } });
       expect(result).toBe('defined');
+    });
+
+    it('L39: skips viteEnv block when viteEnv is explicitly undefined and uses nodeEnv', () => {
+      const result = getEnvVar('X', 'NODE_Y', 'def', {
+        viteEnv: undefined,
+        nodeEnv: { NODE_Y: 'node-y' }
+      });
+      expect(result).toBe('node-y');
     });
 
     it('returns value from opts.nodeEnv when provided (covers Node return branch L32)', () => {
@@ -96,6 +124,11 @@ describe('Constants', () => {
     it('L43 B1: getEnvVar enters nodeEnv branch when opts.nodeEnv provided', () => {
       const result = getEnvVar('X', 'Y', 'def', { nodeEnv: { Y: 'node-val' } });
       expect(result).toBe('node-val');
+    });
+
+    it('L43: uses RHS for nodeEnv when opts.nodeEnv omitted (opts defined with only viteEnv)', () => {
+      const result = getEnvVar('VITE_K', 'MISSING_NODE', 'fallback', { viteEnv: {} });
+      expect(result).toBe('fallback');
     });
 
     it('falls through to opts.nodeEnv when opts.viteEnv is present but key missing (L31 L36)', () => {

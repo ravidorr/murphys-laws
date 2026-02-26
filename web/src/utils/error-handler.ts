@@ -134,7 +134,6 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryConfig = 
     }
   }
 
-  /* v8 ignore next - Unreachable; loop always returns or throws */
   throw new Error('withRetry: unexpected loop exit');
 }
 

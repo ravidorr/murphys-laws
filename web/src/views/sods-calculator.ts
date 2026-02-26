@@ -77,23 +77,23 @@ export function Calculator(): HTMLDivElement {
     const F = parseFloat(sliders.frequency.value);
     const A = 0.7;
 
-    // Calculate score
+    // Calculate score (scale 0-8.6 per FAQ; display as 0-100% for UX consistency with Buttered Toast)
     const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
     const displayScore = Math.min(score, 8.6);
-    const scoreText = displayScore.toFixed(2);
+    const displayPercent = Math.round((displayScore / 8.6) * 100);
 
-    scoreValueDisplay.textContent = `${scoreText}%`;
+    scoreValueDisplay.textContent = `${displayPercent}%`;
     updateResultInterpretation(displayScore);
 
     const interpretation = scoreInterpretationDisplay.textContent || '';
     setExportContent({
       type: ContentType.CONTENT,
       title: "Sod's Law Calculator",
-      data: `Probability of things going wrong: ${scoreText}%. ${interpretation}`
+      data: `Probability of things going wrong: ${displayPercent}%. ${interpretation}`
     });
 
     // Generate LaTeX formula - show variable name or value based on showValues
-    const pFormula = showValues.U ? scoreText : 'P';
+    const pFormula = showValues.U ? String(displayPercent) : 'P';
     const uDisplay = showValues.U ? U : 'U';
     const cDisplay = showValues.C ? C : 'C';
     const iDisplay = showValues.I ? I : 'I';
@@ -108,7 +108,6 @@ export function Calculator(): HTMLDivElement {
       // Capture MathJax reference to avoid race conditions in test environments
       const mathJax = window.MathJax;
       requestAnimationFrame(() => {
-        /* v8 ignore next 3 - MathJax defensive check for race conditions */
         if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
           return;
         }
@@ -127,7 +126,6 @@ export function Calculator(): HTMLDivElement {
 
           const variables = formulaDisplay.querySelectorAll('mjx-mi');
 
-          /* v8 ignore start - MathJax CHTML DOM only exists in real browser, not jsdom */
           variables.forEach((mi) => {
             // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
             // Map Unicode Math Italic characters to regular letters
@@ -157,7 +155,6 @@ export function Calculator(): HTMLDivElement {
               }
             }
           });
-          /* v8 ignore stop */
         }).catch(() => {
           // Silently handle MathJax errors
         });
@@ -240,7 +237,7 @@ export function Calculator(): HTMLDivElement {
     importance: parseFloat(sliders.importance.value),
     skill: parseFloat(sliders.skill.value),
     frequency: parseFloat(sliders.frequency.value),
-    probability: scoreValueDisplay.textContent || '0.00%',
+    probability: scoreValueDisplay.textContent || '0%',
     interpretation: scoreInterpretationDisplay.textContent || ''
   };
 
@@ -250,7 +247,7 @@ export function Calculator(): HTMLDivElement {
     state.importance = parseFloat(sliders.importance.value);
     state.skill = parseFloat(sliders.skill.value);
     state.frequency = parseFloat(sliders.frequency.value);
-    state.probability = scoreValueDisplay.textContent || '0.00%';
+    state.probability = scoreValueDisplay.textContent || '0%';
     state.interpretation = scoreInterpretationDisplay.textContent || '';
   }
 
