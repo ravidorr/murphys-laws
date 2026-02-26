@@ -125,6 +125,16 @@ describe('Attribution utilities', () => {
       expect(firstAttributionLine(law)).toBe('');
     });
 
+    it('L33 B1: firstAttributionLine uses first attribution name when present', () => {
+      const law = { attributions: [{ name: 'Valid Name' }] };
+      expect(firstAttributionLine(law)).toBe('Sent by Valid Name');
+    });
+
+    it('returns Sent by when first attribution has no name but exists', () => {
+      const law = { attributions: [{ name: null } as Attribution] };
+      expect(firstAttributionLine(law)).toBe('Sent by ');
+    });
+
     it('falls back to author when no attributions', () => {
       const law = { attributions: [], author: 'Murphy' };
       expect(firstAttributionLine(law)).toBe('- Murphy');
@@ -144,6 +154,12 @@ describe('Attribution utilities', () => {
     it('returns false for display name', () => {
       expect(isEmailLikeDisplay('Jane Doe')).toBe(false);
       expect(isEmailLikeDisplay('Murphy')).toBe(false);
+    });
+    it('L7 B0: returns true for non-string or empty/whitespace', () => {
+      expect(isEmailLikeDisplay('')).toBe(true);
+      expect(isEmailLikeDisplay('   ')).toBe(true);
+      expect(isEmailLikeDisplay(null as unknown as string)).toBe(true);
+      expect(isEmailLikeDisplay(undefined as unknown as string)).toBe(true);
     });
   });
 

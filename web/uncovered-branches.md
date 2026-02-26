@@ -308,27 +308,213 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [x] L245 T22 B1 | src/views/sods-calculator.ts:245 | tests/sods-calculator.test.ts
 - [x] L246 T23 B1 | src/views/sods-calculator.ts:246 | tests/sods-calculator.test.ts
 - [x] L54 T4 B1 | src/views/why-murphys-law-feels-true.ts:54 | tests/why-murphys-law-feels-true.test.ts
+- [x] L53 T4 B1 | src/components/advanced-search.ts:53 | tests/advanced-search.test.ts
+- [x] L209 T13 B1 | src/components/export-menu.ts:209 | tests/export-menu.test.ts
+- [x] L230 T14 B1 | src/components/export-menu.ts:230 | tests/export-menu.test.ts
+- [x] L237 T15 B1 | src/components/export-menu.ts:237 | tests/export-menu.test.ts
+- [x] L238 T16 B1 | src/components/export-menu.ts:238 | tests/export-menu.test.ts
+- [x] L281 T15 B0 | src/components/install-prompt.ts:281 | tests/install-prompt.test.ts
+- [x] L359 T20 B0 | src/components/install-prompt.ts:359 | tests/install-prompt.test.ts
+- [x] L378 T22 B0 | src/components/install-prompt.ts:378 | tests/install-prompt.test.ts
+- [x] L150 T14 B1 | src/components/social-share.ts:150 | tests/social-share.test.ts
+- [x] L188 T20 B0 | src/components/social-share.ts:188 | tests/social-share.test.ts
+- [x] L189 T21 B1 | src/components/social-share.ts:189 | tests/social-share.test.ts
+- [x] L276 T30 B0 | src/components/social-share.ts:276 | tests/social-share.test.ts
+- [x] L325 T42 B1 | src/components/social-share.ts:325 | tests/social-share.test.ts
+- [x] L328 T44 B1 | src/components/social-share.ts:328 | tests/social-share.test.ts
+- [x] L389 T48 B0 | src/components/social-share.ts:389 | tests/social-share.test.ts
+- [x] L507 T61 B0 | src/components/social-share.ts:507 | tests/social-share.test.ts
+- [x] L516 T62 B1 | src/components/social-share.ts:516 | tests/social-share.test.ts
+- [x] L517 T63 B1 | src/components/social-share.ts:517 | tests/social-share.test.ts
+- [x] L528 T64 B1 | src/components/social-share.ts:528 | tests/social-share.test.ts
+- [x] L537 T66 B0 | src/components/social-share.ts:537 | tests/social-share.test.ts
+- [x] L543 T68 B1 | src/components/social-share.ts:543 | tests/social-share.test.ts
+- [x] L545 T70 B1 | src/components/social-share.ts:545 | tests/social-share.test.ts
+- [x] L595 T73 B1 | src/components/social-share.ts:595 | tests/social-share.test.ts
+- [x] L604 T75 B1 | src/components/social-share.ts:604 | tests/social-share.test.ts
+- [x] L617 T77 B1 | src/components/social-share.ts:617 | tests/social-share.test.ts
+- [x] L215 T44 B1 | src/views/browse.ts:215 | tests/browse.test.ts
+- [x] L243 T49 B1 | src/views/browse.ts:243 | tests/browse.test.ts
+- [x] L272 T51 B1 | src/views/browse.ts:272 | tests/browse.test.ts
+- [x] L274 T53 B1 | src/views/browse.ts:274 | tests/browse.test.ts
+- [x] L279 T54 B1 | src/views/browse.ts:279 | tests/browse.test.ts
+- [x] L280 T55 B1 | src/views/browse.ts:280 | tests/browse.test.ts
+- [x] L22 T0 B1 | src/views/buttered-toast-calculator.ts:22 | tests/buttered-toast-calculator.test.ts
+- [x] L32 T1 B0 | src/views/buttered-toast-calculator.ts:32 | tests/buttered-toast-calculator.test.ts
+- [x] L33 T2 B0 | src/views/buttered-toast-calculator.ts:33 | tests/buttered-toast-calculator.test.ts
+- [x] L48 T3 B0 | src/views/buttered-toast-calculator.ts:48 | tests/buttered-toast-calculator.test.ts
+- [x] L261 T22 B1 | src/views/buttered-toast-calculator.ts:261 | tests/buttered-toast-calculator.test.ts
+- [x] L262 T23 B1 | src/views/buttered-toast-calculator.ts:262 | tests/buttered-toast-calculator.test.ts
+- [x] L272 T24 B1 | src/views/buttered-toast-calculator.ts:272 | tests/buttered-toast-calculator.test.ts
+- [x] L273 T25 B1 | src/views/buttered-toast-calculator.ts:273 | tests/buttered-toast-calculator.test.ts
+- [x] L347 T50 B1 | src/views/category-detail.ts:347 | tests/category-detail.test.ts
+- [x] L369 T53 B1 | src/views/category-detail.ts:369 | tests/category-detail.test.ts
+- [x] L371 T55 B1 | src/views/category-detail.ts:371 | tests/category-detail.test.ts
+- [x] L376 T56 B1 | src/views/category-detail.ts:376 | tests/category-detail.test.ts
+- [x] L377 T57 B1 | src/views/category-detail.ts:377 | tests/category-detail.test.ts
+- [x] L243 T11 B1 | src/views/favorites.ts:243 | tests/favorites-view.test.ts
+- [x] L253 T14 B1 | src/views/favorites.ts:253 | tests/favorites-view.test.ts
+- [x] L261 T15 B1 | src/views/favorites.ts:261 | tests/favorites-view.test.ts
+- [x] L265 T16 B1 | src/views/favorites.ts:265 | tests/favorites-view.test.ts
+- [x] L273 T18 B1 | src/views/favorites.ts:273 | tests/favorites-view.test.ts
+- [x] L279 T21 B1 | src/views/favorites.ts:279 | tests/favorites-view.test.ts
+- [x] L283 T23 B1 | src/views/favorites.ts:283 | tests/favorites-view.test.ts
+- [x] L164 T5 B0 | src/views/home.ts:164 | tests/home.test.ts
+- [x] L172 T7 B1 | src/views/home.ts:172 | tests/home.test.ts
+- [x] L204 T16 B1 | src/views/home.ts:204 | tests/home.test.ts
+- [x] L215 T18 B1 | src/views/home.ts:215 | tests/home.test.ts
+- [x] L128 T21 B1 | src/views/law-detail.ts:128 | tests/law-detail.test.ts
+- [x] L137 T23 B1 | src/views/law-detail.ts:137 | tests/law-detail.test.ts
+- [x] L139 T24 B1 | src/views/law-detail.ts:139 | tests/law-detail.test.ts
+- [x] L145 T26 B1 | src/views/law-detail.ts:145 | tests/law-detail.test.ts
+- [x] L154 T28 B1 | src/views/law-detail.ts:154 | tests/law-detail.test.ts
+- [x] L166 T32 B1 | src/views/law-detail.ts:166 | tests/law-detail.test.ts
+- [x] L207 T38 B1 | src/views/law-detail.ts:207 | tests/law-detail.test.ts
+- [x] L219 T41 B1 | src/views/law-detail.ts:219 | tests/law-detail.test.ts
+- [x] L226 T42 B1 | src/views/law-detail.ts:226 | tests/law-detail.test.ts
+- [x] L228 T43 B1 | src/views/law-detail.ts:228 | tests/law-detail.test.ts
+- [x] L234 T44 B1 | src/views/law-detail.ts:234 | tests/law-detail.test.ts
+- [x] L258 T45 B1 | src/views/law-detail.ts:258 | tests/law-detail.test.ts
+- [x] L274 T49 B0 | src/views/law-detail.ts:274 | tests/law-detail.test.ts
+- [x] L314 T55 B0 | src/views/law-detail.ts:314 | tests/law-detail.test.ts
+- [x] L315 T56 B1 | src/views/law-detail.ts:315 | tests/law-detail.test.ts
+- [x] L335 T58 B1 | src/views/law-detail.ts:335 | tests/law-detail.test.ts
+- [x] L345 T60 B0 | src/views/law-detail.ts:345 | tests/law-detail.test.ts
+- [x] L387 T69 B1 | src/views/law-detail.ts:387 | tests/law-detail.test.ts
+- [x] L397 T71 B1 | src/views/law-detail.ts:397 | tests/law-detail.test.ts
+- [x] L404 T72 B1 | src/views/law-detail.ts:404 | tests/law-detail.test.ts
+- [x] L407 T74 B1 | src/views/law-detail.ts:407 | tests/law-detail.test.ts
+- [x] L423 T77 B1 | src/views/law-detail.ts:423 | tests/law-detail.test.ts
+- [x] L431 T78 B1 | src/views/law-detail.ts:431 | tests/law-detail.test.ts
+- [x] L439 T80 B1 | src/views/law-detail.ts:439 | tests/law-detail.test.ts
+- [x] L441 T81 B1 | src/views/law-detail.ts:441 | tests/law-detail.test.ts
+- [x] L460 T86 B1 | src/views/law-detail.ts:460 | tests/law-detail.test.ts
+- [x] L485 T91 B1 | src/views/law-detail.ts:485 | tests/law-detail.test.ts
+- [x] L24 T0 B1 | src/views/sods-calculator.ts:24 | tests/sods-calculator.test.ts
+- [x] L34 T1 B0 | src/views/sods-calculator.ts:34 | tests/sods-calculator.test.ts
+- [x] L35 T2 B0 | src/views/sods-calculator.ts:35 | tests/sods-calculator.test.ts
+- [x] L49 T3 B0 | src/views/sods-calculator.ts:49 | tests/sods-calculator.test.ts
+- [x] L235 T20 B1 | src/views/sods-calculator.ts:235 | tests/sods-calculator.test.ts
+- [x] L236 T21 B1 | src/views/sods-calculator.ts:236 | tests/sods-calculator.test.ts
+- [x] L245 T22 B1 | src/views/sods-calculator.ts:245 | tests/sods-calculator.test.ts
+- [x] L246 T23 B1 | src/views/sods-calculator.ts:246 | tests/sods-calculator.test.ts
+- [x] L37 T1 B1 | src/components/breadcrumb.ts:37 | tests/breadcrumb.test.ts
+- [x] L315 T56 B0 | src/views/law-detail.ts:315 | tests/law-detail.test.ts
+- [x] L316 T57 B1 | src/views/law-detail.ts:316 | tests/law-detail.test.ts
+- [x] L337 T60 B1 | src/views/law-detail.ts:337 | tests/law-detail.test.ts
+- [x] L346 T61 B0 | src/views/law-detail.ts:346 | tests/law-detail.test.ts
+- [x] L7 T0 B0 | src/utils/attribution.ts:7 | tests/attribution.test.ts
+- [x] L33 T15 B1 | src/utils/attribution.ts:33 | tests/attribution.test.ts
+- [x] L72 T12 B0 | src/components/advanced-search.ts:72 | tests/advanced-search.test.ts
+- [x] L108 T17 B0 | src/components/advanced-search.ts:108 | tests/advanced-search.test.ts
+- [x] L109 T18 B0 | src/components/advanced-search.ts:109 | tests/advanced-search.test.ts
+- [x] L114 T19 B0 | src/components/advanced-search.ts:114 | tests/advanced-search.test.ts
+- [x] L115 T20 B1 | src/components/advanced-search.ts:115 | tests/advanced-search.test.ts
+- [x] L179 T37 B1 | src/components/advanced-search.ts:179 | tests/advanced-search.test.ts
+- [x] L191 T41 B0 | src/components/advanced-search.ts:191 | tests/advanced-search.test.ts
+- [x] L191 T41 B1 | src/components/advanced-search.ts:191 | tests/advanced-search.test.ts
+- [x] L194 T42 B0 | src/components/advanced-search.ts:194 | tests/advanced-search.test.ts
+- [x] L194 T42 B1 | src/components/advanced-search.ts:194 | tests/advanced-search.test.ts
+- [x] L196 T43 B1 | src/components/advanced-search.ts:196 | tests/advanced-search.test.ts
+- [x] L201 T45 B1 | src/components/advanced-search.ts:201 | tests/advanced-search.test.ts
+- [x] L201 T46 B0 | src/components/advanced-search.ts:201 | tests/advanced-search.test.ts
+- [x] L208 T50 B0 | src/components/advanced-search.ts:208 | tests/advanced-search.test.ts
+- [x] L216 T51 B1 | src/components/advanced-search.ts:216 | tests/advanced-search.test.ts
+- [x] L217 T52 B0 | src/components/advanced-search.ts:217 | tests/advanced-search.test.ts
+- [x] L218 T53 B0 | src/components/advanced-search.ts:218 | tests/advanced-search.test.ts
+- [x] L224 T54 B0 | src/components/advanced-search.ts:224 | tests/advanced-search.test.ts
+- [x] L224 T54 B1 | src/components/advanced-search.ts:224 | tests/advanced-search.test.ts
+- [x] L224 T55 B0 | src/components/advanced-search.ts:224 | tests/advanced-search.test.ts
+- [x] L224 T55 B1 | src/components/advanced-search.ts:224 | tests/advanced-search.test.ts
+- [x] L196 T43 B0 | src/components/advanced-search.ts:196 | tests/advanced-search.test.ts
+- [x] L199 T44 B0 | src/components/advanced-search.ts:199 | tests/advanced-search.test.ts
+- [x] L199 T44 B1 | src/components/advanced-search.ts:199 | tests/advanced-search.test.ts
+- [x] L201 T45 B0 | src/components/advanced-search.ts:201 | tests/advanced-search.test.ts
+- [x] L201 T46 B1 | src/components/advanced-search.ts:201 | tests/advanced-search.test.ts
+- [x] L203 T47 B1 | src/components/advanced-search.ts:203 | tests/advanced-search.test.ts
+- [x] L205 T48 B0 | src/components/advanced-search.ts:205 | tests/advanced-search.test.ts
+- [x] L206 T49 B0 | src/components/advanced-search.ts:206 | tests/advanced-search.test.ts
+- [x] L132 T19 B1 | src/components/footer.ts:132 | tests/footer.test.ts
+- [x] L177 T7 B1 | src/views/home.ts:177 | tests/home.test.ts
+- [x] L81 T15 B1 | src/components/advanced-search.ts:81 | tests/advanced-search.test.ts
+- [x] L179 T37 B0 | src/components/advanced-search.ts:179 | tests/advanced-search.test.ts
+- [x] L180 T38 B0 | src/components/advanced-search.ts:180 | tests/advanced-search.test.ts
+- [x] L180 T39 B0 | src/components/advanced-search.ts:180 | tests/advanced-search.test.ts
+- [x] L180 T39 B1 | src/components/advanced-search.ts:180 | tests/advanced-search.test.ts
+- [x] L186 T40 B0 | src/components/advanced-search.ts:186 | tests/advanced-search.test.ts
+- [x] L186 T40 B1 | src/components/advanced-search.ts:186 | tests/advanced-search.test.ts
+- [x] L203 T47 B0 | src/components/advanced-search.ts:203 | tests/advanced-search.test.ts
+- [x] L205 T48 B1 | src/components/advanced-search.ts:205 | tests/advanced-search.test.ts
+- [x] L206 T49 B1 | src/components/advanced-search.ts:206 | tests/advanced-search.test.ts
+- [x] L206 T49 B2 | src/components/advanced-search.ts:206 | tests/advanced-search.test.ts
+- [x] L208 T50 B1 | src/components/advanced-search.ts:208 | tests/advanced-search.test.ts
+- [x] L216 T51 B0 | src/components/advanced-search.ts:216 | tests/advanced-search.test.ts
+- [x] L217 T52 B1 | src/components/advanced-search.ts:217 | tests/advanced-search.test.ts
+- [x] L218 T53 B1 | src/components/advanced-search.ts:218 | tests/advanced-search.test.ts
+- [x] L218 T53 B2 | src/components/advanced-search.ts:218 | tests/advanced-search.test.ts
+- [x] L230 T56 B1 | src/components/advanced-search.ts:230 | tests/advanced-search.test.ts
+- [x] L238 T58 B1 | src/components/advanced-search.ts:238 | tests/advanced-search.test.ts
+- [x] L240 T59 B1 | src/components/advanced-search.ts:240 | tests/advanced-search.test.ts
+- [x] L252 T64 B1 | src/components/advanced-search.ts:252 | tests/advanced-search.test.ts
+- [x] L253 T65 B1 | src/components/advanced-search.ts:253 | tests/advanced-search.test.ts
+- [x] L255 T66 B1 | src/components/advanced-search.ts:255 | tests/advanced-search.test.ts
+- [x] L256 T67 B1 | src/components/advanced-search.ts:256 | tests/advanced-search.test.ts
+- [x] L40 T8 B0 | src/views/browse.ts:40 | tests/browse.test.ts
+- [x] L217 T51 B0 | src/components/advanced-search.ts:217 | tests/advanced-search.test.ts
+- [x] L35 T1 B0 | src/views/sods-calculator.ts:35 | tests/sods-calculator.test.ts
+- [x] L36 T2 B0 | src/views/sods-calculator.ts:36 | tests/sods-calculator.test.ts
+- [x] L115 T20 B0 | src/components/advanced-search.ts:115 | tests/advanced-search.test.ts
+- [x] L164 T36 B0 | src/components/advanced-search.ts:164 | tests/advanced-search.test.ts
 
-## Uncovered (184) | Branch coverage: 93.57% (2677/2861)
+## Uncovered (209) | Branch coverage: 92.92% (2745/2954)
 
-- [ ] L53 T4 B1 | src/components/advanced-search.ts:53 | tests/advanced-search.test.ts
-- [ ] L37 T1 B1 | src/components/breadcrumb.ts:37 | tests/breadcrumb.test.ts
-- [ ] L209 T13 B1 | src/components/export-menu.ts:209 | tests/export-menu.test.ts
-- [ ] L230 T14 B1 | src/components/export-menu.ts:230 | tests/export-menu.test.ts
-- [ ] L237 T15 B1 | src/components/export-menu.ts:237 | tests/export-menu.test.ts
-- [ ] L238 T16 B1 | src/components/export-menu.ts:238 | tests/export-menu.test.ts
+- [ ] L52 T4 B1 | src/components/advanced-search.ts:52 | tests/advanced-search.test.ts
+- [ ] L54 T7 B1 | src/components/advanced-search.ts:54 | tests/advanced-search.test.ts
+- [ ] L57 T8 B1 | src/components/advanced-search.ts:57 | tests/advanced-search.test.ts
+- [ ] L62 T9 B1 | src/components/advanced-search.ts:62 | tests/advanced-search.test.ts
+- [ ] L66 T10 B1 | src/components/advanced-search.ts:66 | tests/advanced-search.test.ts
+- [ ] L67 T11 B1 | src/components/advanced-search.ts:67 | tests/advanced-search.test.ts
+- [ ] L78 T14 B0 | src/components/advanced-search.ts:78 | tests/advanced-search.test.ts
+- [ ] L108 T17 B1 | src/components/advanced-search.ts:108 | tests/advanced-search.test.ts
+- [ ] L109 T18 B1 | src/components/advanced-search.ts:109 | tests/advanced-search.test.ts
+- [ ] L114 T19 B1 | src/components/advanced-search.ts:114 | tests/advanced-search.test.ts
+- [ ] L147 T30 B1 | src/components/advanced-search.ts:147 | tests/advanced-search.test.ts
+- [ ] L160 T34 B0 | src/components/advanced-search.ts:160 | tests/advanced-search.test.ts
+- [ ] L180 T38 B1 | src/components/advanced-search.ts:180 | tests/advanced-search.test.ts
+- [ ] L204 T47 B0 | src/components/advanced-search.ts:204 | tests/advanced-search.test.ts
+- [ ] L206 T48 B1 | src/components/advanced-search.ts:206 | tests/advanced-search.test.ts
+- [ ] L207 T49 B1 | src/components/advanced-search.ts:207 | tests/advanced-search.test.ts
+- [ ] L207 T49 B2 | src/components/advanced-search.ts:207 | tests/advanced-search.test.ts
+- [ ] L209 T50 B1 | src/components/advanced-search.ts:209 | tests/advanced-search.test.ts
+- [ ] L218 T52 B1 | src/components/advanced-search.ts:218 | tests/advanced-search.test.ts
+- [ ] L219 T53 B1 | src/components/advanced-search.ts:219 | tests/advanced-search.test.ts
+- [ ] L219 T53 B2 | src/components/advanced-search.ts:219 | tests/advanced-search.test.ts
+- [ ] L231 T56 B1 | src/components/advanced-search.ts:231 | tests/advanced-search.test.ts
+- [ ] L239 T58 B1 | src/components/advanced-search.ts:239 | tests/advanced-search.test.ts
+- [ ] L241 T59 B1 | src/components/advanced-search.ts:241 | tests/advanced-search.test.ts
+- [ ] L253 T64 B1 | src/components/advanced-search.ts:253 | tests/advanced-search.test.ts
+- [ ] L254 T65 B1 | src/components/advanced-search.ts:254 | tests/advanced-search.test.ts
+- [ ] L256 T66 B1 | src/components/advanced-search.ts:256 | tests/advanced-search.test.ts
+- [ ] L257 T67 B1 | src/components/advanced-search.ts:257 | tests/advanced-search.test.ts
+- [ ] L212 T13 B1 | src/components/export-menu.ts:212 | tests/export-menu.test.ts
+- [ ] L233 T14 B1 | src/components/export-menu.ts:233 | tests/export-menu.test.ts
+- [ ] L240 T15 B1 | src/components/export-menu.ts:240 | tests/export-menu.test.ts
+- [ ] L241 T16 B1 | src/components/export-menu.ts:241 | tests/export-menu.test.ts
 - [ ] L65 T8 B0 | src/components/footer.ts:65 | tests/footer.test.ts
 - [ ] L86 T11 B0 | src/components/footer.ts:86 | tests/footer.test.ts
 - [ ] L126 T17 B0 | src/components/footer.ts:126 | tests/footer.test.ts
-- [ ] L132 T19 B1 | src/components/footer.ts:132 | tests/footer.test.ts
 - [ ] L138 T14 B1 | src/components/header.ts:138 | tests/header.test.ts
 - [ ] L141 T15 B1 | src/components/header.ts:141 | tests/header.test.ts
 - [ ] L155 T18 B1 | src/components/header.ts:155 | tests/header.test.ts
 - [ ] L163 T20 B1 | src/components/header.ts:163 | tests/header.test.ts
 - [ ] L166 T21 B1 | src/components/header.ts:166 | tests/header.test.ts
-- [ ] L281 T15 B0 | src/components/install-prompt.ts:281 | tests/install-prompt.test.ts
-- [ ] L359 T20 B0 | src/components/install-prompt.ts:359 | tests/install-prompt.test.ts
-- [ ] L378 T22 B0 | src/components/install-prompt.ts:378 | tests/install-prompt.test.ts
+- [ ] L217 T6 B0 | src/components/install-prompt.ts:217 | tests/install-prompt.test.ts
+- [ ] L222 T7 B0 | src/components/install-prompt.ts:222 | tests/install-prompt.test.ts
+- [ ] L299 T18 B0 | src/components/install-prompt.ts:299 | tests/install-prompt.test.ts
+- [ ] L307 T21 B0 | src/components/install-prompt.ts:307 | tests/install-prompt.test.ts
+- [ ] L381 T24 B0 | src/components/install-prompt.ts:381 | tests/install-prompt.test.ts
+- [ ] L386 T26 B0 | src/components/install-prompt.ts:386 | tests/install-prompt.test.ts
+- [ ] L403 T27 B0 | src/components/install-prompt.ts:403 | tests/install-prompt.test.ts
 - [ ] L71 T4 B1 | src/components/keyboard-help-modal.ts:71 | tests/keyboard-help-modal.test.ts
 - [ ] L80 T9 B1 | src/components/law-of-day.ts:80 | tests/law-of-day.test.ts
 - [ ] L174 T20 B1 | src/components/law-of-day.ts:174 | tests/law-of-day.test.ts
@@ -339,23 +525,25 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [ ] L66 T6 B0 | src/components/search-autocomplete.ts:66 | tests/search-autocomplete.test.ts
 - [ ] L122 T14 B0 | src/components/search-autocomplete.ts:122 | tests/search-autocomplete.test.ts
 - [ ] L209 T30 B1 | src/components/search-autocomplete.ts:209 | tests/search-autocomplete.test.ts
-- [ ] L150 T14 B1 | src/components/social-share.ts:150 | tests/social-share.test.ts
-- [ ] L188 T20 B0 | src/components/social-share.ts:188 | tests/social-share.test.ts
-- [ ] L189 T21 B1 | src/components/social-share.ts:189 | tests/social-share.test.ts
-- [ ] L276 T30 B0 | src/components/social-share.ts:276 | tests/social-share.test.ts
-- [ ] L325 T42 B1 | src/components/social-share.ts:325 | tests/social-share.test.ts
-- [ ] L328 T44 B1 | src/components/social-share.ts:328 | tests/social-share.test.ts
-- [ ] L389 T48 B0 | src/components/social-share.ts:389 | tests/social-share.test.ts
-- [ ] L507 T61 B0 | src/components/social-share.ts:507 | tests/social-share.test.ts
-- [ ] L516 T62 B1 | src/components/social-share.ts:516 | tests/social-share.test.ts
-- [ ] L517 T63 B1 | src/components/social-share.ts:517 | tests/social-share.test.ts
-- [ ] L528 T64 B1 | src/components/social-share.ts:528 | tests/social-share.test.ts
-- [ ] L537 T66 B0 | src/components/social-share.ts:537 | tests/social-share.test.ts
-- [ ] L543 T68 B1 | src/components/social-share.ts:543 | tests/social-share.test.ts
-- [ ] L545 T70 B1 | src/components/social-share.ts:545 | tests/social-share.test.ts
-- [ ] L595 T73 B1 | src/components/social-share.ts:595 | tests/social-share.test.ts
-- [ ] L604 T75 B1 | src/components/social-share.ts:604 | tests/social-share.test.ts
-- [ ] L617 T77 B1 | src/components/social-share.ts:617 | tests/social-share.test.ts
+- [ ] L77 T0 B1 | src/components/social-share.ts:77 | tests/social-share.test.ts
+- [ ] L166 T16 B1 | src/components/social-share.ts:166 | tests/social-share.test.ts
+- [ ] L204 T22 B0 | src/components/social-share.ts:204 | tests/social-share.test.ts
+- [ ] L205 T23 B1 | src/components/social-share.ts:205 | tests/social-share.test.ts
+- [ ] L292 T32 B0 | src/components/social-share.ts:292 | tests/social-share.test.ts
+- [ ] L341 T44 B1 | src/components/social-share.ts:341 | tests/social-share.test.ts
+- [ ] L344 T46 B1 | src/components/social-share.ts:344 | tests/social-share.test.ts
+- [ ] L405 T50 B0 | src/components/social-share.ts:405 | tests/social-share.test.ts
+- [ ] L523 T63 B0 | src/components/social-share.ts:523 | tests/social-share.test.ts
+- [ ] L531 T64 B1 | src/components/social-share.ts:531 | tests/social-share.test.ts
+- [ ] L532 T65 B1 | src/components/social-share.ts:532 | tests/social-share.test.ts
+- [ ] L543 T66 B1 | src/components/social-share.ts:543 | tests/social-share.test.ts
+- [ ] L551 T68 B0 | src/components/social-share.ts:551 | tests/social-share.test.ts
+- [ ] L557 T70 B1 | src/components/social-share.ts:557 | tests/social-share.test.ts
+- [ ] L559 T72 B1 | src/components/social-share.ts:559 | tests/social-share.test.ts
+- [ ] L564 T73 B0 | src/components/social-share.ts:564 | tests/social-share.test.ts
+- [ ] L603 T77 B1 | src/components/social-share.ts:603 | tests/social-share.test.ts
+- [ ] L612 T79 B1 | src/components/social-share.ts:612 | tests/social-share.test.ts
+- [ ] L625 T81 B1 | src/components/social-share.ts:625 | tests/social-share.test.ts
 - [ ] L132 T12 B1 | src/components/submit-law.ts:132 | tests/submit-law.test.ts
 - [ ] L203 T6 B1 | src/utils/button.ts:203 | tests/button.test.ts
 - [ ] L263 T12 B1 | src/utils/button.ts:263 | tests/button.test.ts
@@ -397,24 +585,24 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [ ] L106 T11 B1 | src/utils/third-party.ts:106 | tests/third-party.test.ts
 - [ ] L109 T12 B1 | src/utils/third-party.ts:109 | tests/third-party.test.ts
 - [ ] L37 T4 B1 | src/views/browse.ts:37 | tests/browse.test.ts
-- [ ] L40 T8 B0 | src/views/browse.ts:40 | tests/browse.test.ts
 - [ ] L60 T19 B1 | src/views/browse.ts:60 | tests/browse.test.ts
 - [ ] L100 T24 B1 | src/views/browse.ts:100 | tests/browse.test.ts
 - [ ] L171 T34 B1 | src/views/browse.ts:171 | tests/browse.test.ts
-- [ ] L215 T44 B1 | src/views/browse.ts:215 | tests/browse.test.ts
-- [ ] L243 T49 B1 | src/views/browse.ts:243 | tests/browse.test.ts
-- [ ] L272 T51 B1 | src/views/browse.ts:272 | tests/browse.test.ts
-- [ ] L274 T53 B1 | src/views/browse.ts:274 | tests/browse.test.ts
-- [ ] L279 T54 B1 | src/views/browse.ts:279 | tests/browse.test.ts
-- [ ] L280 T55 B1 | src/views/browse.ts:280 | tests/browse.test.ts
-- [ ] L22 T0 B1 | src/views/buttered-toast-calculator.ts:22 | tests/buttered-toast-calculator.test.ts
-- [ ] L32 T1 B0 | src/views/buttered-toast-calculator.ts:32 | tests/buttered-toast-calculator.test.ts
-- [ ] L33 T2 B0 | src/views/buttered-toast-calculator.ts:33 | tests/buttered-toast-calculator.test.ts
-- [ ] L48 T3 B0 | src/views/buttered-toast-calculator.ts:48 | tests/buttered-toast-calculator.test.ts
-- [ ] L261 T22 B1 | src/views/buttered-toast-calculator.ts:261 | tests/buttered-toast-calculator.test.ts
-- [ ] L262 T23 B1 | src/views/buttered-toast-calculator.ts:262 | tests/buttered-toast-calculator.test.ts
-- [ ] L272 T24 B1 | src/views/buttered-toast-calculator.ts:272 | tests/buttered-toast-calculator.test.ts
-- [ ] L273 T25 B1 | src/views/buttered-toast-calculator.ts:273 | tests/buttered-toast-calculator.test.ts
+- [ ] L218 T44 B1 | src/views/browse.ts:218 | tests/browse.test.ts
+- [ ] L246 T49 B1 | src/views/browse.ts:246 | tests/browse.test.ts
+- [ ] L275 T51 B1 | src/views/browse.ts:275 | tests/browse.test.ts
+- [ ] L277 T53 B1 | src/views/browse.ts:277 | tests/browse.test.ts
+- [ ] L282 T54 B1 | src/views/browse.ts:282 | tests/browse.test.ts
+- [ ] L283 T55 B1 | src/views/browse.ts:283 | tests/browse.test.ts
+- [ ] L23 T0 B1 | src/views/buttered-toast-calculator.ts:23 | tests/buttered-toast-calculator.test.ts
+- [ ] L33 T1 B0 | src/views/buttered-toast-calculator.ts:33 | tests/buttered-toast-calculator.test.ts
+- [ ] L34 T2 B0 | src/views/buttered-toast-calculator.ts:34 | tests/buttered-toast-calculator.test.ts
+- [ ] L49 T3 B0 | src/views/buttered-toast-calculator.ts:49 | tests/buttered-toast-calculator.test.ts
+- [ ] L197 T15 B1 | src/views/buttered-toast-calculator.ts:197 | tests/buttered-toast-calculator.test.ts
+- [ ] L269 T23 B1 | src/views/buttered-toast-calculator.ts:269 | tests/buttered-toast-calculator.test.ts
+- [ ] L270 T24 B1 | src/views/buttered-toast-calculator.ts:270 | tests/buttered-toast-calculator.test.ts
+- [ ] L280 T25 B1 | src/views/buttered-toast-calculator.ts:280 | tests/buttered-toast-calculator.test.ts
+- [ ] L281 T26 B1 | src/views/buttered-toast-calculator.ts:281 | tests/buttered-toast-calculator.test.ts
 - [ ] L139 T11 B1 | src/views/categories.ts:139 | tests/categories.test.ts
 - [ ] L149 T12 B1 | src/views/categories.ts:149 | tests/categories.test.ts
 - [ ] L154 T15 B1 | src/views/categories.ts:154 | tests/categories.test.ts
@@ -425,22 +613,21 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [ ] L182 T25 B1 | src/views/category-detail.ts:182 | tests/category-detail.test.ts
 - [ ] L197 T28 B1 | src/views/category-detail.ts:197 | tests/category-detail.test.ts
 - [ ] L253 T37 B1 | src/views/category-detail.ts:253 | tests/category-detail.test.ts
-- [ ] L347 T50 B1 | src/views/category-detail.ts:347 | tests/category-detail.test.ts
-- [ ] L369 T53 B1 | src/views/category-detail.ts:369 | tests/category-detail.test.ts
-- [ ] L371 T55 B1 | src/views/category-detail.ts:371 | tests/category-detail.test.ts
-- [ ] L376 T56 B1 | src/views/category-detail.ts:376 | tests/category-detail.test.ts
-- [ ] L377 T57 B1 | src/views/category-detail.ts:377 | tests/category-detail.test.ts
-- [ ] L243 T11 B1 | src/views/favorites.ts:243 | tests/favorites-view.test.ts
-- [ ] L253 T14 B1 | src/views/favorites.ts:253 | tests/favorites-view.test.ts
-- [ ] L261 T15 B1 | src/views/favorites.ts:261 | tests/favorites-view.test.ts
-- [ ] L265 T16 B1 | src/views/favorites.ts:265 | tests/favorites-view.test.ts
-- [ ] L273 T18 B1 | src/views/favorites.ts:273 | tests/favorites-view.test.ts
-- [ ] L279 T21 B1 | src/views/favorites.ts:279 | tests/favorites-view.test.ts
-- [ ] L283 T23 B1 | src/views/favorites.ts:283 | tests/favorites-view.test.ts
-- [ ] L164 T5 B0 | src/views/home.ts:164 | tests/home.test.ts
-- [ ] L172 T7 B1 | src/views/home.ts:172 | tests/home.test.ts
-- [ ] L204 T16 B1 | src/views/home.ts:204 | tests/home.test.ts
-- [ ] L215 T18 B1 | src/views/home.ts:215 | tests/home.test.ts
+- [ ] L350 T50 B1 | src/views/category-detail.ts:350 | tests/category-detail.test.ts
+- [ ] L372 T53 B1 | src/views/category-detail.ts:372 | tests/category-detail.test.ts
+- [ ] L374 T55 B1 | src/views/category-detail.ts:374 | tests/category-detail.test.ts
+- [ ] L379 T56 B1 | src/views/category-detail.ts:379 | tests/category-detail.test.ts
+- [ ] L380 T57 B1 | src/views/category-detail.ts:380 | tests/category-detail.test.ts
+- [ ] L244 T11 B1 | src/views/favorites.ts:244 | tests/favorites-view.test.ts
+- [ ] L254 T14 B1 | src/views/favorites.ts:254 | tests/favorites-view.test.ts
+- [ ] L262 T15 B1 | src/views/favorites.ts:262 | tests/favorites-view.test.ts
+- [ ] L266 T16 B1 | src/views/favorites.ts:266 | tests/favorites-view.test.ts
+- [ ] L274 T18 B1 | src/views/favorites.ts:274 | tests/favorites-view.test.ts
+- [ ] L280 T21 B1 | src/views/favorites.ts:280 | tests/favorites-view.test.ts
+- [ ] L284 T23 B1 | src/views/favorites.ts:284 | tests/favorites-view.test.ts
+- [ ] L169 T5 B0 | src/views/home.ts:169 | tests/home.test.ts
+- [ ] L209 T16 B1 | src/views/home.ts:209 | tests/home.test.ts
+- [ ] L220 T18 B1 | src/views/home.ts:220 | tests/home.test.ts
 - [ ] L43 T0 B1 | src/views/law-detail.ts:43 | tests/law-detail.test.ts
 - [ ] L45 T1 B1 | src/views/law-detail.ts:45 | tests/law-detail.test.ts
 - [ ] L59 T2 B1 | src/views/law-detail.ts:59 | tests/law-detail.test.ts
@@ -452,46 +639,41 @@ Each item is a todo: add a test to cover the branch at the given file:line (sugg
 - [ ] L115 T15 B1 | src/views/law-detail.ts:115 | tests/law-detail.test.ts
 - [ ] L124 T18 B1 | src/views/law-detail.ts:124 | tests/law-detail.test.ts
 - [ ] L125 T19 B1 | src/views/law-detail.ts:125 | tests/law-detail.test.ts
-- [ ] L128 T21 B1 | src/views/law-detail.ts:128 | tests/law-detail.test.ts
-- [ ] L137 T23 B1 | src/views/law-detail.ts:137 | tests/law-detail.test.ts
-- [ ] L139 T24 B1 | src/views/law-detail.ts:139 | tests/law-detail.test.ts
-- [ ] L145 T26 B1 | src/views/law-detail.ts:145 | tests/law-detail.test.ts
-- [ ] L154 T28 B1 | src/views/law-detail.ts:154 | tests/law-detail.test.ts
-- [ ] L166 T32 B1 | src/views/law-detail.ts:166 | tests/law-detail.test.ts
-- [ ] L207 T38 B1 | src/views/law-detail.ts:207 | tests/law-detail.test.ts
-- [ ] L219 T41 B1 | src/views/law-detail.ts:219 | tests/law-detail.test.ts
-- [ ] L226 T42 B1 | src/views/law-detail.ts:226 | tests/law-detail.test.ts
-- [ ] L228 T43 B1 | src/views/law-detail.ts:228 | tests/law-detail.test.ts
-- [ ] L234 T44 B1 | src/views/law-detail.ts:234 | tests/law-detail.test.ts
-- [ ] L258 T45 B1 | src/views/law-detail.ts:258 | tests/law-detail.test.ts
-- [ ] L274 T49 B0 | src/views/law-detail.ts:274 | tests/law-detail.test.ts
-- [ ] L314 T55 B0 | src/views/law-detail.ts:314 | tests/law-detail.test.ts
-- [ ] L315 T56 B0 | src/views/law-detail.ts:315 | tests/law-detail.test.ts
-- [ ] L315 T56 B1 | src/views/law-detail.ts:315 | tests/law-detail.test.ts
-- [ ] L335 T58 B1 | src/views/law-detail.ts:335 | tests/law-detail.test.ts
+- [ ] L129 T21 B1 | src/views/law-detail.ts:129 | tests/law-detail.test.ts
+- [ ] L138 T24 B1 | src/views/law-detail.ts:138 | tests/law-detail.test.ts
+- [ ] L140 T25 B1 | src/views/law-detail.ts:140 | tests/law-detail.test.ts
+- [ ] L146 T27 B1 | src/views/law-detail.ts:146 | tests/law-detail.test.ts
+- [ ] L155 T29 B1 | src/views/law-detail.ts:155 | tests/law-detail.test.ts
+- [ ] L167 T33 B1 | src/views/law-detail.ts:167 | tests/law-detail.test.ts
+- [ ] L208 T39 B1 | src/views/law-detail.ts:208 | tests/law-detail.test.ts
+- [ ] L220 T42 B1 | src/views/law-detail.ts:220 | tests/law-detail.test.ts
+- [ ] L227 T43 B1 | src/views/law-detail.ts:227 | tests/law-detail.test.ts
+- [ ] L229 T44 B1 | src/views/law-detail.ts:229 | tests/law-detail.test.ts
+- [ ] L235 T45 B1 | src/views/law-detail.ts:235 | tests/law-detail.test.ts
+- [ ] L259 T46 B1 | src/views/law-detail.ts:259 | tests/law-detail.test.ts
+- [ ] L275 T50 B0 | src/views/law-detail.ts:275 | tests/law-detail.test.ts
+- [ ] L316 T57 B0 | src/views/law-detail.ts:316 | tests/law-detail.test.ts
 - [ ] L336 T59 B1 | src/views/law-detail.ts:336 | tests/law-detail.test.ts
-- [ ] L345 T60 B0 | src/views/law-detail.ts:345 | tests/law-detail.test.ts
-- [ ] L387 T69 B1 | src/views/law-detail.ts:387 | tests/law-detail.test.ts
 - [ ] L388 T70 B1 | src/views/law-detail.ts:388 | tests/law-detail.test.ts
-- [ ] L397 T71 B1 | src/views/law-detail.ts:397 | tests/law-detail.test.ts
-- [ ] L404 T72 B1 | src/views/law-detail.ts:404 | tests/law-detail.test.ts
+- [ ] L389 T71 B1 | src/views/law-detail.ts:389 | tests/law-detail.test.ts
+- [ ] L398 T72 B1 | src/views/law-detail.ts:398 | tests/law-detail.test.ts
 - [ ] L405 T73 B1 | src/views/law-detail.ts:405 | tests/law-detail.test.ts
-- [ ] L407 T74 B1 | src/views/law-detail.ts:407 | tests/law-detail.test.ts
-- [ ] L423 T77 B1 | src/views/law-detail.ts:423 | tests/law-detail.test.ts
-- [ ] L431 T78 B1 | src/views/law-detail.ts:431 | tests/law-detail.test.ts
-- [ ] L439 T80 B1 | src/views/law-detail.ts:439 | tests/law-detail.test.ts
-- [ ] L441 T81 B1 | src/views/law-detail.ts:441 | tests/law-detail.test.ts
-- [ ] L460 T86 B1 | src/views/law-detail.ts:460 | tests/law-detail.test.ts
-- [ ] L485 T91 B1 | src/views/law-detail.ts:485 | tests/law-detail.test.ts
+- [ ] L406 T74 B1 | src/views/law-detail.ts:406 | tests/law-detail.test.ts
+- [ ] L408 T75 B1 | src/views/law-detail.ts:408 | tests/law-detail.test.ts
+- [ ] L424 T78 B1 | src/views/law-detail.ts:424 | tests/law-detail.test.ts
+- [ ] L432 T79 B1 | src/views/law-detail.ts:432 | tests/law-detail.test.ts
+- [ ] L440 T81 B1 | src/views/law-detail.ts:440 | tests/law-detail.test.ts
+- [ ] L442 T82 B1 | src/views/law-detail.ts:442 | tests/law-detail.test.ts
+- [ ] L461 T87 B1 | src/views/law-detail.ts:461 | tests/law-detail.test.ts
+- [ ] L486 T92 B1 | src/views/law-detail.ts:486 | tests/law-detail.test.ts
 - [ ] L54 T4 B1 | src/views/murphys-law-project-management.ts:54 | tests/murphys-law-project-management.test.ts
 - [ ] L30 T2 B1 | src/views/not-found.ts:30 | tests/not-found.test.ts
 - [ ] L66 T4 B1 | src/views/origin-story.ts:66 | tests/origin-story.test.ts
-- [ ] L24 T0 B1 | src/views/sods-calculator.ts:24 | tests/sods-calculator.test.ts
-- [ ] L34 T1 B0 | src/views/sods-calculator.ts:34 | tests/sods-calculator.test.ts
-- [ ] L35 T2 B0 | src/views/sods-calculator.ts:35 | tests/sods-calculator.test.ts
-- [ ] L49 T3 B0 | src/views/sods-calculator.ts:49 | tests/sods-calculator.test.ts
-- [ ] L235 T20 B1 | src/views/sods-calculator.ts:235 | tests/sods-calculator.test.ts
-- [ ] L236 T21 B1 | src/views/sods-calculator.ts:236 | tests/sods-calculator.test.ts
-- [ ] L245 T22 B1 | src/views/sods-calculator.ts:245 | tests/sods-calculator.test.ts
-- [ ] L246 T23 B1 | src/views/sods-calculator.ts:246 | tests/sods-calculator.test.ts
+- [ ] L25 T0 B1 | src/views/sods-calculator.ts:25 | tests/sods-calculator.test.ts
+- [ ] L50 T3 B0 | src/views/sods-calculator.ts:50 | tests/sods-calculator.test.ts
+- [ ] L88 T4 B1 | src/views/sods-calculator.ts:88 | tests/sods-calculator.test.ts
+- [ ] L243 T21 B1 | src/views/sods-calculator.ts:243 | tests/sods-calculator.test.ts
+- [ ] L244 T22 B1 | src/views/sods-calculator.ts:244 | tests/sods-calculator.test.ts
+- [ ] L253 T23 B1 | src/views/sods-calculator.ts:253 | tests/sods-calculator.test.ts
+- [ ] L254 T24 B1 | src/views/sods-calculator.ts:254 | tests/sods-calculator.test.ts
 - [ ] L54 T4 B1 | src/views/why-murphys-law-feels-true.ts:54 | tests/why-murphys-law-feels-true.test.ts

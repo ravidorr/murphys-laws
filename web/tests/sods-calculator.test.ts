@@ -116,12 +116,13 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent!.replace('%', '') || '0');
     expect(score).toBeGreaterThan(0);
+    expect(score).toBeLessThanOrEqual(100);
     expect(el!.querySelector('#score-interpretation')!.textContent!.length).toBeGreaterThan(5);
   });
 
-  it('shows "safe" interpretation for low scores (< 2)', () => {
+  it('shows "safe" interpretation for low scores (< 2 on 0-8.6 scale, shown as < ~23%)', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '1';
     (el!.querySelector('#complexity') as HTMLInputElement)!.value = '1';
     (el!.querySelector('#importance') as HTMLInputElement)!.value = '1';
@@ -130,15 +131,15 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent!.replace('%', '') || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
-    expect(score).toBeLessThan(2);
+    expect(score).toBeLessThan(24);
     expect(interpretation).toMatch(/safe/i);
     expect(el!.querySelector('#result-display')!.classList.contains('calc-ok')).toBe(true);
   });
 
-  it('shows "risky" interpretation for scores between 2 and 4', () => {
+  it('shows "risky" interpretation for scores between 2 and 4 (display ~23-47%)', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '4';
     (el!.querySelector('#complexity') as HTMLInputElement)!.value = '4';
     (el!.querySelector('#importance') as HTMLInputElement)!.value = '4';
@@ -147,16 +148,16 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent!.replace('%', '') || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
-    expect(score).toBeGreaterThanOrEqual(2);
-    expect(score).toBeLessThan(4);
+    expect(score).toBeGreaterThanOrEqual(23);
+    expect(score).toBeLessThan(47);
     expect(interpretation).toMatch(/risky/i);
     expect(el!.querySelector('#result-display')!.classList.contains('calc-warn')).toBe(true);
   });
 
-  it('shows "worrying" interpretation for scores between 4 and 6', () => {
+  it('shows "worrying" interpretation for scores between 4 and 6 (display ~47-70%)', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '5';
     (el!.querySelector('#complexity') as HTMLInputElement)!.value = '5';
     (el!.querySelector('#importance') as HTMLInputElement)!.value = '5';
@@ -165,16 +166,16 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent!.replace('%', '') || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
-    expect(score).toBeGreaterThanOrEqual(4);
-    expect(score).toBeLessThan(6);
+    expect(score).toBeGreaterThanOrEqual(47);
+    expect(score).toBeLessThan(70);
     expect(interpretation).toMatch(/worrying/i);
     expect(el!.querySelector('#result-display')!.classList.contains('calc-orange')).toBe(true);
   });
 
-  it('shows "disaster" interpretation for scores between 6 and 8', () => {
+  it('shows "disaster" interpretation for scores between 6 and 8 (display ~70-93%)', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '5';
     (el!.querySelector('#complexity') as HTMLInputElement)!.value = '5';
     (el!.querySelector('#importance') as HTMLInputElement)!.value = '5';
@@ -183,16 +184,16 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent!.replace('%', '') || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
-    expect(score).toBeGreaterThanOrEqual(6);
-    expect(score).toBeLessThan(8);
+    expect(score).toBeGreaterThanOrEqual(70);
+    expect(score).toBeLessThan(93);
     expect(interpretation).toMatch(/disaster/i);
     expect(el!.querySelector('#result-display')!.classList.contains('calc-danger')).toBe(true);
   });
 
-  it('shows "catastrophe" interpretation for high scores (>= 8)', () => {
+  it('shows "catastrophe" interpretation for high scores (>= 8 on 0-8.6 scale, display >= ~93%)', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '9';
     (el!.querySelector('#complexity') as HTMLInputElement)!.value = '9';
     (el!.querySelector('#importance') as HTMLInputElement)!.value = '9';
@@ -201,10 +202,10 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent!.replace('%', '') || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
-    expect(score).toBeGreaterThanOrEqual(8);
+    expect(score).toBeGreaterThanOrEqual(93);
     expect(interpretation).toMatch(/catastrophe/i);
     expect(el!.querySelector('#result-display')!.classList.contains('calc-dark')).toBe(true);
   });

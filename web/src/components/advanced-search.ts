@@ -78,7 +78,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     if (!attributionListbox) return;
     const options: string[] = [];
     options.push(''); // All Submitters (clear)
-    if (!names.includes('Anonymous')) options.push('Anonymous');
+    if (names.some(n => n === 'Anonymous')) options.push('Anonymous');
     options.push(...names.filter(n => n !== 'Anonymous'));
     attributionListbox.innerHTML = options.map((name, idx) => {
       const label = name === '' ? 'All Submitters' : name;
@@ -183,7 +183,8 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
             renderListboxItems(names);
             showListbox();
             listboxSelectedIndex = 0;
-            items.forEach((item, i) => item.setAttribute('aria-selected', i === 0 ? 'true' : 'false'));
+            const currentItems = attributionListbox.querySelectorAll('.submitter-typeahead-item');
+            currentItems.forEach((item, i) => item.setAttribute('aria-selected', i === 0 ? 'true' : 'false'));
           }).catch(() => {});
         }
         return;

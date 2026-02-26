@@ -178,6 +178,21 @@ describe('Browse view', () => {
     expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ category_id: 5 }));
   });
 
+  it('L40 T8 B1: parseBrowseParams uses page from URL', async () => {
+    const url = new URL('/browse', location.origin);
+    url.search = '?page=2';
+    window.history.replaceState({}, '', url.toString());
+    fetchLawsSpy.mockResolvedValue({
+      data: [{ id: 1, title: 'L', text: 'T', upvotes: 0, downvotes: 0 }],
+      total: 1,
+      limit: 25,
+      offset: 25
+    });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalled());
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 25 }));
+  });
+
   it('L40 T8 B0: parseBrowseParams does not add attribution when absent', async () => {
     const url = new URL(location.href);
     url.search = '';
@@ -189,6 +204,18 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
     const lastCall = fetchLawsSpy.mock.calls[fetchLawsSpy.mock.calls.length - 1];
     expect(lastCall?.[0]).not.toHaveProperty('attribution');
+  });
+
+  it('L40 B1: parseBrowseParams adds attribution to filters when in URL', async () => {
+    const url = new URL(location.href);
+    url.search = '?attribution=Alice';
+    url.pathname = '/browse';
+    window.history.replaceState({}, '', url.toString());
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalled();
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ attribution: 'Alice' }));
   });
 
   it('L60 B1: uses searchQuery in currentFilters when provided and non-empty', async () => {
@@ -443,6 +470,28 @@ describe('Browse view', () => {
       expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
         offset: 25
       }));
+    }, { timeout: 1000 });
+  });
+
+  it('L246 L275 L277 L282 L283: sort select change updates sort/order and reloads', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: [{ id: 1, title: 'Law', text: 'Text', upvotes: 0, downvotes: 0 }],
+      total: 1,
+      limit: 25,
+      offset: 0
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('#sort-select')).toBeTruthy(), { timeout: 1000 });
+
+    const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+    const optionOldest = Array.from(sortSelect.options).find((o) => o.value === 'created_at-asc');
+    expect(optionOldest).toBeTruthy();
+    sortSelect.value = 'created_at-asc';
+    sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ sort: 'created_at', order: 'asc' }));
     }, { timeout: 1000 });
   });
 
@@ -1291,6 +1340,36 @@ describe('Browse view', () => {
         order: 'desc'
       }));
     }, { timeout: 1000 });
+  });
+
+  it('buildBrowseSearch receives sort and order from URL so non-default branches are hit', async () => {
+    const url = new URL(location.origin + '/browse');
+    url.search = '?sort=created_at&order=asc';
+    window.history.replaceState({}, '', url.toString());
+    fetchLawsSpy.mockResolvedValue({
+      data: [{ id: 1, title: 'L', text: 'T', upvotes: 0, downvotes: 0 }],
+      total: 1,
+      limit: 25,
+      offset: 0
+    });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalled());
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ sort: 'created_at', order: 'asc' }));
+  });
+
+  it('buildBrowseSearch receives page from URL so page > 1 branch is hit', async () => {
+    const url = new URL(location.origin + '/browse');
+    url.search = '?page=2';
+    window.history.replaceState({}, '', url.toString());
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(25).fill(null).map((_, i) => ({ id: i + 1, title: 'L', text: 'T', upvotes: 0, downvotes: 0 })),
+      total: 50,
+      limit: 25,
+      offset: 25
+    });
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+    await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalled());
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 25 }));
   });
 
   it('resets to page 1 when changing sort order', async () => {

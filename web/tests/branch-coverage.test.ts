@@ -241,6 +241,46 @@ describe('Branch Coverage Tests', () => {
         expect(fetchAPISpy).toHaveBeenCalledWith('/api/v1/submitters', expect.any(Object));
       }, { timeout: 500 });
     });
+
+    it('init with no cache calls loadFilters directly (else branch of cachedCategories)', async () => {
+      getCachedCategoriesSpy.mockReturnValue(null);
+      getCachedAttributionsSpy.mockReturnValue(null);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      localThis.el = AdvancedSearch({ onSearch: () => {} });
+
+      await vi.waitFor(() => expect(fetchAPISpy).toHaveBeenCalled());
+      expect(cacheUtils.deferUntilIdle).not.toHaveBeenCalled();
+    });
+
+    it('clear button clears keyword, category, attribution and calls onSearch empty', async () => {
+      getCachedCategoriesSpy.mockReturnValue([{ id: 1, title: 'Cat', slug: 'cat' }]);
+      fetchAPISpy.mockResolvedValue({ data: [] });
+
+      let lastFilters: Record<string, unknown> | null = null;
+      localThis.el = AdvancedSearch({
+        onSearch: (f) => { lastFilters = f as Record<string, unknown>; }
+      });
+      document.body.appendChild(localThis.el!);
+
+      const keywordInput = localThis.el!.querySelector('#search-keyword') as HTMLInputElement;
+      const categorySelect = localThis.el!.querySelector('#search-category') as HTMLSelectElement;
+      const attributionInput = localThis.el!.querySelector('#search-attribution-input') as HTMLInputElement;
+      const attributionHidden = localThis.el!.querySelector('#search-attribution') as HTMLInputElement;
+      keywordInput.value = 'q';
+      categorySelect.value = '1';
+      attributionInput.value = 'Alice';
+      attributionHidden.value = 'Alice';
+
+      const clearBtn = localThis.el!.querySelector('#clear-btn') as HTMLElement;
+      clearBtn.click();
+
+      expect(keywordInput.value).toBe('');
+      expect(categorySelect.value).toBe('');
+      expect(attributionInput.value).toBe('');
+      expect(attributionHidden.value).toBe('');
+      expect(lastFilters).toEqual({});
+    });
   });
 
   describe('voting addVotingListeners branches', () => {

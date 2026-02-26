@@ -75,6 +75,22 @@ describe('Home view', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
+  it('L169 B1: click on retry button triggers fetchAndRender', async () => {
+    const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('Network error'))
+      .mockResolvedValue({ ok: true, json: async () => ({ law: lawOfTheDay, featured_date: '2025-10-29' }) });
+    globalThis.fetch = fetchMock;
+    const el = Home({ onNavigate: () => {} });
+    await new Promise(r => setTimeout(r, 50));
+    const retryBtn = el.querySelector('[data-action="retry"]') as HTMLElement | null;
+    if (retryBtn) {
+      retryBtn.click();
+      await new Promise(r => setTimeout(r, 20));
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    }
+  });
+
   it('L164 B0: click not on retry does not trigger fetchAndRender', async () => {
     const lawOfTheDay = { id: 1, text: 'Test law', upvotes: 10, downvotes: 0 };
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -138,6 +154,18 @@ describe('Home view', () => {
     el.appendChild(btn);
     btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
     expect(navTarget).toBe('submit');
+  });
+
+  it('L169 B0: does not call onNavigate when data-nav is empty', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ law: { id: 1, text: 'T' }, featured_date: '2025-10-29' }) });
+    const onNavigate = vi.fn();
+    const el = Home({ onNavigate });
+    await new Promise(r => setTimeout(r, 0));
+    const btn = document.createElement('button');
+    btn.setAttribute('data-nav', '');
+    el.appendChild(btn);
+    btn.click();
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
   it('navigates to category when clicking category:id nav button', async () => {

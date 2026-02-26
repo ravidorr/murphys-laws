@@ -10,7 +10,6 @@ export function setLoaderForTesting(loader: (() => Promise<unknown>) | undefined
 const MATHJAX_FONT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2';
 
 function configureMathJax(): void {
-  /* v8 ignore next 3 - SSR environment check */
   if (typeof window === 'undefined') {
     return;
   }
@@ -93,7 +92,6 @@ export async function ensureMathJax(): Promise<unknown> {
 
       const mj = window.MathJax;
       const appRoot = document.getElementById('app');
-      /* v8 ignore next 5 - MathJax async initialization, tested via integration tests */
       if (mj && typeof mj.typesetPromise === 'function' && appRoot) {
         mj.typesetPromise([appRoot]).catch(() => {
           // Silently handle MathJax errors
@@ -115,7 +113,6 @@ export function resetMathJaxStateForTesting(): void {
   loaderPromise = undefined;
 }
 
-/* v8 ignore start - HMR code only runs in Vite dev mode */
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     loaderPromise = undefined;
@@ -135,4 +132,3 @@ if (import.meta.hot) {
     }
   });
 }
-/* v8 ignore stop */

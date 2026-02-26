@@ -118,6 +118,15 @@ describe('Lazy Loader Utilities', () => {
       expect(localThis.mockFactory).toHaveBeenCalledTimes(1);
     });
 
+    it('L93 L96: when placeholder not connected in rAF, setTimeout observes after append', async () => {
+      localThis.mockFactory.mockReturnValue(document.createElement('div'));
+      const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      document.body.appendChild(placeholder);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(localThis.mockObserver.observe).toHaveBeenCalledWith(placeholder);
+    });
+
     it('observes placeholder when not connected at rAF then connected later (L93)', async () => {
       localThis.mockFactory.mockReturnValue(document.createElement('div'));
       const placeholder = lazyLoad(localThis.mockFactory as () => HTMLElement);

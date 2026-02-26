@@ -132,6 +132,16 @@ describe('Footer component', () => {
     expect(onNavigateMock).not.toHaveBeenCalled();
   });
 
+  it('L126 B0: does not call onNavigate when nav element has empty data-nav', () => {
+    const onNavigateMock = vi.fn();
+    const el = Footer({ onNavigate: onNavigateMock });
+    const navBtn = el.querySelector('[data-nav="about"]') as HTMLElement;
+    expect(navBtn).toBeTruthy();
+    navBtn.setAttribute('data-nav', '');
+    navBtn.click();
+    expect(onNavigateMock).not.toHaveBeenCalled();
+  });
+
   it('contains ad slot placeholder', () => {
     const el = Footer({
       onNavigate: () => { }

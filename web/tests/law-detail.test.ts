@@ -112,6 +112,56 @@ describe('LawDetail view', () => {
     }, { timeout: 1000 });
   });
 
+  it('L325 L326 L346 L347: random-law when total > 0 navigates to law by id', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    const listWithTotal = { data: [], total: 5, limit: 1, offset: 0 };
+    const listWithLaw = { data: [{ id: 99, title: 'Random Law', text: 'Text', score: 0 }], total: 5, limit: 1, offset: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => listWithTotal })
+      .mockResolvedValueOnce({ ok: true, json: async () => listWithLaw });
+    let navPage = '';
+    let navParam: string | undefined;
+    const el = LawDetail({ lawId: '1', onNavigate: (page, param) => { navPage = page; navParam = param; } });
+    await vi.waitFor(() => expect(el.querySelector('[data-action="random-law"]')).toBeTruthy(), { timeout: 1000 });
+    (el.querySelector('[data-action="random-law"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 150));
+    expect(navPage).toBe('law');
+    expect(navParam).toBe('99');
+  });
+
+  it('L352 L353: random-law when fetchLaws rejects navigates to browse', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+      .mockRejectedValueOnce(new Error('Network error'));
+    let nav = '';
+    const el = LawDetail({ lawId: '1', onNavigate: (t) => { nav = t; } });
+    await vi.waitFor(() => expect(el.querySelector('[data-action="random-law"]')).toBeTruthy(), { timeout: 1000 });
+    (el.querySelector('[data-action="random-law"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 150));
+    expect(nav).toBe('browse');
+  });
+
+  it('L346 L347: random-law when second fetch returns data without id navigates to browse', async () => {
+    const law = { id: '1', title: 'T', text: 'T', score: 0 };
+    const listWithTotal = { data: [], total: 2, limit: 1, offset: 0 };
+    const listWithNoId = { data: [{ title: 'No Id Law', text: 'T', score: 0 }], total: 2, limit: 1, offset: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => law })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => listWithTotal })
+      .mockResolvedValueOnce({ ok: true, json: async () => listWithNoId });
+    let nav = '';
+    const el = LawDetail({ lawId: '1', onNavigate: (t) => { nav = t; } });
+    await vi.waitFor(() => expect(el.querySelector('[data-action="random-law"]')).toBeTruthy(), { timeout: 1000 });
+    (el.querySelector('[data-action="random-law"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 150));
+    expect(nav).toBe('browse');
+  });
+
   it('L387 L388 L397 L404 L405 L407 B1: copy and favorite and related card handlers', async () => {
     const law = { id: '1', title: 'T', text: 'T', score: 0 };
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
@@ -158,6 +208,15 @@ describe('LawDetail view', () => {
   it('renders not found when lawId is null', async () => {
     const el = LawDetail({ lawId: null as unknown as string, onNavigate: () => { } });
     expect(el.textContent).toMatch(/Law Not Found/);
+  });
+
+  it('renders law with single-word title (L91 else branch)', async () => {
+    const law = { id: '1', title: 'Murphy', text: 'Single word title.', upvotes: 0, downvotes: 0 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-law-title]')).toBeTruthy(), { timeout: 500 });
+    const titleEl = el.querySelector('[data-law-title]');
+    expect(titleEl?.textContent).toBe('Murphy');
   });
 
   it('renders title for existing law and triggers vote', async () => {
@@ -741,6 +800,7 @@ describe('LawDetail view', () => {
     // Should have copied the law text from the rendered element
     expect(writeTextMock).toHaveBeenCalled();
   });
+
 
   it('uses data-copy-value when set on copy text button (L305)', async () => {
     const law = { id: '7', title: 'Test Law', text: 'Body text', upvotes: 5, downvotes: 2 };

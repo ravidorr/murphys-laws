@@ -30,6 +30,18 @@ describe('Breadcrumb component', () => {
     expect(sep).toBeTruthy();
   });
 
+  it('L37 B0: does not append separator when items is empty', () => {
+    const el = Breadcrumb({
+      items: [],
+      onNavigate: () => {}
+    });
+    const list = el.querySelector('.breadcrumb-list');
+    const firstLi = list?.querySelector('.breadcrumb-item');
+    expect(firstLi).toBeTruthy();
+    const separators = firstLi!.querySelectorAll('.breadcrumb-separator');
+    expect(separators.length).toBe(0);
+  });
+
   it('sets data-param when item has param (L65)', () => {
     const el = Breadcrumb({
       items: [

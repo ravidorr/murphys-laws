@@ -1198,6 +1198,11 @@ describe('normalizeShareUrl', () => {
   it('preserves path and search', () => {
     expect(normalizeShareUrl('https://test.com/law/1?q=2')).toBe('https://test.com/law/1?q=2');
   });
+
+  it('L77 B1: returns trimmed string when URL constructor throws (invalid URL)', () => {
+    const invalid = 'x'; // new URL('x') throws without base
+    expect(normalizeShareUrl(invalid)).toBe('x');
+  });
 });
 
 describe('buildShareUrls', () => {
