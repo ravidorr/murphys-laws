@@ -851,6 +851,38 @@ describe('Footer component', () => {
     expect(adSlot!.dataset.loaded).not.toBe('true');
   });
 
+  it('hides footer-ad-shell until ad load is triggered (sufficient content, ads enabled)', () => {
+    window.adsbygoogle = [];
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+
+    const observeMock = vi.fn();
+    globalThis.IntersectionObserver = vi.fn(function () {
+      return { observe: observeMock, disconnect: vi.fn() };
+    }) as unknown as typeof IntersectionObserver;
+
+    const el = Footer({ onNavigate: () => {} });
+    document.body.appendChild(el);
+
+    const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
+    expect(adSlot).toBeTruthy();
+    // Shell is hidden until we trigger load (no empty "Advertisement" placeholder)
+    expect(adSlot!.classList.contains('hidden')).toBe(true);
+    expect(adSlot!.dataset.loaded).not.toBe('true');
+
+    // Trigger load (e.g. user scroll or adslot:init)
+    el.dispatchEvent(new Event('adslot:init'));
+
+    // Shell is shown and ad is loaded
+    expect(adSlot!.classList.contains('hidden')).toBe(false);
+    expect(adSlot!.dataset.loaded).toBe('true');
+
+    el.remove();
+  });
+
   it('skips ad loading when main content is insufficient', () => {
     window.adsbygoogle = [];
 
