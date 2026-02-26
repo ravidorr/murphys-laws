@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Print: hide all ads in print with broader selectors ([id*="google_ads"], div:has(> iframe) for ad iframe wrappers); docs/print-ads-debug-console-script.js for production DOM inspection
 - Ad display: hideAds only on NotFound route; footer-ad-shell hidden when hideAds or insufficient content; print hides .footer-ad-shell, ins, .adsbygoogle, [data-ad-slot] so side-rail ads hidden; bump root to 2.0.37, web to 3.1.11
 - Vote UX: move "Votes are anonymous; no login required." to tooltip on vote-group; use data-tooltip on up/down vote buttons (Law of the Day, law detail, law cards); remove .vote-hint; bump root to 2.0.36, web to 3.1.10
 - AdSense: scope footer ad CSS to .footer-ad-shell so Google-injected side-rail ads do not get width: 100% and block clicks on main content; bump root to 2.0.35, web to 3.1.9
