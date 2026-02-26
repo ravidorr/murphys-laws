@@ -423,7 +423,7 @@ if (isFavoritesEnabled()) {
       // Update icon
       const icon = favoriteBtn.querySelector('[data-icon-name]');
       if (icon) {
-        const newIconName = isNowFavorite ? 'heartFilled' : 'heart';
+        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
         icon.setAttribute('data-icon-name', newIconName);
         // Re-render the icon by importing hydrateIcons dynamically
         import('./utils/icons.ts')

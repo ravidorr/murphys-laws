@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Favorite: bookmark-with-star icon (outline/filled) instead of heart; vote-group container for up/down buttons; law card title h3.section-title; backend/api fixes; bump root to 2.0.33, web to 3.1.7
 - Share: all options (Copy link, X, Email, Facebook, etc.) in popover for cleaner UI; remove always-visible top row; bump root to 2.0.32, web to 3.1.6
 - Breadcrumb: single separator before each item after Home (remove duplicate separator after Home); bump root to 2.0.31, web to 3.1.5
 - Home: Science of Murphy's Law section is a plain section (always visible); removed details/summary and related CSS; bump root to 2.0.30, web to 3.1.4

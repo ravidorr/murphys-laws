@@ -709,4 +709,36 @@ describe('API utilities', () => {
       );
     });
   });
+
+  describe('fetchLaws with exclude_corollaries', () => {
+    it('includes exclude_corollaries=1 when exclude_corollaries is true', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [], total: 0 })
+      });
+
+      await fetchLaws({ exclude_corollaries: true });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('exclude_corollaries=1'),
+        expect.any(Object)
+      );
+    });
+
+    it('omits exclude_corollaries when not provided', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [], total: 0 })
+      });
+
+      await fetchLaws({});
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.not.stringContaining('exclude_corollaries='),
+        expect.any(Object)
+      );
+    });
+  });
 });

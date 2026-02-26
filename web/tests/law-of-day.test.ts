@@ -685,7 +685,7 @@ describe('LawOfTheDay component', () => {
       expect(favoriteBtn!.getAttribute('aria-label')).toBe('Remove from favorites');
     });
 
-    it('L80 B1: favorited law with svg icon replaces icon with heartFilled', () => {
+    it('L80 B1: favorited law with svg icon replaces icon with bookmarkFilled', () => {
       isFavoritesEnabledSpy.mockReturnValue(true);
       isFavoriteSpy.mockReturnValue(true);
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
@@ -693,11 +693,11 @@ describe('LawOfTheDay component', () => {
       const favoriteBtn = el.querySelector('[data-favorite-btn]');
       const icon = favoriteBtn?.querySelector('svg[data-icon-name]');
       expect(icon).toBeTruthy();
-      expect(icon!.getAttribute('data-icon-name')).toBe('heartFilled');
+      expect(icon!.getAttribute('data-icon-name')).toBe('bookmarkFilled');
       expect(favoriteBtn?.classList.contains('favorited')).toBe(true);
     });
 
-    it('shows filled heart icon when law is already favorited on init (L80)', () => {
+    it('shows filled bookmark icon when law is already favorited on init (L80)', () => {
       isFavoritesEnabledSpy.mockReturnValue(true);
       isFavoriteSpy.mockReturnValue(true);
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
@@ -708,7 +708,7 @@ describe('LawOfTheDay component', () => {
       expect(favoriteBtn!.classList.contains('favorited')).toBe(true);
       const icon = favoriteBtn!.querySelector('svg[data-icon-name]');
       expect(icon).toBeTruthy();
-      expect(icon!.getAttribute('data-icon-name')).toBe('heartFilled');
+      expect(icon!.getAttribute('data-icon-name')).toBe('bookmarkFilled');
     });
 
     it('renders without replacing icon when createIcon returns null on favorited init', () => {
@@ -719,7 +719,7 @@ describe('LawOfTheDay component', () => {
       const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
       const el = mountLawForFavorites(law);
 
-      expect(createIconSpy).toHaveBeenCalledWith('heartFilled');
+      expect(createIconSpy).toHaveBeenCalledWith('bookmarkFilled');
       expect(el.querySelector('[data-favorite-btn].favorited')).toBeTruthy();
     });
 
@@ -747,14 +747,14 @@ describe('LawOfTheDay component', () => {
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
       expect(favoriteBtn).toBeTruthy();
       const iconBefore = favoriteBtn!.querySelector('svg[data-icon-name]');
-      expect(iconBefore!.getAttribute('data-icon-name')).toBe('heart');
+      expect(iconBefore!.getAttribute('data-icon-name')).toBe('bookmark');
 
       favoriteBtn!.click();
 
       await vi.waitFor(() => {
         const iconAfter = favoriteBtn!.querySelector('svg[data-icon-name]');
         expect(iconAfter).toBeTruthy();
-        expect(iconAfter!.getAttribute('data-icon-name')).toBe('heartFilled');
+        expect(iconAfter!.getAttribute('data-icon-name')).toBe('bookmarkFilled');
       });
     });
 

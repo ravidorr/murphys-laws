@@ -92,7 +92,8 @@ describe('LawController', () => {
                 categorySlug: null,
                 attribution: '',
                 sort: 'score',
-                order: 'desc'
+                order: 'desc',
+                excludeCorollaries: false
             });
             expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
         });
@@ -117,8 +118,18 @@ describe('LawController', () => {
                 categorySlug: 'test-cat',
                 attribution: 'Murphy',
                 sort: 'score',
-                order: 'desc'
+                order: 'desc',
+                excludeCorollaries: false
             });
+        });
+
+        it('should pass excludeCorollaries when exclude_corollaries=1', async () => {
+            lawService.listLaws.mockResolvedValue({ data: [], total: 0 });
+            await lawController.list(req, res, { query: { exclude_corollaries: '1' } });
+
+            expect(lawService.listLaws).toHaveBeenCalledWith(expect.objectContaining({
+                excludeCorollaries: true
+            }));
         });
 
         it('should clamp invalid limit', async () => {

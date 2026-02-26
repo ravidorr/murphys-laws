@@ -58,7 +58,7 @@
 <template data-law-card-template>
   <section class="section section-card mb-12" data-law-card-root>
     <div class="section-header">
-      <h1 class="page-title" data-law-title><span class="visually-hidden">Loading law title...</span></h1>
+      <h3 class="section-title" data-law-title><span class="visually-hidden">Loading law title...</span></h3>
     </div>
     <div class="section-body">
       <blockquote class="lod-quote-large" data-law-text></blockquote>
@@ -67,16 +67,18 @@
     </div>
     <div class="section-footer">
       <div class="left">
-        <button type="button" class="vote-btn count-up" data-vote="up" data-id="" aria-label="Upvote this law">
-          <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
-          <span class="count-num" data-upvote-count>0</span>
-        </button>
-        <button type="button" class="vote-btn count-down" data-vote="down" data-id="" aria-label="Downvote this law">
-          <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
-          <span class="count-num" data-downvote-count>0</span>
-        </button>
+        <div class="vote-group" role="group" aria-label="Vote">
+          <button type="button" class="vote-btn count-up" data-vote="up" data-id="" aria-label="Upvote this law">
+            <span class="icon" data-icon="thumbUp" aria-hidden="true"></span>
+            <span class="count-num" data-upvote-count>0</span>
+          </button>
+          <button type="button" class="vote-btn count-down" data-vote="down" data-id="" aria-label="Downvote this law">
+            <span class="icon" data-icon="thumbDown" aria-hidden="true"></span>
+            <span class="count-num" data-downvote-count>0</span>
+          </button>
+        </div>
         <button type="button" class="vote-btn count-up" data-action="favorite" data-id="" data-favorite-btn aria-label="Add to favorites" data-tooltip="Add to favorites" hidden>
-          <span class="icon" data-icon="heart" aria-hidden="true"></span>
+          <span class="icon" data-icon="bookmark" aria-hidden="true"></span>
           <span class="count-num"></span>
         </button>
       </div>

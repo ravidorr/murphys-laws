@@ -59,6 +59,16 @@ describe('LawService', () => {
         featured_date DATE,
         PRIMARY KEY (law_id, featured_date)
       );
+
+      CREATE TABLE law_relations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_law_id INTEGER NOT NULL,
+        to_law_id INTEGER NOT NULL,
+        relation_type TEXT NOT NULL,
+        note TEXT,
+        FOREIGN KEY (from_law_id) REFERENCES laws(id),
+        FOREIGN KEY (to_law_id) REFERENCES laws(id)
+      );
     `);
 
     lawService = new LawService(db);
@@ -340,6 +350,20 @@ describe('LawService', () => {
     // No sort parameter
     const result = await lawService.listLaws({ limit: 10, offset: 0 });
     expect(result.data[0].text).toBe('High Score');
+  });
+
+  it('should exclude corollaries when excludeCorollaries is true', async () => {
+    const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Parent Law', 'published')").run();
+    const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Corollary Law', 'published')").run();
+    const id1 = Number(law1.lastInsertRowid);
+    const id2 = Number(law2.lastInsertRowid);
+    db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COROLLARY_OF')").run(id2, id1);
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0, excludeCorollaries: true });
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].id).toBe(id1);
+    expect(result.data[0].text).toBe('Parent Law');
+    expect(result.total).toBe(1);
   });
 
   it('should throw error when law insert fails', async () => {
