@@ -67,6 +67,19 @@ export function isTransientError(error: unknown): boolean {
 }
 
 /**
+ * Errors we still report to Sentry but should not show the user-facing error banner.
+ * Used for known browser/Service Worker quirks (e.g. InvalidStateError during SW update).
+ */
+export function isServiceWorkerTransientError(value: unknown): boolean {
+  const msg = value instanceof Error ? value.message : String(value ?? '');
+  return (
+    /Failed to update a ServiceWorker/i.test(msg) ||
+    /The object is in an invalid state/i.test(msg) ||
+    /Failed to register a ServiceWorker/i.test(msg)
+  );
+}
+
+/**
  * Calculate delay with exponential backoff and jitter
  * @param {number} attempt - Current attempt number (0-based)
  * @param {number} baseDelay - Base delay in ms
