@@ -596,6 +596,20 @@ describe('renderHome function', () => {
     expect(subtitle!.textContent).toMatch(/Anything that can go wrong, will go wrong/);
   });
 
+  it('Science section is a plain section with body visible (no details/summary)', () => {
+    const el = document.createElement('div');
+    renderHome(el, null, [], vi.fn());
+
+    const scienceSection = Array.from(el.querySelectorAll('.section-card')).find(
+      (s) => s.textContent?.includes('Anything that can go wrong, will go wrong')
+    );
+    expect(scienceSection).toBeTruthy();
+    expect(scienceSection!.querySelector('details')).toBeNull();
+    expect(scienceSection!.querySelector('summary')).toBeNull();
+    expect(scienceSection!.querySelector('.section-body')).toBeTruthy();
+    expect(scienceSection!.textContent).toMatch(/Why Murphy's Law Still Matters/);
+  });
+
   it('renders Articles section with links to origin-story and new long-form articles', () => {
     const el = document.createElement('div');
     renderHome(el, null, [], vi.fn());

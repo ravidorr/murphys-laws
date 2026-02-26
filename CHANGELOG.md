@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Home: Science of Murphy's Law section is a plain section (always visible); removed details/summary and related CSS; bump root to 2.0.30, web to 3.1.4
 - Deploy workflow: install Rollup Linux native binary after npm ci (same fix as backend/web CI); bump root to 2.0.29
 - Web CI: install Rollup Linux native binary after npm ci (same fix as backend); bump root to 2.0.28
 - Backend CI: install Rollup Linux native binary after npm ci to fix optional deps bug on ubuntu-latest; bump root to 2.0.27
