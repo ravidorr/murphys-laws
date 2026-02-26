@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove law-of-day API preload from index.html to avoid console warning "preloaded but not used within a few seconds" (preload was only consumed on home after SPA boot; on other routes it was never used). Bump root to 2.0.40, web to 3.1.14.
 - PWA: handle registration.update() promise rejection (InvalidStateError in Firefox when SW registration is stale). Extract scheduleServiceWorkerUpdateCheck to utils and add unit tests. Bump root to 2.0.41, web to 3.1.15.
 - Sentry: ignore InvalidStateError "object is not, or is no longer, usable" (stale SW registration; code already handles via .catch). Bump root to 2.0.42, web to 3.1.16.
+- PWA install prompt: safe localStorage get/set helpers to avoid SecurityError in insecure contexts (Safari). Sentry: only ignore browser extension errors; remove SW/SDK/module patterns so we don't hide app errors. README: note only extension errors filtered. Bump root to 2.0.43, web to 3.1.17.
 
 ### Changed
 - Vote tooltip: single combined tooltip on vote-group ("Upvote or downvote. Votes are anonymous; no login required."); remove per-button tooltips so they do not hide each other; bump root to 2.0.38, web to 3.1.12
