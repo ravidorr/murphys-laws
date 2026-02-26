@@ -147,6 +147,13 @@ describe('law-card-renderer', () => {
       expect(html).toContain('aria-label="Add to favorites"');
     });
 
+    it('wraps favorite button in vote-group when feature enabled', () => {
+      const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
+      const html = renderLawCard(law);
+      expect(html).toContain('class="vote-group" role="group" aria-label="Add to favorites"');
+      expect(html).toContain('data-action="favorite"');
+    });
+
     it('does not render favorite button when feature is disabled', () => {
       vi.mocked(isFavoritesEnabled).mockReturnValue(false);
       

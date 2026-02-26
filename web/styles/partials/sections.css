@@ -521,10 +521,9 @@
   font-weight: 600;
 }
 
-/* Favorite button styles */
+/* Favorite button styles (inside its own vote-group for consistent border) */
 .vote-btn[data-action="favorite"] {
   color: var(--favorite-color, #c2185b);
-  margin-left: 0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
