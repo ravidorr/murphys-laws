@@ -88,7 +88,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     const downVoteCount = clone.querySelector('[data-downvote-count]');
 
     if (titleEl) {
-      const title = law.title ? String(law.title) : 'Law';
+      const title = law.title ? String(law.title) : "Murphy's Law";
       // Split title to accent the first word
       const words = title.split(' ');
       if (words.length > 1) {
