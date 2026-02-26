@@ -26,6 +26,14 @@ let deferredPrompt: BeforeInstallPromptEvent | null = null;
 // Track if user has dismissed the prompt (to avoid showing again this session)
 let promptDismissedThisSession = false;
 
+// Show at most once per session
+let promptShownThisSession = false;
+
+// Only show after a qualifying user action (download, calculator, share/copy link)
+let qualifyingUserActionHappened = false;
+
+const PWA_NEVER_SHOW_KEY = 'pwa_install_never_show';
+
 // Track if app is already installed
 let isInstalled = false;
 
@@ -45,12 +53,22 @@ const engagement = {
 export function _resetForTesting() {
   deferredPrompt = null;
   promptDismissedThisSession = false;
+  promptShownThisSession = false;
+  qualifyingUserActionHappened = false;
   isInstalled = false;
   engagement.pageViews = 0;
   engagement.lawsViewed = 0;
   engagement.calculatorUsed = false;
   engagement.timeOnSite = 0;
   engagement.startTime = Date.now();
+}
+
+export function _setPromptShownThisSessionForTesting(value: boolean) {
+  promptShownThisSession = value;
+}
+
+export function _setQualifyingUserActionForTesting(value: boolean) {
+  qualifyingUserActionHappened = value;
 }
 
 /**
@@ -102,6 +120,7 @@ const ENGAGEMENT_THRESHOLDS = {
  * @returns {boolean}
  */
 export function isRunningStandalone() {
+  if (typeof window.matchMedia !== 'function') return false;
   return window.matchMedia('(display-mode: standalone)').matches ||
          window.matchMedia('(display-mode: fullscreen)').matches ||
          (window.navigator as NavigatorStandalone).standalone === true; // iOS Safari
@@ -137,114 +156,110 @@ export function initInstallPrompt() {
 
   // Listen for the beforeinstallprompt event
   window.addEventListener('beforeinstallprompt', (e: Event) => {
-    // Prevent the default mini-infobar
     e.preventDefault();
-    // Save the event for later
     deferredPrompt = e as BeforeInstallPromptEvent;
-
-    // Check if we should show the prompt based on engagement
-    checkAndShowPrompt();
+    // Do not auto-show here; wait for qualifying user action
   });
 
   // Listen for successful installation
   window.addEventListener('appinstalled', () => {
     isInstalled = true;
     deferredPrompt = null;
-    // Remove any visible prompt
     hideInstallPrompt();
-    // Log for analytics
     console.log('PWA was installed');
   });
 
-  // Track time on site
+  // Track time on site only; do not trigger prompt from interval
   setInterval(() => {
     engagement.timeOnSite = Date.now() - engagement.startTime;
   }, 5000);
 }
 
 /**
- * Track a page view for engagement metrics
+ * Track a page view for engagement metrics (does not show prompt by itself)
  */
 export function trackPageView() {
   engagement.pageViews++;
-  checkAndShowPrompt();
 }
 
 /**
- * Track a law view for engagement metrics
+ * Track a law view for engagement metrics (does not show prompt by itself)
  */
 export function trackLawView() {
   engagement.lawsViewed++;
-  checkAndShowPrompt();
 }
 
 /**
- * Track calculator usage for engagement metrics
+ * Track calculator usage - qualifying user action; may show prompt once per session
  */
 export function trackCalculatorUse() {
   engagement.calculatorUsed = true;
-  // Calculator use is a high-intent action, check prompt immediately
+  recordQualifyingUserAction();
+}
+
+/**
+ * Call when user takes a qualifying action (download, calculator, share/copy link).
+ * Allows the install prompt to be shown at most once per session if thresholds are met.
+ */
+export function recordQualifyingUserAction() {
+  qualifyingUserActionHappened = true;
   checkAndShowPrompt();
 }
 
 /**
- * Check if engagement thresholds are met and show prompt if appropriate
+ * Check if engagement thresholds are met and show prompt if appropriate.
+ * Only runs after a qualifying user action; shows at most once per session.
  */
 function checkAndShowPrompt() {
-  // Don't show if already installed, dismissed, or no prompt available
-  if (isInstalled || promptDismissedThisSession || isRunningStandalone()) {
+  if (isInstalled || promptDismissedThisSession || promptShownThisSession || isRunningStandalone()) {
+    return;
+  }
+  if (!qualifyingUserActionHappened) {
     return;
   }
 
-  // Check if user has previously dismissed (stored in localStorage)
   try {
+    if (localStorage.getItem(PWA_NEVER_SHOW_KEY) === '1') {
+      return;
+    }
     const lastDismissed = localStorage.getItem('pwa_install_dismissed');
     if (lastDismissed) {
       const dismissedDate = new Date(lastDismissed);
       const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
-      // Don't show again for 7 days after dismissal
       if (daysSinceDismissed < 7) {
         return;
       }
     }
   } catch {
-    // localStorage unavailable (insecure context, private mode, etc.)
+    // localStorage unavailable
   }
 
-  // Update time on site
   engagement.timeOnSite = Date.now() - engagement.startTime;
-
-  // Check engagement thresholds
   const meetsPageViews = engagement.pageViews >= ENGAGEMENT_THRESHOLDS.minPageViews;
   const meetsLawsViewed = engagement.lawsViewed >= ENGAGEMENT_THRESHOLDS.minLawsViewed;
   const meetsTimeOnSite = engagement.timeOnSite >= ENGAGEMENT_THRESHOLDS.minTimeOnSite;
   const calculatorBonus = engagement.calculatorUsed && ENGAGEMENT_THRESHOLDS.calculatorBonus;
-
-  // Show if calculator was used OR if other thresholds are met
   const shouldShow = calculatorBonus || (meetsPageViews && meetsLawsViewed && meetsTimeOnSite);
 
   if (shouldShow) {
-    // For browsers with beforeinstallprompt support
     if (deferredPrompt) {
       showInstallPrompt();
-    }
-    // For iOS Safari
-    else if (isIOS() && isSafari()) {
+    } else if (isIOS() && isSafari()) {
       showIOSInstallInstructions();
     }
   }
 }
 
 /**
- * Show the custom install prompt UI
+ * Show the custom install prompt UI (at most once per session)
  */
 export function showInstallPrompt() {
-  if (!deferredPrompt || isInstalled || promptDismissedThisSession) {
+  if (!deferredPrompt || isInstalled || promptDismissedThisSession || promptShownThisSession) {
     return;
   }
 
-  // Remove any existing prompt
   hideInstallPrompt();
+  promptShownThisSession = true;
 
   const prompt = document.createElement('div');
   prompt.className = 'install-prompt';
@@ -272,6 +287,9 @@ export function showInstallPrompt() {
       <button class="install-prompt-btn install-prompt-btn-secondary" data-action="dismiss">
         Not now
       </button>
+      <button class="install-prompt-btn install-prompt-btn-secondary" data-action="never">
+        Never show again
+      </button>
     </div>
   `;
 
@@ -286,6 +304,8 @@ export function showInstallPrompt() {
       await triggerInstall();
     } else if (action === 'dismiss') {
       dismissPrompt();
+    } else if (action === 'never') {
+      dismissPromptNeverShowAgain();
     }
   });
 
@@ -298,15 +318,15 @@ export function showInstallPrompt() {
 }
 
 /**
- * Show iOS-specific install instructions
+ * Show iOS-specific install instructions (at most once per session)
  */
 export function showIOSInstallInstructions() {
-  if (isInstalled || promptDismissedThisSession || isRunningStandalone()) {
+  if (isInstalled || promptDismissedThisSession || promptShownThisSession || isRunningStandalone()) {
     return;
   }
 
-  // Remove any existing prompt
   hideInstallPrompt();
+  promptShownThisSession = true;
 
   const prompt = document.createElement('div');
   prompt.className = 'install-prompt install-prompt-ios';
@@ -350,16 +370,21 @@ export function showIOSInstallInstructions() {
       <button class="install-prompt-btn install-prompt-btn-secondary" data-action="dismiss">
         Got it
       </button>
+      <button class="install-prompt-btn install-prompt-btn-secondary" data-action="never">
+        Never show again
+      </button>
     </div>
   `;
 
-  // Event handler
   prompt.addEventListener('click', (e) => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
 
-    if (target.getAttribute('data-action') === 'dismiss') {
+    const action = target.getAttribute('data-action');
+    if (action === 'dismiss') {
       dismissPrompt();
+    } else if (action === 'never') {
+      dismissPromptNeverShowAgain();
     }
   });
 
@@ -398,14 +423,27 @@ async function triggerInstall() {
 }
 
 /**
- * Dismiss the prompt and remember the choice
+ * Dismiss the prompt and remember for 7 days
  */
 function dismissPrompt() {
   promptDismissedThisSession = true;
   try {
     localStorage.setItem('pwa_install_dismissed', new Date().toISOString());
   } catch {
-    // localStorage unavailable (insecure context, private mode, etc.)
+    // localStorage unavailable
+  }
+  hideInstallPrompt();
+}
+
+/**
+ * Dismiss and never show again (user choice)
+ */
+function dismissPromptNeverShowAgain() {
+  promptDismissedThisSession = true;
+  try {
+    localStorage.setItem(PWA_NEVER_SHOW_KEY, '1');
+  } catch {
+    // localStorage unavailable
   }
   hideInstallPrompt();
 }

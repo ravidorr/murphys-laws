@@ -6,6 +6,8 @@
 
 import { createIcon } from '../utils/icons.ts';
 import { createButton, renderShareLinkHTML } from '../utils/button.ts';
+import { copyToClipboard } from '../utils/clipboard.ts';
+import { recordQualifyingUserAction } from './install-prompt.ts';
 
 interface BuildShareUrlsOptions {
   url?: string;
@@ -69,6 +71,20 @@ export const SHARE_PLATFORMS = {
 };
 
 /**
+ * Normalize URL for sharing: trim, strip invisible chars, canonical form (no fragment).
+ */
+export function normalizeShareUrl(url: string): string {
+  const trimmed = (url ?? '').trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
+  if (!trimmed) return '';
+  try {
+    const u = new URL(trimmed);
+    return u.origin + u.pathname + u.search;
+  } catch {
+    return trimmed;
+  }
+}
+
+/**
  * Build share URLs for each platform
  * @param {Object} options - Configuration options
  * @param {string} options.url - URL to share
@@ -79,13 +95,14 @@ export const SHARE_PLATFORMS = {
  * @returns {Object} - Object with URL for each platform
  */
 export function buildShareUrls({ url, title, description = '', lawText, emailSubject }: BuildShareUrlsOptions = {}): Record<string, string> {
-  const encodedUrl = encodeURIComponent(url ?? '');
+  const normalizedUrl = normalizeShareUrl(url ?? '');
+  const encodedUrl = encodeURIComponent(normalizedUrl);
   const encodedTitle = encodeURIComponent(title ?? '');
   const encodedDescription = encodeURIComponent(description);
   
   const subject = encodeURIComponent(emailSubject || "Check out this Murphy's Law");
   const emailBody = encodeURIComponent(
-    `I found this and thought you'd like it:\n\n${lawText || title}\n\n${url}`
+    `I found this and thought you'd like it:\n\n${lawText || title}\n\n${normalizedUrl}`
   );
 
   return {
@@ -112,8 +129,7 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
   const wrapper = document.createElement('div');
   wrapper.className = 'share-wrapper';
 
-  // Use provided values or defaults
-  const shareUrl = url || window.location.href;
+  const shareUrl = normalizeShareUrl(url || window.location.href);
   const shareTitle = title || document.title;
   const shareDescription = description || '';
   const textToCopy = lawText || shareTitle;
@@ -307,7 +323,7 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
 const TOP_CHANNEL_IDS = new Set(SHARE_PLATFORMS.topChannels.map(c => ('action' in c ? c.action : c.id)));
 
 export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButtonsOptions = {}) {
-  const shareUrl = url || `${window.location.origin}/law/${lawId}`;
+  const shareUrl = normalizeShareUrl(url ?? `${window.location.origin}/law/${lawId}`);
   const safeText = lawText ? lawText.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
 
   const shareUrls = buildShareUrls({
@@ -511,9 +527,8 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     }, 1500);
   }
 
-  // Update share link URLs
   function updateShareLinks() {
-    const url = getShareableUrl?.() ?? '';
+    const url = normalizeShareUrl(getShareableUrl?.() ?? '');
     const text = getShareText?.() ?? '';
     const shareUrls = buildShareUrls({
       url,
@@ -531,7 +546,6 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     });
   }
 
-  // Handle copy actions
   async function handleCopyAction(e: Event) {
     const button = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
     if (!button) return;
@@ -542,26 +556,20 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     if (action === 'copy-text') {
       textToCopy = getShareText?.() ?? '';
     } else if (action === 'copy-link') {
-      textToCopy = getShareableUrl?.() ?? '';
+      textToCopy = normalizeShareUrl(getShareableUrl?.() ?? '');
     } else {
       return;
     }
 
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      showCopyFeedback();
-    } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea');
-      textarea.value = textToCopy;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      showCopyFeedback();
+    if (!textToCopy) return;
+
+    recordQualifyingUserAction();
+    if (action === 'copy-link') {
+      await copyToClipboard(textToCopy, 'Link copied to clipboard!');
+    } else {
+      await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
     }
+    showCopyFeedback();
   }
 
   // Handle clicks on the wrapper

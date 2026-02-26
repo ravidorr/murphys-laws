@@ -205,8 +205,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       return;
     }
 
-    // Handle navigation buttons (shared utility)
-    if (handleNavClick(t, onNavigate)) return;
+    // Handle navigation buttons and links (shared utility)
+    if (handleNavClick(t, onNavigate)) {
+      e.preventDefault();
+      return;
+    }
 
     // Handle page navigation
     const pageAttr = t.getAttribute('data-page');

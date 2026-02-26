@@ -1049,6 +1049,16 @@
   line-height: 1.4;
 }
 
+.law-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.law-card-link:hover,
+.law-card-link:focus-visible {
+  text-decoration: underline;
+}
+
 .law-card-attrib {
   font-size: 0.75rem;
   color: var(--muted-fg);

@@ -1,6 +1,6 @@
 import templateHtml from '@views/templates/law-detail.html?raw';
 import { fetchLaw, fetchLaws, fetchRelatedLaws as fetchRelatedLawsAPI } from '../utils/api.ts';
-import { renderAttributionsList } from '../utils/attribution.ts';
+import { renderAttributionsList, submittedByLabel } from '../utils/attribution.ts';
 import { escapeHtml } from '../utils/sanitize.ts';
 import { toggleVote, getUserVote } from '../utils/voting.ts';
 import { getRandomLoadingMessage } from '../utils/constants.ts';
@@ -124,9 +124,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     if (upVoteCount) upVoteCount.textContent = String(upvotes);
     if (downVoteCount) downVoteCount.textContent = String(downvotes);
 
-    const submittedBy = law.submittedBy ? String(law.submittedBy) : '';
+    const submittedBy = submittedByLabel(law.attributions);
+    const hasAttributions = Array.isArray(law.attributions) && law.attributions.length > 0;
     if (submittedEl) {
-      if (submittedBy) {
+      if (submittedBy && (submittedBy !== 'Anonymous' || hasAttributions)) {
         submittedEl.textContent = `Submitted by ${submittedBy}`;
         submittedEl.removeAttribute('hidden');
       } else {

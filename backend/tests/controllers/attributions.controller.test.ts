@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AttributionController } from '../../src/controllers/attributions.controller.ts';
 
 interface AttributionsTestLocalThis {
-    attributionService: { listAttributions: ReturnType<typeof vi.fn> };
+    attributionService: { listAttributions: ReturnType<typeof vi.fn>; searchSubmitters: ReturnType<typeof vi.fn> };
     attributionController: AttributionController;
     req: IncomingMessage;
     res: ServerResponse;
@@ -16,6 +16,7 @@ describe('AttributionController', () => {
         localThis = {
             attributionService: {
                 listAttributions: vi.fn(),
+                searchSubmitters: vi.fn(),
             },
             attributionController: null!,
             req: {} as IncomingMessage,
@@ -91,5 +92,16 @@ describe('AttributionController', () => {
         await localThis.attributionController.list(localThis.req, localThis.res);
 
         expect(localThis.res.end).toHaveBeenCalledWith(expect.stringContaining('["Valid"]'));
+    });
+
+    it('searchSubmitters returns 200 and data array', async () => {
+        localThis.req.url = '/api/v1/submitters?q=Ali&limit=20';
+        (localThis.req as any).headers = { host: 'localhost' };
+        localThis.attributionService.searchSubmitters.mockResolvedValue([{ name: 'Alice' }, { name: 'Alicia' }]);
+        await localThis.attributionController.searchSubmitters(localThis.req, localThis.res);
+
+        expect(localThis.attributionService.searchSubmitters).toHaveBeenCalledWith('Ali', 20);
+        expect(localThis.res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+        expect(localThis.res.end).toHaveBeenCalledWith(expect.stringContaining('"data":["Alice","Alicia"]'));
     });
 });

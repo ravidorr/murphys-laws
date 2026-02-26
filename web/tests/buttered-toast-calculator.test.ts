@@ -711,11 +711,11 @@ describe('ButteredToastCalculator view', () => {
     expect(copyBtn).toBeTruthy();
     copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
-    await Promise.resolve();
-
-    const feedback = el.querySelector('.share-copy-feedback');
-    expect(feedback).toBeTruthy();
-    expect(feedback!.classList.contains('visible')).toBe(true);
+    await vi.waitFor(() => {
+      const feedback = el.querySelector('.share-copy-feedback');
+      expect(feedback).toBeTruthy();
+      expect(feedback!.classList.contains('visible')).toBe(true);
+    });
 
     document.body.removeChild(el);
   });
@@ -734,16 +734,16 @@ describe('ButteredToastCalculator view', () => {
     expect(copyBtn).toBeTruthy();
     copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
-    await Promise.resolve();
+    await vi.waitFor(() => {
+      const feedback = el.querySelector('.share-copy-feedback');
+      expect(feedback).toBeTruthy();
+      expect(feedback!.classList.contains('visible')).toBe(true);
+    });
 
-    const feedback = el.querySelector('.share-copy-feedback');
-    expect(feedback).toBeTruthy();
-    expect(feedback!.classList.contains('visible')).toBe(true);
-
-    // Advance timer past the feedback timeout (1500ms)
     vi.advanceTimersByTime(1600);
 
-    expect(feedback!.classList.contains('visible')).toBe(false);
+    const feedbackAfter = el.querySelector('.share-copy-feedback');
+    expect(feedbackAfter!.classList.contains('visible')).toBe(false);
     vi.useRealTimers();
 
     document.body.removeChild(el);

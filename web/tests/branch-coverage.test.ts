@@ -191,23 +191,14 @@ describe('Branch Coverage Tests', () => {
       });
     });
 
-    it('shows error when attributions fetch fails and no cache exists', async () => {
-      // No cache available
+    it('renders attribution typeahead input and hidden field', () => {
       getCachedCategoriesSpy.mockReturnValue(null);
-      getCachedAttributionsSpy.mockReturnValue(null);
-
-      // Categories succeeds, attributions fails
-      fetchAPISpy
-        .mockResolvedValueOnce({ data: [] })
-        .mockRejectedValueOnce(new Error('Network error'));
+      fetchAPISpy.mockResolvedValue({ data: [] });
 
       localThis.el = AdvancedSearch({ onSearch: () => {} });
 
-      // Wait for async operations
-      await vi.waitFor(() => {
-        const attributionSelect = localThis.el!.querySelector('#search-attribution');
-        expect(attributionSelect!.innerHTML).toContain('Error loading attributions');
-      });
+      expect(localThis.el!.querySelector('#search-attribution-input')).toBeTruthy();
+      expect(localThis.el!.querySelector('#search-attribution')).toBeTruthy();
     });
 
     it('uses cached categories when fetch fails and cache exists', async () => {
@@ -232,26 +223,23 @@ describe('Branch Coverage Tests', () => {
       });
     });
 
-    it('uses cached attributions when fetch fails and cache exists', async () => {
-      const cachedAttributions = [{ name: 'Cached Author' }];
-      
+    it('submitters typeahead fetches on focus', async () => {
       getCachedCategoriesSpy.mockReturnValue(null);
-      // Cache exists
-      getCachedAttributionsSpy
-        .mockReturnValueOnce(null)   // First call
-        .mockReturnValueOnce(cachedAttributions); // Fallback in catch
-
-      // First fetch succeeds, second fails
-      fetchAPISpy
-        .mockResolvedValueOnce({ data: [] })
-        .mockRejectedValueOnce(new Error('Network error'));
+      fetchAPISpy.mockResolvedValueOnce({ data: [] });
 
       localThis.el = AdvancedSearch({ onSearch: () => {} });
+      document.body.appendChild(localThis.el!);
+      await vi.waitFor(() => expect(fetchAPISpy).toHaveBeenCalled());
+
+      fetchAPISpy.mockClear();
+      fetchAPISpy.mockResolvedValueOnce({ data: ['Cached Author'] });
+
+      const attributionInput = localThis.el!.querySelector('#search-attribution-input') as HTMLInputElement;
+      attributionInput.focus();
 
       await vi.waitFor(() => {
-        const attributionSelect = localThis.el!.querySelector('#search-attribution');
-        expect(attributionSelect!.innerHTML).toContain('Cached Author');
-      });
+        expect(fetchAPISpy).toHaveBeenCalledWith('/api/v1/submitters', expect.any(Object));
+      }, { timeout: 500 });
     });
   });
 

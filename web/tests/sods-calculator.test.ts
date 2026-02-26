@@ -116,7 +116,7 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = Number(el!.querySelector('#score-value')!.textContent);
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
     expect(score).toBeGreaterThan(0);
     expect(el!.querySelector('#score-interpretation')!.textContent!.length).toBeGreaterThan(5);
   });
@@ -130,7 +130,7 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = Number(el!.querySelector('#score-value')!.textContent);
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
     expect(score).toBeLessThan(2);
@@ -147,7 +147,7 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = Number(el!.querySelector('#score-value')!.textContent);
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
     expect(score).toBeGreaterThanOrEqual(2);
@@ -165,7 +165,7 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = Number(el!.querySelector('#score-value')!.textContent);
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
     expect(score).toBeGreaterThanOrEqual(4);
@@ -183,7 +183,7 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = Number(el!.querySelector('#score-value')!.textContent);
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
     expect(score).toBeGreaterThanOrEqual(6);
@@ -201,7 +201,7 @@ describe("Calculator view", () => {
 
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
 
-    const score = Number(el!.querySelector('#score-value')!.textContent);
+    const score = parseFloat(el!.querySelector('#score-value')!.textContent || '0');
     const interpretation = el!.querySelector('#score-interpretation')!.textContent;
 
     expect(score).toBeGreaterThanOrEqual(8);
@@ -370,15 +370,14 @@ describe("Calculator view", () => {
     const copyBtn = el!.querySelector('[data-action="copy-link"]');
     copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
-    await Promise.resolve();
-
-    const feedback = el!.querySelector('.share-copy-feedback');
-    expect(feedback).toBeTruthy();
-    expect(feedback!.classList.contains('visible')).toBe(true);
+    await vi.waitFor(() => {
+      const feedback = el!.querySelector('.share-copy-feedback');
+      expect(feedback).toBeTruthy();
+      expect(feedback!.classList.contains('visible')).toBe(true);
+    });
   });
 
   it('hides copy feedback after timeout', async () => {
-    // Note: vi.useFakeTimers() is already called in beforeEach
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -389,17 +388,16 @@ describe("Calculator view", () => {
     const copyBtn = el!.querySelector('[data-action="copy-link"]');
     copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
 
-    await Promise.resolve();
+    await vi.waitFor(() => {
+      const feedback = el!.querySelector('.share-copy-feedback');
+      expect(feedback).toBeTruthy();
+      expect(feedback!.classList.contains('visible')).toBe(true);
+    });
 
-    const feedback = el!.querySelector('.share-copy-feedback');
-    expect(feedback).toBeTruthy();
-    expect(feedback!.classList.contains('visible')).toBe(true);
-
-    // Advance timer past the feedback timeout (1500ms)
     vi.advanceTimersByTime(1600);
 
-    expect(feedback!.classList.contains('visible')).toBe(false);
-    // Note: vi.useRealTimers() is called in afterEach
+    const feedbackAfter = el!.querySelector('.share-copy-feedback');
+    expect(feedbackAfter!.classList.contains('visible')).toBe(false);
   });
 
   it('loads URL parameters into sliders', () => {

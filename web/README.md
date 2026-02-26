@@ -131,8 +131,9 @@ The application is a fully installable PWA with offline support.
 | Google Fonts | CacheFirst | 1 year |
 
 **Install Prompt:**
-- Custom install prompt appears after user engagement (3+ page views, 2+ laws viewed, 30+ seconds)
-- Calculator usage triggers immediate prompt (high-intent action)
+- Shown at most once per session and only after a qualifying user action (e.g. download, calculator use, share/copy link)
+- Thresholds (3+ page views, 2+ laws viewed, 30+ seconds) must be met before the prompt can appear
+- "Never show again" option persists in localStorage
 - iOS Safari users see step-by-step "Add to Home Screen" instructions
 - 7-day cooldown after user dismisses prompt
 
@@ -172,10 +173,10 @@ The application includes a universal export feature accessible from the header (
 | Single Law | Yes | Yes | Yes | Yes |
 | Categories List | Yes | Yes | Yes | Yes |
 | Content pages (About, Origin Story, articles, etc.) | Yes | No | Yes | Yes |
-| Calculators | - | - | - | - |
+| Calculators | Yes (state summary) | No | Yes | Yes |
 | 404 Page | - | - | - | - |
 
-*Calculators and 404 page do not support export (button disabled).*
+*Calculators register CONTENT (title + state summary) so the download control is enabled; 404 has no export.*
 
 **Architecture:**
 - `src/utils/export-context.ts` - Page content registration system (singleton context)
@@ -183,7 +184,7 @@ The application includes a universal export feature accessible from the header (
 - `src/components/export-menu.ts` - Header dropdown component
 
 **Usage:**
-Pages register their exportable content using `setExportContent()` and clear it on unmount with `clearExportContent()`. The export menu automatically updates available formats based on content type.
+Pages register their exportable content using `setExportContent()` and clear it on unmount with `clearExportContent()`. The export menu automatically updates available formats based on content type. Calculators register CONTENT with a short state summary so the download control is enabled consistently on all pages.
 
 ### Social Sharing
 

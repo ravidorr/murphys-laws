@@ -58,15 +58,15 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     safeText = highlightSearchTerm(law.text, searchQuery);
   }
 
-  // Build title text with optional title prefix
+  const lawHref = `/law/${safeId}`;
+  const lawLinkAttrs = `href="${lawHref}" class="law-card-link" data-nav="law" data-param="${safeId}"`;
   const titleText = safeTitle ? `<strong>${safeTitle}:</strong> ${safeText}` : safeText;
+  const titleContent = `<a ${lawLinkAttrs}>${titleText}</a>`;
 
-  // Build rank markup if rankOffset is provided
   const rankMarkup = typeof rankOffset === 'number'
     ? `<span class="rank">#${index + rankOffset}</span>`
     : '';
 
-  // Build accessible label (plain text without HTML)
   const plainTitle = law.title ? escapeHtml(law.title) : '';
   const plainText = escapeHtml(law.text || '');
   const ariaLabel = plainTitle ? `${plainTitle}: ${plainText}` : plainText;
@@ -104,7 +104,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
       <p class="law-card-text">
         ${rankMarkup}
-        ${titleText}
+        ${titleContent}
       </p>
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       ${categoryChip ? `<div class="law-card-categories">${categoryChip}</div>` : ''}

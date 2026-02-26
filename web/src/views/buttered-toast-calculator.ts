@@ -5,6 +5,7 @@ import { SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.ts';
 import { ensureMathJax } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
+import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
@@ -192,6 +193,13 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
     probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
     updateInterpretation(finalProbability);
+
+    const interpretation = interpretationDisplay.textContent || '';
+    setExportContent({
+      type: ContentType.CONTENT,
+      title: 'Buttered Toast Landing Calculator',
+      data: `Probability butter-side down: ${Math.round(finalProbability)}%. ${interpretation}`
+    });
   }
 
   function updateInterpretation(probability: number) {
@@ -325,7 +333,10 @@ export function ButteredToastCalculator(): HTMLDivElement {
     emailSubject: 'Check out my Buttered Toast calculation'
   });
 
-  (el as CleanableElement).cleanup = teardownShare;
+  (el as CleanableElement).cleanup = () => {
+    clearExportContent();
+    teardownShare();
+  };
 
   return el;
 }

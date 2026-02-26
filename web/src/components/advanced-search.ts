@@ -4,14 +4,14 @@ import templateHtml from '@components/templates/advanced-search.html?raw';
 import { fetchAPI } from '../utils/api.ts';
 import { hydrateIcons } from '../utils/icons.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
-import type { CachedAttribution } from '../utils/category-cache.ts';
 import {
   getCachedCategories,
   setCachedCategories,
-  getCachedAttributions,
-  setCachedAttributions,
   deferUntilIdle
 } from '../utils/category-cache.ts';
+
+const SUBMITTERS_DEBOUNCE_MS = 250;
+const SUBMITTERS_LIMIT = 20;
 
 interface AdvancedSearchFilters {
   q?: string;
@@ -30,207 +30,246 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
   const el = document.createElement('section');
   el.className = 'section section-card mb-12';
 
-  // State
   let categories: Array<{ id: number; title: string; slug: string }> = [];
-  let attributions: CachedAttribution[] = [];
   let selectedCategory = initialFilters.category_id || '';
   let selectedAttribution = initialFilters.attribution || '';
   let searchQuery = initialFilters.q || '';
   let filtersLoaded = false;
+  let submittersDebounceId: ReturnType<typeof setTimeout> | null = null;
+  let listboxSelectedIndex = -1;
 
-  // Initial HTML (with loading placeholders)
   el.innerHTML = templateHtml;
-  
-  // Hydrate icons
   hydrateIcons(el);
 
   const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
-  const attributionSelect = el.querySelector('#search-attribution') as HTMLSelectElement;
+  const attributionInput = el.querySelector('#search-attribution-input') as HTMLInputElement;
+  const attributionListbox = el.querySelector('#search-attribution-listbox') as HTMLElement;
+  const attributionHidden = el.querySelector('#search-attribution') as HTMLInputElement;
   const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
   const searchBtn = el.querySelector('#search-btn') as HTMLButtonElement;
   const clearBtn = el.querySelector('#clear-btn') as HTMLButtonElement;
 
   if (keywordInput) keywordInput.value = searchQuery;
+  if (attributionInput && selectedAttribution) attributionInput.value = selectedAttribution;
+  if (attributionHidden) attributionHidden.value = selectedAttribution;
 
-  // Populate dropdowns with cached or provided data
+  function hideListbox() {
+    if (attributionListbox) {
+      attributionListbox.setAttribute('aria-hidden', 'true');
+      attributionListbox.innerHTML = '';
+      listboxSelectedIndex = -1;
+    }
+    if (attributionInput) attributionInput.setAttribute('aria-expanded', 'false');
+  }
+
+  function showListbox() {
+    if (attributionListbox) attributionListbox.setAttribute('aria-hidden', 'false');
+    if (attributionInput) attributionInput.setAttribute('aria-expanded', 'true');
+  }
+
+  async function fetchSubmitters(q: string): Promise<string[]> {
+    const params: Record<string, string> = { limit: String(SUBMITTERS_LIMIT) };
+    if (q.trim()) params.q = q.trim();
+    const data = await fetchAPI('/api/v1/submitters', params) as { data?: string[] };
+    return data.data ?? [];
+  }
+
+  function renderListboxItems(names: string[]) {
+    if (!attributionListbox) return;
+    const options: string[] = [];
+    options.push(''); // All Submitters (clear)
+    if (!names.includes('Anonymous')) options.push('Anonymous');
+    options.push(...names.filter(n => n !== 'Anonymous'));
+    attributionListbox.innerHTML = options.map((name, idx) => {
+      const label = name === '' ? 'All Submitters' : name;
+      return `<div class="submitter-typeahead-item" role="option" data-value="${escapeHtmlAttr(name)}" data-index="${idx}" aria-selected="false">${escapeHtmlText(label)}</div>`;
+    }).join('');
+    listboxSelectedIndex = -1;
+  }
+
+  function escapeHtmlAttr(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+  function escapeHtmlText(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function onSelectSubmitter(value: string, label: string) {
+    selectedAttribution = value;
+    if (attributionInput) attributionInput.value = label;
+    if (attributionHidden) attributionHidden.value = value;
+    hideListbox();
+  }
+
+  function runSubmittersSearch() {
+    const q = attributionInput?.value?.trim() ?? '';
+    if (submittersDebounceId) clearTimeout(submittersDebounceId);
+    submittersDebounceId = setTimeout(async () => {
+      submittersDebounceId = null;
+      try {
+        const names = await fetchSubmitters(q);
+        renderListboxItems(names);
+        showListbox();
+      } catch {
+        hideListbox();
+      }
+    }, SUBMITTERS_DEBOUNCE_MS);
+  }
+
   function populateDropdowns() {
-    // Try to use cached categories first
     const cachedCategories = getCachedCategories();
     if (cachedCategories && cachedCategories.length > 0) {
       categories = cachedCategories;
       categorySelect.innerHTML = '<option value="">All Categories</option>' +
         categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${stripMarkdownFootnotes(cat.title)}</option>`).join('');
     }
-
-    // Try to use cached attributions first
-    const cachedAttributions = getCachedAttributions();
-    if (cachedAttributions && cachedAttributions.length > 0) {
-      attributions = cachedAttributions;
-      // Filter out null/undefined/empty and handle both string and object formats
-      const validAttributions = (attributions as Array<string | { name?: string }>)
-        .map(att => {
-          const name = typeof att === 'string' ? att : att?.name;
-          return name;
-        })
-        .filter(name => {
-          if (!name) return false;
-          if (typeof name !== 'string') return false;
-          const trimmed = name.trim();
-          if (!trimmed) return false;
-          if (trimmed.toLowerCase() === 'undefined') return false;
-          if (trimmed.toLowerCase() === 'null') return false;
-          return true;
-        });
-      
-      attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-        validAttributions.map(name => {
-          return `<option value="${name}" ${name === selectedAttribution ? 'selected' : ''}>${name}</option>`;
-        }).join('');
-    }
   }
 
-  // Load categories and attributions
   async function loadFilters(forceReload = false) {
     if (filtersLoaded && !forceReload) return;
     filtersLoaded = true;
 
-    // Fetch categories (always fetch fresh, but use cache as fallback)
     try {
       const catData = await fetchAPI('/api/v1/categories') as { data?: Array<{ id: number; title: string; slug: string }> };
       categories = catData.data || [];
       setCachedCategories(categories);
     } catch {
-      // Fallback to cache if fetch fails
       const cached = getCachedCategories();
-      if (cached && cached.length > 0) {
-        categories = cached;
-      } else {
-        // Show error if no cache available
-        categorySelect.innerHTML = '<option value="">Error loading categories</option>';
-      }
+      if (cached && cached.length > 0) categories = cached;
+      else if (categorySelect) categorySelect.innerHTML = '<option value="">Error loading categories</option>';
     }
 
-    // Update category dropdown
-    if (categories.length > 0) {
+    if (categories.length > 0 && categorySelect) {
       categorySelect.innerHTML = '<option value="">All Categories</option>' +
         categories.map(cat => `<option value="${cat.id}" ${String(cat.id) === String(selectedCategory) ? 'selected' : ''}>${stripMarkdownFootnotes(cat.title)}</option>`).join('');
-    }
-
-    // Fetch attributions
-    try {
-      const attData = await fetchAPI('/api/v1/attributions') as { data?: CachedAttribution[] };
-      attributions = attData.data || [];
-      setCachedAttributions(attributions);
-    } catch {
-      // Fallback to cache if fetch fails
-      const cached = getCachedAttributions();
-      if (cached && cached.length > 0) {
-        attributions = cached;
-      } else {
-        // Show error if no cache available
-        attributionSelect.innerHTML = '<option value="">Error loading attributions</option>';
-      }
-    }
-
-    // Update attribution dropdown
-    if (attributions.length > 0) {
-      // Filter out null/undefined/empty and handle both string and object formats
-      const validAttributions = (attributions as Array<string | { name?: string }>)
-        .map(att => {
-          // Handle both string format (from API) and object format (legacy)
-          const name = typeof att === 'string' ? att : att?.name;
-          return name;
-        })
-        .filter(name => {
-          // Filter out null, undefined, empty strings, "undefined" string, and whitespace-only
-          if (!name) return false;
-          if (typeof name !== 'string') return false;
-          const trimmed = name.trim();
-          if (!trimmed) return false;
-          if (trimmed.toLowerCase() === 'undefined') return false;
-          if (trimmed.toLowerCase() === 'null') return false;
-          if (trimmed.toLowerCase() === 'anonymous') return false; // Optionally hide anonymous
-          return true;
-        });
-      
-      attributionSelect.innerHTML = '<option value="">All Submitters</option>' +
-        validAttributions.map(name => {
-          return `<option value="${name}" ${name === selectedAttribution ? 'selected' : ''}>${name}</option>`;
-        }).join('');
     }
   }
 
   _testLoadFiltersRef?.(loadFilters);
 
-  // Lazy load on user interaction (fallback if idle callback doesn't fire).
-  // Template always provides #search-category and #search-attribution.
-  function setupLazyLoad() {
-    let categoryLoadAttempted = false;
-    let attributionLoadAttempted = false;
+  function setupAttributionTypeahead() {
+    if (!attributionInput || !attributionListbox) return;
 
-    categorySelect!.addEventListener('focus', () => {
-      if (!categoryLoadAttempted && categories.length === 0) {
-        categoryLoadAttempted = true;
-        loadFilters(true);
+    attributionInput.addEventListener('focus', () => {
+      const q = attributionInput.value.trim();
+      if (q) runSubmittersSearch();
+      else {
+        fetchSubmitters('').then(names => {
+          renderListboxItems(names);
+          showListbox();
+        }).catch(() => hideListbox());
       }
-    }, { once: true });
+    });
 
-    attributionSelect!.addEventListener('focus', () => {
-      if (!attributionLoadAttempted && attributions.length === 0) {
-        attributionLoadAttempted = true;
-        loadFilters(true);
+    attributionInput.addEventListener('input', () => {
+      runSubmittersSearch();
+    });
+
+    attributionInput.addEventListener('keydown', (e: KeyboardEvent) => {
+      const items = attributionListbox.querySelectorAll('.submitter-typeahead-item');
+      if (attributionListbox.getAttribute('aria-hidden') === 'true') {
+        if (e.key === 'ArrowDown' || e.key === 'Enter') {
+          e.preventDefault();
+          fetchSubmitters(attributionInput.value.trim()).then(names => {
+            renderListboxItems(names);
+            showListbox();
+            listboxSelectedIndex = 0;
+            items.forEach((item, i) => item.setAttribute('aria-selected', i === 0 ? 'true' : 'false'));
+          }).catch(() => {});
+        }
+        return;
       }
-    }, { once: true });
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        listboxSelectedIndex = Math.min(listboxSelectedIndex + 1, items.length - 1);
+        items.forEach((item, i) => item.setAttribute('aria-selected', i === listboxSelectedIndex ? 'true' : 'false'));
+        items[listboxSelectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        listboxSelectedIndex = Math.max(listboxSelectedIndex - 1, 0);
+        items.forEach((item, i) => item.setAttribute('aria-selected', i === listboxSelectedIndex ? 'true' : 'false'));
+        items[listboxSelectedIndex]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter' && listboxSelectedIndex >= 0) {
+        const item = items[listboxSelectedIndex];
+        if (!item) return;
+        e.preventDefault();
+        const value = item.getAttribute('data-value') ?? '';
+        const label = item.textContent?.trim() ?? (value || 'All Submitters');
+        onSelectSubmitter(value, label);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideListbox();
+      }
+    });
+
+    attributionListbox.addEventListener('click', (e: Event) => {
+      const target = (e.target as HTMLElement).closest('.submitter-typeahead-item');
+      if (!target) return;
+      const value = target.getAttribute('data-value') ?? '';
+      const label = target.textContent?.trim() ?? (value || 'All Submitters');
+      onSelectSubmitter(value, label);
+    });
   }
 
-  // Handle search
-  searchBtn.addEventListener('click', () => {
-    const filters = {
-      q: keywordInput.value.trim(),
-      category_id: categorySelect.value ? Number(categorySelect.value) : null,
-      attribution: attributionSelect.value
-    };
-
-    // Only include non-empty filters
-    const cleanFilters: AdvancedSearchFilters = {};
-    if (filters.q) cleanFilters.q = filters.q;
-    // Keep category_id even if it's 0 or 'null' as it signifies "All Categories" or a specific category.
-    // The previous logic was removing category_id if it was null, which would prevent
-    // clearing a category filter explicitly.
-    if (filters.category_id !== null) cleanFilters.category_id = filters.category_id;
-    if (filters.attribution) cleanFilters.attribution = filters.attribution;
-
-    onSearch(cleanFilters);
-  });
-
-  // Handle clear
-  clearBtn.addEventListener('click', () => {
-    keywordInput.value = '';
-    categorySelect.value = '';
-    attributionSelect.value = '';
-    onSearch({});
-  });
-
-  // Allow Enter key to trigger search
-  keywordInput.addEventListener('keypress', (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      searchBtn.click();
+  document.addEventListener('click', function closeListbox(e: Event) {
+    if (!el.contains(e.target as Node) && attributionListbox?.getAttribute('aria-hidden') !== 'true') {
+      hideListbox();
     }
   });
 
-  // Initialize: populate from cache immediately, then load fresh data when idle
+  function setupLazyLoad() {
+    if (categorySelect) {
+      categorySelect.addEventListener('focus', () => {
+        if (categories.length === 0) loadFilters(true);
+      }, { once: true });
+    }
+  }
+
+  searchBtn?.addEventListener('click', () => {
+    const attributionValue = (attributionHidden?.value ?? selectedAttribution) || undefined;
+    const filters: AdvancedSearchFilters = {
+      q: keywordInput?.value?.trim() ?? '',
+      category_id: categorySelect?.value ? Number(categorySelect.value) : undefined,
+      attribution: attributionValue
+    };
+    const cleanFilters: AdvancedSearchFilters = {};
+    if (filters.q) cleanFilters.q = filters.q;
+    if (filters.category_id !== undefined) cleanFilters.category_id = filters.category_id;
+    if (filters.attribution) cleanFilters.attribution = filters.attribution;
+    onSearch(cleanFilters);
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    if (keywordInput) keywordInput.value = '';
+    if (categorySelect) categorySelect.value = '';
+    selectedAttribution = '';
+    if (attributionInput) attributionInput.value = '';
+    if (attributionHidden) attributionHidden.value = '';
+    hideListbox();
+    onSearch({});
+  });
+
+  keywordInput?.addEventListener('keypress', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') searchBtn?.click();
+  });
+
   populateDropdowns();
   setupLazyLoad();
-  
-  // If no cache exists, load immediately; otherwise defer until idle
+  setupAttributionTypeahead();
+
   const cachedCategories = getCachedCategories();
   if (cachedCategories && cachedCategories.length > 0) {
-    // We have cache, so we can defer loading fresh data
-    deferUntilIdle(() => {
-      loadFilters();
-    }, 2000);
+    deferUntilIdle(() => loadFilters(), 2000);
   } else {
-    // No cache, load immediately so dropdown gets populated
     loadFilters();
   }
 

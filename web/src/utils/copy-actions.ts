@@ -2,16 +2,17 @@
 // Eliminates ~20 lines of duplicate copy-text/copy-link handling across 3 views
 
 import { copyToClipboard } from './clipboard.ts';
+import { recordQualifyingUserAction } from '../components/install-prompt.ts';
 
 /**
  * Handles copy-text and copy-link button clicks via event delegation.
  * Returns true if the event was handled (a copy action occurred).
  */
 export async function handleCopyAction(e: Event, target: Element): Promise<boolean> {
-  // Handle copy text action
   const copyTextBtn = target.closest('[data-action="copy-text"]');
   if (copyTextBtn) {
     e.stopPropagation();
+    recordQualifyingUserAction();
     const textToCopy = copyTextBtn.getAttribute('data-copy-value') || '';
     if (textToCopy) {
       await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
@@ -19,10 +20,10 @@ export async function handleCopyAction(e: Event, target: Element): Promise<boole
     return true;
   }
 
-  // Handle copy link action
   const copyLinkBtn = target.closest('[data-action="copy-link"]');
   if (copyLinkBtn) {
     e.stopPropagation();
+    recordQualifyingUserAction();
     const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || '';
     if (linkToCopy) {
       await copyToClipboard(linkToCopy, 'Link copied to clipboard!');

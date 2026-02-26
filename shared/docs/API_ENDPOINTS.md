@@ -310,7 +310,28 @@ Get all attributions (submitters).
 ```
 
 **Used in:**
-- `web/src/components/advanced-search.ts` - Advanced search filters
+- `web/src/components/advanced-search.ts` - Advanced search filters (legacy dropdown; typeahead uses submitters)
+
+**Note:** Law objects in `GET /api/v1/laws` and `GET /api/v1/laws/{id}` include `attributions` with only `name` and `note` (no `contact_value` or `contact_type` for privacy).
+
+---
+
+#### GET `/api/v1/submitters`
+Search submitters for the "Submitted By" filter (typeahead).
+
+**Query Parameters:**
+- `q` (string, optional): Search query; matches names with LIKE `%q%`. Empty returns first N.
+- `limit` (number, optional): Max results (default: 20, max: 100).
+
+**Response:**
+```json
+{
+  "data": ["Alice", "Alicia", "Anonymous"]
+}
+```
+
+**Used in:**
+- `web/src/components/advanced-search.ts` - Submitted By typeahead
 
 ---
 
@@ -353,7 +374,7 @@ Share SOD (Sod's Law) calculation via email.
 
 ## Summary
 
-Total API endpoints: **12** (all use `/api/v1/...` prefix)
+Total API endpoints: **13** (all use `/api/v1/...` prefix)
 
 1. `GET /api/v1/laws` - List laws with filters
 2. `GET /api/v1/laws/suggestions` - Get search suggestions for autocomplete
@@ -366,7 +387,8 @@ Total API endpoints: **12** (all use `/api/v1/...` prefix)
 9. `GET /api/v1/categories` - List all categories
 10. `GET /api/v1/categories/{id}` - Get single category
 11. `GET /api/v1/attributions` - List all attributions
-12. `POST /api/v1/share-calculation` - Share calculation via email
+12. `GET /api/v1/submitters` - Search submitters (typeahead)
+13. `POST /api/v1/share-calculation` - Share calculation via email
 
 ## Implementation Details
 

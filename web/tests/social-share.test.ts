@@ -5,6 +5,7 @@ import {
   initSharePopovers,
   SHARE_PLATFORMS,
   buildShareUrls,
+  normalizeShareUrl,
   renderInlineShareButtonsHTML,
   initInlineShareButtons
 } from '../src/components/social-share.js';
@@ -1183,6 +1184,22 @@ describe('SHARE_PLATFORMS configuration', () => {
   });
 });
 
+describe('normalizeShareUrl', () => {
+  it('trims whitespace and strips fragment', () => {
+    expect(normalizeShareUrl('  https://test.com/path  ')).toBe('https://test.com/path');
+    expect(normalizeShareUrl('https://test.com/path#section')).toBe('https://test.com/path');
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(normalizeShareUrl('')).toBe('');
+    expect(normalizeShareUrl('   ')).toBe('');
+  });
+
+  it('preserves path and search', () => {
+    expect(normalizeShareUrl('https://test.com/law/1?q=2')).toBe('https://test.com/law/1?q=2');
+  });
+});
+
 describe('buildShareUrls', () => {
   it('builds URLs for all social platforms', () => {
     const urls = buildShareUrls({
@@ -1477,10 +1494,10 @@ describe('initInlineShareButtons', () => {
     const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
-    await Promise.resolve();
-
-    const feedback = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
-    expect(feedback.classList.contains('visible')).toBe(true);
+    await vi.waitFor(() => {
+      const feedback = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
+      expect(feedback.classList.contains('visible')).toBe(true);
+    });
 
     teardown();
   });
@@ -1503,15 +1520,16 @@ describe('initInlineShareButtons', () => {
     const copyLinkBtn = localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement;
     copyLinkBtn.click();
 
-    await Promise.resolve();
-
-    const feedback = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
-    expect(feedback.classList.contains('visible')).toBe(true);
+    await vi.waitFor(() => {
+      const feedback = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
+      expect(feedback.classList.contains('visible')).toBe(true);
+    });
 
     // Advance timer past feedback timeout (1500ms)
     vi.advanceTimersByTime(1600);
 
-    expect(feedback.classList.contains('visible')).toBe(false);
+    const feedbackAfter = localThis.container.querySelector('.share-copy-feedback') as HTMLElement;
+    expect(feedbackAfter.classList.contains('visible')).toBe(false);
 
     vi.useRealTimers();
     teardown();

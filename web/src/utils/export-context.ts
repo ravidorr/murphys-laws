@@ -5,6 +5,10 @@
  * The export menu component subscribes to content changes and displays
  * appropriate format options based on the content type.
  *
+ * Policy: All pages that can show meaningful content (including calculators)
+ * register export content so the header download control is consistently
+ * enabled. Calculators use ContentType.CONTENT with a short state summary.
+ *
  * @example
  * // In a view component
  * import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';

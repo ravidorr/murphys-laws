@@ -7,6 +7,7 @@ import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.ts';
 import { ensureMathJax } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
+import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
@@ -81,8 +82,15 @@ export function Calculator(): HTMLDivElement {
     const displayScore = Math.min(score, 8.6);
     const scoreText = displayScore.toFixed(2);
 
-    scoreValueDisplay.textContent = scoreText;
+    scoreValueDisplay.textContent = `${scoreText}%`;
     updateResultInterpretation(displayScore);
+
+    const interpretation = scoreInterpretationDisplay.textContent || '';
+    setExportContent({
+      type: ContentType.CONTENT,
+      title: "Sod's Law Calculator",
+      data: `Probability of things going wrong: ${scoreText}%. ${interpretation}`
+    });
 
     // Generate LaTeX formula - show variable name or value based on showValues
     const pFormula = showValues.U ? scoreText : 'P';
@@ -190,13 +198,13 @@ export function Calculator(): HTMLDivElement {
     });
   });
 
-  // Initialize formula and score after MathJax is loaded
+  updateCalculation();
+
   ensureMathJax()
     .then(() => {
       updateCalculation();
     })
     .catch(() => {
-      // MathJax load failed, show formula without rendering
       updateCalculation();
     });
 
@@ -232,7 +240,7 @@ export function Calculator(): HTMLDivElement {
     importance: parseFloat(sliders.importance.value),
     skill: parseFloat(sliders.skill.value),
     frequency: parseFloat(sliders.frequency.value),
-    probability: scoreValueDisplay.textContent || '0.00',
+    probability: scoreValueDisplay.textContent || '0.00%',
     interpretation: scoreInterpretationDisplay.textContent || ''
   };
 
@@ -242,7 +250,7 @@ export function Calculator(): HTMLDivElement {
     state.importance = parseFloat(sliders.importance.value);
     state.skill = parseFloat(sliders.skill.value);
     state.frequency = parseFloat(sliders.frequency.value);
-    state.probability = scoreValueDisplay.textContent || '0.00';
+    state.probability = scoreValueDisplay.textContent || '0.00%';
     state.interpretation = scoreInterpretationDisplay.textContent || '';
   }
 
@@ -290,7 +298,10 @@ export function Calculator(): HTMLDivElement {
     emailSubject: "Check out my Sod's Law calculation"
   });
 
-  (el as CleanableElement).cleanup = teardownShare;
+  (el as CleanableElement).cleanup = () => {
+    clearExportContent();
+    teardownShare();
+  };
 
   return el;
 }
