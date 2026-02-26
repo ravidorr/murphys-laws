@@ -13,9 +13,13 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
   // Hydrate icons (for RSS icon)
   hydrateIcons(footer);
 
-  const adHost = footer.querySelector('[data-ad-slot]');
+  const adHost = footer.querySelector('[data-ad-slot]') as HTMLElement | null;
 
-  // Don't load ads if explicitly disabled (e.g., 404 pages, insufficient content)
+  if (adHost && hideAds) {
+    adHost.classList.add('hidden');
+  }
+
+  // Don't load ads if explicitly disabled (e.g., 404 pages)
   if (adHost && !hideAds) {
     let observer: IntersectionObserver | undefined;
 
@@ -91,6 +95,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
       // This prevents ads on empty states, 404 pages, etc.
       const mainContent = document.querySelector<HTMLElement>('main');
       if (!mainContent || !hasMinimumContent(mainContent)) {
+        adHost.classList.add('hidden');
         return; // Don't load ads if content is insufficient
       }
 
@@ -100,6 +105,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
         // Re-check content at trigger time in case page changed
         const mainEl = document.querySelector<HTMLElement>('main');
         if (!mainEl || !hasMinimumContent(mainEl)) {
+          adHost.classList.add('hidden');
           return;
         }
         loadAd();

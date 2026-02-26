@@ -831,7 +831,7 @@ describe('Footer component', () => {
     expect(adSlot!.dataset.loaded).toBe('true');
   });
 
-  it('does not load ads when hideAds prop is true', () => {
+  it('does not load ads when hideAds prop is true and hides footer-ad-shell', () => {
     window.adsbygoogle = [];
 
     const el = Footer({
@@ -839,13 +839,14 @@ describe('Footer component', () => {
       hideAds: true
     });
 
-    // The ad slot should exist in template but ad loading logic should be skipped
+    // The ad slot should exist in template but be hidden
     const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot).toBeTruthy();
-    
+    expect(adSlot!.classList.contains('hidden')).toBe(true);
+
     // Trigger event that would normally load ad
     el.dispatchEvent(new Event('adslot:init'));
-    
+
     // Ad should not be loaded since hideAds is true
     expect(adSlot!.dataset.loaded).not.toBe('true');
   });
@@ -879,6 +880,8 @@ describe('Footer component', () => {
     const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     // Ad should not be loaded due to insufficient content
     expect(adSlot!.dataset.loaded).not.toBe('true');
+    // Shell should be hidden when content is insufficient
+    expect(adSlot!.classList.contains('hidden')).toBe(true);
 
     // Cleanup
     emptyMain.remove();
