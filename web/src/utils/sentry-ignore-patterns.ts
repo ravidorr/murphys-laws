@@ -19,6 +19,8 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /error occurred when fetching the script/i,
   /The object is in an invalid state/i,
   /newestWorker is null/i,
+  // Stale SW registration (registration.update() rejects with InvalidStateError in Firefox)
+  /An attempt was made to use an object that is not, or is no longer, usable/i,
   // Precache failures (e.g. 404.html returns 404 when requested directly; host-dependent)
   /bad-precaching-response/i,
   // Sentry SDK / third-party: feature lookup for "performanceMetrics" not found (not our feature flags)
