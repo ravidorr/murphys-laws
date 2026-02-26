@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Share: all options (Copy link, X, Email, Facebook, etc.) in popover for cleaner UI; remove always-visible top row; bump root to 2.0.32, web to 3.1.6
 - Breadcrumb: single separator before each item after Home (remove duplicate separator after Home); bump root to 2.0.31, web to 3.1.5
 - Home: Science of Murphy's Law section is a plain section (always visible); removed details/summary and related CSS; bump root to 2.0.30, web to 3.1.4
 - Deploy workflow: install Rollup Linux native binary after npm ci (same fix as backend/web CI); bump root to 2.0.29
