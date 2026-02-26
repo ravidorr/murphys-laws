@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- npm audit fix (lockfile)
 - Remove all v8 ignore comments from web and backend (coverage now counts previously excluded branches); backend branch threshold 95% -> 93%, web branch threshold 93% -> 92% after excluded code no longer ignored; bump root to 2.0.26, web to 3.1.3
 - Web: use local html-validate disable for typeahead listbox instead of turning prefer-native-element off globally
 - Expert UX review fixes: privacy (no contact_value/mailto in API or UI), Submitted By typeahead, PWA prompt once per session after user action with Never show again, download menu on calculators, share URL normalization and copy-link toast, ad gutter, clickable law cards, pagination hint, favorites empty state copy, Sod's Law calculator percentage format; bump root to 2.0.25, backend to 2.0.11, web to 3.1.2
