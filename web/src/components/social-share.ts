@@ -47,15 +47,9 @@ interface InitInlineShareButtonsOptions {
 
 /**
  * Share platforms configuration - Single source of truth for all share options
- * Used by both dropdown popover and inline share buttons
- * topChannels: shown as always-visible buttons (2-3); rest appear in Share popover
+ * Used by popover menu and inline share buttons. All options appear in the Share popover.
  */
 export const SHARE_PLATFORMS = {
-  topChannels: [
-    { id: 'copy-link', label: 'Copy link', shortLabel: 'Link', icon: 'link', action: 'copy-link' },
-    { id: 'twitter', label: 'Share on X', shortLabel: 'X', icon: 'twitter' },
-    { id: 'email', label: 'Share via Email', shortLabel: 'Email', icon: 'email' },
-  ],
   social: [
     { id: 'twitter', label: 'Share on X', shortLabel: 'X', icon: 'twitter' },
     { id: 'facebook', label: 'Share on Facebook', shortLabel: 'Facebook', icon: 'facebook' },
@@ -144,39 +138,7 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
       lawText: textToCopy,
     });
 
-  // Top channels: Copy link, X, Email (always visible)
-  const topRow = document.createElement('div');
-  topRow.className = 'share-top-channels';
-  topRow.setAttribute('aria-label', 'Share options');
-
-  const copyLinkBtn = document.createElement('button');
-  copyLinkBtn.type = 'button';
-  copyLinkBtn.className = 'share-btn-top';
-  copyLinkBtn.setAttribute('data-action', 'copy-link');
-  copyLinkBtn.setAttribute('data-copy-value', shareUrl);
-  if (lawId) copyLinkBtn.setAttribute('data-law-id', lawId);
-  copyLinkBtn.setAttribute('aria-label', 'Copy link');
-  const copyLinkIcon = createIcon('link', { classNames: [] });
-  if (copyLinkIcon) copyLinkBtn.appendChild(copyLinkIcon);
-  topRow.appendChild(copyLinkBtn);
-
-  ['twitter', 'email'].forEach((id) => {
-    const link = document.createElement('a');
-    link.className = 'share-btn-top';
-    link.href = shareUrls[id] ?? '#';
-    link.setAttribute('aria-label', id === 'twitter' ? 'Share on X' : 'Share via Email');
-    if (id !== 'email') {
-      link.setAttribute('target', '_blank');
-      link.setAttribute('rel', 'noopener noreferrer');
-    }
-    const icon = createIcon(id === 'twitter' ? 'twitter' : 'email', { classNames: [] });
-    if (icon) link.appendChild(icon);
-    topRow.appendChild(link);
-  });
-
-  wrapper.appendChild(topRow);
-
-  // Share button (opens popover with more options)
+  // Share button (opens popover with all options)
   const trigger = createButton({
     variant: 'secondary',
     icon: 'share',
@@ -184,19 +146,33 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
     className: 'share-trigger',
     ariaExpanded: false,
     ariaHaspopup: true,
-    ariaLabel: 'More share options',
+    ariaLabel: 'Share options',
   });
   wrapper.appendChild(trigger);
 
-  // Create popover (Facebook, LinkedIn, Reddit, WhatsApp, Copy text)
+  // Create popover with all options: Copy link, then social, then Copy text
   const popover = document.createElement('div');
   popover.className = 'share-popover';
   popover.setAttribute('role', 'menu');
 
-  const popoverSocialIds = SHARE_PLATFORMS.social.filter(({ id }) => !TOP_CHANNEL_IDS.has(id)).map(p => p.id);
-  popoverSocialIds.forEach((id) => {
-    const platform = SHARE_PLATFORMS.social.find(p => p.id === id)!;
-    const { label, icon: iconName } = platform;
+  // Copy link (first item)
+  const copyLinkBtn = document.createElement('button');
+  copyLinkBtn.type = 'button';
+  copyLinkBtn.className = 'share-popover-item';
+  copyLinkBtn.setAttribute('role', 'menuitem');
+  copyLinkBtn.setAttribute('data-action', 'copy-link');
+  copyLinkBtn.setAttribute('data-copy-value', shareUrl);
+  if (lawId) copyLinkBtn.setAttribute('data-law-id', lawId);
+  const copyLinkIconCircle = document.createElement('span');
+  copyLinkIconCircle.className = 'icon-circle link';
+  const copyLinkIcon = createIcon('link', { classNames: [] });
+  if (copyLinkIcon) copyLinkIconCircle.appendChild(copyLinkIcon);
+  copyLinkBtn.appendChild(copyLinkIconCircle);
+  copyLinkBtn.appendChild(document.createTextNode('Copy link'));
+  popover.appendChild(copyLinkBtn);
+
+  // Social links (X, Facebook, LinkedIn, Reddit, WhatsApp, Email)
+  SHARE_PLATFORMS.social.forEach(({ id, label, icon: iconName }) => {
     const link = document.createElement('a');
     link.className = 'share-popover-item';
     link.href = shareUrls[id] ?? '';
@@ -209,15 +185,13 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
     const iconCircle = document.createElement('span');
     iconCircle.className = `icon-circle ${id}`;
     const icon = createIcon(iconName, { classNames: [] });
-    if (icon) {
-      iconCircle.appendChild(icon);
-    }
+    if (icon) iconCircle.appendChild(icon);
     link.appendChild(iconCircle);
     link.appendChild(document.createTextNode(label));
     popover.appendChild(link);
   });
 
-  // Add divider and Copy text only (Copy link is in top row)
+  // Divider and Copy text
   const divider = document.createElement('div');
   divider.className = 'share-popover-divider';
   popover.appendChild(divider);
@@ -320,8 +294,6 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
  * @param {string} options.url - URL to share (optional, will be constructed from lawId if not provided)
  * @returns {string} - HTML string for share popover
  */
-const TOP_CHANNEL_IDS = new Set(SHARE_PLATFORMS.topChannels.map(c => ('action' in c ? c.action : c.id)));
-
 export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButtonsOptions = {}) {
   const shareUrl = normalizeShareUrl(url ?? `${window.location.origin}/law/${lawId}`);
   const safeText = lawText ? lawText.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
@@ -332,23 +304,12 @@ export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButto
     lawText: lawText || '',
   });
 
-  // Always-visible: Copy link, X, Email (2-3 top channels)
-  const topButtonsHTML = SHARE_PLATFORMS.topChannels.map((ch) => {
-    if ('action' in ch && ch.action === 'copy-link') {
-      return `<button type="button" class="share-btn-top" data-action="copy-link" data-copy-value="${shareUrl.replace(/"/g, '&quot;')}" data-law-id="${lawId}" aria-label="Copy link"><span class="icon" data-icon="link" aria-hidden="true"></span></button>`;
-    }
-    if (ch.id === 'twitter') {
-      return `<a href="${shareUrls.twitter ?? '#'}" class="share-btn-top" target="_blank" rel="noopener noreferrer" aria-label="Share on X"><span class="icon" data-icon="twitter" aria-hidden="true"></span></a>`;
-    }
-    if (ch.id === 'email') {
-      return `<a href="${shareUrls.email ?? '#'}" class="share-btn-top" aria-label="Share via Email"><span class="icon" data-icon="email" aria-hidden="true"></span></a>`;
-    }
-    return '';
-  }).filter(Boolean).join('\n        ');
+  const copyLinkButton = `<button type="button" class="share-popover-item" role="menuitem" data-action="copy-link" data-copy-value="${shareUrl.replace(/"/g, '&quot;')}" data-law-id="${lawId}">
+          <span class="icon-circle link"><span class="icon" data-icon="link" aria-hidden="true"></span></span>
+          Copy link
+        </button>`;
 
-  // Popover: social channels not in top (Facebook, LinkedIn, Reddit, WhatsApp) + Copy text
-  const popoverSocial = SHARE_PLATFORMS.social.filter(({ id }) => !TOP_CHANNEL_IDS.has(id));
-  const shareLinkItems = popoverSocial.map(({ id, label, icon }) =>
+  const shareLinkItems = SHARE_PLATFORMS.social.map(({ id, label, icon }) =>
     renderShareLinkHTML({ href: shareUrls[id], text: label, icon, platform: id })
   ).join('\n        ');
 
@@ -359,14 +320,12 @@ export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButto
 
   return `
     <div class="share-wrapper">
-      <div class="share-top-channels" aria-label="Share options">
-        ${topButtonsHTML}
-      </div>
-      <button type="button" class="share-trigger" aria-expanded="false" aria-haspopup="true" aria-label="More share options">
+      <button type="button" class="share-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Share options">
         <span class="icon" data-icon="share" aria-hidden="true"></span>
         Share
       </button>
       <div class="share-popover" role="menu">
+        ${copyLinkButton}
         ${shareLinkItems}
         <div class="share-popover-divider"></div>
         ${copyTextButton}

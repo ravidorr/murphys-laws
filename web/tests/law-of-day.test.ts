@@ -130,8 +130,7 @@ describe('LawOfTheDay component', () => {
     expect(popover!.querySelector('[href*="facebook"]')).toBeTruthy();
     expect(popover!.querySelector('[href*="linkedin"]')).toBeTruthy();
     expect(popover!.querySelector('[href*="reddit"]')).toBeTruthy();
-    // Mailto is in top channels, not popover
-    expect(shareWrapper!.querySelector('[href*="mailto"]')).toBeTruthy();
+    expect(popover!.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
   it('handles upvote button click', async () => {

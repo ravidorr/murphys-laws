@@ -199,7 +199,7 @@ The application provides a unified sharing system used across laws and calculato
 
 | Mode | Component | Used In |
 |------|-----------|---------|
-| Dropdown popover | `SocialShare()` | Law cards, Law of the Day |
+| Dropdown popover (all options in menu) | `SocialShare()` | Law cards, Law of the Day |
 | Inline buttons | `renderInlineShareButtonsHTML()` + `initInlineShareButtons()` | Calculators |
 
 **Single Source of Truth:**

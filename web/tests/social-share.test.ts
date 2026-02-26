@@ -38,23 +38,24 @@ describe('SocialShare component', () => {
   it('creates a trigger button', () => {
     const el = SocialShare();
     const trigger = el.querySelector('.share-trigger') as HTMLElement;
-    
+
     expect(trigger).toBeTruthy();
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(trigger.getAttribute('aria-haspopup')).toBe('true');
+    expect(trigger.getAttribute('aria-label')).toBe('Share options');
     expect(trigger.textContent).toContain('Share');
   });
 
-  it('creates a popover with menu items', () => {
+  it('creates a popover with all menu items', () => {
     const el = SocialShare();
     const popover = el.querySelector('.share-popover') as HTMLElement;
 
     expect(popover).toBeTruthy();
     expect(popover.getAttribute('role')).toBe('menu');
 
-    // Popover: 4 social (Facebook, LinkedIn, Reddit, WhatsApp) + 1 copy text = 5 items
+    // Popover: 1 Copy link + 6 social (X, Facebook, LinkedIn, Reddit, WhatsApp, Email) + 1 Copy text = 8 items
     const items = popover.querySelectorAll('.share-popover-item');
-    expect(items.length).toBe(5);
+    expect(items.length).toBe(8);
   });
 
   it('L184 B0: popover non-email link uses target _blank', () => {
@@ -101,11 +102,11 @@ describe('SocialShare component', () => {
     expect(linkedinLink.href).toContain(encodeURIComponent('Custom description here'));
   });
 
-  it('L146 B1: top row email link has aria-label Share via Email', () => {
+  it('popover contains Copy link as first item', () => {
     const el = SocialShare({ url: 'https://test.com', title: 'Test' });
-    const emailLink = el.querySelector('a.share-btn-top[href^="mailto"]') as HTMLAnchorElement;
-    expect(emailLink).toBeTruthy();
-    expect(emailLink.getAttribute('aria-label')).toBe('Share via Email');
+    const copyLinkBtn = el.querySelector('.share-popover-item[data-action="copy-link"]') as HTMLElement;
+    expect(copyLinkBtn).toBeTruthy();
+    expect(copyLinkBtn.textContent).toContain('Copy link');
   });
 
   describe('Twitter button', () => {
@@ -238,13 +239,11 @@ describe('SocialShare component', () => {
       expect(link.href).toContain(encodeURIComponent('https://test.com/law/123'));
     });
 
-    it('uses _self target for email link', () => {
+    it('uses _self target for email link in popover', () => {
       const el = SocialShare({ url: 'https://test.com', title: 'Test Law' });
-      const link = el.querySelector('a[href*="mailto"]') as HTMLAnchorElement;
+      const link = el.querySelector('.share-popover-item[href*="mailto"]') as HTMLAnchorElement;
       expect(link).toBeTruthy();
-      // Top-channel email link: no target or _self; no rel (mailto opens in client)
-      expect(link.getAttribute('target')).toBeFalsy();
-      expect(link.getAttribute('rel')).toBeNull();
+      expect(link.getAttribute('target')).toBe('_self');
     });
   });
 
@@ -261,8 +260,8 @@ describe('SocialShare component', () => {
       const el = SocialShare();
       const iconCircles = el.querySelectorAll('.icon-circle');
 
-      // Popover: 4 social (Facebook, LinkedIn, Reddit, WhatsApp) + 1 copy text = 5 icon circles
-      expect(iconCircles.length).toBe(5);
+      // Popover: 1 link + 6 social + 1 copy = 8 icon circles
+      expect(iconCircles.length).toBe(8);
     });
 
     it('handles missing icon gracefully', () => {
@@ -703,37 +702,16 @@ describe('renderShareButtonsHTML', () => {
     expect(html).toContain('/law/789');
   });
 
-  it('L272 T29 B0: top channel with no matching condition yields empty string in map', () => {
-    const originalTopChannels = [...SHARE_PLATFORMS.topChannels];
-    try {
-      (SHARE_PLATFORMS.topChannels as Array<{ id: string }>).push({ id: 'unknown' });
-      const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
-      expect(html).toContain('data-action="copy-link"');
-      expect(html).toContain('twitter.com/intent/tweet');
-      expect(html).toContain('mailto:');
-      expect(html).not.toContain('data-share="unknown"');
-    } finally {
-      SHARE_PLATFORMS.topChannels.length = 0;
-      originalTopChannels.forEach(ch => SHARE_PLATFORMS.topChannels.push(ch));
-    }
-  });
-
-  it('L321 B1: top buttons HTML includes copy-link button', () => {
+  it('popover HTML includes Copy link, all social, and Copy text', () => {
     const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
     expect(html).toContain('data-action="copy-link"');
-    expect(html).toContain('aria-label="Copy link"');
-  });
-
-  it('L323 B1: top buttons HTML includes twitter share link', () => {
-    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
+    expect(html).toContain('Copy link');
     expect(html).toContain('twitter.com/intent/tweet');
     expect(html).toContain('Share on X');
-  });
-
-  it('L324 B1: top buttons HTML includes email share link', () => {
-    const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test' });
     expect(html).toContain('mailto:');
     expect(html).toContain('Share via Email');
+    expect(html).toContain('data-action="copy-text"');
+    expect(html).toContain('Copy text');
   });
 });
 
@@ -874,7 +852,7 @@ describe('initSharePopovers', () => {
     trigger.click(); // Open popover
     expect(popover.classList.contains('open')).toBe(true);
 
-    // Click a social link that is in the popover (Facebook; Twitter/Email are now top channels)
+    // Click a social link in the popover
     const facebookLink = localThis.container.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
     facebookLink.click();
 
