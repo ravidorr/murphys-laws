@@ -5,6 +5,35 @@
 
 @media print {
   /* =========================
+     Hide all ad-related elements (AdSense, injected side-rail, iframes)
+     ========================= */
+  .footer-ad-shell,
+  .footer-ad-reserved,
+  .footer-ad-shell ins,
+  ins.adsbygoogle,
+  .adsbygoogle,
+  [data-ad-slot],
+  [data-ad-client],
+  [id^="google_ads"],
+  [id*="google_ads"],
+  [id*="google_ads_iframe"],
+  iframe[src*="googlesyndication.com"],
+  iframe[src*="googleadservices.com"],
+  iframe[src*="doubleclick.net"],
+  /* Hide any wrapper that contains an ad iframe (catches Google-injected side-rail containers) */
+  [id*="google_ads"]:has(iframe),
+  div:has(> iframe[src*="googlesyndication.com"]),
+  div:has(> iframe[src*="doubleclick.net"]) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+
+  /* =========================
      Hide interactive/non-essential elements
      ========================= */
   header.sticky,
@@ -14,12 +43,6 @@
   .vote-btn,
   .section-footer,
   .related-laws-section,
-  .footer-ad-shell,
-  .footer-ad-reserved,
-  .footer-ad-shell ins,
-  ins.adsbygoogle,
-  .adsbygoogle,
-  [data-ad-slot],
   .social-share-popover,
   .keyboard-help-modal,
   [data-theme-toggle],
