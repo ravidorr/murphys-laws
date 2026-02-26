@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Deploy workflow: install Rollup Linux native binary after npm ci (same fix as backend/web CI); bump root to 2.0.29
 - Web CI: install Rollup Linux native binary after npm ci (same fix as backend); bump root to 2.0.28
 - Backend CI: install Rollup Linux native binary after npm ci to fix optional deps bug on ubuntu-latest; bump root to 2.0.27
 - npm audit fix (lockfile)
