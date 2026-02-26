@@ -34,6 +34,24 @@ let qualifyingUserActionHappened = false;
 
 const PWA_NEVER_SHOW_KEY = 'pwa_install_never_show';
 
+/** Safe localStorage get (SecurityError in Safari insecure contexts, private mode, etc.) */
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** Safe localStorage set (SecurityError in Safari insecure contexts, private mode, etc.) */
+function safeLocalStorageSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Unavailable or insecure context
+  }
+}
+
 // Track if app is already installed
 let isInstalled = false;
 
@@ -218,20 +236,16 @@ function checkAndShowPrompt() {
     return;
   }
 
-  try {
-    if (localStorage.getItem(PWA_NEVER_SHOW_KEY) === '1') {
+  if (safeLocalStorageGet(PWA_NEVER_SHOW_KEY) === '1') {
+    return;
+  }
+  const lastDismissed = safeLocalStorageGet('pwa_install_dismissed');
+  if (lastDismissed) {
+    const dismissedDate = new Date(lastDismissed);
+    const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceDismissed < 7) {
       return;
     }
-    const lastDismissed = localStorage.getItem('pwa_install_dismissed');
-    if (lastDismissed) {
-      const dismissedDate = new Date(lastDismissed);
-      const daysSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 7) {
-        return;
-      }
-    }
-  } catch {
-    // localStorage unavailable
   }
 
   engagement.timeOnSite = Date.now() - engagement.startTime;
@@ -427,11 +441,7 @@ async function triggerInstall() {
  */
 function dismissPrompt() {
   promptDismissedThisSession = true;
-  try {
-    localStorage.setItem('pwa_install_dismissed', new Date().toISOString());
-  } catch {
-    // localStorage unavailable
-  }
+  safeLocalStorageSet('pwa_install_dismissed', new Date().toISOString());
   hideInstallPrompt();
 }
 
@@ -440,11 +450,7 @@ function dismissPrompt() {
  */
 function dismissPromptNeverShowAgain() {
   promptDismissedThisSession = true;
-  try {
-    localStorage.setItem(PWA_NEVER_SHOW_KEY, '1');
-  } catch {
-    // localStorage unavailable
-  }
+  safeLocalStorageSet(PWA_NEVER_SHOW_KEY, '1');
   hideInstallPrompt();
 }
 

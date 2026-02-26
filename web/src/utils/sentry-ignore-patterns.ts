@@ -1,5 +1,6 @@
 /**
- * Error message patterns that Sentry should ignore (not application bugs).
+ * Error message patterns that Sentry should ignore (not our code).
+ * Only extension errors are ignored; add other patterns back if Sentry noise returns.
  * Used by main.ts beforeSend. Exported for unit tests.
  */
 
@@ -10,21 +11,6 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /moz-extension:\/\//i,
   /safari-extension:\/\//i,
   /Object Not Found Matching Id/i, // LastPass, Grammarly, and similar extensions
-  // Module import failures (transient network/cache issues)
-  /Importing a module script failed/i,
-  // Service worker errors (transient browser state issues, crawlers, network)
-  /Service worker registration failed/i,
-  /Failed to register a ServiceWorker/i,
-  /Failed to update a ServiceWorker/i,
-  /error occurred when fetching the script/i,
-  /The object is in an invalid state/i,
-  /newestWorker is null/i,
-  // Stale SW registration (registration.update() rejects with InvalidStateError in Firefox)
-  /An attempt was made to use an object that is not, or is no longer, usable/i,
-  // Precache failures (e.g. 404.html returns 404 when requested directly; host-dependent)
-  /bad-precaching-response/i,
-  // Sentry SDK / third-party: feature lookup for "performanceMetrics" not found (not our feature flags)
-  /feature named `performanceMetrics` was not found/i,
 ];
 
 /**
