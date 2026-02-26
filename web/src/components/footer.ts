@@ -23,6 +23,14 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
   if (adHost && !hideAds) {
     let observer: IntersectionObserver | undefined;
 
+    const showShellAndLoadAd = () => {
+      if (!adHost || (adHost as HTMLElement).dataset.loaded === 'true') {
+        return;
+      }
+      adHost.classList.remove('hidden');
+      loadAd();
+    };
+
     const loadAd = () => {
       if (!adHost || (adHost as HTMLElement).dataset.loaded === 'true') {
         return;
@@ -69,20 +77,23 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
       if (!adHost) {
         return;
       }
+      // Hide the "Advertisement" placeholder until we are about to load; show only when triggering.
+      adHost.classList.add('hidden');
 
       if (typeof window.IntersectionObserver === 'function') {
+        // Observe the footer so we trigger when it nears view (shell is hidden so has no box).
         observer = new IntersectionObserver((entries) => {
           for (const entry of entries) {
             if (entry.isIntersecting) {
-              loadAd();
+              showShellAndLoadAd();
               break;
             }
           }
         }, { rootMargin: '0px 0px 200px 0px' });
 
-        observer.observe(adHost);
+        observer.observe(footer);
       } else {
-        defer(loadAd);
+        defer(showShellAndLoadAd);
       }
     };
 
@@ -108,7 +119,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
           adHost.classList.add('hidden');
           return;
         }
-        loadAd();
+        showShellAndLoadAd();
       };
 
       window.addEventListener('pointerdown', triggerOnce, { once: true });
@@ -117,7 +128,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
     };
 
     footer.addEventListener('adslot:init', () => {
-      loadAd();
+      showShellAndLoadAd();
     }, { once: true });
 
     if (document.readyState === 'complete') {
