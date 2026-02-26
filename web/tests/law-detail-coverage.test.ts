@@ -116,7 +116,8 @@ describe('LawDetail view - Coverage', () => {
     
     const titleEl = el.querySelector('[data-law-title]');
     expect(titleEl).toBeTruthy();
-    expect(titleEl!.textContent).toBe('Law'); // Fallback title
+    expect(titleEl!.textContent).toBe("Murphy's Law"); // Fallback title
+    expect(titleEl!.innerHTML).toContain('accent-text'); // "Murphy's" accented
   });
 
   it('handles click events on non-element targets', () => {
