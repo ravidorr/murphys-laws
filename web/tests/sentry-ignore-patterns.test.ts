@@ -16,6 +16,10 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('Failed to register a ServiceWorker')).toBe(true);
     });
 
+    it('returns true for precache failures (e.g. 404.html returns 404)', () => {
+      expect(isSentryErrorIgnored('bad-precaching-response: bad-precaching-response :: [{"url":"https://murphys-laws.com/404.html","status":404}]')).toBe(true);
+    });
+
     it('returns true for module script import failures', () => {
       expect(isSentryErrorIgnored('Importing a module script failed')).toBe(true);
     });
