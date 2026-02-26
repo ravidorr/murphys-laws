@@ -41,6 +41,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 // Register PWA service worker for offline support
 import { registerSW } from 'virtual:pwa-register';
 import { showUpdateAvailable, showOfflineReady } from './components/update-notification.ts';
+import { scheduleServiceWorkerUpdateCheck } from './utils/service-worker-update.ts';
 
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -52,17 +53,8 @@ const updateSW = registerSW({
     showOfflineReady();
   },
   onRegisteredSW(swUrl, registration) {
-    // Check for updates periodically (every hour)
     if (registration) {
-      void setInterval(() => {
-        // Wrap in try-catch - registration can become invalid if SW is unregistered
-        // or the browser is in a state where update() cannot be called
-        try {
-          registration.update();
-        } catch {
-          // Silently ignore - SW will recover on next page load
-        }
-      }, 60 * 60 * 1000);
+      scheduleServiceWorkerUpdateCheck(registration);
     }
   },
   onRegisterError(error) {
