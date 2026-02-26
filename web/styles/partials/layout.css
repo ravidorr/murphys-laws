@@ -298,8 +298,10 @@ footer .footer-nav {
   display: none;
 }
 
-.footer-ad,
-.adsbygoogle {
+/* Scope to our footer slot only; do not style Google-injected ads (e.g. side-rail)
+   or they get width: 100% and block clicks on main content. */
+.footer-ad-shell .footer-ad,
+.footer-ad-shell .adsbygoogle {
   width: 100%;
   min-height: 90px;
   display: block !important;
