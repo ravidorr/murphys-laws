@@ -60,6 +60,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
             "The law you need most will be the one you forgot to save."
           </blockquote>
           <p class="text-muted-fg">Your favorites collection is empty. Save laws to access them quickly.</p>
+          <p class="text-muted-fg small">Favorites are stored in your browser only; no account is required.</p>
         </header>
         <div class="card-body text-center">
           <div class="not-found-search mb-6">

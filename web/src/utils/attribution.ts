@@ -1,30 +1,36 @@
-// Attribution rendering utilities
-import { escapeHtml, sanitizeUrl } from './sanitize.ts';
+// Attribution rendering utilities (privacy: never expose contact_value / mailto in UI)
+import { escapeHtml } from './sanitize.ts';
 import type { Attribution } from '../types/app.d.ts';
 
+/** True if string looks like an email (do not show as submitter display name). */
+export function isEmailLikeDisplay(s: string): boolean {
+  if (typeof s !== 'string' || !s.trim()) return true;
+  const t = s.trim();
+  return t.includes('@') || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
+
 /**
- * Renders a single attribution object to HTML - exported for testing
+ * Safe display label for "Submitted by" - name if display-safe, else "Anonymous".
+ */
+export function submittedByLabel(attributions: (Attribution | null)[] | null | undefined): string {
+  const first = Array.isArray(attributions) ? attributions[0] : null;
+  const name = (first && typeof first.name === 'string') ? first.name.trim() : '';
+  if (!name || isEmailLikeDisplay(name)) return 'Anonymous';
+  return name;
+}
+
+/**
+ * Renders a single attribution object to HTML - name and note only, no links.
  * @param {Object} att - Attribution object or null
  * @returns {string} HTML string for attribution
  */
 export function renderAttribution(att: Attribution | null) {
   if (!att) return '';
 
-  const { name, contact_type, contact_value, note } = att;
-  let who = name ? escapeHtml(name) : '';
-
-  if (contact_type === 'email' && contact_value) {
-    const safeEmail = escapeHtml(contact_value);
-    who = `<a href="mailto:${safeEmail}">${escapeHtml(name)}</a>`;
-  } else if (contact_type === 'url' && contact_value) {
-    const safeUrl = sanitizeUrl(contact_value);
-    if (safeUrl) {
-      who = `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>`;
-    }
-  }
-
-  const safeNote = note ? escapeHtml(note) : '';
-  return `${who}${safeNote ? ` - ${safeNote}` : ''}`;
+  const { name, note } = att;
+  const who = name && typeof name === 'string' && name.trim() ? escapeHtml(name.trim()) : '';
+  const safeNote = note && typeof note === 'string' && note.trim() ? escapeHtml(note.trim()) : '';
+  return who ? `${who}${safeNote ? ` - ${safeNote}` : ''}` : safeNote || '';
 }
 
 /**

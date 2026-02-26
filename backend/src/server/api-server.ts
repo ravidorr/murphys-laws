@@ -118,6 +118,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.get('/api/v1/categories/:id', (req, res, id) => categoryController.get(req, res, Number(id)));
 
   router.get('/api/v1/attributions', (req, res) => attributionController.list(req, res));
+  router.get('/api/v1/submitters', (req, res) => attributionController.searchSubmitters(req, res));
 
   router.get('/api/v1/feed.rss', (req, res) => feedController.getRssFeed(req, res));
   router.get('/api/v1/feed.atom', (req, res) => feedController.getAtomFeed(req, res));

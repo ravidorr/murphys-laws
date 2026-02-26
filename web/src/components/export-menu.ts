@@ -21,6 +21,7 @@ import {
   exportToText,
   generateFilename
 } from '../utils/export.ts';
+import { recordQualifyingUserAction } from './install-prompt.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
 /**
@@ -152,6 +153,8 @@ export function ExportMenu(): HTMLDivElement {
     if (!content) {
       return;
     }
+
+    recordQualifyingUserAction();
 
     const filename = generateFilename(content.title, format);
 

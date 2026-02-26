@@ -330,8 +330,11 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       return;
     }
 
-    // Handle navigation buttons (shared utility)
-    if (handleNavClick(t, onNavigate)) return;
+    // Handle navigation buttons and links (shared utility)
+    if (handleNavClick(t, onNavigate)) {
+      e.preventDefault();
+      return;
+    }
 
     // Handle page navigation
     if (t.dataset.page && !t.hasAttribute('disabled')) {

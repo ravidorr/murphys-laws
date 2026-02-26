@@ -24,4 +24,14 @@ export class AttributionController {
       });
     return sendJson(res, 200, { data: names }, req);
   }
+
+  async searchSubmitters(req: any, res: any) {
+    const url = new URL(req.url ?? '', `http://${req.headers?.host ?? 'localhost'}`);
+    const q = (url.searchParams.get('q') ?? '').toString().trim();
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10) || 20)) : 20;
+    const submitters = await this.attributionService.searchSubmitters(q, limit);
+    const names = submitters.map((a: { name: string }) => a.name);
+    return sendJson(res, 200, { data: names }, req);
+  }
 }

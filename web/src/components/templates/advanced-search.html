@@ -20,11 +20,22 @@
       </select>
     </div>
 
-    <div class="search-field">
-      <label for="search-attribution">Submitted By</label>
-      <select id="search-attribution" class="input">
-        <option value="">Loading attributions...</option>
-      </select>
+    <div class="search-field search-field-typeahead">
+      <label for="search-attribution-input">Submitted By</label>
+      <input
+        type="text"
+        id="search-attribution-input"
+        class="input"
+        placeholder="Search or select submitter..."
+        autocomplete="off"
+        aria-autocomplete="list"
+        aria-controls="search-attribution-listbox"
+        aria-expanded="false"
+        aria-haspopup="listbox"
+      >
+      <!-- html-validate-disable-next prefer-native-element -->
+      <div id="search-attribution-listbox" role="listbox" class="submitter-typeahead-listbox" aria-hidden="true"></div>
+      <input type="hidden" id="search-attribution" value="">
     </div>
 
     <div class="search-actions">

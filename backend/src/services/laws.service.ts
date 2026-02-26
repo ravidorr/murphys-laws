@@ -101,8 +101,6 @@ export class LawService {
         COALESCE((
           SELECT json_group_array(json_object(
             'name', a.name,
-            'contact_type', a.contact_type,
-            'contact_value', a.contact_value,
             'note', a.note
           )) FROM attributions a WHERE a.law_id = l.id
         ), '[]') AS attributions,
@@ -207,8 +205,6 @@ export class LawService {
         COALESCE((
           SELECT json_group_array(json_object(
             'name', a.name,
-            'contact_type', a.contact_type,
-            'contact_value', a.contact_value,
             'note', a.note
           )) FROM attributions a WHERE a.law_id = l.id
         ), '[]') AS attributions,

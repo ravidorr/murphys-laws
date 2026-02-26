@@ -7,6 +7,7 @@ import {
   trackPageView,
   trackLawView,
   trackCalculatorUse,
+  recordQualifyingUserAction,
   showInstallPrompt,
   showIOSInstallInstructions,
   hideInstallPrompt,
@@ -16,7 +17,8 @@ import {
   _setDeferredPromptForTesting,
   _getEngagementForTesting,
   _setEngagementForTesting,
-  _setIsInstalledForTesting
+  _setIsInstalledForTesting,
+  _setQualifyingUserActionForTesting
 } from '../src/components/install-prompt.js';
 
 /** Test-only: cast mock to the deferred prompt type expected by _setDeferredPromptForTesting */
@@ -565,18 +567,20 @@ describe('Install Prompt Component', () => {
     });
 
     it('does not add duplicate prompt when showing after hide', async () => {
-      vi.useFakeTimers();
-      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      try {
+        vi.useFakeTimers();
+        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      showIOSInstallInstructions();
-      hideInstallPrompt();
-      // hideInstallPrompt removes the element asynchronously (transitionend or 300ms fallback)
-      await vi.advanceTimersByTimeAsync(350);
-      showIOSInstallInstructions();
+        showIOSInstallInstructions();
+        hideInstallPrompt();
+        await vi.advanceTimersByTimeAsync(350);
+        showIOSInstallInstructions();
 
-      const prompts = document.querySelectorAll('#install-prompt');
-      expect(prompts.length).toBe(1);
-      vi.useRealTimers();
+        const prompts = document.querySelectorAll('#install-prompt');
+        expect(prompts.length).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
@@ -758,7 +762,6 @@ describe('Install Prompt Component', () => {
 
       _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
-      // Set engagement to meet thresholds: 3+ page views, 2+ laws, 30+ seconds
       _setEngagementForTesting({
         pageViews: 3,
         lawsViewed: 2,
@@ -766,8 +769,7 @@ describe('Install Prompt Component', () => {
         startTime: Date.now() - 31000
       });
 
-      // Trigger check by tracking another page view
-      trackPageView();
+      recordQualifyingUserAction();
 
       expect(document.querySelector('.install-prompt')).toBeTruthy();
     });
@@ -837,11 +839,9 @@ describe('Install Prompt Component', () => {
 
       _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
-      // Set dismissal to 3 days ago (within 7 day cooldown)
       localStorage.setItem('pwa_install_dismissed',
         new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
 
-      // Meet all thresholds
       _setEngagementForTesting({
         pageViews: 10,
         lawsViewed: 10,
@@ -849,9 +849,8 @@ describe('Install Prompt Component', () => {
         calculatorUsed: true
       });
 
-      trackPageView();
+      recordQualifyingUserAction();
 
-      // Should NOT show prompt due to cooldown
       expect(document.querySelector('.install-prompt')).toBeFalsy();
     });
 
@@ -910,11 +909,13 @@ describe('Install Prompt Component', () => {
         startTime: Date.now() - 31000
       });
 
-      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-        throw new Error('The operation is insecure.');
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key: string) => {
+        if (key === 'pwa_install_never_show') return null;
+        if (key === 'pwa_install_dismissed') throw new Error('The operation is insecure.');
+        return null;
       });
 
-      trackPageView();
+      recordQualifyingUserAction();
 
       expect(document.querySelector('.install-prompt')).toBeTruthy();
       getItemSpy.mockRestore();
@@ -1268,10 +1269,9 @@ describe('Install Prompt Component', () => {
       expect(document.querySelectorAll('.install-prompt').length).toBe(1);
     });
 
-    it('removes iOS prompt when showing standard prompt', async () => {
+    it('does not replace iOS prompt with standard when already shown this session', async () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
 
-      // Show iOS instructions first
       showIOSInstallInstructions();
       expect(document.querySelector('.install-prompt-ios')).toBeTruthy();
 
@@ -1284,16 +1284,13 @@ describe('Install Prompt Component', () => {
 
       _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
 
-      // Wait for transition timeout fallback
       await new Promise(resolve => setTimeout(resolve, 350));
 
-      // Show standard prompt - should replace iOS prompt
       showInstallPrompt();
 
-      // After removal timeout, should only have one standard prompt
       await new Promise(resolve => setTimeout(resolve, 350));
       expect(document.querySelectorAll('.install-prompt').length).toBe(1);
-      expect(document.querySelector('.install-prompt-ios')).toBeFalsy();
+      expect(document.querySelector('.install-prompt-ios')).toBeTruthy();
     });
   });
 

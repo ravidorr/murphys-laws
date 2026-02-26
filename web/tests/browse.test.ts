@@ -1118,20 +1118,17 @@ describe('Browse view', () => {
 
     const el = Browse({ searchQuery: '', onNavigate: () => { } });
 
-    // Wait for attributions dropdown to be populated
+    // Wait for advanced search to be present
     await vi.waitFor(() => {
-      const attributionSelect = el.querySelector('#search-attribution');
-      const options = attributionSelect?.querySelectorAll('option');
-      // Should have at least 2 options: "All Submitters" + "Edward Murphy"
-      expect(options?.length).toBeGreaterThan(1);
-    }, { timeout: 1000 });
+      expect(el.querySelector('#search-attribution')).toBeTruthy();
+    }, { timeout: 500 });
 
-    // Select an attribution
-    const attributionSelect = el.querySelector('#search-attribution');
+    // Set attribution filter via hidden input (typeahead value) and search
+    const attributionHidden = el.querySelector('#search-attribution') as HTMLInputElement;
     const searchBtn = el.querySelector('#search-btn');
 
-    if (attributionSelect && searchBtn) {
-      (attributionSelect as HTMLSelectElement).value = 'Edward Murphy';
+    if (attributionHidden && searchBtn) {
+      attributionHidden.value = 'Edward Murphy';
       (searchBtn as HTMLButtonElement).click();
 
       // Widgets should now be hidden

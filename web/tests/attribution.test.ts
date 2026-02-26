@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Attribution } from '../src/types/app.d.ts';
-import { firstAttributionLine, renderAttribution, renderAttributionsList } from '../src/utils/attribution.ts';
+import { firstAttributionLine, renderAttribution, renderAttributionsList, isEmailLikeDisplay, submittedByLabel } from '../src/utils/attribution.ts';
 
 describe('Attribution utilities', () => {
   describe('renderAttribution', () => {
@@ -12,25 +12,18 @@ describe('Attribution utilities', () => {
       expect(renderAttribution({ name: 'John' })).toBe('John');
     });
 
-    it('renders email link', () => {
+    it('renders name only for attribution with email (privacy: no mailto)', () => {
       const att: Attribution = { name: 'John', contact_type: 'email', contact_value: 'john@example.com' };
       const result = renderAttribution(att);
-      expect(result).toContain('mailto:john@example.com');
-      expect(result).toContain('John');
+      expect(result).toBe('John');
+      expect(result).not.toContain('mailto:');
     });
 
-    it('renders URL link', () => {
+    it('renders name only for attribution with URL (privacy: no link)', () => {
       const att: Attribution = { name: 'John', contact_type: 'url', contact_value: 'https://example.com' };
       const result = renderAttribution(att);
-      expect(result).toContain('href="https://example.com"');
-      expect(result).toContain('John');
-    });
-
-    it('falls back to name only for invalid URL', () => {
-      const att: Attribution = { name: 'John', contact_type: 'url', contact_value: 'javascript:alert(1)' };
-      const result = renderAttribution(att);
       expect(result).toBe('John');
-      expect(result).not.toContain('href');
+      expect(result).not.toContain('href=');
     });
 
     it('includes note when provided', () => {
@@ -45,7 +38,7 @@ describe('Attribution utilities', () => {
 
     it('handles attribution without name', () => {
       const att = { note: 'Anonymous contribution' };
-      expect(renderAttribution(att)).toBe(' - Anonymous contribution');
+      expect(renderAttribution(att)).toBe('Anonymous contribution');
     });
   });
 
@@ -89,23 +82,23 @@ describe('Attribution utilities', () => {
       expect(firstAttributionLine(law)).toBe('Sent by John Doe');
     });
 
-    it('formats name with email', () => {
+    it('formats name only when attribution had email (no mailto)', () => {
       const law = {
         attributions: [{ name: 'John Doe', contact_type: 'email' as const, contact_value: 'john@example.com' }]
       };
       const result = firstAttributionLine(law);
       expect(result).toContain('Sent by');
       expect(result).toContain('John Doe');
-      expect(result).toContain('mailto:john@example.com');
+      expect(result).not.toContain('mailto:');
     });
 
-    it('formats name with URL', () => {
+    it('formats name only when attribution had URL (no link)', () => {
       const law = {
         attributions: [{ name: 'John Doe', contact_type: 'url' as const, contact_value: 'https://example.com' }]
       };
       const result = firstAttributionLine(law);
       expect(result).toContain('John Doe');
-      expect(result).toContain('<a href="https://example.com"');
+      expect(result).not.toContain('<a href=');
     });
 
     it('escapes HTML in name', () => {
@@ -140,6 +133,27 @@ describe('Attribution utilities', () => {
     it('falls back to author when attributions is missing', () => {
       const law = { author: 'Murphy' };
       expect(firstAttributionLine(law)).toBe('- Murphy');
+    });
+  });
+
+  describe('isEmailLikeDisplay', () => {
+    it('returns true for email-like string', () => {
+      expect(isEmailLikeDisplay('a@b.com')).toBe(true);
+      expect(isEmailLikeDisplay('user@example.org')).toBe(true);
+    });
+    it('returns false for display name', () => {
+      expect(isEmailLikeDisplay('Jane Doe')).toBe(false);
+      expect(isEmailLikeDisplay('Murphy')).toBe(false);
+    });
+  });
+
+  describe('submittedByLabel', () => {
+    it('returns Anonymous for empty or email-like name', () => {
+      expect(submittedByLabel([])).toBe('Anonymous');
+      expect(submittedByLabel([{ name: 'a@b.com' }])).toBe('Anonymous');
+    });
+    it('returns trimmed name for display-safe attribution', () => {
+      expect(submittedByLabel([{ name: '  Jane Doe  ' }])).toBe('Jane Doe');
     });
   });
 });

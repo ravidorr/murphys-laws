@@ -61,6 +61,7 @@ export function renderPagination(currentPage: number, totalItems: number, itemsP
   });
 
   return `
+    <p class="pagination-hint" aria-live="polite">Use the buttons below to see more.</p>
     <div class="pagination">
       ${prevBtn}
       ${pageButtons}

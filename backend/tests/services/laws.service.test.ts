@@ -250,6 +250,22 @@ describe('LawService', () => {
     expect(law).toBeUndefined();
   });
 
+  it('should return attributions without contact_value or contact_type (privacy)', async () => {
+    const info = db.prepare("INSERT INTO laws (text, status) VALUES ('Law with attribution', 'published')").run();
+    const id = Number(info.lastInsertRowid);
+    db.prepare("INSERT INTO attributions (law_id, name, contact_type, contact_value, note) VALUES (?, 'Jane', 'email', 'jane@example.com', 'Austin')").run(id);
+
+    const law = await lawService.getLaw(id);
+    expect(law).toBeDefined();
+    expect(Array.isArray(law!.attributions)).toBe(true);
+    expect((law as any).attributions).toHaveLength(1);
+    const att = (law as any).attributions[0];
+    expect(att.name).toBe('Jane');
+    expect(att.note).toBe('Austin');
+    expect(att).not.toHaveProperty('contact_value');
+    expect(att).not.toHaveProperty('contact_type');
+  });
+
   it('should sort laws by score (default)', async () => {
     const law1 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
     const law2 = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 2', 'published')").run();
