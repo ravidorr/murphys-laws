@@ -140,10 +140,11 @@ The application is a fully installable PWA with offline support.
 
 **Configuration:**
 
-PWA is configured in `vite.config.js` using `vite-plugin-pwa`. The plugin generates:
+PWA is configured in `vite.config.ts` using `vite-plugin-pwa`. The plugin generates:
 - `manifest.webmanifest` - App manifest with icons, theme colors, screenshots
 - `sw.js` - Service worker with Workbox caching
 - Auto-injects manifest link and registers service worker
+- `404.html` is excluded from precache so SW install does not fail when the server returns 404 for GET `/404.html` (common when 404 is only used as fallback)
 
 **Development:**
 

@@ -184,7 +184,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
           </button>
         </div>
       `;
-      hydrateIcons(cardText);
+      try {
+        hydrateIcons(cardText);
+      } catch (iconErr) {
+        console.error('Failed to hydrate error state icons:', iconErr);
+      }
     }
   }
 
@@ -234,8 +238,10 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
   addNavigationListener(el, onNavigate);
 
-  // Initial render and load
-  render();
+  // Initial render and load (catch so rejections don't trigger global error banner)
+  void render().catch((err) => {
+    console.error('Browse initial render failed:', err);
+  });
 
   // Add voting listeners using shared utility (replaces 35 lines of duplicate code)
   addVotingListeners(el);
@@ -285,7 +291,9 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     loadPage(1);
   });
 
-  loadPage(currentPage);
+  void loadPage(currentPage).catch((err) => {
+    console.error('Browse loadPage failed:', err);
+  });
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {

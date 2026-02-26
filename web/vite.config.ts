@@ -60,6 +60,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        // Exclude 404.html from precache: many hosts serve it only as fallback for unknown
+        // routes and return 404 for GET /404.html, which triggers bad-precaching-response
+        // and the app error banner.
+        globIgnores: ['**/404.html'],
         // Offline fallback page
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [/^\/api\//],
