@@ -20,6 +20,10 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('bad-precaching-response: bad-precaching-response :: [{"url":"https://murphys-laws.com/404.html","status":404}]')).toBe(true);
     });
 
+    it('returns true for stale SW registration InvalidStateError', () => {
+      expect(isSentryErrorIgnored('An attempt was made to use an object that is not, or is no longer, usable')).toBe(true);
+    });
+
     it('returns true for module script import failures', () => {
       expect(isSentryErrorIgnored('Importing a module script failed')).toBe(true);
     });
