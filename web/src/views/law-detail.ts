@@ -123,10 +123,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     if (upVoteCount) upVoteCount.textContent = String(upvotes);
     if (downVoteCount) downVoteCount.textContent = String(downvotes);
 
+    // Show "Submitted by" only when we did not already show attribution (avoid "Sent by X" + "Submitted by X" duplication)
+    const showedAttribution = !!(attsHtml || author);
     const submittedBy = submittedByLabel(law.attributions);
     const hasAttributions = Array.isArray(law.attributions) && law.attributions.length > 0;
     if (submittedEl) {
-      if (submittedBy && (submittedBy !== 'Anonymous' || hasAttributions)) {
+      if (!showedAttribution && submittedBy && (submittedBy !== 'Anonymous' || hasAttributions)) {
         submittedEl.textContent = `Submitted by ${submittedBy}`;
         submittedEl.removeAttribute('hidden');
       } else {

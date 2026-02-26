@@ -98,6 +98,29 @@ describe('LawDetail view - Coverage', () => {
     expect(submittedEl!.hasAttribute('hidden')).toBe(true);
   });
 
+  it('hides submitted line when attribution is shown (no Sent by + Submitted by duplication)', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 5,
+        title: 'Test Law',
+        text: 'Law text.',
+        attributions: [{ name: 'Jane', contact_type: null, contact_value: null }],
+        upvotes: 0,
+        downvotes: 0
+      })
+    });
+    const el = LawDetail({ lawId: '5', onNavigate: () => {} });
+    container.appendChild(el);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const attributionEl = el.querySelector('[data-law-attribution]');
+    const submittedEl = el.querySelector('[data-law-submitted]');
+    expect(attributionEl).toBeTruthy();
+    expect(attributionEl!.textContent).toContain('Sent by Jane');
+    expect(submittedEl).toBeTruthy();
+    expect(submittedEl!.hasAttribute('hidden')).toBe(true);
+  });
+
   it('handles law with missing title or author', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
