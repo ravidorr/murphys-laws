@@ -36,6 +36,10 @@ jobs:
       - name: Install dependencies (root - npm workspaces)
         run: npm ci
 
+      - name: Install Rollup Linux native binary (npm optional deps bug)
+        run: npm install @rollup/rollup-linux-x64-gnu@4.59.0 --no-save
+        if: runner.os == 'Linux'
+
       - name: Audit dependencies
         run: npm audit --audit-level=high
         continue-on-error: true
