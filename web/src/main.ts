@@ -1,6 +1,7 @@
 // Initialize Sentry first to capture all errors
 import * as Sentry from '@sentry/browser';
 import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
+import { isServiceWorkerTransientError } from './utils/error-handler.ts';
 
 // Initialize Sentry for production error tracking. Metrics are automatically
 // enabled (SDK 10.25+); use the metrics API for count/gauge/distribution.
@@ -470,12 +471,16 @@ if (typeof window !== 'undefined') {
     if (import.meta.env.PROD && typeof Sentry !== 'undefined') {
       Sentry.captureException(event.error || new Error(event.message), { extra: { filename: event.filename, lineno: event.lineno } });
     }
-    showErrorBanner();
+    if (!isServiceWorkerTransientError(event.error || event.message)) {
+      showErrorBanner();
+    }
   });
   window.addEventListener('unhandledrejection', (event) => {
     if (import.meta.env.PROD && typeof Sentry !== 'undefined') {
       Sentry.captureException(event.reason);
     }
-    showErrorBanner();
+    if (!isServiceWorkerTransientError(event.reason)) {
+      showErrorBanner();
+    }
   });
 }

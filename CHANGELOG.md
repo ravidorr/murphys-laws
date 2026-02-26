@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Web: do not show "Something went wrong" banner for known Service Worker transient errors (update/registration failures); still report to Sentry. Add isServiceWorkerTransientError in error-handler with tests; README documents banner vs Sentry. Bump root to 2.0.44, web to 3.1.18.
 - PWA: exclude 404.html from service worker precache so install does not fail when server returns 404 for GET /404.html (avoids "Something went wrong" banner from bad-precaching-response). Browse view: catch render/loadPage rejections and harden loadPage error-path so unhandled rejections do not trigger error banner. Sentry: ignore bad-precaching-response. Bump root to 2.0.39, web to 3.1.13.
 - Remove law-of-day API preload from index.html to avoid console warning "preloaded but not used within a few seconds" (preload was only consumed on home after SPA boot; on other routes it was never used). Bump root to 2.0.40, web to 3.1.14.
 - PWA: handle registration.update() promise rejection (InvalidStateError in Firefox when SW registration is stale). Extract scheduleServiceWorkerUpdateCheck to utils and add unit tests. Bump root to 2.0.41, web to 3.1.15.

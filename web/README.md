@@ -92,7 +92,7 @@ VITE_SENTRY_DSN=https://xxxxx@o123456.ingest.sentry.io/123456
 
 **Error Tracking (Sentry):**
 
-Sentry is used for production error monitoring. Set `VITE_SENTRY_DSN` to enable error tracking. Errors are automatically captured and reported to Sentry. Only browser extension errors are filtered out (`sentry-ignore-patterns.ts`); all other errors are reported so we don't hide app bugs.
+Sentry is used for production error monitoring. Set `VITE_SENTRY_DSN` to enable error tracking. Errors are automatically captured and reported to Sentry. Only browser extension errors are filtered out (`sentry-ignore-patterns.ts`); all other errors are reported so we don't hide app bugs. Unhandled errors and rejections also show a user-facing "Something went wrong" banner; known Service Worker transient errors (e.g. update/registration failures) are still reported to Sentry but do not show the banner (`isServiceWorkerTransientError` in `src/utils/error-handler.ts`).
 
 For source map uploads during build (better stack traces), also set:
 - `SENTRY_AUTH_TOKEN` - Sentry auth token

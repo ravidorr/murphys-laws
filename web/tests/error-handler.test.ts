@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   isTransientError,
+  isServiceWorkerTransientError,
   calculateBackoff,
   withRetry,
   safeAsync,
@@ -80,6 +81,33 @@ describe('Error Handler Utilities', () => {
       expect(isTransientError(null)).toBe(false);
       expect(isTransientError(undefined)).toBe(false);
       expect(isTransientError({})).toBe(false);
+    });
+  });
+
+  describe('isServiceWorkerTransientError', () => {
+    it('returns true for Service Worker update failure messages', () => {
+      expect(isServiceWorkerTransientError(new Error('Failed to update a ServiceWorker for scope ...'))).toBe(true);
+      expect(isServiceWorkerTransientError('Failed to update a ServiceWorker for scope https://example.com/')).toBe(true);
+    });
+
+    it('returns true for invalid state messages', () => {
+      expect(isServiceWorkerTransientError(new Error('The object is in an invalid state'))).toBe(true);
+      expect(isServiceWorkerTransientError('The object is in an invalid state')).toBe(true);
+    });
+
+    it('returns true for Service Worker registration failure messages', () => {
+      expect(isServiceWorkerTransientError(new Error('Failed to register a ServiceWorker'))).toBe(true);
+      expect(isServiceWorkerTransientError('Failed to register a ServiceWorker')).toBe(true);
+    });
+
+    it('returns false for other errors', () => {
+      expect(isServiceWorkerTransientError(new Error('Network error'))).toBe(false);
+      expect(isServiceWorkerTransientError(new Error('Something went wrong'))).toBe(false);
+    });
+
+    it('handles null/undefined', () => {
+      expect(isServiceWorkerTransientError(null)).toBe(false);
+      expect(isServiceWorkerTransientError(undefined)).toBe(false);
     });
   });
 
