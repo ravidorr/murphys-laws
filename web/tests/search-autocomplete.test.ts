@@ -72,11 +72,22 @@ describe('SearchAutocomplete', () => {
     }).toThrow('inputElement is required');
   });
 
-  it('should set aria attributes on input', () => {
+  it('should set aria attributes and combobox role on input', () => {
     autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    expect(inputElement.getAttribute('role')).toBe('combobox');
     expect(inputElement.getAttribute('aria-expanded')).toBe('false');
     expect(inputElement.getAttribute('aria-autocomplete')).toBe('list');
     expect(inputElement.getAttribute('aria-controls')).toBe('search-autocomplete-listbox');
+  });
+
+  it('cleanup removes role and aria attributes from input', () => {
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    expect(inputElement.getAttribute('role')).toBe('combobox');
+    autocomplete.cleanup();
+    expect(inputElement.getAttribute('role')).toBeNull();
+    expect(inputElement.getAttribute('aria-expanded')).toBeNull();
+    expect(inputElement.getAttribute('aria-controls')).toBeNull();
+    expect(inputElement.getAttribute('aria-autocomplete')).toBeNull();
   });
 
   it('should create dropdown element', () => {

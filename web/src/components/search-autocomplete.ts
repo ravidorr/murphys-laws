@@ -221,7 +221,8 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     }
   }
 
-  // Initialize
+  // Initialize: combobox role so aria-expanded is valid (axe aria-allowed-attr)
+  inputElement.setAttribute('role', 'combobox');
   inputElement.setAttribute('aria-expanded', 'false');
   inputElement.setAttribute('aria-autocomplete', 'list');
   inputElement.setAttribute('aria-controls', 'search-autocomplete-listbox');
@@ -238,6 +239,10 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   // Cleanup function (dropdown always set after init)
   return {
     cleanup() {
+      inputElement.removeAttribute('role');
+      inputElement.removeAttribute('aria-expanded');
+      inputElement.removeAttribute('aria-controls');
+      inputElement.removeAttribute('aria-autocomplete');
       inputElement.removeEventListener('input', handleInput);
       inputElement.removeEventListener('keydown', handleKeydown);
       dropdown!.removeEventListener('click', handleDropdownClick);
