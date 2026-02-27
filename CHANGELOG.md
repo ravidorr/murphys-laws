@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Bump minimatch override to 10.2.4 (npm audit)
+
 ### Fixed
 - Web: do not show "Something went wrong" banner for known Service Worker transient errors (update/registration failures); still report to Sentry. Add isServiceWorkerTransientError in error-handler with tests; README documents banner vs Sentry. Bump root to 2.0.44, web to 3.1.18.
 - PWA: exclude 404.html from service worker precache so install does not fail when server returns 404 for GET /404.html (avoids "Something went wrong" banner from bad-precaching-response). Browse view: catch render/loadPage rejections and harden loadPage error-path so unhandled rejections do not trigger error banner. Sentry: ignore bad-precaching-response. Bump root to 2.0.39, web to 3.1.13.
