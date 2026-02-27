@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.51] - 2025-02-27
+
+### Removed
+- docs/print-ads-debug-console-script.js (one-off production DOM inspection script; print ad selectors are stable, script no longer needed)
+
+## [Unreleased]
+
 ### Fixed
 - Web: do not show "Something went wrong" banner for known Service Worker transient errors (update/registration failures); still report to Sentry. Add isServiceWorkerTransientError in error-handler with tests; README documents banner vs Sentry. Bump root to 2.0.44, web to 3.1.18.
 - PWA: exclude 404.html from service worker precache so install does not fail when server returns 404 for GET /404.html (avoids "Something went wrong" banner from bad-precaching-response). Browse view: catch render/loadPage rejections and harden loadPage error-path so unhandled rejections do not trigger error banner. Sentry: ignore bad-precaching-response. Bump root to 2.0.39, web to 3.1.13.
@@ -20,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web: favorite button in its own vote-group (border matches up/down); bookmark icon viewBox -24 -24 72 72; tests for viewBox and vote-group wrapper; TODO bookmark not heart. Bump root to 2.0.46, web to 3.1.20.
 - Web: hide footer ad shell until ad load is triggered (footer in view or user interaction); no empty "Advertisement" placeholder until then. Observe footer for intersection; add test and README. Bump root to 2.0.45, web to 3.1.19.
 - Vote tooltip: single combined tooltip on vote-group ("Upvote or downvote. Votes are anonymous; no login required."); remove per-button tooltips so they do not hide each other; bump root to 2.0.38, web to 3.1.12
-- Print: hide all ads in print with broader selectors ([id*="google_ads"], div:has(> iframe) for ad iframe wrappers); docs/print-ads-debug-console-script.js for production DOM inspection
+- Print: hide all ads in print with broader selectors ([id*="google_ads"], div:has(> iframe) for ad iframe wrappers)
 - Ad display: hideAds only on NotFound route; footer-ad-shell hidden when hideAds or insufficient content; print hides .footer-ad-shell, ins, .adsbygoogle, [data-ad-slot] so side-rail ads hidden; bump root to 2.0.37, web to 3.1.11
 - Vote UX: move "Votes are anonymous; no login required." to tooltip on vote-group; use data-tooltip on up/down vote buttons (Law of the Day, law detail, law cards); remove .vote-hint; bump root to 2.0.36, web to 3.1.10
 - AdSense: scope footer ad CSS to .footer-ad-shell so Google-injected side-rail ads do not get width: 100% and block clicks on main content; bump root to 2.0.35, web to 3.1.9
