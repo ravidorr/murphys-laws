@@ -56,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backup script in repo: `backend/scripts/backup-murphys.sh` (excludes backend/web node_modules to reduce backup size); deployed to `/usr/local/bin` via deploy and CI
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
+## [2.0.54] - 2025-02-27
+
+### Fixed
+- Web: My Favorites showed "1 law saved" but not the law content when a favorite was saved with empty title/text (e.g. from card click before fix). Global favorite handler now extracts title and text from `.law-card-text a`; law-detail related-law handler does the same. Favorites view fetches law from API when stored favorite has no text and re-renders with enriched data. Bump root to 2.0.54, web to 3.1.28.
+
 ## [2.0.53] - 2025-02-27
 
 ### Changed

@@ -397,10 +397,13 @@ if (isFavoritesEnabled()) {
       const lawId = favoriteBtn.getAttribute('data-law-id');
       if (!lawId) return;
 
-      // Get law data from the card
+      // Get law content from the card (.law-card-text contains the link with "Title: text" or "text")
       const lawCard = favoriteBtn.closest('.law-card-mini');
-      const lawText = lawCard?.querySelector('.law-card-text')?.textContent?.trim() || '';
-      const lawTitle = lawCard?.querySelector('.card-title')?.textContent?.trim() || '';
+      const link = lawCard?.querySelector('.law-card-text a');
+      const fullContent = link?.textContent?.trim() || '';
+      const colonIdx = fullContent.indexOf(': ');
+      const lawTitle = colonIdx > 0 ? fullContent.slice(0, colonIdx).trim() : '';
+      const lawText = colonIdx > 0 ? fullContent.slice(colonIdx + 2).trim() : fullContent;
 
       // Toggle favorite state
       const isNowFavorite = toggleFavorite({
