@@ -58,7 +58,6 @@ Concrete version targets and migration checklist for major upgrades. Do these in
 ## After each upgrade
 
 - `npm install` at repo root.
-- `npm run test:backend` and `npm run test:web`.
-- Run `npm run test:web:e2e` if Playwright is involved.
+- Run all tests: `npm test` (backend unit, web unit, web E2E). Or subsets: `npm run test:backend`, `npm run test:web`, `npm run test:web:e2e`.
 - Run lint: `npm run lint`.
 - Manual smoke: build, preview, and key user flows.

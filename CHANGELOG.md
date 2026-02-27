@@ -56,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backup script in repo: `backend/scripts/backup-murphys.sh` (excludes backend/web node_modules to reduce backup size); deployed to `/usr/local/bin` via deploy and CI
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
+## [2.0.52] - 2025-02-27
+
+### Changed
+- Root `npm run test` now runs all tests (backend unit, web unit, web E2E). Use `npm run test:backend`, `npm run test:web`, or `npm run test:web:e2e` for subsets. README, DEPENDENCY_MAJOR_UPGRADES, GEMINI, MOBILE-REPOSITORY-STRUCTURE docs updated. Bump root to 2.0.52, web to 3.1.26.
+
 ### Fixed
 - Law detail: prevent law title/quote truncation (overflow-wrap, min-width); In context same card style as Related Laws; increase law context text line-height
 - Backup: apply 30-day retention to env_*backup files (find now matches murphys_* and env_*); bump backend to 2.0.10
