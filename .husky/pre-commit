@@ -23,6 +23,7 @@ if [ -t 0 ]; then
   echo "     In Cursor, say: 'pre-commit review'"
   echo "  2. Have you updated CHANGELOG.md?"
   echo "     Add your changes under [Unreleased]"
+  echo "  3. E2E tests will run (skip with SKIP_E2E_CHECK=1)"
   echo "=========================================="
   echo ""
   echo "Press Enter to continue, or Ctrl+C to cancel."
@@ -91,6 +92,21 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 cd ..
+
+# Run E2E tests (Playwright starts backend + web dev server)
+# Bypass with SKIP_E2E_CHECK=1 for emergency commits
+if [ "$SKIP_E2E_CHECK" != "1" ]; then
+  echo ""
+  echo "Running web E2E tests..."
+  cd web && npm run test:e2e
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "E2E tests failed! Commit blocked."
+    echo "Bypass with: SKIP_E2E_CHECK=1 git commit ..."
+    exit 1
+  fi
+  cd ..
+fi
 
 echo ""
 echo "All tests passed!"

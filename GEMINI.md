@@ -19,7 +19,7 @@ This is a monorepo for "Murphy's Laws," a multi-platform application (Web, Andro
 
 ### Web (`web/`)
 - **Framework:** No heavy UI framework; pure Vanilla JS and CSS.
-- **Testing:** `vitest` for unit tests, `playwright` for E2E.
+- **Testing:** `vitest` for unit tests, `playwright` for E2E. E2E runs on pre-commit (bypass with `SKIP_E2E_CHECK=1`) and in the web-ci workflow.
 - **Linting:** Run `npm run lint` and `npm run lint:css` to verify changes.
 
 ### Backend (`backend/`)
