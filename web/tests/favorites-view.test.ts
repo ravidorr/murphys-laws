@@ -26,10 +26,16 @@ vi.mock('../src/utils/voting.js', () => ({
   addVotingListeners: vi.fn(),
 }));
 
+// Mock API for enrich-from-API when favorite has no text
+vi.mock('../src/utils/api.js', () => ({
+  fetchLaw: vi.fn(),
+}));
+
 import { isFavoritesEnabled } from '../src/utils/feature-flags.js';
 import { getFavorites, clearAllFavorites, removeFavorite } from '../src/utils/favorites.js';
 import { renderLawCards } from '../src/utils/law-card-renderer.js';
 import { addVotingListeners } from '../src/utils/voting.js';
+import { fetchLaw } from '../src/utils/api.js';
 
 describe('Favorites View Component', () => {
   const localThis: {
@@ -183,6 +189,25 @@ describe('Favorites View Component', () => {
       expect(cardText).toBeTruthy();
       expect(lawCards.length).toBe(2);
       expect(renderLawCards).toHaveBeenCalledWith([localThis.mockLaw1, localThis.mockLaw2]);
+    });
+
+    it('fetches law from API when favorite has no text and re-renders with enriched data', async () => {
+      const emptyTextFavorite: FavoriteLaw = { id: 999, text: '', title: '', savedAt: 1 };
+      const fetchedLaw = { id: 999, text: 'Fetched law text', title: 'Fetched Title', upvotes: 0, downvotes: 0 };
+      vi.mocked(getFavorites).mockReturnValue([emptyTextFavorite]);
+      vi.mocked(fetchLaw).mockResolvedValue(fetchedLaw as import('../src/types/app.d').Law);
+
+      Favorites({ onNavigate: localThis.mockNavigate });
+
+      expect(renderLawCards).toHaveBeenCalledWith([emptyTextFavorite]);
+      expect(fetchLaw).toHaveBeenCalledWith(999);
+
+      await vi.waitFor(() => {
+        expect(renderLawCards).toHaveBeenCalledTimes(2);
+      });
+      const secondCall = vi.mocked(renderLawCards).mock.calls[1]![0];
+      expect(secondCall).toHaveLength(1);
+      expect(secondCall[0]).toMatchObject({ id: 999, text: 'Fetched law text', title: 'Fetched Title' });
     });
 
     it('calls addVotingListeners exactly once during initialization', () => {

@@ -7,6 +7,7 @@ import { getFavorites, clearAllFavorites, removeFavorite } from '@utils/favorite
 import { isFavoritesEnabled } from '@utils/feature-flags.ts';
 import { addVotingListeners } from '@utils/voting.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
+import { fetchLaw } from '@utils/api.ts';
 import type { CleanableElement, OnNavigate, FavoriteLaw, Law } from '../types/app.d.ts';
 
 /**
@@ -133,7 +134,8 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
   }
 
   /**
-   * Render the page based on current state
+   * Render the page based on current state.
+   * If any favorite has no text (saved before we stored content), fetch from API and re-render.
    */
   function render() {
     const root = el.querySelector('#favorites-root')!;
@@ -150,18 +152,45 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
       clearExportContent();
     } else {
       root.innerHTML = renderPopulatedState(favorites);
-      // Register export content for favorites
+      hydrateIcons(root);
       setExportContent({
         type: ContentType.LAWS,
         title: 'My Favorite Laws',
         data: favorites,
         metadata: { total: favorites.length }
       });
+
+      // Enrich favorites that have no text (e.g. saved before we fixed extraction)
+      const needEnrich = favorites.filter((f) => !(f.text || '').trim());
+      if (needEnrich.length > 0) {
+        Promise.all(needEnrich.map((f) => fetchLaw(f.id).catch(() => null)))
+          .then((laws) => {
+            const byId: Record<string, Law> = {};
+            laws.forEach((law, i) => {
+              if (law && needEnrich[i]) byId[String(needEnrich[i]!.id)] = law;
+            });
+            const displayList: FavoriteLaw[] = favorites.map((f) => {
+              const fetched = byId[String(f.id)];
+              if (!fetched) return f;
+              return {
+                ...f,
+                text: fetched.text || f.text,
+                title: fetched.title ?? f.title,
+                attribution: fetched.attribution ?? f.attribution
+              };
+            });
+            root.innerHTML = renderPopulatedState(displayList);
+            hydrateIcons(root);
+            setExportContent({
+              type: ContentType.LAWS,
+              title: 'My Favorite Laws',
+              data: displayList,
+              metadata: { total: displayList.length }
+            });
+          });
+      }
     }
 
-    hydrateIcons(root);
-
-    // Set up search form handler for empty state
     setupSearchFormHandler();
   }
 
