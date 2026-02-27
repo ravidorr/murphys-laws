@@ -79,6 +79,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump root 2.0.14, backend 2.0.4, web 3.0.16
 - Web: branch coverage tests (export-menu, install-prompt, law-of-day, not-found, browse, structured-data) and uncovered-branches checklist
 
+## [2.0.49] - 2025-02-27
+
+### Fixed
+- PWA: use `navigateFallback: '/index.html'` instead of `/offline.html` so direct navigation to SPA routes (e.g. `/favorites`) serves the app shell and the router runs; offline page remains for actual offline/catch handling only. E2E: add SPA fallback test; path-based URLs and combobox locator for search; Playwright config as plain object to avoid ESM resolution with `"type": "module"`. Search autocomplete: set `role="combobox"` for axe aria-allowed-attr; advanced-search attribution input gets combobox role. Bump root to 2.0.49, web to 3.1.23.
+
 ## [2.0.48] - 2025-02-26
 
 ### Changed

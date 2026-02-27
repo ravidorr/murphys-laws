@@ -193,6 +193,13 @@ describe('AdvancedSearch component', () => {
     expect(deferUntilIdleSpy).toHaveBeenCalled();
   });
 
+  it('attribution input has role combobox for accessibility (aria-expanded allowed)', () => {
+    const el = AdvancedSearch({ onSearch: () => {} });
+    const attributionInput = el.querySelector('#search-attribution-input') as HTMLInputElement;
+    expect(attributionInput).toBeTruthy();
+    expect(attributionInput.getAttribute('role')).toBe('combobox');
+  });
+
   it('loads categories on focus if not loaded yet', async () => {
     const categories: Category[] = [
       { id: 1, title: 'General', slug: 'general' }

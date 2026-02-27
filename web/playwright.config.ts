@@ -1,6 +1,6 @@
-import { defineConfig, devices } from '@playwright/test';
-
-export default defineConfig({
+// Plain object export avoids ESM resolution errors with "type": "module" (defineConfig/devices not found when config loads).
+/** @type {import('@playwright/test').PlaywrightTestConfig} */
+const config = {
   testDir: './e2e',
   timeout: 30 * 1000,
   expect: { timeout: 5000 },
@@ -28,10 +28,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
   ],
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
-});
+  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+};
+
+export default config;

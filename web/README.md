@@ -57,6 +57,8 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
+E2E tests use path-based URLs (e.g. `/browse`, `/law/123`) and run against the dev server. Playwright config is a plain object export (no `defineConfig`/`devices`) to avoid ESM resolution issues with `"type": "module"`.
+
 Uncovered branches are tracked in `uncovered-branches.md`; `uncovered-branches-agent.md` describes how to work through the checklist.
 
 ## Linting
@@ -145,6 +147,7 @@ PWA is configured in `vite.config.ts` using `vite-plugin-pwa`. The plugin genera
 - `sw.js` - Service worker with Workbox caching
 - Auto-injects manifest link and registers service worker
 - `404.html` is excluded from precache so SW install does not fail when the server returns 404 for GET `/404.html` (common when 404 is only used as fallback)
+- `navigateFallback` is `/index.html` (app shell): all non-precached navigations (e.g. `/favorites`, `/browse`) receive the SPA shell so the client router can run. The offline page (`offline.html`) is used only for actual offline/catch handling, not as the navigation fallback
 
 **Development:**
 

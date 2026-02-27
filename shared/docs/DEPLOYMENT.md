@@ -75,7 +75,7 @@ sudo systemctl reload nginx
 - Frontend is served as static files from `/root/murphys-laws/web/dist/`
 - API proxy points to port **8787** (Node.js API server)
 - No Vite preview server is used in production
-- **Custom 404 Page:** Configured via `error_page 404 /404.html;` to serve the styled `404.html` while returning the correct 404 status code (critical for AdSense). The PWA excludes `404.html` from service worker precache so install does not fail when GET `/404.html` returns 404 (e.g. when the file is only served as fallback).
+- **Custom 404 Page:** Configured via `error_page 404 /404.html;` to serve the styled `404.html` while returning the correct 404 status code (critical for AdSense). The PWA excludes `404.html` from service worker precache so install does not fail when GET `/404.html` returns 404 (e.g. when the file is only served as fallback). PWA `navigateFallback` is `/index.html` (app shell) so non-precached routes get the SPA and the client router can run; `offline.html` is used only for offline/catch handling.
 - **AdSense:** The build includes deferred AdSense loading to prevent "No Content" violations.
 
 ---

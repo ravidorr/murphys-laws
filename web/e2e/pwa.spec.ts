@@ -1,4 +1,7 @@
-import { test, expect } from '@playwright/test';
+// Workaround for ESM resolution with "type": "module" - load @playwright/test via CJS so named exports resolve.
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { test, expect } = require('@playwright/test');
 
 /**
  * PWA/Offline E2E Tests
@@ -123,6 +126,20 @@ test.describe('PWA Install Prompt', () => {
     // Verify apple touch icon
     const appleTouchIconResponse = await page.request.get('/apple-touch-icon.png');
     expect(appleTouchIconResponse.ok()).toBe(true);
+  });
+});
+
+test.describe('SPA navigation fallback', () => {
+  test('direct navigation to /favorites shows app shell not offline page', async ({ page }) => {
+    // Regression: navigateFallback must be index.html so non-precached routes get the app;
+    // with offline.html as fallback, direct /favorites would show "You're Offline".
+    await page.goto('/favorites', { waitUntil: 'networkidle' });
+
+    // App shell loads and router renders Favorites view: we see Favorites content, not offline page
+    await expect(page.getByRole('heading', { name: 'My Favorites', level: 1 })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByRole('heading', { name: "You're Offline" })).not.toBeVisible();
   });
 });
 

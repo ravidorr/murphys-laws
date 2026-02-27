@@ -64,8 +64,9 @@ export default defineConfig({
         // routes and return 404 for GET /404.html, which triggers bad-precaching-response
         // and the app error banner.
         globIgnores: ['**/404.html'],
-        // Offline fallback page
-        navigateFallback: '/offline.html',
+        // App shell for SPA: all non-precached navigations (e.g. /favorites) get index.html so the router can run.
+        // Use index.html, not offline.html; the offline page is for actual offline/catch handling only.
+        navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         // Clean up old caches on activation to prevent stale chunk errors
         // This helps prevent "Importing a module script failed" when old HTML references new chunks
