@@ -163,7 +163,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         favoriteBtn.classList.add('favorited');
         favoriteBtn.setAttribute('aria-label', favoriteTooltip);
         favoriteBtn.setAttribute('data-tooltip', favoriteTooltip);
-        // Replace icon with filled bookmark
+        // Use filled bookmark icon (same for add/remove)
         const iconEl = favoriteBtn.querySelector('[data-icon]');
         if (iconEl) {
           iconEl.setAttribute('data-icon', 'bookmarkFilled');
@@ -401,11 +401,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       favoriteBtn.setAttribute('aria-label', newTooltip);
       favoriteBtn.setAttribute('data-tooltip', newTooltip);
 
-      // Update icon
+      // Update icon (always use filled bookmark for add/remove)
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
-        const newIcon = createIcon(newIconName);
+        const newIcon = createIcon('bookmarkFilled');
         if (newIcon) {
           iconEl.replaceWith(newIcon);
         }
@@ -435,11 +434,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       relatedFavoriteBtn.setAttribute('aria-label', newTooltip);
       relatedFavoriteBtn.setAttribute('data-tooltip', newTooltip);
 
-      // Update icon
+      // Update icon (always use filled bookmark for add/remove)
       const iconEl = relatedFavoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
-        const newIcon = createIcon(newIconName);
+        const newIcon = createIcon('bookmarkFilled');
         if (newIcon) {
           iconEl.replaceWith(newIcon);
         }

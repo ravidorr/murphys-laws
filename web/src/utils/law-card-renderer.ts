@@ -85,7 +85,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     ? renderButtonHTML({
       variant: 'vote',
       direction: 'up', // Required for vote variant
-      icon: isFav ? 'bookmarkFilled' : 'bookmark',
+      icon: 'bookmarkFilled',
       count: 0, // No count for favorites
       lawId: safeId,
       action: 'favorite',

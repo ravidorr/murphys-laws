@@ -75,7 +75,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
     const favoriteTooltip = isFav ? 'Remove from favorites' : 'Add to favorites';
     if (isFav) {
       favoriteBtn.classList.add('favorited');
-      // Replace icon with filled bookmark
+      // Ensure filled bookmark icon (same for add/remove)
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
         const newIcon = createIcon('bookmarkFilled');
@@ -181,11 +181,10 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       favoriteBtn.setAttribute('aria-label', newTooltip);
       favoriteBtn.setAttribute('data-tooltip', newTooltip);
 
-      // Update icon
+      // Update icon (always use filled bookmark for add/remove)
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
       if (iconEl) {
-        const newIconName = isNowFavorite ? 'bookmarkFilled' : 'bookmark';
-        const newIcon = createIcon(newIconName);
+        const newIcon = createIcon('bookmarkFilled');
         if (newIcon) {
           iconEl.replaceWith(newIcon);
         }

@@ -318,7 +318,7 @@ describe('LawDetail view - Coverage', () => {
     expect(writeText).toHaveBeenCalledWith('https://custom.link/1');
   });
 
-  it('L384 L388 L389 L398 L405 L406 L408: main favorite button click toggles and updates icon', async () => {
+  it('L384 L388 L389 L398 L405 L406 L408: main favorite button click toggles favorited state', async () => {
     const el = LawDetail({ lawId: '1', onNavigate: () => {} });
     container.appendChild(el);
     await new Promise(resolve => setTimeout(resolve, 80));

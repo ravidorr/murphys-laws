@@ -1034,7 +1034,7 @@ describe('LawDetail view', () => {
     favoriteBtn.dataset.lawTitle = 'Test Law';
     
     const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    iconSvg.setAttribute('data-icon-name', 'bookmark');
+    iconSvg.setAttribute('data-icon-name', 'bookmarkFilled');
     favoriteBtn.appendChild(iconSvg);
     
     el.appendChild(favoriteBtn);
@@ -1097,7 +1097,7 @@ describe('LawDetail view', () => {
     favoriteBtn.setAttribute('data-law-id', '42');
     
     const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    iconSvg.setAttribute('data-icon-name', 'bookmark');
+    iconSvg.setAttribute('data-icon-name', 'bookmarkFilled');
     favoriteBtn.appendChild(iconSvg);
     
     lawCard.appendChild(favoriteBtn);
