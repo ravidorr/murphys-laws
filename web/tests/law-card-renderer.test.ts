@@ -180,13 +180,14 @@ describe('law-card-renderer', () => {
       vi.mocked(isFavorite).mockReturnValue(false);
     });
 
-    it('renders non-favorited state with outline bookmark icon', () => {
+    it('renders non-favorited state with filled bookmark icon', () => {
       vi.mocked(isFavorite).mockReturnValue(false);
       
       const law = { id: 1, text: 'Test', upvotes: 0, downvotes: 0 };
       const html = renderLawCard(law);
       
       expect(html).not.toContain('favorited');
+      expect(html).toContain('bookmarkFilled');
       expect(html).toContain('Add to favorites');
     });
 

@@ -747,7 +747,7 @@ describe('LawOfTheDay component', () => {
       const favoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement | null;
       expect(favoriteBtn).toBeTruthy();
       const iconBefore = favoriteBtn!.querySelector('svg[data-icon-name]');
-      expect(iconBefore!.getAttribute('data-icon-name')).toBe('bookmark');
+      expect(iconBefore!.getAttribute('data-icon-name')).toBe('bookmarkFilled');
 
       favoriteBtn!.click();
 
