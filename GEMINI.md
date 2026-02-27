@@ -39,7 +39,7 @@ This is a monorepo for "Murphy's Laws," a multi-platform application (Web, Andro
 ## Common Commands
 - **Backend Dev:** `cd backend && npm run dev`
 - **Web Dev:** `cd web && npm run dev`
-- **Run Tests:** `npm test` (within respective directories)
+- **Run Tests:** `npm test` (from repo root runs all: backend, web unit, web E2E). Or run from `backend/` or `web/` for that package only.
 
 ## SSH Configuration & Usage
 

@@ -71,12 +71,13 @@ cd android
 ## Testing
 
 ```bash
-# Run all tests
+# Run all tests (backend unit, web unit, web E2E)
 npm test
 
-# Test specific platform
-npm run test:backend  # Backend Vitest suite
-npm run test:web      # Web Vitest suite
+# Test a subset only
+npm run test:backend   # Backend Vitest suite
+npm run test:web       # Web Vitest suite only (no E2E)
+npm run test:web:e2e   # Web E2E (Playwright) only
 ```
 
 ## Development

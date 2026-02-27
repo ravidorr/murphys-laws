@@ -716,8 +716,10 @@ mv index.html web/index.html
  "dev:web": "cd web && npm run dev",
  "dev": "npm run dev:backend & npm run dev:web",
  "build:web": "cd web && npm run build",
+ "test": "npm run test:backend && npm run test:web && npm run test:web:e2e",
  "test:backend": "cd backend && npm test",
- "test:web": "cd web && npm test"
+ "test:web": "cd web && npm test",
+ "test:web:e2e": "cd web && npm run test:e2e"
  }
 }
 ```
