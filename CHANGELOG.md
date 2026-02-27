@@ -56,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backup script in repo: `backend/scripts/backup-murphys.sh` (excludes backend/web node_modules to reduce backup size); deployed to `/usr/local/bin` via deploy and CI
 - Backend: tests and coverage for 95% plan (api-server, router, email, database, facebook-signed-request, http-helpers, og-image, feed, laws service/controller; vitest thresholds 95%)
 
+## [2.0.53] - 2025-02-27
+
+### Changed
+- Web: footer ad shell placeholder has no size until ad loads; when ad is displayed it uses its own size. README AdSense visibility note updated. Bump root to 2.0.53, web to 3.1.27.
+
 ## [2.0.52] - 2025-02-27
 
 ### Changed

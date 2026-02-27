@@ -230,45 +230,43 @@ footer .footer-nav {
   align-items: center;
 }
 
-/* Ad gutter: visually distinct from content; low z-index so install prompt and CTAs stay on top */
+/* Ad gutter: no size until ad loads; then ad dictates size. Low z-index so install prompt and CTAs stay on top. */
 .footer-ad-shell {
-  --footer-ad-min-height: 280px;
-
   box-sizing: border-box;
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: 60rem;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 0;
+  min-height: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: var(--footer-ad-min-height);
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 97%, var(--muted-fg) 3%);
 }
 
 @media (width <= 768px) {
   .footer-ad-shell {
-    --footer-ad-min-height: 220px;
-
-    padding: 1rem;
+    padding: 0;
   }
 }
 
 .footer-ad-shell[data-loaded="true"] {
-  /* Keep min-height to prevent layout shift */
   padding: 1rem;
 }
 
+/* Placeholder has no size so shell collapses until ad loads */
 .footer-ad-reserved {
   box-sizing: border-box;
   width: 100%;
-  height: var(--footer-ad-min-height);
-  border-radius: 0.75rem;
-  border: 1px dashed color-mix(in srgb, var(--border) 70%, transparent 30%);
-  background: color-mix(in srgb, var(--bg) 85%, white 15%);
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  border: none;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -299,11 +297,11 @@ footer .footer-nav {
 }
 
 /* Scope to our footer slot only; do not style Google-injected ads (e.g. side-rail)
-   or they get width: 100% and block clicks on main content. */
+   or they get width: 100% and block clicks on main content. Ad dictates its own height. */
 .footer-ad-shell .footer-ad,
 .footer-ad-shell .adsbygoogle {
   width: 100%;
-  min-height: 90px;
+  min-height: 0;
   display: block !important;
 }
 
