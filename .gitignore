@@ -24,6 +24,7 @@ murphys.db-wal
 
 .continue/
 .claude/
+.cursor/
 
 # ===== Monorepo Structure =====
 
