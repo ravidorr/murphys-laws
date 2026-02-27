@@ -57,7 +57,7 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
-E2E tests use path-based URLs (e.g. `/browse`, `/law/123`) and run against the dev server. Playwright config is a plain object export (no `defineConfig`/`devices`) to avoid ESM resolution issues with `"type": "module"`.
+E2E tests use path-based URLs (e.g. `/browse`, `/law/123`) and run against the dev server. Playwright config is a plain object export (no `defineConfig`/`devices`) to avoid ESM resolution issues with `"type": "module"`. E2E runs on pre-commit (bypass with `SKIP_E2E_CHECK=1`) and in the web-ci workflow.
 
 Uncovered branches are tracked in `uncovered-branches.md`; `uncovered-branches-agent.md` describes how to work through the checklist.
 

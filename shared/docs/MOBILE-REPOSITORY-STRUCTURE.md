@@ -559,7 +559,7 @@ jobs:
  - run: npm ci
  - run: npm test
  - run: npm run build
- - run: npm run test:e2e
+ - run: npm run test:e2e  # E2E runs in a separate e2e-tests job; also runs on pre-commit (SKIP_E2E_CHECK=1 to bypass)
 ```
 
 **`.github/workflows/ios-ci.yml`:**
