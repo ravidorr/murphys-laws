@@ -89,6 +89,10 @@ function normalizeText(txt: string): string {
     .replace(/—/g, '--')
     .trim();
 
+  // Strip Markdown escapes (backslash followed by punctuation)
+  // This handles cases like \=, \+, \!, \*, etc.
+  result = result.replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/g, '$1');
+
   result = result.replace(/^["']|["']$/g, '');
   return result.trim();
 }
@@ -179,7 +183,11 @@ async function buildSQL(): Promise<string> {
       statements.push(
         `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
         `VALUES (NULL, ${q(lawTitle)}, ${q(body)}, ${q(rawMd)}, NULL, ${q(rel)}, ${position})\n` +
-        `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
+        `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO UPDATE SET\n` +
+        `  title = excluded.title,\n` +
+        `  text = excluded.text,\n` +
+        `  raw_markdown = excluded.raw_markdown,\n` +
+        `  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now');`
       );
 
       statements.push(
@@ -222,7 +230,11 @@ async function buildSQL(): Promise<string> {
         statements.push(
           `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
           `VALUES (NULL, ${q(subTitle)}, ${q(subText)}, ${q(subRaw)}, NULL, ${q(rel)}, ${subPos})\n` +
-          `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO NOTHING;`
+          `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO UPDATE SET\n` +
+          `  title = excluded.title,\n` +
+          `  text = excluded.text,\n` +
+          `  raw_markdown = excluded.raw_markdown,\n` +
+          `  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now');`
         );
 
         for (const att of subAtts) {

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.57] - 2026-02-28
+
+### Changed
+- Backend: strip Markdown escape backslashes (e.g. \=, \+, \*, \!, \-, \.) from law text and titles to ensure clean data for all consumers (Web, Android, iOS). Added migration 014 and updated `build-sqlite.ts` importer with stripping logic and `ON CONFLICT DO UPDATE` support. Bump root to 2.0.57, backend to 2.0.12, web to 3.1.31.
+
 ## [2.0.56] - 2026-02-28
 
 ### Fixed
@@ -574,7 +579,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Murphy's Laws content database
 - Basic file organization
 
-[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.56...HEAD
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.57...HEAD
+[2.0.57]: https://github.com/ravidorr/murphys-laws/compare/v2.0.56...v2.0.57
 [2.0.56]: https://github.com/ravidorr/murphys-laws/compare/v2.0.55...v2.0.56
 [2.0.55]: https://github.com/ravidorr/murphys-laws/compare/v2.0.54...v2.0.55
 [2.0.54]: https://github.com/ravidorr/murphys-laws/compare/v2.0.53...v2.0.54
