@@ -106,8 +106,8 @@ export function addVotingListeners(el: HTMLElement): void {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
 
-    // Handle vote buttons
-    const voteBtn = t.closest('[data-vote]');
+    // Handle vote buttons (use closest so clicks on button inner icon/count still work)
+    const voteBtn = t.closest('button[data-vote]');
     if (voteBtn) {
       e.stopPropagation();
       const voteType = voteBtn.getAttribute('data-vote') as VoteType | null;

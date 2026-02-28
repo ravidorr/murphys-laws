@@ -192,8 +192,8 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       return;
     }
 
-    // Handle vote buttons
-    const voteBtn = t.closest('[data-vote]');
+    // Handle vote buttons (use closest so clicks on button inner icon/count still work)
+    const voteBtn = t.closest('button[data-vote]');
     if (voteBtn) {
       e.stopPropagation();
       const voteType = voteBtn.getAttribute('data-vote') as import('../types/app.d.ts').VoteType | null;

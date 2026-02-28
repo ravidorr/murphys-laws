@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.55] - 2025-02-28
+## [2.0.56] - 2026-02-28
+
+### Fixed
+- Web: vote buttons (Upvote, Downvote) sometimes did not respond when clicking the button icon or count; clicks were handled only when the event target was the button element. Handlers now use `closest('button[data-vote]')` so clicks on inner elements trigger voting consistently. Bump root to 2.0.56, web to 3.1.30.
+
+## [2.0.55] - 2026-02-28
 
 ### Fixed
 - Web: pagination buttons (Browse and Category detail) sometimes did not respond when clicking the button label or icon; clicks were handled only when the event target was the button element. Handlers now use `closest('button[data-page]')` so clicks on inner elements (e.g. `.btn-text`, icon) trigger page navigation consistently. Bump root to 2.0.55, web to 3.1.29.
@@ -569,7 +574,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Murphy's Laws content database
 - Basic file organization
 
-[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.10...HEAD
+[Unreleased]: https://github.com/ravidorr/murphys-laws/compare/v2.0.56...HEAD
+[2.0.56]: https://github.com/ravidorr/murphys-laws/compare/v2.0.55...v2.0.56
+[2.0.55]: https://github.com/ravidorr/murphys-laws/compare/v2.0.54...v2.0.55
+[2.0.54]: https://github.com/ravidorr/murphys-laws/compare/v2.0.53...v2.0.54
+[2.0.53]: https://github.com/ravidorr/murphys-laws/compare/v2.0.52...v2.0.53
+[2.0.52]: https://github.com/ravidorr/murphys-laws/compare/v2.0.51...v2.0.52
+[2.0.51]: https://github.com/ravidorr/murphys-laws/compare/v2.0.10...v2.0.51
 [2.0.10]: https://github.com/ravidorr/murphys-laws/compare/v2.0.9...v2.0.10
 [2.0.9]: https://github.com/ravidorr/murphys-laws/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/ravidorr/murphys-laws/compare/v2.0.7...v2.0.8

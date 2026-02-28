@@ -468,8 +468,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       }
     }
 
-    // Handle voting
-    const voteBtn = t.closest('[data-vote]') as HTMLElement | null;
+    // Handle voting (use closest so clicks on button inner icon/count still work)
+    const voteBtn = t.closest('button[data-vote]') as HTMLElement | null;
     if (voteBtn && voteBtn.dataset.id) {
       e.stopPropagation();
       const lawId = voteBtn.dataset.id;
