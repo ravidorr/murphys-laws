@@ -473,6 +473,43 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
   });
 
+  it('pagination works when clicking button inner element (label or icon)', async () => {
+    fetchLawsSpy.mockResolvedValue({
+      data: Array(20).fill(null).map((_, i) => ({
+        id: i + 1,
+        title: `Law ${i + 1}`,
+        text: `Text ${i + 1}`,
+        upvotes: 0,
+        downvotes: 0
+      })),
+      total: 50,
+      limit: 25,
+      offset: 0
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+        .find(btn => (btn as HTMLElement).textContent?.includes('Next'));
+      expect(nextBtn).toBeTruthy();
+    }, { timeout: 1000 });
+
+    const nextBtn = Array.from(el.querySelectorAll('.pagination button'))
+      .find(btn => (btn as HTMLElement).textContent?.includes('Next')) as HTMLButtonElement;
+    const inner = nextBtn.querySelector('.btn-text') ?? nextBtn.firstElementChild;
+    expect(inner).toBeTruthy();
+
+    fetchLawsSpy.mockClear();
+    (inner as HTMLElement).click();
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({
+        offset: 25
+      }));
+    }, { timeout: 1000 });
+  });
+
   it('L246 L275 L277 L282 L283: sort select change updates sort/order and reloads', async () => {
     fetchLawsSpy.mockResolvedValue({
       data: [{ id: 1, title: 'Law', text: 'Text', upvotes: 0, downvotes: 0 }],

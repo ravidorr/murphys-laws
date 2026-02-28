@@ -300,6 +300,34 @@ describe('CategoryDetail view', () => {
     }));
   });
 
+  it('pagination works when clicking button inner element (label or icon)', async () => {
+    vi.mocked(api.fetchLaws).mockResolvedValue({
+      data: [],
+      total: 20,
+      limit: 10,
+      offset: 0
+    });
+
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    vi.mocked(api.fetchLaws).mockClear();
+
+    const pageBtn = document.createElement('button');
+    pageBtn.dataset.page = '2';
+    const span = document.createElement('span');
+    span.className = 'btn-text';
+    span.textContent = '2';
+    pageBtn.appendChild(span);
+    el.appendChild(pageBtn);
+
+    span.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+      offset: 10
+    }));
+  });
+
   it('handles law card click navigation', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
