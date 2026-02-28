@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.55] - 2025-02-28
+
+### Fixed
+- Web: pagination buttons (Browse and Category detail) sometimes did not respond when clicking the button label or icon; clicks were handled only when the event target was the button element. Handlers now use `closest('button[data-page]')` so clicks on inner elements (e.g. `.btn-text`, icon) trigger page navigation consistently. Bump root to 2.0.55, web to 3.1.29.
+
 ## [2.0.51] - 2025-02-27
 
 ### Removed

@@ -215,12 +215,15 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       return;
     }
 
-    // Handle page navigation
-    const pageAttr = t.getAttribute('data-page');
-    if (pageAttr && !t.hasAttribute('disabled')) {
-      const page = parseInt(pageAttr, 10);
-      if (!isNaN(page) && page > 0) {
-        loadPage(page);
+    // Handle page navigation (use closest so clicks on button inner span/icon still work)
+    const pageBtn = t.closest('button[data-page]');
+    if (pageBtn && !pageBtn.hasAttribute('disabled')) {
+      const pageAttr = pageBtn.getAttribute('data-page');
+      if (pageAttr) {
+        const page = parseInt(pageAttr, 10);
+        if (!isNaN(page) && page > 0) {
+          loadPage(page);
+        }
       }
       return;
     }
