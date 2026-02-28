@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Backend: strip Markdown escape backslashes (e.g. \=, \+, \*, \!, \-, \.) from law text and titles to ensure clean data for all consumers (Web, Android, iOS). Added migration 014 and updated `build-sqlite.ts` importer with stripping logic and `ON CONFLICT DO UPDATE` support. Bump root to 2.0.57, backend to 2.0.12, web to 3.1.31.
-- Web: upgrade vite-plugin-pwa to ^0.21.1 and update root overrides to fix high-severity vulnerabilities and resolve Vite 7 peer dependency conflict.
+- Web: upgrade vite-plugin-pwa to ^0.21.1 and added `.npmrc` with `legacy-peer-deps=true` to resolve Vite 7 peer dependency conflict and fix high-severity vulnerabilities.
 
 ## [2.0.56] - 2026-02-28
 
