@@ -26,6 +26,7 @@ const RATE_LIMITS: Record<RateLimitType, RateLimitConfig> = {
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
 // Clean up old rate limit entries every 5 minutes
+/* v8 ignore start -- setInterval callback runs every 5 min; never invoked in unit tests */
 setInterval(() => {
   const now = Date.now();
   for (const [key, record] of rateLimitStore.entries()) {
@@ -34,6 +35,7 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+/* v8 ignore stop */
 
 export function checkRateLimit(identifier: string, type: string): RateLimitResult {
   const limit = RATE_LIMITS[type as RateLimitType];

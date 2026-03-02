@@ -351,6 +351,31 @@ describe('SocialShare component', () => {
       document.body.removeChild(el);
     });
 
+    it('closes popover via setTimeout after anchor link click in SocialShare popover (L268-272)', async () => {
+      vi.useFakeTimers();
+      const el = SocialShare({ url: 'https://test.com/law/123', lawId: '123', lawText: 'Test' });
+      document.body.appendChild(el);
+
+      const trigger = el.querySelector('.share-trigger') as HTMLElement;
+      const popover = el.querySelector('.share-popover') as HTMLElement;
+
+      trigger.click();
+      expect(popover.classList.contains('open')).toBe(true);
+
+      // Click a social share anchor link inside the popover
+      const facebookLink = el.querySelector('.share-popover-item[href*="facebook"]') as HTMLAnchorElement;
+      expect(facebookLink).toBeTruthy();
+      facebookLink.click();
+
+      // After 100ms timeout fires, popover closes (global document handler may close it sooner)
+      vi.advanceTimersByTime(150);
+      expect(popover.classList.contains('open')).toBe(false);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      vi.useRealTimers();
+      document.body.removeChild(el);
+    });
+
     it('closes other open popovers when opening a new one', () => {
       const el1 = SocialShare({ lawId: '1', lawText: 'Law 1' });
       const el2 = SocialShare({ lawId: '2', lawText: 'Law 2' });
@@ -894,6 +919,33 @@ describe('initSharePopovers', () => {
     expect(trigger.dataset.initialized).toBeUndefined();
   });
 
+  it('closes other popovers when a second initSharePopovers trigger is clicked (L365-368)', () => {
+    // Two share wrappers in the same container
+    const html1 = renderShareButtonsHTML({ lawId: '111', lawText: 'Law One' });
+    const html2 = renderShareButtonsHTML({ lawId: '222', lawText: 'Law Two' });
+    localThis.container.innerHTML = html1 + html2;
+
+    initSharePopovers(localThis.container);
+
+    const triggers = Array.from(localThis.container.querySelectorAll('.share-trigger')) as HTMLElement[];
+    const popovers = Array.from(localThis.container.querySelectorAll('.share-popover')) as HTMLElement[];
+    const trigger1 = triggers[0]!;
+    const trigger2 = triggers[1]!;
+    const popover1 = popovers[0]!;
+    const popover2 = popovers[1]!;
+
+    // Open first popover
+    trigger1.click();
+    expect(popover1.classList.contains('open')).toBe(true);
+    expect(popover2.classList.contains('open')).toBe(false);
+
+    // Click second trigger — first popover should close via lines 365-368
+    trigger2.click();
+    expect(popover1.classList.contains('open')).toBe(false);
+    expect(trigger1.getAttribute('aria-expanded')).toBe('false');
+    expect(popover2.classList.contains('open')).toBe(true);
+  });
+
   it('L385 B0: single open popover skipped in close-others forEach when clicking its trigger', () => {
     const html = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
     localThis.container.innerHTML = html;
@@ -1065,6 +1117,22 @@ describe('Global event handlers', () => {
     expect(popover.classList.contains('open')).toBe(true);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(popover.classList.contains('open')).toBe(false);
+  });
+
+  it('L584 B0: Escape closes popover without previous sibling (no trigger)', () => {
+    // Create a .share-popover.open that has no previousElementSibling
+    // This covers the false branch of `if (trigger)` in the global keydown handler
+    const popover = document.createElement('div');
+    popover.classList.add('share-popover', 'open');
+    document.body.appendChild(popover);
+
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      // Popover should be closed even without a trigger
+      expect(popover.classList.contains('open')).toBe(false);
+    } finally {
+      document.body.removeChild(popover);
+    }
   });
 
   it('toggles popover closed when clicking trigger while open', () => {

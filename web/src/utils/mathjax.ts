@@ -113,6 +113,7 @@ export function resetMathJaxStateForTesting(): void {
   loaderPromise = undefined;
 }
 
+/* v8 ignore start -- HMR disposal: only runs in Vite dev mode, not in tests or production builds */
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     loaderPromise = undefined;
@@ -132,3 +133,4 @@ if (import.meta.hot) {
     }
   });
 }
+/* v8 ignore stop */

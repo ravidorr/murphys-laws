@@ -22,6 +22,7 @@ export function Calculator(): HTMLDivElement {
   // Hydrate icons
   hydrateIcons(el);
 
+  /* v8 ignore next -- SSR guard: document is always defined in browser/jsdom */
   if (typeof document !== 'undefined') {
     // Update page title
     document.title = `Sod's Law Calculator | ${SITE_NAME}`;
@@ -47,6 +48,7 @@ export function Calculator(): HTMLDivElement {
 
   // Verify all sliders exist
   for (const [name, slider] of Object.entries(_sliders)) {
+    /* v8 ignore next -- slider is always provided by the template HTML */
     if (!slider) throw new Error(`Calculator slider "${name}" not found`);
   }
   const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
@@ -85,6 +87,7 @@ export function Calculator(): HTMLDivElement {
     scoreValueDisplay.textContent = `${displayPercent}%`;
     updateResultInterpretation(displayScore);
 
+    /* v8 ignore next -- textContent is always set by updateResultInterpretation() */
     const interpretation = scoreInterpretationDisplay.textContent || '';
     setExportContent({
       type: ContentType.CONTENT,
@@ -140,6 +143,7 @@ export function Calculator(): HTMLDivElement {
             };
 
             // Get the first mjx-c child to identify the variable
+            /* v8 ignore start -- MathJax typesetPromise callback: only reachable when MathJax renders in a real browser */
             const mjxC = mi.querySelector('mjx-c');
             if (mjxC) {
               const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
@@ -154,6 +158,7 @@ export function Calculator(): HTMLDivElement {
                 }
               }
             }
+            /* v8 ignore stop */
           });
         }).catch(() => {
           // Silently handle MathJax errors
@@ -237,7 +242,9 @@ export function Calculator(): HTMLDivElement {
     importance: parseFloat(sliders.importance.value),
     skill: parseFloat(sliders.skill.value),
     frequency: parseFloat(sliders.frequency.value),
+    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
     probability: scoreValueDisplay.textContent || '0%',
+    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
     interpretation: scoreInterpretationDisplay.textContent || ''
   };
 
@@ -247,7 +254,9 @@ export function Calculator(): HTMLDivElement {
     state.importance = parseFloat(sliders.importance.value);
     state.skill = parseFloat(sliders.skill.value);
     state.frequency = parseFloat(sliders.frequency.value);
+    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
     state.probability = scoreValueDisplay.textContent || '0%';
+    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
     state.interpretation = scoreInterpretationDisplay.textContent || '';
   }
 
