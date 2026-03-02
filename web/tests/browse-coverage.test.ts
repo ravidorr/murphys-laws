@@ -54,18 +54,36 @@ describe('Browse view - Coverage', () => {
     expect(el.innerHTML).toContain('Murphy spared these results');
   });
   
+  it('cleanup function runs without throwing (L303 B0)', () => {
+    const el = Browse({ searchQuery: '', onNavigate: () => {} }) as HTMLElement & { cleanup?: () => void };
+    expect(typeof el.cleanup).toBe('function');
+    expect(() => el.cleanup!()).not.toThrow();
+  });
+
   it('handles fetch errors in loadPage', async () => {
     // Set mock to reject for all calls to ensure it hits the error branch
     vi.mocked(globalThis.fetch).mockRejectedValue(new Error('API Failure'));
-    
+
     const el = Browse({ searchQuery: '', onNavigate: () => {} });
     container.appendChild(el);
-    
+
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // Check if error state is shown in the correct list container
     const list = el.querySelector('#browse-laws-list');
     expect(list).toBeTruthy();
     expect(list!.innerHTML).toContain('Ironically');
+  });
+
+  it('render() rejection is caught and logged (L246)', async () => {
+    const searchInfoModule = await import('../src/utils/search-info.ts');
+    vi.spyOn(searchInfoModule, 'updateSearchInfo').mockRejectedValueOnce(new Error('render failed'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    Browse({ searchQuery: '', onNavigate: () => {} });
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    expect(consoleSpy).toHaveBeenCalledWith('Browse initial render failed:', expect.any(Error));
+    consoleSpy.mockRestore();
   });
 });

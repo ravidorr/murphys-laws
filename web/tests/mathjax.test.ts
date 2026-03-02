@@ -159,6 +159,36 @@ describe('mathjax utility', () => {
       expect(result).toBe(getWindow().MathJax);
     });
 
+    it('calls typesetPromise with appRoot when loader completes and appRoot is present', async () => {
+      // This covers line 96: mj.typesetPromise([appRoot]).catch(...)
+      // For this path: MathJax has no typesetPromise initially, but loader adds it
+      getWindow().MathJax = undefined;
+      resetMathJaxStateForTesting();
+      vi.resetModules();
+      const module = await import('../src/utils/mathjax.ts');
+
+      const typesetPromiseMock = vi.fn().mockResolvedValue(undefined);
+      module.setLoaderForTesting(() => {
+        // Simulate what the real mathjax loader does: adds typesetPromise to the configured MathJax
+        const mj = getWindow().MathJax;
+        if (mj) {
+          mj.typesetPromise = typesetPromiseMock;
+        }
+        return Promise.resolve();
+      });
+
+      const mockAppRoot = document.createElement('div');
+      mockAppRoot.id = 'app';
+      vi.spyOn(document, 'getElementById').mockReturnValue(mockAppRoot);
+
+      await module.ensureMathJax();
+
+      // Allow the fire-and-forget .catch chain to settle
+      await Promise.resolve();
+
+      expect(typesetPromiseMock).toHaveBeenCalledWith([mockAppRoot]);
+    });
+
     it('handles typesetPromise errors silently', async () => {
       const typesetPromiseMock = vi.fn().mockRejectedValue(new Error('Typeset failed'));
 

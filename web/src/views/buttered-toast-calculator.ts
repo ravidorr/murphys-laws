@@ -20,6 +20,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
   // Hydrate icons
   hydrateIcons(el);
 
+  /* v8 ignore next -- SSR guard: document is always defined in browser/jsdom */
   if (typeof document !== 'undefined') {
     // Update page title
     document.title = `Buttered Toast Landing Calculator | ${SITE_NAME}`;
@@ -46,6 +47,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   // Verify all sliders exist
   for (const [name, slider] of Object.entries(_sliders)) {
+    /* v8 ignore next -- slider is always provided by the template HTML */
     if (!slider) throw new Error(`Calculator slider "${name}" not found`);
   }
   const sliders = _sliders as Record<ToastSliderKey, HTMLInputElement>;
@@ -126,6 +128,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
             };
 
             // Get the first mjx-c child to identify the variable
+            /* v8 ignore start -- MathJax typesetPromise callback: only reachable when MathJax renders in a real browser */
             const mjxC = mi.querySelector('mjx-c');
             if (mjxC) {
               const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
@@ -140,6 +143,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
                 }
               }
             }
+            /* v8 ignore stop */
           });
         }).catch(() => {
           // Silently handle MathJax errors
@@ -264,7 +268,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
     butter: parseFloat(sliders.butter.value),
     friction: parseFloat(sliders.friction.value),
     inertia: parseFloat(sliders.inertia.value),
+    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
     probability: probabilityDisplay.textContent || '0%',
+    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
     interpretation: interpretationDisplay.textContent || ''
   };
 
@@ -275,7 +281,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
     state.butter = parseFloat(sliders.butter.value);
     state.friction = parseFloat(sliders.friction.value);
     state.inertia = parseFloat(sliders.inertia.value);
+    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
     state.probability = probabilityDisplay.textContent || '0%';
+    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
     state.interpretation = interpretationDisplay.textContent || '';
   }
 

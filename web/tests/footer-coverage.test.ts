@@ -304,6 +304,29 @@ describe('Footer component - Coverage', () => {
     addSpy.mockRestore();
   });
 
+  it('primeAd returns early when ad is already loaded (L102 B0)', () => {
+    // To hit line 102's early return: register primeAd as load listener (readyState=loading),
+    // pre-mark the ad slot as loaded, then fire the load event
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+
+    const el = Footer({ onNavigate: () => {} });
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+
+    // Mark ad as already loaded before the load event fires
+    if (adSlot) adSlot.dataset.loaded = 'true';
+
+    // Fire load event — primeAd is called via window.addEventListener('load', primeAd)
+    // It should return early at line 102 because dataset.loaded === 'true'
+    window.dispatchEvent(new Event('load'));
+
+    // Still loaded (no reset or double-load happened)
+    expect(adSlot?.dataset.loaded).toBe('true');
+  });
+
   it('skips scheduleAd when adHost is null', () => {
     // This tests the defensive check in scheduleAd().
     // We can test this by mocking querySelector to return null for ad slot

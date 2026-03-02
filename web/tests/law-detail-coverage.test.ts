@@ -372,4 +372,38 @@ describe('LawDetail view - Coverage', () => {
     await new Promise(resolve => setTimeout(resolve, 20));
     expect(writeText).toHaveBeenCalledWith('Law text to copy');
   });
+
+  it('submittedEl shows when attribution has empty name (L132 L133)', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 10,
+        title: 'Test Law',
+        text: 'Test text.',
+        attributions: [{ name: '', contact_type: null, contact_value: null }]
+      })
+    });
+    const el = LawDetail({ lawId: '10', onNavigate: () => {} });
+    container.appendChild(el);
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const submittedEl = el.querySelector('[data-law-submitted]');
+    expect(submittedEl).toBeTruthy();
+    expect(submittedEl!.hasAttribute('hidden')).toBe(false);
+    expect(submittedEl!.textContent).toContain('Submitted by');
+  });
+
+  it('retry-law catch fires when retry fetch also fails (L326-L328)', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error('first fail'))
+      .mockRejectedValueOnce(new Error('retry fail'));
+    const el = LawDetail({ lawId: '1', onNavigate: () => {} });
+    container.appendChild(el);
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const retryBtn = el.querySelector('[data-action="retry-law"]') as HTMLElement | null;
+    expect(retryBtn).toBeTruthy();
+    retryBtn!.click();
+    await new Promise(resolve => setTimeout(resolve, 80));
+    const notFound = el.querySelector('[data-not-found]');
+    expect(notFound?.hasAttribute('hidden')).toBe(false);
+  });
 });

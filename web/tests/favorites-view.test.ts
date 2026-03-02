@@ -603,5 +603,36 @@ describe('Favorites View Component', () => {
       // We can't easily verify clearExportContent was called without mocking,
       // but the coverage should be satisfied
     });
+
+    it('ignores keydown with key other than Enter or Space', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      el.querySelector('.law-card-mini')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+      );
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
+    });
+
+    it('does not navigate on Enter key when target is inside a button in law card', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      vi.mocked(renderLawCards).mockReturnValue(
+        `<article class="law-card-mini" data-law-id="123">
+          <button data-action="favorite" data-law-id="123">Fav</button>
+        </article>`
+      );
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const btn = el.querySelector('[data-action="favorite"]') as HTMLElement;
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalledWith('law', '123');
+    });
+
+    it('does not navigate when nav link has empty data-nav attribute', () => {
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const emptyNavLink = document.createElement('a');
+      emptyNavLink.setAttribute('data-nav', '');
+      el.appendChild(emptyNavLink);
+      emptyNavLink.click();
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
+    });
   });
 });

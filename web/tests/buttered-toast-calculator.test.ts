@@ -877,4 +877,12 @@ describe('ButteredToastCalculator view', () => {
     vi.clearAllMocks();
   });
 
+  it('cleanup function runs without throwing (covers clearExportContent and teardownShare)', () => {
+    const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+    document.body.appendChild(el);
+    expect(typeof el.cleanup).toBe('function');
+    expect(() => el.cleanup!()).not.toThrow();
+    document.body.removeChild(el);
+  });
+
 });

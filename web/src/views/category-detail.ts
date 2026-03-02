@@ -46,6 +46,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   el.className = 'container page';
   el.setAttribute('aria-live', 'polite');
 
+  /* v8 ignore next -- SSR guard: location is always defined in browser/jsdom */
   const initialParams = typeof location !== 'undefined' ? parseCategoryParams(location.search) : { page: 1, sort: 'score', order: 'desc' };
   let currentPage = initialParams.page;
   let totalLaws = 0;
@@ -109,6 +110,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
 
     const loadingPlaceholder = el.querySelector('.loading-placeholder p');
+    /* v8 ignore next -- loadingPlaceholder is always present in the template */
     if (loadingPlaceholder) loadingPlaceholder.textContent = getRandomLoadingMessage();
   }
 
@@ -191,6 +193,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         clearExportContent();
       }
 
+      /* v8 ignore next -- SSR guard: history is always defined in browser/jsdom */
       if (typeof history !== 'undefined' && history.replaceState) {
         const search = buildCategorySearch(currentPage, currentSort, currentOrder);
         history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
