@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.59] - 2026-03-03
+
+### Fixed
+- Fix CI branch coverage gap: annotate platform-specific `truncateText` while loop in `og-image.service.ts` (canvas text measurement returns 0 on Linux headless); annotate unreachable `?? null` fallbacks in `http-helpers.ts`; annotate defensive `??`/`?.` on `req.url`/`req.headers` in `attributions.controller.ts`; add tests for `searchSubmitters` with missing/invalid `q` and `limit` params
+- Versions: bump root to 2.0.59, backend to 2.0.14, web to 3.1.33
+
 ## [2.0.58] - 2026-03-02
 
 ### Changed
