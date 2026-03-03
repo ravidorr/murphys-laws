@@ -104,4 +104,34 @@ describe('AttributionController', () => {
         expect(localThis.res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
         expect(localThis.res.end).toHaveBeenCalledWith(expect.stringContaining('"data":["Alice","Alicia"]'));
     });
+
+    it('searchSubmitters uses empty string when no q param', async () => {
+        localThis.req.url = '/api/v1/submitters?limit=10';
+        (localThis.req as any).headers = { host: 'localhost' };
+        localThis.attributionService.searchSubmitters.mockResolvedValue([{ name: 'Bob' }]);
+        await localThis.attributionController.searchSubmitters(localThis.req, localThis.res);
+
+        expect(localThis.attributionService.searchSubmitters).toHaveBeenCalledWith('', 10);
+        expect(localThis.res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+    });
+
+    it('searchSubmitters uses default limit of 20 when no limit param', async () => {
+        localThis.req.url = '/api/v1/submitters?q=Bob';
+        (localThis.req as any).headers = { host: 'localhost' };
+        localThis.attributionService.searchSubmitters.mockResolvedValue([{ name: 'Bob' }]);
+        await localThis.attributionController.searchSubmitters(localThis.req, localThis.res);
+
+        expect(localThis.attributionService.searchSubmitters).toHaveBeenCalledWith('Bob', 20);
+        expect(localThis.res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+    });
+
+    it('searchSubmitters uses default limit when limit param is non-numeric', async () => {
+        localThis.req.url = '/api/v1/submitters?q=Bob&limit=abc';
+        (localThis.req as any).headers = { host: 'localhost' };
+        localThis.attributionService.searchSubmitters.mockResolvedValue([{ name: 'Bob' }]);
+        await localThis.attributionController.searchSubmitters(localThis.req, localThis.res);
+
+        expect(localThis.attributionService.searchSubmitters).toHaveBeenCalledWith('Bob', 20);
+        expect(localThis.res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+    });
 });
