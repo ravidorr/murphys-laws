@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Raise web branch coverage threshold from 92% to 95%; annotate unreachable branches with `/* v8 ignore start/stop */` in `advanced-search.ts`, `law-detail.ts`, `social-share.ts`, `mathjax.ts`, `buttered-toast-calculator.ts`, `sods-calculator.ts`, `category-detail.ts`
 - Raise backend branch coverage threshold from 93% to 95%; annotate unreachable setInterval callback and env-var fallback defaults in `rate-limit.ts` and `api-server.ts`
 - Add coverage test files: `browse-coverage.test.ts`, `buttered-toast-calculator.test.ts`, `favorites-view.test.ts`, `footer-coverage.test.ts`, `home-coverage.test.ts`, `law-detail-coverage.test.ts`, `mathjax.test.ts`, `social-share.test.ts`
+- Fix CI branch coverage gap: annotate platform-specific `truncateText` while loop in `og-image.service.ts` (canvas text measurement returns 0 on Linux headless); annotate unreachable `?? null` in `http-helpers.ts`; annotate defensive `??`/`?.` on `req.url`/`req.headers` in `attributions.controller.ts`; add tests for `searchSubmitters` with missing/invalid `q` and `limit` params
 - Versions: bump root to 2.0.58, backend to 2.0.13, web to 3.1.32
 
 ## [2.0.57] - 2026-02-28

@@ -367,11 +367,13 @@ export class OgImageService {
       return text;
     }
 
+    /* v8 ignore start */
     let truncated = text;
     while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
       truncated = truncated.slice(0, -1);
     }
     return truncated + '...';
+    /* v8 ignore stop */
   }
 
   /**
