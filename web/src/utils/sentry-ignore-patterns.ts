@@ -11,6 +11,8 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /moz-extension:\/\//i,
   /safari-extension:\/\//i,
   /Object Not Found Matching Id/i, // LastPass, Grammarly, and similar extensions
+  // Sentry SDK internal error (v10+ browserTracingIntegration bug on some browsers)
+  /feature named .?pageObserver.? was not found/i,
 ];
 
 /**
