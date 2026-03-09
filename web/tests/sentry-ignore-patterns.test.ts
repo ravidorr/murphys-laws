@@ -9,6 +9,12 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('Object Not Found Matching Id')).toBe(true);
     });
 
+    it('returns true for Sentry SDK internal pageObserver error', () => {
+      expect(isSentryErrorIgnored("feature named `pageObserver` was not found")).toBe(true);
+      expect(isSentryErrorIgnored("feature named 'pageObserver' was not found")).toBe(true);
+      expect(isSentryErrorIgnored('feature named pageObserver was not found')).toBe(true);
+    });
+
     it('returns false for application errors', () => {
       expect(isSentryErrorIgnored('Cannot read property "x" of undefined')).toBe(false);
       expect(isSentryErrorIgnored('Network request failed')).toBe(false);
@@ -18,8 +24,8 @@ describe('sentry-ignore-patterns', () => {
   });
 
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
-    it('includes only extension-related patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(5);
+    it('has the expected number of patterns', () => {
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(6);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
