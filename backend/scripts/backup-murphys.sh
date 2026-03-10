@@ -16,17 +16,9 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting backup..."
 sqlite3 $DB_PATH ".backup '$BACKUP_DIR/murphys_db_$DATE.db'"
 
 # Backup .env file (contains sensitive config)
-cp $APP_DIR/.env $BACKUP_DIR/env_$DATE.bak 2>/dev/null || echo "No .env file found"
+cp $APP_DIR/backend/.env $BACKUP_DIR/env_$DATE.bak 2>/dev/null || echo "No .env file found"
 
-# Create tarball of application (exclude node_modules, logs, .git; restore runs npm install)
-tar -czf $BACKUP_DIR/murphys_app_$DATE.tar.gz \
-    -C /root \
-    --exclude='murphys-laws/node_modules' \
-    --exclude='murphys-laws/backend/node_modules' \
-    --exclude='murphys-laws/web/node_modules' \
-    --exclude='murphys-laws/logs' \
-    --exclude='murphys-laws/.git' \
-    murphys-laws
+# NOTE: App code is in git — no tarball needed. Recovery = git pull + npm install + restore DB.
 
 # Remove backups older than retention period (murphys_* and env_*)
 find $BACKUP_DIR \( -name 'murphys_*' -o -name 'env_*' \) -mtime +$RETENTION_DAYS -delete
