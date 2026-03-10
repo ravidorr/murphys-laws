@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Remove redundant app tarball from backup script (code is in git); fix .env backup path from `APP_DIR/.env` to `APP_DIR/backend/.env`
 
+### Changed
+- Add CLAUDE.md to .gitignore; add .claude/settings.json with acceptEdits mode and command allowlist
+
 ## [2.0.59] - 2026-03-03
 
 ### Fixed
