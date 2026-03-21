@@ -67,7 +67,9 @@ export default defineConfig({
         // App shell for SPA: all non-precached navigations (e.g. /favorites) get index.html so the router can run.
         // Use index.html, not offline.html; the offline page is for actual offline/catch handling only.
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // Exclude API routes and static text/data files (robots.txt, llms.txt, openapi.json,
+        // sitemaps, feed) from the SPA fallback — they must be served as-is, not as index.html.
+        navigateFallbackDenylist: [/^\/api\//, /^\/[^/]+\.(txt|xml|json|rss|atom)(\?.*)?$/],
         // Clean up old caches on activation to prevent stale chunk errors
         // This helps prevent "Importing a module script failed" when old HTML references new chunks
         cleanupOutdatedCaches: true,
