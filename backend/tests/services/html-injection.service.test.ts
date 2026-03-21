@@ -224,6 +224,23 @@ describe('HtmlInjectionService', () => {
       expect(schema).not.toBeNull();
       expect(schema!['author']).toBeUndefined();
     });
+
+    it('escapes </script> in law text to prevent XSS via JSON-LD injection', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 13,
+        title: 'XSS Test',
+        text: '</script><script>alert(1)</script>',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('13');
+      expect(html).not.toContain('</script><script>alert(1)');
+      expect(html).toContain('<\\/script>');
+      // Structured data must still be valid JSON after unescaping
+      const schema = extractJsonLd(html!);
+      expect(schema).not.toBeNull();
+      expect(schema!['text']).toBe('</script><script>alert(1)</script>');
+    });
   });
 
   describe('getCategoryHtml', () => {
