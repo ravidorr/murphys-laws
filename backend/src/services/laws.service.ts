@@ -250,6 +250,37 @@ export class LawService {
     return law as LawRow | undefined;
   }
 
+  async getRandomLaw(): Promise<LawRow | undefined> {
+    const sql = `
+      SELECT
+        l.id,
+        l.title,
+        l.text,
+        l.first_seen_file_path AS file_path,
+        l.first_seen_line_number AS line_number,
+        COALESCE((
+          SELECT json_group_array(json_object(
+            'name', a.name,
+            'note', a.note
+          )) FROM attributions a WHERE a.law_id = l.id
+        ), '[]') AS attributions,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes
+      FROM laws l
+      WHERE l.status = 'published'
+      ORDER BY RANDOM()
+      LIMIT 1;
+    `;
+    const stmt = this.db.prepare(sql);
+    const law = stmt.get() as LawDbRow | undefined;
+
+    if (law) {
+      law.attributions = safeParseJsonArray(law.attributions);
+    }
+
+    return law as LawRow | undefined;
+  }
+
   async getRelatedLaws(lawId: number, { limit = 5 }: { limit?: number } = {}) {
     // 1. Get category IDs for this law
     const categoriesStmt = this.db.prepare(`

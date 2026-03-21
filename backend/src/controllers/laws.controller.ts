@@ -92,6 +92,14 @@ export class LawController {
     return sendJson(res, 200, { data: relatedLaws, law_id: lawId }, req);
   }
 
+  async getRandom(req: any, res: any) {
+    const law = await this.lawService.getRandomLaw();
+    if (!law) {
+      return sendJson(res, 404, { error: 'No published laws available' }, req);
+    }
+    return sendJson(res, 200, law, req);
+  }
+
   async getLawOfTheDay(req: any, res: any) {
     const result = await this.lawService.getLawOfTheDay();
     if (!result) {

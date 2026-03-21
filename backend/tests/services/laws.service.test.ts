@@ -706,4 +706,47 @@ describe('LawService', () => {
       expect(related).toHaveLength(5);
     });
   });
+
+  describe('getRandomLaw', () => {
+    it('should return a published law', async () => {
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Random Law', 'published')").run();
+
+      const law = await lawService.getRandomLaw();
+      expect(law).toBeDefined();
+      expect(law!.text).toBe('Random Law');
+    });
+
+    it('should return undefined when no published laws exist', async () => {
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Draft Law', 'in_review')").run();
+
+      const law = await lawService.getRandomLaw();
+      expect(law).toBeUndefined();
+    });
+
+    it('should only return published laws', async () => {
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Published', 'published')").run();
+      db.prepare("INSERT INTO laws (text, status) VALUES ('In Review', 'in_review')").run();
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Rejected', 'rejected')").run();
+
+      const results = new Set<string>();
+      for (let i = 0; i < 20; i++) {
+        const law = await lawService.getRandomLaw();
+        if (law) results.add(law.text as string);
+      }
+
+      expect(results.has('Published')).toBe(true);
+      expect(results.has('In Review')).toBe(false);
+      expect(results.has('Rejected')).toBe(false);
+    });
+
+    it('should return a law with attributions field', async () => {
+      const info = db.prepare("INSERT INTO laws (text, status) VALUES ('Law With Attr', 'published')").run();
+      db.prepare("INSERT INTO attributions (law_id, name) VALUES (?, 'Murphy')").run(info.lastInsertRowid);
+
+      const law = await lawService.getRandomLaw();
+      expect(law).toBeDefined();
+      expect(Array.isArray(law!.attributions)).toBe(true);
+      expect((law!.attributions as { name: string }[])[0].name).toBe('Murphy');
+    });
+  });
 });

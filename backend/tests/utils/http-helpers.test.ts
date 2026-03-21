@@ -135,12 +135,20 @@ describe('HTTP Helpers', () => {
     it('should send JSON response with specific CORS and Credentials', () => {
       process.env.ALLOWED_ORIGINS = 'http://example.com';
       req.headers.origin = 'http://example.com';
-      
+
       httpHelpers.sendJson(asRes(res), 200, { data: 'ok' }, asReq(req));
-      
+
       expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
         'Access-Control-Allow-Origin': 'http://example.com',
         'Access-Control-Allow-Credentials': 'true'
+      }));
+    });
+
+    it('should include Link rel=describedby header pointing to openapi.json', () => {
+      httpHelpers.sendJson(asRes(res), 200, { data: 'ok' });
+
+      expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
+        'Link': '<https://murphys-laws.com/openapi.json>; rel="describedby"',
       }));
     });
   });
