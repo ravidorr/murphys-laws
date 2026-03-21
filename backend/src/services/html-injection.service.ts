@@ -140,6 +140,7 @@ export class HtmlInjectionService {
       `<main id="main-content" class="flex-1 container page" aria-label="Main content">${staticContent}</main>`
     );
 
+    // Escape </ sequences so law text can never close the <script> tag early (stored XSS guard)
     const jsonLd = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': ['Article', 'Quotation'],
@@ -156,7 +157,7 @@ export class HtmlInjectionService {
         '@type': 'SpeakableSpecification',
         'cssSelector': ['.law-text', '.card-title', '.attribution'],
       },
-    });
+    }).replaceAll('</', '<\\/');
     html = html.replace('</head>', `<script type="application/ld+json">${jsonLd}</script>\n</head>`);
 
     return html;
