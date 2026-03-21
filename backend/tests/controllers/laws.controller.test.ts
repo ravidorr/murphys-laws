@@ -24,6 +24,7 @@ interface LawServiceMock {
     listLaws: ReturnType<typeof vi.fn>;
     getLaw: ReturnType<typeof vi.fn>;
     getLawOfTheDay: ReturnType<typeof vi.fn>;
+    getRandomLaw: ReturnType<typeof vi.fn>;
     submitLaw: ReturnType<typeof vi.fn>;
     suggestions: ReturnType<typeof vi.fn>;
     getRelatedLaws: ReturnType<typeof vi.fn>;
@@ -56,6 +57,7 @@ describe('LawController', () => {
             listLaws: vi.fn(),
             getLaw: vi.fn(),
             getLawOfTheDay: vi.fn(),
+            getRandomLaw: vi.fn(),
             submitLaw: vi.fn(),
             suggestions: vi.fn(),
             getRelatedLaws: vi.fn(),
@@ -497,6 +499,28 @@ describe('LawController', () => {
             await lawController.suggestions(req, res, { query: { q: '  test  ', limit: '10' } });
 
             expect(lawService.suggestions).toHaveBeenCalledWith({ q: 'test', limit: 10 });
+        });
+    });
+
+    describe('getRandom', () => {
+        it('should return 200 with a random law', async () => {
+            const law = { id: 42, text: 'Random Law', attributions: [] };
+            lawService.getRandomLaw.mockResolvedValue(law);
+
+            await lawController.getRandom(req, res);
+
+            expect(lawService.getRandomLaw).toHaveBeenCalled();
+            expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+            expect(res.end).toHaveBeenCalledWith(JSON.stringify(law));
+        });
+
+        it('should return 404 when no published laws exist', async () => {
+            lawService.getRandomLaw.mockResolvedValue(undefined);
+
+            await lawController.getRandom(req, res);
+
+            expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+            expect(res.end).toHaveBeenCalledWith(JSON.stringify({ error: 'No published laws available' }));
         });
     });
 });

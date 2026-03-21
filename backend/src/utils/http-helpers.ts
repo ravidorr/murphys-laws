@@ -80,6 +80,7 @@ export function sendJson(
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Link': '<https://murphys-laws.com/openapi.json>; rel="describedby"',
   };
 
   // Only add credentials header if not using wildcard

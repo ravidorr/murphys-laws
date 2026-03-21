@@ -1,0 +1,27 @@
+# Murphy's Law Archive
+
+> A public archive of 1500+ Murphy's Laws, corollaries, and variations organized into 15+ thematic categories. All content is freely accessible via a REST API with no authentication required for read operations.
+
+## API
+
+Base URL: https://murphys-laws.com
+
+- [OpenAPI spec](https://murphys-laws.com/openapi.json): Machine-readable API definition (OpenAPI 3.0)
+- [List laws](https://murphys-laws.com/api/v1/laws): GET /api/v1/laws — paginated, filterable. Params: limit (max 25), offset, q (full-text search), category_slug, attribution, sort (score|upvotes|created_at|last_voted_at), order (asc|desc)
+- [Random law](https://murphys-laws.com/api/v1/laws/random): GET /api/v1/laws/random — one randomly selected published law
+- [Single law](https://murphys-laws.com/api/v1/laws/1): GET /api/v1/laws/:id — returns one law with attributions and category IDs
+- [Law of the Day](https://murphys-laws.com/api/v1/law-of-day): GET /api/v1/law-of-day — today's featured law
+- [Categories](https://murphys-laws.com/api/v1/categories): GET /api/v1/categories — all 15+ categories with law counts
+- [Single category](https://murphys-laws.com/api/v1/categories/1): GET /api/v1/categories/:id — category details
+- [RSS feed](https://murphys-laws.com/api/v1/feed.rss): Standard RSS 2.0 feed of recent laws
+- [Atom feed](https://murphys-laws.com/api/v1/feed.atom): Standard Atom 1.0 feed of recent laws
+
+Rate limits apply only to writes: 5 law submissions/hour, 60 votes/hour per IP. All reads are unlimited.
+
+## Content
+
+- [Browse all laws](https://murphys-laws.com/browse)
+- [Browse by category](https://murphys-laws.com/categories)
+- [Origin of Murphy's Law](https://murphys-laws.com/origin-story)
+- [Notable examples](https://murphys-laws.com/examples)
+- [About the archive](https://murphys-laws.com/about)
