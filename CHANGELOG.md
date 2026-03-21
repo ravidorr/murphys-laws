@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Remove redundant app tarball from backup script (code is in git); fix .env backup path from `APP_DIR/.env` to `APP_DIR/backend/.env`
-- Bump dompurify, flatted, jspdf, undici to fix moderate/high/critical audit vulnerabilities
-- Escape `</` in JSON-LD payload before injecting into `<script>` tag to prevent stored XSS on law detail pages
 
 ### Changed
 - Add CLAUDE.md to .gitignore; add .claude/settings.json with acceptEdits mode and command allowlist
+
+## [2.1.1] - 2026-03-21
+
+### Fixed
+- Service worker `navigateFallbackDenylist` now excludes root-level `.txt`, `.xml`, `.json`, `.rss`, `.atom` files so `/llms.txt`, `/robots.txt`, `/openapi.json`, and sitemaps are served as-is instead of returning `index.html`
+- Add unit tests (`sw-denylist.test.ts`) validating the denylist regex against static files, API routes, and SPA routes
+- Add e2e tests verifying `/llms.txt` and `/robots.txt` return `text/plain`, not HTML
+- Bump version to 2.1.1
 
 ## [2.1.0] - 2026-03-21
 
