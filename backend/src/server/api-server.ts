@@ -24,6 +24,7 @@ import { OgImageController } from '../controllers/og-image.controller.ts';
 import { SpaController } from '../controllers/spa.controller.ts';
 
 import { Router } from '../routes/router.ts';
+import { OPENAPI_SPEC } from '../openapi.ts';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 type Db = InstanceType<typeof Database>;
@@ -110,8 +111,18 @@ export function createApiServer(options?: CreateApiServerOptions) {
 
   router.get('/api/health', (req, res) => healthController.check(req, res));
 
+  router.get('/api/v1/openapi.json', (_req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=86400',
+    });
+    res.end(JSON.stringify(OPENAPI_SPEC));
+  });
+
   router.get('/api/v1/laws', (req, res, parsed) => lawController.list(req, res, parsed));
   router.get('/api/v1/laws/suggestions', (req, res, parsed) => lawController.suggestions(req, res, parsed));
+  router.get('/api/v1/laws/random', (req, res) => lawController.getRandom(req, res));
   router.get('/api/v1/laws/:id', (req, res, id) => lawController.get(req, res, id));
   router.get('/api/v1/laws/:id/related', (req, res, id) => lawController.getRelated(req, res, id));
   router.post('/api/v1/laws', (req, res) => lawController.submit(req, res));

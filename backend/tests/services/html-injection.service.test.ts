@@ -23,6 +23,12 @@ const MINIMAL_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
+function extractJsonLd(html: string): Record<string, unknown> | null {
+  const match = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  if (!match) return null;
+  return JSON.parse(match[1]);
+}
+
 vi.mock('node:fs/promises', () => ({
   default: {
     readFile: vi.fn(),
@@ -146,7 +152,7 @@ describe('HtmlInjectionService', () => {
 
       const html = await service.getLawHtml('5');
       expect(html).not.toBeNull();
-      expect(html).not.toContain('attribution');
+      expect(html).not.toContain('<p class="attribution">');
     });
 
     it('omits attribution when first attribution has no name', async () => {
@@ -160,6 +166,63 @@ describe('HtmlInjectionService', () => {
       const html = await service.getLawHtml('6');
       expect(html).not.toBeNull();
       expect(html).not.toContain('<p class="attribution">');
+    });
+
+    it('injects JSON-LD script into <head>', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 1,
+        title: "Murphy's Law",
+        text: 'If it can go wrong, it will.',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('1');
+      expect(html).toContain('<script type="application/ld+json">');
+    });
+
+    it('JSON-LD contains valid parseable JSON with correct schema fields', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 10,
+        title: 'Test Law',
+        text: 'Things go wrong.',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('10');
+      const schema = extractJsonLd(html!);
+      expect(schema).not.toBeNull();
+      expect(schema!['@context']).toBe('https://schema.org');
+      expect(schema!['@type']).toContain('Quotation');
+      expect(schema!['text']).toBe('Things go wrong.');
+      expect(schema!['url']).toContain('/law/10');
+    });
+
+    it('JSON-LD includes author when attribution is present', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 11,
+        title: 'Attributed Law',
+        text: 'Something goes wrong.',
+        attributions: [{ name: 'Edward Murphy' }],
+      });
+
+      const html = await service.getLawHtml('11');
+      const schema = extractJsonLd(html!);
+      expect(schema).not.toBeNull();
+      expect((schema!['author'] as { name: string }).name).toBe('Edward Murphy');
+    });
+
+    it('JSON-LD omits author when no attribution', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 12,
+        title: 'No Author',
+        text: 'No attribution here.',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('12');
+      const schema = extractJsonLd(html!);
+      expect(schema).not.toBeNull();
+      expect(schema!['author']).toBeUndefined();
     });
   });
 

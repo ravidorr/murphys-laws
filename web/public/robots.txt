@@ -2,10 +2,34 @@
 
 User-agent: *
 Allow: /
+Disallow: /api/
 
 # Sitemap locations
 Sitemap: https://murphys-laws.com/sitemap.xml
 Sitemap: https://murphys-laws.com/image-sitemap.xml
+Sitemap: https://murphys-laws.com/llms.txt
+
+# AI agent crawlers — full API access allowed
+User-agent: GPTBot
+Allow: /api/
+
+User-agent: ClaudeBot
+Allow: /api/
+
+User-agent: Google-Extended
+Allow: /api/
+
+User-agent: PerplexityBot
+Allow: /api/
+
+User-agent: cohere-ai
+Allow: /api/
+
+User-agent: Applebot-Extended
+Allow: /api/
+
+User-agent: meta-externalagent
+Allow: /api/
 
 # Allow Google AdSense and Google bots
 User-agent: Mediapartners-Google
@@ -16,6 +40,3 @@ Allow: /
 
 User-agent: Googlebot-Image
 Allow: /
-
-# Disallow access to API endpoints
-Disallow: /api/

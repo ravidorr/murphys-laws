@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.0.60",
+  "version": "2.1.0",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -13,8 +13,9 @@
     "dev:web": "cd web && npm run dev",
     "dev": "npm run dev:backend & npm run dev:web",
     "build:backend:db": "cd backend && npm run build:db",
+    "build:openapi": "npx tsx backend/scripts/export-openapi.ts",
     "build:web": "cd web && npm run build",
-    "build": "npm run build:backend:db && npm run build:web",
+    "build": "npm run build:backend:db && npm run build:openapi && npm run build:web",
     "test:backend": "cd backend && npm test",
     "test:web": "cd web && npm test",
     "test:web:e2e": "cd web && npm run test:e2e",
