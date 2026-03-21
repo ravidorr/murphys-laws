@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove redundant app tarball from backup script (code is in git); fix .env backup path from `APP_DIR/.env` to `APP_DIR/backend/.env`
 - Bump dompurify, flatted, jspdf, undici to fix moderate/high/critical audit vulnerabilities
 - Escape `</` in JSON-LD payload before injecting into `<script>` tag to prevent stored XSS on law detail pages
+- Add `.txt`, `.xml`, `.json`, `.rss`, `.atom` extensions to service worker `navigateFallbackDenylist` so `/llms.txt`, `/robots.txt`, `/openapi.json`, and sitemaps are served as-is instead of returning `index.html`
 
 ### Changed
 - Add CLAUDE.md to .gitignore; add .claude/settings.json with acceptEdits mode and command allowlist
