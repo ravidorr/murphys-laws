@@ -17,8 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Service worker `navigateFallbackDenylist` now excludes root-level `.txt`, `.xml`, `.json`, `.rss`, `.atom` files so `/llms.txt`, `/robots.txt`, `/openapi.json`, and sitemaps are served as-is instead of returning `index.html`
-- Add unit tests (`sw-denylist.test.ts`) validating the denylist regex against static files, API routes, and SPA routes
-- Add e2e tests verifying `/llms.txt` and `/robots.txt` return `text/plain`, not HTML
+- Add unit tests (`sw-denylist.test.ts`) validating the denylist regex against static files, API routes, and SPA routes; removed misleading e2e tests that bypassed the SW entirely
 - Bump version to 2.1.1
 
 ## [2.1.0] - 2026-03-21

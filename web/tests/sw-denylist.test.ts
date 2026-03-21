@@ -7,7 +7,16 @@ import { describe, it, expect } from 'vitest';
  * /robots.txt, /openapi.json, or sitemaps — those must pass through to the
  * real files. SPA routes like /favorites or /law/123 must still get index.html.
  *
- * Keep this in sync with the regex in workbox.navigateFallbackDenylist.
+ * WHY NOT AN E2E TEST:
+ * The Playwright e2e suite runs against `npm run dev`, which disables the service
+ * worker (devOptions.enabled: false). navigateFallbackDenylist is a Workbox build-time
+ * config that only takes effect in the generated production SW. An e2e test using
+ * page.request.get() or page.goto() in dev mode would bypass the SW entirely and
+ * only test that the dev server can serve the file — it would pass even if the
+ * denylist regex were completely removed. The regex unit test here is the authoritative
+ * coverage for this config.
+ *
+ * Keep this in sync with the regex in workbox.navigateFallbackDenylist (vite.config.ts).
  */
 const STATIC_FILE_PATTERN = /^\/[^/]+\.(txt|xml|json|rss|atom)(\?.*)?$/;
 const API_PATTERN = /^\/api\//;
