@@ -140,6 +140,26 @@ export class HtmlInjectionService {
       `<main id="main-content" class="flex-1 container page" aria-label="Main content">${staticContent}</main>`
     );
 
+    // Escape </ sequences so law text can never close the <script> tag early (stored XSS guard)
+    const jsonLd = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': ['Article', 'Quotation'],
+      'headline': escapeHtml(title).substring(0, 120),
+      'text': law.text,
+      'description': description,
+      'url': lawUrl,
+      'mainEntityOfPage': { '@type': 'WebPage', '@id': lawUrl },
+      'image': ogImageUrl,
+      'publisher': { '@type': 'Organization', 'name': "Murphy's Law Archive", 'url': SITE_URL },
+      ...(law.created_at ? { 'datePublished': law.created_at } : {}),
+      ...(attributionName ? { 'author': { '@type': 'Person', 'name': attributionName } } : {}),
+      'speakable': {
+        '@type': 'SpeakableSpecification',
+        'cssSelector': ['.law-text', '.card-title', '.attribution'],
+      },
+    }).replaceAll('</', '<\\/');
+    html = html.replace('</head>', `<script type="application/ld+json">${jsonLd}</script>\n</head>`);
+
     return html;
   }
 

@@ -73,3 +73,6 @@ web/package-lock.json
 # Platform-specific build outputs
 backend/dist/
 web/dist/
+
+# Generated at build time by build:openapi
+web/public/openapi.json
