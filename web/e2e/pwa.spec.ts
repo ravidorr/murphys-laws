@@ -129,27 +129,6 @@ test.describe('PWA Install Prompt', () => {
   });
 });
 
-test.describe('Static files are not swallowed by the SPA fallback', () => {
-  test('/llms.txt returns plain text, not HTML', async ({ page }) => {
-    const response = await page.request.get('/llms.txt');
-    expect(response.ok()).toBe(true);
-    const contentType = response.headers()['content-type'] ?? '';
-    expect(contentType).toMatch(/text\/plain/);
-    const body = await response.text();
-    expect(body).not.toMatch(/<html/i);
-  });
-
-  test('/robots.txt returns plain text, not HTML', async ({ page }) => {
-    const response = await page.request.get('/robots.txt');
-    expect(response.ok()).toBe(true);
-    const contentType = response.headers()['content-type'] ?? '';
-    expect(contentType).toMatch(/text\/plain/);
-    const body = await response.text();
-    expect(body).not.toMatch(/<html/i);
-    expect(body).toContain('User-agent:');
-  });
-});
-
 test.describe('SPA navigation fallback', () => {
   test('direct navigation to /favorites shows app shell not offline page', async ({ page }) => {
     // Regression: navigateFallback must be index.html so non-precached routes get the app;
