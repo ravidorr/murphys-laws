@@ -23,8 +23,11 @@ murphys.db-shm
 murphys.db-wal
 
 .continue/
-.claude/
 .cursor/
+# Claude Code — track project config and skills, ignore ephemeral/personal files
+.claude/worktrees/
+.claude/settings.local.json
+.claude/memory/
 CLAUDE.md
 
 # ===== Monorepo Structure =====
