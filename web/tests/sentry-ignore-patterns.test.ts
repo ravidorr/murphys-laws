@@ -15,6 +15,10 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('feature named pageObserver was not found')).toBe(true);
     });
 
+    it('returns true for GA gtag unhandled rejection with undefined value', () => {
+      expect(isSentryErrorIgnored('Non-Error promise rejection captured with value: undefined')).toBe(true);
+    });
+
     it('returns false for application errors', () => {
       expect(isSentryErrorIgnored('Cannot read property "x" of undefined')).toBe(false);
       expect(isSentryErrorIgnored('Network request failed')).toBe(false);
@@ -25,7 +29,7 @@ describe('sentry-ignore-patterns', () => {
 
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(6);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(7);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });

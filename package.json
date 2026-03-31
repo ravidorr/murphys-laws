@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -47,6 +47,14 @@
     "markdownlint-cli2": "^0.21.0",
     "markdownlint-rule-search-replace": "^1.2.0",
     "tsx": "^4.20.3"
+  },
+  "overrides": {
+    "serialize-javascript": "7.0.5",
+    "workbox-build": {
+      "@rollup/plugin-terser": {
+        "serialize-javascript": "7.0.5"
+      }
+    }
   },
   "optionalDependencies": {
     "@esbuild/darwin-x64": "^0.25.10",
