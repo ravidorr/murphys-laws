@@ -72,11 +72,14 @@ export function isTransientError(error: unknown): boolean {
  */
 export function isServiceWorkerTransientError(value: unknown): boolean {
   const msg = value instanceof Error ? value.message : String(value ?? '');
+  const name = value instanceof Error ? (value as { name?: string }).name ?? '' : '';
   return (
     /Failed to update a ServiceWorker/i.test(msg) ||
     /The object is in an invalid state/i.test(msg) ||
     /Failed to register a ServiceWorker/i.test(msg) ||
-    /invalid origin/i.test(msg)
+    // WebKit/DuckDuckGo Mobile throws SecurityError DOMException with this message
+    // when blocking service worker registration due to privacy restrictions.
+    (name === 'SecurityError' && /invalid origin/i.test(msg))
   );
 }
 

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- Suppress false "Something went wrong" error banner for DuckDuckGo Mobile users - WebKit throws `invalid origin` when blocking service worker registration; now treated as a known browser quirk, not a user-facing error
+- Suppress false "Something went wrong" error banner for DuckDuckGo Mobile users - WebKit throws a `SecurityError` DOMException with message `invalid origin` when blocking service worker registration; suppression now scoped to `SecurityError` only so unrelated origin/CORS errors still surface to users
 - Bump brace-expansion, nodemailer, picomatch via `npm audit fix` (moderate vulnerabilities)
 - Remove redundant app tarball from backup script (code is in git); fix .env backup path from `APP_DIR/.env` to `APP_DIR/backend/.env`
 
