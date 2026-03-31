@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Suppress false "Something went wrong" error banner for DuckDuckGo Mobile users - WebKit throws `invalid origin` when blocking service worker registration; now treated as a known browser quirk, not a user-facing error
 - Remove redundant app tarball from backup script (code is in git); fix .env backup path from `APP_DIR/.env` to `APP_DIR/backend/.env`
 - Bump dompurify, flatted, jspdf, undici to fix moderate/high/critical audit vulnerabilities
 - Escape `</` in JSON-LD payload before injecting into `<script>` tag to prevent stored XSS on law detail pages
