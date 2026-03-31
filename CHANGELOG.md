@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Fix high-severity `serialize-javascript` vulnerability (GHSA-5c6j-r48x-rmvq, GHSA-qj8w-gfj5-8c6v): upgraded `vite-plugin-pwa` to `^1.0.0` (adds vite@7 support, removes need for `legacy-peer-deps`), added npm `overrides` to force `serialize-javascript@7.0.5` throughout the tree
 - Drop Sentry noise from GA gtag beacon failures: "Non-Error promise rejection captured with value: undefined" has no stack trace and is not actionable - added to the ignore list
 - Fix duplicate Sentry captures for unhandled rejections: remove manual `captureException` from the `unhandledrejection` handler since Sentry's SDK already auto-captures these; also suppress the error banner when `event.reason` is null/undefined
 - Drop Sentry errors originating in third-party ad scripts (googlesyndication.com, doubleclick.net, googleadservices.com) via Sentry `denyUrls`; these are AdSense bugs outside our control
