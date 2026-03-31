@@ -75,7 +75,8 @@ export function isServiceWorkerTransientError(value: unknown): boolean {
   return (
     /Failed to update a ServiceWorker/i.test(msg) ||
     /The object is in an invalid state/i.test(msg) ||
-    /Failed to register a ServiceWorker/i.test(msg)
+    /Failed to register a ServiceWorker/i.test(msg) ||
+    /invalid origin/i.test(msg)
   );
 }
 
