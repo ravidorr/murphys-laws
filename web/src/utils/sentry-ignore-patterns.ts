@@ -15,6 +15,8 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /feature named .?pageObserver.? was not found/i,
   // GA gtag beacon failures reject with undefined (not an Error); no actionable stack trace
   /Non-Error promise rejection captured with value: undefined/i,
+  // iOS WebKit bridge probe by ad/analytics scripts (e.g. Google FundingChoices) in non-native browsers
+  /window\.webkit\.messageHandlers/i,
 ];
 
 /**

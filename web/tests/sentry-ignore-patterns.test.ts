@@ -9,6 +9,10 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('Object Not Found Matching Id')).toBe(true);
     });
 
+    it('returns true for webkit messageHandlers probe errors', () => {
+      expect(isSentryErrorIgnored("undefined is not an object (evaluating 'window.webkit.messageHandlers')")).toBe(true);
+    });
+
     it('returns true for Sentry SDK internal pageObserver error', () => {
       expect(isSentryErrorIgnored("feature named `pageObserver` was not found")).toBe(true);
       expect(isSentryErrorIgnored("feature named 'pageObserver' was not found")).toBe(true);
@@ -29,7 +33,7 @@ describe('sentry-ignore-patterns', () => {
 
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(7);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(8);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
