@@ -17,6 +17,12 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     tracesSampleRate: 0.1,
     // Don't send errors in development
     enabled: import.meta.env.PROD,
+    // Drop errors originating entirely in third-party ad scripts
+    denyUrls: [
+      /googlesyndication\.com/i,
+      /doubleclick\.net/i,
+      /googleadservices\.com/i,
+    ],
     // Filter out errors that aren't application bugs
     beforeSend(event) {
       const errorMessage = event.exception?.values?.[0]?.value || '';
