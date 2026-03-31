@@ -100,6 +100,11 @@ describe('Error Handler Utilities', () => {
       expect(isServiceWorkerTransientError('Failed to register a ServiceWorker')).toBe(true);
     });
 
+    it('returns true for invalid origin messages (DuckDuckGo/WebKit SW restriction)', () => {
+      expect(isServiceWorkerTransientError(new Error('invalid origin'))).toBe(true);
+      expect(isServiceWorkerTransientError('invalid origin')).toBe(true);
+    });
+
     it('returns false for other errors', () => {
       expect(isServiceWorkerTransientError(new Error('Network error'))).toBe(false);
       expect(isServiceWorkerTransientError(new Error('Something went wrong'))).toBe(false);
