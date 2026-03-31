@@ -17,6 +17,12 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     tracesSampleRate: 0.1,
     // Don't send errors in development
     enabled: import.meta.env.PROD,
+    // Drop errors originating entirely in third-party ad scripts
+    denyUrls: [
+      /googlesyndication\.com/i,
+      /doubleclick\.net/i,
+      /googleadservices\.com/i,
+    ],
     // Filter out errors that aren't application bugs
     beforeSend(event) {
       const errorMessage = event.exception?.values?.[0]?.value || '';
@@ -479,10 +485,10 @@ if (typeof window !== 'undefined') {
     }
   });
   window.addEventListener('unhandledrejection', (event) => {
-    if (import.meta.env.PROD && typeof Sentry !== 'undefined') {
-      Sentry.captureException(event.reason);
-    }
-    if (!isServiceWorkerTransientError(event.reason)) {
+    // Sentry's SDK auto-captures unhandled rejections via its own instrumentation;
+    // calling captureException here too would create a duplicate "handled: yes" event.
+    // We only need to decide whether to show the user-facing error banner.
+    if (event.reason != null && !isServiceWorkerTransientError(event.reason)) {
       showErrorBanner();
     }
   });

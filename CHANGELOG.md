@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Fix duplicate Sentry captures for unhandled rejections: remove manual `captureException` from the `unhandledrejection` handler since Sentry's SDK already auto-captures these; also suppress the error banner when `event.reason` is null/undefined
+- Drop Sentry errors originating in third-party ad scripts (googlesyndication.com, doubleclick.net, googleadservices.com) via Sentry `denyUrls`; these are AdSense bugs outside our control
 - Suppress false "Something went wrong" error banner for DuckDuckGo Mobile users - WebKit throws a `SecurityError` DOMException with message `invalid origin` when blocking service worker registration; suppression now scoped to `SecurityError` only so unrelated origin/CORS errors still surface to users
 - Bump brace-expansion, nodemailer, picomatch via `npm audit fix` (moderate vulnerabilities)
 - Remove redundant app tarball from backup script (code is in git); fix .env backup path from `APP_DIR/.env` to `APP_DIR/backend/.env`
