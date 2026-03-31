@@ -100,9 +100,15 @@ describe('Error Handler Utilities', () => {
       expect(isServiceWorkerTransientError('Failed to register a ServiceWorker')).toBe(true);
     });
 
-    it('returns true for invalid origin messages (DuckDuckGo/WebKit SW restriction)', () => {
-      expect(isServiceWorkerTransientError(new Error('invalid origin'))).toBe(true);
-      expect(isServiceWorkerTransientError('invalid origin')).toBe(true);
+    it('returns true for SecurityError DOMException with "invalid origin" (DuckDuckGo/WebKit SW restriction)', () => {
+      const domEx = Object.assign(new Error('invalid origin'), { name: 'SecurityError' });
+      expect(isServiceWorkerTransientError(domEx)).toBe(true);
+    });
+
+    it('returns false for generic "invalid origin" errors without SecurityError name', () => {
+      // A plain Error (e.g. CORS/origin validation) with "invalid origin" must NOT be suppressed
+      expect(isServiceWorkerTransientError(new Error('invalid origin'))).toBe(false);
+      expect(isServiceWorkerTransientError('invalid origin')).toBe(false);
     });
 
     it('returns false for other errors', () => {
