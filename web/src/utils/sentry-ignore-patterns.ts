@@ -13,6 +13,8 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /Object Not Found Matching Id/i, // LastPass, Grammarly, and similar extensions
   // Sentry SDK internal error (v10+ browserTracingIntegration bug on some browsers)
   /feature named .?pageObserver.? was not found/i,
+  // GA gtag beacon failures reject with undefined (not an Error); no actionable stack trace
+  /Non-Error promise rejection captured with value: undefined/i,
 ];
 
 /**
