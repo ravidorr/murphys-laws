@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- MCP (Model Context Protocol) server (`mcp/`) with 7 tools for AI agent integration: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`
+- `llms-full.txt` with detailed API docs, example responses, all 55 category slugs, and MCP setup instructions
+- MCP section in `llms.txt` linking to full reference and listing available tools
+
 ### Changed
 - Track `.claude/` project config in git (`settings.json`, `launch.json`, `skills/`); exclude ephemeral paths (`worktrees/`, `settings.local.json`, `memory/`)
 - Add `ship` skill: step-by-step end-of-change workflow (version bump, CHANGELOG, rebase, commit, push, PR)
 
 ### Fixed
+- Fix jsdom 28 ESM breakage: added `html-encoding-sniffer` override to 4.0.0 (the `@exodus/bytes` transitive dep is ESM-only, breaking vitest's jsdom environment)
+- Fix flaky rate-limit test: replaced `vi.advanceTimersByTime` (hung due to module-level `setInterval`) with `vi.setSystemTime`; added `afterEach` cleanup
 - Fix high-severity `serialize-javascript` vulnerability (GHSA-5c6j-r48x-rmvq, GHSA-qj8w-gfj5-8c6v): upgraded `vite-plugin-pwa` to `^1.0.0` (adds vite@7 support, removes need for `legacy-peer-deps`), added npm `overrides` to force `serialize-javascript@7.0.5` throughout the tree
 - Drop Sentry noise from GA gtag beacon failures: "Non-Error promise rejection captured with value: undefined" has no stack trace and is not actionable - added to the ignore list
 - Suppress Sentry noise from `window.webkit.messageHandlers` TypeError thrown by Google FundingChoices/AdSense scripts probing for iOS native WebView in the Facebook in-app browser

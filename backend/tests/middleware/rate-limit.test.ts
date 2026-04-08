@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { checkRateLimit } from '../../src/middleware/rate-limit.ts';
 
 describe('RateLimit Middleware', () => {
     beforeEach(() => {
-        // We need to reset the module state or mock Date.now
-        vi.useFakeTimers();
+        vi.useFakeTimers({ shouldAdvanceTime: false });
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it('should allow requests within limit', () => {
@@ -24,14 +27,16 @@ describe('RateLimit Middleware', () => {
     });
 
     it('should reset after window', () => {
+        const now = Date.now();
+
         // Exhaust limit
         for (let i = 0; i < 30; i++) {
             checkRateLimit('user3', 'vote');
         }
         expect(checkRateLimit('user3', 'vote').allowed).toBe(false);
 
-        // Advance time by 1 minute + 1 second
-        vi.advanceTimersByTime(61000);
+        // Advance system time by 1 minute + 1 second
+        vi.setSystemTime(now + 61000);
 
         expect(checkRateLimit('user3', 'vote').allowed).toBe(true);
     });

@@ -1,0 +1,211 @@
+# Murphy's Law Archive — Full Reference for LLMs
+
+> A public archive of 1500+ Murphy's Laws, corollaries, and variations organized into 55 thematic categories. All content is freely accessible via a REST API with no authentication required for read operations.
+
+## MCP Server
+
+An MCP (Model Context Protocol) server is available for direct integration with LLM hosts like Claude Desktop, VS Code Copilot, and Cursor.
+
+### Tools Available
+
+- `search_laws` — Search laws by keyword with optional category filter
+- `get_random_law` — Get a random law
+- `get_law_of_the_day` — Get today's featured law
+- `get_law` — Get a specific law by ID
+- `list_categories` — List all categories with slugs and law counts
+- `get_laws_by_category` — Browse laws in a specific category
+- `submit_law` — Submit a new law for review (not published until approved)
+
+### Installation (Claude Desktop)
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "murphys-laws": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/murphys-laws/mcp/src/index.ts"],
+      "env": {
+        "MURPHYS_DB_PATH": "/path/to/murphys-laws/backend/murphys.db"
+      }
+    }
+  }
+}
+```
+
+## REST API
+
+Base URL: https://murphys-laws.com
+
+### GET /api/v1/laws — List and search laws
+
+Parameters:
+- `limit` (int, 1-25, default 25) — Number of results
+- `offset` (int, default 0) — Pagination offset
+- `q` (string) — Full-text search query
+- `category_slug` (string) — Filter by category slug
+- `attribution` (string) — Filter by attribution name
+- `sort` (string: score|upvotes|created_at|last_voted_at, default score)
+- `order` (string: asc|desc, default desc)
+
+Example request: GET /api/v1/laws?q=computer&limit=2
+
+Example response:
+```json
+{
+  "data": [
+    {
+      "id": 2055,
+      "title": null,
+      "text": "If it's not in the computer, it doesn't exist.",
+      "attributions": [],
+      "upvotes": 3,
+      "downvotes": 0,
+      "score": 3
+    },
+    {
+      "id": 489,
+      "title": "Murphy's First Law of Computers",
+      "text": "When you finally find a solution, the original problem has changed.",
+      "attributions": [{"name": "Nadine", "note": null}],
+      "upvotes": 1,
+      "downvotes": 0,
+      "score": 1
+    }
+  ],
+  "total": 39,
+  "limit": 2,
+  "offset": 0
+}
+```
+
+### GET /api/v1/laws/:id — Get a single law
+
+Example request: GET /api/v1/laws/1
+
+Example response:
+```json
+{
+  "id": 1,
+  "title": "Alder's razor (Newton's flaming laser sword)",
+  "text": "What cannot be settled by experiment is not worth debating.",
+  "attributions": [],
+  "upvotes": 0,
+  "downvotes": 0,
+  "category_ids": [23],
+  "category_id": 23,
+  "category_slug": "murphys-laws",
+  "category_name": "Murphy's Laws"
+}
+```
+
+### GET /api/v1/laws/random — Random law
+
+Returns a single randomly selected published law. Same response shape as GET /api/v1/laws/:id.
+
+### GET /api/v1/law-of-day — Law of the Day
+
+Returns today's featured law (selected daily based on popularity, not repeated within 365 days).
+
+Example response:
+```json
+{
+  "law": {
+    "id": 42,
+    "title": "Parkinson's Law of Delay",
+    "text": "Every bureaucracy tends to delay action until the deadline arrives.",
+    "attributions": [{"name": "C. Northcote Parkinson", "note": null}],
+    "upvotes": 15,
+    "downvotes": 3
+  },
+  "featured_date": "2026-04-08"
+}
+```
+
+### GET /api/v1/categories — List categories
+
+Example response:
+```json
+[
+  {"id": 1, "slug": "murphys-laws", "title": "Murphy's Laws", "description": "The foundational laws...", "law_count": 228},
+  {"id": 2, "slug": "murphys-computers-laws", "title": "Murphy's Computer Laws", "description": "Digital doom...", "law_count": 182}
+]
+```
+
+### GET /api/v1/categories/:id — Single category
+
+Returns category details by ID.
+
+### POST /api/v1/laws — Submit a new law
+
+Rate limited: 5 submissions/hour per IP.
+
+Request body:
+```json
+{
+  "text": "The law text (required, 10-1000 chars)",
+  "title": "Optional title",
+  "author": "Optional author name",
+  "email": "Optional author email",
+  "category_id": 1
+}
+```
+
+Response (201):
+```json
+{
+  "id": 1234,
+  "title": "Optional title",
+  "text": "The law text",
+  "status": "in_review",
+  "message": "Law submitted successfully and is pending review"
+}
+```
+
+### GET /api/v1/feed.rss — RSS 2.0 feed
+
+Standard RSS feed of recent laws and the law of the day.
+
+### GET /api/v1/feed.atom — Atom 1.0 feed
+
+Standard Atom feed of recent laws and the law of the day.
+
+### GET /api/v1/openapi.json — OpenAPI 3.0.3 spec
+
+Machine-readable API definition.
+
+## Category Slugs
+
+Complete list of category slugs for use with the `category_slug` parameter:
+
+murphys-laws, murphys-love-laws, murphys-war-laws, murphys-computers-laws,
+murphys-miscellaneous-laws, murphys-technology-laws, murphys-commerce-laws,
+murphys-music-laws, murphys-teaching-laws, murphys-emt-laws,
+murphys-cowboy-action-shooting-laws, murphys-nurses-laws,
+murphys-photography-laws, murphys-military-police-laws,
+murphys-employees-laws, murphys-cops-laws, murphys-office-laws,
+murphys-volunteer-bushfire-brigade-laws, murphys-toddlers-laws,
+murphys-bus-laws, murphys-cars-laws, murphys-cars-open-road-laws,
+murphys-graphic-design-laws, murphys-jagged-alliance-2-laws,
+murphys-sewing-laws, murphys-horse-laws, murphys-college-student-laws,
+murphys-cars-4x4-laws, murphys-real-estate-laws,
+murphys-transformers-laws, murphys-game-mastering-laws,
+murphys-lotto-laws, murphys-fighting-airplanes-laws,
+murphys-martial-arts-laws, murphys-travel-laws, murphys-golf-laws,
+murphys-political-laws, murphys-role-playing-by-internet-message-board-laws,
+murphys-desert-war-laws, murphys-mothers-laws,
+murphys-unformatted-character-sheets-laws, murphys-alarm-clock-laws,
+murphys-mechanics-laws, murphys-scouting-laws, murphys-tv-laws,
+murphys-elevator-laws, murphys-printing-laws, murphys-microbiology-laws,
+murphys-rental-laws, murphys-tanks-war-laws, murphys-helicopters-war-laws,
+murphys-sport-laws, murphys-repairmen-laws, murphys-marine-corp-laws,
+murphys-gravity-laws
+
+## Content Pages
+
+- [Browse all laws](https://murphys-laws.com/browse)
+- [Browse by category](https://murphys-laws.com/categories)
+- [Origin of Murphy's Law](https://murphys-laws.com/origin-story)
+- [Notable examples](https://murphys-laws.com/examples)
+- [About the archive](https://murphys-laws.com/about)

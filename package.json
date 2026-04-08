@@ -5,12 +5,14 @@
   "private": true,
   "workspaces": [
     "backend",
-    "web"
+    "web",
+    "mcp"
   ],
   "scripts": {
     "predev": "npx tsx backend/scripts/cleanup-ports.ts --kill",
     "dev:backend": "cd backend && npm run dev",
     "dev:web": "cd web && npm run dev",
+    "dev:mcp": "cd mcp && npm run start",
     "dev": "npm run dev:backend & npm run dev:web",
     "build:backend:db": "cd backend && npm run build:db",
     "build:openapi": "npx tsx backend/scripts/export-openapi.ts",
@@ -50,6 +52,7 @@
   },
   "overrides": {
     "serialize-javascript": "7.0.5",
+    "html-encoding-sniffer": "4.0.0",
     "workbox-build": {
       "@rollup/plugin-terser": {
         "serialize-javascript": "7.0.5"
