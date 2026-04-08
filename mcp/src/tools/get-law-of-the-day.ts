@@ -1,27 +1,32 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { LawService } from '../../../backend/src/services/laws.service.ts';
-import { formatLaw } from '../format.ts';
+import type { ApiClient } from '../api-client.js';
+import { formatLaw, type LawData } from '../format.js';
 
-export function registerGetLawOfTheDay(server: McpServer, lawService: LawService): void {
+interface LawOfDayResponse {
+  law: LawData;
+  featured_date: string;
+}
+
+export function registerGetLawOfTheDay(server: McpServer, api: ApiClient): void {
   server.tool(
     'get_law_of_the_day',
     "Get today's featured Murphy's Law. A new law is selected each day based on popularity.",
     {},
     async () => {
-      const result = await lawService.getLawOfTheDay();
+      try {
+        const result = await api.get<LawOfDayResponse>('/api/v1/law-of-day');
 
-      if (!result) {
+        const text = `Law of the Day (${result.featured_date})\n\n${formatLaw(result.law)}`;
+
+        return {
+          content: [{ type: 'text' as const, text }],
+        };
+      } catch {
         return {
           content: [{ type: 'text' as const, text: 'No law of the day available.' }],
           isError: true,
         };
       }
-
-      const text = `Law of the Day (${result.featured_date})\n\n${formatLaw(result.law)}`;
-
-      return {
-        content: [{ type: 'text' as const, text }],
-      };
     },
   );
 }

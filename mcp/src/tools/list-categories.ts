@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { CategoryService } from '../../../backend/src/services/categories.service.ts';
+import type { ApiClient } from '../api-client.js';
 
-interface CategoryRow {
+interface Category {
   id: number;
   slug: string;
   title: string;
@@ -9,13 +9,18 @@ interface CategoryRow {
   law_count: number;
 }
 
-export function registerListCategories(server: McpServer, categoryService: CategoryService): void {
+interface CategoriesResponse {
+  data: Category[];
+}
+
+export function registerListCategories(server: McpServer, api: ApiClient): void {
   server.tool(
     'list_categories',
     "List all Murphy's Law categories with their slugs and law counts. Use the slug values to filter searches or browse by category.",
     {},
     async () => {
-      const categories = await categoryService.listCategories() as CategoryRow[];
+      const result = await api.get<CategoriesResponse>('/api/v1/categories');
+      const categories = result.data;
 
       const lines = categories.map(c => {
         const desc = c.description ? ` — ${c.description}` : '';
