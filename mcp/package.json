@@ -5,9 +5,12 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "murphys-laws-mcp": "./bin/cli.js"
+    "murphys-laws-mcp": "bin/cli.js"
   },
-  "files": ["dist", "bin"],
+  "files": [
+    "dist",
+    "bin"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -30,7 +33,7 @@
   "mcpName": "murphys-laws.com/murphys-laws",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ravidorr/murphys-laws",
+    "url": "git+https://github.com/ravidorr/murphys-laws.git",
     "directory": "mcp"
   },
   "homepage": "https://murphys-laws.com/developers",
