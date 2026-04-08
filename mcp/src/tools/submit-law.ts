@@ -2,6 +2,9 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { LawService } from '../../../backend/src/services/laws.service.ts';
 import type { CategoryService } from '../../../backend/src/services/categories.service.ts';
+import { checkRateLimit } from '../../../backend/src/middleware/rate-limit.ts';
+
+const MCP_RATE_LIMIT_ID = 'mcp-client';
 
 export function registerSubmitLaw(
   server: McpServer,
@@ -10,7 +13,7 @@ export function registerSubmitLaw(
 ): void {
   server.tool(
     'submit_law',
-    "Submit a new Murphy's Law for review. The law will not be published immediately — it goes into a review queue for manual approval.",
+    "Submit a new Murphy's Law for review. The law will not be published immediately — it goes into a review queue for manual approval. Rate limited to 3 submissions per minute.",
     {
       text: z.string().min(10).max(1000).describe("The law text (10-1000 characters). Should be a pithy, universal observation in the spirit of Murphy's Law."),
       title: z.string().optional().describe('Optional title for the law (e.g. "Murphy\'s Law of Debugging")'),
@@ -18,6 +21,27 @@ export function registerSubmitLaw(
       category_slug: z.string().optional().describe('Category slug to file the law under. Use list_categories to see available slugs.'),
     },
     async ({ text, title, author, category_slug }) => {
+      // Rate limit: 3 submissions per minute (same as REST API)
+      const rateLimit = checkRateLimit(MCP_RATE_LIMIT_ID, 'submit');
+      if (!rateLimit.allowed) {
+        const resetInSec = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
+        return {
+          content: [{ type: 'text' as const, text: `Rate limit exceeded. You can submit up to 3 laws per minute. Try again in ${resetInSec} seconds.` }],
+          isError: true,
+        };
+      }
+
+      // Trim and validate (match REST controller behavior)
+      const trimmedText = text.trim();
+      if (trimmedText.length < 10) {
+        return {
+          content: [{ type: 'text' as const, text: 'Law text must be at least 10 characters after trimming whitespace.' }],
+          isError: true,
+        };
+      }
+
+      const trimmedTitle = title?.trim() || null;
+
       let categoryId: number | null = null;
 
       if (category_slug) {
@@ -32,18 +56,18 @@ export function registerSubmitLaw(
       }
 
       const lawId = await lawService.submitLaw({
-        title: title ?? '',
-        text,
-        author: author ?? undefined,
+        title: trimmedTitle ?? '',
+        text: trimmedText,
+        author: author?.trim() ?? undefined,
         categoryId,
       });
 
       const lines = [
         `Law submitted successfully! (ID: ${lawId})`,
         '',
-        `Title: ${title || '(none)'}`,
-        `Text: "${text}"`,
-        `Author: ${author || 'Anonymous'}`,
+        `Title: ${trimmedTitle || '(none)'}`,
+        `Text: "${trimmedText}"`,
+        `Author: ${author?.trim() || 'Anonymous'}`,
         `Category: ${category_slug || '(none)'}`,
         `Status: in_review`,
         '',
