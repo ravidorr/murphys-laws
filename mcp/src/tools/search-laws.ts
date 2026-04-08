@@ -1,9 +1,16 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { LawService } from '../../../backend/src/services/laws.service.ts';
-import { formatLawList } from '../format.ts';
+import type { ApiClient } from '../api-client.js';
+import { formatLawList, type LawData } from '../format.js';
 
-export function registerSearchLaws(server: McpServer, lawService: LawService): void {
+interface SearchResponse {
+  data: LawData[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export function registerSearchLaws(server: McpServer, api: ApiClient): void {
   server.tool(
     'search_laws',
     "Search Murphy's Laws by keyword. Returns matching laws with text, attribution, score, and category.",
@@ -13,17 +20,20 @@ export function registerSearchLaws(server: McpServer, lawService: LawService): v
       limit: z.number().min(1).max(10).default(5).describe('Number of results to return (1-10, default 5)'),
     },
     async ({ q, category_slug, limit }) => {
-      const { data, total } = await lawService.listLaws({
-        limit,
-        offset: 0,
+      const params = new URLSearchParams({
         q,
-        categorySlug: category_slug ?? null,
+        limit: String(limit),
         sort: 'score',
         order: 'desc',
       });
+      if (category_slug) {
+        params.set('category_slug', category_slug);
+      }
+
+      const result = await api.get<SearchResponse>(`/api/v1/laws?${params}`);
 
       return {
-        content: [{ type: 'text' as const, text: formatLawList(data, total) }],
+        content: [{ type: 'text' as const, text: formatLawList(result.data, result.total) }],
       };
     },
   );

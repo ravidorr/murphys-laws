@@ -3,7 +3,7 @@ interface Attribution {
   note?: string;
 }
 
-interface LawData {
+export interface LawData {
   id: number;
   title?: string | null;
   text: string;

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "murphys-laws.com/murphys-laws",
+  "description": "Access 1,500+ Murphy's Laws, corollaries, and humorous observations. Search, browse by category, get the law of the day, or submit new laws.",
+  "repository": {
+    "url": "https://github.com/ravidorr/murphys-laws",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "murphys-laws-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

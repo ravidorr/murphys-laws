@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { LawService } from '../../../backend/src/services/laws.service.ts';
-import { formatLaw } from '../format.ts';
+import type { ApiClient } from '../api-client.js';
+import { ApiError } from '../api-client.js';
+import { formatLaw, type LawData } from '../format.js';
 
-export function registerGetLaw(server: McpServer, lawService: LawService): void {
+export function registerGetLaw(server: McpServer, api: ApiClient): void {
   server.tool(
     'get_law',
     "Get a specific Murphy's Law by its ID. Use this to look up a law found in search results.",
@@ -11,18 +12,21 @@ export function registerGetLaw(server: McpServer, lawService: LawService): void 
       law_id: z.number().int().positive().describe('The ID of the law to retrieve'),
     },
     async ({ law_id }) => {
-      const law = await lawService.getLaw(law_id);
+      try {
+        const law = await api.get<LawData>(`/api/v1/laws/${law_id}`);
 
-      if (!law) {
         return {
-          content: [{ type: 'text' as const, text: `Law #${law_id} not found.` }],
-          isError: true,
+          content: [{ type: 'text' as const, text: formatLaw(law) }],
         };
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          return {
+            content: [{ type: 'text' as const, text: `Law #${law_id} not found.` }],
+            isError: true,
+          };
+        }
+        throw err;
       }
-
-      return {
-        content: [{ type: 'text' as const, text: formatLaw(law) }],
-      };
     },
   );
 }
