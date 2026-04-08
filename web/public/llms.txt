@@ -1,6 +1,12 @@
 # Murphy's Law Archive
 
-> A public archive of 1500+ Murphy's Laws, corollaries, and variations organized into 15+ thematic categories. All content is freely accessible via a REST API with no authentication required for read operations.
+> A public archive of 1500+ Murphy's Laws, corollaries, and variations organized into 55 thematic categories. All content is freely accessible via a REST API with no authentication required for read operations.
+
+- [Full reference with examples](https://murphys-laws.com/llms-full.txt): Detailed API docs with request/response examples, category slugs, and MCP server setup
+
+## MCP Server
+
+A Model Context Protocol server is available for direct integration with AI hosts (Claude Desktop, VS Code, Cursor). Tools: search_laws, get_random_law, get_law_of_the_day, get_law, list_categories, get_laws_by_category, submit_law. See [llms-full.txt](https://murphys-laws.com/llms-full.txt) for setup instructions.
 
 ## API
 
@@ -11,7 +17,7 @@ Base URL: https://murphys-laws.com
 - [Random law](https://murphys-laws.com/api/v1/laws/random): GET /api/v1/laws/random — one randomly selected published law
 - [Single law](https://murphys-laws.com/api/v1/laws/1): GET /api/v1/laws/:id — returns one law with attributions and category IDs
 - [Law of the Day](https://murphys-laws.com/api/v1/law-of-day): GET /api/v1/law-of-day — today's featured law
-- [Categories](https://murphys-laws.com/api/v1/categories): GET /api/v1/categories — all 15+ categories with law counts
+- [Categories](https://murphys-laws.com/api/v1/categories): GET /api/v1/categories — all 55 categories with law counts
 - [Single category](https://murphys-laws.com/api/v1/categories/1): GET /api/v1/categories/:id — category details
 - [RSS feed](https://murphys-laws.com/api/v1/feed.rss): Standard RSS 2.0 feed of recent laws
 - [Atom feed](https://murphys-laws.com/api/v1/feed.atom): Standard Atom 1.0 feed of recent laws
