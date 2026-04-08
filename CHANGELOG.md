@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - MCP (Model Context Protocol) server (`mcp/`) with 7 tools for AI agent integration: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`
+- MCP server published to npm as `murphys-laws-mcp` — install with `npx murphys-laws-mcp` (no clone needed)
+- MCP server submitted to the [MCP Registry](https://registry.modelcontextprotocol.io) for discovery by AI hosts
+- `/developers` page on the website with REST API docs, MCP setup, feeds, and machine-readable resources
 - `llms-full.txt` with detailed API docs, example responses, all 55 category slugs, and MCP setup instructions
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
 ### Changed
+- MCP server rewritten to use the public REST API instead of direct SQLite access, making it fully standalone and publishable to npm
 - Track `.claude/` project config in git (`settings.json`, `launch.json`, `skills/`); exclude ephemeral paths (`worktrees/`, `settings.local.json`, `memory/`)
 - Add `ship` skill: step-by-step end-of-change workflow (version bump, CHANGELOG, rebase, commit, push, PR)
 

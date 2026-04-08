@@ -10,6 +10,37 @@ Available on **Web**, **iOS**, and **Android**.
 - **iOS**: Coming Soon
 - **Android**: Coming Soon
 
+## AI & Developer Integration
+
+### MCP Server (Model Context Protocol)
+
+An [MCP server](mcp/) lets AI agents (Claude Desktop, Cursor, VS Code Copilot) query Murphy's Laws directly.
+
+**Quick start — no clone needed:**
+
+```json
+{
+  "mcpServers": {
+    "murphys-laws": {
+      "command": "npx",
+      "args": ["-y", "murphys-laws-mcp"]
+    }
+  }
+}
+```
+
+7 tools: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`
+
+See [mcp/README.md](mcp/README.md) or [npm](https://www.npmjs.com/package/murphys-laws-mcp).
+
+### REST API
+
+Public API at `https://murphys-laws.com/api/v1/` — no auth required for reads.
+
+- [API Documentation](shared/docs/API.md)
+- [OpenAPI spec](https://murphys-laws.com/openapi.json)
+- [llms.txt](https://murphys-laws.com/llms.txt) | [llms-full.txt](https://murphys-laws.com/llms-full.txt)
+
 ## Repository Structure
 
 This is a monorepo containing:
@@ -18,6 +49,7 @@ This is a monorepo containing:
 murphys-laws/
 ├── backend/        # Node.js API server (TypeScript runtime via tsx)
 ├── web/            # Web application (TypeScript + Vite)
+├── mcp/            # MCP server for AI agent integration (npm: murphys-laws-mcp)
 ├── ios/            # iOS app (Swift + SwiftUI)
 ├── android/        # Android app (Kotlin + Jetpack Compose)
 └── shared/         # Shared resources and documentation
@@ -62,6 +94,7 @@ cd android
 ## Documentation
 
 - **Architecture**: [Mobile Architecture Guide](shared/docs/MOBILE-ARCHITECTURE.md)
+- **MCP Server**: [MCP README](mcp/README.md)
 - **API**: [API Documentation](shared/docs/API.md)
 - **iOS**: [iOS PRD](shared/docs/MOBILE-IOS-PRD.md)
 - **Android**: [Android PRD](shared/docs/MOBILE-ANDROID-PRD.md)
