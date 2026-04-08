@@ -25,10 +25,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "murphys-laws": {
       "command": "npx",
-      "args": ["tsx", "/path/to/murphys-laws/mcp/src/index.ts"],
-      "env": {
-        "MURPHYS_DB_PATH": "/path/to/murphys-laws/backend/murphys.db"
-      }
+      "args": ["-y", "murphys-laws-mcp"]
     }
   }
 }

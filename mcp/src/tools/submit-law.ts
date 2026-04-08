@@ -1,16 +1,33 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { LawService } from '../../../backend/src/services/laws.service.ts';
-import type { CategoryService } from '../../../backend/src/services/categories.service.ts';
-import { checkRateLimit } from '../../../backend/src/middleware/rate-limit.ts';
+import type { ApiClient } from '../api-client.js';
 
-const MCP_RATE_LIMIT_ID = 'mcp-client';
+interface Category {
+  id: number;
+  slug: string;
+  title: string;
+  description: string | null;
+  law_count: number;
+}
 
-export function registerSubmitLaw(
-  server: McpServer,
-  lawService: LawService,
-  categoryService: CategoryService,
-): void {
+interface CategoriesResponse {
+  data: Category[];
+}
+
+interface SubmitSuccessResponse {
+  id: number;
+  title: string;
+  text: string;
+  status: string;
+  message: string;
+}
+
+interface SubmitErrorResponse {
+  error: string;
+  retryAfter?: number;
+}
+
+export function registerSubmitLaw(server: McpServer, api: ApiClient): void {
   server.tool(
     'submit_law',
     "Submit a new Murphy's Law for review. The law will not be published immediately — it goes into a review queue for manual approval. Rate limited to 3 submissions per minute.",
@@ -21,31 +38,12 @@ export function registerSubmitLaw(
       category_slug: z.string().optional().describe('Category slug to file the law under. Use list_categories to see available slugs.'),
     },
     async ({ text, title, author, category_slug }) => {
-      // Rate limit: 3 submissions per minute (same as REST API)
-      const rateLimit = checkRateLimit(MCP_RATE_LIMIT_ID, 'submit');
-      if (!rateLimit.allowed) {
-        const resetInSec = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
-        return {
-          content: [{ type: 'text' as const, text: `Rate limit exceeded. You can submit up to 3 laws per minute. Try again in ${resetInSec} seconds.` }],
-          isError: true,
-        };
-      }
-
-      // Trim and validate (match REST controller behavior)
-      const trimmedText = text.trim();
-      if (trimmedText.length < 10) {
-        return {
-          content: [{ type: 'text' as const, text: 'Law text must be at least 10 characters after trimming whitespace.' }],
-          isError: true,
-        };
-      }
-
-      const trimmedTitle = title?.trim() || null;
-
-      let categoryId: number | null = null;
+      // Resolve category_slug to category_id if provided
+      let categoryId: number | undefined;
 
       if (category_slug) {
-        const category = await categoryService.getCategoryBySlug(category_slug);
+        const categoriesResult = await api.get<CategoriesResponse>('/api/v1/categories');
+        const category = categoriesResult.data.find(c => c.slug === category_slug);
         if (!category) {
           return {
             content: [{ type: 'text' as const, text: `Category "${category_slug}" not found. Use list_categories to see available category slugs.` }],
@@ -55,21 +53,50 @@ export function registerSubmitLaw(
         categoryId = category.id;
       }
 
-      const lawId = await lawService.submitLaw({
-        title: trimmedTitle ?? '',
-        text: trimmedText,
-        author: author?.trim() ?? undefined,
-        categoryId,
-      });
+      const body: Record<string, unknown> = { text };
+      if (title) body.title = title;
+      if (author) body.author = author;
+      if (categoryId !== undefined) body.category_id = categoryId;
+
+      const { status, data } = await api.post<SubmitSuccessResponse | SubmitErrorResponse>(
+        '/api/v1/laws',
+        body,
+      );
+
+      if (status === 429) {
+        const errData = data as SubmitErrorResponse;
+        const retryIn = errData.retryAfter ?? 60;
+        return {
+          content: [{ type: 'text' as const, text: `Rate limit exceeded. Try again in ${retryIn} seconds.` }],
+          isError: true,
+        };
+      }
+
+      if (status === 400) {
+        const errData = data as SubmitErrorResponse;
+        return {
+          content: [{ type: 'text' as const, text: `Validation error: ${errData.error}` }],
+          isError: true,
+        };
+      }
+
+      if (status !== 201) {
+        return {
+          content: [{ type: 'text' as const, text: `Unexpected response (status ${status}).` }],
+          isError: true,
+        };
+      }
+
+      const successData = data as SubmitSuccessResponse;
 
       const lines = [
-        `Law submitted successfully! (ID: ${lawId})`,
+        `Law submitted successfully! (ID: ${successData.id})`,
         '',
-        `Title: ${trimmedTitle || '(none)'}`,
-        `Text: "${trimmedText}"`,
+        `Title: ${successData.title || '(none)'}`,
+        `Text: "${successData.text}"`,
         `Author: ${author?.trim() || 'Anonymous'}`,
         `Category: ${category_slug || '(none)'}`,
-        `Status: in_review`,
+        `Status: ${successData.status}`,
         '',
         'The law is now in the review queue and will be published after manual approval.',
       ];
