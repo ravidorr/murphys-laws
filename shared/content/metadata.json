@@ -34,6 +34,11 @@
     "lastUpdated": "2026-02-22",
     "description": "How to use Murphy's Law in project management - planning, scope, and communication"
   },
+  "developers": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-04-08",
+    "description": "Developer documentation - REST API, MCP server, feeds, and machine-readable resources"
+  },
   "schema": {
     "version": "1.0.0",
     "description": "This metadata tracks versions and last-updated dates for all legal content files. Update the lastUpdated field whenever content changes to ensure consistency across all platforms."

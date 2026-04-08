@@ -317,6 +317,85 @@
   color: var(--fg);
 }
 
+/* Inline code */
+.content-section code {
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: color-mix(in oklab, var(--fg) 6%, var(--bg) 94%);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  overflow-wrap: break-word;
+}
+
+/* Code blocks (pre > code) */
+.content-section pre {
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  background: color-mix(in oklab, var(--fg) 5%, var(--bg) 95%);
+  border: 1px solid color-mix(in oklab, var(--border) 50%, transparent 50%);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  line-height: 1.6;
+  -webkit-overflow-scrolling: touch;
+}
+
+.content-section pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
+  word-break: normal;
+}
+
+/* Tables */
+.content-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+  font-size: 0.925rem;
+  line-height: 1.6;
+}
+
+.content-section th,
+.content-section td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent 50%);
+}
+
+.content-section th {
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.content-section td {
+  color: color-mix(in oklab, var(--fg) 90%, var(--muted-fg) 10%);
+}
+
+.content-section thead th {
+  border-bottom-width: 2px;
+}
+
+.content-section tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (width <= 600px) {
+  .content-section table {
+    font-size: 0.85rem;
+  }
+
+  .content-section th,
+  .content-section td {
+    padding: 0.5rem;
+  }
+
+  .content-section pre {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
 .content-grid {
   display: grid;
   gap: 2rem;

@@ -273,6 +273,37 @@
   box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
 }
 
+/* Code blocks and tables - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .content-section code {
+    background: color-mix(in oklab, var(--fg) 12%, var(--bg) 88%);
+  }
+
+  :root:not([data-theme="light"]) .content-section pre {
+    background: color-mix(in oklab, var(--bg) 80%, white 20%);
+    border-color: var(--border);
+  }
+
+  :root:not([data-theme="light"]) .content-section th,
+  :root:not([data-theme="light"]) .content-section td {
+    border-bottom-color: var(--border);
+  }
+}
+
+:root[data-theme="dark"] .content-section code {
+  background: color-mix(in oklab, var(--fg) 12%, var(--bg) 88%);
+}
+
+:root[data-theme="dark"] .content-section pre {
+  background: color-mix(in oklab, var(--bg) 80%, white 20%);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .content-section th,
+:root[data-theme="dark"] .content-section td {
+  border-bottom-color: var(--border);
+}
+
 /* Navigation dropdown - dark mode */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .nav-dropdown {
