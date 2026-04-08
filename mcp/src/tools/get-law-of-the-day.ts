@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ApiClient } from '../api-client.js';
+import { ApiError } from '../api-client.js';
 import { formatLaw, type LawData } from '../format.js';
 
 interface LawOfDayResponse {
@@ -21,11 +22,14 @@ export function registerGetLawOfTheDay(server: McpServer, api: ApiClient): void 
         return {
           content: [{ type: 'text' as const, text }],
         };
-      } catch {
-        return {
-          content: [{ type: 'text' as const, text: 'No law of the day available.' }],
-          isError: true,
-        };
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          return {
+            content: [{ type: 'text' as const, text: 'No law of the day available.' }],
+            isError: true,
+          };
+        }
+        throw err;
       }
     },
   );
