@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `llms-full.txt` with detailed API docs, example responses, all 55 category slugs, and MCP setup instructions
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
+### Changed
+- Track `.claude/` project config in git (`settings.json`, `launch.json`, `skills/`); exclude ephemeral paths (`worktrees/`, `settings.local.json`, `memory/`)
+- Add `ship` skill: step-by-step end-of-change workflow (version bump, CHANGELOG, rebase, commit, push, PR)
+
 ### Fixed
 - Fix jsdom 28 ESM breakage: added `html-encoding-sniffer` override to 4.0.0 (the `@exodus/bytes` transitive dep is ESM-only, breaking vitest's jsdom environment)
 - Fix flaky rate-limit test: replaced `vi.advanceTimersByTime` (hung due to module-level `setInterval`) with `vi.setSystemTime`; added `afterEach` cleanup
