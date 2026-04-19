@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
 ### Changed
+- Bump Android Gradle Plugin from `9.1.0` to `9.1.1` (patch update); add `ios/*.xcodeproj/project.xcworkspace/xcuserdata/` to `.gitignore` so Xcode's per-user IDE state stops showing up as a diff
 - MCP server rewritten to use the public REST API instead of direct SQLite access, making it fully standalone and publishable to npm
 - Track `.claude/` project config in git (`settings.json`, `launch.json`, `skills/`); exclude ephemeral paths (`worktrees/`, `settings.local.json`, `memory/`)
 - Add `ship` skill: step-by-step end-of-change workflow (version bump, CHANGELOG, rebase, commit, push, PR)
