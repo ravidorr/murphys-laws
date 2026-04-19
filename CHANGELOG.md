@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
 ### Changed
+- Clean up iOS `.gitignore`: replace the scoped `xcuserdata` entries with the idiomatic `**/xcuserdata/` pattern, narrow the blanket `project.xcworkspace/xcshareddata/` rule to `**/IDEWorkspaceChecks.plist` (so legitimate shared workspace settings stay tracked), and `git rm --cached` the two previously-tracked `UserInterfaceState.xcuserstate` files so they stop producing diffs every time Xcode is opened. The ignore rule added in the AGP bump PR was not enough on its own because the files were already tracked.
+- Refine the `ship` skill: only bump a sub-package's version (`web/`, `backend/`, `mcp/`) when code inside that sub-package actually changed. The root `package.json` still bumps on every ship (drives the Sentry release tag); sub-package bumps are gated on actual diffs so Sentry sub-package releases stop corresponding to zero-change ships.
 - Bump Android Gradle Plugin from `9.1.0` to `9.1.1` (patch update); add `ios/*.xcodeproj/project.xcworkspace/xcuserdata/` to `.gitignore` so Xcode's per-user IDE state stops showing up as a diff
 - MCP server rewritten to use the public REST API instead of direct SQLite access, making it fully standalone and publishable to npm
 - Track `.claude/` project config in git (`settings.json`, `launch.json`, `skills/`); exclude ephemeral paths (`worktrees/`, `settings.local.json`, `memory/`)
