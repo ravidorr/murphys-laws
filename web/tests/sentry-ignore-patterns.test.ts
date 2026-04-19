@@ -13,6 +13,11 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored("undefined is not an object (evaluating 'window.webkit.messageHandlers')")).toBe(true);
     });
 
+    it('returns true for Android WebView JS-to-Java bridge teardown errors (e.g. Facebook in-app browser)', () => {
+      expect(isSentryErrorIgnored('Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone')).toBe(true);
+      expect(isSentryErrorIgnored('Error invoking someMethod: Java object is gone')).toBe(true);
+    });
+
     it('returns true for Sentry SDK internal pageObserver error', () => {
       expect(isSentryErrorIgnored("feature named `pageObserver` was not found")).toBe(true);
       expect(isSentryErrorIgnored("feature named 'pageObserver' was not found")).toBe(true);
@@ -33,7 +38,7 @@ describe('sentry-ignore-patterns', () => {
 
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(8);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(9);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
