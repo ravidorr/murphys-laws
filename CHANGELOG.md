@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - MCP (Model Context Protocol) server (`mcp/`) with 7 tools for AI agent integration: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`
-- MCP server published to npm as `murphys-laws-mcp` — install with `npx murphys-laws-mcp` (no clone needed)
+- MCP server published to npm as `murphys-laws-mcp` - install with `npx murphys-laws-mcp` (no clone needed)
 - MCP server submitted to the [MCP Registry](https://registry.modelcontextprotocol.io) for discovery by AI hosts
 - `/developers` page on the website with REST API docs, MCP setup, feeds, and machine-readable resources
 - `llms-full.txt` with detailed API docs, example responses, all 55 category slugs, and MCP setup instructions
@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ship` skill: step-by-step end-of-change workflow (version bump, CHANGELOG, rebase, commit, push, PR)
 
 ### Fixed
+- Suppress Sentry noise from Android WebView JS-to-Java bridge teardown (`Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone`). Fired on `beforeunload` inside the Facebook in-app browser when its injected keyboard-logging bridge's Java object has already been GC'd. Not our code, not actionable. Pattern `/Java object is gone/i` also covers equivalent teardown races in other Android in-app browsers.
 - Fix jsdom 28 ESM breakage: added `html-encoding-sniffer` override to 4.0.0 (the `@exodus/bytes` transitive dep is ESM-only, breaking vitest's jsdom environment)
 - Fix flaky rate-limit test: replaced `vi.advanceTimersByTime` (hung due to module-level `setInterval`) with `vi.setSystemTime`; added `afterEach` cleanup
 - Fix high-severity `serialize-javascript` vulnerability (GHSA-5c6j-r48x-rmvq, GHSA-qj8w-gfj5-8c6v): upgraded `vite-plugin-pwa` to `^1.0.0` (adds vite@7 support, removes need for `legacy-peer-deps`), added npm `overrides` to force `serialize-javascript@7.0.5` throughout the tree
