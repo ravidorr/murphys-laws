@@ -38,10 +38,8 @@ CLAUDE.md
 # iOS
 ios/DerivedData/
 ios/build/
-ios/*.xcworkspace/xcuserdata/
-ios/*.xcodeproj/xcuserdata/
-ios/*.xcodeproj/project.xcworkspace/xcuserdata/
-ios/*.xcodeproj/project.xcworkspace/xcshareddata/
+**/xcuserdata/
+**/IDEWorkspaceChecks.plist
 ios/Pods/
 ios/.DS_Store
 ios/*.ipa
