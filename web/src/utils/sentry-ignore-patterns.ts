@@ -17,6 +17,9 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /Non-Error promise rejection captured with value: undefined/i,
   // iOS WebKit bridge probe by ad/analytics scripts (e.g. Google FundingChoices) in non-native browsers
   /window\.webkit\.messageHandlers/i,
+  // Android WebView JS-to-Java bridge teardown race on beforeunload (seen in Facebook in-app
+  // browser calling its internal enableDidUserTypeOnKeyboardLogging analytics). Not our code.
+  /Java object is gone/i,
 ];
 
 /**
