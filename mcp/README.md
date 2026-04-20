@@ -1,5 +1,9 @@
 # murphys-laws-mcp
 
+[![npm version](https://img.shields.io/npm/v/murphys-laws-mcp.svg)](https://www.npmjs.com/package/murphys-laws-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/murphys-laws-mcp.svg)](https://www.npmjs.com/package/murphys-laws-mcp)
+[![license](https://img.shields.io/npm/l/murphys-laws-mcp.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI agents access to 1,500+ Murphy's Laws, corollaries, and humorous observations about life's tendency for things to go wrong.
 
 Works with Claude Desktop, Cursor, VS Code Copilot, and any MCP-compatible host.

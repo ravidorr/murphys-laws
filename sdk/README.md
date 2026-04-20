@@ -1,5 +1,9 @@
 # murphys-laws-sdk
 
+[![npm version](https://img.shields.io/npm/v/murphys-laws-sdk.svg)](https://www.npmjs.com/package/murphys-laws-sdk)
+[![npm downloads](https://img.shields.io/npm/dm/murphys-laws-sdk.svg)](https://www.npmjs.com/package/murphys-laws-sdk)
+[![license](https://img.shields.io/npm/l/murphys-laws-sdk.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+
 Tiny TypeScript SDK for the public [Murphy's Laws](https://murphys-laws.com) REST API.
 
 No runtime dependencies. Uses the platform `fetch`.
