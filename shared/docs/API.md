@@ -6,8 +6,11 @@ REST API for the Murphy's Laws Archive. All endpoints return JSON unless otherwi
 
 ## Table of Contents
 
+- [Versioning and stability](#versioning-and-stability)
+- [User-Agent guidance](#user-agent-guidance)
 - [Authentication](#authentication)
 - [Rate Limiting](#rate-limiting)
+- [Client libraries](#client-libraries)
 - [Endpoints](#endpoints)
   - [Health](#health)
   - [Laws](#laws)
@@ -21,6 +24,59 @@ REST API for the Murphy's Laws Archive. All endpoints return JSON unless otherwi
 
 ---
 
+## Versioning and stability
+
+All versioned endpoints live under `/api/v1/`. `/api/v1/` is considered stable:
+we will not rename or remove existing fields, nor change response semantics in
+incompatible ways.
+
+- Breaking changes ship under a new prefix, e.g. `/api/v2/`. The old version
+  keeps working for at least 6 months after the successor is announced.
+- Deprecations are announced using the
+  [`Deprecation`](https://datatracker.ietf.org/doc/html/draft-ietf-httpapi-deprecation-header)
+  and `Sunset` response headers.
+- The machine-readable contract is the
+  [OpenAPI document](https://murphys-laws.com/openapi.json) at
+  `/openapi.json`, which is regenerated on every deploy. Generate typed clients
+  or diff against a known-good copy if you care about breakage.
+- Additive changes (new optional fields, new endpoints, new headers) may happen
+  at any time within `/api/v1/` without a version bump.
+
+Routes outside `/api/v1/` (for example, `/api/health`, `/feed.*`, `/og-image/*`)
+are best-effort and are not part of the versioning promise, though we try hard
+not to break them either.
+
+---
+
+## User-Agent guidance
+
+Scripted clients, bots, and server-to-server integrations should send a
+meaningful `User-Agent` header. It helps us diagnose traffic spikes and
+contact you before applying defensive rate limits, and it is a requirement
+common to most public APIs.
+
+Good examples:
+
+```http
+User-Agent: acme-murphy-bot/1.4 (+https://acme.example/bot-info)
+User-Agent: my-startup-etl/0.2 (contact: data@my-startup.example)
+```
+
+The official clients set this automatically:
+
+- [`murphys-laws-sdk`](https://www.npmjs.com/package/murphys-laws-sdk) sends
+  `murphys-laws-sdk` by default; override via the `userAgent` constructor
+  option.
+- [`murphys-laws-cli`](https://www.npmjs.com/package/murphys-laws-cli) sends
+  `murphys-laws-cli/<version>`; override with `--user-agent`.
+- [`murphys-laws-mcp`](https://www.npmjs.com/package/murphys-laws-mcp) sends
+  `murphys-laws-mcp`.
+
+Requests with a blank or generic `User-Agent` (for example, default `curl` or
+`Go-http-client`) may be rate-limited more aggressively.
+
+---
+
 ## Authentication
 
 The API is publicly accessible. No authentication is required for read operations.
@@ -31,14 +87,52 @@ Write operations (submitting laws, voting) use IP-based identification for rate 
 
 ## Rate Limiting
 
-Rate limits are enforced on write operations:
+Rate limits are enforced on write operations and are applied per IP address:
 
 | Operation | Limit |
 |-----------|-------|
-| Submit law | 5 per hour per IP |
-| Vote | 60 per hour per IP |
+| Submit law | 3 per minute |
+| Vote | 30 per minute |
 
-When rate limited, the API returns `429 Too Many Requests` with a `Retry-After` header.
+Every write response (success or 429) carries the following headers so
+clients can back off proactively:
+
+| Header | Meaning |
+|--------|---------|
+| `X-RateLimit-Limit` | Maximum requests allowed in the current window |
+| `X-RateLimit-Remaining` | Requests remaining before the limit is hit |
+| `X-RateLimit-Reset` | ISO-8601 timestamp when the window resets |
+| `Retry-After` | (429 only) seconds until the window resets |
+
+When rate limited the API returns `429 Too Many Requests` with a JSON body:
+
+```json
+{
+  "error": "Rate limit exceeded. Please try again later.",
+  "retryAfter": 42
+}
+```
+
+Read endpoints are not rate-limited today, but may be in the future. Treat
+the `X-RateLimit-*` headers as authoritative rather than hard-coding the
+numbers in this table.
+
+---
+
+## Client libraries
+
+Official clients live in the
+[Murphy's Laws monorepo](https://github.com/ravidorr/murphys-laws):
+
+- [`murphys-laws-sdk`](https://www.npmjs.com/package/murphys-laws-sdk) - typed
+  TypeScript client, zero runtime dependencies.
+- [`murphys-laws-cli`](https://www.npmjs.com/package/murphys-laws-cli) -
+  command-line wrapper (`npx murphys-laws-cli search "debug"`).
+- [`murphys-laws-mcp`](https://www.npmjs.com/package/murphys-laws-mcp) - MCP
+  server exposing laws to AI agents.
+
+See the [developer landing page](https://murphys-laws.com/developers) for a
+one-page summary.
 
 ---
 

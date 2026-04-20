@@ -53,6 +53,7 @@ describe('VoteController', () => {
         // Reset rate limit mock to default (allowed)
         vi.spyOn(rateLimitModule, 'checkRateLimit').mockReturnValue({
             allowed: true,
+            limit: 30,
             remaining: 29,
             resetTime: Date.now() + 60000,
         });
@@ -124,6 +125,7 @@ describe('VoteController', () => {
     it('should return 429 when rate limit exceeded on vote', async () => {
         vi.spyOn(rateLimitModule, 'checkRateLimit').mockReturnValue({
             allowed: false,
+            limit: 30,
             remaining: 0,
             resetTime: Date.now() + 60000,
         });
@@ -137,6 +139,7 @@ describe('VoteController', () => {
     it('should return 429 when rate limit exceeded on removeVote', async () => {
         vi.spyOn(rateLimitModule, 'checkRateLimit').mockReturnValue({
             allowed: false,
+            limit: 30,
             remaining: 0,
             resetTime: Date.now() + 60000,
         });

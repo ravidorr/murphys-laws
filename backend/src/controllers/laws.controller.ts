@@ -129,7 +129,7 @@ export class LawController {
     const rateLimit = checkRateLimit(identifier, 'submit');
 
     if (!rateLimit.allowed) {
-      return rateLimitExceeded(res, rateLimit.resetTime, req);
+      return rateLimitExceeded(res, rateLimit, req);
     }
 
     let body: any;
@@ -184,7 +184,7 @@ export class LawController {
         text,
         status: 'in_review',
         message: 'Law submitted successfully and is pending review'
-      }, req);
+      }, req, rateLimit);
     } catch (error: any) {
       console.error('Submission error:', error);
       return badRequest(res, error.message, req);

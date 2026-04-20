@@ -14,6 +14,7 @@ describe('RateLimit Middleware', () => {
         const result = checkRateLimit('user1', 'vote');
         expect(result.allowed).toBe(true);
         expect(result.remaining).toBeGreaterThan(0);
+        expect(result.limit).toBe(30);
     });
 
     it('should block requests exceeding limit', () => {
@@ -24,6 +25,7 @@ describe('RateLimit Middleware', () => {
         const result = checkRateLimit('user2', 'vote');
         expect(result.allowed).toBe(false);
         expect(result.remaining).toBe(0);
+        expect(result.limit).toBe(30);
     });
 
     it('should reset after window', () => {
@@ -45,6 +47,7 @@ describe('RateLimit Middleware', () => {
         const result = checkRateLimit('user4', 'unknown');
         expect(result.allowed).toBe(true);
         expect(result.remaining).toBe(Infinity);
+        expect(result.limit).toBe(Infinity);
     });
 
     it('should enforce submit rate limit', () => {
