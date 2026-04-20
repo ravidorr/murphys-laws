@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ApiClient } from '../api-client.js';
+import type { MurphysLawsClient } from 'murphys-laws-sdk';
 
 interface Category {
   id: number;
@@ -13,7 +13,7 @@ interface CategoriesResponse {
   data: Category[];
 }
 
-export function registerListCategories(server: McpServer, api: ApiClient): void {
+export function registerListCategories(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'list_categories',
     "List all Murphy's Law categories with their slugs and law counts. Use the slug values to filter searches or browse by category.",

@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ApiClient } from '../api-client.js';
-import { ApiError } from '../api-client.js';
+import { ApiError, type MurphysLawsClient } from 'murphys-laws-sdk';
 import { formatLaw, type LawData } from '../format.js';
 
-export function registerGetLaw(server: McpServer, api: ApiClient): void {
+export function registerGetLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'get_law',
     "Get a specific Murphy's Law by its ID. Use this to look up a law found in search results.",

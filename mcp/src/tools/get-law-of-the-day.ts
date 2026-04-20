@@ -1,6 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ApiClient } from '../api-client.js';
-import { ApiError } from '../api-client.js';
+import { ApiError, type MurphysLawsClient } from 'murphys-laws-sdk';
 import { formatLaw, type LawData } from '../format.js';
 
 interface LawOfDayResponse {
@@ -8,7 +7,7 @@ interface LawOfDayResponse {
   featured_date: string;
 }
 
-export function registerGetLawOfTheDay(server: McpServer, api: ApiClient): void {
+export function registerGetLawOfTheDay(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'get_law_of_the_day',
     "Get today's featured Murphy's Law. A new law is selected each day based on popularity.",
