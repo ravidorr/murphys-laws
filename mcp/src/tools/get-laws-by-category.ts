@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ApiClient } from '../api-client.js';
+import type { MurphysLawsClient } from 'murphys-laws-sdk';
 import { formatLawList, type LawData } from '../format.js';
 
 interface SearchResponse {
@@ -10,7 +10,7 @@ interface SearchResponse {
   offset: number;
 }
 
-export function registerGetLawsByCategory(server: McpServer, api: ApiClient): void {
+export function registerGetLawsByCategory(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'get_laws_by_category',
     "Browse Murphy's Laws in a specific category. Use list_categories first to discover available category slugs.",
