@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ApiClient } from '../api-client.js';
+import type { MurphysLawsClient } from 'murphys-laws-sdk';
 
 interface Category {
   id: number;
@@ -27,7 +27,7 @@ interface SubmitErrorResponse {
   retryAfter?: number;
 }
 
-export function registerSubmitLaw(server: McpServer, api: ApiClient): void {
+export function registerSubmitLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'submit_law',
     "Submit a new Murphy's Law for review. The law will not be published immediately — it goes into a review queue for manual approval. Rate limited to 3 submissions per minute.",

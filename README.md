@@ -14,6 +14,15 @@ Available on **Web**, **iOS**, and **Android**.
 
 Four official ways to integrate Murphy's Laws. No API key for reads.
 
+| Package | npm | Purpose |
+|---------|-----|---------|
+| [`murphys-laws-sdk`](sdk/) | [![npm](https://img.shields.io/npm/v/murphys-laws-sdk.svg?label=)](https://www.npmjs.com/package/murphys-laws-sdk) | Typed TypeScript client, zero deps |
+| [`murphys-laws-cli`](cli/) | [![npm](https://img.shields.io/npm/v/murphys-laws-cli.svg?label=)](https://www.npmjs.com/package/murphys-laws-cli) | Command-line interface (`npx murphys-laws-cli`) |
+| [`murphys-laws-mcp`](mcp/) | [![npm](https://img.shields.io/npm/v/murphys-laws-mcp.svg?label=)](https://www.npmjs.com/package/murphys-laws-mcp) | Model Context Protocol server for AI agents |
+| [REST API](shared/docs/API.md) | - | Public HTTP API at `https://murphys-laws.com/api/v1/` |
+
+Full details and examples on the [developer landing page](https://murphys-laws.com/developers).
+
 ### REST API
 
 Public API at `https://murphys-laws.com/api/v1/`, no auth required for reads.

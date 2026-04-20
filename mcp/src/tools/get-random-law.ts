@@ -1,9 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { ApiClient } from '../api-client.js';
-import { ApiError } from '../api-client.js';
+import { ApiError, type MurphysLawsClient } from 'murphys-laws-sdk';
 import { formatLaw, type LawData } from '../format.js';
 
-export function registerGetRandomLaw(server: McpServer, api: ApiClient): void {
+export function registerGetRandomLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'get_random_law',
     "Get a random Murphy's Law. Great for adding humor to conversations or discovering new laws.",

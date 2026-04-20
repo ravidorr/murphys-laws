@@ -1,5 +1,9 @@
 # murphys-laws-cli
 
+[![npm version](https://img.shields.io/npm/v/murphys-laws-cli.svg)](https://www.npmjs.com/package/murphys-laws-cli)
+[![npm downloads](https://img.shields.io/npm/dm/murphys-laws-cli.svg)](https://www.npmjs.com/package/murphys-laws-cli)
+[![license](https://img.shields.io/npm/l/murphys-laws-cli.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+
 Command-line interface for the public [Murphy's Laws](https://murphys-laws.com)
 REST API. Built on top of `murphys-laws-sdk`.
 

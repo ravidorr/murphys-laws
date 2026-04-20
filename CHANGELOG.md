@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
 ### Changed
+- `murphys-laws-mcp` bumped to `1.1.1`: removed the backwards-compatible `api-client.ts` shim; all tools now import `MurphysLawsClient` and `ApiError` directly from `murphys-laws-sdk`. MCP handshake `serverInfo.version` now reads from `package.json` at runtime so it stays in sync on every bump (previously hard-coded to `1.0.0`). Outgoing API calls send `User-Agent: murphys-laws-mcp/<version>`.
+- Root `README.md` gained a discoverability table with live npm version badges for the SDK, CLI, and MCP packages. Each sub-package README also carries npm version/downloads/license shields.
 - `murphys-laws-mcp` bumped to `1.1.0`: now consumes the new `murphys-laws-sdk`. Behavior unchanged; the local `api-client.ts` remains as a backwards-compatible shim that delegates to the SDK and will be removed in the next minor.
 - Root `package.json` workspaces now include `sdk` and `cli`; CI/test/lint scripts gained `ci:sdk`, `ci:cli`, `test:sdk`, `test:cli`, `lint:sdk`, `lint:cli` entries with the same 95% coverage gate as the other workspaces.
 - Rate limits documented on `/developers` and in `shared/docs/API.md` now match the code (3 submissions/min, 30 votes/min) instead of the stale per-hour numbers.
