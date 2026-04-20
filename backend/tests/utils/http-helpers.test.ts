@@ -151,15 +151,72 @@ describe('HTTP Helpers', () => {
         'Link': '<https://murphys-laws.com/openapi.json>; rel="describedby"',
       }));
     });
+
+    it('emits X-RateLimit headers when rate limit info provided', () => {
+      const resetTime = Date.now() + 60000;
+      httpHelpers.sendJson(asRes(res), 200, { data: 'ok' }, null, {
+        allowed: true,
+        limit: 30,
+        remaining: 27,
+        resetTime,
+      });
+
+      expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
+        'X-RateLimit-Limit': '30',
+        'X-RateLimit-Remaining': '27',
+        'X-RateLimit-Reset': new Date(resetTime).toISOString(),
+      }));
+    });
+
+    it('omits X-RateLimit headers when limit is Infinity', () => {
+      httpHelpers.sendJson(asRes(res), 200, { data: 'ok' }, null, {
+        allowed: true,
+        limit: Infinity,
+        remaining: Infinity,
+        resetTime: 0,
+      });
+      const headers = res.writeHead.mock.calls[0][1];
+      expect(headers['X-RateLimit-Limit']).toBeUndefined();
+      expect(headers['X-RateLimit-Remaining']).toBeUndefined();
+    });
+
+    it('clamps negative remaining to 0', () => {
+      httpHelpers.sendJson(asRes(res), 200, { data: 'ok' }, null, {
+        allowed: true,
+        limit: 10,
+        remaining: -5,
+        resetTime: Date.now() + 1000,
+      });
+      expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
+        'X-RateLimit-Remaining': '0',
+      }));
+    });
   });
 
   describe('rateLimitExceeded', () => {
-    it('should send 429 response', () => {
+    it('should send 429 response with legacy resetTime number', () => {
       const resetTime = Date.now() + 60000;
       httpHelpers.rateLimitExceeded(asRes(res), resetTime);
-      
+
       expect(res.writeHead).toHaveBeenCalledWith(429, expect.objectContaining({
-        'Retry-After': expect.any(Number)
+        'Retry-After': expect.any(Number),
+        'X-RateLimit-Reset': new Date(resetTime).toISOString(),
+        'X-RateLimit-Remaining': '0',
+      }));
+    });
+
+    it('includes X-RateLimit-Limit when full rate limit result provided', () => {
+      const resetTime = Date.now() + 60000;
+      httpHelpers.rateLimitExceeded(asRes(res), {
+        allowed: false,
+        limit: 3,
+        remaining: 0,
+        resetTime,
+      });
+
+      expect(res.writeHead).toHaveBeenCalledWith(429, expect.objectContaining({
+        'X-RateLimit-Limit': '3',
+        'X-RateLimit-Remaining': '0',
       }));
     });
 

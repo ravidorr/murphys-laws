@@ -12,11 +12,39 @@ Available on **Web**, **iOS**, and **Android**.
 
 ## AI & Developer Integration
 
+Four official ways to integrate Murphy's Laws. No API key for reads.
+
+### REST API
+
+Public API at `https://murphys-laws.com/api/v1/`, no auth required for reads.
+
+- [API Documentation](shared/docs/API.md)
+- [OpenAPI spec](https://murphys-laws.com/openapi.json)
+- [llms.txt](https://murphys-laws.com/llms.txt) | [llms-full.txt](https://murphys-laws.com/llms-full.txt)
+
+### TypeScript SDK
+
+[`murphys-laws-sdk`](sdk/) on [npm](https://www.npmjs.com/package/murphys-laws-sdk) is a tiny typed client over the REST API with zero runtime dependencies.
+
+```ts
+import { MurphysLawsClient } from 'murphys-laws-sdk';
+const law = await new MurphysLawsClient().getRandomLaw();
+```
+
+### Command-line interface
+
+[`murphys-laws-cli`](cli/) on [npm](https://www.npmjs.com/package/murphys-laws-cli) wraps the API for scripts and terminal use.
+
+```bash
+npx murphys-laws-cli random
+npx murphys-laws-cli search "computer" --limit 3
+```
+
 ### MCP Server (Model Context Protocol)
 
 An [MCP server](mcp/) lets AI agents (Claude Desktop, Cursor, VS Code Copilot) query Murphy's Laws directly.
 
-**Quick start — no clone needed:**
+Quick start, no clone needed:
 
 ```json
 {
@@ -29,17 +57,9 @@ An [MCP server](mcp/) lets AI agents (Claude Desktop, Cursor, VS Code Copilot) q
 }
 ```
 
-7 tools: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`
+7 tools: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`.
 
-See [mcp/README.md](mcp/README.md) or [npm](https://www.npmjs.com/package/murphys-laws-mcp).
-
-### REST API
-
-Public API at `https://murphys-laws.com/api/v1/` — no auth required for reads.
-
-- [API Documentation](shared/docs/API.md)
-- [OpenAPI spec](https://murphys-laws.com/openapi.json)
-- [llms.txt](https://murphys-laws.com/llms.txt) | [llms-full.txt](https://murphys-laws.com/llms-full.txt)
+See [mcp/README.md](mcp/README.md) or [npm](https://www.npmjs.com/package/murphys-laws-mcp), or the [developer landing page](https://murphys-laws.com/developers) for the full picture.
 
 ## Repository Structure
 
@@ -50,6 +70,8 @@ murphys-laws/
 ├── backend/        # Node.js API server (TypeScript runtime via tsx)
 ├── web/            # Web application (TypeScript + Vite)
 ├── mcp/            # MCP server for AI agent integration (npm: murphys-laws-mcp)
+├── sdk/            # TypeScript SDK over the public REST API (npm: murphys-laws-sdk)
+├── cli/            # Command-line interface (npm: murphys-laws-cli)
 ├── ios/            # iOS app (Swift + SwiftUI)
 ├── android/        # Android app (Kotlin + Jetpack Compose)
 └── shared/         # Shared resources and documentation

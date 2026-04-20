@@ -78,7 +78,7 @@ describe('LawController', () => {
 
         // Reset mocks
         vi.clearAllMocks();
-        vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, remaining: 10, resetTime: 0 });
+        vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, limit: 3, remaining: 10, resetTime: 0 });
     });
 
     describe('list', () => {
@@ -359,7 +359,7 @@ describe('LawController', () => {
 
     describe('submit', () => {
         it('should return 429 if rate limit exceeded', async () => {
-            vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, remaining: 0, resetTime: Date.now() + 1000 });
+            vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, limit: 3, remaining: 0, resetTime: Date.now() + 1000 });
             await lawController.submit(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(429, expect.any(Object));
         });

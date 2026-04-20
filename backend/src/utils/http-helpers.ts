@@ -5,6 +5,18 @@ import type {
   ServerResponse,
 } from 'node:http';
 import { getCorsOrigin } from '../middleware/cors.ts';
+import type { RateLimitResult } from '../middleware/rate-limit.ts';
+
+function rateLimitHeaders(rateLimit: RateLimitResult | null): OutgoingHttpHeaders {
+  if (!rateLimit || !Number.isFinite(rateLimit.limit)) {
+    return {};
+  }
+  return {
+    'X-RateLimit-Limit': String(rateLimit.limit),
+    'X-RateLimit-Remaining': String(Math.max(0, rateLimit.remaining)),
+    'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
+  };
+}
 
 function getAllowedOrigins(): string[] {
   return process.env.ALLOWED_ORIGINS
@@ -68,7 +80,8 @@ export function sendJson(
   res: ServerResponse,
   status: number,
   obj: unknown,
-  req: IncomingMessage | null = null
+  req: IncomingMessage | null = null,
+  rateLimit: RateLimitResult | null = null
 ): void {
   const body = JSON.stringify(obj);
   const ALLOWED_ORIGINS = getAllowedOrigins();
@@ -81,6 +94,7 @@ export function sendJson(
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Link': '<https://murphys-laws.com/openapi.json>; rel="describedby"',
+    ...rateLimitHeaders(rateLimit),
   };
 
   // Only add credentials header if not using wildcard
@@ -102,10 +116,15 @@ export function badRequest(res: ServerResponse, msg?: string, req: IncomingMessa
 
 export function rateLimitExceeded(
   res: ServerResponse,
-  resetTime: number,
+  rateLimitOrResetTime: RateLimitResult | number,
   req: IncomingMessage | null = null
 ): void {
-  const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
+  const rateLimit: RateLimitResult =
+    typeof rateLimitOrResetTime === 'number'
+      ? { allowed: false, limit: Infinity, remaining: 0, resetTime: rateLimitOrResetTime }
+      : rateLimitOrResetTime;
+
+  const retryAfter = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
   const ALLOWED_ORIGINS = getAllowedOrigins();
 
   const origin = req ? getCorsOrigin(req, ALLOWED_ORIGINS) : '*';
@@ -113,10 +132,12 @@ export function rateLimitExceeded(
   const headers: OutgoingHttpHeaders = {
     'Content-Type': 'application/json; charset=utf-8',
     'Retry-After': retryAfter,
-    'X-RateLimit-Reset': new Date(resetTime).toISOString(),
+    'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    ...(Number.isFinite(rateLimit.limit) ? { 'X-RateLimit-Limit': String(rateLimit.limit) } : {}),
+    'X-RateLimit-Remaining': '0',
   };
 
   // Only add credentials header if not using wildcard

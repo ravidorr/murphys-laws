@@ -11,8 +11,9 @@ interface RateLimitRecord {
   resetTime: number;
 }
 
-interface RateLimitResult {
+export interface RateLimitResult {
   allowed: boolean;
+  limit: number;
   remaining: number;
   resetTime: number;
 }
@@ -40,7 +41,7 @@ setInterval(() => {
 export function checkRateLimit(identifier: string, type: string): RateLimitResult {
   const limit = RATE_LIMITS[type as RateLimitType];
   if (!limit) {
-    return { allowed: true, remaining: Infinity, resetTime: 0 };
+    return { allowed: true, limit: Infinity, remaining: Infinity, resetTime: 0 };
   }
 
   const key = `${type}:${identifier}`;
@@ -61,6 +62,7 @@ export function checkRateLimit(identifier: string, type: string): RateLimitResul
   if (record.count >= limit.max) {
     return {
       allowed: false,
+      limit: limit.max,
       remaining: 0,
       resetTime: record.resetTime,
     };
@@ -69,6 +71,7 @@ export function checkRateLimit(identifier: string, type: string): RateLimitResul
   record.count++;
   return {
     allowed: true,
+    limit: limit.max,
     remaining: limit.max - record.count,
     resetTime: record.resetTime,
   };
