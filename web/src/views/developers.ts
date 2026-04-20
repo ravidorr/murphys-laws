@@ -17,7 +17,7 @@ export function Developers({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
 
   setExportContent({
     type: ContentType.CONTENT,
-    title: 'Developers — Murphy\'s Law Archive',
+    title: "Developers - Murphy's Law Archive",
     data: getRawMarkdownContent('developers')
   });
 

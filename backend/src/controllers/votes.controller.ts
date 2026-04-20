@@ -15,7 +15,7 @@ export class VoteController {
     const rateLimit = checkRateLimit(identifier, 'vote');
 
     if (!rateLimit.allowed) {
-      return rateLimitExceeded(res, rateLimit.resetTime, req);
+      return rateLimitExceeded(res, rateLimit, req);
     }
 
     let body: any;
@@ -46,7 +46,7 @@ export class VoteController {
       vote_type: voteType,
       upvotes: updatedLaw.upvotes,
       downvotes: updatedLaw.downvotes
-    }, req);
+    }, req, rateLimit);
   }
 
   async removeVote(req: any, res: any, lawId: number) {
@@ -54,7 +54,7 @@ export class VoteController {
     const rateLimit = checkRateLimit(identifier, 'vote');
 
     if (!rateLimit.allowed) {
-      return rateLimitExceeded(res, rateLimit.resetTime, req);
+      return rateLimitExceeded(res, rateLimit, req);
     }
 
     const law = await this.lawService.getLaw(lawId);
@@ -71,6 +71,6 @@ export class VoteController {
       law_id: lawId,
       upvotes: updatedLaw.upvotes,
       downvotes: updatedLaw.downvotes
-    }, req);
+    }, req, rateLimit);
   }
 }

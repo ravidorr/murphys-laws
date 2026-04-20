@@ -1,0 +1,60 @@
+{
+  "name": "murphys-laws-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for the Murphy's Laws public REST API",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "murphy": "bin/murphy.js",
+    "murphys-laws-cli": "bin/murphy.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "murphys-law",
+    "cli",
+    "command-line"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ravidorr/murphys-laws.git",
+    "directory": "cli"
+  },
+  "homepage": "https://murphys-laws.com/developers",
+  "license": "CC0-1.0",
+  "dependencies": {
+    "murphys-laws-sdk": "^0.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^10.0.0",
+    "globals": "^16.5.0",
+    "jiti": "^2.6.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.56.0",
+    "vitest": "^4.0.18"
+  }
+}
