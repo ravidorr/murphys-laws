@@ -1,0 +1,63 @@
+name: CLI CI
+
+on:
+  push:
+    paths:
+      - 'cli/**'
+      - 'sdk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+      - '.github/workflows/cli-ci.yml'
+  pull_request:
+    paths:
+      - 'cli/**'
+      - 'sdk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (root - npm workspaces)
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Build SDK (CLI imports from murphys-laws-sdk/dist)
+        run: npm run build
+        working-directory: sdk
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: cli
+
+      - name: Lint
+        run: npm run lint
+        working-directory: cli
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        working-directory: cli
+
+      - name: Build
+        run: npm run build
+        working-directory: cli
+
+      - name: Smoke-test built binary
+        run: node bin/murphy.js --version
+        working-directory: cli

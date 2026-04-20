@@ -1,0 +1,87 @@
+name: MCP CI
+
+on:
+  push:
+    paths:
+      - 'mcp/**'
+      - 'sdk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+      - '.github/workflows/mcp-ci.yml'
+  pull_request:
+    paths:
+      - 'mcp/**'
+      - 'sdk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (root - npm workspaces)
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Build SDK (MCP imports from murphys-laws-sdk/dist)
+        run: npm run build
+        working-directory: sdk
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: mcp
+
+      - name: Lint
+        run: npm run lint
+        working-directory: mcp
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        working-directory: mcp
+
+      - name: Build
+        run: npm run build
+        working-directory: mcp
+
+      - name: Boot smoke test (stdio handshake + tools/list)
+        working-directory: mcp
+        run: |
+          node -e "
+          const { spawn } = require('child_process');
+          const proc = spawn('node', ['./dist/index.js'], { stdio: ['pipe', 'pipe', 'pipe'] });
+          let out = '';
+          proc.stdout.on('data', b => out += b.toString());
+          proc.stdin.write(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2024-11-05',capabilities:{},clientInfo:{name:'ci',version:'0'}}}) + '\n');
+          proc.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'}) + '\n');
+          proc.stdin.write(JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list'}) + '\n');
+          setTimeout(() => proc.kill(), 3000);
+          proc.on('close', () => {
+            let toolCount = 0;
+            for (const line of out.trim().split('\n').filter(Boolean)) {
+              try {
+                const msg = JSON.parse(line);
+                if (msg.id === 2) toolCount = msg.result?.tools?.length ?? 0;
+              } catch {}
+            }
+            if (toolCount !== 7) {
+              console.error('Expected 7 tools, got ' + toolCount);
+              process.exit(1);
+            }
+            console.log('MCP handshake OK, ' + toolCount + ' tools listed');
+          });
+          "

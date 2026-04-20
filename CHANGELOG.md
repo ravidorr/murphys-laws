@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `cli-ci.yml` and `mcp-ci.yml` now build the SDK before running typecheck / lint / tests. `murphys-laws-sdk`'s `main` points at `dist/index.js`, and `npm ci` alone doesn't build workspace members, so consumers couldn't resolve the module on a fresh runner.
+
 ### Added
+- GitHub Actions workflows `sdk-ci.yml`, `cli-ci.yml`, and `mcp-ci.yml` so SDK/CLI/MCP now run typecheck + lint + test (95% coverage) + build on every push/PR that touches them. CLI and MCP workflows also trigger on `sdk/**` changes so SDK-breaking refactors are caught in consumer packages. `mcp-ci.yml` additionally runs a stdio handshake smoke test that boots the server and asserts `tools/list` returns 7 tools.
+- Vitest suite for `murphys-laws-mcp`: 48 tests across `format.ts`, each of the 7 tool registrations (with mocked SDK client), and `server.ts` wiring. 100% coverage. `mcp/` also gains an ESLint config mirroring the other workspaces.
 - `murphys-laws-sdk` (`sdk/`) package: typed TypeScript client over the public REST API, zero runtime deps. Ships typed methods for all `/api/v1/*` endpoints plus a discriminated `SubmitLawResult` union. Published at `0.1.0`.
 - `murphys-laws-cli` (`cli/`) package: command-line wrapper around the API (`murphy search`, `random`, `today`, `get`, `categories`, `category`, `submit`). Supports `--json`, `--no-color`, `--base-url`, `--user-agent`. Exit codes document success (0), not-found (1), usage error (2), rate-limited (3), network error (4). Published at `0.1.0`.
 - Write endpoints now emit `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` response headers on both success and 429 responses so clients can back off proactively.
@@ -21,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
 ### Changed
+- `murphys-laws-mcp` bumped to `1.1.2`: added dev-only vitest + eslint deps and config for the new test suite. Build output (`dist/`) unchanged; published runtime behavior unchanged. Also split `tsconfig.build.json` from `tsconfig.json` so tests compile under the same strict TS settings without getting shipped in the tarball.
 - `murphys-laws-mcp` bumped to `1.1.1`: removed the backwards-compatible `api-client.ts` shim; all tools now import `MurphysLawsClient` and `ApiError` directly from `murphys-laws-sdk`. MCP handshake `serverInfo.version` now reads from `package.json` at runtime so it stays in sync on every bump (previously hard-coded to `1.0.0`). Outgoing API calls send `User-Agent: murphys-laws-mcp/<version>`.
 - Root `README.md` gained a discoverability table with live npm version badges for the SDK, CLI, and MCP packages. Each sub-package README also carries npm version/downloads/license shields.
 - `murphys-laws-mcp` bumped to `1.1.0`: now consumes the new `murphys-laws-sdk`. Behavior unchanged; the local `api-client.ts` remains as a backwards-compatible shim that delegates to the SDK and will be removed in the next minor.
