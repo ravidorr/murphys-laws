@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `cli-ci.yml` and `mcp-ci.yml` now build the SDK before running typecheck / lint / tests. `murphys-laws-sdk`'s `main` points at `dist/index.js`, and `npm ci` alone doesn't build workspace members, so consumers couldn't resolve the module on a fresh runner.
+
 ### Added
 - GitHub Actions workflows `sdk-ci.yml`, `cli-ci.yml`, and `mcp-ci.yml` so SDK/CLI/MCP now run typecheck + lint + test (95% coverage) + build on every push/PR that touches them. CLI and MCP workflows also trigger on `sdk/**` changes so SDK-breaking refactors are caught in consumer packages. `mcp-ci.yml` additionally runs a stdio handshake smoke test that boots the server and asserts `tools/list` returns 7 tools.
 - Vitest suite for `murphys-laws-mcp`: 48 tests across `format.ts`, each of the 7 tool registrations (with mocked SDK client), and `server.ts` wiring. 100% coverage. `mcp/` also gains an ESLint config mirroring the other workspaces.
