@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `murphys-laws-sdk` (`sdk/`) package: typed TypeScript client over the public REST API, zero runtime deps. Ships typed methods for all `/api/v1/*` endpoints plus a discriminated `SubmitLawResult` union. Published at `0.1.0`.
+- `murphys-laws-cli` (`cli/`) package: command-line wrapper around the API (`murphy search`, `random`, `today`, `get`, `categories`, `category`, `submit`). Supports `--json`, `--no-color`, `--base-url`, `--user-agent`. Exit codes document success (0), not-found (1), usage error (2), rate-limited (3), network error (4). Published at `0.1.0`.
+- Write endpoints now emit `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` response headers on both success and 429 responses so clients can back off proactively.
+- `shared/docs/API.md` gained a versioning & stability section (`/api/v1/` is stable, breaking changes ship under `/api/v2/`, deprecations via `Deprecation`/`Sunset` headers) and User-Agent guidance.
+- `/developers` page now documents the SDK, CLI, current per-minute write rate limits, and the new `X-RateLimit-*` headers.
 - MCP (Model Context Protocol) server (`mcp/`) with 7 tools for AI agent integration: `search_laws`, `get_random_law`, `get_law_of_the_day`, `get_law`, `list_categories`, `get_laws_by_category`, `submit_law`
 - MCP server published to npm as `murphys-laws-mcp` - install with `npx murphys-laws-mcp` (no clone needed)
 - MCP server submitted to the [MCP Registry](https://registry.modelcontextprotocol.io) for discovery by AI hosts
@@ -16,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP section in `llms.txt` linking to full reference and listing available tools
 
 ### Changed
+- `murphys-laws-mcp` bumped to `1.1.0`: now consumes the new `murphys-laws-sdk`. Behavior unchanged; the local `api-client.ts` remains as a backwards-compatible shim that delegates to the SDK and will be removed in the next minor.
+- Root `package.json` workspaces now include `sdk` and `cli`; CI/test/lint scripts gained `ci:sdk`, `ci:cli`, `test:sdk`, `test:cli`, `lint:sdk`, `lint:cli` entries with the same 95% coverage gate as the other workspaces.
+- Rate limits documented on `/developers` and in `shared/docs/API.md` now match the code (3 submissions/min, 30 votes/min) instead of the stale per-hour numbers.
 - Clean up iOS `.gitignore`: replace the scoped `xcuserdata` entries with the idiomatic `**/xcuserdata/` pattern, narrow the blanket `project.xcworkspace/xcshareddata/` rule to `**/IDEWorkspaceChecks.plist` (so legitimate shared workspace settings stay tracked), and `git rm --cached` the two previously-tracked `UserInterfaceState.xcuserstate` files so they stop producing diffs every time Xcode is opened. The ignore rule added in the AGP bump PR was not enough on its own because the files were already tracked.
 - Refine the `ship` skill: only bump a sub-package's version (`web/`, `backend/`, `mcp/`) when code inside that sub-package actually changed. The root `package.json` still bumps on every ship (drives the Sentry release tag); sub-package bumps are gated on actual diffs so Sentry sub-package releases stop corresponding to zero-change ships.
 - Bump Android Gradle Plugin from `9.1.0` to `9.1.1` (patch update); add `ios/*.xcodeproj/project.xcworkspace/xcuserdata/` to `.gitignore` so Xcode's per-user IDE state stops showing up as a diff

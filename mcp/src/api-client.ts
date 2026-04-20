@@ -1,31 +1,29 @@
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public body: string,
-  ) {
-    super(`API error ${status}: ${body}`);
-    this.name = 'ApiError';
-  }
-}
+/**
+ * Backwards-compatible shim kept for one minor release.
+ * Prefer importing `MurphysLawsClient` directly from `murphys-laws-sdk` in new code.
+ * This shim adapts the SDK client to the legacy `ApiClient` shape used by the
+ * existing MCP tools.
+ */
+import { MurphysLawsClient, ApiError as SdkApiError } from 'murphys-laws-sdk';
+
+export const ApiError = SdkApiError;
+export type ApiError = InstanceType<typeof SdkApiError>;
 
 export class ApiClient {
-  constructor(private baseUrl: string) {}
+  private readonly client: MurphysLawsClient;
 
-  async get<T>(path: string): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`);
-    if (!res.ok) {
-      throw new ApiError(res.status, await res.text());
-    }
-    return res.json() as Promise<T>;
+  constructor(baseUrl: string) {
+    this.client = new MurphysLawsClient({
+      baseUrl,
+      userAgent: 'murphys-laws-mcp',
+    });
   }
 
-  async post<T>(path: string, body: unknown): Promise<{ status: number; data: T }> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = (await res.json()) as T;
-    return { status: res.status, data };
+  get<T>(path: string): Promise<T> {
+    return this.client.get<T>(path);
+  }
+
+  post<T>(path: string, body: unknown): Promise<{ status: number; data: T }> {
+    return this.client.post<T>(path, body);
   }
 }
