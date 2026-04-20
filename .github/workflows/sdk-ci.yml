@@ -1,0 +1,53 @@
+name: SDK CI
+
+on:
+  push:
+    paths:
+      - 'sdk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+      - '.github/workflows/sdk-ci.yml'
+  pull_request:
+    paths:
+      - 'sdk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (root - npm workspaces)
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: sdk
+
+      - name: Lint
+        run: npm run lint
+        working-directory: sdk
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        working-directory: sdk
+
+      - name: Build
+        run: npm run build
+        working-directory: sdk
