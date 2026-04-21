@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `sdk/README.md` and `cli/README.md` gained "Cookbook" sections with real usage patterns (pagination, cron posters, jq pipelines, discriminated-union submit handling, injected `fetch` for tests, custom User-Agents, running against a local backend, exit-code-driven shell logic).
+- All three published package READMEs (`sdk/`, `cli/`, `mcp/`) now carry CI status and coverage badges in addition to npm version / downloads / license.
+
 ### Changed
 - `murphys-laws-mcp` bumped to `1.2.0`: each of the 7 tool files now calls the SDK's typed methods (`api.searchLaws`, `api.getRandomLaw`, etc.) instead of the low-level `api.get`/`api.post` with hand-rolled response interfaces. Net `-109` lines across `mcp/src/`; the biggest win is `submit-law.ts` which delegates category-slug resolution and discriminated-union error handling to the SDK. No behavior change for AI hosts using the server; the 7 tool names, descriptions, and output formatting are identical.
 
 ### Fixed
 - `npm audit` no longer reports the two moderate advisories that had been nagging every push: `dompurify` bumped `3.3.3 -> 3.4.0` (transitive via `jspdf` in web) and `hono` bumped `4.12.12 -> 4.12.14` (transitive via `@modelcontextprotocol/sdk` in mcp). Resolved cleanly with `npm audit fix`; no consumer code changes. All 3105 tests still pass.
+- `npm run lint:md` now ignores the gitignored `CLAUDE.md`, `.cursor/**`, and `.claude/**` paths. These local-only config files don't exist on a fresh clone but were producing noisy errors whenever a contributor had them present locally. CI was never affected - this just quiets local `npm run lint:md` output.
 - `cli-ci.yml` and `mcp-ci.yml` now build the SDK before running typecheck / lint / tests. `murphys-laws-sdk`'s `main` points at `dist/index.js`, and `npm ci` alone doesn't build workspace members, so consumers couldn't resolve the module on a fresh runner.
 
 ### Added
