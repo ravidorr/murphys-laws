@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `mcp/server.json` description trimmed from 140 chars to 79 so it passes the MCP Registry's `description <= 100` validation. The old longer description on `mcp/package.json` is unchanged (npm has no such limit). The MCP Registry now lists `com.murphys-laws/murphys-laws@1.2.1` and resolves to `npm:murphys-laws-mcp@1.2.1`.
+
 ### Changed
 - `murphys-laws-mcp` bumped to `1.2.1`: corrected `mcpName` (and the matching `name` in `mcp/server.json`) from `murphys-laws.com/murphys-laws` to the reverse-DNS form `com.murphys-laws/murphys-laws` required by the [MCP Registry naming rules](https://modelcontextprotocol.io/registry/authentication). The old value was malformed - neither a `io.github.*` nor a reverse-DNS `com.*` namespace - which is why the initial registry submission never actually landed (registry search still returns 0 hits). The npm package, stdio behavior, and 7 tool surface are otherwise unchanged.
 - `mcp/server.json` pinned both its own `version` and the bundled npm `packages[0].version` to `1.2.1` so registry publish (once credentials are set up) reflects the current artifact on npm.
