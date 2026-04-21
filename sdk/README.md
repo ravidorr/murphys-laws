@@ -2,6 +2,8 @@
 
 [![npm version](https://img.shields.io/npm/v/murphys-laws-sdk.svg)](https://www.npmjs.com/package/murphys-laws-sdk)
 [![npm downloads](https://img.shields.io/npm/dm/murphys-laws-sdk.svg)](https://www.npmjs.com/package/murphys-laws-sdk)
+[![CI](https://github.com/ravidorr/murphys-laws/actions/workflows/sdk-ci.yml/badge.svg)](https://github.com/ravidorr/murphys-laws/actions/workflows/sdk-ci.yml)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/ravidorr/murphys-laws/actions/workflows/sdk-ci.yml)
 [![license](https://img.shields.io/npm/l/murphys-laws-sdk.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
 
 Tiny TypeScript SDK for the public [Murphy's Laws](https://murphys-laws.com) REST API.
@@ -64,6 +66,110 @@ success, validation errors, and rate limiting without catching exceptions.
 
 Network and unexpected non-2xx GET responses throw `ApiError` with `status`
 and `body`.
+
+## Cookbook
+
+Real patterns, not toy examples.
+
+### Paginate search results
+
+```ts
+const client = new MurphysLawsClient();
+const PAGE_SIZE = 25;
+
+async function *allResults(q: string) {
+  let offset = 0;
+  while (true) {
+    const page = await client.searchLaws({ q, limit: PAGE_SIZE, offset });
+    for (const law of page.data) yield law;
+    offset += page.data.length;
+    if (offset >= page.total || page.data.length === 0) return;
+  }
+}
+
+for await (const law of allResults('computer')) {
+  console.log(law.id, law.text);
+}
+```
+
+### Handle submissions without `try/catch`
+
+```ts
+const result = await client.submitLaw({
+  text: "Anything that can go wrong, will, and at the worst possible time.",
+  author: 'Jane Doe',
+  category_slug: 'computers',
+});
+
+switch (result.kind) {
+  case 'success':
+    console.log('submitted', result.data.id);
+    break;
+  case 'rate_limited':
+    console.warn(`back off ${result.retryAfter}s`);
+    break;
+  case 'validation_error':
+    console.error('rejected:', result.error);
+    break;
+  case 'unexpected_error':
+    console.error(`unknown status ${result.status}:`, result.error);
+    break;
+}
+```
+
+### Tag your client with a meaningful User-Agent
+
+The public API rate-limits requests with a generic User-Agent more
+aggressively. Always identify your app.
+
+```ts
+const client = new MurphysLawsClient({
+  userAgent: 'my-startup-etl/0.2 (contact: data@my-startup.example)',
+});
+```
+
+### Run against a local backend
+
+```ts
+const client = new MurphysLawsClient({
+  baseUrl: 'http://127.0.0.1:8787',
+});
+```
+
+### Inject `fetch` for deterministic tests
+
+```ts
+const calls: string[] = [];
+const client = new MurphysLawsClient({
+  fetch: (url, init) => {
+    calls.push(url.toString());
+    return Promise.resolve(new Response(JSON.stringify({ id: 1, text: 'fake' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+  },
+});
+
+await client.getRandomLaw();
+// calls is now ['https://murphys-laws.com/api/v1/laws/random']
+```
+
+### Catch `ApiError` only when you need the status
+
+```ts
+import { ApiError } from 'murphys-laws-sdk';
+
+try {
+  const law = await client.getLaw(999999);
+  console.log(law.text);
+} catch (err) {
+  if (err instanceof ApiError && err.status === 404) {
+    console.log('no such law');
+  } else {
+    throw err;
+  }
+}
+```
 
 ## License
 
