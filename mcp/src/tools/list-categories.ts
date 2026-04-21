@@ -1,26 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { MurphysLawsClient } from 'murphys-laws-sdk';
 
-interface Category {
-  id: number;
-  slug: string;
-  title: string;
-  description: string | null;
-  law_count: number;
-}
-
-interface CategoriesResponse {
-  data: Category[];
-}
-
 export function registerListCategories(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'list_categories',
     "List all Murphy's Law categories with their slugs and law counts. Use the slug values to filter searches or browse by category.",
     {},
     async () => {
-      const result = await api.get<CategoriesResponse>('/api/v1/categories');
-      const categories = result.data;
+      const categories = await api.listCategories();
 
       const lines = categories.map(c => {
         const desc = c.description ? ` — ${c.description}` : '';

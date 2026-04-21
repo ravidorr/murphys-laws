@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ApiError, type MurphysLawsClient } from 'murphys-laws-sdk';
-import { formatLaw, type LawData } from '../format.js';
+import { formatLaw } from '../format.js';
 
 export function registerGetRandomLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
@@ -9,7 +9,7 @@ export function registerGetRandomLaw(server: McpServer, api: MurphysLawsClient):
     {},
     async () => {
       try {
-        const law = await api.get<LawData>('/api/v1/laws/random');
+        const law = await api.getRandomLaw();
 
         return {
           content: [{ type: 'text' as const, text: formatLaw(law) }],
