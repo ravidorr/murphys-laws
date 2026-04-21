@@ -1,11 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ApiError, type MurphysLawsClient } from 'murphys-laws-sdk';
-import { formatLaw, type LawData } from '../format.js';
-
-interface LawOfDayResponse {
-  law: LawData;
-  featured_date: string;
-}
+import { formatLaw } from '../format.js';
 
 export function registerGetLawOfTheDay(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
@@ -14,7 +9,7 @@ export function registerGetLawOfTheDay(server: McpServer, api: MurphysLawsClient
     {},
     async () => {
       try {
-        const result = await api.get<LawOfDayResponse>('/api/v1/law-of-day');
+        const result = await api.getLawOfTheDay();
 
         const text = `Law of the Day (${result.featured_date})\n\n${formatLaw(result.law)}`;
 

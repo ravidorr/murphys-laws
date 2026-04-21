@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ApiError, type MurphysLawsClient } from 'murphys-laws-sdk';
-import { formatLaw, type LawData } from '../format.js';
+import { formatLaw } from '../format.js';
 
 export function registerGetLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
@@ -12,7 +12,7 @@ export function registerGetLaw(server: McpServer, api: MurphysLawsClient): void 
     },
     async ({ law_id }) => {
       try {
-        const law = await api.get<LawData>(`/api/v1/laws/${law_id}`);
+        const law = await api.getLaw(law_id);
 
         return {
           content: [{ type: 'text' as const, text: formatLaw(law) }],
