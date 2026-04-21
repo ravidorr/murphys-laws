@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `murphys-laws-mcp` bumped to `1.2.1`: corrected `mcpName` (and the matching `name` in `mcp/server.json`) from `murphys-laws.com/murphys-laws` to the reverse-DNS form `com.murphys-laws/murphys-laws` required by the [MCP Registry naming rules](https://modelcontextprotocol.io/registry/authentication). The old value was malformed - neither a `io.github.*` nor a reverse-DNS `com.*` namespace - which is why the initial registry submission never actually landed (registry search still returns 0 hits). The npm package, stdio behavior, and 7 tool surface are otherwise unchanged.
+- `mcp/server.json` pinned both its own `version` and the bundled npm `packages[0].version` to `1.2.1` so registry publish (once credentials are set up) reflects the current artifact on npm.
+- `.gitignore` now excludes `.config/`. That directory holds local-only MCP Registry signing keys (Ed25519 private key, DNS-based auth); it must never enter git.
+
 ### Added
 - `sdk/README.md` and `cli/README.md` gained "Cookbook" sections with real usage patterns (pagination, cron posters, jq pipelines, discriminated-union submit handling, injected `fetch` for tests, custom User-Agents, running against a local backend, exit-code-driven shell logic).
 - All three published package READMEs (`sdk/`, `cli/`, `mcp/`) now carry CI status and coverage badges in addition to npm version / downloads / license.
