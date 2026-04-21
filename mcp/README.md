@@ -2,6 +2,8 @@
 
 [![npm version](https://img.shields.io/npm/v/murphys-laws-mcp.svg)](https://www.npmjs.com/package/murphys-laws-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/murphys-laws-mcp.svg)](https://www.npmjs.com/package/murphys-laws-mcp)
+[![CI](https://github.com/ravidorr/murphys-laws/actions/workflows/mcp-ci.yml/badge.svg)](https://github.com/ravidorr/murphys-laws/actions/workflows/mcp-ci.yml)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/ravidorr/murphys-laws/actions/workflows/mcp-ci.yml)
 [![license](https://img.shields.io/npm/l/murphys-laws-mcp.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
 
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI agents access to 1,500+ Murphy's Laws, corollaries, and humorous observations about life's tendency for things to go wrong.
