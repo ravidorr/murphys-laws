@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { formatLaw, formatLawList, type LawData } from '../src/format.js';
+import type { Law } from 'murphys-laws-sdk';
+import { formatLaw, formatLawList } from '../src/format.js';
+
+type LawData = Law;
 
 describe('formatLaw', () => {
   it('renders full law with score and attributions', () => {

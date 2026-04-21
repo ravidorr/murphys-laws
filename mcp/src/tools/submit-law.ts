@@ -2,31 +2,6 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { MurphysLawsClient } from 'murphys-laws-sdk';
 
-interface Category {
-  id: number;
-  slug: string;
-  title: string;
-  description: string | null;
-  law_count: number;
-}
-
-interface CategoriesResponse {
-  data: Category[];
-}
-
-interface SubmitSuccessResponse {
-  id: number;
-  title: string;
-  text: string;
-  status: string;
-  message: string;
-}
-
-interface SubmitErrorResponse {
-  error: string;
-  retryAfter?: number;
-}
-
 export function registerSubmitLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'submit_law',
@@ -38,71 +13,42 @@ export function registerSubmitLaw(server: McpServer, api: MurphysLawsClient): vo
       category_slug: z.string().optional().describe('Category slug to file the law under. Use list_categories to see available slugs.'),
     },
     async ({ text, title, author, category_slug }) => {
-      // Resolve category_slug to category_id if provided
-      let categoryId: number | undefined;
+      const result = await api.submitLaw({ text, title, author, category_slug });
 
-      if (category_slug) {
-        const categoriesResult = await api.get<CategoriesResponse>('/api/v1/categories');
-        const category = categoriesResult.data.find(c => c.slug === category_slug);
-        if (!category) {
-          return {
-            content: [{ type: 'text' as const, text: `Category "${category_slug}" not found. Use list_categories to see available category slugs.` }],
-            isError: true,
-          };
-        }
-        categoryId = category.id;
+      if (result.kind === 'success') {
+        const lines = [
+          `Law submitted successfully! (ID: ${result.data.id})`,
+          '',
+          `Title: ${result.data.title || '(none)'}`,
+          `Text: "${result.data.text}"`,
+          `Author: ${author?.trim() || 'Anonymous'}`,
+          `Category: ${category_slug || '(none)'}`,
+          `Status: ${result.data.status}`,
+          '',
+          'The law is now in the review queue and will be published after manual approval.',
+        ];
+        return {
+          content: [{ type: 'text' as const, text: lines.join('\n') }],
+        };
       }
 
-      const body: Record<string, unknown> = { text };
-      if (title) body.title = title;
-      if (author) body.author = author;
-      if (categoryId !== undefined) body.category_id = categoryId;
-
-      const { status, data } = await api.post<SubmitSuccessResponse | SubmitErrorResponse>(
-        '/api/v1/laws',
-        body,
-      );
-
-      if (status === 429) {
-        const errData = data as SubmitErrorResponse;
-        const retryIn = errData.retryAfter ?? 60;
+      if (result.kind === 'rate_limited') {
         return {
-          content: [{ type: 'text' as const, text: `Rate limit exceeded. Try again in ${retryIn} seconds.` }],
+          content: [{ type: 'text' as const, text: `Rate limit exceeded. Try again in ${result.retryAfter} seconds.` }],
           isError: true,
         };
       }
 
-      if (status === 400) {
-        const errData = data as SubmitErrorResponse;
+      if (result.kind === 'validation_error') {
         return {
-          content: [{ type: 'text' as const, text: `Validation error: ${errData.error}` }],
+          content: [{ type: 'text' as const, text: `Validation error: ${result.error}` }],
           isError: true,
         };
       }
-
-      if (status !== 201) {
-        return {
-          content: [{ type: 'text' as const, text: `Unexpected response (status ${status}).` }],
-          isError: true,
-        };
-      }
-
-      const successData = data as SubmitSuccessResponse;
-
-      const lines = [
-        `Law submitted successfully! (ID: ${successData.id})`,
-        '',
-        `Title: ${successData.title || '(none)'}`,
-        `Text: "${successData.text}"`,
-        `Author: ${author?.trim() || 'Anonymous'}`,
-        `Category: ${category_slug || '(none)'}`,
-        `Status: ${successData.status}`,
-        '',
-        'The law is now in the review queue and will be published after manual approval.',
-      ];
 
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: `Unexpected response (status ${result.status}).` }],
+        isError: true,
       };
     },
   );

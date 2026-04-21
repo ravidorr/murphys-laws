@@ -1,14 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { MurphysLawsClient } from 'murphys-laws-sdk';
-import { formatLawList, type LawData } from '../format.js';
-
-interface SearchResponse {
-  data: LawData[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+import { formatLawList } from '../format.js';
 
 export function registerGetLawsByCategory(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
@@ -19,14 +12,11 @@ export function registerGetLawsByCategory(server: McpServer, api: MurphysLawsCli
       limit: z.number().min(1).max(25).default(10).describe('Number of results to return (1-25, default 10)'),
     },
     async ({ category_slug, limit }) => {
-      const params = new URLSearchParams({
-        category_slug,
-        limit: String(limit),
+      const result = await api.getLawsByCategory(category_slug, {
+        limit,
         sort: 'score',
         order: 'desc',
       });
-
-      const result = await api.get<SearchResponse>(`/api/v1/laws?${params}`);
 
       return {
         content: [{ type: 'text' as const, text: formatLawList(result.data, result.total) }],

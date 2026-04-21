@@ -44,22 +44,24 @@ export interface StubClientBehavior {
     ...args: Parameters<MurphysLawsClient['getLawsByCategory']>
   ) => Promise<unknown>;
   submitLaw?: (...args: Parameters<MurphysLawsClient['submitLaw']>) => Promise<SubmitLawResult>;
-  get?: (path: string) => Promise<unknown>;
-  post?: (path: string, body: unknown) => Promise<{ status: number; data: unknown }>;
+}
+
+function unstubbed(method: string): never {
+  throw new Error(`${method} not stubbed`);
 }
 
 export function createStubClient(behavior: StubClientBehavior): MurphysLawsClient {
   return {
     baseUrl: 'https://api.test',
     userAgent: 'test-agent',
-    get: behavior.get ?? (() => Promise.reject(new Error('get not stubbed'))),
-    post: behavior.post ?? (() => Promise.reject(new Error('post not stubbed'))),
-    searchLaws: behavior.searchLaws ?? (() => Promise.reject(new Error('searchLaws not stubbed'))),
-    getRandomLaw: behavior.getRandomLaw ?? (() => Promise.reject(new Error('getRandomLaw not stubbed'))),
-    getLawOfTheDay: behavior.getLawOfTheDay ?? (() => Promise.reject(new Error('getLawOfTheDay not stubbed'))),
-    getLaw: behavior.getLaw ?? (() => Promise.reject(new Error('getLaw not stubbed'))),
-    listCategories: behavior.listCategories ?? (() => Promise.reject(new Error('listCategories not stubbed'))),
-    getLawsByCategory: behavior.getLawsByCategory ?? (() => Promise.reject(new Error('getLawsByCategory not stubbed'))),
-    submitLaw: behavior.submitLaw ?? (() => Promise.reject(new Error('submitLaw not stubbed'))),
+    get: () => unstubbed('get'),
+    post: () => unstubbed('post'),
+    searchLaws: behavior.searchLaws ?? (() => unstubbed('searchLaws')),
+    getRandomLaw: behavior.getRandomLaw ?? (() => unstubbed('getRandomLaw')),
+    getLawOfTheDay: behavior.getLawOfTheDay ?? (() => unstubbed('getLawOfTheDay')),
+    getLaw: behavior.getLaw ?? (() => unstubbed('getLaw')),
+    listCategories: behavior.listCategories ?? (() => unstubbed('listCategories')),
+    getLawsByCategory: behavior.getLawsByCategory ?? (() => unstubbed('getLawsByCategory')),
+    submitLaw: behavior.submitLaw ?? (() => unstubbed('submitLaw')),
   } as unknown as MurphysLawsClient;
 }
