@@ -30,6 +30,9 @@ murphys.db-wal
 .claude/memory/
 CLAUDE.md
 
+# Local-only credentials (MCP Registry signing keys, etc.) - never commit
+.config/
+
 # ===== Monorepo Structure =====
 
 # Migration backups
