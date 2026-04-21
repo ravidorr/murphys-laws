@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- GitHub Actions workflow `.github/workflows/mcp-registry-publish.yml` that re-publishes `com.murphys-laws/murphys-laws` to the MCP Registry whenever `mcp/server.json` changes on `main` (or via manual `workflow_dispatch`). Guardrails: reads the version out of `server.json`, verifies the referenced `murphys-laws-mcp@<version>` actually exists on npm (otherwise aborts), installs `mcp-publisher`, authenticates via DNS using a new `MCP_PUBLISHER_PRIVATE_KEY` repo secret, publishes, and verifies the live registry entry by filtering the search response for an exact `server.name` match (not `servers[0]`, since search ordering is not guaranteed). Key rotation instructions in `mcp/README.md`.
+
 ### Fixed
 - `mcp/server.json` description trimmed from 140 chars to 79 so it passes the MCP Registry's `description <= 100` validation. The old longer description on `mcp/package.json` is unchanged (npm has no such limit). The MCP Registry now lists `com.murphys-laws/murphys-laws@1.2.1` and resolves to `npm:murphys-laws-mcp@1.2.1`.
 

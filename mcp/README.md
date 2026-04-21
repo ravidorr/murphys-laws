@@ -77,6 +77,35 @@ This MCP server uses the public [Murphy's Laws REST API](https://murphys-laws.co
 - [OpenAPI Spec](https://murphys-laws.com/openapi.json)
 - [llms.txt](https://murphys-laws.com/llms.txt)
 
+## MCP Registry publishing
+
+This server is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `com.murphys-laws/murphys-laws`. Registry metadata is re-published automatically by [.github/workflows/mcp-registry-publish.yml](../.github/workflows/mcp-registry-publish.yml) whenever `mcp/server.json` changes on `main` (or via `workflow_dispatch`).
+
+Prerequisites for the automation:
+
+1. A DNS TXT record on `murphys-laws.com` containing `v=MCPv1; k=ed25519; p=<PUBLIC_KEY>` (already set; the public key is in the [authentication docs](https://modelcontextprotocol.io/registry/authentication)).
+2. A repo secret `MCP_PUBLISHER_PRIVATE_KEY` holding the matching Ed25519 private key as hex (no separators).
+
+### Key rotation (when needed)
+
+```bash
+# Generate a fresh keypair (on a machine with OpenSSL 3)
+mkdir -p ~/.config/mcp && cd ~/.config/mcp
+openssl genpkey -algorithm Ed25519 -out murphys-laws.key.pem
+chmod 600 murphys-laws.key.pem
+
+# Derive the new TXT record value
+PUBLIC_KEY="$(openssl pkey -in murphys-laws.key.pem -pubout -outform DER | tail -c 32 | base64)"
+echo "v=MCPv1; k=ed25519; p=${PUBLIC_KEY}"
+# Replace the old TXT record on murphys-laws.com with this value
+
+# Extract the hex private key for the GitHub secret
+openssl pkey -in murphys-laws.key.pem -noout -text | grep -A3 'priv:' | tail -n +2 | tr -d ' :\n'
+# Paste the hex output into repo Settings -> Secrets -> MCP_PUBLISHER_PRIVATE_KEY
+```
+
+The private key file at `~/.config/mcp/murphys-laws.key.pem` is the only local copy; back it up to a password manager.
+
 ## License
 
 CC0 1.0 Universal (Public Domain)
