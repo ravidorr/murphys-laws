@@ -73,17 +73,27 @@ jobs:
         run: mcp-publisher publish
 
       - name: Verify entry is live at expected version
+        env:
+          EXPECTED_NAME: ${{ steps.server.outputs.name }}
+          EXPECTED_VERSION: ${{ steps.server.outputs.version }}
         run: |
           set -euo pipefail
           # Allow a beat for the registry to index.
           sleep 5
+          # The search endpoint may return multiple partial matches with
+          # non-guaranteed ordering, so filter by exact server.name match
+          # rather than trusting .servers[0].
           LIVE_VERSION=$(
-            curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=${{ steps.server.outputs.name }}" \
-              | jq -r '.servers[0].server.version // ""'
+            curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
+              | jq -r --arg name "$EXPECTED_NAME" \
+                  'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""'
           )
-          EXPECTED="${{ steps.server.outputs.version }}"
-          if [ "$LIVE_VERSION" != "$EXPECTED" ]; then
-            echo "::error::Registry shows version '$LIVE_VERSION', expected '$EXPECTED'"
+          if [ -z "$LIVE_VERSION" ]; then
+            echo "::error::No registry entry found for '$EXPECTED_NAME'"
             exit 1
           fi
-          echo "Registry entry verified: ${{ steps.server.outputs.name }}@$LIVE_VERSION"
+          if [ "$LIVE_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "::error::Registry shows '$EXPECTED_NAME@$LIVE_VERSION', expected '@$EXPECTED_VERSION'"
+            exit 1
+          fi
+          echo "Registry entry verified: $EXPECTED_NAME@$LIVE_VERSION"
