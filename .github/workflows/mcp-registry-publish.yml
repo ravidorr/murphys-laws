@@ -3,6 +3,11 @@ name: MCP Registry Publish
 # Re-publishes mcp/server.json to registry.modelcontextprotocol.io
 # whenever the pinned version changes, or on manual dispatch.
 #
+# Idempotent: if the registry already has the target version, the publish
+# step is skipped (the registry rejects duplicate-version publishes with
+# 400). The verify step always runs so successful completion always means
+# "registry matches server.json".
+#
 # Requires repo secret: MCP_PUBLISHER_PRIVATE_KEY
 #   The Ed25519 private key (hex) matching the DNS TXT record on
 #   murphys-laws.com. See mcp/README.md for setup / rotation steps.
@@ -38,9 +43,31 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "package_identifier=$PACKAGE_IDENTIFIER" >> "$GITHUB_OUTPUT"
           echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Will publish: $NAME@$VERSION -> npm:$PACKAGE_IDENTIFIER@$PACKAGE_VERSION"
+          echo "Target: $NAME@$VERSION -> npm:$PACKAGE_IDENTIFIER@$PACKAGE_VERSION"
+
+      - name: Check current registry state
+        id: check
+        env:
+          EXPECTED_NAME: ${{ steps.server.outputs.name }}
+          EXPECTED_VERSION: ${{ steps.server.outputs.version }}
+        run: |
+          set -euo pipefail
+          LIVE_VERSION=$(
+            curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
+              | jq -r --arg name "$EXPECTED_NAME" \
+                  'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""'
+          )
+          echo "live_version=$LIVE_VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$LIVE_VERSION" = "$EXPECTED_VERSION" ]; then
+            echo "Registry already has $EXPECTED_NAME@$EXPECTED_VERSION - skipping publish"
+            echo "needs_publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Registry has '${LIVE_VERSION:-<none>}', target '$EXPECTED_VERSION' - publish needed"
+            echo "needs_publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Verify npm artifact exists (guardrail)
+        if: steps.check.outputs.needs_publish == 'true'
         run: |
           # If server.json points at a version that never made it to npm,
           # a successful registry publish would reference a dangling package.
@@ -48,6 +75,7 @@ jobs:
           npm view "${{ steps.server.outputs.package_identifier }}@${{ steps.server.outputs.package_version }}" version
 
       - name: Install mcp-publisher
+        if: steps.check.outputs.needs_publish == 'true'
         run: |
           set -euo pipefail
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -59,6 +87,7 @@ jobs:
           echo "mcp-publisher installed"
 
       - name: Authenticate with registry (DNS auth)
+        if: steps.check.outputs.needs_publish == 'true'
         env:
           PRIVATE_KEY: ${{ secrets.MCP_PUBLISHER_PRIVATE_KEY }}
         run: |
@@ -69,6 +98,7 @@ jobs:
           mcp-publisher login dns --domain murphys-laws.com --private-key "$PRIVATE_KEY"
 
       - name: Publish to MCP Registry
+        if: steps.check.outputs.needs_publish == 'true'
         working-directory: mcp
         run: mcp-publisher publish
 
@@ -76,10 +106,14 @@ jobs:
         env:
           EXPECTED_NAME: ${{ steps.server.outputs.name }}
           EXPECTED_VERSION: ${{ steps.server.outputs.version }}
+          NEEDS_PUBLISH: ${{ steps.check.outputs.needs_publish }}
         run: |
           set -euo pipefail
-          # Allow a beat for the registry to index.
-          sleep 5
+          # After a fresh publish, allow a beat for the registry to index.
+          # No-op runs can skip the sleep.
+          if [ "$NEEDS_PUBLISH" = "true" ]; then
+            sleep 5
+          fi
           # The search endpoint may return multiple partial matches with
           # non-guaranteed ordering, so filter by exact server.name match
           # rather than trusting .servers[0].
