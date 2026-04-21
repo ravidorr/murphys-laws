@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -32,8 +32,8 @@
     "lint:sdk": "cd sdk && npm run lint",
     "lint:cli": "cd cli && npm run lint",
     "lint:mcp": "cd mcp && npm run lint",
-    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\"",
-    "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\"",
+    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\" \"#CLAUDE.md\" \"#.cursor/**\" \"#.claude/**\"",
+    "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\" \"#CLAUDE.md\" \"#.cursor/**\" \"#.claude/**\"",
     "lint": "npm run lint:web && npm run lint:sdk && npm run lint:cli && npm run lint:mcp && npm run lint:md",
     "ci:backend": "cd backend && npm run typecheck && npm run lint && npm run build:db && npm run test:coverage",
     "ci:web": "cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html && npm test && npm run build",
