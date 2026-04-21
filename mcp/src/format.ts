@@ -1,22 +1,6 @@
-interface Attribution {
-  name?: string;
-  note?: string;
-}
+import type { Attribution, Law } from 'murphys-laws-sdk';
 
-export interface LawData {
-  id: number;
-  title?: string | null;
-  text: string;
-  attributions?: Attribution[] | string;
-  upvotes?: number;
-  downvotes?: number;
-  score?: number;
-  category_name?: string;
-  category_slug?: string;
-  [key: string]: unknown;
-}
-
-function parseAttributions(attributions: Attribution[] | string | undefined): Attribution[] {
+function parseAttributions(attributions: Law['attributions']): Attribution[] {
   if (!attributions) return [];
   if (typeof attributions === 'string') {
     try {
@@ -29,7 +13,7 @@ function parseAttributions(attributions: Attribution[] | string | undefined): At
   return attributions;
 }
 
-export function formatLaw(law: LawData): string {
+export function formatLaw(law: Law): string {
   const lines: string[] = [];
 
   const header = law.title
@@ -59,7 +43,7 @@ export function formatLaw(law: LawData): string {
   return lines.join('\n');
 }
 
-export function formatLawList(laws: LawData[], total?: number): string {
+export function formatLawList(laws: Law[], total?: number): string {
   if (laws.length === 0) {
     return 'No laws found.';
   }
