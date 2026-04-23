@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Android toolchain bumped: Android Gradle Plugin `9.1.1` -> `9.2.0` and Gradle wrapper `9.3.1` -> `9.4.1`. Keeps the Android build on current toolchain releases; no app code changes.
 
+### Fixed
+- Resolved two high-severity `npm audit` advisories via `npm audit fix`: `@xmldom/xmldom` `0.9.9` -> `0.9.10` and `speech-rule-engine` `4.1.3` -> `4.1.4` (both transitive via MathJax). Unblocks the pre-push audit hook; no consumer code changes.
+
 ### Added
 - GitHub Actions workflow `.github/workflows/mcp-registry-publish.yml` that re-publishes `com.murphys-laws/murphys-laws` to the MCP Registry whenever `mcp/server.json` changes on `main` (or via manual `workflow_dispatch`). Guardrails: reads the version out of `server.json`, verifies the referenced `murphys-laws-mcp@<version>` actually exists on npm (otherwise aborts), installs `mcp-publisher`, authenticates via DNS using a new `MCP_PUBLISHER_PRIVATE_KEY` repo secret, publishes, and verifies the live registry entry by filtering the search response for an exact `server.name` match (not `servers[0]`, since search ordering is not guaranteed). Key rotation instructions in `mcp/README.md`.
 
