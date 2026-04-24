@@ -55,6 +55,15 @@ function safeLocalStorageSet(key: string, value: string): void {
 // Track if app is already installed
 let isInstalled = false;
 
+// Focus-trap state for the install-prompt dialog.
+// Populated when the prompt opens, torn down when it closes so a second
+// open doesn't leak a previous dialog's focus target or keydown listener.
+let previouslyFocusedElement: HTMLElement | null = null;
+let focusTrapKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+
+const FOCUSABLE_SELECTORS =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // Engagement metrics for smart prompting
 const engagement = {
   pageViews: 0,
@@ -79,6 +88,80 @@ export function _resetForTesting() {
   engagement.calculatorUsed = false;
   engagement.timeOnSite = 0;
   engagement.startTime = Date.now();
+  deactivateFocusTrap();
+}
+
+/**
+ * Activate an ARIA-modal focus trap on the install prompt.
+ *
+ * - Moves keyboard focus to the primary CTA on the next paint.
+ * - Saves the previously-focused element so we can restore on close.
+ * - Listens (document-wide) for Escape (dismiss) and Tab wrap.
+ *
+ * The trap is intentionally scoped to the document: if something
+ * programmatically moves focus outside the prompt while it is open,
+ * the next Tab press yanks focus back to the primary CTA.
+ */
+function activateFocusTrap(prompt: HTMLElement, primarySelector: string) {
+  previouslyFocusedElement =
+    document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+  requestAnimationFrame(() => {
+    const primary = prompt.querySelector<HTMLElement>(primarySelector);
+    if (primary) primary.focus();
+  });
+
+  focusTrapKeydownHandler = (e: KeyboardEvent) => {
+    if (!document.body.contains(prompt)) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      const dismissBtn = prompt.querySelector<HTMLElement>('[data-action="dismiss"]');
+      if (dismissBtn) dismissBtn.click();
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      prompt.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS),
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    const active = document.activeElement;
+
+    if (!prompt.contains(active)) {
+      e.preventDefault();
+      first.focus();
+      return;
+    }
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  document.addEventListener('keydown', focusTrapKeydownHandler);
+}
+
+/**
+ * Tear down the focus trap and return focus to the element that had it
+ * before the prompt opened. Safe to call when the trap is inactive.
+ */
+function deactivateFocusTrap() {
+  if (focusTrapKeydownHandler) {
+    document.removeEventListener('keydown', focusTrapKeydownHandler);
+    focusTrapKeydownHandler = null;
+  }
+  if (previouslyFocusedElement && document.contains(previouslyFocusedElement)) {
+    previouslyFocusedElement.focus();
+  }
+  previouslyFocusedElement = null;
 }
 
 export function _setPromptShownThisSessionForTesting(value: boolean) {
@@ -279,6 +362,7 @@ export function showInstallPrompt() {
   prompt.className = 'install-prompt';
   prompt.id = 'install-prompt';
   prompt.setAttribute('role', 'dialog');
+  prompt.setAttribute('aria-modal', 'true');
   prompt.setAttribute('aria-labelledby', 'install-prompt-title');
   prompt.setAttribute('aria-describedby', 'install-prompt-desc');
 
@@ -331,6 +415,8 @@ export function showInstallPrompt() {
   requestAnimationFrame(() => {
     prompt.classList.add('install-prompt-visible');
   });
+
+  activateFocusTrap(prompt, '[data-action="install"]');
 }
 
 /**
@@ -348,6 +434,7 @@ export function showIOSInstallInstructions() {
   prompt.className = 'install-prompt install-prompt-ios';
   prompt.id = 'install-prompt';
   prompt.setAttribute('role', 'dialog');
+  prompt.setAttribute('aria-modal', 'true');
   prompt.setAttribute('aria-labelledby', 'install-prompt-title');
   prompt.setAttribute('aria-describedby', 'install-prompt-desc');
 
@@ -410,6 +497,8 @@ export function showIOSInstallInstructions() {
   requestAnimationFrame(() => {
     prompt.classList.add('install-prompt-visible');
   });
+
+  activateFocusTrap(prompt, '[data-action="dismiss"]');
 }
 
 /**
@@ -462,6 +551,7 @@ function dismissPromptNeverShowAgain() {
 export function hideInstallPrompt() {
   const prompt = document.getElementById('install-prompt');
   if (prompt) {
+    deactivateFocusTrap();
     prompt.classList.remove('install-prompt-visible');
     prompt.addEventListener('transitionend', () => prompt.remove(), { once: true });
     // Fallback removal if transition doesn't fire
