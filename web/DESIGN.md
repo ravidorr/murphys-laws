@@ -181,6 +181,25 @@ components:
     textColor: "{colors.text-high-contrast}"
     typography: "{typography.body-md}"
     width: "24px"
+  notification:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    typography: "{typography.body-sm}"
+  header:
+    textColor: "{colors.fg}"
+    typography: "{typography.body-md}"
+  footer:
+    textColor: "{colors.muted-fg}"
+    typography: "{typography.body-sm}"
+  breadcrumb:
+    textColor: "{colors.muted-fg}"
+    typography: "{typography.body-sm}"
+  search-autocomplete:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    typography: "{typography.body-md}"
 ---
 # Murphy's Law Archive - Design System
 

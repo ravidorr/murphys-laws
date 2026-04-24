@@ -285,6 +285,46 @@ const COMPONENTS: Record<string, Record<string, string>> = {
     typography: '{typography.body-md}',
     width: '24px',
   },
+  // Notification / toast. The shipped surface is always decorated with a
+  // success / error variant class (see web/styles/partials/notification.css);
+  // the base entry captures the shared shape (radius, type size) and uses
+  // neutral bg/fg as a placeholder. Agents should swap to success-bg / error-bg
+  // when rendering the concrete variants, matching the calc-* pattern above.
+  notification: {
+    backgroundColor: '{colors.bg}',
+    textColor: '{colors.fg}',
+    rounded: '{rounded.lg}',
+    typography: '{typography.body-sm}',
+  },
+  // Sticky header. The shipped background is a translucent color-mix over
+  // --bg; DESIGN.md's YAML schema only allows literal #HEX, so the background
+  // is deliberately omitted (see Elevation & Depth in the Markdown body).
+  header: {
+    textColor: '{colors.fg}',
+    typography: '{typography.body-md}',
+  },
+  // Site footer. Nav links use muted-fg by default and lift to fg on hover
+  // (see web/styles/partials/layout.css). Contract records the default.
+  footer: {
+    textColor: '{colors.muted-fg}',
+    typography: '{typography.body-sm}',
+  },
+  // Breadcrumb trail. The trail links are muted-fg; the current-page item is
+  // fg. Contract records the trail colour (dominant by count); current-page
+  // styling is a local emphasis override in components.css.
+  breadcrumb: {
+    textColor: '{colors.muted-fg}',
+    typography: '{typography.body-sm}',
+  },
+  // Search autocomplete dropdown (floating surface). Elevation / shadow are
+  // not tokenized (see Elevation & Depth); the entry captures the solid
+  // surface, text, radius, and type size.
+  'search-autocomplete': {
+    backgroundColor: '{colors.bg}',
+    textColor: '{colors.fg}',
+    rounded: '{rounded.lg}',
+    typography: '{typography.body-md}',
+  },
 };
 
 const NAME = "Murphy's Law Archive";
