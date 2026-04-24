@@ -1,0 +1,4 @@
+# Local-only scratch dir for Stitch (https://stitch.withgoogle.com) mockups.
+# DESIGN.md is the canonical design-system artifact; Stitch output is for
+# ideation only and must never be committed or shipped.
+.stitch/
