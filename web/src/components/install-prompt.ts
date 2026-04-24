@@ -285,12 +285,12 @@ export function showInstallPrompt() {
   prompt.innerHTML = `
     <div class="install-prompt-content">
       <div class="install-prompt-icon">
-        <img src="/android-chrome-192x192.png" alt="Murphy's Laws app icon" width="64" height="64">
+        <img src="/android-chrome-192x192.png" alt="Murphy's Laws app icon" width="40" height="40">
       </div>
       <div class="install-prompt-text">
         <h3 id="install-prompt-title" class="install-prompt-title">Install Murphy's Laws</h3>
         <p id="install-prompt-desc" class="install-prompt-desc">
-          Get quick access to laws and calculators, even offline. No app store needed.
+          Preserve the documentation of inevitable failure for offline consultation.
         </p>
       </div>
     </div>
@@ -298,12 +298,14 @@ export function showInstallPrompt() {
       <button class="install-prompt-btn install-prompt-btn-primary" data-action="install">
         Install
       </button>
-      <button class="install-prompt-btn install-prompt-btn-secondary" data-action="dismiss">
-        Not now
-      </button>
-      <button class="install-prompt-btn install-prompt-btn-secondary" data-action="never">
-        Never show again
-      </button>
+      <div class="install-prompt-actions-row">
+        <button class="install-prompt-btn install-prompt-btn-secondary" data-action="dismiss">
+          Not now
+        </button>
+        <button class="install-prompt-btn install-prompt-btn-tertiary" data-action="never">
+          Never show again
+        </button>
+      </div>
     </div>
   `;
 
@@ -352,12 +354,12 @@ export function showIOSInstallInstructions() {
   prompt.innerHTML = `
     <div class="install-prompt-content">
       <div class="install-prompt-icon">
-        <img src="/apple-touch-icon.png" alt="Murphy's Laws app icon" width="64" height="64">
+        <img src="/apple-touch-icon.png" alt="Murphy's Laws app icon" width="40" height="40">
       </div>
       <div class="install-prompt-text">
         <h3 id="install-prompt-title" class="install-prompt-title">Install Murphy's Laws</h3>
         <p id="install-prompt-desc" class="install-prompt-desc">
-          Add this app to your home screen for quick access.
+          Add this archive to your home screen for immediate reference.
         </p>
       </div>
     </div>
@@ -381,10 +383,10 @@ export function showIOSInstallInstructions() {
       </div>
     </div>
     <div class="install-prompt-actions">
-      <button class="install-prompt-btn install-prompt-btn-secondary" data-action="dismiss">
+      <button class="install-prompt-btn install-prompt-btn-primary" data-action="dismiss">
         Got it
       </button>
-      <button class="install-prompt-btn install-prompt-btn-secondary" data-action="never">
+      <button class="install-prompt-btn install-prompt-btn-tertiary" data-action="never">
         Never show again
       </button>
     </div>
