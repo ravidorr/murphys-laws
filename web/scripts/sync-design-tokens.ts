@@ -280,6 +280,11 @@ const COMPONENTS: Record<string, Record<string, string>> = {
     backgroundColor: '{colors.dark-bg}',
     textColor: '{colors.dark-text}',
   },
+  rank: {
+    textColor: '{colors.text-high-contrast}',
+    typography: '{typography.body-md}',
+    width: '24px',
+  },
 };
 
 const NAME = "Murphy's Law Archive";
