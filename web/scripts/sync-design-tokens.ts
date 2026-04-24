@@ -11,6 +11,7 @@
  */
 
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -703,11 +704,30 @@ export function buildSharedDesignMd(parsed: ClassifiedTokens): string {
 
 export interface RunOptions {
   check: boolean;
+  /**
+   * Hook mode. When true, refuse to run if either output file has unstaged
+   * changes in the working tree. Set by the pre-commit hook in
+   * .lintstagedrc.json; never set for manual `npm run design:sync` runs.
+   *
+   * Why: in write mode the script regenerates YAML front matter but preserves
+   * the existing Markdown body via `extractBody()`. If a developer has WIP
+   * body edits on disk, a pre-commit hook that stages web/DESIGN.md would
+   * silently ship those edits alongside the variables.css change that
+   * triggered the hook. The guard forces the developer to stage, stash, or
+   * discard the body edits before the hook proceeds.
+   */
+  hook: boolean;
   variablesCssPath: string;
   designMdPath: string;
   sharedDesignMdPath: string;
   readFile: (p: string) => string;
   existsFile: (p: string) => boolean;
+  /**
+   * Return true if the given path has unstaged changes (working-tree differs
+   * from the index). Only consulted when `hook` is true. Tests inject a fake
+   * so we don't depend on a real git repo.
+   */
+  hasUnstagedChanges: (p: string) => boolean;
   writeFile: (p: string, contents: string) => void;
   logger: Pick<Console, 'log' | 'error'>;
 }
@@ -744,6 +764,19 @@ export function run(options: RunOptions): 0 | 1 {
     return 0;
   }
 
+  if (options.hook) {
+    for (const p of [options.designMdPath, options.sharedDesignMdPath]) {
+      if (options.existsFile(p) && options.hasUnstagedChanges(p)) {
+        options.logger.error(
+          `sync refuses to run: ${p} has unstaged changes.\n` +
+            '  Stage, stash, or discard those edits before committing.\n' +
+            '  (Triggered by the pre-commit hook on web/styles/partials/variables.css.)',
+        );
+        return 1;
+      }
+    }
+  }
+
   options.writeFile(options.designMdPath, next);
   options.logger.log(`Wrote ${options.designMdPath}`);
   options.writeFile(options.sharedDesignMdPath, nextShared);
@@ -761,15 +794,31 @@ function isMain(): boolean {
   }
 }
 
+/**
+ * Shell out to `git diff --quiet --` to detect unstaged changes for a single
+ * path. Exit code 0 = clean; 1 = unstaged diff present; anything else (e.g.
+ * git not installed, path outside a repo) is treated as "cannot verify" and
+ * returns false so the hook doesn't spuriously fail for non-git environments.
+ */
+function hasUnstagedChangesFromGit(target: string): boolean {
+  const r = spawnSync('git', ['diff', '--quiet', '--', target], {
+    stdio: 'ignore',
+  });
+  return r.status === 1;
+}
+
 if (isMain()) {
   const check = process.argv.includes('--check');
+  const hook = process.argv.includes('--hook');
   const code = run({
     check,
+    hook,
     variablesCssPath: VARIABLES_CSS_PATH,
     designMdPath: DESIGN_MD_PATH,
     sharedDesignMdPath: SHARED_DESIGN_MD_PATH,
     readFile: (p) => fs.readFileSync(p, 'utf8'),
     existsFile: (p) => fs.existsSync(p),
+    hasUnstagedChanges: hasUnstagedChangesFromGit,
     writeFile: (p, c) => fs.writeFileSync(p, c, 'utf8'),
     logger: console,
   });
