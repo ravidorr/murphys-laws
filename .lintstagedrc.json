@@ -5,11 +5,12 @@
   "web/**/*.test.{js,ts}": [
     "eslint --config web/eslint.config.test.ts --fix"
   ],
-  "web/styles/**/*.css": [
+  "web/styles/**/!(variables).css": [
     "stylelint --config web/.stylelintrc.json --fix"
   ],
   "web/styles/partials/variables.css": [
-    "tsx web/scripts/sync-design-tokens.ts",
+    "stylelint --config web/.stylelintrc.json --fix",
+    "tsx web/scripts/sync-design-tokens.ts --hook",
     "git add web/DESIGN.md shared/DESIGN.md"
   ],
   "web/**/*.html": [
