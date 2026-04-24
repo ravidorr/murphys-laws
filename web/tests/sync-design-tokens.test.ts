@@ -196,6 +196,24 @@ describe('renderFrontMatter', () => {
     );
   });
 
+  it('includes the chrome components that AI agents most often regenerate', () => {
+    const localThis: RenderLocalThis = {};
+    localThis.parsed = classifyTokens(parseCssVariables(sampleCss()));
+    localThis.yaml = renderFrontMatter(localThis.parsed);
+
+    // Anchored on the two-space YAML indent so we match component keys
+    // (not stray substrings inside token refs like {colors.bg}).
+    expect(localThis.yaml).toContain('\n  notification:\n');
+    expect(localThis.yaml).toContain('\n  header:\n');
+    expect(localThis.yaml).toContain('\n  footer:\n');
+    expect(localThis.yaml).toContain('\n  breadcrumb:\n');
+    expect(localThis.yaml).toContain('\n  search-autocomplete:\n');
+
+    expect(localThis.yaml).toContain(
+      '  search-autocomplete:\n    backgroundColor: "{colors.bg}"\n    textColor: "{colors.fg}"\n    rounded: "{rounded.lg}"\n    typography: "{typography.body-md}"',
+    );
+  });
+
   it('appends author-added colors alphabetically after the canonical order', () => {
     const localThis: RenderLocalThis = {};
     localThis.parsed = {
