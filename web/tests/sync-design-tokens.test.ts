@@ -28,6 +28,7 @@ interface RenderLocalThis {
 
 interface RunLocalThis {
   files?: Map<string, string>;
+  unstaged?: Set<string>;
   written?: Map<string, string>;
   logs?: string[];
   errors?: string[];
@@ -63,11 +64,13 @@ function sampleCss(): string {
 function buildRunLocalThis(initialFiles: Record<string, string> = {}): RunLocalThis {
   const localThis: RunLocalThis = {};
   localThis.files = new Map(Object.entries(initialFiles));
+  localThis.unstaged = new Set();
   localThis.written = new Map();
   localThis.logs = [];
   localThis.errors = [];
   localThis.options = {
     check: false,
+    hook: false,
     variablesCssPath: '/virt/variables.css',
     designMdPath: '/virt/DESIGN.md',
     sharedDesignMdPath: '/virt/shared/DESIGN.md',
@@ -79,6 +82,7 @@ function buildRunLocalThis(initialFiles: Record<string, string> = {}): RunLocalT
       return value;
     },
     existsFile: (p: string): boolean => localThis.files!.has(p),
+    hasUnstagedChanges: (p: string): boolean => localThis.unstaged!.has(p),
     writeFile: (p: string, contents: string): void => {
       localThis.written!.set(p, contents);
       localThis.files!.set(p, contents);
@@ -450,5 +454,97 @@ describe('run', () => {
     expect(localThis.code).toBe(0);
     expect(written).toContain('generated token-only mirror');
     expect(written).not.toContain('someone hand-edited this');
+  });
+
+  it('in --hook mode returns 1 when web/DESIGN.md has unstaged changes (guards against silent auto-staging)', () => {
+    const initial = buildRunLocalThis({ '/virt/variables.css': sampleCss() });
+    run(initial.options!);
+
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+      '/virt/DESIGN.md': initial.written!.get('/virt/DESIGN.md')!,
+      '/virt/shared/DESIGN.md': initial.written!.get('/virt/shared/DESIGN.md')!,
+    });
+    localThis.options!.hook = true;
+    localThis.unstaged!.add('/virt/DESIGN.md');
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(1);
+    expect(
+      localThis.errors!.some((e) =>
+        e.includes('/virt/DESIGN.md has unstaged changes'),
+      ),
+    ).toBe(true);
+    expect(localThis.written!.size).toBe(0);
+  });
+
+  it('in --hook mode returns 1 when shared/DESIGN.md has unstaged changes', () => {
+    const initial = buildRunLocalThis({ '/virt/variables.css': sampleCss() });
+    run(initial.options!);
+
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+      '/virt/DESIGN.md': initial.written!.get('/virt/DESIGN.md')!,
+      '/virt/shared/DESIGN.md': initial.written!.get('/virt/shared/DESIGN.md')!,
+    });
+    localThis.options!.hook = true;
+    localThis.unstaged!.add('/virt/shared/DESIGN.md');
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(1);
+    expect(
+      localThis.errors!.some((e) =>
+        e.includes('/virt/shared/DESIGN.md has unstaged changes'),
+      ),
+    ).toBe(true);
+    expect(localThis.written!.size).toBe(0);
+  });
+
+  it('in --hook mode succeeds when neither target has unstaged changes', () => {
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+    });
+    localThis.options!.hook = true;
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(0);
+    expect(localThis.written!.has('/virt/DESIGN.md')).toBe(true);
+    expect(localThis.written!.has('/virt/shared/DESIGN.md')).toBe(true);
+  });
+
+  it('without --hook, unstaged changes on DESIGN.md do not block a manual sync', () => {
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+      '/virt/DESIGN.md':
+        '---\nversion: old\n---\n# body with WIP edits\n',
+    });
+    localThis.options!.hook = false;
+    localThis.unstaged!.add('/virt/DESIGN.md');
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(0);
+    expect(localThis.written!.has('/virt/DESIGN.md')).toBe(true);
+  });
+
+  it("in --hook mode does not probe unstaged state for a DESIGN.md that doesn't exist yet", () => {
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+    });
+    localThis.options!.hook = true;
+    // Simulate a broken dev env where git reports anything as unstaged even
+    // though DESIGN.md isn't tracked yet. The guard must look at file
+    // existence first so the first-run case (no DESIGN.md on disk) succeeds.
+    localThis.unstaged!.add('/virt/DESIGN.md');
+    localThis.unstaged!.add('/virt/shared/DESIGN.md');
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(0);
+    expect(localThis.written!.has('/virt/DESIGN.md')).toBe(true);
+    expect(localThis.written!.has('/virt/shared/DESIGN.md')).toBe(true);
   });
 });
