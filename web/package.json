@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-web",
-  "version": "3.2.8",
+  "version": "3.2.9",
   "description": "Murphy's Laws Web Application",
   "type": "module",
   "scripts": {
@@ -23,7 +23,8 @@
     "optimize:images": "tsx scripts/optimize-images.ts",
     "optimize:images:dry-run": "tsx scripts/optimize-images.ts --dry-run",
     "design:sync": "tsx scripts/sync-design-tokens.ts",
-    "design:check": "tsx scripts/sync-design-tokens.ts --check && tsx scripts/design-md-lint.ts"
+    "design:check": "tsx scripts/sync-design-tokens.ts --check && tsx scripts/design-md-lint.ts",
+    "design:export": "tsx scripts/export-design-tokens.ts"
   },
   "keywords": [
     "murphys-law",
