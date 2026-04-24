@@ -1349,4 +1349,327 @@ describe('Install Prompt Component', () => {
       expect(document.querySelector('.install-prompt')).toBeFalsy();
     });
   });
+
+  describe('focus trap', () => {
+    interface FocusTrapContext {
+      mockPromptEvent?: {
+        preventDefault: ReturnType<typeof vi.fn>;
+        prompt: ReturnType<typeof vi.fn>;
+        userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+      };
+      trigger?: HTMLButtonElement;
+      installBtn?: HTMLElement | null;
+      neverBtn?: HTMLElement | null;
+      dismissBtn?: HTMLElement | null;
+      gotItBtn?: HTMLElement | null;
+    }
+
+    function newMockPromptEvent() {
+      return {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+    }
+
+    it('has aria-modal="true" on the generic variant', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      expect(
+        document.querySelector('.install-prompt')!.getAttribute('aria-modal')
+      ).toBe('true');
+    });
+
+    it('has aria-modal="true" on the iOS variant', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+      expect(
+        document.querySelector('.install-prompt.install-prompt-ios')!
+          .getAttribute('aria-modal')
+      ).toBe('true');
+    });
+
+    it('moves focus to the primary Install button after rAF on generic variant', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      localThis.installBtn = document.querySelector('[data-action="install"]') as HTMLElement | null;
+      expect(localThis.installBtn).toBeTruthy();
+      expect(document.activeElement).toBe(localThis.installBtn);
+    });
+
+    it('moves focus to the primary Got it button after rAF on iOS variant', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      const localThis: FocusTrapContext = {};
+      localThis.gotItBtn = document.querySelector('.install-prompt-ios [data-action="dismiss"]') as HTMLElement | null;
+      expect(localThis.gotItBtn).toBeTruthy();
+      expect(document.activeElement).toBe(localThis.gotItBtn);
+    });
+
+    it('Tab from last focusable wraps to first', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      localThis.installBtn = document.querySelector('[data-action="install"]') as HTMLElement | null;
+      localThis.neverBtn = document.querySelector('[data-action="never"]') as HTMLElement | null;
+      expect(localThis.installBtn).toBeTruthy();
+      expect(localThis.neverBtn).toBeTruthy();
+
+      localThis.neverBtn!.focus();
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      document.dispatchEvent(tabEvent);
+
+      expect(tabEvent.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(localThis.installBtn);
+    });
+
+    it('Shift+Tab from first focusable wraps to last', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      localThis.installBtn = document.querySelector('[data-action="install"]') as HTMLElement | null;
+      localThis.neverBtn = document.querySelector('[data-action="never"]') as HTMLElement | null;
+      expect(localThis.installBtn).toBeTruthy();
+      expect(localThis.neverBtn).toBeTruthy();
+
+      localThis.installBtn!.focus();
+      const shiftTabEvent = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(shiftTabEvent);
+
+      expect(shiftTabEvent.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(localThis.neverBtn);
+    });
+
+    it('Tab in the middle of the focusable list is not intercepted', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      localThis.dismissBtn = document.querySelector('[data-action="dismiss"]') as HTMLElement | null;
+      localThis.dismissBtn!.focus();
+
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      document.dispatchEvent(tabEvent);
+
+      expect(tabEvent.defaultPrevented).toBe(false);
+    });
+
+    it('Tab when focus has escaped the prompt yanks focus back to first focusable', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      const outside = document.createElement('button');
+      outside.textContent = 'Outside';
+      document.body.appendChild(outside);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      outside.focus();
+      expect(document.activeElement).toBe(outside);
+
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      document.dispatchEvent(tabEvent);
+
+      localThis.installBtn = document.querySelector('[data-action="install"]') as HTMLElement | null;
+      expect(tabEvent.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(localThis.installBtn);
+
+      outside.remove();
+    });
+
+    it('Escape key dismisses the generic prompt via the dismiss action', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      document.dispatchEvent(escEvent);
+
+      expect(escEvent.defaultPrevented).toBe(true);
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('Escape key dismisses the iOS prompt via the dismiss action (Got it)', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      document.dispatchEvent(escEvent);
+
+      expect(escEvent.defaultPrevented).toBe(true);
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('restores focus to the previously-focused element on hide', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+
+      localThis.trigger = document.createElement('button');
+      localThis.trigger.textContent = 'Open';
+      document.body.appendChild(localThis.trigger);
+      localThis.trigger.focus();
+      expect(document.activeElement).toBe(localThis.trigger);
+
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      expect(document.activeElement).not.toBe(localThis.trigger);
+
+      hideInstallPrompt();
+      await new Promise(r => setTimeout(r, 10));
+
+      expect(document.activeElement).toBe(localThis.trigger);
+      localThis.trigger.remove();
+    });
+
+    it('does not throw when the previously-focused element was removed from the DOM', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.trigger = document.createElement('button');
+      document.body.appendChild(localThis.trigger);
+      localThis.trigger.focus();
+
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      localThis.trigger.remove();
+
+      expect(() => hideInstallPrompt()).not.toThrow();
+    });
+
+    it('removes the document keydown listener after hide so next keypress is not trapped', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      hideInstallPrompt();
+      await new Promise(r => setTimeout(r, 350));
+
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      document.dispatchEvent(tabEvent);
+
+      expect(tabEvent.defaultPrevented).toBe(false);
+    });
+
+    it('ignores keys other than Tab and Escape', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      const aEvent = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
+      document.dispatchEvent(aEvent);
+
+      expect(aEvent.defaultPrevented).toBe(false);
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
+    it('keydown is a no-op when the prompt has been removed from the DOM already', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const localThis: FocusTrapContext = {};
+      localThis.mockPromptEvent = newMockPromptEvent();
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+
+      // Force-remove the prompt element without going through hideInstallPrompt
+      // (simulates a race where the element is gone but the listener is still
+      // attached). The handler should early-return.
+      const prompt = document.querySelector('.install-prompt')!;
+      prompt.remove();
+
+      const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      document.dispatchEvent(escEvent);
+
+      expect(escEvent.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe('never-show-again action', () => {
+    it('clicking Never show again on the generic prompt persists the flag and dismisses', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(mockPromptEvent as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      const neverBtn = document.querySelector('.install-prompt [data-action="never"]') as HTMLElement | null;
+      expect(neverBtn).toBeTruthy();
+      neverBtn!.click();
+      await new Promise(r => setTimeout(r, 350));
+
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+      expect(localStorage.getItem('pwa_install_never_show')).toBe('1');
+    });
+
+    it('clicking Never show again on the iOS prompt persists the flag and dismisses', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+      const neverBtn = document.querySelector('.install-prompt-ios [data-action="never"]') as HTMLElement | null;
+      expect(neverBtn).toBeTruthy();
+      neverBtn!.click();
+      await new Promise(r => setTimeout(r, 350));
+
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+      expect(localStorage.getItem('pwa_install_never_show')).toBe('1');
+    });
+  });
 });
