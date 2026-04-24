@@ -8,6 +8,10 @@
   "web/styles/**/*.css": [
     "stylelint --config web/.stylelintrc.json --fix"
   ],
+  "web/styles/partials/variables.css": [
+    "tsx web/scripts/sync-design-tokens.ts",
+    "git add web/DESIGN.md"
+  ],
   "web/**/*.html": [
     "npx html-validate --config web/.htmlvalidate.json"
   ],
