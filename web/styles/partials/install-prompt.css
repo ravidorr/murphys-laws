@@ -8,8 +8,8 @@
   z-index: 10000;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 15%), 0 10px 20px -5px rgb(0 0 0 / 10%);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px -10px var(--shadow-light), 0 10px 20px -5px var(--shadow-light);
   padding: 1.25rem;
   max-width: calc(100vw - 2rem);
   width: 380px;
@@ -26,16 +26,26 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .install-prompt-icon {
   flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 0.75rem;
+  background: color-mix(in oklab, var(--bg) 85%, var(--fg) 15%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .install-prompt-icon img {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+  width: 40px;
+  height: 40px;
+  border-radius: 0.375rem;
+  display: block;
 }
 
 .install-prompt-text {
@@ -60,8 +70,8 @@
 .install-prompt-instructions {
   background: color-mix(in oklab, var(--bg) 90%, var(--fg) 10%);
   border-radius: 0.75rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 1rem 1rem 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .install-step {
@@ -102,20 +112,31 @@
   flex-shrink: 0;
 }
 
+/* Action hierarchy:
+   - Primary (Install / Got it) is its own full-width row.
+   - Secondary (Not now) + Tertiary (Never show again) share a row.
+   - On the iOS variant there is no secondary; tertiary is centered below the primary. */
 .install-prompt-actions {
   display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.install-prompt-actions-row {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
 }
 
 .install-prompt-btn {
-  flex: 1;
   padding: 0.75rem 1rem;
   font-size: 0.9375rem;
   font-weight: 500;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s, transform 0.1s;
+  font-family: inherit;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
 }
 
 .install-prompt-btn:active {
@@ -125,21 +146,47 @@
 .install-prompt-btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
+  width: 100%;
 }
 
-.install-prompt-btn-primary:hover {
+.install-prompt-btn-primary:hover,
+.install-prompt-btn-primary:focus-visible {
   filter: brightness(1.1);
 }
 
 .install-prompt-btn-secondary {
   background: transparent;
-  color: var(--muted-fg);
+  color: var(--fg);
   border: 1px solid var(--border);
+  flex: 1;
 }
 
-.install-prompt-btn-secondary:hover {
-  background: color-mix(in oklab, var(--fg) 15%, var(--bg) 85%);
+.install-prompt-btn-secondary:hover,
+.install-prompt-btn-secondary:focus-visible {
+  background: color-mix(in oklab, var(--fg) 8%, var(--bg) 92%);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--fg) 30%);
+}
+
+.install-prompt-btn-tertiary {
+  background: transparent;
+  color: var(--muted-fg);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.install-prompt-btn-tertiary:hover,
+.install-prompt-btn-tertiary:focus-visible {
   color: var(--fg);
+  text-decoration: underline;
+}
+
+/* iOS variant: primary is full-width; tertiary is a centered, subtler link below. */
+.install-prompt-ios .install-prompt-btn-tertiary {
+  align-self: center;
 }
 
 @media (width <= 480px) {
@@ -149,85 +196,124 @@
     border-radius: 0.75rem;
   }
 
-  .install-prompt-actions {
+  .install-prompt-actions-row {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .install-prompt-btn-secondary {
+    width: 100%;
+  }
+
+  .install-prompt-btn-tertiary {
+    align-self: center;
   }
 }
 
 /* Dark mode - system preference */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .install-prompt {
-    background: var(--dark-bg-primary, #0b0b11);
-    border-color: var(--dark-border, rgb(255 255 255 / 25%));
-    box-shadow: 0 20px 40px -10px rgb(0 0 0 / 40%), 0 10px 20px -5px rgb(0 0 0 / 30%);
+    background: var(--dark-bg-primary);
+    border-color: var(--dark-border);
+    box-shadow: 0 20px 40px -10px var(--shadow-dark), 0 10px 20px -5px var(--shadow-dark);
+  }
+
+  :root:not([data-theme="light"]) .install-prompt-icon {
+    background: color-mix(in oklab, var(--dark-bg-primary) 82%, white 18%);
   }
 
   :root:not([data-theme="light"]) .install-prompt-title {
-    color: var(--dark-fg-primary, #e9eaee);
+    color: var(--dark-fg-primary);
   }
 
   :root:not([data-theme="light"]) .install-prompt-desc {
-    color: var(--dark-muted-fg, #9ca3af);
+    color: var(--dark-muted-fg);
   }
 
   :root:not([data-theme="light"]) .install-prompt-instructions {
-    background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
+    background: color-mix(in oklab, var(--dark-bg-primary) 85%, white 15%);
   }
 
   :root:not([data-theme="light"]) .install-step:not(:last-child) {
-    border-color: var(--dark-border, rgb(255 255 255 / 25%));
+    border-color: var(--dark-border);
   }
 
   :root:not([data-theme="light"]) .install-step-text {
-    color: var(--dark-fg-primary, #e9eaee);
+    color: var(--dark-fg-primary);
   }
 
   :root:not([data-theme="light"]) .install-prompt-btn-secondary {
-    color: var(--dark-muted-fg, #9ca3af);
-    border-color: var(--dark-border, rgb(255 255 255 / 25%));
+    color: var(--dark-fg-primary);
+    border-color: var(--dark-border);
   }
 
-  :root:not([data-theme="light"]) .install-prompt-btn-secondary:hover {
-    background: color-mix(in oklab, #fff 20%, var(--dark-bg-primary, #0b0b11) 80%);
-    color: #fff;
+  :root:not([data-theme="light"]) .install-prompt-btn-secondary:hover,
+  :root:not([data-theme="light"]) .install-prompt-btn-secondary:focus-visible {
+    background: color-mix(in oklab, white 12%, var(--dark-bg-primary) 88%);
+    border-color: color-mix(in oklab, var(--dark-border) 70%, white 30%);
+  }
+
+  :root:not([data-theme="light"]) .install-prompt-btn-tertiary {
+    color: var(--dark-muted-fg);
+    box-shadow: none;
+  }
+
+  :root:not([data-theme="light"]) .install-prompt-btn-tertiary:hover,
+  :root:not([data-theme="light"]) .install-prompt-btn-tertiary:focus-visible {
+    color: var(--dark-fg-primary);
   }
 }
 
 /* Dark mode - explicit dark theme */
 :root[data-theme="dark"] .install-prompt {
-  background: var(--dark-bg-primary, #0b0b11);
-  border-color: var(--dark-border, rgb(255 255 255 / 25%));
-  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 40%), 0 10px 20px -5px rgb(0 0 0 / 30%);
+  background: var(--dark-bg-primary);
+  border-color: var(--dark-border);
+  box-shadow: 0 20px 40px -10px var(--shadow-dark), 0 10px 20px -5px var(--shadow-dark);
+}
+
+:root[data-theme="dark"] .install-prompt-icon {
+  background: color-mix(in oklab, var(--dark-bg-primary) 82%, white 18%);
 }
 
 :root[data-theme="dark"] .install-prompt-title {
-  color: var(--dark-fg-primary, #e9eaee);
+  color: var(--dark-fg-primary);
 }
 
 :root[data-theme="dark"] .install-prompt-desc {
-  color: var(--dark-muted-fg, #9ca3af);
+  color: var(--dark-muted-fg);
 }
 
 :root[data-theme="dark"] .install-prompt-instructions {
-  background: color-mix(in oklab, var(--dark-bg-primary, #0b0b11) 85%, #fff 15%);
+  background: color-mix(in oklab, var(--dark-bg-primary) 85%, white 15%);
 }
 
 :root[data-theme="dark"] .install-step:not(:last-child) {
-  border-color: var(--dark-border, rgb(255 255 255 / 25%));
+  border-color: var(--dark-border);
 }
 
 :root[data-theme="dark"] .install-step-text {
-  color: var(--dark-fg-primary, #e9eaee);
+  color: var(--dark-fg-primary);
 }
 
 :root[data-theme="dark"] .install-prompt-btn-secondary {
-  color: var(--dark-muted-fg, #9ca3af);
-  border-color: var(--dark-border, rgb(255 255 255 / 25%));
+  color: var(--dark-fg-primary);
+  border-color: var(--dark-border);
 }
 
-:root[data-theme="dark"] .install-prompt-btn-secondary:hover {
-  background: color-mix(in oklab, #fff 20%, var(--dark-bg-primary, #0b0b11) 80%);
-  color: #fff;
+:root[data-theme="dark"] .install-prompt-btn-secondary:hover,
+:root[data-theme="dark"] .install-prompt-btn-secondary:focus-visible {
+  background: color-mix(in oklab, white 12%, var(--dark-bg-primary) 88%);
+  border-color: color-mix(in oklab, var(--dark-border) 70%, white 30%);
+}
+
+:root[data-theme="dark"] .install-prompt-btn-tertiary {
+  color: var(--dark-muted-fg);
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .install-prompt-btn-tertiary:hover,
+:root[data-theme="dark"] .install-prompt-btn-tertiary:focus-visible {
+  color: var(--dark-fg-primary);
 }
 
 /* Only show in browser mode (not when installed) */
