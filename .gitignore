@@ -81,3 +81,7 @@ web/dist/
 
 # Generated at build time by build:openapi
 web/public/openapi.json
+
+# On-demand DTCG exports of DESIGN.md (for designers importing into Figma / Style Dictionary).
+# Regenerate with `npm --prefix web run design:export`.
+web/.design-exports/

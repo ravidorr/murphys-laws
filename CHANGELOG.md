@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `npm --prefix web run design:export` emits the DESIGN.md token catalogue as a [Design Tokens Community Group (DTCG)](https://tr.designtokens.org/format/) JSON document at `web/.design-exports/design-tokens.dtcg.json` (gitignored). Designers can import the file into Figma Variables (via Tokens Studio or Figma's native JSON import) or feed it into Style Dictionary / any DTCG-aware pipeline without hand-translating `web/DESIGN.md`'s YAML. Output reuses the `parseCssVariables` + `classifyTokens` pipeline from [web/scripts/sync-design-tokens.ts](web/scripts/sync-design-tokens.ts), so the export can never drift from what `design:check` publishes. Nested shape: `color.*`, `dimension.spacing.*`, `dimension.radius.*`, `typography.*` (composite tokens), `component.*` (references into the base tokens). The export is intentionally NOT in `ci:web`; `design:check` remains the server-side gate. 22 new vitest cases cover the build / reference rewriting / type inference / run-mode behaviour.
+
+### Added
 - Five more chrome components in the `COMPONENTS` contract driven by [web/scripts/sync-design-tokens.ts](web/scripts/sync-design-tokens.ts): `notification`, `header`, `footer`, `breadcrumb`, `search-autocomplete`. These are the pieces AI agents most often regenerate without consulting the design contract, so pinning them as explicit token references in `web/DESIGN.md`'s YAML front matter makes the contract binding on those surfaces too. Component count 16 -> 21; ignored-warning count 35 -> 34 (`muted-fg` is now referenced by `footer` / `breadcrumb` so it drops out of the unreferenced bucket). Translucent backgrounds on `header` and floating surfaces remain intentionally untokenized (see "Elevation & Depth" in the Markdown body) because DESIGN.md requires literal `#HEX`. One new vitest case asserts presence of each new component.
 
 ### Added
