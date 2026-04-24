@@ -123,16 +123,15 @@ function remOrPxToPx(raw: string): number | null {
  *
  * Keep this in sync with web/styles/partials/base.css and components.css.
  */
-const TYPOGRAPHY_LEVELS: Record<
-  string,
-  {
-    fontFamily: string;
-    fontSize: string;
-    fontWeight: number;
-    lineHeight: number | string;
-    letterSpacing?: string;
-  }
-> = {
+export interface TypographyLevel {
+  fontFamily: string;
+  fontSize: string;
+  fontWeight: number;
+  lineHeight: number | string;
+  letterSpacing?: string;
+}
+
+export const TYPOGRAPHY_LEVELS: Record<string, TypographyLevel> = {
   display: {
     fontFamily: 'Work Sans, system-ui',
     fontSize: '48px',
@@ -194,7 +193,7 @@ const TYPOGRAPHY_LEVELS: Record<
  * Corner-radius scale. Derived from observed border-radius values in
  * components.css and calculator.css; not currently tokenized in CSS.
  */
-const ROUNDED_SCALE: Record<string, string> = {
+export const ROUNDED_SCALE: Record<string, string> = {
   sm: '4px',
   md: '6px',
   lg: '8px',
@@ -207,7 +206,7 @@ const ROUNDED_SCALE: Record<string, string> = {
  * generated `colors` block via DESIGN.md's `{path.to.token}` syntax.
  * Keep this aligned with web/styles/partials/components.css and theme.css.
  */
-const COMPONENTS: Record<string, Record<string, string>> = {
+export const COMPONENTS: Record<string, Record<string, string>> = {
   'btn-primary': {
     backgroundColor: '{colors.btn-primary-bg}',
     textColor: '{colors.btn-primary-fg}',
