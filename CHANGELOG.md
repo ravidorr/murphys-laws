@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `web/DESIGN.md`: adopted Google Labs' [DESIGN.md](https://github.com/google-labs-code/design.md) format as the web's design-system contract. YAML front matter (52 colors, 9 typography levels, 5 rounding tokens, 10 spacing tokens, 15 components) is regenerated from `web/styles/partials/variables.css` by `web/scripts/sync-design-tokens.ts`; the Markdown body is authored (tone, a11y posture, elevation, shapes, workflow). New `npm run design:check` in `web/` runs drift detection plus `@google/design.md lint` and is wired into `ci:web`; WCAG-AA contrast failures are promoted from warnings to errors so sub-threshold pairs fail the build. Stitch-generated mockups live in `web/.stitch/` (gitignored) and are never shipped. Adds 35 vitest cases and pins `@google/design.md@0.1.1` as a web devDependency.
+
 ### Changed
 - Android toolchain bumped: Android Gradle Plugin `9.1.1` -> `9.2.0` and Gradle wrapper `9.3.1` -> `9.4.1`. Keeps the Android build on current toolchain releases; no app code changes.
 
