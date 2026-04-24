@@ -22,6 +22,10 @@ const VARIABLES_CSS_PATH = path.resolve(
   '../styles/partials/variables.css',
 );
 const DESIGN_MD_PATH = path.resolve(__dirname, '../DESIGN.md');
+const SHARED_DESIGN_MD_PATH = path.resolve(
+  __dirname,
+  '../../shared/DESIGN.md',
+);
 
 const HEX_COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const SPACING_KEY_RE = /^space-(\d+)$/;
@@ -637,10 +641,71 @@ export function buildDesignMd(input: BuildInput): string {
   return `---\n${yaml}---\n${body}`;
 }
 
+/**
+ * Body emitted for the cross-platform token-only mirror at `shared/DESIGN.md`.
+ *
+ * The mirror intentionally strips all web-specific prose (elevation story,
+ * Stitch workflow, do's-and-don'ts, dogfood write-ups) because those are
+ * tied to the web implementation. iOS (SwiftUI) and Android (Jetpack Compose)
+ * consumers want the tokens only and want pointers to the web source so
+ * changes are never authored in two places.
+ *
+ * Keeping this body small is the whole point: if we start adding structural
+ * narrative here, we've grown a second source of truth.
+ */
+const SHARED_BODY = `# Murphy's Law Archive - Design Tokens (Shared)
+
+This file is a **generated token-only mirror** of [web/DESIGN.md](../web/DESIGN.md).
+It exists so cross-platform consumers (iOS in \`ios/\`, Android in \`android/\`)
+can read the same token values the web uses, without depending on web-specific
+prose (elevation story, Stitch workflow, component contracts tuned for
+vanilla-TS components).
+
+## Source of truth
+
+- **Authoritative values:** [web/styles/partials/variables.css](../web/styles/partials/variables.css).
+- **Authoritative contract:** [web/DESIGN.md](../web/DESIGN.md) (YAML front matter + Markdown body).
+- **This file:** the YAML front matter above only. Regenerated in lockstep with
+  \`web/DESIGN.md\` by [web/scripts/sync-design-tokens.ts](../web/scripts/sync-design-tokens.ts).
+
+## Do not hand-edit
+
+Every run of \`npm --prefix web run design:sync\` rewrites this file. Edits made
+directly to \`shared/DESIGN.md\` are lost on the next sync, and CI's
+\`npm --prefix web run design:check\` fails the build if the mirror drifts.
+
+## Cross-platform mapping
+
+Interpretation of the tokens on each platform is defined by the platform
+implementation, not by this file. Known mappings:
+
+- **Web** (authoritative): \`web/styles/partials/variables.css\` exports each
+  token as a CSS custom property (\`--bg\`, \`--space-4\`, ...). Dark-mode
+  counterparts (\`--dark-*\`) are applied via \`:root[data-theme="dark"]\` in
+  [web/styles/partials/theme.css](../web/styles/partials/theme.css).
+- **iOS / Android:** expected to bind each token to a platform-native colour /
+  dimension resource and swap the \`dark-*\` counterparts under the platform's
+  dark-mode trigger. Specifics live in the respective platform implementation,
+  not here; see [shared/docs/MOBILE-ARCHITECTURE.md](./docs/MOBILE-ARCHITECTURE.md).
+
+## Schema
+
+The YAML front matter follows the [Google Labs \`design.md\`](https://github.com/google-labs-code/design.md)
+schema, version \`0.1.1\`. A DTCG (Design Tokens Community Group) JSON export
+of the same catalogue can be generated on demand via
+\`npm --prefix web run design:export\`.
+`;
+
+export function buildSharedDesignMd(parsed: ClassifiedTokens): string {
+  const yaml = renderFrontMatter(parsed);
+  return `---\n${yaml}---\n${SHARED_BODY}`;
+}
+
 export interface RunOptions {
   check: boolean;
   variablesCssPath: string;
   designMdPath: string;
+  sharedDesignMdPath: string;
   readFile: (p: string) => string;
   existsFile: (p: string) => boolean;
   writeFile: (p: string, contents: string) => void;
@@ -656,6 +721,11 @@ export function run(options: RunOptions): 0 | 1 {
     : undefined;
   const next = buildDesignMd({ existingContent: existing, parsed });
 
+  const existingShared = options.existsFile(options.sharedDesignMdPath)
+    ? options.readFile(options.sharedDesignMdPath)
+    : undefined;
+  const nextShared = buildSharedDesignMd(parsed);
+
   if (options.check) {
     if (existing !== next) {
       options.logger.error(
@@ -663,12 +733,21 @@ export function run(options: RunOptions): 0 | 1 {
       );
       return 1;
     }
+    if (existingShared !== nextShared) {
+      options.logger.error(
+        'shared/DESIGN.md is out of sync with web/styles/partials/variables.css. Run: npm --prefix web run design:sync',
+      );
+      return 1;
+    }
     options.logger.log('DESIGN.md is in sync with variables.css.');
+    options.logger.log('shared/DESIGN.md is in sync with variables.css.');
     return 0;
   }
 
   options.writeFile(options.designMdPath, next);
   options.logger.log(`Wrote ${options.designMdPath}`);
+  options.writeFile(options.sharedDesignMdPath, nextShared);
+  options.logger.log(`Wrote ${options.sharedDesignMdPath}`);
   return 0;
 }
 
@@ -688,6 +767,7 @@ if (isMain()) {
     check,
     variablesCssPath: VARIABLES_CSS_PATH,
     designMdPath: DESIGN_MD_PATH,
+    sharedDesignMdPath: SHARED_DESIGN_MD_PATH,
     readFile: (p) => fs.readFileSync(p, 'utf8'),
     existsFile: (p) => fs.existsSync(p),
     writeFile: (p, c) => fs.writeFileSync(p, c, 'utf8'),

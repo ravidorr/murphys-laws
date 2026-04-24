@@ -4,6 +4,7 @@ import {
   classifyTokens,
   renderFrontMatter,
   buildDesignMd,
+  buildSharedDesignMd,
   extractBody,
   run,
   type ClassifiedTokens,
@@ -69,6 +70,7 @@ function buildRunLocalThis(initialFiles: Record<string, string> = {}): RunLocalT
     check: false,
     variablesCssPath: '/virt/variables.css',
     designMdPath: '/virt/DESIGN.md',
+    sharedDesignMdPath: '/virt/shared/DESIGN.md',
     readFile: (p: string): string => {
       const value = localThis.files!.get(p);
       if (value === undefined) {
@@ -277,6 +279,48 @@ describe('buildDesignMd', () => {
   });
 });
 
+describe('buildSharedDesignMd', () => {
+  it('emits the same YAML front matter as web/DESIGN.md', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const webYaml = renderFrontMatter(parsed);
+    const shared = buildSharedDesignMd(parsed);
+
+    expect(shared.startsWith(`---\n${webYaml}---\n`)).toBe(true);
+  });
+
+  it('uses the shared token-only body, not the web-specific body', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const shared = buildSharedDesignMd(parsed);
+
+    expect(shared).toContain('# Murphy\'s Law Archive - Design Tokens (Shared)');
+    expect(shared).toContain('generated token-only mirror');
+    // Web-specific structural prose must not land in the mirror.
+    expect(shared).not.toContain('First dogfood');
+    expect(shared).not.toContain('Do\'s and Don\'ts');
+    expect(shared).not.toContain('Elevation & Depth');
+    expect(shared).not.toContain('Major Third');
+  });
+
+  it('points cross-platform consumers at web/DESIGN.md as the source of truth', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const shared = buildSharedDesignMd(parsed);
+
+    expect(shared).toContain('../web/DESIGN.md');
+    expect(shared).toContain('../web/styles/partials/variables.css');
+    expect(shared).toContain(
+      'npm --prefix web run design:sync',
+    );
+  });
+
+  it('ignores whatever is currently at shared/DESIGN.md (regenerates every run)', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const first = buildSharedDesignMd(parsed);
+    const second = buildSharedDesignMd(parsed);
+
+    expect(first).toBe(second);
+  });
+});
+
 describe('run', () => {
   it('writes DESIGN.md on first run when the file is missing', () => {
     const localThis = buildRunLocalThis({
@@ -294,13 +338,32 @@ describe('run', () => {
     );
   });
 
-  it('in --check mode returns 0 when the file is already in sync', () => {
+  it('writes shared/DESIGN.md alongside web/DESIGN.md in a single run', () => {
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+    });
+    localThis.options!.check = false;
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(0);
+    expect(localThis.written!.has('/virt/shared/DESIGN.md')).toBe(true);
+    const shared = localThis.written!.get('/virt/shared/DESIGN.md')!;
+    expect(shared.startsWith('---\n')).toBe(true);
+    expect(shared).toContain('generated token-only mirror');
+    expect(
+      localThis.logs!.some((l) => l.includes('Wrote /virt/shared/DESIGN.md')),
+    ).toBe(true);
+  });
+
+  it('in --check mode returns 0 when both files are already in sync', () => {
     const initial = buildRunLocalThis({ '/virt/variables.css': sampleCss() });
     run(initial.options!);
 
     const localThis = buildRunLocalThis({
       '/virt/variables.css': sampleCss(),
       '/virt/DESIGN.md': initial.written!.get('/virt/DESIGN.md')!,
+      '/virt/shared/DESIGN.md': initial.written!.get('/virt/shared/DESIGN.md')!,
     });
     localThis.options!.check = true;
     localThis.code = run(localThis.options!);
@@ -310,9 +373,14 @@ describe('run', () => {
     expect(
       localThis.logs!.some((l) => l.includes('DESIGN.md is in sync')),
     ).toBe(true);
+    expect(
+      localThis.logs!.some((l) =>
+        l.includes('shared/DESIGN.md is in sync'),
+      ),
+    ).toBe(true);
   });
 
-  it('in --check mode returns 1 and logs an error when the file is out of sync', () => {
+  it('in --check mode returns 1 when web/DESIGN.md is out of sync', () => {
     const localThis = buildRunLocalThis({
       '/virt/variables.css': sampleCss(),
       '/virt/DESIGN.md': '---\nversion: alpha\n---\n# stale\n',
@@ -325,6 +393,28 @@ describe('run', () => {
     expect(
       localThis.errors!.some((e) =>
         e.includes('DESIGN.md is out of sync'),
+      ),
+    ).toBe(true);
+    expect(localThis.written!.size).toBe(0);
+  });
+
+  it('in --check mode returns 1 when shared/DESIGN.md is out of sync even if web/DESIGN.md is fresh', () => {
+    const initial = buildRunLocalThis({ '/virt/variables.css': sampleCss() });
+    run(initial.options!);
+
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+      '/virt/DESIGN.md': initial.written!.get('/virt/DESIGN.md')!,
+      '/virt/shared/DESIGN.md': '---\nversion: alpha\n---\n# stale\n',
+    });
+    localThis.options!.check = true;
+
+    localThis.code = run(localThis.options!);
+
+    expect(localThis.code).toBe(1);
+    expect(
+      localThis.errors!.some((e) =>
+        e.includes('shared/DESIGN.md is out of sync'),
       ),
     ).toBe(true);
     expect(localThis.written!.size).toBe(0);
@@ -344,5 +434,21 @@ describe('run', () => {
     expect(localThis.code).toBe(0);
     expect(written).toContain('version: alpha');
     expect(written).toMatch(/\n---\n# Kept body\n\nContent\.\n$/);
+  });
+
+  it('in write mode overwrites any hand-edited body in shared/DESIGN.md', () => {
+    const localThis = buildRunLocalThis({
+      '/virt/variables.css': sampleCss(),
+      '/virt/shared/DESIGN.md':
+        '---\nversion: old\n---\n# someone hand-edited this\n',
+    });
+    localThis.options!.check = false;
+
+    localThis.code = run(localThis.options!);
+
+    const written = localThis.written!.get('/virt/shared/DESIGN.md')!;
+    expect(localThis.code).toBe(0);
+    expect(written).toContain('generated token-only mirror');
+    expect(written).not.toContain('someone hand-edited this');
   });
 });
