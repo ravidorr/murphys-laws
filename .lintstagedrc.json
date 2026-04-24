@@ -10,7 +10,7 @@
   ],
   "web/styles/partials/variables.css": [
     "tsx web/scripts/sync-design-tokens.ts",
-    "git add web/DESIGN.md"
+    "git add web/DESIGN.md shared/DESIGN.md"
   ],
   "web/**/*.html": [
     "npx html-validate --config web/.htmlvalidate.json"
