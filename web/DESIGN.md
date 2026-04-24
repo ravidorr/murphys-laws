@@ -177,6 +177,10 @@ components:
   calc-dark:
     backgroundColor: "{colors.dark-bg}"
     textColor: "{colors.dark-text}"
+  rank:
+    textColor: "{colors.text-high-contrast}"
+    typography: "{typography.body-md}"
+    width: "24px"
 ---
 # Murphy's Law Archive - Design System
 
