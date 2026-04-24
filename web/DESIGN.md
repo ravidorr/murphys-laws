@@ -314,3 +314,45 @@ the YAML front matter above; it does not touch this Markdown body.
 - **Validate:** `npm --prefix web run design:check` runs
   `design:sync --check` for drift and `@google/design.md lint` for
   structural correctness and WCAG contrast.
+
+### First dogfood: install-prompt (2026-04-24)
+
+First redesign driven by Stitch, on the PWA install prompt
+(`web/src/components/install-prompt.ts`). Roughly one hour from prep to
+open PR. Six mockups generated (generic and iOS, light and dark, two
+iterations for the generic variant).
+
+What Stitch got right: the action hierarchy. The shipping component
+laid out Install / Not now / Never show again as three equal
+rectangles in a row. Stitch promoted Install to a full-width primary,
+demoted Not now to secondary, and rendered Never show again as a
+text-only tertiary on the same row. That change alone is the entire
+visual argument for keeping Stitch in the workflow. Microcopy also
+improved: "Preserve the documentation of inevitable failure for
+offline consultation." and "Add this archive to your home screen for
+immediate reference." are on-brand in a way the shipping copy was not.
+The tinted rounded icon plate was a small, cheap win.
+
+What Stitch got wrong: almost everything below the pixel layer. Every
+mockup came back as Tailwind plus Material Design 3 token names
+(`surface`, `on-surface`, `primary-container`, `surface-tint`),
+Material Symbols Outlined font icons (`book_4`, `ios_share`), a second
+Google Fonts link, and a flattened `primary: #000000` in dark mode
+that would have failed WCAG contrast. None of that shipped.
+DESIGN.md's token palette was in the context but Stitch did not
+consume it; it treated the file as style guidance and re-derived an
+MD3 theme underneath. Translation was entirely hand-work: decision.md
+first, then CSS, then markup, then a small `box-shadow: none` override
+for the new tertiary to defeat theme.css's inset-shadow-as-border on
+`button` in dark mode.
+
+Test contract held. No class rename, no DOM restructure that broke a
+selector, no a11y attribute lost. All 76 `install-prompt.test.ts`
+tests and all 2624 web tests passed without a single edit to the test
+file. design:check stayed at 0 errors, 0 warnings.
+
+Verdict: use Stitch again, but only as an ideation partner. It is
+good at hierarchy and on-brand microcopy and bad at respecting tokens
+that are not in its default MD3 library. Keep mockups in
+`web/.stitch/` (gitignored). Never paste Stitch HTML/CSS. Budget the
+translation time; it is the real cost.
