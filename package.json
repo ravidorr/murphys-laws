@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -36,7 +36,7 @@
     "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\" \"#CLAUDE.md\" \"#.cursor/**\" \"#.claude/**\"",
     "lint": "npm run lint:web && npm run lint:sdk && npm run lint:cli && npm run lint:mcp && npm run lint:md",
     "ci:backend": "cd backend && npm run typecheck && npm run lint && npm run build:db && npm run test:coverage",
-    "ci:web": "cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html && npm test && npm run build",
+    "ci:web": "cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html && npm run design:check && npm test && npm run build",
     "ci:sdk": "cd sdk && npm run typecheck && npm run lint && npm run test:coverage",
     "ci:cli": "cd cli && npm run typecheck && npm run lint && npm run test:coverage",
     "ci:mcp": "cd mcp && npm run typecheck && npm run lint && npm run test:coverage && npm run build",
