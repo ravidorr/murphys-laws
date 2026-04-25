@@ -7,12 +7,12 @@ import {
   buildIosArtifacts,
   runIosExport,
   type IosRunOptions,
-} from '../../shared/design-tokens/export-ios-tokens.ts';
+} from './export-ios-tokens.ts';
 import {
   classifyTokens,
   parseCssVariables,
   type ClassifiedTokens,
-} from '../../shared/design-tokens/sync-design-tokens.ts';
+} from './sync-design-tokens.ts';
 
 interface PairLocalThis {
   colors?: Map<string, string>;

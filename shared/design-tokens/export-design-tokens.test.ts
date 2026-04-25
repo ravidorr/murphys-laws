@@ -8,12 +8,12 @@ import {
   type DtcgGroup,
   type DtcgLeafToken,
   type ExportRunOptions,
-} from '../../shared/design-tokens/export-design-tokens.ts';
+} from './export-design-tokens.ts';
 import {
   classifyTokens,
   parseCssVariables,
   type ClassifiedTokens,
-} from '../../shared/design-tokens/sync-design-tokens.ts';
+} from './sync-design-tokens.ts';
 
 interface BuildLocalThis {
   parsed?: ClassifiedTokens;
@@ -182,7 +182,7 @@ describe('buildDtcgDocument', () => {
     localThis.parsed = classifyTokens(parseCssVariables(sampleCss()));
     localThis.doc = buildDtcgDocument(localThis.parsed);
 
-    const { COMPONENTS } = await import('../../shared/design-tokens/sync-design-tokens.ts');
+    const { COMPONENTS } = await import('./sync-design-tokens.ts');
     for (const name of Object.keys(COMPONENTS)) {
       expect(localThis.doc.component[name]).toBeDefined();
     }

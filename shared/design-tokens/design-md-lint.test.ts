@@ -4,7 +4,7 @@ import {
   isWcagFailureWarning,
   runDesignMdLint,
   type RunLintOptions,
-} from '../../shared/design-tokens/design-md-lint.ts';
+} from './design-md-lint.ts';
 
 interface IgnorableLocalThis {
   finding?: Parameters<typeof isIgnorableWarning>[0];
