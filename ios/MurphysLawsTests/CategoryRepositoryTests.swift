@@ -104,7 +104,7 @@ class CategoryRepositoryTests: XCTestCase {
         )
         
         // Categories with same ID should have same hash
-        var set = Set<Category>()
+        var set = Set<MurphysLaws.Category>()
         set.insert(category1)
         set.insert(category2) // Should not increase count (same ID)
         XCTAssertEqual(set.count, 1, "Set should contain only 1 category (same ID)")
@@ -169,7 +169,7 @@ class CategoryRepositoryTests: XCTestCase {
 class CategoryDeduplicationTests: XCTestCase {
     
     func testEmptyArray() {
-        let categories: [Category] = []
+        let categories: [MurphysLaws.Category] = []
         let deduplicated = deduplicateByTitle(categories)
         XCTAssertTrue(deduplicated.isEmpty)
     }
@@ -243,10 +243,19 @@ class CategoryDeduplicationTests: XCTestCase {
         XCTAssertTrue(ids.contains(3), "Should keep ID 3 for Unique")
     }
     
-    // Helper function that mirrors the production deduplication logic
-    private func deduplicateByTitle(_ categories: [Category]) -> [Category] {
-        var seenTitles: [String: Category] = [:]
-        var uniqueCategories: [Category] = []
+    // Helper function that mirrors the production deduplication logic.
+    // `MurphysLaws.Category` is module-qualified to disambiguate from
+    // `objc.Category` (the C typedef `typedef struct objc_category *Category`)
+    // which becomes visible to test files via @testable import + the
+    // implicit ObjectiveC runtime import. Production files don't need
+    // the qualifier because the local `MurphysLaws.Category` wins ambient
+    // name resolution within its own module; test files cross a module
+    // boundary so resolution is symmetric and the compiler can't pick a
+    // winner. Call sites elsewhere in this file (`Category(id: ...)`)
+    // disambiguate via initializer signature.
+    private func deduplicateByTitle(_ categories: [MurphysLaws.Category]) -> [MurphysLaws.Category] {
+        var seenTitles: [String: MurphysLaws.Category] = [:]
+        var uniqueCategories: [MurphysLaws.Category] = []
         
         for category in categories {
             if let existing = seenTitles[category.title] {
