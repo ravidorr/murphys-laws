@@ -19,8 +19,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import com.murphyslaws.ui.theme.DS
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.domain.model.Law
@@ -209,7 +209,7 @@ private fun LawSearchResultCard(
                     Icon(
                         Icons.Default.ThumbUp,
                         contentDescription = null,
-                        tint = Color(0xFF10b981),
+                        tint = DS.Color.success,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
@@ -225,7 +225,7 @@ private fun LawSearchResultCard(
                     Icon(
                         Icons.Default.ThumbDown,
                         contentDescription = null,
-                        tint = Color(0xFFef4444),
+                        tint = DS.Color.error,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
