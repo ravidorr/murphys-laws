@@ -48,10 +48,11 @@
     "cleanup-ports": "npx tsx backend/scripts/cleanup-ports.ts",
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../sdk && npm install && cd ../cli && npm install && cd ../mcp && npm install",
     "design:sync": "tsx shared/design-tokens/sync-design-tokens.ts",
-    "design:check": "tsx shared/design-tokens/sync-design-tokens.ts --check && tsx shared/design-tokens/design-md-lint.ts && tsx shared/design-tokens/export-ios-tokens.ts --check && tsx shared/design-tokens/export-android-tokens.ts --check",
+    "design:check": "tsx shared/design-tokens/sync-design-tokens.ts --check && tsx shared/design-tokens/design-md-lint.ts && tsx shared/design-tokens/export-ios-tokens.ts --check && tsx shared/design-tokens/export-android-tokens.ts --check && npm run design:test",
     "design:export": "tsx shared/design-tokens/export-design-tokens.ts",
     "design:export:ios": "tsx shared/design-tokens/export-ios-tokens.ts",
-    "design:export:android": "tsx shared/design-tokens/export-android-tokens.ts"
+    "design:export:android": "tsx shared/design-tokens/export-android-tokens.ts",
+    "design:test": "cd web && npm test -- ../shared/design-tokens/*.test.ts"
   },
   "keywords": [
     "murphys-law",

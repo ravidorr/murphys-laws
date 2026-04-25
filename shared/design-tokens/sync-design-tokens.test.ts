@@ -9,7 +9,7 @@ import {
   run,
   type ClassifiedTokens,
   type RunOptions,
-} from '../../shared/design-tokens/sync-design-tokens.ts';
+} from './sync-design-tokens.ts';
 
 interface ParseLocalThis {
   css?: string;
