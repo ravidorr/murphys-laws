@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Work Sans variable font bundled in the iOS app for visual parity with web. [ios/MurphysLaws/Resources/Fonts/WorkSans-VariableFont_wght.ttf](ios/MurphysLaws/Resources/Fonts/WorkSans-VariableFont_wght.ttf) (~360 KB, single VF covers all weights via the `wght` axis), registered via `UIAppFonts` in [Info.plist](ios/MurphysLaws/Info.plist) and mirrored in [project.yml](ios/project.yml) for XcodeGen consumers. [web/scripts/export-ios-tokens.ts](web/scripts/export-ios-tokens.ts) now emits `Font.custom("Work Sans", size:).weight(...)` for every `DS.Typography.<level>` so SwiftUI picks up the bundled family. Resolves the placeholder `Font.system(size:)` from PR iOS-1. PR iOS-3 of the design-tokens-mobile rollout. Bundling a new font is a user-visible change, so iOS app bumped MINOR to `1.1.0` / build `4`; root to `2.4.18`.
+
 ### Changed
 - iOS skeleton-loading shimmer now consumes `DS.Color.mutedFg` (light + dark from the Asset Catalog) instead of hand-branching on `@Environment(\.colorScheme)` with hardcoded `Color(white:)` greys. [ios/MurphysLaws/Views/Home/SkeletonViews.swift](ios/MurphysLaws/Views/Home/SkeletonViews.swift). The dark-mode swap is now driven by the system trait collection via `Assets.xcassets/DS/muted-fg.colorset`, matching how every other DS color works. PR iOS-2 of the design-tokens-mobile rollout; calculator and vote-thumb surfaces are explicitly out of scope (HIG-idiomatic semantic colors `.green` / `.orange` / `.red` are correct on iOS), and no rank-style surface exists on iOS to migrate yet. iOS app bumped to `1.0.2` / build `3`; root to `2.4.17`.
 

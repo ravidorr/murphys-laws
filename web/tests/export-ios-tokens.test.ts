@@ -378,6 +378,22 @@ describe('buildIosArtifacts', () => {
     expect(swift).toMatch(/display = Level\([\s\S]*?letterSpacing: -0\.96/);
   });
 
+  it('renders typography levels using Font.custom("Work Sans", size:).weight(...) so the bundled variable font is picked up', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const { swift } = buildIosArtifacts(parsed);
+    expect(swift).toContain(
+      'font: SwiftUI.Font.custom("Work Sans", size: 48).weight(.bold)',
+    );
+    expect(swift).toContain(
+      'font: SwiftUI.Font.custom("Work Sans", size: 16).weight(.regular)',
+    );
+    expect(swift).toContain(
+      'font: SwiftUI.Font.custom("Work Sans", size: 12).weight(.medium)',
+    );
+    // Guard against a regression to Font.system.
+    expect(swift).not.toContain('Font.system(size:');
+  });
+
   it('renders typography levels without letterSpacing as nil', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { swift } = buildIosArtifacts(parsed);
