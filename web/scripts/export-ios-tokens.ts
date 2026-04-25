@@ -421,11 +421,12 @@ function renderTypographyLevel(
   const ident = swiftIdentifier(level);
   const lines: string[] = [];
   lines.push(`        public static let ${ident} = Level(`);
-  // Use Font.system as the fallback while Work Sans isn't bundled (PR
-  // iOS-3 will flip these to Font.custom("WorkSans", size:) once the
-  // TTFs are added).
+  // Work Sans is bundled as a variable font (Resources/Fonts/
+  // WorkSans-VariableFont_wght.ttf, registered via UIAppFonts in
+  // Info.plist). SwiftUI resolves Font.custom by the registered PostScript
+  // name; .weight(...) requests the matching variation on the wght axis.
   lines.push(
-    `            font: SwiftUI.Font.system(size: ${fontSize}, weight: ${swiftFontWeight(props.fontWeight)}),`,
+    `            font: SwiftUI.Font.custom("WorkSans-Regular", size: ${fontSize}).weight(${swiftFontWeight(props.fontWeight)}),`,
   );
   lines.push(
     `            lineSpacing: ${roundTo3(lineSpacing)},`,
