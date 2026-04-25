@@ -263,10 +263,12 @@ describe('buildAndroidArtifacts', () => {
     expect(kt).toMatch(/val display: TextStyle = TextStyle\([\s\S]*?letterSpacing = -0\.96\.sp/);
   });
 
-  it('uses FontFamily.Default in Phase 1 (Work Sans bundling is PR Android-3)', () => {
+  it('uses the WorkSans FontFamily declared in WorkSans.kt for every typography level', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { kt } = buildAndroidArtifacts(parsed);
-    expect(kt).toContain('fontFamily = FontFamily.Default');
+    expect(kt).toContain('fontFamily = WorkSans');
+    // Guard against regression to the FontFamily.Default placeholder.
+    expect(kt).not.toContain('FontFamily.Default');
   });
 
   it('emits values/colors.xml with ds_-prefixed snake_case names', () => {
