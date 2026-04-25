@@ -185,6 +185,7 @@ object MarkdownParser {
         text: String,
         links: List<ExtractedLink>,
         onNavigate: ((String) -> Unit)? = null,
+        linkColor: Color = DS.Color.btnPrimaryBg,
         onUrlClick: (String) -> Unit
     ): AnnotatedString {
         // Remove all link syntax and get clean text
@@ -202,7 +203,7 @@ object MarkdownParser {
 
         val linkStyle = TextLinkStyles(
             style = SpanStyle(
-                color = DS.Color.btnPrimaryBg,
+                color = linkColor,
                 textDecoration = TextDecoration.Underline
             )
         )
@@ -353,12 +354,18 @@ fun ClickableMarkdownText(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val linkColor = if (MaterialTheme.colorScheme.background == DS.Color.darkBgPrimary) {
+        DS.Color.darkLink
+    } else {
+        DS.Color.btnPrimaryBg
+    }
 
-    val annotatedString = remember(text, links, onNavigate) {
+    val annotatedString = remember(text, links, onNavigate, linkColor) {
         MarkdownParser.buildAnnotatedString(
             text = text,
             links = links,
             onNavigate = onNavigate,
+            linkColor = linkColor,
             onUrlClick = { url ->
                 when {
                     url.startsWith("mailto:") -> {

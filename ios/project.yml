@@ -16,32 +16,20 @@ targets:
     platform: iOS
     sources:
       - path: MurphysLaws
+        # The hand-authored MurphysLaws/Info.plist is the source of truth
+        # (referenced by INFOPLIST_FILE below). A second stray plist at
+        # MurphysLaws/Repositories/Info.plist is leftover scaffolding from
+        # an earlier framework-style structure. Both must be excluded so
+        # XcodeGen doesn't add them to Copy Bundle Resources, which
+        # produces `Multiple commands produce ... MurphysLaws.app/Info.plist`
+        # at build time. The `**/Info.plist` glob covers any future-stray
+        # plist as well.
+        excludes:
+          - "**/Info.plist"
       - path: ../shared/content
         name: content
         type: folder
         buildPhase: resources
-    info:
-      path: MurphysLaws/Info.plist
-      properties:
-        CFBundleDisplayName: Murphy's Laws
-        CFBundleDevelopmentRegion: en
-        UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: true
-        UIApplicationSupportsIndirectInputEvents: true
-        UILaunchScreen:
-          UIColorName: LaunchScreenBackground
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        UISupportedInterfaceOrientations~ipad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        NSPhotoLibraryAddUsageDescription: "Save and share Murphy's Laws as images"
-        UIAppFonts:
-          - WorkSans-VariableFont_wght.ttf
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLaws
       INFOPLIST_FILE: MurphysLaws/Info.plist
@@ -59,6 +47,7 @@ targets:
     platform: iOS
     sources:
       - MurphysLawsTests
+      - MurphysLawsUITests/MarkdownContentTests.swift
     dependencies:
       - target: MurphysLaws
     settings:
@@ -70,7 +59,9 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - MurphysLawsUITests
+      - path: MurphysLawsUITests
+        excludes:
+          - MarkdownContentTests.swift
     dependencies:
       - target: MurphysLaws
     settings:

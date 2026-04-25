@@ -2,12 +2,18 @@ name: iOS CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'ios/**'
+      - 'shared/DESIGN.md'
+      - 'web/scripts/export-ios-tokens.ts'
       - '.github/workflows/ios-ci.yml'
   pull_request:
     paths:
       - 'ios/**'
+      - 'shared/DESIGN.md'
+      - 'web/scripts/export-ios-tokens.ts'
 
 jobs:
   build-and-test:
@@ -16,22 +22,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (root - npm workspaces)
+        run: npm ci
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.4'
 
-      - name: Check for Xcode project
-        id: check_project
-        run: |
-          if [ -f "ios/MurphysLaws.xcodeproj/project.pbxproj" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
+      # Tokens.swift and Assets.xcassets/DS/ are gitignored; regenerate
+      # them from shared/DESIGN.md so the Swift compiler can resolve
+      # `DS.Color.*` and `DS.Typography.*` references.
+      - name: Regenerate iOS design tokens
+        run: npm --prefix web run design:export:ios
 
-      - name: Build (if project exists)
-        if: steps.check_project.outputs.exists == 'true'
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # The committed MurphysLaws.xcodeproj/project.pbxproj is stale w.r.t.
+      # the freshly-regenerated DesignSystem/Tokens.swift (and any other
+      # source rearrangement since the project was last opened in Xcode).
+      # XcodeGen rebuilds it from project.yml so xcodebuild sees the
+      # current file tree.
+      - name: Regenerate Xcode project
+        run: cd ios && xcodegen generate
+
+      - name: Build
         run: |
           cd ios
           xcodebuild build \
@@ -39,15 +62,10 @@ jobs:
             -scheme MurphysLaws \
             -destination 'platform=iOS Simulator,name=iPhone 16'
 
-      - name: Test (if project exists)
-        if: steps.check_project.outputs.exists == 'true'
+      - name: Test
         run: |
           cd ios
           xcodebuild test \
             -project MurphysLaws.xcodeproj \
             -scheme MurphysLaws \
             -destination 'platform=iOS Simulator,name=iPhone 16'
-
-      - name: Skip (project not yet created)
-        if: steps.check_project.outputs.exists == 'false'
-        run: echo "iOS project not yet created. Skipping build."
