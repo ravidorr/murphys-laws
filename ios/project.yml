@@ -16,13 +16,16 @@ targets:
     platform: iOS
     sources:
       - path: MurphysLaws
-        # The hand-authored Info.plist is the source of truth (referenced
-        # by INFOPLIST_FILE below). Excluded from the source scan so
-        # XcodeGen doesn't also add it to Copy Bundle Resources, which
+        # The hand-authored MurphysLaws/Info.plist is the source of truth
+        # (referenced by INFOPLIST_FILE below). A second stray plist at
+        # MurphysLaws/Repositories/Info.plist is leftover scaffolding from
+        # an earlier framework-style structure. Both must be excluded so
+        # XcodeGen doesn't add them to Copy Bundle Resources, which
         # produces `Multiple commands produce ... MurphysLaws.app/Info.plist`
-        # at build time.
+        # at build time. The `**/Info.plist` glob covers any future-stray
+        # plist as well.
         excludes:
-          - "Info.plist"
+          - "**/Info.plist"
       - path: ../shared/content
         name: content
         type: folder
