@@ -16,30 +16,17 @@ targets:
     platform: iOS
     sources:
       - path: MurphysLaws
+        # The hand-authored Info.plist is the source of truth (referenced
+        # by INFOPLIST_FILE below). Excluded from the source scan so
+        # XcodeGen doesn't also add it to Copy Bundle Resources, which
+        # produces `Multiple commands produce ... MurphysLaws.app/Info.plist`
+        # at build time.
+        excludes:
+          - "Info.plist"
       - path: ../shared/content
         name: content
         type: folder
         buildPhase: resources
-    info:
-      path: MurphysLaws/Info.plist
-      properties:
-        CFBundleDisplayName: Murphy's Laws
-        CFBundleDevelopmentRegion: en
-        UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: true
-        UIApplicationSupportsIndirectInputEvents: true
-        UILaunchScreen:
-          UIColorName: LaunchScreenBackground
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        UISupportedInterfaceOrientations~ipad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        NSPhotoLibraryAddUsageDescription: "Save and share Murphy's Laws as images"
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLaws
       INFOPLIST_FILE: MurphysLaws/Info.plist
