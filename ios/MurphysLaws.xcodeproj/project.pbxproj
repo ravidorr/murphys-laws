@@ -35,6 +35,7 @@
 		441EC254A6EC2BD33FFE37AA /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E590CE9B0966A46756CFD59E /* Constants.swift */; };
 		49FA408589A664074331A528 /* LawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CE1346FFCDE3DDCEE69F106 /* LawRepository.swift */; };
 		4C2DDA029D19E36F4D8837C4 /* validate-config.sh in Resources */ = {isa = PBXBuildFile; fileRef = EFCD9518D3BD3452B519233F /* validate-config.sh */; };
+		4E90F0387B2BF874415C4500 /* WorkSans-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3929DE2CC4B5B795D4BE2F8C /* WorkSans-VariableFont_wght.ttf */; };
 		512FC6FA12AF119AE1AE6085 /* metadata.json in Resources */ = {isa = PBXBuildFile; fileRef = A0AED1B568A572B21E484A12 /* metadata.json */; };
 		576857C0BDB97789E126318D /* VotingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B769A933753CDE8E606F18 /* VotingService.swift */; };
 		58AF40343C809A85903A9B14 /* LawOfDayCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6CB77C95FF85B4ABE3488D9 /* LawOfDayCard.swift */; };
@@ -133,6 +134,7 @@
 		2DA979AAB059066E3BE8C470 /* VOTE_SYNC_BUG_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VOTE_SYNC_BUG_FIX.md; sourceTree = "<group>"; };
 		3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailViewModel.swift; sourceTree = "<group>"; };
 		34D87D391AFBA8AF59AC4B16 /* MathFormulaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathFormulaView.swift; sourceTree = "<group>"; };
+		3929DE2CC4B5B795D4BE2F8C /* WorkSans-VariableFont_wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "WorkSans-VariableFont_wght.ttf"; sourceTree = "<group>"; };
 		3A92344773FFC6A46ED393D5 /* origin-story.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "origin-story.md"; sourceTree = "<group>"; };
 		401F0A8FA88BC3C74BF94D41 /* ImprovedTestExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImprovedTestExample.swift; sourceTree = "<group>"; };
 		4072C53A25F93FC2BD1DE3C2 /* CalculatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorViewModel.swift; sourceTree = "<group>"; };
@@ -309,6 +311,7 @@
 			isa = PBXGroup;
 			children = (
 				95808E3667B7230D637CB341 /* content */,
+				87CF8FEF991EFB714EC04657 /* Fonts */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -350,6 +353,14 @@
 				2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */,
 			);
 			path = MurphysLawsTests;
+			sourceTree = "<group>";
+		};
+		87CF8FEF991EFB714EC04657 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				3929DE2CC4B5B795D4BE2F8C /* WorkSans-VariableFont_wght.ttf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 		8BDF7BD2C017247D0ACD9CAA /* Calculator */ = {
@@ -569,6 +580,7 @@
 				E47E601148670068CA9559E1 /* QUICK_START.md in Resources */,
 				7C622775274ADA969383EE4A /* VOTING_FIX.md in Resources */,
 				B1CBDD83A8863C53A4F01124 /* WRONG_LAW_FIX.md in Resources */,
+				4E90F0387B2BF874415C4500 /* WorkSans-VariableFont_wght.ttf in Resources */,
 				B5CF459C2545A3C354FA6F06 /* about.md in Resources */,
 				84869700F6EB9BB6D5676697 /* contact.md in Resources */,
 				915DB1864B355BE88CDC8BD2 /* content in Resources */,
@@ -758,7 +770,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -777,7 +789,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -897,7 +909,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -910,7 +922,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
