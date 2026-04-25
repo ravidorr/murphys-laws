@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.murphyslaws.ui.theme.DS
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -184,6 +185,7 @@ object MarkdownParser {
         text: String,
         links: List<ExtractedLink>,
         onNavigate: ((String) -> Unit)? = null,
+        linkColor: Color = DS.Color.btnPrimaryBg,
         onUrlClick: (String) -> Unit
     ): AnnotatedString {
         // Remove all link syntax and get clean text
@@ -201,7 +203,7 @@ object MarkdownParser {
 
         val linkStyle = TextLinkStyles(
             style = SpanStyle(
-                color = Color(0xFF1976D2),
+                color = linkColor,
                 textDecoration = TextDecoration.Underline
             )
         )
@@ -352,12 +354,18 @@ fun ClickableMarkdownText(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val linkColor = if (MaterialTheme.colorScheme.background == DS.Color.darkBgPrimary) {
+        DS.Color.darkLink
+    } else {
+        DS.Color.btnPrimaryBg
+    }
 
-    val annotatedString = remember(text, links, onNavigate) {
+    val annotatedString = remember(text, links, onNavigate, linkColor) {
         MarkdownParser.buildAnnotatedString(
             text = text,
             links = links,
             onNavigate = onNavigate,
+            linkColor = linkColor,
             onUrlClick = { url ->
                 when {
                     url.startsWith("mailto:") -> {

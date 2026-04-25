@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.presentation.home.SocialIcons
+import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +107,7 @@ fun LawDetailScreen(
                                     Icon(
                                         Icons.Filled.ThumbUp,
                                         contentDescription = "Upvote",
-                                        tint = Color(0xFF10b981),
+                                        tint = DS.Color.success,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -129,7 +130,7 @@ fun LawDetailScreen(
                                     Icon(
                                         Icons.Filled.ThumbDown,
                                         contentDescription = "Downvote",
-                                        tint = Color(0xFFef4444),
+                                        tint = DS.Color.error,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -145,6 +146,8 @@ fun LawDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val context = LocalContext.current
+                            // Third-party brand colours; intentionally not tokenised in DS
+                            // (they aren't part of the Murphy's Laws design system).
                             val socialButtons = listOf(
                                 Triple(SocialIcons.X, Color(0xFF1DA1F2), com.murphyslaws.util.SocialPlatform.X),
                                 Triple(SocialIcons.Facebook, Color(0xFF1877F2), com.murphyslaws.util.SocialPlatform.FACEBOOK),

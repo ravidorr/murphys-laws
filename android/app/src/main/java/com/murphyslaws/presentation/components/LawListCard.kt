@@ -9,10 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.murphyslaws.domain.model.Law
+import com.murphyslaws.ui.theme.DS
 
 @Composable
 fun LawListCard(
@@ -60,7 +60,7 @@ fun LawListCard(
                     Icon(
                         Icons.Default.ThumbUp,
                         contentDescription = null,
-                        tint = Color(0xFF10b981),
+                        tint = DS.Color.success,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
@@ -77,7 +77,7 @@ fun LawListCard(
                     Icon(
                         Icons.Default.ThumbDown,
                         contentDescription = null,
-                        tint = Color(0xFFef4444),
+                        tint = DS.Color.error,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
