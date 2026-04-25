@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.murphyslaws.ui.theme.DS
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -201,7 +202,7 @@ object MarkdownParser {
 
         val linkStyle = TextLinkStyles(
             style = SpanStyle(
-                color = Color(0xFF1976D2),
+                color = DS.Color.btnPrimaryBg,
                 textDecoration = TextDecoration.Underline
             )
         )
