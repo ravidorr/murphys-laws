@@ -4,10 +4,14 @@ on:
   push:
     paths:
       - 'ios/**'
+      - 'shared/DESIGN.md'
+      - 'web/scripts/export-ios-tokens.ts'
       - '.github/workflows/ios-ci.yml'
   pull_request:
     paths:
       - 'ios/**'
+      - 'shared/DESIGN.md'
+      - 'web/scripts/export-ios-tokens.ts'
 
 jobs:
   build-and-test:
@@ -16,10 +20,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (root - npm workspaces)
+        run: npm ci
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.4'
+
+      # Tokens.swift and Assets.xcassets/DS/ are gitignored; regenerate
+      # them from shared/DESIGN.md so the Swift compiler can resolve
+      # `DS.Color.*` and `DS.Typography.*` references.
+      - name: Regenerate iOS design tokens
+        run: npm --prefix web run design:export:ios
 
       - name: Check for Xcode project
         id: check_project
