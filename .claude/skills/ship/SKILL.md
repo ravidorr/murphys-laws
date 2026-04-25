@@ -37,11 +37,11 @@ Bump the root `package.json` on every ship. Bump a sub-package's version file **
 | File | Field(s) | Scheme | Example | When to bump |
 |------|----------|--------|---------|--------------|
 | `package.json` (root) | `version` | `MAJOR.MINOR.PATCH` | `2.1.1` → `2.1.2` | Always. Drives the Sentry `release` tag across the repo. |
-| `web/package.json` | `version` | `MAJOR.MINOR.PATCH` | `3.1.35` → `3.1.36` | Only when user-facing web code changed. Version is embedded in built web assets and Sentry web releases. **Build-time tooling under `web/scripts/` that emits artifacts for OTHER platforms (e.g. `export-ios-tokens.ts`, `export-android-tokens.ts`) is NOT a web change for versioning purposes** - bumping web for it creates phantom Sentry web releases. |
+| `web/package.json` | `version` | `MAJOR.MINOR.PATCH` | `3.1.35` → `3.1.36` | Only when files that ship in the web bundle changed: `web/**` user-facing code, OR any `shared/` path the web SSG bakes in (today: `shared/content/**`, see [web/scripts/ssg.ts](web/scripts/ssg.ts) constant `SHARED_CONTENT_DIR`). Version is embedded in built web assets and Sentry web releases. **Build-time tooling under `web/scripts/` that emits artifacts for OTHER platforms (e.g. `export-ios-tokens.ts`, `export-android-tokens.ts`) is NOT a web change for versioning purposes** - bumping web for it creates phantom Sentry web releases. |
 | `backend/package.json` | `version` | `MAJOR.MINOR.PATCH` | `2.0.14` → `2.0.15` | Only when files under `backend/` changed. |
 | `mcp/package.json` | `version` | `MAJOR.MINOR.PATCH` | - | Only when files under `mcp/` changed. |
-| `ios/project.yml` AND `ios/MurphysLaws/Info.plist` | `MARKETING_VERSION` / `CFBundleShortVersionString` (semver) AND `CURRENT_PROJECT_VERSION` / `CFBundleVersion` (monotonic build number) | semver + integer | `1.0.1` → `1.0.2`, build `2` → `3` | Only when files under `ios/` changed. Surfaces in TestFlight, App Store, Sentry iOS dashboards. Keep the same value in `project.yml` and `Info.plist` so XcodeGen regeneration is a no-op. |
-| `android/app/build.gradle.kts` | `versionName` (semver) AND `versionCode` (monotonic int) | semver + integer | `versionName "1.0.1"`, `versionCode 2` → `versionName "1.0.2"`, `versionCode 3` | Only when files under `android/` changed. Surfaces in Play Console and Sentry Android dashboards. |
+| `ios/project.yml` AND `ios/MurphysLaws/Info.plist` | `MARKETING_VERSION` / `CFBundleShortVersionString` (semver) AND `CURRENT_PROJECT_VERSION` / `CFBundleVersion` (monotonic build number) | semver + integer | `1.0.1` → `1.0.2`, build `2` → `3` | Only when files that ship in the iOS app binary changed: `ios/**`, OR any `shared/` path bundled into the app (today: `shared/content/**`, declared in [ios/project.yml](ios/project.yml) `sources:`). Surfaces in TestFlight, App Store, Sentry iOS dashboards. Keep the same value in `project.yml` and `Info.plist` so XcodeGen regeneration is a no-op. |
+| `android/app/build.gradle.kts` | `versionName` (semver) AND `versionCode` (monotonic int) | semver + integer | `versionName "1.0.1"`, `versionCode 2` → `versionName "1.0.2"`, `versionCode 3` | Only when files that ship in the Android app binary changed: `android/**`, OR any `shared/` path copied into app assets (today: `shared/content/**`, declared in the `copySharedContent` task in [android/app/build.gradle.kts](android/app/build.gradle.kts)). Surfaces in Play Console and Sentry Android dashboards. |
 
 Increment only the **PATCH** segment of each unless the change warrants MINOR (new user-facing feature, e.g. bundling a new font, adding a screen, opt-in API) or MAJOR (breaking change). When you bump MINOR or MAJOR on any version file, **alert the user explicitly per the version-bump rule** and confirm before proceeding.
 
@@ -49,19 +49,23 @@ Increment only the **PATCH** segment of each unless the change warrants MINOR (n
 
 ### How to decide what changed
 
-Before bumping, inspect the staged diff per platform:
+Before bumping, inspect the staged diff per platform. **Note that `shared/content/` ships in all three platform binaries (web SSG, iOS resource bundle, Android assets), so it must be probed alongside each platform's own directory:**
 
 ```bash
-git diff --cached --stat -- web/
+git diff --cached --stat -- web/ shared/content/
 git diff --cached --stat -- backend/
 git diff --cached --stat -- mcp/
-git diff --cached --stat -- ios/
-git diff --cached --stat -- android/
+git diff --cached --stat -- ios/ shared/content/
+git diff --cached --stat -- android/ shared/content/
 ```
 
 If a directory shows no output, do **not** bump that platform's version. `package-lock.json` updates driven purely by the root version bump do not count as a sub-package change.
 
-For `web/`, the diff alone isn't enough: also check whether the changed files are user-facing (`web/src/**`, `web/styles/**`, `web/index.html`) versus build-time tooling (`web/scripts/**` that emits to other platforms). Tooling-only diffs do not warrant a `web/package.json` bump.
+A PR that touches **only** `shared/content/` (e.g. a copy fix on `about.md`) is a real release on every platform that bundles it: web users see a new build, iOS / Android users get an update via TestFlight / Play. The version files must reflect that. Skipping the bump on iOS / Android specifically can block the next upload because App Store Connect / Play Console reject duplicate `CFBundleVersion` / `versionCode`.
+
+For `web/`, the diff alone isn't enough: also check whether the changed files are user-facing (`web/src/**`, `web/styles/**`, `web/index.html`, `shared/content/**`) versus build-time tooling (`web/scripts/**` that emits to other platforms). Tooling-only diffs do not warrant a `web/package.json` bump.
+
+If `ios/project.yml` `sources:` or `android/app/build.gradle.kts` `copySharedContent` (or the equivalent build glue) ever expands to consume more `shared/` paths, update this skill so the probes match the new reality.
 
 ### iOS specifics
 
@@ -193,14 +197,16 @@ Return the PR URL to the user.
 ## Quick-reference checklist
 
 ```
-[ ] Read the diff - understand what changed AND which platform(s) actually changed
+[ ] Read the diff - understand what changed AND which platform binaries it lands in
 [ ] Bump root package.json (always)
-[ ] If user-facing web/ code changed: bump web/package.json
+[ ] If user-facing web/ code OR shared/content/ changed: bump web/package.json
 [ ] If backend/ code changed: bump backend/package.json
 [ ] If mcp/ code changed: bump mcp/package.json
-[ ] If ios/ code changed: bump MARKETING_VERSION+CURRENT_PROJECT_VERSION in ios/project.yml
-    AND CFBundleShortVersionString+CFBundleVersion in ios/MurphysLaws/Info.plist (lockstep)
-[ ] If android/ code changed: bump versionName + versionCode in android/app/build.gradle.kts
+[ ] If ios/ code OR shared/content/ changed: bump MARKETING_VERSION+CURRENT_PROJECT_VERSION
+    in ios/project.yml AND CFBundleShortVersionString+CFBundleVersion in
+    ios/MurphysLaws/Info.plist (lockstep)
+[ ] If android/ code OR shared/content/ changed: bump versionName + versionCode in
+    android/app/build.gradle.kts
 [ ] Add CHANGELOG bullet under [Unreleased]
 [ ] git fetch origin main && git rebase origin/main
 [ ] git add <files>

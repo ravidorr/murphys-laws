@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `ship` skill ([.claude/skills/ship/SKILL.md](.claude/skills/ship/SKILL.md)) version-bump scope expanded to cover `shared/content/**`. Both mobile apps bundle that directory (`ios/project.yml` `sources:` mounts `../shared/content` as a resource folder; `android/app/build.gradle.kts` copies it into app assets via the `copySharedContent` preBuild task) and the web SSG bakes it into the static build (`web/scripts/ssg.ts` `SHARED_CONTENT_DIR`). Without including it in the iOS / Android / web rule, a PR that only edits `shared/content/about.md` (a copy fix) would change user-visible content in all three platforms while keeping `CFBundleVersion` / `versionCode` / `web/package.json` static, blocking the next App Store / Play Console upload as a duplicate build. Updates the rule rows, the "How to decide what changed" probes, and the quick-reference checklist. Credit: flagged by Codex P1 review on [#98](https://github.com/ravidorr/murphys-laws/pull/98).
+
+### Changed
 - `ship` skill ([.claude/skills/ship/SKILL.md](.claude/skills/ship/SKILL.md)) now documents iOS (`MARKETING_VERSION` + `CURRENT_PROJECT_VERSION` in `ios/project.yml`, `CFBundleShortVersionString` + `CFBundleVersion` in `Info.plist`) and Android (`versionName` + `versionCode` in `app/build.gradle.kts`) version-file rules alongside the existing web / backend / mcp guidance. Also clarifies that build-time tooling under `web/scripts/` that emits artifacts for OTHER platforms (e.g. `export-ios-tokens.ts`, `export-android-tokens.ts`) is NOT a web change for versioning purposes - bumping `web/package.json` for a tooling-only diff creates phantom Sentry web releases. Closes the gap that produced incorrect web bumps and missing iOS/Android bumps in the design-tokens-mobile rollout PRs (#92-#97).
 
 ### Fixed
