@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android design-token codegen. New [web/scripts/export-android-tokens.ts](web/scripts/export-android-tokens.ts) (wired as `npm --prefix web run design:export:android`) reads `shared/DESIGN.md` and emits `Tokens.kt`, day/night `ds_*` color resources, and spacing/radius dimens for Android consumers. Generated outputs stay gitignored and are produced by the `exportDesignTokens` Gradle task before `preBuild`; Android app bumped to `1.0.1` / versionCode `2`; root to `2.4.21`.
 
 ### Changed
+- Android CI now runs on pull requests and `main` pushes only, avoiding duplicate `build-and-test` jobs when a feature branch with an open PR is updated.
 - Android theme now consumes generated DS tokens for Material color and typography slots, replacing the drifted hand-maintained `Color.kt` constants and the previous `Roboto for now` typography placeholder.
 - Web CI now runs on pull requests and `main` pushes only, avoiding duplicate `test-and-build` and `e2e-tests` jobs when a feature branch with an open PR is updated. Root bumped to `2.4.20`.
 - iOS CI now runs on pull requests and `main` pushes only, avoiding duplicate macOS jobs when a feature branch with an open PR is updated. Root bumped to `2.4.18`.
