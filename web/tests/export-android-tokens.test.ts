@@ -278,6 +278,15 @@ describe('buildAndroidArtifacts', () => {
     expect(colorsXml).toContain('<color name="ds_muted_fg">#4b5563</color>');
   });
 
+  it('keeps generated XML comments valid by avoiding double hyphens', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const { colorsXml, colorsNightXml, dimensXml } = buildAndroidArtifacts(parsed);
+
+    expect(colorsXml).not.toMatch(/<!--[\s\S]*--[\s\S]*-->/);
+    expect(colorsNightXml).not.toMatch(/<!--[\s\S]*--[\s\S]*-->/);
+    expect(dimensXml).not.toMatch(/<!--[\s\S]*--[\s\S]*-->/);
+  });
+
   it('emits values-night/colors.xml with the SAME names but dark hex (so consumers get auto-swap via the Android resource system)', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { colorsNightXml } = buildAndroidArtifacts(parsed);

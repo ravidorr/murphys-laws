@@ -423,10 +423,10 @@ function renderTypographyLevel(
   lines.push(`        public static let ${ident} = Level(`);
   // Work Sans is bundled as a variable font (Resources/Fonts/
   // WorkSans-VariableFont_wght.ttf, registered via UIAppFonts in
-  // Info.plist). Font.custom("Work Sans", size:) uses the family name;
-  // .weight(...) requests the matching variation on the wght axis.
+  // Info.plist). SwiftUI resolves Font.custom by the registered PostScript
+  // name; .weight(...) requests the matching variation on the wght axis.
   lines.push(
-    `            font: SwiftUI.Font.custom("Work Sans", size: ${fontSize}).weight(${swiftFontWeight(props.fontWeight)}),`,
+    `            font: SwiftUI.Font.custom("WorkSans-Regular", size: ${fontSize}).weight(${swiftFontWeight(props.fontWeight)}),`,
   );
   lines.push(
     `            lineSpacing: ${roundTo3(lineSpacing)},`,
