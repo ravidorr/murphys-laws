@@ -2,12 +2,18 @@ name: Android CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'android/**'
+      - 'shared/DESIGN.md'
+      - 'web/scripts/export-android-tokens.ts'
       - '.github/workflows/android-ci.yml'
   pull_request:
     paths:
       - 'android/**'
+      - 'shared/DESIGN.md'
+      - 'web/scripts/export-android-tokens.ts'
 
 jobs:
   build-and-test:
@@ -15,6 +21,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (root - npm workspaces)
+        run: npm ci
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
