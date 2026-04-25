@@ -47,6 +47,7 @@ targets:
     platform: iOS
     sources:
       - MurphysLawsTests
+      - MurphysLawsUITests/MarkdownContentTests.swift
     dependencies:
       - target: MurphysLaws
     settings:
@@ -58,7 +59,9 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - MurphysLawsUITests
+      - path: MurphysLawsUITests
+        excludes:
+          - MarkdownContentTests.swift
     dependencies:
       - target: MurphysLaws
     settings:
