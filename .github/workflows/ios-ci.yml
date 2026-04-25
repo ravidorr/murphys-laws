@@ -7,13 +7,13 @@ on:
     paths:
       - 'ios/**'
       - 'shared/DESIGN.md'
-      - 'web/scripts/export-ios-tokens.ts'
+      - 'shared/design-tokens/**'
       - '.github/workflows/ios-ci.yml'
   pull_request:
     paths:
       - 'ios/**'
       - 'shared/DESIGN.md'
-      - 'web/scripts/export-ios-tokens.ts'
+      - 'shared/design-tokens/**'
 
 jobs:
   build-and-test:
@@ -41,7 +41,7 @@ jobs:
       # them from shared/DESIGN.md so the Swift compiler can resolve
       # `DS.Color.*` and `DS.Typography.*` references.
       - name: Regenerate iOS design tokens
-        run: npm --prefix web run design:export:ios
+        run: npm run design:export:ios
 
       - name: Install XcodeGen
         run: brew install xcodegen

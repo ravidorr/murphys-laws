@@ -7,12 +7,12 @@ import {
   buildIosArtifacts,
   runIosExport,
   type IosRunOptions,
-} from '../scripts/export-ios-tokens.ts';
+} from '../../shared/design-tokens/export-ios-tokens.ts';
 import {
   classifyTokens,
   parseCssVariables,
   type ClassifiedTokens,
-} from '../scripts/sync-design-tokens.ts';
+} from '../../shared/design-tokens/sync-design-tokens.ts';
 
 interface PairLocalThis {
   colors?: Map<string, string>;
@@ -312,7 +312,7 @@ describe('buildColorsetContents', () => {
   it('records the generator script as the colorset author for traceability', () => {
     const json = buildColorsetContents('#ffffff', undefined);
     const parsed = JSON.parse(json) as { info: { author: string } };
-    expect(parsed.info.author).toBe('web/scripts/export-ios-tokens.ts');
+    expect(parsed.info.author).toBe('shared/design-tokens/export-ios-tokens.ts');
   });
 });
 

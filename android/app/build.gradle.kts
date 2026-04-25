@@ -70,7 +70,7 @@ tasks.register<Copy>("copySharedContent") {
 // at the Kotlin compile step with a clear "missing Tokens.kt" error, which
 // points at this task).
 tasks.register<Exec>("exportDesignTokens") {
-    workingDir = file("${project.rootDir}/../web")
+    workingDir = file("${project.rootDir}/..")
     commandLine("npm", "run", "design:export:android")
     isIgnoreExitValue = false
     onlyIf {

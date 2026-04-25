@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DESIGN_MD_PATH = path.resolve(__dirname, '../DESIGN.md');
+const DESIGN_MD_PATH = path.resolve(__dirname, '../../web/DESIGN.md');
 const DESIGN_MD_PACKAGE_SPEC = '@google/design.md@0.1.1';
 
 interface Finding {

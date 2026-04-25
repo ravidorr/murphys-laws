@@ -9,7 +9,7 @@ import {
   run,
   type ClassifiedTokens,
   type RunOptions,
-} from '../scripts/sync-design-tokens.ts';
+} from '../../shared/design-tokens/sync-design-tokens.ts';
 
 interface ParseLocalThis {
   css?: string;
@@ -312,7 +312,7 @@ describe('buildSharedDesignMd', () => {
     expect(shared).toContain('../web/DESIGN.md');
     expect(shared).toContain('../web/styles/partials/variables.css');
     expect(shared).toContain(
-      'npm --prefix web run design:sync',
+      'npm run design:sync',
     );
   });
 
