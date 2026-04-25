@@ -17,8 +17,8 @@ android {
         applicationId = "com.murphyslaws"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "com.murphyslaws.CustomTestRunner"
         vectorDrawables {
@@ -63,9 +63,39 @@ tasks.register<Copy>("copySharedContent") {
     into("${project.projectDir}/src/main/assets/content")
 }
 
+// Regenerate Android design tokens from shared/DESIGN.md.
+// Outputs (Tokens.kt, colors.xml, values-night/colors.xml, dimens.xml) are
+// gitignored; this task ensures they exist and are fresh on every build.
+// Skipped automatically if Node/npm aren't on PATH (the build will then fail
+// at the Kotlin compile step with a clear "missing Tokens.kt" error, which
+// points at this task).
+tasks.register<Exec>("exportDesignTokens") {
+    workingDir = file("${project.rootDir}/../web")
+    commandLine("npm", "run", "design:export:android")
+    isIgnoreExitValue = false
+    onlyIf {
+        // Best-effort: skip silently if npm is unavailable. CI and local
+        // dev machines that ran `nvm use && npm install` will always pass
+        // this gate.
+        try {
+            ProcessBuilder("npm", "--version")
+                .redirectErrorStream(true)
+                .start()
+                .waitFor() == 0
+        } catch (_: Exception) {
+            logger.warn(
+                "npm not found on PATH; skipping exportDesignTokens. " +
+                    "Tokens.kt and the ds_* resources may be missing or stale."
+            )
+            false
+        }
+    }
+}
+
 // Run before processing resources
 tasks.named("preBuild") {
     dependsOn("copySharedContent")
+    dependsOn("exportDesignTokens")
 }
 
 
