@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.4.23",
+  "version": "2.4.24",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -36,7 +36,7 @@
     "lint:md:fix": "markdownlint-cli2 --fix \"**/*.md\" \"#**/node_modules\" \"#backup\" \"#**/build\" \"#.migration-backup-*\" \"#CLAUDE.md\" \"#.cursor/**\" \"#.claude/**\"",
     "lint": "npm run lint:web && npm run lint:sdk && npm run lint:cli && npm run lint:mcp && npm run lint:md",
     "ci:backend": "cd backend && npm run typecheck && npm run lint && npm run build:db && npm run test:coverage",
-    "ci:web": "cd web && npm run typecheck && npm run lint && npm run lint:css && npm run lint:html && npm run design:check && npm test && npm run build",
+    "ci:web": "npm --prefix web run typecheck && npm --prefix web run lint && npm --prefix web run lint:css && npm --prefix web run lint:html && npm run design:check && npm --prefix web test && npm --prefix web run build",
     "ci:sdk": "cd sdk && npm run typecheck && npm run lint && npm run test:coverage",
     "ci:cli": "cd cli && npm run typecheck && npm run lint && npm run test:coverage",
     "ci:mcp": "cd mcp && npm run typecheck && npm run lint && npm run test:coverage && npm run build",
@@ -46,7 +46,13 @@
     "validate:node-server": "cd backend && npm run validate:node-server",
     "validate-ports": "npx tsx backend/scripts/validate-ports.ts",
     "cleanup-ports": "npx tsx backend/scripts/cleanup-ports.ts",
-    "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../sdk && npm install && cd ../cli && npm install && cd ../mcp && npm install"
+    "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../sdk && npm install && cd ../cli && npm install && cd ../mcp && npm install",
+    "design:sync": "tsx shared/design-tokens/sync-design-tokens.ts",
+    "design:check": "tsx shared/design-tokens/sync-design-tokens.ts --check && tsx shared/design-tokens/design-md-lint.ts && tsx shared/design-tokens/export-ios-tokens.ts --check && tsx shared/design-tokens/export-android-tokens.ts --check && npm run design:test",
+    "design:export": "tsx shared/design-tokens/export-design-tokens.ts",
+    "design:export:ios": "tsx shared/design-tokens/export-ios-tokens.ts",
+    "design:export:android": "tsx shared/design-tokens/export-android-tokens.ts",
+    "design:test": "cd web && npm test -- ../shared/design-tokens/*.test.ts"
   },
   "keywords": [
     "murphys-law",

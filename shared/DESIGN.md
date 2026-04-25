@@ -214,13 +214,13 @@ vanilla-TS components).
 - **Authoritative values:** [web/styles/partials/variables.css](../web/styles/partials/variables.css).
 - **Authoritative contract:** [web/DESIGN.md](../web/DESIGN.md) (YAML front matter + Markdown body).
 - **This file:** the YAML front matter above only. Regenerated in lockstep with
-  `web/DESIGN.md` by [web/scripts/sync-design-tokens.ts](../web/scripts/sync-design-tokens.ts).
+  `web/DESIGN.md` by [shared/design-tokens/sync-design-tokens.ts](design-tokens/sync-design-tokens.ts).
 
 ## Do not hand-edit
 
-Every run of `npm --prefix web run design:sync` rewrites this file. Edits made
+Every run of `npm run design:sync` rewrites this file. Edits made
 directly to `shared/DESIGN.md` are lost on the next sync, and CI's
-`npm --prefix web run design:check` fails the build if the mirror drifts.
+`npm run design:check` fails the build if the mirror drifts.
 
 ## Cross-platform mapping
 
@@ -241,4 +241,4 @@ implementation, not by this file. Known mappings:
 The YAML front matter follows the [Google Labs `design.md`](https://github.com/google-labs-code/design.md)
 schema, version `0.1.1`. A DTCG (Design Tokens Community Group) JSON export
 of the same catalogue can be generated on demand via
-`npm --prefix web run design:export`.
+`npm run design:export`.
