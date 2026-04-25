@@ -104,7 +104,7 @@ class CategoryRepositoryTests: XCTestCase {
         )
         
         // Categories with same ID should have same hash
-        var set = Set<Category>()
+        var set = Set<MurphysLaws.Category>()
         set.insert(category1)
         set.insert(category2) // Should not increase count (same ID)
         XCTAssertEqual(set.count, 1, "Set should contain only 1 category (same ID)")
@@ -169,7 +169,7 @@ class CategoryRepositoryTests: XCTestCase {
 class CategoryDeduplicationTests: XCTestCase {
     
     func testEmptyArray() {
-        let categories: [Category] = []
+        let categories: [MurphysLaws.Category] = []
         let deduplicated = deduplicateByTitle(categories)
         XCTAssertTrue(deduplicated.isEmpty)
     }
