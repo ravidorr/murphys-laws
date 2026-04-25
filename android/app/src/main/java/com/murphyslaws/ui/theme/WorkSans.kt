@@ -1,5 +1,6 @@
 package com.murphyslaws.ui.theme
 
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
@@ -21,6 +22,7 @@ import com.murphyslaws.R
  * contract. The generated `DS.Typography.<level>` text styles reference
  * this `WorkSans` constant.
  */
+@OptIn(ExperimentalTextApi::class)
 private fun workSansFont(weight: FontWeight, axisWeight: Int): Font = Font(
     resId = R.font.work_sans_variable,
     weight = weight,
