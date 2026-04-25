@@ -7,12 +7,12 @@ import {
   buildAndroidArtifacts,
   runAndroidExport,
   type AndroidRunOptions,
-} from '../scripts/export-android-tokens.ts';
+} from '../../shared/design-tokens/export-android-tokens.ts';
 import {
   classifyTokens,
   parseCssVariables,
   type ClassifiedTokens,
-} from '../scripts/sync-design-tokens.ts';
+} from '../../shared/design-tokens/sync-design-tokens.ts';
 
 interface PairLocalThis {
   colors?: Map<string, string>;

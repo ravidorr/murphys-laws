@@ -10,7 +10,7 @@
   ],
   "web/styles/partials/variables.css": [
     "stylelint --config web/.stylelintrc.json --fix",
-    "tsx web/scripts/sync-design-tokens.ts --hook",
+    "tsx shared/design-tokens/sync-design-tokens.ts --hook",
     "git add web/DESIGN.md shared/DESIGN.md"
   ],
   "web/**/*.html": [

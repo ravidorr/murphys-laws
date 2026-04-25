@@ -36,11 +36,11 @@ const __dirname = path.dirname(__filename);
 
 const VARIABLES_CSS_PATH = path.resolve(
   __dirname,
-  '../styles/partials/variables.css',
+  '../../web/styles/partials/variables.css',
 );
 const DEFAULT_OUTPUT_PATH = path.resolve(
   __dirname,
-  '../.design-exports/design-tokens.dtcg.json',
+  '../../web/.design-exports/design-tokens.dtcg.json',
 );
 
 export interface DtcgLeafToken {
@@ -114,8 +114,8 @@ export function buildDtcgDocument(parsed: ClassifiedTokens): DtcgDocument {
     $description:
       "Murphy's Law Archive design tokens. Generated from web/DESIGN.md " +
       '(and the upstream web/styles/partials/variables.css) by ' +
-      'web/scripts/export-design-tokens.ts. Do not hand-edit; re-run ' +
-      '`npm --prefix web run design:export` to regenerate.',
+      'shared/design-tokens/export-design-tokens.ts. Do not hand-edit; re-run ' +
+      '`npm run design:export` to regenerate.',
     color,
     dimension: { spacing, radius },
     typography,

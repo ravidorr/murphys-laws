@@ -20,12 +20,12 @@ const __dirname = path.dirname(__filename);
 
 const VARIABLES_CSS_PATH = path.resolve(
   __dirname,
-  '../styles/partials/variables.css',
+  '../../web/styles/partials/variables.css',
 );
-const DESIGN_MD_PATH = path.resolve(__dirname, '../DESIGN.md');
+const DESIGN_MD_PATH = path.resolve(__dirname, '../../web/DESIGN.md');
 const SHARED_DESIGN_MD_PATH = path.resolve(
   __dirname,
-  '../../shared/DESIGN.md',
+  '../DESIGN.md',
 );
 
 const HEX_COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -598,11 +598,11 @@ use the \`dark-*\` color tokens for dark surfaces.
 This DESIGN.md is the single source of truth for agents (Cursor,
 Claude, Stitch, Figma). The authoritative values live in
 \`web/styles/partials/variables.css\`. The sync script
-\`web/scripts/sync-design-tokens.ts\` parses that file and regenerates
+\`shared/design-tokens/sync-design-tokens.ts\` parses that file and regenerates
 the YAML front matter above; it does not touch this Markdown body.
 
 - **Change a color or spacing value:** edit \`variables.css\`, then run
-  \`npm --prefix web run design:sync\`. CI enforces no drift via
+  \`npm run design:sync\`. CI enforces no drift via
   \`npm run design:check\` in \`ci:web\`.
 - **Change a typography level, component contract, or radius scale:**
   edit the constants at the top of \`sync-design-tokens.ts\` and re-run
@@ -612,7 +612,7 @@ the YAML front matter above; it does not touch this Markdown body.
   generated mockups in \`web/.stitch/\` (gitignored). Do not ship
   Stitch-generated HTML/CSS; translate mockups by hand into the
   vanilla-TS components under \`web/src/components/\`.
-- **Validate:** \`npm --prefix web run design:check\` runs
+- **Validate:** \`npm run design:check\` runs
   \`design:sync --check\` for drift and \`@google/design.md lint\` for
   structural correctness and WCAG contrast.
 `;
@@ -667,13 +667,13 @@ vanilla-TS components).
 - **Authoritative values:** [web/styles/partials/variables.css](../web/styles/partials/variables.css).
 - **Authoritative contract:** [web/DESIGN.md](../web/DESIGN.md) (YAML front matter + Markdown body).
 - **This file:** the YAML front matter above only. Regenerated in lockstep with
-  \`web/DESIGN.md\` by [web/scripts/sync-design-tokens.ts](../web/scripts/sync-design-tokens.ts).
+  \`web/DESIGN.md\` by [shared/design-tokens/sync-design-tokens.ts](design-tokens/sync-design-tokens.ts).
 
 ## Do not hand-edit
 
-Every run of \`npm --prefix web run design:sync\` rewrites this file. Edits made
+Every run of \`npm run design:sync\` rewrites this file. Edits made
 directly to \`shared/DESIGN.md\` are lost on the next sync, and CI's
-\`npm --prefix web run design:check\` fails the build if the mirror drifts.
+\`npm run design:check\` fails the build if the mirror drifts.
 
 ## Cross-platform mapping
 
@@ -694,7 +694,7 @@ implementation, not by this file. Known mappings:
 The YAML front matter follows the [Google Labs \`design.md\`](https://github.com/google-labs-code/design.md)
 schema, version \`0.1.1\`. A DTCG (Design Tokens Community Group) JSON export
 of the same catalogue can be generated on demand via
-\`npm --prefix web run design:export\`.
+\`npm run design:export\`.
 `;
 
 export function buildSharedDesignMd(parsed: ClassifiedTokens): string {
@@ -749,13 +749,13 @@ export function run(options: RunOptions): 0 | 1 {
   if (options.check) {
     if (existing !== next) {
       options.logger.error(
-        'DESIGN.md is out of sync with web/styles/partials/variables.css. Run: npm --prefix web run design:sync',
+        'DESIGN.md is out of sync with web/styles/partials/variables.css. Run: npm run design:sync',
       );
       return 1;
     }
     if (existingShared !== nextShared) {
       options.logger.error(
-        'shared/DESIGN.md is out of sync with web/styles/partials/variables.css. Run: npm --prefix web run design:sync',
+        'shared/DESIGN.md is out of sync with web/styles/partials/variables.css. Run: npm run design:sync',
       );
       return 1;
     }

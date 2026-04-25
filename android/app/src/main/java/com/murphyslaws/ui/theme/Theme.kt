@@ -17,7 +17,7 @@ import androidx.core.view.WindowCompat
 
 /**
  * Light Material 3 ColorScheme mapped from shared/DESIGN.md tokens via the
- * generated DS namespace (web/scripts/export-android-tokens.ts).
+ * generated DS namespace (shared/design-tokens/export-android-tokens.ts).
  *
  * Mapping decisions worth knowing about:
  *  - `primary` -> `btnPrimaryBg` (the WCAG-tuned interaction blue), not the
