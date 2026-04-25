@@ -1,41 +1,39 @@
 package com.murphyslaws.ui.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 
-// Using Default Roboto for now as it's close to Work Sans.
-// We can add custom fonts later if needed.
-
+/**
+ * Material 3 Typography mapped from shared/DESIGN.md typography levels via
+ * the generated DS.Typography namespace.
+ *
+ * DESIGN.md exposes 9 semantic levels (display, h1..h4, body-lg..body-sm,
+ * caption); Material 3 has its own 5x3 typography slot grid (display /
+ * headline / title / body / label x large/medium/small). Mapping below
+ * keeps the visual hierarchy intact while only populating slots we
+ * actively use; slots not assigned fall back to M3 defaults.
+ *
+ *   display    -> displayLarge
+ *   h1         -> headlineLarge
+ *   h2         -> headlineMedium
+ *   h3         -> titleLarge
+ *   h4         -> titleMedium
+ *   body-lg    -> bodyLarge
+ *   body-md    -> bodyMedium
+ *   body-sm    -> bodySmall
+ *   caption    -> labelSmall
+ *
+ * The fontFamily on every level is FontFamily.Default until PR Android-3
+ * bundles Work Sans into res/font/ and the generator flips to a custom
+ * FontFamily.
+ */
 val Typography = Typography(
-    displayLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
-        letterSpacing = (-0.25).sp
-    ),
-    headlineLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold, // Bold for impact
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
-        letterSpacing = 0.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
-    )
+    displayLarge = DS.Typography.display,
+    headlineLarge = DS.Typography.h1,
+    headlineMedium = DS.Typography.h2,
+    titleLarge = DS.Typography.h3,
+    titleMedium = DS.Typography.h4,
+    bodyLarge = DS.Typography.bodyLg,
+    bodyMedium = DS.Typography.bodyMd,
+    bodySmall = DS.Typography.bodySm,
+    labelSmall = DS.Typography.caption,
 )
