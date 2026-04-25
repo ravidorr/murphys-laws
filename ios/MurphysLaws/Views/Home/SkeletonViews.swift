@@ -9,19 +9,18 @@ import SwiftUI
 
 // MARK: - Skeleton Modifier
 struct SkeletonModifier: ViewModifier {
-    @Environment(\.colorScheme) var colorScheme
     @State private var isAnimating = false
-    
+
+    // Skeleton placeholder uses DS.Color.mutedFg (web's --muted-fg /
+    // --dark-muted-fg) at low alpha so the shimmer is visible without
+    // dominating the layout. Asset Catalog pairs the light/dark variants
+    // automatically; we no longer hand-branch on colorScheme.
     var baseColor: Color {
-        colorScheme == .dark 
-            ? Color(white: 0.25) // Darker gray for dark mode
-            : Color(white: 0.85) // Lighter gray for light mode
+        DS.Color.mutedFg.opacity(0.18)
     }
-    
+
     var highlightColor: Color {
-        colorScheme == .dark
-            ? Color(white: 0.35) // Slightly lighter for shimmer in dark mode
-            : Color(white: 0.95) // Slightly lighter for shimmer in light mode
+        DS.Color.mutedFg.opacity(0.32)
     }
     
     func body(content: Content) -> some View {
