@@ -378,17 +378,17 @@ describe('buildIosArtifacts', () => {
     expect(swift).toMatch(/display = Level\([\s\S]*?letterSpacing: -0\.96/);
   });
 
-  it('renders typography levels using Font.custom("Work Sans", size:).weight(...) so the bundled variable font is picked up', () => {
+  it('renders typography levels using the Work Sans PostScript name so the bundled variable font is picked up', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { swift } = buildIosArtifacts(parsed);
     expect(swift).toContain(
-      'font: SwiftUI.Font.custom("Work Sans", size: 48).weight(.bold)',
+      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 48).weight(.bold)',
     );
     expect(swift).toContain(
-      'font: SwiftUI.Font.custom("Work Sans", size: 16).weight(.regular)',
+      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 16).weight(.regular)',
     );
     expect(swift).toContain(
-      'font: SwiftUI.Font.custom("Work Sans", size: 12).weight(.medium)',
+      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 12).weight(.medium)',
     );
     // Guard against a regression to Font.system.
     expect(swift).not.toContain('Font.system(size:');
