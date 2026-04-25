@@ -313,18 +313,18 @@ use the `dark-*` color tokens for dark surfaces.
 - Don't use inline styles. `html-validate` blocks them; put styles in
   the relevant partial under `web/styles/partials/`.
 - Don't edit the YAML front matter by hand. It is regenerated from
-  `variables.css` by `npm run design:sync` in the `web` workspace.
+  `variables.css` by `npm run design:sync` from the repo root.
 
 ## Workflow
 
 This DESIGN.md is the single source of truth for agents (Cursor,
 Claude, Stitch, Figma). The authoritative values live in
 `web/styles/partials/variables.css`. The sync script
-`web/scripts/sync-design-tokens.ts` parses that file and regenerates
+`shared/design-tokens/sync-design-tokens.ts` parses that file and regenerates
 the YAML front matter above; it does not touch this Markdown body.
 
 - **Change a color or spacing value:** edit `variables.css`, then run
-  `npm --prefix web run design:sync`. CI enforces no drift via
+  `npm run design:sync`. CI enforces no drift via
   `npm run design:check` in `ci:web`.
 - **Change a typography level, component contract, or radius scale:**
   edit the constants at the top of `sync-design-tokens.ts` and re-run
@@ -334,7 +334,7 @@ the YAML front matter above; it does not touch this Markdown body.
   generated mockups in `web/.stitch/` (gitignored). Do not ship
   Stitch-generated HTML/CSS; translate mockups by hand into the
   vanilla-TS components under `web/src/components/`.
-- **Validate:** `npm --prefix web run design:check` runs
+- **Validate:** `npm run design:check` runs
   `design:sync --check` for drift and `@google/design.md lint` for
   structural correctness and WCAG contrast.
 

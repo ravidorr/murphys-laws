@@ -7,13 +7,13 @@ on:
     paths:
       - 'android/**'
       - 'shared/DESIGN.md'
-      - 'web/scripts/export-android-tokens.ts'
+      - 'shared/design-tokens/**'
       - '.github/workflows/android-ci.yml'
   pull_request:
     paths:
       - 'android/**'
       - 'shared/DESIGN.md'
-      - 'web/scripts/export-android-tokens.ts'
+      - 'shared/design-tokens/**'
 
 jobs:
   build-and-test:
