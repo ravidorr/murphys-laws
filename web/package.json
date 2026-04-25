@@ -23,8 +23,9 @@
     "optimize:images": "tsx scripts/optimize-images.ts",
     "optimize:images:dry-run": "tsx scripts/optimize-images.ts --dry-run",
     "design:sync": "tsx scripts/sync-design-tokens.ts",
-    "design:check": "tsx scripts/sync-design-tokens.ts --check && tsx scripts/design-md-lint.ts",
-    "design:export": "tsx scripts/export-design-tokens.ts"
+    "design:check": "tsx scripts/sync-design-tokens.ts --check && tsx scripts/design-md-lint.ts && tsx scripts/export-ios-tokens.ts --check",
+    "design:export": "tsx scripts/export-design-tokens.ts",
+    "design:export:ios": "tsx scripts/export-ios-tokens.ts"
   },
   "keywords": [
     "murphys-law",
