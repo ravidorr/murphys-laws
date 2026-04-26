@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var tabCoordinator = TabNavigationCoordinator.shared
+    @StateObject private var deepLinkHandler = DeepLinkHandler()
     @State private var selectedTab = 0
 
     var body: some View {
@@ -22,7 +23,7 @@ struct ContentView: View {
 
             // Browse Tab - Lazy load
             Group {
-                if selectedTab == 1 || selectedTab == 0 {
+                if selectedTab == 1 {
                     BrowseView()
                 } else {
                     Color.clear
@@ -73,11 +74,16 @@ struct ContentView: View {
             .tag(4)
         }
         .environmentObject(tabCoordinator)
-        .onChange(of: tabCoordinator.targetTab) { newValue in
+        .environmentObject(deepLinkHandler)
+        .handleDeepLinks()
+        .onChange(of: tabCoordinator.targetTab) { oldValue, newValue in
             if let newValue = newValue {
-                selectedTab = newValue.rawValue
-                // Reset after navigation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation {
+                    selectedTab = newValue.rawValue
+                }
+                // Reset after navigation completes
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
                     tabCoordinator.targetTab = nil
                 }
             }
