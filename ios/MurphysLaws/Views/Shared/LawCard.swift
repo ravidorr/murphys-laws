@@ -32,33 +32,28 @@ struct LawCard: View {
                 .foregroundColor(DS.Color.mutedFg)
                 .lineLimit(4)
 
-            // Vote counts and categories
+            Spacer(minLength: 0)
+
+            // Vote counts and share
             HStack {
-                // Upvotes
                 Label("\(law.upvotes)", systemImage: currentVote == .up ? "hand.thumbsup.fill" : "hand.thumbsup")
                     .foregroundColor(currentVote == .up ? DS.Color.success : DS.Color.mutedFg)
                     .dsTypography(DS.Typography.caption)
 
-                // Downvotes
                 Label("\(law.downvotes)", systemImage: currentVote == .down ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                     .foregroundColor(currentVote == .down ? DS.Color.error : DS.Color.mutedFg)
                     .dsTypography(DS.Typography.caption)
 
                 Spacer()
 
-                // Category tags (first one only for card)
-                if let firstCategory = law.categories?.first {
-                    Text(firstCategory.title)
+                ShareLink(item: law.shareText) {
+                    Label("Share", systemImage: "square.and.arrow.up")
                         .dsTypography(DS.Typography.caption)
-                        .padding(.horizontal, Constants.UI.spacingS)
-                        .padding(.vertical, 4)
-                        .background(firstCategory.iconColor.opacity(0.2))
-                        .foregroundColor(firstCategory.iconColor)
-                        .cornerRadius(Constants.UI.cornerRadiusS)
                 }
             }
         }
         .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(DS.Color.surface)
         .cornerRadius(Constants.UI.cornerRadiusM)
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
