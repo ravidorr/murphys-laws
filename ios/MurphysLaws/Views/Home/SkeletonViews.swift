@@ -27,18 +27,16 @@ struct SkeletonModifier: ViewModifier {
         content
             .hidden()
             .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                baseColor,
-                                highlightColor,
-                                baseColor
-                            ],
-                            startPoint: isAnimating ? .leading : .trailing,
-                            endPoint: isAnimating ? .trailing : .leading
-                        )
-                    )
+                LinearGradient(
+                    colors: [
+                        baseColor,
+                        highlightColor,
+                        baseColor
+                    ],
+                    startPoint: isAnimating ? .leading : .trailing,
+                    endPoint: isAnimating ? .trailing : .leading
+                )
+                .mask(content)
             )
             .onAppear {
                 withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
