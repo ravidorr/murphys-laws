@@ -54,6 +54,7 @@
 		79DA507431D055B020B1F39F /* EMPTY_SHEET_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 5ADC6734FBDF467F3F300CF5 /* EMPTY_SHEET_FIX.md */; };
 		7AF98FDDDB1C5BC4CEE3708D /* CategoryListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B83F281BE7A7BBD7D62846 /* CategoryListViewModel.swift */; };
 		7BF4E65D740F1E5EF938F577 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = E721EC9623E2602B825284F3 /* Category.swift */; };
+		7C3A233C7AE978C92D9C70B2 /* SubmitLawViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ED35108A86C24ABEEC2340 /* SubmitLawViewTests.swift */; };
 		7C452D3F05078F272809F8D0 /* LawDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045708B48A09D6F63EAD5ACA /* LawDetailView.swift */; };
 		7C5E42C153248B6BB5CFF235 /* CONFIGURATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 09153AC4B15E8839BC6E93DD /* CONFIGURATION_SUMMARY.md */; };
 		7C622775274ADA969383EE4A /* VOTING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 74999DEEA22D474811EF1351 /* VOTING_FIX.md */; };
@@ -174,6 +175,7 @@
 		A9147BE68F0EFC513C9F2A92 /* MurphysLaws.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MurphysLaws.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAC173281AAC9AB2537D2E88 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
 		B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUITests.swift; sourceTree = "<group>"; };
+		B3ED35108A86C24ABEEC2340 /* SubmitLawViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawViewTests.swift; sourceTree = "<group>"; };
 		B40A0EDD85D6771C9CF0E939 /* content */ = {isa = PBXFileReference; lastKnownFileType = folder; name = content; path = ../shared/content; sourceTree = SOURCE_ROOT; };
 		B64BEE8775DE8A88773886FA /* about.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = about.md; sourceTree = "<group>"; };
 		C39071912628B8D7170205D3 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 				C39071912628B8D7170205D3 /* HomeViewModelTests.swift */,
 				1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */,
 				2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */,
+				B3ED35108A86C24ABEEC2340 /* SubmitLawViewTests.swift */,
 			);
 			path = MurphysLawsTests;
 			sourceTree = "<group>";
@@ -640,6 +643,7 @@
 				785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */,
 				040DD852D753272B9EF61599 /* MarkdownContentTests.swift in Sources */,
 				5EC30FCA8E474C1BA9E91ACE /* MockLawRepository.swift in Sources */,
+				7C3A233C7AE978C92D9C70B2 /* SubmitLawViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -774,7 +778,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -793,7 +797,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -913,7 +917,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -926,7 +930,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
