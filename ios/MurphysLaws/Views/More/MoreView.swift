@@ -24,7 +24,7 @@ struct MoreView: View {
                         showingSubmit = true
                     } label: {
                         Label("Submit a Law", systemImage: "plus.circle.fill")
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(DS.Color.btnPrimaryBg)
                     }
                 } footer: {
                     Text("Contribute your own Murphy's Law variation")
@@ -79,7 +79,7 @@ struct MoreView: View {
                         Text("Version")
                         Spacer()
                         Text("1.0.0")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(DS.Color.mutedFg)
                     }
 
                     Button {
@@ -132,16 +132,17 @@ struct AboutView: View {
                     // Header
                     VStack(spacing: Constants.UI.spacingM) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 72))
-                            .foregroundColor(.accentColor)
+                            .dsTypography(DS.Typography.display)
+                            .foregroundColor(DS.Color.btnPrimaryBg)
 
                         Text("Murphy's Laws")
-                            .font(.title)
+                            .dsTypography(DS.Typography.h2)
                             .fontWeight(.bold)
+                            .foregroundColor(DS.Color.fg)
 
                         Text("If anything can go wrong, it will")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                            .dsTypography(DS.Typography.h4)
+                            .foregroundColor(DS.Color.mutedFg)
                             .italic()
                     }
                     .frame(maxWidth: .infinity)
@@ -152,8 +153,9 @@ struct AboutView: View {
                     // What is Murphy's Law
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         Text("What is Murphy's Law?")
-                            .font(.title2)
+                            .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
+                            .foregroundColor(DS.Color.fg)
 
                         Text("""
                         Murphy's Law is an adage that states: "Anything that can go wrong will go wrong." \
@@ -163,7 +165,8 @@ struct AboutView: View {
                         and human nature. This app collects and shares these laws, allowing you to browse, vote on your favorites, \
                         and even calculate the probability of your own tasks going wrong!
                         """)
-                        .font(.body)
+                        .dsTypography(DS.Typography.bodyMd)
+                        .foregroundColor(DS.Color.fg)
                     }
                     .padding(.horizontal)
 
@@ -172,8 +175,9 @@ struct AboutView: View {
                     // Features
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         Text("Features")
-                            .font(.title2)
+                            .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
+                            .foregroundColor(DS.Color.fg)
 
                         FeatureRow(
                             icon: "house.fill",
@@ -212,8 +216,9 @@ struct AboutView: View {
                     // Credits
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         Text("Credits")
-                            .font(.title2)
+                            .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
+                            .foregroundColor(DS.Color.fg)
 
                         Text("""
                         This app is a labor of love, collecting Murphy's Laws and their variations from various sources. \
@@ -221,7 +226,8 @@ struct AboutView: View {
 
                         If you have a Murphy's Law variation to share, please use the Submit feature to contribute.
                         """)
-                        .font(.body)
+                        .dsTypography(DS.Typography.bodyMd)
+                        .foregroundColor(DS.Color.fg)
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
@@ -249,17 +255,18 @@ struct FeatureRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: Constants.UI.spacingM) {
             Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.accentColor)
+                .dsTypography(DS.Typography.h3)
+                .foregroundColor(DS.Color.btnPrimaryBg)
                 .frame(width: 32)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Spacing.s1) {
                 Text(title)
-                    .font(.headline)
+                    .dsTypography(DS.Typography.h4)
+                    .foregroundColor(DS.Color.fg)
 
                 Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .dsTypography(DS.Typography.bodySm)
+                    .foregroundColor(DS.Color.mutedFg)
             }
         }
     }

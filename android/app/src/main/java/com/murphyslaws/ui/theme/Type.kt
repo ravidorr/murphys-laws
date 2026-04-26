@@ -9,8 +9,8 @@ import androidx.compose.material3.Typography
  * DESIGN.md exposes 9 semantic levels (display, h1..h4, body-lg..body-sm,
  * caption); Material 3 has its own 5x3 typography slot grid (display /
  * headline / title / body / label x large/medium/small). Mapping below
- * keeps the visual hierarchy intact while only populating slots we
- * actively use; slots not assigned fall back to M3 defaults.
+ * keeps the visual hierarchy intact while populating every Material slot
+ * so no app text falls back to untracked M3 defaults.
  *
  *   display    -> displayLarge
  *   h1         -> headlineLarge
@@ -28,12 +28,18 @@ import androidx.compose.material3.Typography
  */
 val Typography = Typography(
     displayLarge = DS.Typography.display,
+    displayMedium = DS.Typography.h1,
+    displaySmall = DS.Typography.h2,
     headlineLarge = DS.Typography.h1,
     headlineMedium = DS.Typography.h2,
+    headlineSmall = DS.Typography.h3,
     titleLarge = DS.Typography.h3,
     titleMedium = DS.Typography.h4,
+    titleSmall = DS.Typography.bodyLg,
     bodyLarge = DS.Typography.bodyLg,
     bodyMedium = DS.Typography.bodyMd,
     bodySmall = DS.Typography.bodySm,
+    labelLarge = DS.Typography.bodyMd,
+    labelMedium = DS.Typography.bodySm,
     labelSmall = DS.Typography.caption,
 )

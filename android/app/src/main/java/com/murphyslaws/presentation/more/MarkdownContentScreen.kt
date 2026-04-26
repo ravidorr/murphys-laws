@@ -11,8 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.murphyslaws.domain.model.ContentPage
+import com.murphyslaws.ui.theme.DS
 import com.murphyslaws.util.ContentLoader
 import com.murphyslaws.util.MarkdownElement
 import com.murphyslaws.util.MarkdownParser
@@ -79,15 +79,15 @@ fun MarkdownContentScreen(
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .padding(32.dp),
+                            .padding(DS.Spacing.s8),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Warning,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(DS.Spacing.s12)
                         )
                         Text(
                             text = "Content Unavailable",
@@ -104,8 +104,8 @@ fun MarkdownContentScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        contentPadding = PaddingValues(DS.Spacing.s4),
+                        verticalArrangement = Arrangement.spacedBy(DS.Spacing.s1)
                     ) {
                         // Show last updated date
                         lastUpdated?.let { date ->
@@ -114,7 +114,7 @@ fun MarkdownContentScreen(
                                     text = "Last updated: $date",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = DS.Spacing.s2)
                                 )
                             }
                         }
@@ -143,7 +143,7 @@ fun MarkdownContentScreen(
                         
                         // Add bottom spacing
                         item {
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(DS.Spacing.s4))
                         }
                     }
                 }

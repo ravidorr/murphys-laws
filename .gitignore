@@ -24,6 +24,7 @@ murphys.db-wal
 
 .continue/
 .cursor/
+.worktrees/
 # Claude Code — track project config and skills, ignore ephemeral/personal files
 .claude/worktrees/
 .claude/settings.local.json

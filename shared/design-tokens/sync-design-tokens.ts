@@ -225,17 +225,17 @@ export const COMPONENTS: Record<string, Record<string, string>> = {
     typography: '{typography.body-md}',
   },
   card: {
-    backgroundColor: '{colors.bg}',
+    backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
     rounded: '{rounded.lg}',
   },
   'section-card': {
-    backgroundColor: '{colors.bg}',
+    backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
     rounded: '{rounded.lg}',
   },
   input: {
-    backgroundColor: '{colors.bg}',
+    backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
     rounded: '{rounded.sm}',
     typography: '{typography.body-md}',
@@ -324,9 +324,45 @@ export const COMPONENTS: Record<string, Record<string, string>> = {
   // not tokenized (see Elevation & Depth); the entry captures the solid
   // surface, text, radius, and type size.
   'search-autocomplete': {
-    backgroundColor: '{colors.bg}',
+    backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
     rounded: '{rounded.lg}',
+    typography: '{typography.body-md}',
+  },
+  tooltip: {
+    backgroundColor: '{colors.tooltip-bg}',
+    textColor: '{colors.tooltip-fg}',
+    rounded: '{rounded.md}',
+    typography: '{typography.caption}',
+  },
+  'tooltip-inverse': {
+    backgroundColor: '{colors.tooltip-bg-inverse}',
+    textColor: '{colors.tooltip-fg-inverse}',
+    rounded: '{rounded.md}',
+    typography: '{typography.caption}',
+  },
+  'social-share-button': {
+    backgroundColor: '{colors.brand-social-email}',
+    textColor: '{colors.brand-social-icon-fg}',
+    rounded: '{rounded.full}',
+    typography: '{typography.caption}',
+  },
+  'calculator-result': {
+    backgroundColor: '{colors.orange-bg}',
+    textColor: '{colors.orange-text}',
+    rounded: '{rounded.xl}',
+    typography: '{typography.display}',
+  },
+  'bottom-navigation': {
+    backgroundColor: '{colors.surface}',
+    textColor: '{colors.muted-fg}',
+    rounded: '{rounded.lg}',
+    typography: '{typography.caption}',
+  },
+  'form-input': {
+    backgroundColor: '{colors.surface}',
+    textColor: '{colors.fg}',
+    rounded: '{rounded.sm}',
     typography: '{typography.body-md}',
   },
 };
@@ -343,6 +379,11 @@ const COLOR_KEY_ORDER = [
   'muted-fg',
   'primary',
   'text-high-contrast',
+  'surface',
+  'surface-border',
+  'link',
+  'link-visited',
+  'link-hover',
   'btn-primary-bg',
   'btn-primary-fg',
   // Semantic: success
@@ -364,6 +405,10 @@ const COLOR_KEY_ORDER = [
   // Semantic: warning
   'warning-bg',
   'warning-text',
+  // Semantic: risk
+  'risk-low',
+  'risk-medium',
+  'risk-high',
   // Semantic: orange
   'orange-bg',
   'orange-text',
@@ -375,6 +420,17 @@ const COLOR_KEY_ORDER = [
   // UI
   'white',
   'highlight',
+  'tooltip-bg',
+  'tooltip-fg',
+  'tooltip-bg-inverse',
+  'tooltip-fg-inverse',
+  'brand-social-x',
+  'brand-social-facebook',
+  'brand-social-linkedin',
+  'brand-social-reddit',
+  'brand-social-whatsapp',
+  'brand-social-email',
+  'brand-social-icon-fg',
   // Gradient
   'gradient-blue',
   'gradient-dark-1',
@@ -385,6 +441,8 @@ const COLOR_KEY_ORDER = [
   'dark-muted-fg',
   'dark-primary',
   'dark-text-high-contrast',
+  'dark-surface',
+  'dark-surface-border',
   'dark-link',
   'dark-link-visited',
   'dark-link-hover',
@@ -666,6 +724,8 @@ vanilla-TS components).
 
 - **Authoritative values:** [web/styles/partials/variables.css](../web/styles/partials/variables.css).
 - **Authoritative contract:** [web/DESIGN.md](../web/DESIGN.md) (YAML front matter + Markdown body).
+- **Approved non-token exceptions:** the "Unavoidable Platform Exceptions"
+  section in [web/DESIGN.md](../web/DESIGN.md).
 - **This file:** the YAML front matter above only. Regenerated in lockstep with
   \`web/DESIGN.md\` by [shared/design-tokens/sync-design-tokens.ts](design-tokens/sync-design-tokens.ts).
 

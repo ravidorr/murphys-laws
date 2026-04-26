@@ -34,8 +34,8 @@ struct MarkdownContentView: View {
                             // Show last updated date if available
                             if let lastUpdated = SharedContentLoader.shared.getLastUpdated(for: page) {
                                 Text("Last updated: \(lastUpdated)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .dsTypography(DS.Typography.caption)
+                                    .foregroundColor(DS.Color.mutedFg)
                                     .padding(.horizontal)
                             }
 
@@ -114,15 +114,16 @@ struct MarkdownContentView: View {
     private func errorView(_ message: String) -> some View {
         VStack(spacing: Constants.UI.spacingM) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.orange)
+                .dsTypography(DS.Typography.display)
+                .foregroundColor(DS.Color.warningText)
 
             Text("Content Unavailable")
-                .font(.headline)
+                .dsTypography(DS.Typography.h4)
+                .foregroundColor(DS.Color.fg)
 
             Text(message)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.bodySm)
+                .foregroundColor(DS.Color.mutedFg)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
@@ -287,46 +288,49 @@ struct MarkdownSection: Identifiable {
         switch type {
         case .header1:
             Text(content)
-                .font(.title)
+                .dsTypography(DS.Typography.h2)
                 .fontWeight(.bold)
+                .foregroundColor(DS.Color.fg)
                 .padding(.horizontal)
                 .padding(.top, Constants.UI.spacingM)
             
         case .header2:
             Text(content)
-                .font(.title2)
+                .dsTypography(DS.Typography.h3)
                 .fontWeight(.semibold)
+                .foregroundColor(DS.Color.fg)
                 .padding(.horizontal)
                 .padding(.top, Constants.UI.spacingM)
             
         case .header3:
             Text(content)
-                .font(.title3)
+                .dsTypography(DS.Typography.h4)
                 .fontWeight(.semibold)
+                .foregroundColor(DS.Color.fg)
                 .padding(.horizontal)
                 .padding(.top, Constants.UI.spacingS)
             
         case .paragraph:
-            renderTextWithLinks(content: content, font: .body, isItalic: false, onNavigate: onNavigate)
+            renderTextWithLinks(content: content, font: DS.Typography.bodyMd.font, isItalic: false, onNavigate: onNavigate)
                 .padding(.horizontal)
             
         case .quote:
             HStack(alignment: .top, spacing: Constants.UI.spacingS) {
                 Rectangle()
-                    .fill(Color.accentColor.opacity(0.3))
+                    .fill(DS.Color.btnPrimaryBg.opacity(0.3))
                     .frame(width: 4)
                 
-                renderTextWithLinks(content: content, font: .body, isItalic: true, onNavigate: onNavigate)
-                    .foregroundColor(.secondary)
+                renderTextWithLinks(content: content, font: DS.Typography.bodyMd.font, isItalic: true, onNavigate: onNavigate)
+                    .foregroundColor(DS.Color.mutedFg)
             }
             .padding(.horizontal)
             
         case .bullet:
             HStack(alignment: .top, spacing: Constants.UI.spacingS) {
                 Text("•")
-                    .font(.body)
-                    .foregroundColor(.accentColor)
-                renderTextWithLinks(content: content, font: .body, isItalic: false, onNavigate: onNavigate)
+                    .dsTypography(DS.Typography.bodyMd)
+                    .foregroundColor(DS.Color.btnPrimaryBg)
+                renderTextWithLinks(content: content, font: DS.Typography.bodyMd.font, isItalic: false, onNavigate: onNavigate)
             }
             .padding(.horizontal)
             .padding(.leading, Constants.UI.spacingM)
@@ -410,7 +414,7 @@ struct FlowTextWithLinks: View {
                 if isInternalLink(link.href) {
                     // For internal links, create tappable button-style text
                     var text = Text(link.text)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(DS.Color.link)
                         .underline()
                     if isItalic {
                         text = text.italic()
