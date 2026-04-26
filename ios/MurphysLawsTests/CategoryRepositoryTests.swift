@@ -164,6 +164,41 @@ class CategoryRepositoryTests: XCTestCase {
         XCTAssertEqual(category1.iconColor, category2.iconColor, 
                       "Categories with same slug should have same color")
     }
+
+    func testCategoryColorBucketsUseDistinctColors() {
+        let categories = (0..<8).map { bucket in
+            Category(
+                id: bucket,
+                title: "Bucket \(bucket)",
+                slug: slug(forHashBucket: bucket),
+                description: nil,
+                sourceFilePath: nil,
+                createdAt: nil,
+                updatedAt: nil
+            )
+        }
+
+        for leftIndex in categories.indices {
+            for rightIndex in categories.indices where rightIndex > leftIndex {
+                XCTAssertNotEqual(
+                    categories[leftIndex].iconColor,
+                    categories[rightIndex].iconColor,
+                    "Hash buckets \(leftIndex) and \(rightIndex) should not share an icon color"
+                )
+            }
+        }
+    }
+
+    private func slug(forHashBucket bucket: Int) -> String {
+        for attempt in 0..<10_000 {
+            let slug = "category-color-bucket-\(bucket)-\(attempt)"
+            if abs(slug.hashValue) % 8 == bucket {
+                return slug
+            }
+        }
+        XCTFail("Could not find a slug for hash bucket \(bucket)")
+        return "fallback-\(bucket)"
+    }
 }
 
 class CategoryDeduplicationTests: XCTestCase {

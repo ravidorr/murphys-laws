@@ -56,7 +56,7 @@ struct Category: Codable, Identifiable, Hashable {
         case 3: return DS.Color.linkVisited
         case 4: return DS.Color.error
         case 5: return DS.Color.favoriteColor
-        case 6: return DS.Color.linkVisited
+        case 6: return DS.Color.gradientBlue
         default: return DS.Color.linkHover
         }
     }
