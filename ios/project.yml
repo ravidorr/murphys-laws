@@ -60,6 +60,9 @@ targets:
       testTargets:
         - MurphysLawsTests
         - MurphysLawsUITests
+      testPlans:
+        - path: MurphysLaws.xcodeproj/xcshareddata/xctestplans/MurphysLaws.xctestplan
+          defaultPlan: true
 
   MurphysLawsTests:
     type: bundle.unit-test
