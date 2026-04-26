@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var tabCoordinator = TabNavigationCoordinator.shared
-    @StateObject private var deepLinkHandler = DeepLinkHandler()
+    @EnvironmentObject private var deepLinkHandler: DeepLinkHandler
     @State private var selectedTab = 0
 
     var body: some View {
@@ -116,5 +116,6 @@ enum AppTab: Int {
 
 #Preview {
     ContentView()
+        .environmentObject(DeepLinkHandler())
         .environmentObject(VotingService.shared)
 }
