@@ -42,8 +42,9 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(categoriesTab.exists)
         categoriesTab.tap()
 
-        // Verify category grid exists
-        XCTAssertTrue(app.scrollViews.firstMatch.waitForExistence(timeout: 2))
+        // Verify category rows exist
+        let firstCategoryRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'")).firstMatch
+        XCTAssertTrue(firstCategoryRow.waitForExistence(timeout: 5), "Category rows should exist")
 
         // Test Calculator tab
         let calculatorTab = app.tabBars.buttons["Calculator"]
