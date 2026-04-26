@@ -25,6 +25,7 @@ struct SkeletonModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
+            .hidden()
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .fill(
