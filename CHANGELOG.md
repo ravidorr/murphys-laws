@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Work Sans variable font bundled in the Android app for visual parity with web. [android/app/src/main/res/font/work_sans_variable.ttf](android/app/src/main/res/font/work_sans_variable.ttf) (~360 KB, single VF covers all weights via the `wght` axis), wrapped by a hand-authored `WorkSans` `FontFamily` in [android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt](android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt). The FontFamily registers the variable font at four weight slots (Normal 400, Medium 500, SemiBold 600, Bold 700) with `FontVariation.Settings(FontVariation.weight(...))` so Compose's typography system resolves `.weight(...)` requests to the correct axis position. Requires API 26+, which matches the app's `minSdk`. [shared/design-tokens/export-android-tokens.ts](shared/design-tokens/export-android-tokens.ts) now emits `fontFamily = WorkSans` for every `DS.Typography.<level>`, replacing the `FontFamily.Default` (Roboto) placeholder from PR Android-1. PR Android-3 (final phase) of the design-tokens-mobile rollout. Bundling a new font is user-visible, so Android app bumped MINOR to `1.1.0` / versionCode `4`; root to `2.4.23`.
 
 ### Changed
+- iOS cleanup removes Codex-generated documentation artifacts, moves law integration
+  coverage into the unit test target, and updates SwiftUI change handlers for iOS 17.
 - Web, iOS, and Android now share the same design-system tokens for social brand colors,
   risk colors, tooltip colors, links, surfaces, spacing, radii, and typography. Remaining
   non-token values are documented in `web/DESIGN.md` as platform or asset exceptions.
