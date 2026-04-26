@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iOS skeleton-loading shimmer now consumes `DS.Color.mutedFg` (light + dark from the Asset Catalog) instead of hand-branching on `@Environment(\.colorScheme)` with hardcoded `Color(white:)` greys. [ios/MurphysLaws/Views/Home/SkeletonViews.swift](ios/MurphysLaws/Views/Home/SkeletonViews.swift). The dark-mode swap is now driven by the system trait collection via `Assets.xcassets/DS/muted-fg.colorset`, matching how every other DS color works. PR iOS-2 of the design-tokens-mobile rollout; calculator and vote-thumb surfaces are explicitly out of scope (HIG-idiomatic semantic colors `.green` / `.orange` / `.red` are correct on iOS), and no rank-style surface exists on iOS to migrate yet. iOS app bumped to `1.0.2` / build `3`; root to `2.4.17`.
 
 ### Fixed
+- iOS shared content loading now falls back to top-level bundled resources, matching
+  how XcodeGen copies `shared/content` into the app bundle for CI tests.
 - iOS navigation UI tests now pass the launch argument the app actually checks for,
   enabling UI test setup during launches.
 - iOS deep links now parse the host-based URLs emitted by `DeepLinkBuilder`, and
