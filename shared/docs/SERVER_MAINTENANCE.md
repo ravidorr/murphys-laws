@@ -6,9 +6,12 @@
 - **Host Alias:** `murphys-main` or `murphys`
 - **Hostname:** murphys-laws.com
 - **IP:** Resolved via DNS
-- **OS:** Ubuntu 24.04.3 LTS
-- **Services:** Nginx, PM2, Node.js API server
-- **User:** ravidor
+- **OS:** Ubuntu 24.04.4 LTS
+- **Services:** Nginx, PM2 (systemd unit `pm2-root.service`, runs as root), Node.js API server (tsx)
+- **User:** ravidor (sudo, passwordless)
+- **API process:** `tsx ./src/server/api-server.ts` listening on `127.0.0.1:8787`, proxied by nginx on 443
+- **Live DB path:** `/root/murphys-laws/backend/murphys.db`
+- **DB backups:** `/root/backups/murphys_db_YYYYMMDD_HHMMSS.db` (daily 04:00 cron via `/usr/local/bin/backup-murphys.sh`)
 
 ### 2. n8n Automation Server
 - **Host Alias:** `murphys-n8n`
@@ -61,15 +64,14 @@ The status-report email's "17 pending updates" figure alone is **not** a signal:
 ### 2. Run Updates
 
 ```bash
-# Take a fresh database snapshot before patching
-ssh murphys-main 'sudo /usr/local/bin/backup-murphys-db.sh' \
-  || ssh murphys-main 'cp /var/lib/murphys/murphys.db /var/backups/murphys/murphys_$(date +%Y%m%d_%H%M%S)_pre-patch.db'
+# Take a fresh database snapshot before patching.
+# (Skip this step if you are patching shortly after the daily 04:00 cron has run;
+# the latest /root/backups/murphys_db_*.db file will already be current.)
+ssh murphys-main 'sudo /usr/local/bin/backup-murphys.sh && ls -lht /root/backups/ | head -n 3'
 
 # Update package lists and upgrade all packages
 ssh murphys-main 'sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y'
 ```
-
-> The first line tries the project's existing backup script if present; otherwise falls back to a manual copy. Confirm the actual path/script name on the server and replace as needed before running.
 
 ### 3. Reboot (if required)
 
@@ -96,10 +98,15 @@ ssh murphys-main 'systemctl status nginx --no-pager -l | head -n 10'
 # Check Node.js processes
 ssh murphys-main 'ps aux | grep -E "node|pm2" | grep -v grep'
 
-# Check pm2 (runs as root via pm2-root.service; plain `sudo pm2` fails because pm2
-# lives under /root/.nvm and sudo does not load root's login shell)
+# Check pm2. The daemon runs as root via pm2-root.service; the binary lives under
+# root's nvm install (/root/.nvm/versions/node/<ver>/bin/pm2) and is not on the
+# PATH that `sudo`, `sudo -i`, `sudo bash -lc`, or `sudo su - root -c` resolve in
+# a non-interactive ssh session. Two things actually work:
+#   1. systemctl (canonical liveness check)
+#   2. invoking pm2 via a glob inside `sudo bash -c` so the shell expands the path
+#      as root (survives node version upgrades under nvm)
 ssh murphys-main 'systemctl status pm2-root.service --no-pager -l | head -n 12'
-ssh murphys-main 'sudo -i pm2 list'
+ssh murphys-main 'sudo bash -c "exec \$(ls -1 /root/.nvm/versions/node/*/bin/pm2 | tail -n 1) list"'
 
 # Confirm the API is listening on its loopback port
 ssh murphys-main 'ss -tln | grep ":8787"'
@@ -177,69 +184,68 @@ The n8n service is configured via Docker Compose:
 
 ## Automated Security Updates (unattended-upgrades)
 
-To stop the daily status email's "pending updates" count from being a manual decision, configure `unattended-upgrades` on the main server to apply **security updates only**, automatically. Kernel-triggered reboots stay manual.
+The main server already runs `unattended-upgrades` (verified 2026-04-26 on package version `2.9.1+nmu4ubuntu1`). Security-pocket updates are auto-applied; auto-reboot is intentionally **off**, so kernel packages land but only take effect on the next manual reboot. That is why the daily status email periodically shows `Reboot Required: YES` with a `linux-image-*` entry in `/var/run/reboot-required.pkgs`: that is normal operation, not a misconfiguration.
 
-### 1. Install and enable
+### What's already configured
 
-```bash
-ssh murphys-main 'sudo apt-get install -y unattended-upgrades apt-listchanges'
-ssh murphys-main 'sudo dpkg-reconfigure -f noninteractive unattended-upgrades'
-```
-
-### 2. Configure the policy
-
-Write `/etc/apt/apt.conf.d/52unattended-upgrades-local` (a higher-numbered file overrides the package default, so we never edit `50unattended-upgrades` directly):
-
-```text
-// Apply only security pockets. Explicitly leave -updates, -proposed, and -backports off.
-Unattended-Upgrade::Allowed-Origins {
-    "${distro_id}:${distro_codename}-security";
-    "${distro_id}ESMApps:${distro_codename}-apps-security";
-    "${distro_id}ESM:${distro_codename}-infra-security";
-};
-
-// Never auto-reboot; the daily report surfaces reboot-required and we patch + reboot deliberately.
-Unattended-Upgrade::Automatic-Reboot "false";
-
-// Clean up old kernels/packages so /boot doesn't fill up.
-Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
-Unattended-Upgrade::Remove-Unused-Dependencies "true";
-
-// If a package upgrade fails, retry once on the next run rather than blocking forever.
-Unattended-Upgrade::MinimalSteps "true";
-
-// Mail the operator on failure only (set this to a real address or leave unset to use logs).
-// Unattended-Upgrade::Mail "ops@murphys-laws.com";
-// Unattended-Upgrade::MailReport "on-change";
-```
-
-And `/etc/apt/apt.conf.d/20auto-upgrades` (this is what the timer reads):
+`/etc/apt/apt.conf.d/20auto-upgrades` (timer settings):
 
 ```text
 APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
 APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
 ```
 
-### 3. Verify it runs
+`/etc/apt/apt.conf.d/50unattended-upgrades` (package-default policy) confirmed to include:
+
+- `Unattended-Upgrade::Automatic-Reboot "false"`
+- `Unattended-Upgrade::Automatic-Reboot-WithUsers "false"`
+- `Unattended-Upgrade::Remove-Unused-Kernel-Packages "true"`
+- `Unattended-Upgrade::Remove-Unused-Dependencies "true"`
+
+### Audit the policy
 
 ```bash
-# Dry-run: show what unattended-upgrades would install on the next pass
+# View active config (the package-default file plus any local overrides)
+ssh murphys-main 'sudo cat /etc/apt/apt.conf.d/20auto-upgrades'
+ssh murphys-main 'sudo grep -nE "Allowed-Origins|Automatic-Reboot|Remove-Unused|MinimalSteps" /etc/apt/apt.conf.d/50unattended-upgrades /etc/apt/apt.conf.d/52*-local 2>/dev/null'
+
+# Dry-run the next pass: shows exactly what would install
 ssh murphys-main 'sudo unattended-upgrade --dry-run --debug 2>&1 | tail -n 40'
 
-# Confirm the systemd timer is active
+# Confirm the daily timer is active
 ssh murphys-main 'systemctl list-timers apt-daily-upgrade.timer --no-pager'
 
 # Inspect the most recent run
 ssh murphys-main 'sudo tail -n 50 /var/log/unattended-upgrades/unattended-upgrades.log'
 ```
 
-### What this changes about the daily status email
+### Optional: project-owned override
 
-After this is in place, the report's "Pending Updates: N" line is mostly **non-security** updates (e.g. `-updates` pocket). The signals that still demand action are unchanged:
+If you want the policy pinned in a file you control instead of relying on the package-default `50unattended-upgrades`, drop a higher-numbered override at `/etc/apt/apt.conf.d/52unattended-upgrades-local`. Higher numbers win, so the package default is left untouched. Only add settings you want to change from current behavior, e.g.:
 
-- `Reboot Required: YES` with a kernel package in `reboot-required.pkgs` → schedule a reboot.
-- A non-zero security count that has stayed > 0 for multiple days → unattended-upgrades is failing; check the log above.
+```text
+// Restrict to security pockets explicitly (tighter than the package default).
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+    "${distro_id}ESMApps:${distro_codename}-apps-security";
+    "${distro_id}ESM:${distro_codename}-infra-security";
+};
+
+// If a package upgrade fails, retry on the next run rather than blocking.
+Unattended-Upgrade::MinimalSteps "true";
+
+// Optional: mail on failure (requires Postfix relay configured).
+// Unattended-Upgrade::Mail "ops@murphys-laws.com";
+// Unattended-Upgrade::MailReport "on-change";
+```
+
+### Reading the daily status email under this policy
+
+- `Pending Updates: N` is mostly **non-security** packages (e.g. `-updates` pocket). Routine, not urgent.
+- `Reboot Required: YES` with `linux-image-*` in `reboot-required.pkgs` means a security-tracked kernel was auto-installed and is waiting for a manual reboot to take effect. Schedule one.
+- A security-update count (`apt list --upgradable | grep -Ei "security|esm"`) that stays `> 0` for multiple days means unattended-upgrades is failing. Check the log above.
 
 ## Quick Reference Commands
 
