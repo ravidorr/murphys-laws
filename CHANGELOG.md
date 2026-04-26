@@ -32,6 +32,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iOS skeleton-loading shimmer now consumes `DS.Color.mutedFg` (light + dark from the Asset Catalog) instead of hand-branching on `@Environment(\.colorScheme)` with hardcoded `Color(white:)` greys. [ios/MurphysLaws/Views/Home/SkeletonViews.swift](ios/MurphysLaws/Views/Home/SkeletonViews.swift). The dark-mode swap is now driven by the system trait collection via `Assets.xcassets/DS/muted-fg.colorset`, matching how every other DS color works. PR iOS-2 of the design-tokens-mobile rollout; calculator and vote-thumb surfaces are explicitly out of scope (HIG-idiomatic semantic colors `.green` / `.orange` / `.red` are correct on iOS), and no rank-style surface exists on iOS to migrate yet. iOS app bumped to `1.0.2` / build `3`; root to `2.4.17`.
 
 ### Fixed
+- `shared/docs/SERVER_MAINTENANCE.md` corrected to match the live `murphys-main` server: the
+  `sudo -i pm2 list` recipe (which fails because pm2 lives in root's nvm and is not on sudo's
+  PATH) is replaced with a working `sudo bash -c "exec $(...)"` invocation that resolves the
+  binary via glob and survives node version upgrades; the pre-update DB-backup step now calls
+  the actual script `/usr/local/bin/backup-murphys.sh` (the doc had a non-existent `-db`
+  variant) and references the real DB path `/root/murphys-laws/backend/murphys.db` instead of
+  a guessed `/var/lib/...`; OS string bumped to Ubuntu 24.04.4 LTS; "Automated Security
+  Updates" section reframed from "install and enable" to "audit existing config" since
+  `unattended-upgrades` 2.9.1 is already installed and configured (which is why kernel
+  packages auto-install but `Reboot Required` periodically lights up). Root bumped to `2.4.28`.
 - Nested iOS project configuration now points `INFOPLIST_FILE` at the app plist
   path that exists relative to that project root.
 - iOS test plan wiring now lives in `project.yml`, so XcodeGen regeneration in CI
