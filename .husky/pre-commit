@@ -14,6 +14,8 @@ if [ "$SKIP_CHANGELOG_CHECK" != "1" ]; then
   fi
 fi
 
+npm run check:versions
+
 # Reminders (only in interactive terminals)
 if [ -t 0 ]; then
   echo ""
