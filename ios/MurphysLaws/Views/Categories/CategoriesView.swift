@@ -29,22 +29,19 @@ struct CategoriesView: View {
                         description: "No categories available"
                     )
                 } else {
-                    ScrollView {
-                        LazyVGrid(
-                            columns: [
-                                GridItem(.flexible(), spacing: Constants.UI.spacingM),
-                                GridItem(.flexible(), spacing: Constants.UI.spacingM)
-                            ],
-                            spacing: Constants.UI.spacingM
-                        ) {
-                            ForEach(viewModel.categories) { category in
-                                CategoryCard(category: category) {
-                                    selectedCategory = category
-                                }
+                    List {
+                        ForEach(viewModel.categories) { category in
+                            Button {
+                                selectedCategory = category
+                            } label: {
+                                CategoryRow(category: category)
                             }
+                            .foregroundColor(DS.Color.fg)
+                            .accessibilityIdentifier("CategoryCard-\(category.id)")
+                            .accessibilityLabel("Category: \(category.title)")
                         }
-                        .padding()
                     }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Categories")
@@ -63,34 +60,29 @@ struct CategoriesView: View {
     }
 }
 
-// MARK: - Category Card Component
-struct CategoryCard: View {
+// MARK: - Category Row Component
+struct CategoryRow: View {
     let category: Category
-    let action: () -> Void
+    var isSelected: Bool? = nil
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: Constants.UI.spacingM) {
-                // Title
-                Text(category.title)
-                    .dsTypography(DS.Typography.h4)
-                    .foregroundColor(DS.Color.fg)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
+        HStack {
+            Image(systemName: category.iconName)
+                .foregroundColor(category.iconColor)
+                .frame(width: 24)
+            Text(category.title)
+            Spacer()
+            if let isSelected {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundColor(DS.Color.btnPrimaryBg)
+                }
+            } else {
+                Image(systemName: "chevron.right")
+                    .dsTypography(DS.Typography.caption)
+                    .foregroundColor(DS.Color.mutedFg)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
-                    .fill(category.iconColor.opacity(0.1))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
-                    .stroke(category.iconColor.opacity(0.3), lineWidth: 1)
-            )
         }
-        .accessibilityIdentifier("CategoryCard-\(category.id)")
-        .accessibilityLabel("Category: \(category.title)")
     }
 }
 
