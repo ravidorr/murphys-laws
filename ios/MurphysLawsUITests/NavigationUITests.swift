@@ -235,7 +235,7 @@ final class NavigationUITests: XCTestCase {
         doneButton.tap()
         
         // Verify filter chip appears
-        let filterChip = app.buttons["FilterChip-\(selectedCategoryLabel)"]
+        let filterChip = app.staticTexts["FilterChip-\(selectedCategoryLabel)"]
         XCTAssertTrue(filterChip.waitForExistence(timeout: 5), "Active filter chip should be visible")
         
         // Verify filter button shows badge (red dot) - hard to test directly
@@ -245,31 +245,31 @@ final class NavigationUITests: XCTestCase {
     func testRemoveFilterViaChip() throws {
         // Navigate to Browse tab
         app.tabBars.buttons["Browse"].tap()
-        sleep(2)
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
+        XCTAssertTrue(firstLawButton.waitForExistence(timeout: 5), "Browse laws should load before filtering")
         
         // Open and apply filter
-        let filterButton = app.navigationBars.buttons.matching(identifier: "line.3.horizontal.decrease.circle").firstMatch
+        let filterButton = app.buttons["BrowseFilterButton"]
+        XCTAssertTrue(filterButton.waitForExistence(timeout: 5), "Filter button should exist")
         filterButton.tap()
-        sleep(1)
         
-        let firstCategory = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Murphy'")).element(boundBy: 1)
-        if firstCategory.exists {
-            firstCategory.tap()
-        }
+        let firstCategory = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'FilterCategory-'")).firstMatch
+        XCTAssertTrue(firstCategory.waitForExistence(timeout: 5), "Filter category should exist")
+        let selectedCategoryLabel = firstCategory.label
+        firstCategory.tap()
         
-        app.navigationBars.buttons["Done"].tap()
-        sleep(1)
+        let doneButton = app.navigationBars.buttons["Done"]
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 5), "Done button should exist")
+        doneButton.tap()
         
         // Find and tap X button on filter chip
-        let removeButton = app.buttons["xmark.circle.fill"].firstMatch
-        if removeButton.exists {
-            removeButton.tap()
-            
-            // Verify filter chip disappears
-            sleep(1)
-            let filterChips = app.scrollViews.otherElements.buttons.containing(NSPredicate(format: "label CONTAINS 'Murphy'"))
-            XCTAssertTrue(filterChips.count == 0, "Filter chip should be removed")
-        }
+        let removeButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'RemoveFilterChip-'")).firstMatch
+        XCTAssertTrue(removeButton.waitForExistence(timeout: 5), "Remove filter chip button should exist")
+        removeButton.tap()
+        
+        // Verify filter chip disappears
+        let filterChip = app.staticTexts["FilterChip-\(selectedCategoryLabel)"]
+        XCTAssertFalse(filterChip.waitForExistence(timeout: 2), "Filter chip should be removed")
     }
     
     func testCategoryLawNavigationShowsCorrectLaw() throws {
