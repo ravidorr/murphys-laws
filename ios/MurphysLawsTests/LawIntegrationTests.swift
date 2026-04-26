@@ -5,9 +5,11 @@
 //  Integration tests for law-related features
 //
 
+import Foundation
 import Testing
 @testable import MurphysLaws
 
+@MainActor
 @Suite("Law Integration Tests")
 struct LawIntegrationTests {
 
@@ -16,11 +18,11 @@ struct LawIntegrationTests {
         let mockRepo = MockLawRepository()
         mockRepo.lawsToReturn = Law.mockList
 
-        let viewModel = await LawListViewModel(repository: mockRepo)
+        let viewModel = LawListViewModel(repository: mockRepo)
 
         await viewModel.loadLaws()
 
-        let laws = await viewModel.laws
+        let laws = viewModel.laws
         #expect(laws.count == 3, "Should load 3 mock laws")
         #expect(laws.first?.id == 1, "First law should have ID 1")
     }
@@ -45,21 +47,21 @@ struct LawIntegrationTests {
             )
         ]
 
-        let viewModel = await LawListViewModel(repository: mockRepo)
-        await viewModel.searchQuery = "Murphy"
+        let viewModel = LawListViewModel(repository: mockRepo)
+        viewModel.searchQuery = "Murphy"
         await viewModel.searchLaws()
 
-        let laws = await viewModel.laws
+        let laws = viewModel.laws
         #expect(laws.count == 1, "Should find 1 law matching 'Murphy'")
         #expect(laws.first?.text.contains("Murphy") == true, "Law should contain 'Murphy'")
     }
 
     @Test("User can vote on a law")
     func testVotingOnLaw() async throws {
-        let votingService = await VotingService.shared
+        let votingService = VotingService.shared
 
         // Initially no vote
-        let initialVote = await votingService.getVote(for: 1)
+        let initialVote = votingService.getVote(for: 1)
         #expect(initialVote == nil, "Should have no initial vote")
 
         // Note: Actually voting requires mocking APIService
@@ -71,30 +73,30 @@ struct LawIntegrationTests {
         let mockRepo = MockLawRepository()
         mockRepo.lawsToReturn = [Law.mock]
 
-        let viewModel = await LawDetailViewModel(lawID: 1, initialLaw: Law.mock)
+        let viewModel = LawDetailViewModel(lawID: 1, initialLaw: Law.mock)
 
-        let law = await viewModel.law
+        let law = viewModel.law
         #expect(law != nil, "Law should be loaded")
         #expect(law?.id == 1, "Law ID should match")
     }
 
     @Test("Calculator computes probability correctly")
     func testCalculatorComputation() async throws {
-        let viewModel = await CalculatorViewModel()
+        let viewModel = CalculatorViewModel()
 
         // Set high risk scenario
-        await viewModel.urgency = 10.0
-        await viewModel.complexity = 10.0
-        await viewModel.importance = 10.0
-        await viewModel.skillLevel = 1.0
-        await viewModel.frequency = 1.0
+        viewModel.urgency = 10.0
+        viewModel.complexity = 10.0
+        viewModel.importance = 10.0
+        viewModel.skillLevel = 1.0
+        viewModel.frequency = 1.0
 
-        await viewModel.calculate()
+        viewModel.calculate()
 
-        let probability = await viewModel.probability
+        let probability = viewModel.probability
         #expect(probability > 50, "High risk scenario should have >50% probability")
 
-        let riskLevel = await viewModel.riskLevel
+        let riskLevel = viewModel.riskLevel
         #expect(riskLevel == .high, "Should be high risk")
     }
 
@@ -103,11 +105,11 @@ struct LawIntegrationTests {
         let mockRepo = MockLawRepository()
         mockRepo.lawsToReturn = []
 
-        let viewModel = await LawListViewModel(repository: mockRepo)
-        await viewModel.searchQuery = "nonexistent"
+        let viewModel = LawListViewModel(repository: mockRepo)
+        viewModel.searchQuery = "nonexistent"
         await viewModel.searchLaws()
 
-        let laws = await viewModel.laws
+        let laws = viewModel.laws
         #expect(laws.isEmpty, "Should return no laws for non-matching search")
     }
 
@@ -131,10 +133,10 @@ struct LawIntegrationTests {
             )
         ]
 
-        let viewModel = await LawListViewModel(categoryID: 1, repository: mockRepo)
+        let viewModel = LawListViewModel(repository: mockRepo, categoryID: 1)
         await viewModel.loadLaws()
 
-        let categoryID = await mockRepo.lastCategoryID
+        let categoryID = mockRepo.lastCategoryID
         #expect(categoryID == 1, "Should filter by category ID 1")
     }
 
@@ -147,56 +149,57 @@ struct LawIntegrationTests {
             Law(id: 1, text: "Law 1", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 10, downvotes: 1, createdAt: nil, updatedAt: nil, attributions: nil, categories: nil)
         ]
 
-        let viewModel = await LawListViewModel(repository: mockRepo)
+        let viewModel = LawListViewModel(repository: mockRepo)
         await viewModel.loadLaws()
 
-        var laws = await viewModel.laws
+        var laws = viewModel.laws
         #expect(laws.count == 1, "Should have 1 law after first load")
 
         // Enable more pages and load second batch
-        await viewModel.hasMorePages = true
+        viewModel.hasMorePages = true
         mockRepo.lawsToReturn = [
             Law(id: 2, text: "Law 2", title: nil, slug: nil, rawMarkdown: nil, originNote: nil, upvotes: 5, downvotes: 1, createdAt: nil, updatedAt: nil, attributions: nil, categories: nil)
         ]
 
         await viewModel.loadMoreLaws()
 
-        laws = await viewModel.laws
+        laws = viewModel.laws
         #expect(laws.count == 2, "Should have 2 laws after loading more")
     }
 
     @Test("Submit law validation works")
     func testSubmitLawValidation() async throws {
-        let viewModel = await SubmitLawViewModel()
+        let viewModel = SubmitLawViewModel()
 
         // Initially invalid
-        var isValid = await viewModel.isValid
+        var isValid = viewModel.isValid
         #expect(!isValid, "Should be invalid with empty fields")
 
         // Add required fields
-        await viewModel.lawText = "This is a new law about software development"
-        await viewModel.selectedCategoryID = 1
-        await viewModel.submitAnonymously = true
+        viewModel.lawText = "This is a new law about software development"
+        viewModel.selectedCategoryID = 1
+        viewModel.submitAnonymously = true
 
-        isValid = await viewModel.isValid
+        isValid = viewModel.isValid
         #expect(isValid, "Should be valid with required fields filled")
     }
 }
 
+@MainActor
 @Suite("Calculator Tests")
 struct CalculatorIntegrationTests {
 
     @Test("Calculator resets to default values")
     func testCalculatorReset() async throws {
-        let viewModel = await CalculatorViewModel()
+        let viewModel = CalculatorViewModel()
 
         // Modify values
-        await viewModel.urgency = 8.0
-        await viewModel.complexity = 9.0
-        await viewModel.reset()
+        viewModel.urgency = 8.0
+        viewModel.complexity = 9.0
+        viewModel.reset()
 
-        let urgency = await viewModel.urgency
-        let complexity = await viewModel.complexity
+        let urgency = viewModel.urgency
+        let complexity = viewModel.complexity
 
         #expect(urgency == 5.0, "Urgency should reset to 5.0")
         #expect(complexity == 5.0, "Complexity should reset to 5.0")
@@ -204,45 +207,45 @@ struct CalculatorIntegrationTests {
 
     @Test("Calculator probability stays within bounds")
     func testCalculatorBounds() async throws {
-        let viewModel = await CalculatorViewModel()
+        let viewModel = CalculatorViewModel()
 
         // Test maximum values
-        await viewModel.urgency = 10.0
-        await viewModel.complexity = 10.0
-        await viewModel.importance = 10.0
-        await viewModel.skillLevel = 10.0
-        await viewModel.frequency = 10.0
+        viewModel.urgency = 10.0
+        viewModel.complexity = 10.0
+        viewModel.importance = 10.0
+        viewModel.skillLevel = 10.0
+        viewModel.frequency = 10.0
 
-        await viewModel.calculate()
+        viewModel.calculate()
 
-        let probability = await viewModel.probability
+        let probability = viewModel.probability
         #expect(probability >= 0.0 && probability <= 100.0, "Probability should be between 0 and 100")
     }
 
     @Test("Risk levels are calculated correctly")
     func testRiskLevelCalculation() async throws {
-        let viewModel = await CalculatorViewModel()
+        let viewModel = CalculatorViewModel()
 
         // Low risk
-        await viewModel.urgency = 1.0
-        await viewModel.complexity = 1.0
-        await viewModel.importance = 1.0
-        await viewModel.skillLevel = 10.0
-        await viewModel.frequency = 10.0
-        await viewModel.calculate()
+        viewModel.urgency = 1.0
+        viewModel.complexity = 1.0
+        viewModel.importance = 1.0
+        viewModel.skillLevel = 10.0
+        viewModel.frequency = 10.0
+        viewModel.calculate()
 
-        var riskLevel = await viewModel.riskLevel
+        var riskLevel = viewModel.riskLevel
         #expect(riskLevel == .low, "Should be low risk")
 
         // High risk
-        await viewModel.urgency = 10.0
-        await viewModel.complexity = 10.0
-        await viewModel.importance = 10.0
-        await viewModel.skillLevel = 1.0
-        await viewModel.frequency = 1.0
-        await viewModel.calculate()
+        viewModel.urgency = 10.0
+        viewModel.complexity = 10.0
+        viewModel.importance = 10.0
+        viewModel.skillLevel = 1.0
+        viewModel.frequency = 1.0
+        viewModel.calculate()
 
-        riskLevel = await viewModel.riskLevel
+        riskLevel = viewModel.riskLevel
         #expect(riskLevel == .high, "Should be high risk")
     }
 }
@@ -261,7 +264,7 @@ struct NetworkErrorTests {
 
     @Test("Voting error messages are helpful")
     func testVotingErrors() {
-        let rateLimitError = VotingError.rateLimitExceeded
-        #expect(rateLimitError.errorDescription?.contains("wait") == true, "Should suggest waiting")
+        let rateLimitError = APIError.rateLimitExceeded
+        #expect(rateLimitError.errorDescription?.contains("try again") == true, "Should suggest retrying later")
     }
 }
