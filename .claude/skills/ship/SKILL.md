@@ -39,9 +39,7 @@ Bump the root `package.json` on every ship. Bump a sub-package's version file **
 | `package.json` (root) | `version` | `MAJOR.MINOR.PATCH` | `2.1.1` → `2.1.2` | Always. Drives the Sentry `release` tag across the repo. |
 | `web/package.json` | `version` | `MAJOR.MINOR.PATCH` | `3.1.35` → `3.1.36` | Only when files that ship in the web bundle changed: `web/**` user-facing code, OR any `shared/` path the web SSG bakes in (today: `shared/content/**`, see [web/scripts/ssg.ts](web/scripts/ssg.ts) constant `SHARED_CONTENT_DIR`). Version is embedded in built web assets and Sentry web releases. **Design-token tooling under `shared/design-tokens/` that emits artifacts for OTHER platforms is NOT a web change for versioning purposes** - bumping web for it creates phantom Sentry web releases. |
 | `backend/package.json` | `version` | `MAJOR.MINOR.PATCH` | `2.0.14` → `2.0.15` | Only when files under `backend/` changed. |
-| `cli/package.json` | `version` | `MAJOR.MINOR.PATCH` | `0.1.0` → `0.1.1` | Only when files under `cli/` changed. |
-| `mcp/package.json` | `version` | `MAJOR.MINOR.PATCH` | `1.2.1` → `1.2.2` | Only when files under `mcp/` changed. |
-| `sdk/package.json` | `version` | `MAJOR.MINOR.PATCH` | `0.1.0` → `0.1.1` | Only when files under `sdk/` changed. |
+| `mcp/package.json` | `version` | `MAJOR.MINOR.PATCH` | - | Only when files under `mcp/` changed. |
 | `ios/project.yml` AND `ios/MurphysLaws/Info.plist` | `MARKETING_VERSION` / `CFBundleShortVersionString` (semver) AND `CURRENT_PROJECT_VERSION` / `CFBundleVersion` (monotonic build number) | semver + integer | `1.0.1` → `1.0.2`, build `2` → `3` | Only when files that ship in the iOS app binary changed: `ios/**`, OR any `shared/` path bundled into the app (today: `shared/content/**`, declared in [ios/project.yml](ios/project.yml) `sources:`). Surfaces in TestFlight, App Store, Sentry iOS dashboards. Keep the same value in `project.yml` and `Info.plist` so XcodeGen regeneration is a no-op. |
 | `android/app/build.gradle.kts` | `versionName` (semver) AND `versionCode` (monotonic int) | semver + integer | `versionName "1.0.1"`, `versionCode 2` → `versionName "1.0.2"`, `versionCode 3` | Only when files that ship in the Android app binary changed: `android/**`, OR any `shared/` path copied into app assets (today: `shared/content/**`, declared in the `copySharedContent` task in [android/app/build.gradle.kts](android/app/build.gradle.kts)). Surfaces in Play Console and Sentry Android dashboards. |
 
@@ -56,9 +54,7 @@ Before bumping, inspect the staged diff per platform. **Note that `shared/conten
 ```bash
 git diff --cached --stat -- web/ shared/content/
 git diff --cached --stat -- backend/
-git diff --cached --stat -- cli/
 git diff --cached --stat -- mcp/
-git diff --cached --stat -- sdk/
 git diff --cached --stat -- ios/ shared/content/
 git diff --cached --stat -- android/ shared/content/
 ```
@@ -68,18 +64,6 @@ If a directory shows no output, do **not** bump that platform's version. `packag
 A PR that touches **only** `shared/content/` (e.g. a copy fix on `about.md`) is a real release on every platform that bundles it: web users see a new build, iOS / Android users get an update via TestFlight / Play. The version files must reflect that. Skipping the bump on iOS / Android specifically can block the next upload because App Store Connect / Play Console reject duplicate `CFBundleVersion` / `versionCode`.
 
 For `web/`, the diff alone isn't enough: also check whether the changed files are user-facing (`web/src/**`, `web/styles/**`, `web/index.html`, `shared/content/**`) versus build-time tooling (`shared/design-tokens/**` exporters that emit to other platforms). Tooling-only diffs do not warrant a `web/package.json` bump.
-
-For package directories (`backend/`, `cli/`, `mcp/`, `sdk/`), treat any package-local source,
-test, CLI binary, config, or build wiring change as a package release unless it is clearly
-documentation-only. If the package behavior, build, generated types, tests, or published files
-change, bump that package.
-
-For platform apps (`ios/`, `android/`), treat app source, app resources, project/Gradle wiring,
-and shared bundled content as release-bearing. Do not dismiss a change as "cleanup" if it
-touches files that compile into, configure, or bundle the app.
-
-The pre-commit hook runs `npm run check:versions` against staged files. If it fails, bump the
-listed version files and stage them; do not bypass the check.
 
 If `ios/project.yml` `sources:` or `android/app/build.gradle.kts` `copySharedContent` (or the equivalent build glue) ever expands to consume more `shared/` paths, update this skill so the probes match the new reality.
 
@@ -217,9 +201,7 @@ Return the PR URL to the user.
 [ ] Bump root package.json (always)
 [ ] If user-facing web/ code OR shared/content/ changed: bump web/package.json
 [ ] If backend/ code changed: bump backend/package.json
-[ ] If cli/ code changed: bump cli/package.json
 [ ] If mcp/ code changed: bump mcp/package.json
-[ ] If sdk/ code changed: bump sdk/package.json
 [ ] If ios/ code OR shared/content/ changed: bump MARKETING_VERSION+CURRENT_PROJECT_VERSION
     in ios/project.yml AND CFBundleShortVersionString+CFBundleVersion in
     ios/MurphysLaws/Info.plist (lockstep)

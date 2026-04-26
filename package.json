@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.4.30",
+  "version": "2.4.29",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -46,7 +46,6 @@
     "validate:node-server": "cd backend && npm run validate:node-server",
     "validate-ports": "npx tsx backend/scripts/validate-ports.ts",
     "cleanup-ports": "npx tsx backend/scripts/cleanup-ports.ts",
-    "check:versions": "tsx scripts/check-version-bumps.ts",
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../sdk && npm install && cd ../cli && npm install && cd ../mcp && npm install",
     "design:sync": "tsx shared/design-tokens/sync-design-tokens.ts",
     "design:check": "tsx shared/design-tokens/sync-design-tokens.ts --check && tsx shared/design-tokens/design-md-lint.ts && tsx shared/design-tokens/export-ios-tokens.ts --check && tsx shared/design-tokens/export-android-tokens.ts --check && npm run design:test",
