@@ -9,7 +9,7 @@ import XCTest
 
 final class SkeletonViewsTests: XCTestCase {
 
-    func testSkeletonModifierHidesSourceContentUnderOverlay() throws {
+    func testSkeletonModifierMasksOverlayToSourceContent() throws {
         let sourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -23,6 +23,14 @@ final class SkeletonViewsTests: XCTestCase {
             .overlay(
 """),
             "Skeleton placeholders should hide their source shapes before drawing the shimmer overlay"
+        )
+        XCTAssertTrue(
+            source.contains(".mask(content)"),
+            "Skeleton shimmer should be masked by the source view so circles stay circular"
+        )
+        XCTAssertFalse(
+            source.contains("RoundedRectangle(cornerRadius: 4)\n                    .fill("),
+            "A fixed rounded-rectangle overlay changes non-rectangular placeholder silhouettes"
         )
     }
 }

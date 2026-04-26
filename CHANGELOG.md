@@ -40,8 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - iOS skeleton loading placeholders now hide their source shapes under the
-  shimmer overlay, preventing content bleed during loading states. iOS app
-  bumped to `1.1.8` / build `12`; root to `2.4.34`.
+  shimmer overlay while preserving circular and rounded silhouettes, preventing
+  content bleed during loading states. iOS app bumped to `1.1.9` / build `13`;
+  root to `2.4.35`.
 - iOS navigation UI tests now wait for category row content on the Categories
   tab, matching the new list layout used by the app. iOS app bumped to `1.1.6`
   / build `10`; root to `2.4.32`.
