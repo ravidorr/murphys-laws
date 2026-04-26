@@ -7,8 +7,8 @@ options:
   xcodeVersion: "14.0"
 
 settings:
-  MARKETING_VERSION: "1.1.3"
-  CURRENT_PROJECT_VERSION: "7"
+  MARKETING_VERSION: "1.1.4"
+  CURRENT_PROJECT_VERSION: "8"
 
 targets:
   MurphysLaws:
@@ -18,32 +18,14 @@ targets:
     sources:
       - path: MurphysLaws
         excludes:
-          # Exclude all markdown documentation
           - "**/*.md"
-          - "**/*README*"
-          - "**/*CHECKLIST*"
-          - "**/*SUMMARY*"
-          - "**/*CORRECTIONS*"
-          - "**/*HONEST*"
-          - "**/*START_HERE*"
-          - "**/*STEP_*"
-
-          # Exclude templates
           - "**/*.template"
           - "**/*.template.*"
-
-          # Exclude test files that ended up in app source
           - "**/Tests"
           - "**/*Tests.swift"
           - "**/*IntegrationTests.swift"
-
-          # Exclude local content copy (use shared instead)
           - "Resources/content"
-
-          # The hand-authored MurphysLaws/Info.plist is the source of truth.
           - "**/Info.plist"
-          - "App/CHECKLIST.md"
-          - "App/README.md"
           - "Repositories/Config.plist.template"
           - "Repositories/validate-config.sh"
       - path: ../shared/content
