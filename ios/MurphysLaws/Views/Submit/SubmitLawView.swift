@@ -20,8 +20,10 @@ struct SubmitLawView: View {
                 Section {
                     TextField("Law text (required)", text: $viewModel.lawText, axis: .vertical)
                         .lineLimit(3...10)
+                        .accessibilityIdentifier("SubmitLawTextField")
 
                     TextField("Title (optional)", text: $viewModel.title)
+                        .accessibilityIdentifier("SubmitLawTitleField")
                 } header: {
                     Text("Law Content")
                 } footer: {
