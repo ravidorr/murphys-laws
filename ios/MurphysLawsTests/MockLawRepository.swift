@@ -8,7 +8,6 @@
 import Foundation
 @testable import MurphysLaws
 
-@MainActor
 class MockLawRepository: LawRepository {
     var shouldFail = false
     var lawsToReturn: [Law] = []
