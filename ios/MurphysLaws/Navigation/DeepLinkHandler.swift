@@ -21,23 +21,25 @@ enum DeepLink: Equatable {
             return nil
         }
         
-        let components = url.pathComponents.filter { $0 != "/" }
-        
-        guard let path = components.first else {
+        let pathComponents = url.pathComponents.filter { $0 != "/" }
+        let routePath = url.host ?? pathComponents.first
+        let routeParameters = url.host == nil ? Array(pathComponents.dropFirst()) : pathComponents
+
+        guard let routePath else {
             self = .home
             return
         }
         
-        switch path {
+        switch routePath {
         case Constants.DeepLink.lawPath:
-            if components.count > 1, let id = Int(components[1]) {
+            if let idString = routeParameters.first, let id = Int(idString) {
                 self = .law(id: id)
             } else {
                 return nil
             }
             
         case Constants.DeepLink.categoryPath:
-            if components.count > 1, let id = Int(components[1]) {
+            if let idString = routeParameters.first, let id = Int(idString) {
                 self = .category(id: id)
             } else {
                 return nil

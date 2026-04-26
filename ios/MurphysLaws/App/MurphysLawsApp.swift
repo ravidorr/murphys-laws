@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct MurphysLawsApp: App {
+    @StateObject private var deepLinkHandler = DeepLinkHandler()
     @StateObject private var votingService = VotingService.shared
     
     // Check if running in UI test mode
@@ -19,6 +20,7 @@ struct MurphysLawsApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(deepLinkHandler)
                 .environmentObject(votingService)
                 .environment(\.isUITesting, isUITesting)
                 .onAppear {
