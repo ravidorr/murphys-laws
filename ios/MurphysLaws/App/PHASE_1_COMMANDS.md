@@ -47,25 +47,25 @@ targets:
           - "**/*HONEST*"
           - "**/*START_HERE*"
           - "**/*STEP_*"
-          
+
           # Exclude templates
           - "**/*.template"
           - "**/*.template.*"
-          
+
           # Exclude test files that ended up in app source
           - "**/Tests"
           - "**/*Tests.swift"
           - "**/*IntegrationTests.swift"
-          
+
           # Specific problem files
           - "App/CHECKLIST.md"
           - "App/README.md"
           - "Repositories/Config.plist.template"
           - "Repositories/validate-config.sh"
-      
+
       - path: ../shared/content
         type: group
-    
+
     # Keep the rest of your existing MurphysLaws config below this
 ```
 

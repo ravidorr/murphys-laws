@@ -172,7 +172,7 @@ struct CalculatorTests {
         let vm = await CalculatorViewModel()
         await vm.urgency = 10.0
         await vm.calculate()
-        
+
         let risk = await vm.riskLevel
         #expect(risk == .high)
     }

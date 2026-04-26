@@ -260,7 +260,7 @@
 			);
 			sourceTree = "<group>";
 		};
-		29DEA1CE2F9E062200EE1264 /* Products */ = {
+		29DEA20E2F9E437600EE1264 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -565,7 +565,7 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 29DEA1CE2F9E062200EE1264 /* Products */;
+					ProductGroup = 29DEA20E2F9E437600EE1264 /* Products */;
 					ProjectRef = 0A4A458B2333FBA01D004AED /* MurphysLaws.xcodeproj */;
 				},
 			);

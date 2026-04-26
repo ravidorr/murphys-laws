@@ -95,7 +95,7 @@ extension Int: Identifiable {
 // MARK: - Identifiable Wrapper for Sheet
 struct IdentifiableInt: Identifiable {
     let id: Int
-    
+
     init(_ value: Int) {
         self.id = value
     }

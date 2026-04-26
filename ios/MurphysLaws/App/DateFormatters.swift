@@ -16,7 +16,7 @@ extension DateFormatter {
         formatter.timeStyle = .none
         return formatter
     }()
-    
+
     /// Relative date formatter for recent dates
     /// Format: "2 hours ago", "Yesterday", etc.
     static let relative: RelativeDateTimeFormatter = {
@@ -25,7 +25,7 @@ extension DateFormatter {
         formatter.unitsStyle = .full
         return formatter
     }()
-    
+
     /// Short date format
     /// Format: "1/15/26"
     static let short: DateFormatter = {
@@ -34,7 +34,7 @@ extension DateFormatter {
         formatter.timeStyle = .none
         return formatter
     }()
-    
+
     /// Long date with time
     /// Format: "January 15, 2026 at 3:30 PM"
     static let longWithTime: DateFormatter = {
@@ -51,17 +51,17 @@ extension Date {
     var lawDisplayFormat: String {
         DateFormatter.lawDisplay.string(from: self)
     }
-    
+
     /// Format this date as relative time
     var relativeFormat: String {
         DateFormatter.relative.localizedString(for: self, relativeTo: Date())
     }
-    
+
     /// Format this date as short format
     var shortFormat: String {
         DateFormatter.short.string(from: self)
     }
-    
+
     /// Format this date with long format and time
     var longWithTimeFormat: String {
         DateFormatter.longWithTime.string(from: self)

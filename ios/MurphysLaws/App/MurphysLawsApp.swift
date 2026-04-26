@@ -11,7 +11,7 @@ import SwiftUI
 struct MurphysLawsApp: App {
     @StateObject private var deepLinkHandler = DeepLinkHandler()
     @StateObject private var votingService = VotingService.shared
-    
+
     // Check if running in UI test mode
     var isUITesting: Bool {
         ProcessInfo.processInfo.arguments.contains("UI-TESTING")
@@ -30,12 +30,12 @@ struct MurphysLawsApp: App {
                 }
         }
     }
-    
+
     /// Setup mock data and configurations for UI testing
     private func setupUITestEnvironment() {
         // Disable animations for faster, more reliable tests
         UIView.setAnimationsEnabled(false)
-        
+
         // You can also set up any UserDefaults or other state here
         UserDefaults.standard.set(true, forKey: "isUITesting")
     }

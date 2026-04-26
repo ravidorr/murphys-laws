@@ -386,7 +386,7 @@ Files in CORRECT locations:
 
 ### Expected Time:
 - Parts A-B: 5 minutes
-- Part C: 5 minutes  
+- Part C: 5 minutes
 - Part D-E: 10 minutes
 - Part F: 5 minutes
 - Part G: 10 minutes

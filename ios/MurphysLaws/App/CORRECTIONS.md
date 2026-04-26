@@ -43,7 +43,7 @@ ios/
 ### Problem
 Documentation claimed these are production app files:
 - AnalyticsService.swift
-- CrashReportingService.swift  
+- CrashReportingService.swift
 - ImageCache.swift
 - DeepLinkHandler.swift
 
@@ -122,7 +122,7 @@ deploymentTarget:
   - [ ] App Store prep
 
 ### Reality
-The **CODE ARCHITECTURE** is production-ready.  
+The **CODE ARCHITECTURE** is production-ready.
 The **APP CONFIGURATION** is not.
 
 ### Correction
@@ -178,7 +178,7 @@ ios/MurphysLaws/Resources/Config.plist.template  # Template (committed)
    # Option A: Use XcodeGen (Recommended)
    cd ios
    xcodegen generate  # Regenerates .xcodeproj from project.yml
-   
+
    # Option B: Manually sync project.yml with .xcodeproj changes
    # (Not recommended - defeats purpose of XcodeGen)
    ```
@@ -196,7 +196,7 @@ ios/MurphysLaws/Resources/Config.plist.template  # Template (committed)
    git mv MurphysLawsUITests/CrashReportingService.swift MurphysLaws/Services/
    git mv MurphysLawsUITests/ImageCache.swift MurphysLaws/Services/
    git mv MurphysLawsUITests/DeepLinkHandler.swift MurphysLaws/Navigation/
-   
+
    # Update project.yml
    # Regenerate with xcodegen
    ```
@@ -205,10 +205,10 @@ ios/MurphysLaws/Resources/Config.plist.template  # Template (committed)
    ```bash
    # Move template to correct location
    git mv MurphysLaws/Repositories/Config.plist.template MurphysLaws/Resources/
-   
+
    # Create actual config
    cp MurphysLaws/Resources/Config.plist.template MurphysLaws/Resources/Config.plist
-   
+
    # Update .gitignore
    echo "MurphysLaws/Resources/Config.plist" >> .gitignore
    ```
@@ -218,7 +218,7 @@ ios/MurphysLaws/Resources/Config.plist.template  # Template (committed)
    # In project.yml, set ONE version:
    deploymentTarget:
      iOS: "17.0"  # Modern features
-   
+
    # Then update all READMEs to match
    ```
 

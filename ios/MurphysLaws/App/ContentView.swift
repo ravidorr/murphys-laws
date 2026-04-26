@@ -94,13 +94,13 @@ struct ContentView: View {
 // MARK: - Tab Navigation Coordinator
 class TabNavigationCoordinator: ObservableObject {
     static let shared = TabNavigationCoordinator()
-    
+
     @Published var targetTab: AppTab?
     @Published var showingSubmit = false
     @Published var showingContact = false
-    
+
     private init() {}
-    
+
     func navigate(to destination: AppTab) {
         targetTab = destination
     }

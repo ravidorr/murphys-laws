@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "9A7B6C5D-4E3F-2A1B-9C8D-7E6F5A4B3C2D",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:MurphysLaws.xcodeproj",
+      "identifier" : "1E8E90165E23502BED88EE9E",
+      "name" : "MurphysLaws"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:MurphysLaws.xcodeproj",
+        "identifier" : "84D35C603FFC36267CC6D2EB",
+        "name" : "MurphysLawsTests"
+      }
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:MurphysLaws.xcodeproj",
+        "identifier" : "93B3FBC99A6FCE0F3F8E715D",
+        "name" : "MurphysLawsUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

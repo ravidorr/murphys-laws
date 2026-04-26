@@ -10,28 +10,28 @@ import SwiftUI
 struct ErrorRecoveryView: View {
     let error: Error
     let retryAction: () async -> Void
-    
+
     @State private var isRetrying = false
     @EnvironmentObject private var networkMonitor: NetworkMonitor
-    
+
     var body: some View {
         VStack(spacing: Constants.UI.spacingL) {
             Image(systemName: errorIcon)
                 .font(.system(size: 64))
                 .foregroundColor(errorColor)
-            
+
             VStack(spacing: Constants.UI.spacingS) {
                 Text(errorTitle)
                     .dsTypography(DS.Typography.h3)
                     .foregroundColor(DS.Color.fg)
-                
+
                 Text(errorMessage)
                     .dsTypography(DS.Typography.bodySm)
                     .foregroundColor(DS.Color.mutedFg)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            
+
             if !networkMonitor.isConnected {
                 HStack(spacing: Constants.UI.spacingS) {
                     Image(systemName: "wifi.slash")
@@ -46,7 +46,7 @@ struct ErrorRecoveryView: View {
                         .fill(DS.Color.errorBg)
                 )
             }
-            
+
             VStack(spacing: Constants.UI.spacingS) {
                 Button {
                     Task {
@@ -71,13 +71,13 @@ struct ErrorRecoveryView: View {
                     .cornerRadius(Constants.UI.cornerRadiusM)
                 }
                 .disabled(isRetrying || !networkMonitor.isConnected)
-                
+
                 if errorSuggestions.count > 0 {
                     VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
                         Text("Try these solutions:")
                             .dsTypography(DS.Typography.caption)
                             .foregroundColor(DS.Color.mutedFg)
-                        
+
                         ForEach(errorSuggestions, id: \.self) { suggestion in
                             HStack(alignment: .top, spacing: Constants.UI.spacingS) {
                                 Text("•")
@@ -98,12 +98,12 @@ struct ErrorRecoveryView: View {
         }
         .padding()
     }
-    
+
     private var errorIcon: String {
         if !networkMonitor.isConnected {
             return "wifi.slash"
         }
-        
+
         switch error {
         case let apiError as APIError:
             switch apiError {
@@ -124,19 +124,19 @@ struct ErrorRecoveryView: View {
             return "exclamationmark.triangle"
         }
     }
-    
+
     private var errorColor: Color {
         if !networkMonitor.isConnected {
             return DS.Color.error
         }
         return DS.Color.orangeText
     }
-    
+
     private var errorTitle: String {
         if !networkMonitor.isConnected {
             return "No Connection"
         }
-        
+
         switch error {
         case let apiError as APIError:
             switch apiError {
@@ -157,11 +157,11 @@ struct ErrorRecoveryView: View {
             return "Something Went Wrong"
         }
     }
-    
+
     private var errorMessage: String {
         error.localizedDescription
     }
-    
+
     private var errorSuggestions: [String] {
         if !networkMonitor.isConnected {
             return [
@@ -170,7 +170,7 @@ struct ErrorRecoveryView: View {
                 "Try moving to a location with better signal"
             ]
         }
-        
+
         switch error {
         case let apiError as APIError:
             switch apiError {

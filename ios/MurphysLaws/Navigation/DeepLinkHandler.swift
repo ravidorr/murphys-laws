@@ -15,12 +15,12 @@ enum DeepLink: Equatable {
     case calculator
     case submit
     case home
-    
+
     init?(url: URL) {
         guard url.scheme == Constants.DeepLink.scheme else {
             return nil
         }
-        
+
         let pathComponents = url.pathComponents.filter { $0 != "/" }
         let routePath = url.host ?? pathComponents.first
         let routeParameters = url.host == nil ? Array(pathComponents.dropFirst()) : pathComponents
@@ -29,7 +29,7 @@ enum DeepLink: Equatable {
             self = .home
             return
         }
-        
+
         switch routePath {
         case Constants.DeepLink.lawPath:
             if let idString = routeParameters.first, let id = Int(idString) {
@@ -37,20 +37,20 @@ enum DeepLink: Equatable {
             } else {
                 return nil
             }
-            
+
         case Constants.DeepLink.categoryPath:
             if let idString = routeParameters.first, let id = Int(idString) {
                 self = .category(id: id)
             } else {
                 return nil
             }
-            
+
         case Constants.DeepLink.calculatorPath:
             self = .calculator
-            
+
         case "submit":
             self = .submit
-            
+
         default:
             return nil
         }
@@ -61,18 +61,18 @@ enum DeepLink: Equatable {
 @MainActor
 class DeepLinkHandler: ObservableObject {
     @Published var activeDeepLink: DeepLink?
-    
+
     func handle(_ url: URL) {
         guard let deepLink = DeepLink(url: url) else {
             print("Invalid deep link: \(url)")
             return
         }
-        
+
         activeDeepLink = deepLink
-        
+
         // Track analytics
         AnalyticsService.shared.track(.appLaunched)
-        
+
         // Handle specific deep links
         switch deepLink {
         case .law(let id):
@@ -87,7 +87,7 @@ class DeepLinkHandler: ObservableObject {
             print("Opening home")
         }
     }
-    
+
     func clearActiveDeepLink() {
         activeDeepLink = nil
     }
@@ -97,10 +97,10 @@ class DeepLinkHandler: ObservableObject {
 struct DeepLinkModifier: ViewModifier {
     @EnvironmentObject var deepLinkHandler: DeepLinkHandler
     @EnvironmentObject var tabCoordinator: TabNavigationCoordinator
-    
+
     @State private var selectedLawID: Int?
     @State private var selectedCategoryID: Int?
-    
+
     func body(content: Content) -> some View {
         content
             .onOpenURL { url in
@@ -108,25 +108,25 @@ struct DeepLinkModifier: ViewModifier {
             }
             .onChange(of: deepLinkHandler.activeDeepLink) { oldValue, newValue in
                 guard let deepLink = newValue else { return }
-                
+
                 switch deepLink {
                 case .law(let id):
                     selectedLawID = id
-                    
+
                 case .category(let id):
                     selectedCategoryID = id
                     tabCoordinator.navigate(to: .categories)
-                    
+
                 case .calculator:
                     tabCoordinator.navigate(to: .calculator)
-                    
+
                 case .submit:
                     tabCoordinator.showingSubmit = true
-                    
+
                 case .home:
                     tabCoordinator.navigate(to: .home)
                 }
-                
+
                 deepLinkHandler.clearActiveDeepLink()
             }
             .sheet(item: $selectedLawID) { lawID in
@@ -154,15 +154,15 @@ enum DeepLinkBuilder {
     static func lawURL(id: Int) -> URL {
         URL(string: "\(Constants.DeepLink.scheme)://\(Constants.DeepLink.lawPath)/\(id)")!
     }
-    
+
     static func categoryURL(id: Int) -> URL {
         URL(string: "\(Constants.DeepLink.scheme)://\(Constants.DeepLink.categoryPath)/\(id)")!
     }
-    
+
     static func calculatorURL() -> URL {
         URL(string: "\(Constants.DeepLink.scheme)://\(Constants.DeepLink.calculatorPath)")!
     }
-    
+
     static func submitURL() -> URL {
         URL(string: "\(Constants.DeepLink.scheme)://submit")!
     }
