@@ -120,20 +120,18 @@ final class NavigationUITests: XCTestCase {
         backButton.tap()
     }
 
-    func testCategoriesViewDisplaysWithoutIcons() throws {
+    func testCategoriesViewDisplaysRows() throws {
         // Navigate to Categories tab
         app.tabBars.buttons["Categories"].tap()
 
         // Wait for categories to load
         sleep(2)
 
-        // Verify category cards exist
-        let firstCategoryCard = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'")).firstMatch
-        XCTAssertTrue(firstCategoryCard.waitForExistence(timeout: 5), "Category cards should exist")
+        // Verify category rows exist
+        let firstCategoryRow = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'")).firstMatch
+        XCTAssertTrue(firstCategoryRow.waitForExistence(timeout: 5), "Category rows should exist")
 
-        // Note: Category cards should display titles without icons
-        // Visual verification required, but we can verify they render
-        XCTAssertTrue(firstCategoryCard.exists, "Category card should be visible")
+        XCTAssertTrue(firstCategoryRow.exists, "Category row should be visible")
     }
 
     func testSubmitLawCategoriesWithoutIcons() throws {
@@ -190,16 +188,16 @@ final class NavigationUITests: XCTestCase {
         }
     }
 
-    func testNoDuplicateCategoriesInGrid() throws {
+    func testNoDuplicateCategoriesInList() throws {
         // Navigate to Categories tab
         app.tabBars.buttons["Categories"].tap()
 
         // Wait for categories to load
         sleep(2)
 
-        // Get all category cards
-        let categoryCards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'"))
-        let count = categoryCards.count
+        // Get all category rows
+        let categoryRows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'"))
+        let count = categoryRows.count
 
         // Note: This test verifies categories render, but can't easily verify
         // deduplication without reading actual text content
