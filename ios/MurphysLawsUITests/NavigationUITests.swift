@@ -135,7 +135,7 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(firstCategoryRow.exists, "Category row should be visible")
     }
 
-    func testSubmitLawCategoriesWithoutIcons() throws {
+    func testSubmitLawCategoriesDisplayRows() throws {
         // Navigate to More tab
         app.tabBars.buttons["More"].tap()
 
@@ -146,15 +146,14 @@ final class NavigationUITests: XCTestCase {
         // Wait for categories to load
         sleep(2)
 
-        // Verify category buttons exist in the form
-        // Note: Categories should display as text-only without icons
-        let categoryButtons = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Murphy'"))
-        XCTAssertTrue(categoryButtons.count > 0, "Category buttons should exist in submit form")
+        // Verify category row buttons exist in the form
+        let categoryButtons = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'SubmitLawCategory-'"))
+        XCTAssertTrue(categoryButtons.count > 0, "Category rows should exist in submit form")
 
         // Verify we can interact with a category
         if categoryButtons.count > 0 {
             let firstCategory = categoryButtons.element(boundBy: 0)
-            XCTAssertTrue(firstCategory.exists, "First category button should be tappable")
+            XCTAssertTrue(firstCategory.exists, "First category row should be tappable")
         }
 
         // Navigate back
