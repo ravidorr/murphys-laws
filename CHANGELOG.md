@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Work Sans variable font bundled in the Android app for visual parity with web. [android/app/src/main/res/font/work_sans_variable.ttf](android/app/src/main/res/font/work_sans_variable.ttf) (~360 KB, single VF covers all weights via the `wght` axis), wrapped by a hand-authored `WorkSans` `FontFamily` in [android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt](android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt). The FontFamily registers the variable font at four weight slots (Normal 400, Medium 500, SemiBold 600, Bold 700) with `FontVariation.Settings(FontVariation.weight(...))` so Compose's typography system resolves `.weight(...)` requests to the correct axis position. Requires API 26+, which matches the app's `minSdk`. [shared/design-tokens/export-android-tokens.ts](shared/design-tokens/export-android-tokens.ts) now emits `fontFamily = WorkSans` for every `DS.Typography.<level>`, replacing the `FontFamily.Default` (Roboto) placeholder from PR Android-1. PR Android-3 (final phase) of the design-tokens-mobile rollout. Bundling a new font is user-visible, so Android app bumped MINOR to `1.1.0` / versionCode `4`; root to `2.4.23`.
 
 ### Changed
+- iOS law cards now keep footer controls aligned and include a share action in
+  the vote row instead of a category pill. iOS app bumped to `1.1.10` / build
+  `14`; root to `2.4.36`.
 - iOS submit-law category selection now uses the same category row treatment as
   browsing and filters. iOS app bumped to `1.1.7` / build `11`; root to
   `2.4.33`.
