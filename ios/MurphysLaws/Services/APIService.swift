@@ -61,25 +61,25 @@ class APIService: ObservableObject {
         let limit: Int
         let offset: Int
     }
-    
+
     struct LawDetailResponse: Codable {
         let law: Law
     }
-    
+
     struct LawOfDayResponse: Codable {
         let law: Law
         let featuredDate: String?
-        
+
         enum CodingKeys: String, CodingKey {
             case law
             case featuredDate = "featured_date"
         }
     }
-    
+
     struct CategoriesResponse: Codable {
         let data: [Category]
     }
-    
+
     struct AttributionsResponse: Codable {
         let data: [Attribution]
     }
@@ -99,7 +99,7 @@ class APIService: ObservableObject {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(DeviceInfo.deviceID, forHTTPHeaderField: "X-Device-ID")
-        
+
         // Add API key if available
         if let apiKey = Constants.API.apiKey {
             request.setValue(apiKey, forHTTPHeaderField: "X-API-Key")
@@ -160,7 +160,10 @@ class APIService: ObservableObject {
         sort: String = "score",
         order: String = "desc"
     ) async throws -> LawsResponse {
-        var components = URLComponents(string: "\(baseURL)\(Constants.API.laws)")!
+        guard var components = URLComponents(string: "\(baseURL)\(Constants.API.laws)") else {
+            throw APIError.invalidURL
+        }
+
         components.queryItems = [
             URLQueryItem(name: "limit", value: "\(limit)"),
             URLQueryItem(name: "offset", value: "\(offset)"),

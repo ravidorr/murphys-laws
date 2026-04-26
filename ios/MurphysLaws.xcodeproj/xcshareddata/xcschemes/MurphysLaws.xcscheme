@@ -32,7 +32,7 @@
       <TestPlans>
          <TestPlanReference
             default = "YES"
-            reference = "container:MurphysLaws.xcodeproj:xcshareddata/xctestplans/MurphysLaws.xctestplan">
+            reference = "container:MurphysLaws.xcodeproj/xcshareddata/xctestplans/MurphysLaws.xctestplan">
          </TestPlanReference>
       </TestPlans>
       <MacroExpansion>

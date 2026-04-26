@@ -62,6 +62,7 @@ struct FilterView: View {
                                 }
                             }
                             .foregroundColor(DS.Color.fg)
+                            .accessibilityIdentifier("FilterCategory-\(category.id)")
                         }
                     }
                 }

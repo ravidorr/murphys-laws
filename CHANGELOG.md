@@ -33,6 +33,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iOS test discovery stabilized with an explicit test plan
   (`MurphysLaws.xctestplan`) wired into the shared scheme, disabling
   parallel execution so Xcode discovers tests reliably in CI and locally.
+- iOS filter-chip removal UI test now uses stable accessibility identifiers for
+  the browse filter button and chip remove action.
+- iOS navigation UI tests now wait on stable SwiftUI accessibility identifiers for
+  filters, submit form fields, and category law rows, reducing CI timing flakiness.
+- iOS shared content loading now falls back to top-level bundled resources, matching
+  how XcodeGen copies `shared/content` into the app bundle for CI tests.
+- iOS navigation UI tests now pass the launch argument the app actually checks for,
+  enabling UI test setup during launches.
+- iOS deep links now parse the host-based URLs emitted by `DeepLinkBuilder`, and
+  `DeepLinkHandler` is injected above `ContentView` so deep-link handling boots at runtime.
+- iOS UI tests no longer compile a duplicate app entry point from the UI test
+  bundle, avoiding missing app-service symbols in CI.
+- iOS README now describes the project as CC0 public-domain content instead of using
+  copyright wording.
+- iOS project cleanup now uses XcodeGen as the source of truth, removes stale root-level
+  Swift duplicates, bundles shared content once, and places app support files in the app
+  target so the generated project builds again. iOS app bumped to `1.1.3` / build `7`;
+  root to `2.4.27`.
 - iOS CI now builds against a generic simulator and selects an available
   iPhone simulator for tests, avoiding failures when the runner image does not
   include a hardcoded simulator name. Simulator selection now extracts the UUID
