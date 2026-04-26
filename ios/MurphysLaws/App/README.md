@@ -408,7 +408,8 @@ xcodebuild -exportArchive \
 
 ## License
 
-Copyright 2026 Murphy's Laws. All rights reserved.
+Murphy's Laws is released under CC0 1.0 Universal and dedicated to the public
+domain. It is free for all uses.
 
 ## Acknowledgments
 
