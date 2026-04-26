@@ -144,6 +144,7 @@ struct BrowseView: View {
                 }
             }
         }
+        .accessibilityIdentifier("BrowseFilterButton")
     }
     
     @StateObject private var categoryViewModel = CategoryListViewModel()
@@ -319,6 +320,7 @@ struct FilterChip: View {
             Capsule()
                 .strokeBorder(color.opacity(0.3), lineWidth: 1)
         )
+        .accessibilityIdentifier("FilterChip-\(title)")
     }
 }
 

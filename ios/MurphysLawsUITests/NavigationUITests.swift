@@ -104,17 +104,19 @@ final class NavigationUITests: XCTestCase {
 
         // Tap Submit a Law
         let submitButton = app.buttons["Submit a Law"]
+        XCTAssertTrue(submitButton.waitForExistence(timeout: 5), "Submit a Law button should exist")
         submitButton.tap()
 
         // Verify form elements exist
-        let lawTextField = app.textViews.firstMatch
-        XCTAssertTrue(lawTextField.waitForExistence(timeout: 2))
+        let lawTextField = app.textFields["SubmitLawTextField"]
+        XCTAssertTrue(lawTextField.waitForExistence(timeout: 5), "Law text field should exist")
 
         let categoryPicker = app.buttons["Select Category"]
-        XCTAssertTrue(categoryPicker.exists)
+        XCTAssertTrue(categoryPicker.waitForExistence(timeout: 5), "Category picker should exist")
 
         // Navigate back
-        let backButton = app.navigationBars.buttons.element(boundBy: 0)
+        let backButton = app.navigationBars.buttons["Cancel"]
+        XCTAssertTrue(backButton.waitForExistence(timeout: 5), "Cancel button should exist")
         backButton.tap()
     }
     
@@ -213,28 +215,28 @@ final class NavigationUITests: XCTestCase {
         app.tabBars.buttons["Browse"].tap()
         
         // Wait for laws to load
-        sleep(2)
+        let firstLawButton = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'LawButton-'")).firstMatch
+        XCTAssertTrue(firstLawButton.waitForExistence(timeout: 5), "Browse laws should load before filtering")
         
         // Open filters
-        let filterButton = app.navigationBars.buttons.matching(identifier: "line.3.horizontal.decrease.circle").firstMatch
-        XCTAssertTrue(filterButton.waitForExistence(timeout: 2))
+        let filterButton = app.buttons["BrowseFilterButton"]
+        XCTAssertTrue(filterButton.waitForExistence(timeout: 5), "Filter button should exist")
         filterButton.tap()
         
         // Select a category filter
-        sleep(1)
-        let firstCategory = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Murphy'")).element(boundBy: 1)
-        if firstCategory.exists {
-            firstCategory.tap()
-        }
+        let firstCategory = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'FilterCategory-'")).firstMatch
+        XCTAssertTrue(firstCategory.waitForExistence(timeout: 5), "Filter category should exist")
+        let selectedCategoryLabel = firstCategory.label
+        firstCategory.tap()
         
         // Close filter sheet
         let doneButton = app.navigationBars.buttons["Done"]
+        XCTAssertTrue(doneButton.waitForExistence(timeout: 5), "Done button should exist")
         doneButton.tap()
         
         // Verify filter chip appears
-        sleep(1)
-        let filterChips = app.scrollViews.otherElements.buttons.containing(NSPredicate(format: "label CONTAINS 'Murphy'"))
-        XCTAssertTrue(filterChips.count > 0, "Active filter chip should be visible")
+        let filterChip = app.buttons["FilterChip-\(selectedCategoryLabel)"]
+        XCTAssertTrue(filterChip.waitForExistence(timeout: 5), "Active filter chip should be visible")
         
         // Verify filter button shows badge (red dot) - hard to test directly
         // The badge is a visual indicator, presence tested via chip existence
@@ -335,13 +337,16 @@ final class NavigationUITests: XCTestCase {
         let firstCategory = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'")).firstMatch
         if firstCategory.waitForExistence(timeout: 5) {
             firstCategory.tap()
-            sleep(2)
             
             // Category detail LawRowView should now use thumbs (not arrows)
             // Visual verification required - icons are part of Label elements
             // Verify the list exists with laws
-            let lawsList = app.tables.firstMatch
-            XCTAssertTrue(lawsList.exists, "Laws list should be visible in category detail")
+            let lawsList = app.collectionViews["CategoryLawList"].firstMatch
+            let firstCategoryLaw = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryLawRow-'")).firstMatch
+            XCTAssertTrue(
+                lawsList.waitForExistence(timeout: 5) || firstCategoryLaw.waitForExistence(timeout: 5),
+                "Laws list should be visible in category detail"
+            )
         }
     }
 }
