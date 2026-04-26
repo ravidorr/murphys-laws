@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - iOS cleanup removes Codex-generated documentation artifacts, moves law integration
   coverage into the unit test target, and updates SwiftUI change handlers for iOS 17.
+  iOS app bumped to `1.1.4` / build `8`; root to `2.4.29`.
 - Web, iOS, and Android now share the same design-system tokens for social brand colors,
   risk colors, tooltip colors, links, surfaces, spacing, radii, and typography. Remaining
   non-token values are documented in `web/DESIGN.md` as platform or asset exceptions.
