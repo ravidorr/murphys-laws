@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - iOS cleanup removes Codex-generated documentation artifacts, moves law integration
   coverage into the unit test target, and updates SwiftUI change handlers for iOS 17.
-  iOS app bumped to `1.1.4` / build `8`; root to `2.4.29`.
+  iOS app bumped to `1.1.4` / build `8`; root to `2.4.30`.
 - Web, iOS, and Android now share the same design-system tokens for social brand colors,
   risk colors, tooltip colors, links, surfaces, spacing, radii, and typography. Remaining
   non-token values are documented in `web/DESIGN.md` as platform or asset exceptions.
@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iOS CI test builds now compile after the cleanup branch by keeping
   generated Xcode project references in sync and aligning integration tests
   with Swift concurrency isolation.
+- Pre-commit now enforces required root, package, iOS, and Android version bumps
+  for staged release-bearing changes so ship metadata cannot be missed. Root bumped to `2.4.29`.
 - `shared/docs/SERVER_MAINTENANCE.md` corrected to match the live `murphys-main` server: the
   `sudo -i pm2 list` recipe (which fails because pm2 lives in root's nvm and is not on sudo's
   PATH) is replaced with a working `sudo bash -c "exec $(...)"` invocation that resolves the
