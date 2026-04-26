@@ -111,10 +111,10 @@ struct MoreView: View {
             .sheet(isPresented: $showingSubmit) {
                 SubmitLawView()
             }
-            .onChange(of: tabCoordinator.showingContact) { newValue in
+            .onChange(of: tabCoordinator.showingContact) { _, newValue in
                 showingContact = newValue
             }
-            .onChange(of: tabCoordinator.showingSubmit) { newValue in
+            .onChange(of: tabCoordinator.showingSubmit) { _, newValue in
                 showingSubmit = newValue
             }
         }

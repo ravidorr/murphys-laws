@@ -175,11 +175,11 @@ struct CalculatorView: View {
             .sheet(isPresented: $showingEmailForm) {
                 EmailFormView(viewModel: viewModel)
             }
-            .onChange(of: viewModel.urgency) { _ in viewModel.calculate() }
-            .onChange(of: viewModel.complexity) { _ in viewModel.calculate() }
-            .onChange(of: viewModel.importance) { _ in viewModel.calculate() }
-            .onChange(of: viewModel.skillLevel) { _ in viewModel.calculate() }
-            .onChange(of: viewModel.frequency) { _ in viewModel.calculate() }
+            .onChange(of: viewModel.urgency) { _, _ in viewModel.calculate() }
+            .onChange(of: viewModel.complexity) { _, _ in viewModel.calculate() }
+            .onChange(of: viewModel.importance) { _, _ in viewModel.calculate() }
+            .onChange(of: viewModel.skillLevel) { _, _ in viewModel.calculate() }
+            .onChange(of: viewModel.frequency) { _, _ in viewModel.calculate() }
         }
     }
 
