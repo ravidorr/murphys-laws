@@ -14,20 +14,20 @@ enum AccessibilityLabels {
     static let downvote = "Downvote this law"
     static let shareLaw = "Share this law"
     static let viewDetails = "View law details"
-    
+
     // Navigation
     static let backButton = "Back"
     static let closeButton = "Close"
-    
+
     // Calculator
     static func sliderLabel(name: String, value: Int) -> String {
         "\(name) slider, current value \(value) out of 10"
     }
-    
+
     static func riskLevel(_ level: String) -> String {
         "Risk level: \(level)"
     }
-    
+
     // Vote counts
     static func voteCount(upvotes: Int, downvotes: Int, score: Int) -> String {
         "\(upvotes) upvotes, \(downvotes) downvotes, score \(score)"
@@ -63,12 +63,12 @@ extension View {
             .accessibilityHint(hint ?? "")
             .accessibilityAddTraits(traits)
     }
-    
+
     /// Mark as a heading for VoiceOver navigation
     func accessibleHeading() -> some View {
         self.accessibilityAddTraits(.isHeader)
     }
-    
+
     /// Group child elements for VoiceOver
     func accessibleGroup(label: String? = nil) -> some View {
         self
@@ -94,7 +94,7 @@ extension View {
 // MARK: - Accessibility-Friendly Loading Indicator
 struct AccessibleLoadingView: View {
     let message: String
-    
+
     var body: some View {
         VStack(spacing: Constants.UI.spacingM) {
             ProgressView()
@@ -113,10 +113,10 @@ struct AccessibleLoadingView: View {
 @available(iOS 14.0, *)
 struct HighContrastModifier: ViewModifier {
     @Environment(\.colorSchemeContrast) var colorSchemeContrast
-    
+
     let normalColor: Color
     let highContrastColor: Color
-    
+
     func body(content: Content) -> some View {
         content
             .foregroundColor(colorSchemeContrast == .increased ? highContrastColor : normalColor)
@@ -137,9 +137,9 @@ extension View {
 // MARK: - Reduce Motion Support
 struct ReduceMotionModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    
+
     let animation: Animation
-    
+
     func body(content: Content) -> some View {
         if reduceMotion {
             content
@@ -159,7 +159,7 @@ extension View {
 #Preview {
     VStack(spacing: 20) {
         AccessibleLoadingView(message: "Loading laws...")
-        
+
         Button("Sample Button") {
             print("Tapped")
         }
@@ -167,7 +167,7 @@ extension View {
             label: "Sample action button",
             hint: "Double tap to perform action"
         )
-        
+
         Text("Heading Text")
             .dsTypography(DS.Typography.h2)
             .accessibleHeading()

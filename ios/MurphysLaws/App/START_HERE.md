@@ -230,7 +230,7 @@ xcodebuild test \
 ### Week 1
 **Day 1-2**: Project cleanup
 - Fix structure
-- Remove duplicates  
+- Remove duplicates
 - Verify targets
 - Create Config.plist
 

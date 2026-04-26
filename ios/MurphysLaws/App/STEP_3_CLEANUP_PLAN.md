@@ -299,7 +299,7 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "16.0"
-    
+
     sources:
       - path: MurphysLaws
         excludes:
@@ -308,27 +308,27 @@ targets:
           - "**/*README*"
           - "**/*CHECKLIST*"
           - "**/*SUMMARY*"
-          
+
           # Exclude templates
           - "**/*.template"
-          
+
           # Exclude tests that ended up in app source
           - "**/Tests"
           - "**/*Tests.swift"
-          
+
           # Specific excludes
           - "App/CHECKLIST.md"
           - "App/README.md"
           - "Repositories/Config.plist.template"
-      
+
       # Include shared content if needed
       - path: ../shared/content
         type: group
-    
+
     resources:
       - MurphysLaws/Resources/Config.plist
       - MurphysLaws/Resources/Assets.xcassets
-    
+
     # Rest of your existing config...
 ```
 

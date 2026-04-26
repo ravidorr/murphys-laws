@@ -14,7 +14,7 @@ ContentView.swift:78:10: error: value of type 'some View' has no member 'handleD
 
 Similarly:
 - `AnalyticsService.swift` → in UITests, needs to be in app
-- `ImageCache.swift` → in UITests, needs to be in app  
+- `ImageCache.swift` → in UITests, needs to be in app
 - `CrashReportingService.swift` → inside AnalyticsService, needs verification
 
 ---
@@ -209,7 +209,7 @@ After completing Steps 1-6, tell me:
 # See all files in Services
 ls -la MurphysLaws/Services/
 
-# See all files in Navigation  
+# See all files in Navigation
 ls -la MurphysLaws/Navigation/
 
 # Check git status

@@ -66,7 +66,7 @@ It probably looks like this:
 .onChange(of: deepLinkHandler.activeDeepLink) { newValue in
     // Note: In iOS 16, onChange only provides newValue, not oldValue
     guard let deepLink = newValue else { return }
-    
+
     // ... rest of your code
 }
 ```
@@ -87,25 +87,25 @@ Open `MurphysLaws/Navigation/DeepLinkHandler.swift` and find the `DeepLinkModifi
 ```swift
 .onChange(of: deepLinkHandler.activeDeepLink) { newValue in
     guard let deepLink = newValue else { return }
-    
+
     switch deepLink {
     case .law(let id):
         selectedLawID = id
-        
+
     case .category(let id):
         selectedCategoryID = id
         tabCoordinator.navigate(to: .categories)
-        
+
     case .calculator:
         tabCoordinator.navigate(to: .calculator)
-        
+
     case .submit:
         tabCoordinator.showingSubmit = true
-        
+
     case .home:
         tabCoordinator.navigate(to: .home)
     }
-    
+
     deepLinkHandler.clearActiveDeepLink()
 }
 ```

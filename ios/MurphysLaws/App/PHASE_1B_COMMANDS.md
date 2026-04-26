@@ -51,30 +51,30 @@ targets:
           - "**/*HONEST*"
           - "**/*START_HERE*"
           - "**/*STEP_*"
-          
+
           # Exclude templates
           - "**/*.template"
           - "**/*.template.*"
-          
+
           # Exclude test files that ended up in app source
           - "**/Tests"
           - "**/*Tests.swift"
           - "**/*IntegrationTests.swift"
-          
+
           # Exclude local content copy (use shared instead)
           - "Resources/content"
-          
+
           # Specific problem files
           - "App/CHECKLIST.md"
           - "App/README.md"
           - "Repositories/Config.plist.template"
           - "Repositories/validate-config.sh"
-      
+
       # Use shared content as the single source of truth
       - path: ../shared/content
         type: group
         name: Content
-    
+
     # Keep the rest of your existing MurphysLaws config below this
 ```
 
@@ -98,26 +98,26 @@ targets:
           - "**/*HONEST*"
           - "**/*START_HERE*"
           - "**/*STEP_*"
-          
+
           # Exclude templates
           - "**/*.template"
           - "**/*.template.*"
-          
+
           # Exclude test files that ended up in app source
           - "**/Tests"
           - "**/*Tests.swift"
           - "**/*IntegrationTests.swift"
-          
+
           # Specific problem files
           - "App/CHECKLIST.md"
           - "App/README.md"
           - "Repositories/Config.plist.template"
           - "Repositories/validate-config.sh"
-      
+
       # Don't include shared/content separately - using iOS version
       # - path: ../shared/content
       #   type: group
-    
+
     # Keep the rest of your existing MurphysLaws config below this
 ```
 
