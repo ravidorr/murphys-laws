@@ -130,6 +130,7 @@ struct CategoryDetailView: View {
                             } label: {
                                 LawRowView(law: law)
                             }
+                            .accessibilityIdentifier("CategoryLawRow-\(law.id)")
                             .onAppear {
                                 if viewModel.shouldLoadMore(currentLaw: law) {
                                     Task {
@@ -148,6 +149,7 @@ struct CategoryDetailView: View {
                         }
                     }
                     .listStyle(.plain)
+                    .accessibilityIdentifier("CategoryLawList")
                     .refreshable {
                         await viewModel.loadLaws(refresh: true)
                     }

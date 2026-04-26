@@ -30,29 +30,36 @@ public class SharedContentLoader {
         loadMetadata()
     }
 
+    private func bundledURL(forResource resource: String, withExtension fileExtension: String) -> URL? {
+        let searchSubdirectories: [String?] = [
+            "content",
+            "Resources/content",
+            "Content",
+            nil
+        ]
+
+        for subdirectory in searchSubdirectories {
+            if let url = Bundle.main.url(
+                forResource: resource,
+                withExtension: fileExtension,
+                subdirectory: subdirectory
+            ) {
+                return url
+            }
+        }
+
+        return nil
+    }
+
     /// Load metadata from JSON file
     private func loadMetadata() {
-        // Try the working path first: content/metadata.json
-        if let url = Bundle.main.url(forResource: "metadata", withExtension: "json", subdirectory: "content") {
-            if let data = try? Data(contentsOf: url),
-               let decoded = try? JSONDecoder().decode(ContentMetadataRoot.self, from: data) {
-                self.metadata = decoded
-                return
-            }
+        guard let url = bundledURL(forResource: "metadata", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode(ContentMetadataRoot.self, from: data) else {
+            return
         }
-        
-        // Fall back to Resources/content path
-        if let url = Bundle.main.url(
-            forResource: "metadata",
-            withExtension: "json",
-            subdirectory: "Resources/content"
-        ) {
-            if let data = try? Data(contentsOf: url),
-               let decoded = try? JSONDecoder().decode(ContentMetadataRoot.self, from: data) {
-                self.metadata = decoded
-                return
-            }
-        }
+
+        self.metadata = decoded
     }
 
     /// Load markdown content for a given page
@@ -62,27 +69,13 @@ public class SharedContentLoader {
             return cached
         }
 
-        // Try the working path first: content/
-        if let url = Bundle.main.url(forResource: page.rawValue, withExtension: "md", subdirectory: "content") {
-            if let content = try? String(contentsOf: url, encoding: .utf8) {
-                contentCache[page] = content
-                return content
-            }
+        guard let url = bundledURL(forResource: page.rawValue, withExtension: "md"),
+              let content = try? String(contentsOf: url, encoding: .utf8) else {
+            return nil
         }
-        
-        // Fall back to Resources/content path
-        if let url = Bundle.main.url(
-            forResource: page.rawValue,
-            withExtension: "md",
-            subdirectory: "Resources/content"
-        ) {
-            if let content = try? String(contentsOf: url, encoding: .utf8) {
-                contentCache[page] = content
-                return content
-            }
-        }
-        
-        return nil
+
+        contentCache[page] = content
+        return content
     }
 
     /// Get metadata for a specific page

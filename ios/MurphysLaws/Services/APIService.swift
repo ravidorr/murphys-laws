@@ -160,7 +160,10 @@ class APIService: ObservableObject {
         sort: String = "score",
         order: String = "desc"
     ) async throws -> LawsResponse {
-        var components = URLComponents(string: "\(baseURL)\(Constants.API.laws)")!
+        guard var components = URLComponents(string: "\(baseURL)\(Constants.API.laws)") else {
+            throw APIError.invalidURL
+        }
+        
         components.queryItems = [
             URLQueryItem(name: "limit", value: "\(limit)"),
             URLQueryItem(name: "offset", value: "\(offset)"),

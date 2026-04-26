@@ -144,6 +144,7 @@ struct BrowseView: View {
                 }
             }
         }
+        .accessibilityIdentifier("BrowseFilterButton")
     }
     
     @StateObject private var categoryViewModel = CategoryListViewModel()
@@ -300,6 +301,7 @@ struct FilterChip: View {
                 .dsTypography(DS.Typography.caption)
                 .fontWeight(.medium)
                 .lineLimit(1)
+                .accessibilityIdentifier("FilterChip-\(title)")
             
             Button {
                 onRemove()
@@ -308,7 +310,10 @@ struct FilterChip: View {
                     .dsTypography(DS.Typography.caption)
                     .foregroundColor(DS.Color.mutedFg)
             }
+            .accessibilityLabel("Remove \(title) filter")
+            .accessibilityIdentifier("RemoveFilterChip-\(title)")
         }
+        .accessibilityElement(children: .contain)
         .padding(.horizontal, DS.Spacing.s3)
         .padding(.vertical, DS.Spacing.s2)
         .background(
