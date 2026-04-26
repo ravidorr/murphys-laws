@@ -19,12 +19,13 @@ struct CalculatorView: View {
                     // Header section
                     VStack(spacing: Constants.UI.spacingM) {
                         Text("Sod's Law Calculator")
-                            .font(.title)
+                            .dsTypography(DS.Typography.h2)
                             .fontWeight(.bold)
+                            .foregroundColor(DS.Color.fg)
 
                         Text("Calculate the probability of your task going wrong")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .dsTypography(DS.Typography.bodySm)
+                            .foregroundColor(DS.Color.mutedFg)
                             .multilineTextAlignment(.center)
                     }
                     .padding()
@@ -32,15 +33,15 @@ struct CalculatorView: View {
                     // Result card
                     VStack(spacing: Constants.UI.spacingM) {
                         Text("\(viewModel.riskLevel.emoji)")
-                            .font(.system(size: 72))
+                            .dsTypography(DS.Typography.display)
 
                         Text("\(String(format: "%.1f", viewModel.probability))%")
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .dsTypography(DS.Typography.display)
                             .foregroundColor(riskColor)
 
                         Text(viewModel.riskLevel.description)
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                            .dsTypography(DS.Typography.h4)
+                            .foregroundColor(DS.Color.mutedFg)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -97,11 +98,12 @@ struct CalculatorView: View {
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         HStack {
                             Text("Formula")
-                                .font(.headline)
+                                .dsTypography(DS.Typography.h4)
+                                .foregroundColor(DS.Color.fg)
                             Spacer()
                             Text("Swipe to view →")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .dsTypography(DS.Typography.caption)
+                                .foregroundColor(DS.Color.mutedFg)
                         }
 
                         VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
@@ -109,18 +111,18 @@ struct CalculatorView: View {
                                 MathFormulaView(viewModel.formulaString, fontSize: 16)
                                     .padding()
                             }
-                            .background(Color(.systemGray6))
+                            .background(DS.Color.surface)
                             .cornerRadius(Constants.UI.cornerRadiusM)
 
                             Text("With your values:")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .dsTypography(DS.Typography.caption)
+                                .foregroundColor(DS.Color.mutedFg)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 MathFormulaView(viewModel.formulaWithValues, fontSize: 14)
                                     .padding()
                             }
-                            .background(Color(.systemGray6))
+                            .background(DS.Color.surface)
                             .cornerRadius(Constants.UI.cornerRadiusM)
                         }
                     }
@@ -134,8 +136,8 @@ struct CalculatorView: View {
                             Label("Share Results", systemImage: "square.and.arrow.up")
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color.accentColor)
-                                .foregroundColor(.white)
+                                .background(DS.Color.btnPrimaryBg)
+                                .foregroundColor(DS.Color.btnPrimaryFg)
                                 .cornerRadius(Constants.UI.cornerRadiusM)
                         }
 
@@ -145,8 +147,8 @@ struct CalculatorView: View {
                             Label("Email Results", systemImage: "envelope.fill")
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color(.systemGray5))
-                                .foregroundColor(.primary)
+                                .background(DS.Color.surface)
+                                .foregroundColor(DS.Color.fg)
                                 .cornerRadius(Constants.UI.cornerRadiusM)
                         }
 
@@ -156,8 +158,8 @@ struct CalculatorView: View {
                             Label("Reset", systemImage: "arrow.counterclockwise")
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color(.systemGray5))
-                                .foregroundColor(.primary)
+                                .background(DS.Color.surface)
+                                .foregroundColor(DS.Color.fg)
                                 .cornerRadius(Constants.UI.cornerRadiusM)
                         }
                     }
@@ -183,9 +185,9 @@ struct CalculatorView: View {
 
     private var riskColor: Color {
         switch viewModel.riskLevel {
-        case .low: return .green
-        case .medium: return .orange
-        case .high: return .red
+        case .low: return DS.Color.riskLow
+        case .medium: return DS.Color.riskMedium
+        case .high: return DS.Color.riskHigh
         }
     }
 }
@@ -201,29 +203,30 @@ struct ParameterSlider: View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(DS.Color.btnPrimaryBg)
                 Text(title)
-                    .font(.headline)
+                    .dsTypography(DS.Typography.h4)
+                    .foregroundColor(DS.Color.fg)
                 Spacer()
                 Text("\(Int(value))")
-                    .font(.title3)
+                    .dsTypography(DS.Typography.h4)
                     .fontWeight(.semibold)
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(DS.Color.btnPrimaryBg)
                     .frame(minWidth: 30)
             }
 
             Slider(value: $value, in: 1...10, step: 1)
-                .tint(.accentColor)
+                .tint(DS.Color.btnPrimaryBg)
                 .accessibilityIdentifier("\(title) Slider")
 
             Text(description)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.caption)
+                .foregroundColor(DS.Color.mutedFg)
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
-                .fill(Color(.systemGray6))
+                .fill(DS.Color.surface)
         )
     }
 }
@@ -259,8 +262,8 @@ struct EmailFormView: View {
                         Text("Skill Level: \(Int(viewModel.skillLevel))")
                         Text("Frequency: \(Int(viewModel.frequency))")
                     }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .dsTypography(DS.Typography.caption)
+                    .foregroundColor(DS.Color.mutedFg)
                 } header: {
                     Text("Preview")
                 }

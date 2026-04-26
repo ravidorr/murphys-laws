@@ -19,8 +19,9 @@ struct HomeView: View {
                     // Law of the Day - Show skeleton or actual content
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         Text("Law of the Day")
-                            .font(.title2)
+                            .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
+                            .foregroundColor(DS.Color.fg)
                         
                         if let lawOfDay = viewModel.lawOfTheDay {
                             LawOfDayCard(law: lawOfDay) {
@@ -36,8 +37,9 @@ struct HomeView: View {
                     // Top Voted Section - Show skeleton or actual content
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         Text("Top Voted Laws")
-                            .font(.title3)
+                            .dsTypography(DS.Typography.h4)
                             .fontWeight(.semibold)
+                            .foregroundColor(DS.Color.fg)
                             .padding(.horizontal)
 
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -65,8 +67,9 @@ struct HomeView: View {
                     // Recently Added Section - Show skeleton or actual content
                     VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                         Text("Recently Added")
-                            .font(.title3)
+                            .dsTypography(DS.Typography.h4)
                             .fontWeight(.semibold)
+                            .foregroundColor(DS.Color.fg)
                             .padding(.horizontal)
 
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -93,7 +96,7 @@ struct HomeView: View {
                 }
                 .padding(.vertical)
             }
-            .background(Color(uiColor: .systemBackground))
+            .background(DS.Color.bg)
             .navigationTitle("Murphy's Laws")
             .refreshable {
                 await viewModel.refresh()
@@ -132,8 +135,9 @@ struct HomeView: View {
                 // Law of the Day Skeleton
                 VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                     Text("Law of the Day")
-                        .font(.title2)
+                        .dsTypography(DS.Typography.h3)
                         .fontWeight(.bold)
+                        .foregroundColor(DS.Color.fg)
                     
                     SkeletonLawOfDayCard()
                 }
@@ -142,8 +146,9 @@ struct HomeView: View {
                 // Top Voted Section Skeleton
                 VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                     Text("Top Voted Laws")
-                        .font(.title3)
+                        .dsTypography(DS.Typography.h4)
                         .fontWeight(.semibold)
+                        .foregroundColor(DS.Color.fg)
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -160,8 +165,9 @@ struct HomeView: View {
                 // Recently Added Section Skeleton
                 VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                     Text("Recently Added")
-                        .font(.title3)
+                        .dsTypography(DS.Typography.h4)
                         .fontWeight(.semibold)
+                        .foregroundColor(DS.Color.fg)
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {

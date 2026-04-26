@@ -36,11 +36,11 @@ struct FilterView: View {
                             Spacer()
                             if selectedCategoryID == nil {
                                 Image(systemName: "checkmark")
-                                    .foregroundColor(.accentColor)
+                                    .foregroundColor(DS.Color.btnPrimaryBg)
                             }
                         }
                     }
-                    .foregroundColor(.primary)
+                    .foregroundColor(DS.Color.fg)
 
                     if viewModel.isLoading && viewModel.categories.isEmpty {
                         ProgressView()
@@ -57,11 +57,11 @@ struct FilterView: View {
                                     Spacer()
                                     if selectedCategoryID == category.id {
                                         Image(systemName: "checkmark")
-                                            .foregroundColor(.accentColor)
+                                            .foregroundColor(DS.Color.btnPrimaryBg)
                                     }
                                 }
                             }
-                            .foregroundColor(.primary)
+                            .foregroundColor(DS.Color.fg)
                         }
                     }
                 }
@@ -77,11 +77,11 @@ struct FilterView: View {
                                 Spacer()
                                 if sortOrder == order {
                                     Image(systemName: "checkmark")
-                                        .foregroundColor(.accentColor)
+                                        .foregroundColor(DS.Color.btnPrimaryBg)
                                 }
                             }
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(DS.Color.fg)
                     }
                 }
             }

@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.murphyslaws.ui.theme.DS
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.domain.model.Law
 
@@ -57,7 +56,7 @@ fun SearchScreen(
                 onValueChange = { viewModel.onQueryChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(DS.Spacing.s4),
                 placeholder = { Text("Search Murphy's Laws...") },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
@@ -143,8 +142,8 @@ private fun SearchResults(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(DS.Spacing.s4),
+        verticalArrangement = Arrangement.spacedBy(DS.Spacing.s3)
     ) {
         items(laws) { law ->
             LawSearchResultCard(law = law, onClick = { onLawClick(law) })
@@ -155,7 +154,7 @@ private fun SearchResults(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(DS.Spacing.s4),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -179,8 +178,8 @@ private fun LawSearchResultCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(DS.Spacing.s4),
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
         ) {
             // Title
             if (!law.title.isNullOrBlank()) {
@@ -199,18 +198,18 @@ private fun LawSearchResultCard(
 
             // Vote counts
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s4),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.ThumbUp,
                         contentDescription = null,
                         tint = DS.Color.success,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(DS.Spacing.s4)
                     )
                     Text(
                         law.upvotes.toString(),
@@ -219,14 +218,14 @@ private fun LawSearchResultCard(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.ThumbDown,
                         contentDescription = null,
                         tint = DS.Color.error,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(DS.Spacing.s4)
                     )
                     Text(
                         law.downvotes.toString(),
@@ -246,7 +245,7 @@ private fun EmptyState() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
         ) {
             Text(
                 "No laws found",
@@ -269,8 +268,8 @@ private fun ErrorMessage(error: String) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(16.dp)
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2),
+            modifier = Modifier.padding(DS.Spacing.s4)
         ) {
             Text(
                 "Error loading results",

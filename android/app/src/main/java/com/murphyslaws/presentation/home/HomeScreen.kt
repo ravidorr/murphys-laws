@@ -32,12 +32,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.ui.theme.DS
 
@@ -65,9 +62,9 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(DS.Spacing.s4)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s4)
         ) {
             // Search Bar (clickable, navigates to search screen)
             Card(
@@ -79,15 +76,15 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
+                    DS.Spacing.s1 / 4,
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(DS.Spacing.s4),
+                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s3),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -111,8 +108,8 @@ fun HomeScreen(
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(DS.Spacing.s4),
+                    verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -129,9 +126,7 @@ fun HomeScreen(
                                     append("Law of the Day")
                                 }
                             },
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontSize = 16.sp
-                            )
+                            style = MaterialTheme.typography.labelLarge
                         )
                         if (uiState.lawOfDay?.date != null) {
                             Text(
@@ -145,7 +140,7 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(100.dp),
+                                .height(DS.Spacing.s10 + DS.Spacing.s16),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
@@ -164,10 +159,9 @@ fun HomeScreen(
                         Text(
                             text = lawOfDay.law.text,
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontSize = 20.sp,
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Normal
                             ),
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            modifier = Modifier.padding(bottom = DS.Spacing.s3)
                         )
 
                         // Voting and Share Buttons (combined in one row)
@@ -178,24 +172,24 @@ fun HomeScreen(
                         ) {
                             // Voting Buttons
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s3),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Upvote
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(
                                         onClick = { viewModel.onUpvoteClicked() },
                                         enabled = !uiState.isVoting,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(DS.Spacing.s8)
                                     ) {
                                         Icon(
                                             Icons.Filled.ThumbUp,
                                             contentDescription = "Upvote",
                                             tint = DS.Color.success,
-                                            modifier = Modifier.size(20.dp)
+                                            modifier = Modifier.size(DS.Spacing.s5)
                                         )
                                     }
                                     Text(
@@ -206,19 +200,19 @@ fun HomeScreen(
 
                                 // Downvote
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(
                                         onClick = { viewModel.onDownvoteClicked() },
                                         enabled = !uiState.isVoting,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(DS.Spacing.s8)
                                     ) {
                                         Icon(
                                             Icons.Filled.ThumbDown,
                                             contentDescription = "Downvote",
                                             tint = DS.Color.error,
-                                            modifier = Modifier.size(20.dp)
+                                            modifier = Modifier.size(DS.Spacing.s5)
                                         )
                                     }
                                     Text(
@@ -230,16 +224,16 @@ fun HomeScreen(
 
                             // Share Buttons
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(DS.Radius.md)
                             ) {
                                 val context = androidx.compose.ui.platform.LocalContext.current
-                                // Third-party brand colours; intentionally not tokenised in DS.
+                                // Third-party brand colours are shared DS tokens.
                                 val socialButtons = listOf(
-                                    Triple(SocialIcons.X, Color(0xFF1DA1F2), com.murphyslaws.util.SocialPlatform.X),
-                                    Triple(SocialIcons.Facebook, Color(0xFF1877F2), com.murphyslaws.util.SocialPlatform.FACEBOOK),
-                                    Triple(SocialIcons.LinkedIn, Color(0xFF0A66C2), com.murphyslaws.util.SocialPlatform.LINKEDIN),
-                                    Triple(SocialIcons.Reddit, Color(0xFFFF4500), com.murphyslaws.util.SocialPlatform.REDDIT),
-                                    Triple(SocialIcons.Email, Color(0xFF777777), com.murphyslaws.util.SocialPlatform.EMAIL)
+                                    Triple(SocialIcons.X, DS.Color.brandSocialX, com.murphyslaws.util.SocialPlatform.X),
+                                    Triple(SocialIcons.Facebook, DS.Color.brandSocialFacebook, com.murphyslaws.util.SocialPlatform.FACEBOOK),
+                                    Triple(SocialIcons.LinkedIn, DS.Color.brandSocialLinkedin, com.murphyslaws.util.SocialPlatform.LINKEDIN),
+                                    Triple(SocialIcons.Reddit, DS.Color.brandSocialReddit, com.murphyslaws.util.SocialPlatform.REDDIT),
+                                    Triple(SocialIcons.Email, DS.Color.brandSocialEmail, com.murphyslaws.util.SocialPlatform.EMAIL)
                                 )
 
                                 socialButtons.forEach { (icon, color, platform) ->
@@ -261,14 +255,14 @@ fun HomeScreen(
                                         },
                                         shape = androidx.compose.foundation.shape.CircleShape,
                                         color = color,
-                                        modifier = Modifier.size(28.dp)
+                                        modifier = Modifier.size(DS.Spacing.s6 + DS.Spacing.s1)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
                                                 imageVector = icon,
                                                 contentDescription = platform.contentDescription,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(24.dp)
+                                                tint = DS.Color.brandSocialIconFg,
+                                                modifier = Modifier.size(DS.Spacing.s6)
                                             )
                                         }
                                     }
@@ -282,7 +276,7 @@ fun HomeScreen(
                                 text = uiState.voteError!!,
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = DS.Spacing.s2)
                             )
                         }
                     }

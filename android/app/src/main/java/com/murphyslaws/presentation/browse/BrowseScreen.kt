@@ -13,10 +13,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.presentation.components.LawListCard
+import com.murphyslaws.ui.theme.DS
 
 @Composable
 fun BrowseScreen(
@@ -37,9 +37,9 @@ fun BrowseScreen(
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(16.dp),
+                        .padding(DS.Spacing.s4),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
                 ) {
                     Text(
                         text = "Error loading laws",
@@ -79,8 +79,8 @@ fun BrowseScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    contentPadding = PaddingValues(DS.Spacing.s4),
+                    verticalArrangement = Arrangement.spacedBy(DS.Spacing.s3)
                 ) {
                     items(uiState.laws) { law ->
                         LawListCard(
@@ -94,7 +94,7 @@ fun BrowseScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(DS.Spacing.s4),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator()

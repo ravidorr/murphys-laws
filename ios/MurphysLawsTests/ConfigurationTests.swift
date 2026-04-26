@@ -64,11 +64,11 @@ final class ConfigurationTests: XCTestCase {
     // MARK: - UI Constants Tests
 
     func testUISpacing() {
-        XCTAssertEqual(Constants.UI.spacingXS, 4)
-        XCTAssertEqual(Constants.UI.spacingS, 8)
-        XCTAssertEqual(Constants.UI.spacingM, 16)
-        XCTAssertEqual(Constants.UI.spacingL, 24)
-        XCTAssertEqual(Constants.UI.spacingXL, 32)
+        XCTAssertEqual(Constants.UI.spacingXS, DS.Spacing.s1)
+        XCTAssertEqual(Constants.UI.spacingS, DS.Spacing.s2)
+        XCTAssertEqual(Constants.UI.spacingM, DS.Spacing.s4)
+        XCTAssertEqual(Constants.UI.spacingL, DS.Spacing.s6)
+        XCTAssertEqual(Constants.UI.spacingXL, DS.Spacing.s8)
 
         // Verify spacing increases
         XCTAssertLessThan(Constants.UI.spacingXS, Constants.UI.spacingS)
@@ -78,13 +78,13 @@ final class ConfigurationTests: XCTestCase {
     }
 
     func testUICornerRadius() {
-        XCTAssertEqual(Constants.UI.cornerRadiusS, 8)
-        XCTAssertEqual(Constants.UI.cornerRadiusM, 12)
-        XCTAssertEqual(Constants.UI.cornerRadiusL, 16)
+        XCTAssertEqual(Constants.UI.cornerRadiusS, DS.Radius.lg)
+        XCTAssertEqual(Constants.UI.cornerRadiusM, DS.Radius.xl)
+        XCTAssertEqual(Constants.UI.cornerRadiusL, DS.Radius.xl)
 
-        // Verify corner radius increases
+        // Verify corner radius stays on the shared DS scale
         XCTAssertLessThan(Constants.UI.cornerRadiusS, Constants.UI.cornerRadiusM)
-        XCTAssertLessThan(Constants.UI.cornerRadiusM, Constants.UI.cornerRadiusL)
+        XCTAssertEqual(Constants.UI.cornerRadiusM, Constants.UI.cornerRadiusL)
     }
 
     func testUIAnimationDuration() {

@@ -8,6 +8,11 @@ colors:
   muted-fg: "#4b5563"
   primary: "#030213"
   text-high-contrast: "#000000"
+  surface: "#ffffff"
+  surface-border: "#d1d5db"
+  link: "#0d5ea1"
+  link-visited: "#6d28d9"
+  link-hover: "#084b83"
   btn-primary-bg: "#0d5ea1"
   btn-primary-fg: "#ffffff"
   success: "#15803d"
@@ -25,6 +30,9 @@ colors:
   favorite-border: "#f48fb1"
   warning-bg: "#fff8e1"
   warning-text: "#5a4300"
+  risk-low: "#15803d"
+  risk-medium: "#ffa500"
+  risk-high: "#b91c1c"
   orange-bg: "#ffe9d6"
   orange-text: "#6a2e00"
   dark-bg: "#f0d6d6"
@@ -32,6 +40,17 @@ colors:
   important: "#b91c1c"
   white: "#ffffff"
   highlight: "#fef08a"
+  tooltip-bg: "#1f2937"
+  tooltip-fg: "#f9fafb"
+  tooltip-bg-inverse: "#ffffff"
+  tooltip-fg-inverse: "#1f2937"
+  brand-social-x: "#000000"
+  brand-social-facebook: "#1877f2"
+  brand-social-linkedin: "#0a66c2"
+  brand-social-reddit: "#ff4500"
+  brand-social-whatsapp: "#25d366"
+  brand-social-email: "#4b5563"
+  brand-social-icon-fg: "#ffffff"
   gradient-blue: "#2563eb"
   gradient-dark-1: "#2d2d2d"
   gradient-dark-2: "#1a1a1a"
@@ -40,6 +59,8 @@ colors:
   dark-muted-fg: "#9ca3af"
   dark-primary: "#6366f1"
   dark-text-high-contrast: "#ffffff"
+  dark-surface: "#15151d"
+  dark-surface-border: "#4b5563"
   dark-link: "#9ecbff"
   dark-link-visited: "#b8a6ff"
   dark-link-hover: "#cfe5ff"
@@ -131,15 +152,15 @@ components:
     rounded: "{rounded.md}"
     typography: "{typography.body-md}"
   card:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
   section-card:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
   input:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.sm}"
     typography: "{typography.body-md}"
@@ -196,9 +217,39 @@ components:
     textColor: "{colors.muted-fg}"
     typography: "{typography.body-sm}"
   search-autocomplete:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
+    typography: "{typography.body-md}"
+  tooltip:
+    backgroundColor: "{colors.tooltip-bg}"
+    textColor: "{colors.tooltip-fg}"
+    rounded: "{rounded.md}"
+    typography: "{typography.caption}"
+  tooltip-inverse:
+    backgroundColor: "{colors.tooltip-bg-inverse}"
+    textColor: "{colors.tooltip-fg-inverse}"
+    rounded: "{rounded.md}"
+    typography: "{typography.caption}"
+  social-share-button:
+    backgroundColor: "{colors.brand-social-email}"
+    textColor: "{colors.brand-social-icon-fg}"
+    rounded: "{rounded.full}"
+    typography: "{typography.caption}"
+  calculator-result:
+    backgroundColor: "{colors.orange-bg}"
+    textColor: "{colors.orange-text}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.display}"
+  bottom-navigation:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.muted-fg}"
+    rounded: "{rounded.lg}"
+    typography: "{typography.caption}"
+  form-input:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.sm}"
     typography: "{typography.body-md}"
 ---
 # Murphy's Law Archive - Design Tokens (Shared)
@@ -213,6 +264,8 @@ vanilla-TS components).
 
 - **Authoritative values:** [web/styles/partials/variables.css](../web/styles/partials/variables.css).
 - **Authoritative contract:** [web/DESIGN.md](../web/DESIGN.md) (YAML front matter + Markdown body).
+- **Approved non-token exceptions:** the "Unavoidable Platform Exceptions"
+  section in [web/DESIGN.md](../web/DESIGN.md).
 - **This file:** the YAML front matter above only. Regenerated in lockstep with
   `web/DESIGN.md` by [shared/design-tokens/sync-design-tokens.ts](design-tokens/sync-design-tokens.ts).
 

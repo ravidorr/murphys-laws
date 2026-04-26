@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.ui.theme.DS
 
@@ -28,8 +27,8 @@ fun LawListCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(DS.Spacing.s4),
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
         ) {
             // Title (if present)
             if (!law.title.isNullOrBlank()) {
@@ -49,19 +48,19 @@ fun LawListCard(
             
             // Vote Counts (Read-only)
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s4),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Upvotes
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.ThumbUp,
                         contentDescription = null,
                         tint = DS.Color.success,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(DS.Spacing.s4)
                     )
                     Text(
                         text = law.upvotes.toString(),
@@ -71,14 +70,14 @@ fun LawListCard(
                 
                 // Downvotes
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.ThumbDown,
                         contentDescription = null,
                         tint = DS.Color.error,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(DS.Spacing.s4)
                     )
                     Text(
                         text = law.downvotes.toString(),

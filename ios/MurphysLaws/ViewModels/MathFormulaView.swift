@@ -197,25 +197,25 @@ struct MathJaxWebView: UIViewRepresentable {
 #Preview {
     VStack(spacing: 20) {
         Text("Sod's Law Formula")
-            .font(.headline)
+            .dsTypography(DS.Typography.h4)
         
         MathFormulaView("\\frac{(U+C+I) \\times (10-S)}{20} \\times A \\times \\frac{1}{1-\\sin(\\frac{F}{10})}", fontSize: 18)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
+            .background(DS.Color.surface)
+            .cornerRadius(DS.Radius.lg)
         
         Text("Einstein's Formula")
-            .font(.headline)
+            .dsTypography(DS.Typography.h4)
         
         MathFormulaView("E = mc^2", fontSize: 24)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
+            .background(DS.Color.surface)
+            .cornerRadius(DS.Radius.lg)
         
         Text("Quadratic Formula")
-            .font(.headline)
+            .dsTypography(DS.Typography.h4)
         
         MathFormulaView("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}", fontSize: 16)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
+            .background(DS.Color.surface)
+            .cornerRadius(DS.Radius.lg)
     }
     .padding()
 }

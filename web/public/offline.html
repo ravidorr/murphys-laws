@@ -12,22 +12,22 @@
     :root {
       --bg: #fff;
       --fg: #111827;
-      --muted-fg: #6b7280;
+      --muted-fg: #4b5563;
       --primary: #030213;
-      --btn-primary-bg: #1173d4;
+      --btn-primary-bg: #0d5ea1;
       --btn-primary-fg: #fff;
-      --card-bg: #f9fafb;
-      --border: #e5e7eb;
+      --surface: #fff;
+      --surface-border: #d1d5db;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #0b0b11;
         --fg: #e9eaee;
-        --muted-fg: #b3b7c4;
-        --primary: #4f46e5;
-        --card-bg: #1a1a24;
-        --border: #2d2d3a;
+        --muted-fg: #9ca3af;
+        --primary: #6366f1;
+        --surface: #15151d;
+        --surface-border: #4b5563;
       }
     }
 
@@ -83,8 +83,8 @@
     }
 
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
       border-radius: 0.75rem;
       padding: 1.5rem;
       margin-bottom: 2rem;
