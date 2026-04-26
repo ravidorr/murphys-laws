@@ -45,16 +45,13 @@ struct SubmitLawView: View {
                             Button {
                                 viewModel.selectedCategoryID = category.id
                             } label: {
-                                HStack {
-                                    Text(category.title)
-                                        .foregroundColor(DS.Color.fg)
-                                    Spacer()
-                                    if viewModel.selectedCategoryID == category.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(DS.Color.btnPrimaryBg)
-                                    }
-                                }
+                                CategoryRow(
+                                    category: category,
+                                    isSelected: viewModel.selectedCategoryID == category.id
+                                )
                             }
+                            .foregroundColor(DS.Color.fg)
+                            .accessibilityIdentifier("SubmitLawCategory-\(category.id)")
                         }
                     }
                 } header: {
