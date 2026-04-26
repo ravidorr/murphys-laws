@@ -100,7 +100,7 @@ struct SubmitLawView: View {
             }
             .overlay {
                 if viewModel.isSubmitting {
-                    DS.Color.fg.opacity(0.3)
+                    Color.black.opacity(0.3)
                         .ignoresSafeArea()
 
                     VStack(spacing: Constants.UI.spacingM) {
