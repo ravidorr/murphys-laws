@@ -20,35 +20,36 @@ struct LawCard: View {
             // Title (if exists)
             if let title = law.title, !title.isEmpty {
                 Text(title)
-                    .font(.headline)
+                    .dsTypography(DS.Typography.h4)
                     .fontWeight(.semibold)
+                    .foregroundColor(DS.Color.fg)
                     .lineLimit(2)
             }
 
             // Law text
             Text(law.text)
-                .font(.body)
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.bodyMd)
+                .foregroundColor(DS.Color.mutedFg)
                 .lineLimit(4)
 
             // Vote counts and categories
             HStack {
                 // Upvotes
                 Label("\(law.upvotes)", systemImage: currentVote == .up ? "hand.thumbsup.fill" : "hand.thumbsup")
-                    .foregroundColor(currentVote == .up ? .green : .gray)
-                    .font(.caption)
+                    .foregroundColor(currentVote == .up ? DS.Color.success : DS.Color.mutedFg)
+                    .dsTypography(DS.Typography.caption)
 
                 // Downvotes
                 Label("\(law.downvotes)", systemImage: currentVote == .down ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                    .foregroundColor(currentVote == .down ? .red : .gray)
-                    .font(.caption)
+                    .foregroundColor(currentVote == .down ? DS.Color.error : DS.Color.mutedFg)
+                    .dsTypography(DS.Typography.caption)
 
                 Spacer()
 
                 // Category tags (first one only for card)
                 if let firstCategory = law.categories?.first {
                     Text(firstCategory.title)
-                        .font(.caption2)
+                        .dsTypography(DS.Typography.caption)
                         .padding(.horizontal, Constants.UI.spacingS)
                         .padding(.vertical, 4)
                         .background(firstCategory.iconColor.opacity(0.2))
@@ -58,7 +59,7 @@ struct LawCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(DS.Color.surface)
         .cornerRadius(Constants.UI.cornerRadiusM)
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }

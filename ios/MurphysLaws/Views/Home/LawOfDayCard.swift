@@ -24,32 +24,32 @@ struct LawOfDayCard: View {
                 HStack {
                     Image(systemName: "star.fill")
                     Text("Law of the Day")
-                        .font(.subheadline)
+                        .dsTypography(DS.Typography.bodySm)
                         .fontWeight(.semibold)
                 }
-                .foregroundColor(.yellow)
+                .foregroundColor(DS.Color.favoriteColor)
 
                 // Title (if exists)
                 if let title = law.title, !title.isEmpty {
                     Text(title)
-                        .font(.title2)
+                        .dsTypography(DS.Typography.h3)
                         .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(DS.Color.fg)
                 }
 
                 // Law text
                 Text(law.displayText)
-                    .font(.title3)
-                    .foregroundColor(.primary)
+                    .dsTypography(DS.Typography.h4)
+                    .foregroundColor(DS.Color.fg)
                     .multilineTextAlignment(.leading)
                     .padding(.vertical, Constants.UI.spacingS)
 
                 // Attribution (if exists)
                 if let attribution = law.attributions?.first {
                     Text("— \(attribution.displayName)")
-                        .font(.callout)
+                        .dsTypography(DS.Typography.bodySm)
                         .italic()
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DS.Color.mutedFg)
                 }
 
                 Divider()
@@ -58,11 +58,11 @@ struct LawOfDayCard: View {
                 HStack {
                     // Upvotes
                     Label("\(law.upvotes)", systemImage: currentVote == .up ? "hand.thumbsup.fill" : "hand.thumbsup")
-                        .foregroundColor(currentVote == .up ? .green : .gray)
+                        .foregroundColor(currentVote == .up ? DS.Color.success : DS.Color.mutedFg)
 
                     // Downvotes
                     Label("\(law.downvotes)", systemImage: currentVote == .down ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                        .foregroundColor(currentVote == .down ? .red : .gray)
+                        .foregroundColor(currentVote == .down ? DS.Color.error : DS.Color.mutedFg)
 
                     Spacer()
 
@@ -71,13 +71,13 @@ struct LawOfDayCard: View {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }
                 }
-                .font(.callout)
+                .dsTypography(DS.Typography.bodySm)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 LinearGradient(
-                    colors: [Color.yellow.opacity(0.1), Color.orange.opacity(0.05)],
+                    colors: [DS.Color.favoriteBg.opacity(0.7), DS.Color.orangeBg.opacity(0.5)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )

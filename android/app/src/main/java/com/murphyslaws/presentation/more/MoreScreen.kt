@@ -28,9 +28,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.murphyslaws.domain.model.ContentPage
+import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +53,7 @@ fun MoreScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(vertical = DS.Spacing.s2)
         ) {
             // Information Section
             item {
@@ -62,7 +62,7 @@ fun MoreScreen(
                     colors = ListItemDefaults.colors(
                         headlineColor = MaterialTheme.colorScheme.primary
                     ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = DS.Spacing.s4, vertical = DS.Spacing.s2)
                 )
             }
 
@@ -132,7 +132,7 @@ fun MoreScreen(
             }
 
             item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = DS.Spacing.s2))
             }
 
             // Share Section
@@ -142,7 +142,7 @@ fun MoreScreen(
                     colors = ListItemDefaults.colors(
                         headlineColor = MaterialTheme.colorScheme.primary
                     ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = DS.Spacing.s4, vertical = DS.Spacing.s2)
                 )
             }
 
@@ -169,7 +169,7 @@ fun MoreScreen(
             }
 
             item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = DS.Spacing.s2))
             }
 
             // App Section
@@ -179,7 +179,7 @@ fun MoreScreen(
                     colors = ListItemDefaults.colors(
                         headlineColor = MaterialTheme.colorScheme.primary
                     ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = DS.Spacing.s4, vertical = DS.Spacing.s2)
                 )
             }
 
@@ -240,6 +240,6 @@ private fun Modifier.clickableListItem(onClick: () -> Unit): Modifier {
     return this.then(
         Modifier.clickable(
             onClick = onClick
-        ).padding(horizontal = 8.dp)
+        ).padding(horizontal = DS.Spacing.s2)
     )
 }

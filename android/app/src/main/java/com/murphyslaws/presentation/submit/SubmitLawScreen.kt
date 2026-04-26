@@ -26,8 +26,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,8 +75,8 @@ fun SubmitLawScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(DS.Spacing.s4),
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s4)
         ) {
             Text(
                 text = "Have a Murphy's Law to share? Submit it here!",
@@ -91,7 +91,7 @@ fun SubmitLawScreen(
                 label = { Text("Law Text (Required)") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
+                    .height(DS.Spacing.s10 + DS.Spacing.s16 + DS.Spacing.s6),
                 maxLines = 5,
                 isError = uiState.text.isBlank() && uiState.isLoading // Show error only if tried to submit empty? No, just validation
             )
@@ -124,7 +124,7 @@ fun SubmitLawScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(DS.Spacing.s2))
 
             Button(
                 onClick = { viewModel.submitLaw() },
@@ -133,7 +133,7 @@ fun SubmitLawScreen(
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(DS.Spacing.s6),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {

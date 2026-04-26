@@ -28,8 +28,8 @@ struct LawDetailView: View {
                     ProgressView()
                         .scaleEffect(1.5)
                     Text("Loading law...")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .dsTypography(DS.Typography.bodySm)
+                        .foregroundColor(DS.Color.mutedFg)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = viewModel.error, viewModel.law == nil {
@@ -48,13 +48,15 @@ struct LawDetailView: View {
                             // Title (if exists)
                             if let title = law.title, !title.isEmpty {
                                 Text(title)
-                                    .font(.title)
+                                    .dsTypography(DS.Typography.h2)
                                     .fontWeight(.bold)
+                                    .foregroundColor(DS.Color.fg)
                             }
 
                             // Law text
                             Text(law.text)
-                                .font(.title3)
+                                .dsTypography(DS.Typography.h4)
+                                .foregroundColor(DS.Color.fg)
                                 .padding(.vertical, Constants.UI.spacingS)
 
                             // Categories
@@ -108,23 +110,25 @@ struct LawDetailView: View {
                         if let attributions = law.attributions, !attributions.isEmpty {
                             VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
                                 Text("Attribution")
-                                    .font(.headline)
+                                    .dsTypography(DS.Typography.h4)
+                                    .foregroundColor(DS.Color.fg)
 
                                 ForEach(attributions, id: \.name) { attribution in
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    VStack(alignment: .leading, spacing: DS.Spacing.s1) {
                                         Text("Submitted by \(attribution.displayName)")
-                                            .font(.subheadline)
+                                            .dsTypography(DS.Typography.bodySm)
+                                            .foregroundColor(DS.Color.fg)
 
                                         if let link = attribution.contactLink {
                                             Link(attribution.contactValue ?? "", destination: URL(string: link)!)
-                                                .font(.caption)
-                                                .foregroundColor(.blue)
+                                                .dsTypography(DS.Typography.caption)
+                                                .foregroundColor(DS.Color.link)
                                         }
 
                                         if let note = attribution.note {
                                             Text(note)
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
+                                                .dsTypography(DS.Typography.caption)
+                                                .foregroundColor(DS.Color.mutedFg)
                                         }
                                     }
                                 }
@@ -187,20 +191,20 @@ struct VoteButton: View {
         Button(action: action) {
             VStack(spacing: Constants.UI.spacingS) {
                 Image(systemName: voteType.iconName)
-                    .font(.title2)
-                    .foregroundColor(isSelected ? iconColor : .gray)
+                    .dsTypography(DS.Typography.h3)
+                    .foregroundColor(isSelected ? iconColor : DS.Color.mutedFg)
 
                 Text("\(count)")
-                    .font(.headline)
-                    .foregroundColor(isSelected ? iconColor : .primary)
+                    .dsTypography(DS.Typography.h4)
+                    .foregroundColor(isSelected ? iconColor : DS.Color.fg)
 
                 Text(voteType.displayName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .dsTypography(DS.Typography.caption)
+                    .foregroundColor(DS.Color.mutedFg)
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(isSelected ? iconColor.opacity(0.1) : Color(.systemGray6))
+            .background(isSelected ? iconColor.opacity(0.1) : DS.Color.surface)
             .cornerRadius(Constants.UI.cornerRadiusM)
         }
         .accessibilityIdentifier(voteType.displayName)
@@ -211,8 +215,8 @@ struct VoteButton: View {
 
     private var iconColor: Color {
         switch voteType {
-        case .up: return .green
-        case .down: return .red
+        case .up: return DS.Color.success
+        case .down: return DS.Color.error
         }
     }
 }
@@ -222,11 +226,11 @@ struct CategoryChip: View {
     let category: Category
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Spacing.s1) {
             Image(systemName: category.iconName)
-                .font(.caption2)
+                .dsTypography(DS.Typography.caption)
             Text(category.title)
-                .font(.caption)
+                .dsTypography(DS.Typography.caption)
         }
         .padding(.horizontal, Constants.UI.spacingM)
         .padding(.vertical, Constants.UI.spacingS)

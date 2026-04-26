@@ -116,7 +116,7 @@ struct SkeletonLawOfDayCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             LinearGradient(
-                colors: [Color.yellow.opacity(0.1), Color.orange.opacity(0.05)],
+                colors: [DS.Color.favoriteBg.opacity(0.7), DS.Color.orangeBg.opacity(0.5)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -172,7 +172,7 @@ struct SkeletonLawCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(DS.Color.surface)
         .cornerRadius(Constants.UI.cornerRadiusM)
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }

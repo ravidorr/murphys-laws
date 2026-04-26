@@ -10,16 +10,16 @@ import SwiftUI
 struct LaunchScreenView: View {
     var body: some View {
         ZStack {
-            Color(uiColor: .systemBackground)
+            DS.Color.bg
                 .ignoresSafeArea()
             
-            VStack(spacing: 24) {
+            VStack(spacing: DS.Spacing.s6) {
                 // App Icon or Logo
                 Image(systemName: "bolt.trianglebadge.exclamationmark.fill")
-                    .font(.system(size: 80))
+                    .dsTypography(DS.Typography.display)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.orange, .red],
+                            colors: [DS.Color.orangeText, DS.Color.error],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -27,14 +27,14 @@ struct LaunchScreenView: View {
                     .symbolRenderingMode(.hierarchical)
                 
                 // App Name
-                VStack(spacing: 8) {
+                VStack(spacing: DS.Spacing.s2) {
                     Text("Murphy's Laws")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.primary)
+                        .dsTypography(DS.Typography.h2)
+                        .foregroundColor(DS.Color.fg)
                     
                     Text("If anything can go wrong, it will")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .dsTypography(DS.Typography.bodySm)
+                        .foregroundColor(DS.Color.mutedFg)
                         .italic()
                 }
             }

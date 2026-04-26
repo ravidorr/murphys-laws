@@ -47,17 +47,17 @@ struct Category: Codable, Identifiable, Hashable {
     }
 
     var iconColor: Color {
-        // Assign colors based on category
+        // Assign colors from the shared DS palette based on category.
         let hash = abs(slug.hashValue) % 8
         switch hash {
-        case 0: return .blue
-        case 1: return .green
-        case 2: return .orange
-        case 3: return .purple
-        case 4: return .red
-        case 5: return .pink
-        case 6: return .indigo
-        default: return .teal
+        case 0: return DS.Color.btnPrimaryBg
+        case 1: return DS.Color.success
+        case 2: return DS.Color.orangeText
+        case 3: return DS.Color.linkVisited
+        case 4: return DS.Color.error
+        case 5: return DS.Color.favoriteColor
+        case 6: return DS.Color.linkVisited
+        default: return DS.Color.linkHover
         }
     }
 

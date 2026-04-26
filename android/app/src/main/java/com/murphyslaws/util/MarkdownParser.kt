@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.murphyslaws.ui.theme.DS
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -27,8 +26,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.murphyslaws.ui.theme.DS
 
 /**
  * Data class for extracted links (both HTML and Markdown)
@@ -265,7 +264,7 @@ fun MarkdownElement(
             Text(
                 text = element.text,
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = modifier.padding(vertical = 8.dp)
+                modifier = modifier.padding(vertical = DS.Spacing.s2)
             )
         }
         is MarkdownParser.MarkdownElement.Header2 -> {
@@ -273,7 +272,7 @@ fun MarkdownElement(
                 text = element.text,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
-                modifier = modifier.padding(vertical = 8.dp)
+                modifier = modifier.padding(vertical = DS.Spacing.s2)
             )
         }
         is MarkdownParser.MarkdownElement.Header3 -> {
@@ -281,7 +280,7 @@ fun MarkdownElement(
                 text = element.text,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                modifier = modifier.padding(vertical = 4.dp)
+                modifier = modifier.padding(vertical = DS.Spacing.s1)
             )
         }
         is MarkdownParser.MarkdownElement.Paragraph -> {
@@ -290,7 +289,7 @@ fun MarkdownElement(
                 links = element.links,
                 style = MaterialTheme.typography.bodyLarge,
                 onNavigate = onNavigate,
-                modifier = modifier.padding(vertical = 4.dp)
+                modifier = modifier.padding(vertical = DS.Spacing.s1)
             )
         }
         is MarkdownParser.MarkdownElement.Quote -> {
@@ -298,16 +297,16 @@ fun MarkdownElement(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = DS.Spacing.s1)
             ) {
-                Row(modifier = Modifier.padding(12.dp)) {
+                Row(modifier = Modifier.padding(DS.Spacing.s3)) {
                     Surface(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .width(4.dp)
+                            .width(DS.Spacing.s1)
                             .fillMaxHeight()
                     ) {}
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(DS.Spacing.s3))
                     ClickableMarkdownText(
                         text = element.text,
                         links = element.links,
@@ -323,14 +322,14 @@ fun MarkdownElement(
         is MarkdownParser.MarkdownElement.BulletPoint -> {
             Row(
                 modifier = modifier
-                    .padding(vertical = 2.dp)
-                    .padding(start = 16.dp)
+                    .padding(vertical = DS.Spacing.s1 / 2)
+                    .padding(start = DS.Spacing.s4)
             ) {
                 Text(
                     text = "•",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = DS.Spacing.s2)
                 )
                 ClickableMarkdownText(
                     text = element.text,

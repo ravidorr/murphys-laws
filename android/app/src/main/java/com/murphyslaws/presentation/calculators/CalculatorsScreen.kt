@@ -39,9 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,8 +66,8 @@ fun CalculatorsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(DS.Spacing.s4),
+            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s6)
         ) {
             // Header
             Text(
@@ -85,24 +84,24 @@ fun CalculatorsScreen(
                     .fillMaxWidth()
                     .background(
                         color = viewModel.riskLevel.color.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(DS.Radius.xl)
                     )
                     .border(
-                        width = 2.dp,
+                        width = DS.Spacing.s1 / 2,
                         color = viewModel.riskLevel.color.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(DS.Radius.xl)
                     )
-                    .padding(24.dp),
+                    .padding(DS.Spacing.s6),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
             ) {
                 Text(
                     text = viewModel.riskLevel.emoji,
-                    fontSize = 72.sp
+                    style = DS.Typography.display
                 )
                 Text(
                     text = "${String.format(java.util.Locale.US, "%.1f", viewModel.probability)}%",
-                    style = MaterialTheme.typography.displayMedium,
+                    style = DS.Typography.display,
                     fontWeight = FontWeight.Bold,
                     color = viewModel.riskLevel.color
                 )
@@ -114,7 +113,7 @@ fun CalculatorsScreen(
             }
 
             // Sliders
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(DS.Spacing.s4)) {
                 ParameterSlider(
                     title = "Urgency",
                     icon = Icons.Filled.AccessTime,
@@ -157,7 +156,7 @@ fun CalculatorsScreen(
             }
 
             // Actions
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(DS.Spacing.s3)) {
                 Button(
                     onClick = {
                         val sendIntent: Intent = Intent().apply {
@@ -171,7 +170,7 @@ fun CalculatorsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Filled.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(DS.Spacing.s2))
                     Text("Share Results")
                 }
 
@@ -194,7 +193,7 @@ fun CalculatorsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Filled.Email, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(DS.Spacing.s2))
                     Text("Email Results")
                 }
 
@@ -203,13 +202,13 @@ fun CalculatorsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Filled.Refresh, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(DS.Spacing.s2))
                     Text("Reset")
                 }
             }
             
             // Bottom spacing
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(DS.Spacing.s8))
         }
     }
 }

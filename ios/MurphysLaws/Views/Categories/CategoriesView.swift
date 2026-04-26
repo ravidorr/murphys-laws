@@ -73,8 +73,8 @@ struct CategoryCard: View {
             VStack(spacing: Constants.UI.spacingM) {
                 // Title
                 Text(category.title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                    .dsTypography(DS.Typography.h4)
+                    .foregroundColor(DS.Color.fg)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
@@ -195,28 +195,29 @@ struct LawRowView: View {
         VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
             if let title = law.title, !title.isEmpty {
                 Text(title)
-                    .font(.headline)
+                    .dsTypography(DS.Typography.h4)
+                    .foregroundColor(DS.Color.fg)
             }
 
             Text(law.text)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.bodySm)
+                .foregroundColor(DS.Color.mutedFg)
                 .lineLimit(3)
 
             HStack {
                 Label("\(law.upvotes)", systemImage: currentVote == .up ? "hand.thumbsup.fill" : "hand.thumbsup")
-                    .foregroundColor(currentVote == .up ? .green : .gray)
-                    .font(.caption)
+                    .foregroundColor(currentVote == .up ? DS.Color.success : DS.Color.mutedFg)
+                    .dsTypography(DS.Typography.caption)
 
                 Label("\(law.downvotes)", systemImage: currentVote == .down ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                    .foregroundColor(currentVote == .down ? .red : .gray)
-                    .font(.caption)
+                    .foregroundColor(currentVote == .down ? DS.Color.error : DS.Color.mutedFg)
+                    .dsTypography(DS.Typography.caption)
 
                 Spacer()
 
                 Text("Score: \(law.score)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .dsTypography(DS.Typography.caption)
+                    .foregroundColor(DS.Color.mutedFg)
             }
         }
         .padding(.vertical, Constants.UI.spacingS)

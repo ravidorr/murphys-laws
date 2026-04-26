@@ -216,7 +216,24 @@ describe('renderFrontMatter', () => {
     expect(localThis.yaml).toContain('\n  search-autocomplete:\n');
 
     expect(localThis.yaml).toContain(
-      '  search-autocomplete:\n    backgroundColor: "{colors.bg}"\n    textColor: "{colors.fg}"\n    rounded: "{rounded.lg}"\n    typography: "{typography.body-md}"',
+      '  search-autocomplete:\n    backgroundColor: "{colors.surface}"\n    textColor: "{colors.fg}"\n    rounded: "{rounded.lg}"\n    typography: "{typography.body-md}"',
+    );
+  });
+
+  it('includes component contracts for cross-platform DS leftovers', () => {
+    const localThis: RenderLocalThis = {};
+    localThis.parsed = classifyTokens(parseCssVariables(sampleCss()));
+    localThis.yaml = renderFrontMatter(localThis.parsed);
+
+    expect(localThis.yaml).toContain('\n  tooltip:\n');
+    expect(localThis.yaml).toContain('\n  social-share-button:\n');
+    expect(localThis.yaml).toContain('\n  calculator-result:\n');
+    expect(localThis.yaml).toContain('\n  bottom-navigation:\n');
+    expect(localThis.yaml).toContain(
+      '  tooltip:\n    backgroundColor: "{colors.tooltip-bg}"\n    textColor: "{colors.tooltip-fg}"\n    rounded: "{rounded.md}"\n    typography: "{typography.caption}"',
+    );
+    expect(localThis.yaml).toContain(
+      '  social-share-button:\n    backgroundColor: "{colors.brand-social-email}"\n    textColor: "{colors.brand-social-icon-fg}"\n    rounded: "{rounded.full}"\n    typography: "{typography.caption}"',
     );
   });
 
