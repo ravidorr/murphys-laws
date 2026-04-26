@@ -56,7 +56,15 @@ jobs:
 
       - name: Select iOS simulator
         run: |
-          SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')"
+          SIMULATOR_ID="$(xcrun simctl list devices available | awk '/iPhone/ {
+            for (i = 1; i <= NF; i++) {
+              if ($i ~ /^\([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\)$/) {
+                gsub(/[()]/, "", $i)
+                print $i
+                exit
+              }
+            }
+          }')"
           if [ -z "$SIMULATOR_ID" ]; then
             echo "No available iPhone simulator found"
             xcrun simctl list devices available
