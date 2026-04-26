@@ -7,8 +7,8 @@ options:
   xcodeVersion: "14.0"
 
 settings:
-  MARKETING_VERSION: "1.1.4"
-  CURRENT_PROJECT_VERSION: "8"
+  MARKETING_VERSION: "1.1.5"
+  CURRENT_PROJECT_VERSION: "9"
 
 targets:
   MurphysLaws:
