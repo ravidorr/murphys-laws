@@ -8,7 +8,7 @@ final class NavigationUITests: XCTestCase {
         app = XCUIApplication()
         
         // Enable UI test mode (faster animations)
-        app.launchArguments = ["--uitesting"]
+        app.launchArguments = ["UI-TESTING"]
         app.launchEnvironment = ["UITEST_DISABLE_ANIMATIONS": "1"]
         
         app.launch()
