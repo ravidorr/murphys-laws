@@ -138,9 +138,9 @@ struct BrowseView: View {
                 // Badge indicator when filters are active
                 if selectedCategoryID != nil || sortOrder != .newest {
                     Circle()
-                        .fill(Color.red)
-                        .frame(width: 8, height: 8)
-                        .offset(x: 6, y: -6)
+                        .fill(DS.Color.important)
+                        .frame(width: DS.Spacing.s2, height: DS.Spacing.s2)
+                        .offset(x: DS.Spacing.s2, y: -DS.Spacing.s2)
                 }
             }
         }
@@ -167,7 +167,7 @@ struct BrowseView: View {
                     FilterChip(
                         title: sortOrder.rawValue,
                         systemImage: "arrow.up.arrow.down",
-                        color: .blue
+                        color: DS.Color.btnPrimaryBg
                     ) {
                         sortOrder = .newest
                     }
@@ -180,9 +180,9 @@ struct BrowseView: View {
                         sortOrder = .newest
                     } label: {
                         Text("Clear All")
-                            .font(.caption)
+                            .dsTypography(DS.Typography.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(.red)
+                            .foregroundColor(DS.Color.error)
                     }
                     .padding(.leading, Constants.UI.spacingS)
                 }
@@ -190,7 +190,7 @@ struct BrowseView: View {
             .padding(.horizontal)
             .padding(.vertical, Constants.UI.spacingS)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(DS.Color.surface)
         .task {
             if categoryViewModel.categories.isEmpty {
                 await categoryViewModel.loadCategories()
@@ -203,7 +203,7 @@ struct BrowseView: View {
     }
     
     private func categoryColor(for id: Int) -> Color {
-        categoryViewModel.categories.first { $0.id == id }?.iconColor ?? .gray
+        categoryViewModel.categories.first { $0.id == id }?.iconColor ?? DS.Color.mutedFg
     }
 
     @ViewBuilder
@@ -240,33 +240,34 @@ struct LawListRow: View {
             // Title (if exists)
             if let title = law.title, !title.isEmpty {
                 Text(title)
-                    .font(.headline)
+                    .dsTypography(DS.Typography.h4)
                     .fontWeight(.semibold)
+                    .foregroundColor(DS.Color.fg)
             }
 
             // Law text
             Text(law.text)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.bodySm)
+                .foregroundColor(DS.Color.mutedFg)
                 .lineLimit(3)
 
             // Metadata
             HStack {
                 // Vote counts
                 Label("\(law.upvotes)", systemImage: currentVote == .up ? "hand.thumbsup.fill" : "hand.thumbsup")
-                    .foregroundColor(currentVote == .up ? .green : .gray)
-                    .font(.caption)
+                    .foregroundColor(currentVote == .up ? DS.Color.success : DS.Color.mutedFg)
+                    .dsTypography(DS.Typography.caption)
 
                 Label("\(law.downvotes)", systemImage: currentVote == .down ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                    .foregroundColor(currentVote == .down ? .red : .gray)
-                    .font(.caption)
+                    .foregroundColor(currentVote == .down ? DS.Color.error : DS.Color.mutedFg)
+                    .dsTypography(DS.Typography.caption)
 
                 Spacer()
 
                 // Category tag
                 if let firstCategory = law.categories?.first {
                     Text(firstCategory.title)
-                        .font(.caption2)
+                        .dsTypography(DS.Typography.caption)
                         .padding(.horizontal, Constants.UI.spacingS)
                         .padding(.vertical, 4)
                         .background(firstCategory.iconColor.opacity(0.2))
@@ -290,13 +291,13 @@ struct FilterChip: View {
     let onRemove: () -> Void
     
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Spacing.s2) {
             Image(systemName: systemImage)
-                .font(.caption2)
+                .dsTypography(DS.Typography.caption)
                 .foregroundColor(color)
             
             Text(title)
-                .font(.caption)
+                .dsTypography(DS.Typography.caption)
                 .fontWeight(.medium)
                 .lineLimit(1)
             
@@ -304,12 +305,12 @@ struct FilterChip: View {
                 onRemove()
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .dsTypography(DS.Typography.caption)
+                    .foregroundColor(DS.Color.mutedFg)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DS.Spacing.s3)
+        .padding(.vertical, DS.Spacing.s2)
         .background(
             Capsule()
                 .fill(color.opacity(0.15))

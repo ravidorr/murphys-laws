@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.murphyslaws.ui.theme.DS
 
 @Composable
 fun ParameterSlider(
@@ -25,10 +25,10 @@ fun ParameterSlider(
             .fillMaxWidth()
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(DS.Radius.xl)
             )
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(DS.Spacing.s4),
+        verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -40,9 +40,9 @@ fun ParameterSlider(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(DS.Spacing.s6)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(DS.Spacing.s2))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,

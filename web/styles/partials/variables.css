@@ -47,6 +47,11 @@
   --primary: #030213;
   --text-high-contrast: #000; /* For text requiring high contrast (WCAG AA) */
   --border: rgb(0 0 0 / 25%); /* Increased opacity for visibility */
+  --surface: #fff;
+  --surface-border: #d1d5db;
+  --link: #0d5ea1;
+  --link-visited: #6d28d9;
+  --link-hover: #084b83;
   --btn-primary-bg: #0d5ea1; /* Darker blue for better contrast (was #1173d4) */
   --btn-primary-fg: #fff;
   
@@ -73,6 +78,11 @@
   --warning-bg: #fff8e1;
   --warning-text: #5a4300;
 
+  /* Semantic colors - Risk */
+  --risk-low: #15803d;
+  --risk-medium: #ffa500;
+  --risk-high: #b91c1c;
+
   /* Semantic colors - Orange */
   --orange-bg: #ffe9d6;
   --orange-text: #6a2e00;
@@ -87,6 +97,19 @@
   /* UI colors */
   --white: #fff;
   --highlight: #fef08a;
+  --tooltip-bg: #1f2937;
+  --tooltip-fg: #f9fafb;
+  --tooltip-bg-inverse: #fff;
+  --tooltip-fg-inverse: #1f2937;
+
+  /* Third-party brand colors */
+  --brand-social-x: #000;
+  --brand-social-facebook: #1877f2;
+  --brand-social-linkedin: #0a66c2;
+  --brand-social-reddit: #ff4500;
+  --brand-social-whatsapp: #25d366;
+  --brand-social-email: #4b5563;
+  --brand-social-icon-fg: #fff;
 
   /* Gradient colors */
   --gradient-blue: #2563eb; /* Darkened */
@@ -108,6 +131,8 @@
   --dark-primary: #6366f1; /* Lightened primary for dark mode */
   --dark-text-high-contrast: #fff; /* For text requiring high contrast in dark mode */
   --dark-border: rgb(255 255 255 / 25%);
+  --dark-surface: #15151d;
+  --dark-surface-border: #4b5563;
   --dark-link: #9ecbff;
   --dark-link-visited: #b8a6ff;
   --dark-link-hover: #cfe5ff;

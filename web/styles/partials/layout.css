@@ -71,11 +71,11 @@ header.sticky {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgb(17 115 212 / 40%);
+    box-shadow: 0 0 0 0 var(--shadow-blue-dark);
   }
 
   50% {
-    box-shadow: 0 0 0 6px rgb(17 115 212 / 0%);
+    box-shadow: 0 0 0 6px rgb(13 94 161 / 0%);
   }
 }
 
@@ -118,7 +118,7 @@ header.sticky {
 .brand-badge:hover {
   transform: scale(1.1);
   background: linear-gradient(135deg, var(--primary) 0%, var(--btn-primary-bg) 100%);
-  box-shadow: 0 4px 12px var(--shadow-blue), 0 0 0 0 rgb(17 115 212 / 0%);
+  box-shadow: 0 4px 12px var(--shadow-blue), 0 0 0 0 rgb(13 94 161 / 0%);
   animation: heartbeat 2s ease-in-out infinite;
 }
 

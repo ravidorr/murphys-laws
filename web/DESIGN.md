@@ -8,6 +8,11 @@ colors:
   muted-fg: "#4b5563"
   primary: "#030213"
   text-high-contrast: "#000000"
+  surface: "#ffffff"
+  surface-border: "#d1d5db"
+  link: "#0d5ea1"
+  link-visited: "#6d28d9"
+  link-hover: "#084b83"
   btn-primary-bg: "#0d5ea1"
   btn-primary-fg: "#ffffff"
   success: "#15803d"
@@ -25,6 +30,9 @@ colors:
   favorite-border: "#f48fb1"
   warning-bg: "#fff8e1"
   warning-text: "#5a4300"
+  risk-low: "#15803d"
+  risk-medium: "#ffa500"
+  risk-high: "#b91c1c"
   orange-bg: "#ffe9d6"
   orange-text: "#6a2e00"
   dark-bg: "#f0d6d6"
@@ -32,6 +40,17 @@ colors:
   important: "#b91c1c"
   white: "#ffffff"
   highlight: "#fef08a"
+  tooltip-bg: "#1f2937"
+  tooltip-fg: "#f9fafb"
+  tooltip-bg-inverse: "#ffffff"
+  tooltip-fg-inverse: "#1f2937"
+  brand-social-x: "#000000"
+  brand-social-facebook: "#1877f2"
+  brand-social-linkedin: "#0a66c2"
+  brand-social-reddit: "#ff4500"
+  brand-social-whatsapp: "#25d366"
+  brand-social-email: "#4b5563"
+  brand-social-icon-fg: "#ffffff"
   gradient-blue: "#2563eb"
   gradient-dark-1: "#2d2d2d"
   gradient-dark-2: "#1a1a1a"
@@ -40,6 +59,8 @@ colors:
   dark-muted-fg: "#9ca3af"
   dark-primary: "#6366f1"
   dark-text-high-contrast: "#ffffff"
+  dark-surface: "#15151d"
+  dark-surface-border: "#4b5563"
   dark-link: "#9ecbff"
   dark-link-visited: "#b8a6ff"
   dark-link-hover: "#cfe5ff"
@@ -131,15 +152,15 @@ components:
     rounded: "{rounded.md}"
     typography: "{typography.body-md}"
   card:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
   section-card:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
   input:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.sm}"
     typography: "{typography.body-md}"
@@ -196,9 +217,39 @@ components:
     textColor: "{colors.muted-fg}"
     typography: "{typography.body-sm}"
   search-autocomplete:
-    backgroundColor: "{colors.bg}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
     rounded: "{rounded.lg}"
+    typography: "{typography.body-md}"
+  tooltip:
+    backgroundColor: "{colors.tooltip-bg}"
+    textColor: "{colors.tooltip-fg}"
+    rounded: "{rounded.md}"
+    typography: "{typography.caption}"
+  tooltip-inverse:
+    backgroundColor: "{colors.tooltip-bg-inverse}"
+    textColor: "{colors.tooltip-fg-inverse}"
+    rounded: "{rounded.md}"
+    typography: "{typography.caption}"
+  social-share-button:
+    backgroundColor: "{colors.brand-social-email}"
+    textColor: "{colors.brand-social-icon-fg}"
+    rounded: "{rounded.full}"
+    typography: "{typography.caption}"
+  calculator-result:
+    backgroundColor: "{colors.orange-bg}"
+    textColor: "{colors.orange-text}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.display}"
+  bottom-navigation:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.muted-fg}"
+    rounded: "{rounded.lg}"
+    typography: "{typography.caption}"
+  form-input:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.sm}"
     typography: "{typography.body-md}"
 ---
 # Murphy's Law Archive - Design System
@@ -224,12 +275,18 @@ are used by the calculators and form feedback surfaces. All light-mode
 tokens are paired with a dark-mode counterpart (prefixed `dark-`)
 activated via `prefers-color-scheme: dark` or `:root[data-theme="dark"]`.
 
-- Neutral surfaces: `bg`, `fg`, `muted-fg`, `text-high-contrast`.
+- Neutral surfaces: `bg`, `fg`, `muted-fg`, `text-high-contrast`,
+  `surface`, and `surface-border`.
+- Links: `link`, `link-visited`, and `link-hover` are the light-mode
+  counterparts to the dark link tokens.
 - Brand: `primary` for brand badge, `btn-primary-bg` / `btn-primary-fg`
   for primary calls-to-action. `btn-primary-bg` is tuned darker than a
   default Tailwind blue to pass WCAG AA on white.
 - Semantic: `success`, `error`, `favorite-color`, `important`, plus
   paired `-bg` / `-text` / `-border` tokens for badges and callouts.
+- Third-party social brands: `brand-social-*` tokens are external brand
+  values, but they still belong here because every platform must render
+  the same X, Facebook, LinkedIn, Reddit, WhatsApp, and email actions.
 - Calculator states: `calc-ok` / `calc-warn` / `calc-orange` / `calc-danger`
   / `calc-dark` map to the semantic palette.
 
@@ -294,9 +351,10 @@ The `components` section in the YAML front matter assigns color and
 shape tokens to the core shipped components. It is not exhaustive - it
 covers the primitives that agents most often need to reproduce
 (buttons, cards, inputs, modal, brand badge, blockquote, pagination,
-and the calculator state pills). Dark-mode overrides are handled in
-`theme.css`; agents should assume any component is theme-aware and
-use the `dark-*` color tokens for dark surfaces.
+tooltips, social share buttons, bottom navigation, form input, and the
+calculator state/result surfaces). Dark-mode overrides are handled in
+`theme.css`; agents should assume any component is theme-aware and use
+the `dark-*` color tokens for dark surfaces.
 
 ## Do's and Don'ts
 
@@ -312,6 +370,8 @@ use the `dark-*` color tokens for dark surfaces.
   them repo-wide.
 - Don't use inline styles. `html-validate` blocks them; put styles in
   the relevant partial under `web/styles/partials/`.
+- Don't leave raw third-party brand colors in platform code. Add or use
+  a `brand-social-*` token so web, iOS, and Android stay aligned.
 - Don't edit the YAML front matter by hand. It is regenerated from
   `variables.css` by `npm run design:sync` from the repo root.
 
@@ -337,6 +397,48 @@ the YAML front matter above; it does not touch this Markdown body.
 - **Validate:** `npm run design:check` runs
   `design:sync --check` for drift and `@google/design.md lint` for
   structural correctness and WCAG contrast.
+
+## Unavoidable Platform Exceptions
+
+These are the only approved non-token design values. Anything else must
+use an existing token or add a new token/component contract before it
+ships.
+
+- **PWA browser chrome metadata**
+  - Used in: `web/index.html` `meta[name="theme-color"]`.
+  - Value pattern: literal light/dark hex values.
+  - Why unavoidable: browser UI metadata cannot read CSS custom
+    properties reliably across install surfaces.
+  - Status: permanent platform exception; keep values synchronized with
+    `bg` and `dark-bg-primary`.
+  - Coverage: `web/tests/design-token-leftovers.test.ts` verifies the
+    critical CSS tokens that sit beside this metadata.
+- **Print-only black and white**
+  - Used in: `web/styles/partials/print.css`.
+  - Value pattern: print media black/white foregrounds and backgrounds.
+  - Why unavoidable: hardcopy output needs predictable ink behavior
+    independent of the interactive theme palette.
+  - Status: permanent print exception.
+  - Coverage: stylelint plus this documented exception.
+- **High-contrast forced outlines**
+  - Used in: `web/styles/partials/theme.css` high-contrast media and
+    `[data-contrast="more"]` overrides.
+  - Value pattern: raw maximum-contrast black/white outlines.
+  - Why unavoidable: WCAG non-text contrast affordances must remain
+    legible even if brand tokens shift.
+  - Status: permanent accessibility exception.
+  - Coverage: design lint and accessibility-oriented CSS tests.
+- **Runtime alpha and vector internals**
+  - Used in: shadows, overlays, `color-mix()` surfaces, data-URI select
+    arrows, and vector path fills inside platform assets.
+  - Value pattern: alpha channels or asset-internal fill values derived
+    at render time.
+  - Why unavoidable: DESIGN.md YAML accepts literal hex tokens, while
+    these values are compositing instructions or embedded asset data.
+  - Status: allowed only when the base color is tokenized or the value
+    is isolated inside an asset.
+  - Coverage: design-token leftover tests block stale app-facing colors
+    from returning outside token definitions.
 
 ### First dogfood: install-prompt (2026-04-24)
 

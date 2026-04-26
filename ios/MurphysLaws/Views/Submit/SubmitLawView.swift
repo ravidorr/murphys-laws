@@ -45,11 +45,11 @@ struct SubmitLawView: View {
                             } label: {
                                 HStack {
                                     Text(category.title)
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(DS.Color.fg)
                                     Spacer()
                                     if viewModel.selectedCategoryID == category.id {
                                         Image(systemName: "checkmark")
-                                            .foregroundColor(.accentColor)
+                                            .foregroundColor(DS.Color.btnPrimaryBg)
                                     }
                                 }
                             }
@@ -100,19 +100,20 @@ struct SubmitLawView: View {
             }
             .overlay {
                 if viewModel.isSubmitting {
-                    Color.black.opacity(0.3)
+                    DS.Color.fg.opacity(0.3)
                         .ignoresSafeArea()
 
                     VStack(spacing: Constants.UI.spacingM) {
                         ProgressView()
                             .scaleEffect(1.5)
                         Text("Submitting...")
-                            .font(.headline)
+                            .dsTypography(DS.Typography.h4)
+                            .foregroundColor(DS.Color.fg)
                     }
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
-                            .fill(Color(.systemBackground))
+                            .fill(DS.Color.surface)
                     )
                     .shadow(radius: 10)
                 }

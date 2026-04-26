@@ -609,7 +609,7 @@
 }
 
 .vote-btn[data-action="favorite"]:hover {
-  color: var(--favorite-color, #e91e63);
+  color: var(--favorite-color, #c2185b);
 }
 
 .vote-btn[data-action="favorite"] .icon {
@@ -622,13 +622,13 @@
 }
 
 .vote-btn.favorited[data-action="favorite"] {
-  background: color-mix(in oklab, var(--favorite-color, #e91e63) 15%, transparent 85%);
-  color: var(--favorite-color, #e91e63);
+  background: color-mix(in oklab, var(--favorite-color, #c2185b) 15%, transparent 85%);
+  color: var(--favorite-color, #c2185b);
 }
 
 .vote-btn.favorited[data-action="favorite"] .icon {
   transform: scale(1.1);
-  color: var(--favorite-color, #e91e63);
+  color: var(--favorite-color, #c2185b);
 }
 
 /* Hide count for favorite button */
@@ -828,7 +828,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: #fff;
+  color: var(--brand-social-icon-fg);
   flex-shrink: 0;
 }
 
@@ -839,9 +839,9 @@
 
 /* Platform colors for quick share */
 .quick-share-actions .icon-circle.link { background-color: var(--btn-primary-bg); }
-.quick-share-actions .icon-circle.twitter { background-color: #000; }
-.quick-share-actions .icon-circle.facebook { background-color: #1877F2; }
-.quick-share-actions .icon-circle.email { background-color: #777; }
+.quick-share-actions .icon-circle.twitter { background-color: var(--brand-social-x); }
+.quick-share-actions .icon-circle.facebook { background-color: var(--brand-social-facebook); }
+.quick-share-actions .icon-circle.email { background-color: var(--brand-social-email); }
 
 @media (width <= 600px) {
   .quick-share-actions {

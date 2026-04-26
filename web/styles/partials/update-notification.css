@@ -6,16 +6,16 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--space-3);
   box-shadow: 0 10px 25px -5px rgb(0 0 0 / 10%), 0 8px 10px -6px rgb(0 0 0 / 10%);
-  padding: 1rem 1.25rem;
+  padding: var(--space-4) var(--space-5);
   max-width: calc(100vw - 2rem);
   width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
   animation: pwa-slide-up 0.3s ease-out;
 }
 
@@ -34,14 +34,14 @@
 .pwa-notification-content {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .pwa-notification-icon {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  color: var(--btn-primary-bg, #1173d4);
+  color: var(--btn-primary-bg);
 }
 
 .pwa-notification-text {
@@ -51,15 +51,15 @@
 
 .pwa-notification-title {
   display: block;
-  font-size: 0.9375rem;
+  font-size: var(--text-base);
   font-weight: 600;
-  color: var(--fg, #111827);
-  margin-bottom: 0.125rem;
+  color: var(--fg);
+  margin-bottom: calc(var(--space-1) / 2);
 }
 
 .pwa-notification-message {
-  font-size: 0.875rem;
-  color: var(--muted-fg, #6b7280);
+  font-size: var(--text-sm);
+  color: var(--muted-fg);
   margin: 0;
   line-height: 1.4;
 }
@@ -67,14 +67,14 @@
 .pwa-notification-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .pwa-notification-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
   font-weight: 500;
-  border-radius: 0.375rem;
+  border-radius: var(--space-1);
   border: none;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
@@ -85,8 +85,8 @@
 }
 
 .pwa-notification-btn-primary {
-  background: var(--btn-primary-bg, #1173d4);
-  color: var(--btn-primary-fg, #fff);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 
 .pwa-notification-btn-primary:hover {
@@ -95,12 +95,12 @@
 
 .pwa-notification-btn-secondary {
   background: transparent;
-  color: var(--muted-fg, #6b7280);
+  color: var(--muted-fg);
 }
 
 .pwa-notification-btn-secondary:hover {
-  background: var(--border, #e5e7eb);
-  color: var(--fg, #111827);
+  background: var(--surface-border);
+  color: var(--fg);
 }
 
 @media (width <= 480px) {

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 enum Constants {
     // MARK: - Configuration Loader
@@ -96,16 +97,16 @@ enum Constants {
     // MARK: - UI Constants
     enum UI {
         // Spacing
-        static let spacingXS: CGFloat = 4
-        static let spacingS: CGFloat = 8
-        static let spacingM: CGFloat = 16
-        static let spacingL: CGFloat = 24
-        static let spacingXL: CGFloat = 32
+        static let spacingXS: CGFloat = DS.Spacing.s1
+        static let spacingS: CGFloat = DS.Spacing.s2
+        static let spacingM: CGFloat = DS.Spacing.s4
+        static let spacingL: CGFloat = DS.Spacing.s6
+        static let spacingXL: CGFloat = DS.Spacing.s8
 
         // Corner Radius
-        static let cornerRadiusS: CGFloat = 8
-        static let cornerRadiusM: CGFloat = 12
-        static let cornerRadiusL: CGFloat = 16
+        static let cornerRadiusS: CGFloat = DS.Radius.lg
+        static let cornerRadiusM: CGFloat = DS.Radius.xl
+        static let cornerRadiusL: CGFloat = DS.Radius.xl
 
         // Animation Duration
         static let animationFast: Double = 0.2

@@ -22,17 +22,18 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: Constants.UI.spacingL) {
             Image(systemName: systemImage)
-                .font(.system(size: 64))
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.display)
+                .foregroundColor(DS.Color.mutedFg)
 
             Text(title)
-                .font(.title2)
+                .dsTypography(DS.Typography.h3)
                 .fontWeight(.semibold)
+                .foregroundColor(DS.Color.fg)
                 .multilineTextAlignment(.center)
 
             Text(description)
-                .font(.body)
-                .foregroundColor(.secondary)
+                .dsTypography(DS.Typography.bodyMd)
+                .foregroundColor(DS.Color.mutedFg)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }

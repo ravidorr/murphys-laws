@@ -10,7 +10,6 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -22,11 +21,9 @@ import androidx.core.view.WindowCompat
  * Mapping decisions worth knowing about:
  *  - `primary` -> `btnPrimaryBg` (the WCAG-tuned interaction blue), not the
  *    deep brand navy `DS.Color.primary`. Brand navy lives on `secondary`.
- *  - `outline` -> `mutedFg` is approximate; DESIGN.md doesn't tokenize a
- *    border colour. Good enough for default M3 outlines.
- *  - `surfaceVariant` is intentionally NOT overridden. Material 3's default
- *    is fine; the previous hand-picked `#F3F4F6` was an "inferred" value
- *    not present in DESIGN.md.
+ *  - `outline` -> `surfaceBorder`, the shared solid border token.
+ *  - `surfaceVariant` -> `surface`, so cards and text fields do not fall
+ *    through to Material 3 defaults.
  *  - `errorContainer` / `onErrorContainer` map to the web's error-bg /
  *    error-text pair so banners and snackbars get the same surface treatment.
  */
@@ -35,10 +32,12 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = DS.Color.btnPrimaryFg,
     secondary = DS.Color.primary,
     background = DS.Color.bg,
-    surface = DS.Color.bg,
+    surface = DS.Color.surface,
+    surfaceVariant = DS.Color.surface,
     onBackground = DS.Color.fg,
     onSurface = DS.Color.fg,
-    outline = DS.Color.mutedFg,
+    onSurfaceVariant = DS.Color.mutedFg,
+    outline = DS.Color.surfaceBorder,
     error = DS.Color.error,
     errorContainer = DS.Color.errorBg,
     onError = DS.Color.btnPrimaryFg,
@@ -54,16 +53,18 @@ private val LightColorScheme = lightColorScheme(
 //   error-bg    -> darkErrorBg
 private val DarkColorScheme = darkColorScheme(
     primary = DS.Color.darkPrimary,
-    onPrimary = Color.White,
+    onPrimary = DS.Color.btnPrimaryFg,
     secondary = DS.Color.darkLink,
     background = DS.Color.darkBgPrimary,
-    surface = DS.Color.darkBgPrimary,
+    surface = DS.Color.darkSurface,
+    surfaceVariant = DS.Color.darkSurface,
     onBackground = DS.Color.darkFgPrimary,
     onSurface = DS.Color.darkFgPrimary,
-    outline = DS.Color.darkMutedFg,
+    onSurfaceVariant = DS.Color.darkMutedFg,
+    outline = DS.Color.darkSurfaceBorder,
     error = DS.Color.error,
     errorContainer = DS.Color.darkErrorBg,
-    onError = Color.White,
+    onError = DS.Color.btnPrimaryFg,
     onErrorContainer = DS.Color.darkErrorFg,
 )
 
@@ -96,6 +97,7 @@ fun MurphysLawsTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = Shapes,
         content = content,
     )
 }
