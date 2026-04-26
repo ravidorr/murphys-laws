@@ -4,7 +4,14 @@ final class NavigationUITests: XCTestCase {
     var app: XCUIApplication!
 
     override func setUpWithError() throws {
-        throw XCTSkip("UI tests temporarily disabled during active UI development")
+        continueAfterFailure = false
+        app = XCUIApplication()
+        
+        // Enable UI test mode (faster animations)
+        app.launchArguments = ["--uitesting"]
+        app.launchEnvironment = ["UITEST_DISABLE_ANIMATIONS": "1"]
+        
+        app.launch()
     }
 
     override func tearDownWithError() throws {
