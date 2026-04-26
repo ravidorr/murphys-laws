@@ -25,13 +25,15 @@ struct FilterView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                // Category filter section
+            List {
                 Section("Category") {
                     Button {
                         selectedCategoryID = nil
                     } label: {
                         HStack {
+                            Image(systemName: "square.grid.2x2")
+                                .foregroundColor(DS.Color.btnPrimaryBg)
+                                .frame(width: 24)
                             Text("All Categories")
                             Spacer()
                             if selectedCategoryID == nil {
@@ -50,16 +52,10 @@ struct FilterView: View {
                             Button {
                                 selectedCategoryID = category.id
                             } label: {
-                                HStack {
-                                    Image(systemName: category.iconName)
-                                        .foregroundColor(category.iconColor)
-                                    Text(category.title)
-                                    Spacer()
-                                    if selectedCategoryID == category.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(DS.Color.btnPrimaryBg)
-                                    }
-                                }
+                                CategoryRow(
+                                    category: category,
+                                    isSelected: selectedCategoryID == category.id
+                                )
                             }
                             .foregroundColor(DS.Color.fg)
                             .accessibilityIdentifier("FilterCategory-\(category.id)")
@@ -67,7 +63,6 @@ struct FilterView: View {
                     }
                 }
 
-                // Sort order section
                 Section("Sort Order") {
                     ForEach(SortOrder.allCases) { order in
                         Button {
@@ -86,6 +81,7 @@ struct FilterView: View {
                     }
                 }
             }
+            .listStyle(.plain)
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

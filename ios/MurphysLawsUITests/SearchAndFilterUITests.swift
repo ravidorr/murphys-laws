@@ -68,7 +68,7 @@ final class SearchAndFilterUITests: XCTestCase {
         // Find first category using accessibility identifier
         let firstCategory = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'CategoryCard-'")).firstMatch
         
-        XCTAssertTrue(firstCategory.waitForExistence(timeout: 3), "Category card should exist")
+        XCTAssertTrue(firstCategory.waitForExistence(timeout: 3), "Category row should exist")
         
         // Tap first category
         firstCategory.tap()
