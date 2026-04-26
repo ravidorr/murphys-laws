@@ -32,7 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - iOS CI now builds against a generic simulator and selects an available
   iPhone simulator for tests, avoiding failures when the runner image does not
-  include a hardcoded simulator name.
+  include a hardcoded simulator name. Simulator selection now extracts the UUID
+  field so device names with parentheses do not break the destination.
 - iOS category color buckets are distinct again, restoring separate visual
   treatment for slug hash buckets 3 and 6; submit loading now uses a stable
   black scrim in dark mode instead of brightening the page with adaptive
