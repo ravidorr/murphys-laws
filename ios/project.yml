@@ -2,34 +2,53 @@ name: MurphysLaws
 options:
   bundleIdPrefix: com.murphyslaws
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
   developmentLanguage: en
   xcodeVersion: "14.0"
 
 settings:
-  MARKETING_VERSION: "1.1.2"
-  CURRENT_PROJECT_VERSION: "6"
+  MARKETING_VERSION: "1.1.3"
+  CURRENT_PROJECT_VERSION: "7"
 
 targets:
   MurphysLaws:
     type: application
     platform: iOS
+    deploymentTarget: "17.0"
     sources:
       - path: MurphysLaws
-        # The hand-authored MurphysLaws/Info.plist is the source of truth
-        # (referenced by INFOPLIST_FILE below). A second stray plist at
-        # MurphysLaws/Repositories/Info.plist is leftover scaffolding from
-        # an earlier framework-style structure. Both must be excluded so
-        # XcodeGen doesn't add them to Copy Bundle Resources, which
-        # produces `Multiple commands produce ... MurphysLaws.app/Info.plist`
-        # at build time. The `**/Info.plist` glob covers any future-stray
-        # plist as well.
         excludes:
+          # Exclude all markdown documentation
+          - "**/*.md"
+          - "**/*README*"
+          - "**/*CHECKLIST*"
+          - "**/*SUMMARY*"
+          - "**/*CORRECTIONS*"
+          - "**/*HONEST*"
+          - "**/*START_HERE*"
+          - "**/*STEP_*"
+
+          # Exclude templates
+          - "**/*.template"
+          - "**/*.template.*"
+
+          # Exclude test files that ended up in app source
+          - "**/Tests"
+          - "**/*Tests.swift"
+          - "**/*IntegrationTests.swift"
+
+          # Exclude local content copy (use shared instead)
+          - "Resources/content"
+
+          # The hand-authored MurphysLaws/Info.plist is the source of truth.
           - "**/Info.plist"
+          - "App/CHECKLIST.md"
+          - "App/README.md"
+          - "Repositories/Config.plist.template"
+          - "Repositories/validate-config.sh"
       - path: ../shared/content
-        name: content
-        type: folder
-        buildPhase: resources
+        name: Content
+        type: group
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.murphyslaws.MurphysLaws
       INFOPLIST_FILE: MurphysLaws/Info.plist

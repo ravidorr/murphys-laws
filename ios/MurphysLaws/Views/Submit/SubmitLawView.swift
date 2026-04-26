@@ -20,8 +20,10 @@ struct SubmitLawView: View {
                 Section {
                     TextField("Law text (required)", text: $viewModel.lawText, axis: .vertical)
                         .lineLimit(3...10)
+                        .accessibilityIdentifier("SubmitLawTextField")
 
                     TextField("Title (optional)", text: $viewModel.title)
+                        .accessibilityIdentifier("SubmitLawTitleField")
                 } header: {
                     Text("Law Content")
                 } footer: {
@@ -34,7 +36,7 @@ struct SubmitLawView: View {
                         // This button is provided for UI tests to locate a category picker trigger.
                         // In a fuller implementation, this could present a dedicated picker.
                     }
-                    
+
                     if viewModel.categories.isEmpty && viewModel.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity, alignment: .center)

@@ -22,7 +22,7 @@ struct BrowseView: View {
                 if selectedCategoryID != nil || sortOrder != .newest {
                     activeFiltersBar
                 }
-                
+
                 lawListContent
             }
             .navigationTitle("Browse Laws")
@@ -134,7 +134,7 @@ struct BrowseView: View {
         } label: {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
-                
+
                 // Badge indicator when filters are active
                 if selectedCategoryID != nil || sortOrder != .newest {
                     Circle()
@@ -144,10 +144,11 @@ struct BrowseView: View {
                 }
             }
         }
+        .accessibilityIdentifier("BrowseFilterButton")
     }
-    
+
     @StateObject private var categoryViewModel = CategoryListViewModel()
-    
+
     private var activeFiltersBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Constants.UI.spacingS) {
@@ -161,7 +162,7 @@ struct BrowseView: View {
                         selectedCategoryID = nil
                     }
                 }
-                
+
                 // Sort order chip (only if not default)
                 if sortOrder != .newest {
                     FilterChip(
@@ -172,7 +173,7 @@ struct BrowseView: View {
                         sortOrder = .newest
                     }
                 }
-                
+
                 // Clear all button (if multiple filters)
                 if selectedCategoryID != nil && sortOrder != .newest {
                     Button {
@@ -197,11 +198,11 @@ struct BrowseView: View {
             }
         }
     }
-    
+
     private func categoryTitle(for id: Int) -> String {
         categoryViewModel.categories.first { $0.id == id }?.title ?? "Category"
     }
-    
+
     private func categoryColor(for id: Int) -> Color {
         categoryViewModel.categories.first { $0.id == id }?.iconColor ?? DS.Color.mutedFg
     }
@@ -289,18 +290,19 @@ struct FilterChip: View {
     let systemImage: String
     let color: Color
     let onRemove: () -> Void
-    
+
     var body: some View {
         HStack(spacing: DS.Spacing.s2) {
             Image(systemName: systemImage)
                 .dsTypography(DS.Typography.caption)
                 .foregroundColor(color)
-            
+
             Text(title)
                 .dsTypography(DS.Typography.caption)
                 .fontWeight(.medium)
                 .lineLimit(1)
-            
+                .accessibilityIdentifier("FilterChip-\(title)")
+
             Button {
                 onRemove()
             } label: {
@@ -308,7 +310,10 @@ struct FilterChip: View {
                     .dsTypography(DS.Typography.caption)
                     .foregroundColor(DS.Color.mutedFg)
             }
+            .accessibilityLabel("Remove \(title) filter")
+            .accessibilityIdentifier("RemoveFilterChip-\(title)")
         }
+        .accessibilityElement(children: .contain)
         .padding(.horizontal, DS.Spacing.s3)
         .padding(.vertical, DS.Spacing.s2)
         .background(

@@ -96,8 +96,19 @@ ssh murphys-main 'systemctl status nginx --no-pager -l | head -n 10'
 # Check Node.js processes
 ssh murphys-main 'ps aux | grep -E "node|pm2" | grep -v grep'
 
-# Test web server response
-ssh murphys-main 'curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost'
+# Check pm2 (runs as root via pm2-root.service; plain `sudo pm2` fails because pm2
+# lives under /root/.nvm and sudo does not load root's login shell)
+ssh murphys-main 'systemctl status pm2-root.service --no-pager -l | head -n 12'
+ssh murphys-main 'sudo -i pm2 list'
+
+# Confirm the API is listening on its loopback port
+ssh murphys-main 'ss -tln | grep ":8787"'
+
+# Test the API directly (bypasses nginx) and through nginx via the real hostname.
+# Do NOT curl http://localhost: the bare vhost does not match murphys-laws.com and
+# returns 404 even when the site is healthy.
+ssh murphys-main 'curl -s -o /dev/null -w "API /api/health: %{http_code} %{time_total}s\n" http://127.0.0.1:8787/api/health'
+ssh murphys-main 'curl -sI -o /dev/null -w "Public  /        : %{http_code} %{time_total}s\n" https://murphys-laws.com/'
 
 # Check disk and memory
 ssh murphys-main 'df -h / && echo "---" && free -h'
@@ -314,6 +325,7 @@ ssh murphys-n8n 'sudo docker run --rm -v n8n_data:/data -v $(pwd):/backup ubuntu
 |------|--------|--------|-------------|-------------|
 | 2025-12-19 | murphys-main | System updates + reboot | 6.8.0-88 kernel | 6.8.0-90 kernel |
 | 2025-12-19 | murphys-n8n | n8n major version upgrade | 1.121.3 | 2.0.3 |
+| 2026-04-26 | murphys-main | Reboot only (kernel package already installed; 0 security updates pending; 17 routine updates deferred) | 6.8.0-107 kernel | 6.8.0-110 kernel |
 
 ## Best Practices
 
