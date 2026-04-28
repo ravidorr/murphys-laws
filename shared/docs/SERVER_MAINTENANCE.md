@@ -247,6 +247,41 @@ Unattended-Upgrade::MinimalSteps "true";
 - `Reboot Required: YES` with `linux-image-*` in `reboot-required.pkgs` means a security-tracked kernel was auto-installed and is waiting for a manual reboot to take effect. Schedule one.
 - A security-update count (`apt list --upgradable | grep -Ei "security|esm"`) that stays `> 0` for multiple days means unattended-upgrades is failing. Check the log above.
 
+## Health Monitoring
+
+Two layers run in parallel:
+
+1. **On-box monitor** (`/usr/local/bin/health-monitor.sh`, source-of-truth at `backend/scripts/health-monitor.sh`). Runs every 5 minutes via cron, hits `/api/health`, and after **3 consecutive failures** runs `pm2 restart all` and emails. Sends a `1/3` informational email on the first failure of any new run.
+2. **External dead-man-switch** (Healthchecks.io). The on-box monitor pings out on every successful check. If pings stop arriving, Healthchecks alerts on its own, catching "the box is dead and can't email" cases the on-box monitor structurally cannot.
+
+The dead-man UUID is treated as a secret and never committed: it lives on the server in `/etc/default/health-monitor`, sourced by the script at startup. Dev environments without the env file behave exactly as before (no ping, no failure).
+
+### Wiring the dead-man-switch on a new server
+
+```bash
+# 1. Drop the env file (replace UUID; keep mode 600)
+ssh murphys-main 'sudo install -m 600 -o root -g root /dev/null /etc/default/health-monitor && \
+  echo "HEALTHCHECKS_PING_URL=https://hc-ping.com/<your-uuid-here>" | sudo tee /etc/default/health-monitor >/dev/null'
+
+# 2. Hand-run the monitor once and confirm the ping registers in the Healthchecks dashboard
+ssh murphys-main 'sudo /usr/local/bin/health-monitor.sh && echo "next 5-min cron tick will repeat"'
+
+# 3. Verify the env is being picked up (the variable should be set after sourcing)
+ssh murphys-main 'sudo bash -c ". /etc/default/health-monitor && echo \$HEALTHCHECKS_PING_URL"'
+```
+
+### Reading Healthchecks.io alerts
+
+- **"Down" notification:** the on-box monitor stopped pinging. Either the box itself is down, the cron stopped firing, or the script is failing before it gets to `ping_deadman`. SSH and check `/var/log/health-monitor.log` and `systemctl list-timers cron.service`.
+- **"Back up" notification:** transient outage that auto-resolved by the next cron tick. Worth logging but not investigating unless it repeats.
+
+### Reading the on-box `1/3 / 2/3 / 3/3` email ladder
+
+- **`1/3`:** single transient failure. Auto-recovered the next tick. Informational only; do not act unless followed by 2/3.
+- **`2/3`:** two consecutive failures. Worth a glance but no action yet.
+- **`3/3` ("Services Restarted Due to Health Check Failures"):** auto-restart fired. Look at `/var/log/health-monitor.log` and `pm2 logs murphys-api` to root-cause.
+- **"CRITICAL: Services Still Failing After Restart":** restart did not help. Drop everything; SSH in.
+
 ## Quick Reference Commands
 
 ### General System Info
