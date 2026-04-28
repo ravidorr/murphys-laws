@@ -57,6 +57,15 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('1');
   });
 
+  it('renders source status and report issue action for fetched law details', async () => {
+    const law = { id: '1', title: 'A Law', text: 'Text', score: 1, attributions: [{ name: 'Known Source' }] };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-source-status]')?.textContent).toContain('Known Source'), { timeout: 500 });
+    expect(el.querySelector('[data-law-report-link]')?.getAttribute('href')).toBe('/contact');
+  });
+
   it('L207 B1: breadcrumbContainer exists so breadcrumb rendered', async () => {
     const law = { id: '1', title: 'T', text: 'T', score: 0 };
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });

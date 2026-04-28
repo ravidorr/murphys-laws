@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { wrapFirstWordWithAccent, enhanceMarkdownHtml, wrapInCardStructure } from '@scripts/ssg';
+import {
+  wrapFirstWordWithAccent,
+  enhanceMarkdownHtml,
+  wrapInCardStructure,
+  CONTENT_PAGES,
+  buildStaticFavoritesContent,
+  buildStaticSubmitContent,
+  buildStaticCalculatorContent,
+  buildStaticLawDetailContent,
+  buildStaticHomeContent
+} from '@scripts/ssg';
 
 describe('SSG Utilities', () => {
   describe('wrapFirstWordWithAccent', () => {
@@ -143,5 +153,73 @@ describe('SSG Utilities', () => {
       expect(result).toContain('<div class="card-body">');
       expect(result).toContain('content-section');
     });
+  });
+});
+
+describe('SSG Static Route Content', () => {
+  it('includes developers as a generated content page', () => {
+    expect(CONTENT_PAGES.map((page) => page.slug)).toContain('developers');
+  });
+
+  it('renders a useful static favorites empty state', () => {
+    const html = buildStaticFavoritesContent();
+
+    expect(html).toContain('My Favorites');
+    expect(html).toContain('stored in your browser');
+    expect(html).toContain('/browse');
+    expect(html).not.toMatch(/Loading favorites/i);
+  });
+
+  it('renders static submit guidance with moderation and attribution copy', () => {
+    const html = buildStaticSubmitContent();
+
+    expect(html).toContain("Submit a Murphy's Law");
+    expect(html).toMatch(/reviewed by a human/i);
+    expect(html).toMatch(/attribution/i);
+    expect(html).toContain('/contact');
+    expect(html).not.toMatch(/Loading the archive/i);
+  });
+
+  it('renders static calculator explainer content for Sod and toast calculators', () => {
+    const sod = buildStaticCalculatorContent('sods-law');
+    const toast = buildStaticCalculatorContent('buttered-toast');
+
+    expect(sod).toContain("Sod's Law Calculator");
+    expect(sod).toMatch(/Urgency/i);
+    expect(sod).toMatch(/for entertainment/i);
+    expect(toast).toContain('Buttered Toast');
+    expect(toast).toMatch(/assumptions/i);
+    expect(toast).toMatch(/simulator/i);
+  });
+
+  it('renders law detail pages as destination pages', () => {
+    const html = buildStaticLawDetailContent({
+      id: 42,
+      title: 'Test Law',
+      text: 'Anything tested can fail.',
+      category_slug: 'murphys-technology-laws',
+      category_name: "Murphy's Technology Laws",
+      attributions: [{ name: 'QA Engineer' }],
+      upvotes: 7,
+      downvotes: 2
+    });
+
+    expect(html).toContain('Anything tested can fail.');
+    expect(html).toContain('QA Engineer');
+    expect(html).toMatch(/Source status/i);
+    expect(html).toMatch(/In context/i);
+    expect(html).toMatch(/Related laws/i);
+    expect(html).toContain('/category/murphys-technology-laws');
+    expect(html).toContain('/contact');
+  });
+
+  it('renders static homepage content around the primary loops', () => {
+    const html = buildStaticHomeContent();
+
+    expect(html).toContain('Search the Archive');
+    expect(html).toContain('Human-reviewed submissions');
+    expect(html).toContain('/categories');
+    expect(html).toContain('/submit');
+    expect(html).not.toMatch(/Loading/i);
   });
 });

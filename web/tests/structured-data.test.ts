@@ -270,6 +270,19 @@ describe('Structured Data module', () => {
       expect(data.hasPart[1]['@type']).toBe('WebApplication');
     });
 
+    it('uses canonical calculator URLs in home hasPart', () => {
+      setHomeStructuredData();
+
+      const el = document.head.querySelector('#jsonld-home-page');
+      const data = JSON.parse(el!.textContent!);
+      const urls = data.hasPart.map((part: { url: string }) => part.url);
+
+      expect(urls).toContain('https://murphys-laws.com/calculator/sods-law');
+      expect(urls).toContain('https://murphys-laws.com/calculator/buttered-toast');
+      expect(urls).not.toContain('https://murphys-laws.com/calculator');
+      expect(urls).not.toContain('https://murphys-laws.com/toastcalculator');
+    });
+
     it('clears previous page data', () => {
       setJsonLd('browse-page', { name: 'Browse' });
       setHomeStructuredData();

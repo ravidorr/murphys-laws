@@ -84,6 +84,14 @@ describe('SubmitLawSection component', () => {
     expect(el.querySelector('#submit-btn') as HTMLButtonElement | null).toBeTruthy();
   });
 
+  it('renders pre-submit guidance about review, attribution, and duplicates', () => {
+    const el = mountSection();
+
+    expect(el.textContent).toMatch(/reviewed by a human/i);
+    expect(el.textContent).toMatch(/attribution/i);
+    expect(el.textContent).toMatch(/duplicates/i);
+  });
+
   it('submit button is disabled initially', () => {
     const el = mountSection();
     const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null;

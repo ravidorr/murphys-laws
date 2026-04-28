@@ -123,13 +123,13 @@ export function setHomeStructuredData(): void {
         '@type': 'WebApplication',
         'name': "Sod's Law Calculator",
         'applicationCategory': 'CalculatorApplication',
-        'url': `${SITE_URL}/calculator`
+        'url': `${SITE_URL}/calculator/sods-law`
       },
       {
         '@type': 'WebApplication',
         'name': 'Buttered Toast Landing Calculator',
         'applicationCategory': 'CalculatorApplication',
-        'url': `${SITE_URL}/toastcalculator`
+        'url': `${SITE_URL}/calculator/buttered-toast`
       }
     ]
   });
