@@ -6,6 +6,8 @@ import { fetchCategories } from '../utils/api.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { getRandomLoadingMessage, getCategoryDisplayName } from '../utils/constants.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import { groupCategories } from '@utils/category-groups.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
 import type { CleanableElement, OnNavigate, Category } from '../types/app.d.ts';
@@ -53,12 +55,19 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       `;
     }
 
-    // Sort categories alphabetically by title
-    const sortedCategories = [...categories].sort((a, b) => 
-      a.title.localeCompare(b.title)
-    );
-
-    return sortedCategories.map(renderCategoryCard).join('');
+    return groupCategories(categories)
+      .map((group) => `
+        <section class="category-cluster" data-category-cluster="${group.name}">
+          <header class="category-cluster-header">
+            <h2 class="category-cluster-title">${group.name}</h2>
+            <p class="category-cluster-description">${group.description}</p>
+          </header>
+          <div class="categories-grid">
+            ${group.categories.map(renderCategoryCard).join('')}
+          </div>
+        </section>
+      `)
+      .join('');
   }
 
   // Render the page structure
@@ -132,7 +141,10 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     const card = target.closest('.category-card');
     if (card) {
       const slug = card.getAttribute('data-category-slug');
-      if (slug) onNavigate('category', slug);
+      if (slug) {
+        trackProductEvent('category.click', { surface: 'categories', category: slug });
+        onNavigate('category', slug);
+      }
       return;
     }
 

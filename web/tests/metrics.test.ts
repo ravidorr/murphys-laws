@@ -77,4 +77,17 @@ describe('metrics', () => {
     count('event');
     expect(mockCount).toHaveBeenCalledWith('event', 1);
   });
+
+  it('tracks typed product events with privacy-safe tags', async () => {
+    import.meta.env.VITE_SENTRY_DSN = 'https://key@o1.ingest.sentry.io/1';
+    import.meta.env.PROD = true;
+    vi.resetModules();
+
+    const { trackProductEvent } = await import('../src/utils/metrics.ts');
+    trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
+
+    expect(mockCount).toHaveBeenCalledWith('product.archive.search', 1, {
+      tags: { surface: 'home', result: 'submitted' }
+    });
+  });
 });

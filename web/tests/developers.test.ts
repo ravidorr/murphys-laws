@@ -39,4 +39,35 @@ describe('Developers page', () => {
     expect(typeof el.cleanup).toBe('function');
     el.cleanup!();
   });
+
+  it('ignores clicks without navigation targets', () => {
+    let navigated = false;
+    const el = Developers({ onNavigate: () => { navigated = true; } });
+    el.click();
+    expect(navigated).toBe(false);
+  });
+
+  it('navigates when a data-nav target is clicked', () => {
+    let target = '';
+    const el = Developers({ onNavigate: (next) => { target = next; } });
+    const button = document.createElement('button');
+    button.setAttribute('data-nav', 'browse');
+    el.appendChild(button);
+
+    button.click();
+
+    expect(target).toBe('browse');
+  });
+
+  it('ignores empty data-nav targets', () => {
+    let navigated = false;
+    const el = Developers({ onNavigate: () => { navigated = true; } });
+    const button = document.createElement('button');
+    button.setAttribute('data-nav', '');
+    el.appendChild(button);
+
+    button.click();
+
+    expect(navigated).toBe(false);
+  });
 });

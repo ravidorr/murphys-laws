@@ -18,6 +18,7 @@ import { isFavorite, toggleFavorite } from '../utils/favorites.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { getDefaultLawContext } from '../utils/law-context-copy.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
 
 interface LawDetailProps {
@@ -306,6 +307,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       contextTextEl.textContent = contextText;
     }
 
+    const sourceStatusEl = el.querySelector('[data-law-source-status]');
+    if (sourceStatusEl) {
+      const attributionName = law.attributions?.[0]?.name || law.author || law.attribution || '';
+      sourceStatusEl.textContent = attributionName
+        ? `Attributed to ${attributionName}`
+        : 'Source not yet verified by the archive.';
+    }
+
     // Fetch and render related laws
     loadRelatedLaws(law.id);
   }
@@ -444,6 +453,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         text: lawText,
         title: lawTitle,
       });
+      trackProductEvent('law.favorite', { surface: 'law_detail', action: isNowFavorite ? 'add' : 'remove' });
 
       // Update button visual state
       /* v8 ignore start -- both tooltip states tested; icon always present in hydrated button */
@@ -486,6 +496,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         text: lawText,
         title: lawTitle,
       });
+      trackProductEvent('law.favorite', { surface: 'related_laws', action: isNowFavorite ? 'add' : 'remove' });
 
       // Update button visual state
       /* v8 ignore start -- both tooltip states tested; icon always present in hydrated button */
@@ -511,6 +522,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
       if (t.closest('button')) return;
+      trackProductEvent('law.related_click', { surface: 'law_detail' });
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }
@@ -537,6 +549,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
 
       try {
         const result = await toggleVote(lawId, voteType);
+        trackProductEvent('law.vote', { surface: 'law_detail', action: voteType });
 
         // Update vote counts in UI
         const upVoteCount = el.querySelector('[data-upvote-count]');

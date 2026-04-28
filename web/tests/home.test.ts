@@ -5,6 +5,31 @@ import { Home, renderHome } from '../src/views/home.ts';
 import * as exportContext from '../src/utils/export-context.js';
 
 describe('Home view', () => {
+  it('renders homepage zones around the discovery and contribution loops', () => {
+    const el = document.createElement('div');
+
+    renderHome(el, { id: 1, text: 'Test law', upvotes: 0, downvotes: 0 }, [], () => {});
+
+    expect(el.querySelector('[data-home-zone="archive-search"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="law-of-day"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="category-discovery"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="tools-submit"]')).toBeTruthy();
+    expect(el.textContent).toMatch(/human-reviewed/i);
+  });
+
+  it('routes homepage search submissions to browse', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
+
+    renderHome(el, { id: 1, text: 'Test law', upvotes: 0, downvotes: 0 }, [], onNavigate);
+    const form = el.querySelector('form[role="search"]');
+    expect(form).toBeTruthy();
+
+    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(onNavigate).toHaveBeenCalledWith('browse');
+  });
+
   it('renders Law of the Day after fetching data', async () => {
     const lawOfTheDay = {
       id: '1',
