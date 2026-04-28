@@ -15,9 +15,24 @@ HEALTH_CHECK_FAILURES="/var/tmp/health-check-failures"
 MAX_FAILURES=3  # Restart after 3 consecutive failures
 ALERT_EMAIL="ravidor@gmail.com"
 
+# Optional config overrides (kept out of the repo so secrets like the dead-man-switch
+# UUID stay off public git history). Currently recognized:
+#   HEALTHCHECKS_PING_URL  full https://hc-ping.com/<uuid> or self-hosted equivalent
+[ -f /etc/default/health-monitor ] && . /etc/default/health-monitor
+
 # Logging
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Optional dead-man-switch ping. Only fires when HEALTHCHECKS_PING_URL is set; absence
+# is silent so dev / fresh deploys without the env file behave identically. Ping failure
+# is non-fatal so a flaky outbound network does not break local restart logic.
+ping_deadman() {
+    if [ -n "${HEALTHCHECKS_PING_URL:-}" ]; then
+        curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_PING_URL" \
+            || log "Dead-man-switch ping failed (non-fatal)"
+    fi
 }
 
 # Get current failure count
@@ -58,6 +73,7 @@ cd "$PROJECT_DIR" || exit 1
 if node backend/scripts/health-check.mjs > /tmp/health-check-output.txt 2>&1; then
     log "Health check passed"
     reset_failure_count
+    ping_deadman
     exit 0
 else
     health_check_exit_code=$?
@@ -110,6 +126,7 @@ Please investigate the root cause of the failures."
         sleep 10
         if node backend/scripts/health-check.mjs > /tmp/health-check-retest.txt 2>&1; then
             log "Health check passed after restart"
+            ping_deadman
             exit 0
         else
             retest_output=$(cat /tmp/health-check-retest.txt)
