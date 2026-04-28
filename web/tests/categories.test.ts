@@ -92,6 +92,15 @@ describe('Categories view', () => {
     expect(el.textContent).toContain('Romance rules: the heart wants what it cannot have.');
   });
 
+  it('groups categories into editorial superclusters', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(el.querySelector('[data-category-cluster="Technology"]')).toBeTruthy();
+    expect(el.querySelector('[data-category-cluster="Everyday Life"]')).toBeTruthy();
+    expect(el.querySelector('[data-category-cluster="Relationships"]')).toBeTruthy();
+  });
+
   it('displays fallback description when none provided', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -123,17 +132,15 @@ describe('Categories view', () => {
     expect(el.textContent).not.toContain('1 laws');
   });
 
-  it('sorts categories alphabetically by title', async () => {
+  it('sorts categories alphabetically within editorial groups', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const cards = el.querySelectorAll('.category-card');
     expect(cards.length).toBe(3);
-    
-    // Should be alphabetically sorted: Alarm Clock, Computer, Love
-    expect(cards[0]!.textContent).toContain("Murphy's Alarm Clock Laws");
-    expect(cards[1]!.textContent).toContain("Murphy's Computer Laws");
-    expect(cards[2]!.textContent).toContain("Murphy's Love Laws");
+    expect(el.querySelector('[data-category-cluster="Technology"]')?.textContent).toContain("Murphy's Computer Laws");
+    expect(el.querySelector('[data-category-cluster="Everyday Life"]')?.textContent).toContain("Murphy's Alarm Clock Laws");
+    expect(el.querySelector('[data-category-cluster="Relationships"]')?.textContent).toContain("Murphy's Love Laws");
   });
 
   it('L139 B1: click on category card triggers onNavigate with slug', async () => {

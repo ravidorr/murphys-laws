@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { OnNavigate, FavoriteLaw } from '../src/types/app.d.ts';
 import { Favorites } from '../src/views/favorites.js';
+import favoritesTemplateHtml from '../src/views/templates/favorites.html?raw';
 
 // Mock feature flags
 vi.mock('../src/utils/feature-flags.js', () => ({
@@ -47,6 +48,13 @@ describe('Favorites View Component', () => {
     mockLaw1: { id: 123, text: 'Test law text', title: 'Test Law', savedAt: 0 },
     mockLaw2: { id: 456, text: 'Another law text', title: 'Another Law', savedAt: 0 },
   };
+
+  it('ships a useful no-JS empty state in the template', () => {
+    expect(favoritesTemplateHtml).toContain('My Favorites');
+    expect(favoritesTemplateHtml).toContain('stored in your browser');
+    expect(favoritesTemplateHtml).toContain('/browse');
+    expect(favoritesTemplateHtml).not.toMatch(/Loading favorites/i);
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();

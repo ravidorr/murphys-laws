@@ -13,6 +13,8 @@ Your phone maintains a healthy charge all day while sitting unused on your desk.
 ### The Update Curse
 Critical software updates always seem to install themselves right when you're about to give an important presentation. The loading bar moves at a glacial pace, seemingly aware of your mounting anxiety.
 
+Explore more failures in [Murphy's Technology Laws](/category/murphys-technology-laws) and [Murphy's Computer Laws](/category/murphys-computer-laws).
+
 ## Work and Career Examples
 
 ### The Interview Outfit
@@ -23,6 +25,8 @@ Your phone connection is crystal clear all day. The moment an important client c
 
 ### The Email Timing
 You finally send that carefully crafted email after hours of editing. Within seconds, you notice a glaring typo in the subject line or realize you hit "Reply All" instead of "Reply."
+
+Work examples connect directly to [Murphy's Office Laws](/category/murphys-office-laws) and the project risk patterns in [Project Management vs. The Universe](/murphys-law-project-management).
 
 ## Everyday Life Examples
 
@@ -38,6 +42,8 @@ When you're running late, every traffic light turns red as you approach. When yo
 ### The Checkout Line
 Whichever line you choose at the grocery store will be the slowest. The moment you switch to another line, your original line starts moving faster.
 
+For more ordinary trouble, start with [Murphy's Alarm Clock Laws](/category/murphys-alarm-clock-laws), [Murphy's Mothers Laws](/category/murphys-mothers-laws), and the full [category directory](/categories).
+
 ## Murphy's Law in Travel
 
 ### The Baggage Claim
@@ -48,6 +54,18 @@ You plan an outdoor event months in advance, carefully selecting a date with his
 
 ### The Flight Connection
 Your first flight will be delayed just long enough to make you miss your connecting flight, which departed on time for the first time in its history.
+
+Travel patterns continue in [Murphy's Travel Laws](/category/murphys-travel-laws), [Murphy's Bus Laws](/category/murphys-bus-laws), and [Murphy's Cars Laws](/category/murphys-cars-laws).
+
+## How to Reduce the Chance of It Happening
+
+Murphy's Law is useful when it changes behavior. Treat each example as a prompt:
+
+- Remove time pressure before it compounds small mistakes.
+- Make important steps visible, reversible, or impossible to skip.
+- Keep backups for tools, routes, batteries, files, and people.
+- Assume communication will be misunderstood and confirm the critical details.
+- Design the system so the most likely mistake is easy to catch.
 
 ## The Science Behind Murphy's Law
 

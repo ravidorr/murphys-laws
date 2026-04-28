@@ -7,6 +7,7 @@ import { hydrateIcons } from '@utils/icons.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
 type ToastSliderKey = 'height' | 'gravity' | 'overhang' | 'butter' | 'friction' | 'inertia';
@@ -14,6 +15,7 @@ type ToastSliderKey = 'height' | 'gravity' | 'overhang' | 'butter' | 'friction' 
 export function ButteredToastCalculator(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page calculator';
+  let hasTrackedStart = false;
 
   el.innerHTML = templateHtml;
 
@@ -229,6 +231,10 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
     sliders[k]?.addEventListener('input', () => {
+      if (!hasTrackedStart) {
+        hasTrackedStart = true;
+        trackProductEvent('calculator.start', { surface: 'calculator_page', calculator: 'buttered-toast' });
+      }
       const val = sliders[k].value;
 
       // Update ARIA attributes
@@ -244,6 +250,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
       flashAllVariables();
       calculateLanding();
+      trackProductEvent('calculator.complete', { surface: 'calculator_page', calculator: 'buttered-toast' });
     });
   });
 

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
+import { groupCategories } from '../src/utils/category-groups.ts';
 import { truncateTitle } from '../src/utils/seo.ts';
 interface LawAttribution { name?: string; contact_type?: string; contact_value?: string; note?: string }
 interface Law {
@@ -10,6 +11,11 @@ interface Law {
   title?: string;
   text?: string;
   attributions?: LawAttribution[];
+  attribution?: string;
+  author?: string;
+  category_slug?: string;
+  category_name?: string;
+  category_context?: string | null;
   upvotes?: number;
   downvotes?: number;
   created_at?: string;
@@ -82,6 +88,12 @@ const CONTENT_PAGES: ContentPageMeta[] = [
     file: 'murphys-law-project-management.md',
     title: 'Project Management vs. The Universe: A Survival Guide',
     description: 'Plan for failure, tame scope creep, and assume you are being misunderstood. A survival guide to applying Murphy\'s Law in project management.'
+  },
+  {
+    slug: 'developers',
+    file: 'developers.md',
+    title: 'Developers',
+    description: 'REST API, MCP server, TypeScript SDK, CLI, and machine-readable feeds for Murphy\'s Law Archive.'
   }
 ];
 
@@ -186,6 +198,83 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
+function getLawAttributionName(law: Law): string | null {
+  if (law.attributions && law.attributions.length > 0 && law.attributions[0]?.name) {
+    return law.attributions[0].name;
+  }
+  return law.author || law.attribution || null;
+}
+
+function buildStaticLawDetailContent(law: Law): string {
+  const title = law.title || "Murphy's Law";
+  const attributionName = getLawAttributionName(law);
+  const sourceStatus = attributionName
+    ? `Attributed to ${escapeHtml(attributionName)}`
+    : 'Source not yet verified by the archive.';
+  const categoryName = law.category_name || 'Murphy\'s Laws';
+  const categorySlug = law.category_slug;
+  const categoryLink = categorySlug
+    ? `<a href="/category/${escapeHtml(categorySlug)}">${escapeHtml(categoryName)}</a>`
+    : `<a href="/categories">Browse categories</a>`;
+  const context = law.category_context
+    || `This law belongs with ${categoryName}, where small assumptions, timing, and system complexity tend to turn into memorable failures.`;
+  const upvotes = Number.isFinite(law.upvotes) ? law.upvotes : 0;
+  const downvotes = Number.isFinite(law.downvotes) ? law.downvotes : 0;
+
+  return `
+    <div class="container page law-detail pt-0">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="/">Home</a></li>
+          <li><a href="/browse">Browse</a></li>
+          <li aria-current="page">${escapeHtml(title)}</li>
+        </ol>
+      </nav>
+      <article class="law-detail-card card">
+        <header class="card-header">
+          <h1 class="card-title">${escapeHtml(title)}</h1>
+          <p class="small">Source status: ${sourceStatus}</p>
+        </header>
+        <div class="card-body">
+          <blockquote class="law-text">${escapeHtml(law.text || '')}</blockquote>
+          ${attributionName ? `<p class="attribution">- ${escapeHtml(attributionName)}</p>` : ''}
+          <div class="law-meta">
+            <p><strong>Category:</strong> ${categoryLink}</p>
+            <p><strong>Votes:</strong> ${upvotes} up, ${downvotes} down</p>
+          </div>
+        </div>
+      </article>
+      <section class="section section-card mb-12" aria-labelledby="law-context-heading">
+        <div class="section-header">
+          <h2 id="law-context-heading" class="section-title" data-section-title="In context"><span class="accent-text">In</span> context</h2>
+        </div>
+        <div class="section-body">
+          <p>${escapeHtml(context)}</p>
+        </div>
+      </section>
+      <section class="section section-card mb-12" aria-labelledby="related-laws-heading">
+        <div class="section-header">
+          <h2 id="related-laws-heading" class="section-title" data-section-title="Related laws"><span class="accent-text">Related</span> laws</h2>
+        </div>
+        <div class="section-body">
+          <p>Keep exploring laws from this topic or browse the full archive for neighboring ideas.</p>
+          <div class="not-found-actions">
+            ${categorySlug ? `<a href="/category/${escapeHtml(categorySlug)}" class="btn">See this category</a>` : ''}
+            <a href="/browse" class="btn outline">Browse all laws</a>
+          </div>
+        </div>
+      </section>
+      <section class="section section-card" aria-labelledby="law-actions-heading">
+        <div class="section-header">
+          <h2 id="law-actions-heading" class="section-title"><span class="accent-text">Improve</span> this entry</h2>
+        </div>
+        <div class="section-body">
+          <p>Know the original source, a better attribution, or a duplicate we should merge? <a href="/contact">Report an issue</a>.</p>
+        </div>
+      </section>
+    </div>`;
+}
+
 /**
  * Update hreflang tags to point to the correct URL
  */
@@ -285,31 +374,10 @@ function generateLawPage(law: Law, template: string): string {
   );
   
   // Get attribution name
-  const attributionName = law.attributions && law.attributions.length > 0
-    ? (law.attributions[0]?.name ?? null)
-    : null;
-  
-  // Split title for accent styling
-  const safeTitle = title ?? "Murphy's Law";
-  const titleWords = safeTitle.split(' ');
-  const accentTitle = titleWords.length > 1
-    ? `<span class="accent-text">${escapeHtml(titleWords[0] ?? '')}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
-    : `<span class="accent-text">${escapeHtml(safeTitle)}</span>`;
-  
+  const attributionName = getLawAttributionName(law);
+
   // Build static content for law detail page
-  const staticContent = `
-    <div class="container page law-detail pt-0">
-      <article class="law-detail-card card">
-        <header class="card-header">
-          <h1 class="card-title">${accentTitle}</h1>
-        </header>
-        <div class="card-body">
-          <blockquote class="law-text">${escapeHtml(law.text || '')}</blockquote>
-          ${attributionName ? `<p class="attribution">- ${escapeHtml(attributionName)}</p>` : ''}
-        </div>
-      </article>
-    </div>
-`;
+  const staticContent = buildStaticLawDetailContent(law);
   
   // Inject content into main
   pageHtml = pageHtml.replace(
@@ -348,6 +416,33 @@ function generateLawPage(law: Law, template: string): string {
   });
   
   pageHtml = injectJsonLd(pageHtml, lawJsonLd);
+
+  const breadcrumbJsonLd = generateJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': [
+      {
+        '@type': 'ListItem',
+        'position': 1,
+        'name': 'Home',
+        'item': SITE_URL
+      },
+      {
+        '@type': 'ListItem',
+        'position': 2,
+        'name': 'Browse',
+        'item': `${SITE_URL}/browse`
+      },
+      {
+        '@type': 'ListItem',
+        'position': 3,
+        'name': title,
+        'item': lawUrl
+      }
+    ]
+  });
+
+  pageHtml = injectJsonLd(pageHtml, breadcrumbJsonLd);
   
   return pageHtml;
 }
@@ -449,6 +544,165 @@ ${headerHtml}
             ${bodyContent.trim()}
           </div>
         </article>`;
+}
+
+function buildStaticFavoritesContent(): string {
+  return `
+    <div class="container page">
+      <h1 class="page-title mb-4" data-page-title="My Favorites"><span class="accent-text">My</span> Favorites</h1>
+      <article class="card content-card">
+        <header class="card-header text-center">
+          <h2 class="card-title"><span class="accent-text">Save</span> Laws You Want To Revisit</h2>
+          <blockquote class="not-found-quote">
+            "The law you need most will be the one you forgot to save."
+          </blockquote>
+          <p class="text-muted-fg">Favorites are stored in your browser on this device. No account is required.</p>
+          <p class="text-muted-fg small">Enable JavaScript to see saved laws from this browser, or start building your collection from the archive.</p>
+        </header>
+        <div class="card-body text-center">
+          <div class="not-found-actions">
+            <a href="/browse" class="btn">
+              <span class="btn-text">Browse All Laws</span>
+            </a>
+            <a href="/categories" class="btn outline">
+              <span class="btn-text">Explore Categories</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>`;
+}
+
+function buildStaticSubmitContent(): string {
+  return `
+    <div class="container page">
+      <h1 class="page-title mb-4" data-page-title="Submit a Murphy's Law"><span class="accent-text">Submit</span> a Murphy's Law</h1>
+      <article class="card content-card">
+        <header class="card-header content-header">
+          <h2 class="card-title"><span class="accent-text">Share</span> a Law With the Archive</h2>
+          <p class="lead">Every submission is reviewed by a human before publication so the archive stays useful, readable, and trustworthy.</p>
+        </header>
+        <div class="card-body">
+          <section class="content-section">
+            <h3>What makes a good law?</h3>
+            <ul>
+              <li>Keep it short enough to quote.</li>
+              <li>Make the pattern specific, not just generally unlucky.</li>
+              <li>Include attribution when you know the original author or source.</li>
+              <li>Check the archive first so near-duplicates do not crowd out better versions.</li>
+            </ul>
+          </section>
+          <section class="content-section">
+            <h3>Submission expectations</h3>
+            <p>You may submit anonymously. If you include a name or source note, we use it only for attribution and moderation context.</p>
+            <p>If the form is unavailable, contact the archive directly at <a href="/contact">Contact</a>.</p>
+          </section>
+        </div>
+      </article>
+    </div>`;
+}
+
+function buildStaticHomeContent(): string {
+  return `
+    <div class="container page pt-0">
+      <section class="section section-card mb-12" data-home-zone="archive-search">
+        <div class="section-header">
+          <h1 class="section-title" data-section-title="Search the Archive"><span class="accent-text">Search</span> the Archive</h1>
+        </div>
+        <div class="section-subheader">
+          <p class="section-subtitle">Explore Murphy's Law history, browse thousands of laws, and find the category that fits your next mishap.</p>
+        </div>
+        <div class="section-body">
+          <div class="home-proof-points">
+            <span>2,400+ laws</span>
+            <span>55+ categories</span>
+            <span>Human-reviewed submissions</span>
+            <span>Curated since the late 1990s</span>
+          </div>
+          <div class="not-found-actions">
+            <a href="/browse" class="btn">Browse All Laws</a>
+            <a href="/categories" class="btn outline">Explore Categories</a>
+          </div>
+        </div>
+      </section>
+      <section class="section section-card mb-12" data-home-zone="law-of-day">
+        <div class="section-header">
+          <h2 class="section-title"><span class="accent-text">Law</span> of the Day</h2>
+        </div>
+        <div class="section-body">
+          <p>Enable JavaScript for today's rotating law, or browse the full archive now.</p>
+        </div>
+      </section>
+      <section class="section section-card mb-12" data-home-zone="category-discovery">
+        <div class="section-header">
+          <h2 class="section-title"><span class="accent-text">Browse</span> by Theme</h2>
+        </div>
+        <div class="section-body">
+          <p>Start with technology, work, travel, relationships, and everyday life categories.</p>
+          <a href="/categories" class="btn">See category groups</a>
+        </div>
+      </section>
+      <section class="section section-card mb-12" data-home-zone="tools-submit">
+        <div class="section-header">
+          <h2 class="section-title"><span class="accent-text">Tools</span> and Submissions</h2>
+        </div>
+        <div class="section-body">
+          <p>Try the calculators for playful risk modeling, then submit your own law for human review.</p>
+          <div class="not-found-actions">
+            <a href="/calculator/sods-law" class="btn">Try Sod's Law Calculator</a>
+            <a href="/calculator/buttered-toast" class="btn outline">Try Buttered Toast</a>
+            <a href="/submit" class="btn outline">Submit a Law</a>
+          </div>
+        </div>
+      </section>
+    </div>`;
+}
+
+function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): string {
+  if (kind === 'sods-law') {
+    return `
+      <div class="container page calculator">
+        <h1 class="page-title mb-4" data-page-title="Sod's Law Calculator"><span class="accent-text">Sod's</span> Law Calculator</h1>
+        <article class="card content-card">
+          <header class="card-header content-header">
+            <h2 class="card-title"><span class="accent-text">Estimate</span> Your Risk</h2>
+            <p class="lead">Model how likely a task is to go wrong using Urgency, Complexity, Importance, Skill, and Frequency.</p>
+          </header>
+          <div class="card-body">
+            <section class="content-section">
+              <h3>How the calculator works</h3>
+              <p>The interactive version lets you adjust each input and see the result change. Without JavaScript, this page still explains the assumptions behind the model.</p>
+              <ul>
+                <li><strong>Urgency:</strong> how much time pressure surrounds the task.</li>
+                <li><strong>Complexity:</strong> how many moving parts can fail.</li>
+                <li><strong>Importance:</strong> how painful failure would be.</li>
+                <li><strong>Skill:</strong> how much experience reduces risk.</li>
+                <li><strong>Frequency:</strong> how repeated attempts increase exposure.</li>
+              </ul>
+              <p class="small">This calculator is for entertainment and lightweight planning, not engineering risk certification.</p>
+            </section>
+          </div>
+        </article>
+      </div>`;
+  }
+
+  return `
+    <div class="container page calculator">
+      <h1 class="page-title mb-4" data-page-title="Buttered Toast Calculator"><span class="accent-text">Buttered</span> Toast Calculator</h1>
+      <article class="card content-card">
+        <header class="card-header content-header">
+          <h2 class="card-title"><span class="accent-text">Simulate</span> the Classic Mishap</h2>
+          <p class="lead">Explore why toast seems destined to land butter-side down when breakfast is already running late.</p>
+        </header>
+        <div class="card-body">
+          <section class="content-section">
+            <h3>Assumptions</h3>
+            <p>The simulator treats table height, rotation, butter coverage, and launch angle as playful inputs that influence the final landing side.</p>
+            <p>Enable JavaScript for the live controls, or read the explanation here to understand the joke behind the physics.</p>
+          </section>
+        </div>
+      </article>
+    </div>`;
 }
 
 async function main(): Promise<void> {
@@ -629,10 +883,10 @@ async function main(): Promise<void> {
   categoriesHtml = categoriesHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/categories">`);
   categoriesHtml = updateHreflang(categoriesHtml, 'https://murphys-laws.com/categories');
 
-  // Build category cards HTML for SSG
-  const categoryCardsHtml = categories
-    .sort((a, b) => a.title.localeCompare(b.title))
-    .map(cat => {
+  // Build grouped category cards HTML for SSG
+  const categoryCardsHtml = groupCategories(categories)
+    .map(group => {
+      const cards = group.categories.map(cat => {
       const lawText = cat.law_count === 1 ? 'law' : 'laws';
       return `
       <article class="category-card" data-category-slug="${cat.slug}">
@@ -642,6 +896,17 @@ async function main(): Promise<void> {
           <span class="category-card-count">${cat.law_count} ${lawText}</span>
         </div>
       </article>`;
+      }).join('');
+      return `
+      <section class="category-cluster" data-category-cluster="${group.name}">
+        <header class="category-cluster-header">
+          <h2 class="category-cluster-title">${group.name}</h2>
+          <p class="category-cluster-description">${group.description}</p>
+        </header>
+        <div class="categories-grid">
+${cards.trim()}
+        </div>
+      </section>`;
     })
     .join('');
 
@@ -773,13 +1038,86 @@ ${cardHtml.trim()}
   }
   console.log(`Generated ${CONTENT_PAGES.length} content pages.`);
   
-  // 3b. Generate remaining static routes (calculator pages, submit) - SPA fallback only
-  const spaOnlyRoutes = ['calculator', 'toastcalculator', 'submit'];
-  
-  for (const route of spaOnlyRoutes) {
-    const routeDir = path.join(DIST_DIR, route);
+  // 3b. Generate app routes that hydrate on the client but still need useful static content
+  const staticAppRoutes = [
+    {
+      pathParts: ['calculator', 'sods-law'],
+      title: 'Sod\'s Law Calculator - Murphy\'s Law Archive',
+      description: 'Estimate how likely a task is to go wrong using urgency, complexity, importance, skill, and frequency.',
+      content: buildStaticCalculatorContent('sods-law'),
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        'name': 'Sod\'s Law Calculator',
+        'url': `${SITE_URL}/calculator/sods-law`,
+        'description': 'Estimate how likely a task is to go wrong using urgency, complexity, importance, skill, and frequency.',
+        'applicationCategory': 'EntertainmentApplication'
+      }
+    },
+    {
+      pathParts: ['calculator', 'buttered-toast'],
+      title: 'Buttered Toast Calculator - Murphy\'s Law Archive',
+      description: 'A playful simulator for the classic Murphy\'s Law question: will toast land butter-side down?',
+      content: buildStaticCalculatorContent('buttered-toast'),
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        'name': 'Buttered Toast Calculator',
+        'url': `${SITE_URL}/calculator/buttered-toast`,
+        'description': 'A playful simulator for the classic Murphy\'s Law question: will toast land butter-side down?',
+        'applicationCategory': 'EntertainmentApplication'
+      }
+    },
+    {
+      pathParts: ['submit'],
+      title: 'Submit a Murphy\'s Law - Murphy\'s Law Archive',
+      description: 'Submit a Murphy\'s Law for human review, with guidance on attribution, duplicate checks, and publication expectations.',
+      content: buildStaticSubmitContent(),
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        'name': 'Submit a Murphy\'s Law',
+        'url': `${SITE_URL}/submit`,
+        'description': 'Submit a Murphy\'s Law for human review.'
+      }
+    },
+    {
+      pathParts: ['favorites'],
+      title: 'My Favorites - Murphy\'s Law Archive',
+      description: 'Save favorite Murphy\'s Laws in your browser and revisit them quickly.',
+      content: buildStaticFavoritesContent(),
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        'name': 'My Favorites',
+        'url': `${SITE_URL}/favorites`,
+        'description': 'Save favorite Murphy\'s Laws in your browser and revisit them quickly.'
+      }
+    }
+  ];
+
+  for (const route of staticAppRoutes) {
+    const routePath = route.pathParts.join('/');
+    const routeDir = path.join(DIST_DIR, ...route.pathParts);
     await fs.mkdir(routeDir, { recursive: true });
-    await fs.copyFile(path.join(DIST_DIR, 'index.html'), path.join(routeDir, 'index.html'));
+
+    let routeHtml = template;
+    routeHtml = routeHtml.replace(/<title>.*?<\/title>/, `<title>${route.title}</title>`);
+    routeHtml = routeHtml.replace(
+      /<meta name="description" content=".*?">/,
+      `<meta name="description" content="${route.description}">`
+    );
+    routeHtml = routeHtml.replace(
+      /<link rel="canonical" href=".*?">/,
+      `<link rel="canonical" href="${SITE_URL}/${routePath}">`
+    );
+    routeHtml = updateHreflang(routeHtml, `${SITE_URL}/${routePath}`);
+    routeHtml = routeHtml.replace(
+      /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
+      `<main id="main-content" class="flex-1 container page">${route.content}</main>`
+    );
+    routeHtml = injectJsonLd(routeHtml, generateJsonLd(route.jsonLd));
+    await fs.writeFile(path.join(routeDir, 'index.html'), routeHtml);
   }
 
   // 3c. Generate Law Detail Pages
@@ -809,7 +1147,7 @@ ${cardHtml.trim()}
   
   let homeHtml = template;
   
-  const homeContent = '';
+  const homeContent = buildStaticHomeContent();
 
   // Inject into main
   homeHtml = homeHtml.replace(
@@ -878,11 +1216,12 @@ ${cardHtml.trim()}
   </url>`;
   }
 
-  // Add SPA-only routes (calculators, submit)
-  for (const route of spaOnlyRoutes) {
+  // Add static app routes (calculators, submit, favorites)
+  for (const route of staticAppRoutes) {
+    const routePath = route.pathParts.join('/');
     sitemap += `
   <url>
-    <loc>${baseUrl}/${route}</loc>
+    <loc>${baseUrl}/${routePath}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -980,4 +1319,14 @@ if (isMainModule) {
 }
 
 // Export functions for testing
-export { wrapFirstWordWithAccent, enhanceMarkdownHtml, wrapInCardStructure };
+export {
+  CONTENT_PAGES,
+  wrapFirstWordWithAccent,
+  enhanceMarkdownHtml,
+  wrapInCardStructure,
+  buildStaticFavoritesContent,
+  buildStaticSubmitContent,
+  buildStaticHomeContent,
+  buildStaticCalculatorContent,
+  buildStaticLawDetailContent
+};

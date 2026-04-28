@@ -7,6 +7,7 @@ import { fetchAPI } from '../utils/api.ts';
 import { apiPost } from '../utils/request.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import {
   getCachedCategories,
   setCachedCategories,
@@ -185,6 +186,7 @@ export function SubmitLawSection() {
   // Template always has .submit-form
   form!.addEventListener('submit', async (e) => {
     e.preventDefault();
+    trackProductEvent('submit.start', { surface: 'submit_form' });
 
     const title = (el.querySelector('#submit-title') as HTMLInputElement | null)?.value.trim();
     const text = (el.querySelector('#submit-text') as HTMLTextAreaElement | null)?.value.trim();
@@ -226,6 +228,7 @@ export function SubmitLawSection() {
 
     try {
       await submitLaw(lawData);
+      trackProductEvent('submit.complete', { surface: 'submit_form', result: 'success' });
 
       showMessage(
         'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
