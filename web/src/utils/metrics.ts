@@ -14,12 +14,35 @@ function hasMetrics(): boolean {
   return metricsEnabled && typeof Sentry.metrics?.count === 'function';
 }
 
+export type ProductEventName =
+  | 'archive.search'
+  | 'archive.no_results'
+  | 'category.click'
+  | 'law.related_click'
+  | 'law.vote'
+  | 'law.favorite'
+  | 'law.share'
+  | 'calculator.start'
+  | 'calculator.complete'
+  | 'submit.start'
+  | 'submit.complete';
+
+type ProductEventTags = Partial<Record<'surface' | 'result' | 'category' | 'action' | 'calculator', string>>;
+
 /**
  * Increment a counter (e.g. button clicks, API calls).
  */
-export function count(name: string, value: number = 1): void {
+export function count(name: string, value: number = 1, options?: { tags?: Record<string, string>; unit?: string }): void {
   if (!hasMetrics()) return;
+  if (options) {
+    Sentry.metrics.count(name, value, options);
+    return;
+  }
   Sentry.metrics.count(name, value);
+}
+
+export function trackProductEvent(name: ProductEventName, tags: ProductEventTags = {}): void {
+  count(`product.${name}`, 1, { tags });
 }
 
 /**

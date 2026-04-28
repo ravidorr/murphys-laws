@@ -9,6 +9,7 @@ import { hydrateIcons } from '@utils/icons.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
 type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency';
@@ -70,6 +71,7 @@ export function Calculator(): HTMLDivElement {
   type FormulaVarKey = 'U' | 'C' | 'I' | 'S' | 'F';
   const showValues: Record<FormulaVarKey, boolean> = { U: false, C: false, I: false, S: false, F: false };
   let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { U: null, C: null, I: null, S: null, F: null };
+  let hasTrackedStart = false;
 
   function updateCalculation() {
     const U = parseFloat(sliders.urgency.value);
@@ -189,6 +191,10 @@ export function Calculator(): HTMLDivElement {
 
   (Object.keys(sliders) as SliderKey[]).forEach((k) => {
     sliders[k].addEventListener('input', () => {
+      if (!hasTrackedStart) {
+        hasTrackedStart = true;
+        trackProductEvent('calculator.start', { surface: 'calculator_page', calculator: 'sods-law' });
+      }
       const val = sliders[k].value;
       sliderValues[k].textContent = val;
 
@@ -197,6 +203,7 @@ export function Calculator(): HTMLDivElement {
       sliders[k].setAttribute('aria-valuetext', val);
 
       flashAllVariables();
+      trackProductEvent('calculator.complete', { surface: 'calculator_page', calculator: 'sods-law' });
     });
   });
 

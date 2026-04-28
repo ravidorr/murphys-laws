@@ -8,6 +8,7 @@ import { createIcon } from '../utils/icons.ts';
 import { createButton, renderShareLinkHTML } from '../utils/button.ts';
 import { copyToClipboard } from '../utils/clipboard.ts';
 import { recordQualifyingUserAction } from './install-prompt.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 
 interface BuildShareUrlsOptions {
   url?: string;
@@ -533,6 +534,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     /* v8 ignore stop */
 
     recordQualifyingUserAction();
+    trackProductEvent('law.share', { surface: 'inline_share', action: action || 'copy' });
     if (action === 'copy-link') {
       await copyToClipboard(textToCopy, 'Link copied to clipboard!');
     } else {
@@ -547,6 +549,8 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     // Update URLs before navigation for share links
     if (target.closest('[data-share]')) {
       updateShareLinks();
+      const platform = target.closest('[data-share]')?.getAttribute('data-share') || 'social';
+      trackProductEvent('law.share', { surface: 'inline_share', action: platform });
       return; // Let the link navigate
     }
     // Handle copy buttons
@@ -571,7 +575,6 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
 let globalListenersInitialized = false;
 /* v8 ignore start -- globalListenersInitialized prevents duplicate init on re-import; not testable without module reset */
 if (typeof document !== 'undefined' && !globalListenersInitialized) {
-  // eslint-disable-next-line no-useless-assignment -- flag is read on next top-level check
   globalListenersInitialized = true;
 
   document.addEventListener('click', () => {
