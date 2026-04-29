@@ -47,6 +47,17 @@ describe('Developers page', () => {
     expect(navigated).toBe(false);
   });
 
+  it('ignores non-HTMLElement click targets', () => {
+    let navigated = false;
+    const el = Developers({ onNavigate: () => { navigated = true; } });
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.appendChild(svg);
+
+    svg.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(navigated).toBe(false);
+  });
+
   it('navigates when a data-nav target is clicked', () => {
     let target = '';
     const el = Developers({ onNavigate: (next) => { target = next; } });

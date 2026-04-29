@@ -238,7 +238,10 @@ describe('SSG Static Route Content', () => {
     const html = buildStaticHomeContent();
 
     expect(html).toContain('Search the Archive');
-    expect(html).toContain('Human-reviewed submissions');
+    expect(html).toContain('Human-reviewed');
+    expect(html).toContain('submissions');
+    expect(html).toContain('since 1998');
+    expect(html).toContain('home-proof-point');
     expect(html).toContain('/categories');
     expect(html).toContain('/submit');
     expect(html).toContain('Trending and Recently Added');

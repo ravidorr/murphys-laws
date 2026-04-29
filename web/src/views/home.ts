@@ -30,11 +30,11 @@ const ARCHIVE_SEARCH_HTML = `
           <span class="icon" data-icon="search" aria-hidden="true"></span>
         </button>
       </form>
-      <div class="home-proof-points">
-        <span>2,400+ laws</span>
-        <span>55+ categories</span>
-        <span>Human-reviewed submissions</span>
-        <span>Curated since the late 1990s</span>
+      <div class="home-proof-points" aria-label="Archive facts">
+        <span class="home-proof-point"><strong>2,400+</strong><span>laws</span></span>
+        <span class="home-proof-point"><strong>55+</strong><span>categories</span></span>
+        <span class="home-proof-point"><strong>Human-reviewed</strong><span>submissions</span></span>
+        <span class="home-proof-point"><strong>Curated</strong><span>since 1998</span></span>
       </div>
       <a href="/browse" class="btn primary" data-nav="browse">
         <span class="btn-text">Browse All Laws</span>
@@ -162,13 +162,8 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
   const trendingRecentZone = document.createElement('section');
   trendingRecentZone.setAttribute('data-home-zone', 'trending-recent');
   trendingRecentZone.className = 'section mb-12';
-  trendingRecentZone.innerHTML = `
-    <div class="section-header">
-      <h2 class="section-title"><span class="accent-text">Trending</span> and Recently Added</h2>
-    </div>
-  `;
   const discoveryGrid = document.createElement('div');
-  discoveryGrid.className = 'grid gap-4 md:grid-cols-2';
+  discoveryGrid.className = 'home-discovery-grid';
   discoveryGrid.appendChild(Trending());
   discoveryGrid.appendChild(RecentlyAdded());
   trendingRecentZone.appendChild(discoveryGrid);
