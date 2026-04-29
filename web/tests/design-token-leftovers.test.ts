@@ -42,6 +42,21 @@ describe('design-token leftovers', () => {
     expect(components).toContain('.card-body--flush');
   });
 
+  it('keeps law-list cards visually aligned with section card surfaces', () => {
+    const localThis: FileScanLocalThis = {};
+    localThis.content = readWebFile('styles/partials/components.css');
+
+    expect(localThis.content).toMatch(/\.card--law-list,\n\.law-list-card\s*\{[^}]*box-shadow:/);
+    expect(localThis.content).toMatch(/\.card--law-list,\n\.law-list-card\s*\{[^}]*border:\s*2px solid var\(--border\);/);
+  });
+
+  it('keeps law-list row padding on the shared card spacing scale', () => {
+    const localThis: FileScanLocalThis = {};
+    localThis.content = readWebFile('styles/partials/sections.css');
+
+    expect(localThis.content).toMatch(/\.card--law-list \.law-card-mini,\n\.law-list-card \.law-card-mini\s*\{[^}]*padding:\s*1rem 1\.25rem;/);
+  });
+
   it('does not keep stale implementation colors outside variables.css', () => {
     const localThis: FileScanLocalThis = {};
     localThis.root = root;

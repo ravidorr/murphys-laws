@@ -1163,6 +1163,11 @@
   transition: background-color 0.15s ease;
 }
 
+.card--law-list .law-card-mini,
+.law-list-card .law-card-mini {
+  padding: 1rem 1.25rem;
+}
+
 .law-card-mini:last-child {
   border-bottom: none;
 }

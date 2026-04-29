@@ -543,6 +543,10 @@ button:disabled {
 
 .card--law-list,
 .law-list-card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
   overflow: hidden;
 }
 
