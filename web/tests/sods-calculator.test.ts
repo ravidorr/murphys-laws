@@ -63,6 +63,11 @@ describe("Calculator view", () => {
     expect(document.title).toMatch(/Sod's Law Calculator/);
   });
 
+  it('renders scenario links for related content', () => {
+    expect(el!.querySelector('[data-calculator-scenario-links]')?.innerHTML).toContain('/murphys-law-vs-sods-law');
+    expect(el!.querySelector('[data-calculator-scenario-links]')?.innerHTML).toContain('/examples/work');
+  });
+
   it('L34 B0: og:image branch not taken when absent', () => {
     expect(el!.querySelector('#urgency')).toBeTruthy();
   });

@@ -10,6 +10,15 @@ import examplesMd from '../../../shared/content/examples.md?raw';
 import whyMurphysLawFeelsTrueMd from '../../../shared/content/why-murphys-law-feels-true.md?raw';
 import murphysLawProjectManagementMd from '../../../shared/content/murphys-law-project-management.md?raw';
 import developersMd from '../../../shared/content/developers.md?raw';
+import bestMurphysLawsMd from '../../../shared/content/best-murphys-laws.md?raw';
+import funniestMurphysLawsMd from '../../../shared/content/funniest-murphys-laws.md?raw';
+import murphysLawsAboutWorkMd from '../../../shared/content/murphys-laws-about-work.md?raw';
+import murphysLawsAboutTechnologyMd from '../../../shared/content/murphys-laws-about-technology.md?raw';
+import murphysLawVsSodsLawMd from '../../../shared/content/murphys-law-vs-sods-law.md?raw';
+import examplesWorkMd from '../../../shared/content/examples-work.md?raw';
+import examplesTravelMd from '../../../shared/content/examples-travel.md?raw';
+import examplesTechMd from '../../../shared/content/examples-tech.md?raw';
+import examplesEverydayLifeMd from '../../../shared/content/examples-everyday-life.md?raw';
 import metadata from '../../../shared/content/metadata.json';
 
 /** Metadata entry for a single content page */
@@ -30,11 +39,20 @@ interface ContentMetadata {
   'why-murphys-law-feels-true': PageMeta;
   'murphys-law-project-management': PageMeta;
   developers?: PageMeta;
+  'best-murphys-laws'?: PageMeta;
+  'funniest-murphys-laws'?: PageMeta;
+  'murphys-laws-about-work'?: PageMeta;
+  'murphys-laws-about-technology'?: PageMeta;
+  'murphys-law-vs-sods-law'?: PageMeta;
+  'examples/work'?: PageMeta;
+  'examples/travel'?: PageMeta;
+  'examples/tech'?: PageMeta;
+  'examples/everyday-life'?: PageMeta;
   schema: { version: string; description: string };
 }
 
 /** Valid page identifiers for content pages */
-export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples' | 'why-murphys-law-feels-true' | 'murphys-law-project-management' | 'developers';
+export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples' | 'why-murphys-law-feels-true' | 'murphys-law-project-management' | 'developers' | 'best-murphys-laws' | 'funniest-murphys-laws' | 'murphys-laws-about-work' | 'murphys-laws-about-technology' | 'murphys-law-vs-sods-law' | 'examples/work' | 'examples/travel' | 'examples/tech' | 'examples/everyday-life';
 
 const typedMetadata = metadata as ContentMetadata;
 
@@ -199,7 +217,16 @@ export function getPageContent(page: ContentPage): string {
     examples: { markdown: examplesMd, meta: typedMetadata.examples || { version: '1.0.0', description: '' } },
     'why-murphys-law-feels-true': { markdown: whyMurphysLawFeelsTrueMd, meta: typedMetadata['why-murphys-law-feels-true'] },
     'murphys-law-project-management': { markdown: murphysLawProjectManagementMd, meta: typedMetadata['murphys-law-project-management'] },
-    developers: { markdown: developersMd, meta: typedMetadata.developers || { version: '1.0.0', description: '' } }
+    developers: { markdown: developersMd, meta: typedMetadata.developers || { version: '1.0.0', description: '' } },
+    'best-murphys-laws': { markdown: bestMurphysLawsMd, meta: typedMetadata['best-murphys-laws'] || { version: '1.0.0', description: 'A curated starting point for the best Murphy\'s Laws.' } },
+    'funniest-murphys-laws': { markdown: funniestMurphysLawsMd, meta: typedMetadata['funniest-murphys-laws'] || { version: '1.0.0', description: 'Funny Murphy\'s Laws that capture familiar failures.' } },
+    'murphys-laws-about-work': { markdown: murphysLawsAboutWorkMd, meta: typedMetadata['murphys-laws-about-work'] || { version: '1.0.0', description: 'Murphy\'s Laws for work, offices, meetings, and projects.' } },
+    'murphys-laws-about-technology': { markdown: murphysLawsAboutTechnologyMd, meta: typedMetadata['murphys-laws-about-technology'] || { version: '1.0.0', description: 'Murphy\'s Laws about technology, software, and systems.' } },
+    'murphys-law-vs-sods-law': { markdown: murphysLawVsSodsLawMd, meta: typedMetadata['murphys-law-vs-sods-law'] || { version: '1.0.0', description: 'The difference between Murphy\'s Law and Sod\'s Law.' } },
+    'examples/work': { markdown: examplesWorkMd, meta: typedMetadata['examples/work'] || { version: '1.0.0', description: 'Workplace Murphy\'s Law examples.' } },
+    'examples/travel': { markdown: examplesTravelMd, meta: typedMetadata['examples/travel'] || { version: '1.0.0', description: 'Travel Murphy\'s Law examples.' } },
+    'examples/tech': { markdown: examplesTechMd, meta: typedMetadata['examples/tech'] || { version: '1.0.0', description: 'Technology Murphy\'s Law examples.' } },
+    'examples/everyday-life': { markdown: examplesEverydayLifeMd, meta: typedMetadata['examples/everyday-life'] || { version: '1.0.0', description: 'Everyday Murphy\'s Law examples.' } }
   };
 
   const entry = contentMap[page];
@@ -304,7 +331,16 @@ export function getRawMarkdownContent(page: ContentPage): string {
     examples: examplesMd,
     'why-murphys-law-feels-true': whyMurphysLawFeelsTrueMd,
     'murphys-law-project-management': murphysLawProjectManagementMd,
-    developers: developersMd
+    developers: developersMd,
+    'best-murphys-laws': bestMurphysLawsMd,
+    'funniest-murphys-laws': funniestMurphysLawsMd,
+    'murphys-laws-about-work': murphysLawsAboutWorkMd,
+    'murphys-laws-about-technology': murphysLawsAboutTechnologyMd,
+    'murphys-law-vs-sods-law': murphysLawVsSodsLawMd,
+    'examples/work': examplesWorkMd,
+    'examples/travel': examplesTravelMd,
+    'examples/tech': examplesTechMd,
+    'examples/everyday-life': examplesEverydayLifeMd
   };
 
   return contentMap[page] || '';

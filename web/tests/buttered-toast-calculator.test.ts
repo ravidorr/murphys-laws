@@ -14,6 +14,7 @@ describe('ButteredToastCalculator view', () => {
     document.body.appendChild(el);
     expect(typeof document !== 'undefined').toBe(true);
     expect(document.title).toMatch(/Buttered Toast Landing Calculator/);
+    expect(el.querySelector('[data-calculator-scenario-links]')?.innerHTML).toContain('/examples/everyday-life');
     document.body.removeChild(el);
   });
 

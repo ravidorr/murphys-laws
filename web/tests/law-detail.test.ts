@@ -66,6 +66,23 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-law-report-link]')?.getAttribute('href')).toBe('/contact');
   });
 
+  it('renders internal links for law category context', async () => {
+    const law = {
+      id: '1',
+      title: 'Technology Law',
+      text: 'Text',
+      score: 1,
+      category_slug: 'murphys-technology-laws',
+      category_name: "Murphy's Technology Laws"
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-internal-links]')?.textContent).toContain('Technology hub'), { timeout: 500 });
+    expect(el.querySelector('[data-law-internal-links]')?.textContent).toContain('Technology hub');
+    expect(el.querySelector('[data-law-internal-links]')?.innerHTML).toContain('/examples/tech');
+  });
+
   it('L207 B1: breadcrumbContainer exists so breadcrumb rendered', async () => {
     const law = { id: '1', title: 'T', text: 'T', score: 0 };
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });

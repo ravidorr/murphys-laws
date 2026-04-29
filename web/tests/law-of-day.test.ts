@@ -133,6 +133,16 @@ describe('LawOfTheDay component', () => {
     expect(popover!.querySelector('[href*="mailto"]')).toBeTruthy();
   });
 
+  it('shows daily distribution links', () => {
+    const law = { id: '1', text: 'Test law', upvotes: 5, downvotes: 1 };
+    const el = mountLaw(law);
+
+    expect(el.querySelector('[data-daily-law-distribution]')).toBeTruthy();
+    expect(el.querySelector('[data-daily-law-distribution]')?.innerHTML).toContain('/api/v1/feed.rss');
+    expect(el.querySelector('[data-daily-law-distribution] a:last-of-type')?.getAttribute('href')).toBe('/api/v1/law-of-day');
+    expect(el.querySelector('[data-daily-law-distribution]')?.textContent).toContain('Daily Law');
+  });
+
   it('handles upvote button click', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);

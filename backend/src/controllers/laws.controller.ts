@@ -124,6 +124,18 @@ export class LawController {
     return sendJson(res, 200, result, req);
   }
 
+  async duplicates(req: any, res: any, parsed: any) {
+    const text = (parsed.query.text || '').toString().trim();
+    const limit = parseBoundedInt(parsed.query.limit, { min: 1, max: 10, fallback: 5 });
+
+    if (!text || text.length < 10) {
+      return badRequest(res, 'Query parameter "text" is required and must be at least 10 characters', req);
+    }
+
+    const result = await this.lawService.findDuplicateCandidates({ text, limit });
+    return sendJson(res, 200, { data: result, text, limit }, req);
+  }
+
   async submit(req: any, res: any) {
     const identifier = getVoterIdentifier(req);
     const rateLimit = checkRateLimit(identifier, 'submit');

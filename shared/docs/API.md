@@ -275,6 +275,37 @@ Get search suggestions for autocomplete. Returns top matching laws based on sear
 
 ---
 
+#### GET /api/v1/laws/duplicates
+
+Find possible duplicate laws before submitting a new one.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | string | Yes | - | Proposed law text, minimum 10 characters |
+| `limit` | integer | No | 5 | Number of candidates to return (max: 10) |
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "title": "Example",
+      "text": "Existing law text",
+      "upvotes": 10,
+      "downvotes": 1
+    }
+  ],
+  "text": "Proposed law text",
+  "limit": 5
+}
+```
+
+---
+
 #### GET /api/v1/laws/:id
 
 Get a single law by ID.
@@ -579,6 +610,40 @@ Get a single category by ID.
 ```json
 {
   "error": "Category not found"
+}
+```
+
+---
+
+#### GET /api/v1/categories/:slug/related
+
+Get related category suggestions for internal linking and topic discovery.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `slug` | string | Category slug |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | integer | No | 6 | Number of related categories to return |
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "id": 2,
+      "slug": "murphys-technology-laws",
+      "title": "Murphy's Technology Laws",
+      "description": "Tech truths: to err is human, to really foul things up requires a computer."
+    }
+  ],
+  "category_slug": "murphys-computer-laws"
 }
 ```
 

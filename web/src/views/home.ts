@@ -3,6 +3,8 @@
 import { LawOfTheDay } from '@components/law-of-day.ts';
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.ts';
 import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calculator-simple.ts';
+import { Trending } from '@components/trending.ts';
+import { RecentlyAdded } from '@components/recently-added.ts';
 import { fetchLawOfTheDay } from '../utils/api.ts';
 import { createErrorState } from '../utils/dom.ts';
 import { renderLoadingHTML } from '../components/loading.ts';
@@ -156,6 +158,21 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
   const categorySection = categoryWrap.firstElementChild!;
   hydrateIcons(categorySection as HTMLElement);
   el.appendChild(categorySection);
+
+  const trendingRecentZone = document.createElement('section');
+  trendingRecentZone.setAttribute('data-home-zone', 'trending-recent');
+  trendingRecentZone.className = 'section mb-12';
+  trendingRecentZone.innerHTML = `
+    <div class="section-header">
+      <h2 class="section-title"><span class="accent-text">Trending</span> and Recently Added</h2>
+    </div>
+  `;
+  const discoveryGrid = document.createElement('div');
+  discoveryGrid.className = 'grid gap-4 md:grid-cols-2';
+  discoveryGrid.appendChild(Trending());
+  discoveryGrid.appendChild(RecentlyAdded());
+  trendingRecentZone.appendChild(discoveryGrid);
+  el.appendChild(trendingRecentZone);
 
   const toolsZone = document.createElement('section');
   toolsZone.setAttribute('data-home-zone', 'tools-submit');

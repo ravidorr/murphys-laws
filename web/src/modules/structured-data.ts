@@ -8,8 +8,10 @@ const PAGE_IDS = new Set([
   'law-article',
   'calculator-sod',
   'calculator-sod-howto',
+  'calculator-sod-faq',
   'calculator-toast',
   'calculator-toast-howto',
+  'calculator-toast-faq',
   'browse-page-breadcrumbs',
   'categories-page',
   'category-detail-page',
@@ -265,6 +267,29 @@ export function setSodCalculatorStructuredData(): void {
       }
     ]
   });
+
+  setJsonLd('calculator-sod-faq', {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': [
+      {
+        '@type': 'Question',
+        'name': 'What changes the Sod\'s Law score?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': 'Urgency, complexity, importance, skill, and frequency all influence the score. Higher urgency and complexity raise risk, while higher skill lowers it.'
+        }
+      },
+      {
+        '@type': 'Question',
+        'name': 'Is the Sod\'s Law Calculator scientific?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': 'It is an entertainment and planning model that explains risk factors, not a certified engineering probability tool.'
+        }
+      }
+    ]
+  });
 }
 
 export function setToastCalculatorStructuredData(): void {
@@ -327,6 +352,29 @@ export function setToastCalculatorStructuredData(): void {
         'position': 6,
         'name': 'Read the Result',
         'text': 'View the probability percentage. Higher percentages mean your toast is more likely to land butter-side down.'
+      }
+    ]
+  });
+
+  setJsonLd('calculator-toast-faq', {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': [
+      {
+        '@type': 'Question',
+        'name': 'Why does toast often land butter-side down?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': 'Typical table height gives toast enough time for roughly a half rotation, which often leaves the buttered side facing down.'
+        }
+      },
+      {
+        '@type': 'Question',
+        'name': 'What inputs affect the toast result?',
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': 'Height, gravity, push force, butter factor, air friction, and toast density affect rotation and landing orientation.'
+        }
       }
     ]
   });

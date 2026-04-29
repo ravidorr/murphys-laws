@@ -161,6 +161,25 @@ describe('SSG Static Route Content', () => {
     expect(CONTENT_PAGES.map((page) => page.slug)).toContain('developers');
   });
 
+  it('includes SEO hub pages as generated content pages', () => {
+    expect(CONTENT_PAGES.map((page) => page.slug)).toEqual(expect.arrayContaining([
+      'best-murphys-laws',
+      'funniest-murphys-laws',
+      'murphys-laws-about-work',
+      'murphys-laws-about-technology',
+      'murphys-law-vs-sods-law'
+    ]));
+  });
+
+  it('includes examples subpages as generated content pages', () => {
+    expect(CONTENT_PAGES.map((page) => page.slug)).toEqual(expect.arrayContaining([
+      'examples/work',
+      'examples/travel',
+      'examples/tech',
+      'examples/everyday-life'
+    ]));
+  });
+
   it('renders a useful static favorites empty state', () => {
     const html = buildStaticFavoritesContent();
 
@@ -210,6 +229,8 @@ describe('SSG Static Route Content', () => {
     expect(html).toMatch(/In context/i);
     expect(html).toMatch(/Related laws/i);
     expect(html).toContain('/category/murphys-technology-laws');
+    expect(html).toContain('/examples/tech');
+    expect(html).toContain('Technology hub');
     expect(html).toContain('/contact');
   });
 
@@ -220,6 +241,7 @@ describe('SSG Static Route Content', () => {
     expect(html).toContain('Human-reviewed submissions');
     expect(html).toContain('/categories');
     expect(html).toContain('/submit');
+    expect(html).toContain('Trending and Recently Added');
     expect(html).not.toMatch(/Loading/i);
   });
 });
