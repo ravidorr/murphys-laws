@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Forced PostCSS resolution to `8.5.12` so Vite and Stylelint no longer pull in
+  the vulnerable `postcss <8.5.10` dev-tooling copy flagged by `npm audit`.
+  Root bumped to `2.5.3`.
+
 ### Added
 - Growth follow-up surfaces for the archive: new internal-link modules connect
   laws, categories, calculators, hubs, and examples; calculators now use stable
