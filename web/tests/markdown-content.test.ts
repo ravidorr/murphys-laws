@@ -10,7 +10,7 @@ describe('markdown-content.js', () => {
       const markdown = '# Hello World\nThis is a test.';
       const html = markdownToHtml(markdown);
       
-      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('<article class="card card--content content-card">');
       expect(html).toContain('<h1>Hello World</h1>');
       expect(html).toContain('<p>This is a test.</p>');
       expect(html).toContain('</article>');
@@ -42,7 +42,7 @@ describe('markdown-content.js', () => {
     it('returns HTML content for about page', () => {
       const html = getPageContent('about');
 
-      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('<article class="card card--content content-card">');
       expect(html).toContain('<header class="card-header content-header">');
       expect(html).toContain('About');
       expect(html).toContain('Murphy');
@@ -68,20 +68,20 @@ describe('markdown-content.js', () => {
     it('returns HTML content for examples page (L199)', () => {
       const html = getPageContent('examples');
       expect(html).toBeDefined();
-      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('<article class="card card--content content-card">');
     });
 
     it('returns HTML content for why-murphys-law-feels-true page', () => {
       const html = getPageContent('why-murphys-law-feels-true');
       expect(html).toBeDefined();
-      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('<article class="card card--content content-card">');
       expect(html).toContain('Universe');
     });
 
     it('returns HTML content for murphys-law-project-management page', () => {
       const html = getPageContent('murphys-law-project-management');
       expect(html).toBeDefined();
-      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('<article class="card card--content content-card">');
       expect(html).toContain('Survival Guide');
     });
 
@@ -312,7 +312,7 @@ describe('markdown-content.js', () => {
     it('handles case where h1Match is null', () => {
       vi.spyOn(marked, 'parse').mockReturnValueOnce('<h2>No H1</h2><p>Content</p>');
       const html = getPageContent('about');
-      expect(html).toContain('<article class="card content-card">');
+      expect(html).toContain('<article class="card card--content content-card">');
       vi.restoreAllMocks();
     });
 

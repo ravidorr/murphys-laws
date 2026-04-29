@@ -356,6 +356,49 @@ calculator state/result surfaces). Dark-mode overrides are handled in
 `theme.css`; agents should assume any component is theme-aware and use
 the `dark-*` color tokens for dark surfaces.
 
+## Card System
+
+Cards use one canonical shell plus explicit variants. Keep old class names as
+compatibility aliases while migrating markup; do not create new one-off card
+selectors.
+
+### Base Contract
+
+Use `card` for the outer surface. Use these regions inside it:
+
+- `card-header` for the title and summary area. Header dividers are full-width.
+- `card-title` for the title text only. It should not add its own divider.
+- `card-body` for normal padded content.
+- `card-body--flush` when the body contains full-width rows, such as law lists.
+- `card-footer` for full-width action or metadata rows.
+
+### Variants
+
+Use a variant class with `card` so the surface intent is explicit:
+
+- `card--section`: homepage widgets, Law of the Day, submit modules, advanced
+  search, and law-detail supporting sections. Legacy alias: `section-card`.
+- `card--content`: long-form Markdown/content pages with wider reading spacing.
+  Legacy alias: `content-card`.
+- `card--law-list`: stacked law-list widgets such as Top Voted, Trending Now,
+  and Recently Added. Legacy alias: `law-list-card`. The child rows remain
+  `law-card-mini` and are not standalone card shells.
+- `card--category`: category tiles. Use `category-card--rich` for the current
+  grouped category cards and `category-card--compact` only for older compact
+  directory tiles. Legacy alias: `category-card`.
+- `card--empty`: empty states such as 404 and empty favorites.
+
+### Rules
+
+- Do not use broad selectors like `.card .card-title` for variant-specific
+  behavior. Target the variant instead.
+- Do not add a second card system with parallel header/body/footer names.
+  `section-header`, `section-body`, and `section-footer` may remain for
+  semantic sections, but their visual behavior must map to card regions.
+- Runtime and SSG markup must use the same card shell for the same page type.
+- Dark mode, high-contrast mode, and print styles should target the canonical
+  variants first, with legacy aliases only for compatibility.
+
 ## Do's and Don'ts
 
 - Do keep type doing the heavy lifting. Chrome should be quiet.

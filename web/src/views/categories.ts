@@ -27,7 +27,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     const lawText = lawCount === 1 ? 'law' : 'laws';
 
     return `
-      <article class="category-card" data-category-slug="${category.slug}" tabindex="0" role="link" aria-label="${title} - ${lawCount} ${lawText}">
+      <article class="card card--category category-card category-card--rich" data-category-slug="${category.slug}" tabindex="0" role="link" aria-label="${title} - ${lawCount} ${lawText}">
         <h3 class="category-card-title">${title}</h3>
         <p class="category-card-description">${description}</p>
         <div class="category-card-footer">

@@ -28,7 +28,7 @@ export interface AdvancedSearchOptions {
 
 export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearchFilters, _testLoadFiltersRef }: AdvancedSearchOptions): HTMLElement {
   const el = document.createElement('section');
-  el.className = 'section section-card mb-12';
+  el.className = 'section card card--section section-card mb-12';
 
   let categories: Array<{ id: number; title: string; slug: string }> = [];
   let selectedCategory = initialFilters.category_id || '';

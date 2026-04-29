@@ -27,7 +27,7 @@ interface SubmitLawPayload extends Record<string, unknown> {
 
 export function SubmitLawSection() {
   const el = document.createElement('section');
-  el.className = 'section section-card mb-12';
+  el.className = 'section card card--section section-card mb-12';
   el.innerHTML = templateHtml;
 
   // Hydrate icons
@@ -183,7 +183,7 @@ export function SubmitLawSection() {
       ? `<a href="/category/${categorySlug}" class="btn outline">Browse your category</a>`
       : '<a href="/categories" class="btn outline">Browse categories</a>';
     nextActions.innerHTML = `
-      <div class="section section-card mt-4">
+      <div class="section card card--section section-card mt-4">
         <div class="section-header">
           <h3 class="section-title"><span class="accent-text">Keep</span> exploring</h3>
         </div>

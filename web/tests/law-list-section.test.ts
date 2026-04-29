@@ -11,6 +11,7 @@ describe('LawListSection component', () => {
     expect(el.tagName).toBe('DIV');
     expect(el.classList.contains('card')).toBe(true);
     expect(el.classList.contains('law-list-card')).toBe(true);
+    expect(el.classList.contains('card--law-list')).toBe(true);
   });
 
   it('renders title with accent and remainder text', () => {
@@ -18,6 +19,8 @@ describe('LawListSection component', () => {
       accentText: 'Top',
       remainderText: ' Voted'
     });
+
+    expect(el.querySelector('.card-body')?.classList.contains('card-body--flush')).toBe(true);
 
     const title = el.querySelector('.card-title');
     expect(title).toBeTruthy();

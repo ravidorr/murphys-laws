@@ -79,7 +79,8 @@ button.outline:focus-visible {
 .btn:focus-visible,
 button:focus-visible,
 a.btn:focus-visible,
-.category-card:focus-visible {
+.category-card:focus-visible,
+.card--category:focus-visible {
   outline: 3px solid var(--btn-primary-bg);
   outline-offset: 3px;
 }
@@ -522,6 +523,35 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: .75rem;
   background: color-mix(in oklab, var(--bg) 96%, white 4%);
+}
+
+.card--section,
+.section-card {
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in oklab, var(--bg) 98%, white 2%);
+  box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
+}
+
+.card--content,
+.content-card {
+  border: 1px solid color-mix(in oklab, var(--border) 80%, white 20%);
+  box-shadow: 0 18px 50px color-mix(in oklab, var(--shadow-light) 80%, transparent 20%),
+    0 6px 20px color-mix(in oklab, var(--shadow-light) 60%, transparent 40%);
+  background: color-mix(in oklab, var(--bg) 97%, white 3%);
+}
+
+.card--law-list,
+.law-list-card {
+  overflow: hidden;
+}
+
+.card--empty {
+  text-align: center;
+}
+
+.card-body--flush {
+  padding: 0;
 }
 
 .card-title {
@@ -1349,7 +1379,7 @@ kbd {
 }
 
 /* Category Card */
-.category-card {
+.category-card--rich {
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
@@ -1360,13 +1390,13 @@ kbd {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.category-card:hover {
+.category-card--rich:hover {
   border-color: var(--btn-primary-bg);
   box-shadow: 0 4px 12px var(--shadow-light), 0 0 0 1px color-mix(in oklab, var(--btn-primary-bg) 20%, transparent 80%);
   transform: translateY(-2px);
 }
 
-.category-card:active {
+.category-card--rich:active {
   transform: translateY(0);
 }
 
@@ -1422,8 +1452,8 @@ kbd {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.category-card:hover .category-card-arrow,
-.category-card:focus-visible .category-card-arrow {
+.category-card--rich:hover .category-card-arrow,
+.category-card--rich:focus-visible .category-card-arrow {
   opacity: 1;
   transform: translateX(0);
 }
@@ -1436,12 +1466,12 @@ kbd {
 
 /* Dark mode adjustments for category cards */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .category-card {
+  :root:not([data-theme="light"]) .category-card--rich {
     background: var(--dark-bg-secondary);
     border-color: var(--dark-border);
   }
 
-  :root:not([data-theme="light"]) .category-card:hover {
+  :root:not([data-theme="light"]) .category-card--rich:hover {
     border-color: var(--btn-primary-bg);
     background: color-mix(in oklab, var(--dark-bg-secondary) 95%, var(--btn-primary-bg) 5%);
   }
@@ -1451,12 +1481,12 @@ kbd {
   }
 }
 
-:root[data-theme="dark"] .category-card {
+:root[data-theme="dark"] .category-card--rich {
   background: var(--dark-bg-secondary);
   border-color: var(--dark-border);
 }
 
-:root[data-theme="dark"] .category-card:hover {
+:root[data-theme="dark"] .category-card--rich:hover {
   border-color: var(--btn-primary-bg);
   background: color-mix(in oklab, var(--dark-bg-secondary) 95%, var(--btn-primary-bg) 5%);
 }
@@ -1472,7 +1502,7 @@ kbd {
     gap: 1rem;
   }
 
-  .category-card {
+  .category-card--rich {
     padding: 1rem;
   }
 

@@ -29,7 +29,7 @@ export function createErrorState(message = 'Something went wrong. Please try aga
   el.setAttribute('role', 'alert');
   el.setAttribute('aria-live', 'assertive');
   el.innerHTML = `
-    <section class="section section-card">
+    <section class="section card card--section section-card">
       <div class="section-header">
         <h3 class="section-title">
           <span class="icon" data-icon="warning" aria-hidden="true"></span>

@@ -7,7 +7,7 @@ type ToastSimpleSliderKey = 'height' | 'overhang';
 
 export function ButteredToastCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) {
   const el = document.createElement('section');
-  el.className = 'section section-card mb-12';
+  el.className = 'section card card--section section-card mb-12';
 
   el.innerHTML = templateHtml;
 
