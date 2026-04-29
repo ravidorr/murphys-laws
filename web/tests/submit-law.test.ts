@@ -542,6 +542,30 @@ describe('SubmitLawSection component', () => {
     expect(el.querySelector('[data-submit-next-actions]')?.textContent).toContain('Submit another law');
   });
 
+  it('handles submit another law action after successful submission', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, id: 123 })
+    });
+
+    const el = mountSection({ append: true });
+    const form = el.querySelector('.submit-form') as HTMLFormElement | null;
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
+
+    textarea!.value = 'This is a valid law text with more than ten characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
+    form!.dispatchEvent(new Event('submit'));
+
+    await vi.waitFor(() => expect(el.querySelector('[data-action="submit-another-law"]')).toBeTruthy());
+    (el.querySelector('[data-action="submit-another-law"]') as HTMLButtonElement).click();
+
+    expect(el.querySelector('[data-submit-next-actions]')?.hasAttribute('hidden')).toBe(true);
+    expect(document.activeElement).toBe(textarea);
+  });
+
   it('shows error message on submit failure', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,

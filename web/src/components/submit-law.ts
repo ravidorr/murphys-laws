@@ -224,6 +224,15 @@ export function SubmitLawSection() {
     clearMessage();
   });
 
+  el.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.closest('[data-action="submit-another-law"]')) return;
+
+    nextActions?.setAttribute('hidden', '');
+    textArea?.focus();
+  });
+
   // Template always has .submit-form
   form!.addEventListener('submit', async (e) => {
     e.preventDefault();
