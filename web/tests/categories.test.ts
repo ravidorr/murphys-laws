@@ -215,6 +215,9 @@ describe('Categories view', () => {
     expect(card).toBeTruthy();
     expect(card!.getAttribute('tabindex')).toBe('0');
     expect(card!.getAttribute('role')).toBe('link');
+    expect(card!.classList.contains('card')).toBe(true);
+    expect(card!.classList.contains('card--category')).toBe(true);
+    expect(card!.classList.contains('category-card--rich')).toBe(true);
     expect(card!.getAttribute('aria-label')).toContain('laws');
   });
 

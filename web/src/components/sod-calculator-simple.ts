@@ -7,7 +7,7 @@ type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency'
 
 export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) {
   const el = document.createElement('section');
-  el.className = 'section section-card mb-12';
+  el.className = 'section card card--section section-card mb-12';
 
   el.innerHTML = templateHtml;
 

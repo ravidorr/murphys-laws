@@ -20,7 +20,7 @@ import type { Law } from '../types/app.d.ts';
  */
 export function createLawListSection({ accentText, remainderText }: { accentText: string; remainderText: string }) {
   const el = document.createElement('div');
-  el.className = 'card law-list-card';
+  el.className = 'card card--law-list law-list-card';
   // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
   el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
@@ -28,7 +28,7 @@ export function createLawListSection({ accentText, remainderText }: { accentText
     <header class="card-header">
       <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
     </header>
-    <div class="card-body"></div>
+    <div class="card-body card-body--flush"></div>
   `;
 
   const bodyDiv = el.querySelector('.card-body')!;

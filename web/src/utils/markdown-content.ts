@@ -70,7 +70,7 @@ export function markdownToHtml(markdownContent: string, options: { lastUpdated?:
   const html = marked.parse(markdownContent, { async: false });
 
   // Wrap in card structure consistent with existing templates
-  let output = '<article class="card content-card">\n';
+  let output = '<article class="card card--content content-card">\n';
 
   // Add last updated date if provided
   if (options.lastUpdated) {
@@ -255,7 +255,7 @@ export function getPageContent(page: ContentPage): string {
     output += `<h1 class="page-title mb-4">${h1Content}</h1>\n`;
 
     // Start the card
-    output += '<article class="card content-card">\n';
+    output += '<article class="card card--content content-card">\n';
 
     // Find the first paragraph after h1
     const firstPMatch = html.substring(afterH1).match(/<p>([\s\S]*?)<\/p>/);
@@ -297,7 +297,7 @@ export function getPageContent(page: ContentPage): string {
     }
   } else {
     // No h1 found, just start card with card-body
-    output += '<article class="card content-card">\n';
+    output += '<article class="card card--content content-card">\n';
     html = '  <div class="card-body">\n' + html;
   }
 

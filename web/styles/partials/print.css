@@ -225,7 +225,9 @@
     display: block;
   }
 
-  .category-card {
+  .card--category,
+  .category-card--rich,
+  .category-card--compact {
     border: 1px solid #ccc !important;
     margin-bottom: 0.5rem;
     break-inside: avoid;
