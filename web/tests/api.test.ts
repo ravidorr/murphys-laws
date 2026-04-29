@@ -8,13 +8,38 @@ vi.mock('@sentry/browser', () => ({
 }));
 
 import * as Sentry from '@sentry/browser';
-import { fetchAPI, fetchLaw, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.ts';
+import { fetchAPI, fetchDuplicateCandidates, fetchLaw, fetchRelatedCategories, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.ts';
 
 describe('API utilities', () => {
   let fetchSpy: MockInstance;
 
   beforeEach(() => {
     fetchSpy = vi.spyOn(globalThis, 'fetch');
+  });
+
+  describe('growth endpoints', () => {
+    it('fetches duplicate candidates', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [{ id: 1, text: 'Existing law' }] })
+      });
+
+      await fetchDuplicateCandidates('Existing law with enough text');
+
+      expect(String(fetchSpy.mock.calls[0]![0])).toContain('/api/v1/laws/duplicates');
+      expect(String(fetchSpy.mock.calls[0]![0])).toContain('text=Existing+law+with+enough+text');
+    });
+
+    it('fetches related categories', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [{ slug: 'work', title: 'Work' }] })
+      });
+
+      await fetchRelatedCategories('murphys-office-laws');
+
+      expect(String(fetchSpy.mock.calls[0]![0])).toContain('/api/v1/categories/murphys-office-laws/related');
+    });
   });
 
   afterEach(() => {

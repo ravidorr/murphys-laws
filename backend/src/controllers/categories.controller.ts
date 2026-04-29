@@ -21,4 +21,9 @@ export class CategoryController {
 
     return sendJson(res, 200, category, req);
   }
+
+  async related(req: any, res: any, slug: string) {
+    const related = await this.categoryService.getRelatedCategories(slug, { limit: 6 });
+    return sendJson(res, 200, { data: related, category_slug: slug }, req);
+  }
 }

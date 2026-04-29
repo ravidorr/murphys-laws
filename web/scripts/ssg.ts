@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
 import { groupCategories } from '../src/utils/category-groups.ts';
-import { truncateTitle } from '../src/utils/seo.ts';
+import { getCalculatorScenarioLinks, getCategoryHubLinks, getLawDetailInternalLinks, renderInternalLinkList } from '../src/utils/internal-links.ts';
+import { SITE_URL } from '../src/utils/constants.ts';
+import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
 interface LawAttribution { name?: string; contact_type?: string; contact_value?: string; note?: string }
 interface Law {
   id: number;
@@ -37,7 +39,6 @@ const SHARED_CONTENT_DIR = path.resolve(__dirname, '../../shared/content');
 
 // API configuration for fetching laws
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
-const SITE_URL = 'https://murphys-laws.com';
 
 // Content pages metadata for SSG
 const CONTENT_PAGES: ContentPageMeta[] = [
@@ -94,6 +95,60 @@ const CONTENT_PAGES: ContentPageMeta[] = [
     file: 'developers.md',
     title: 'Developers',
     description: 'REST API, MCP server, TypeScript SDK, CLI, and machine-readable feeds for Murphy\'s Law Archive.'
+  },
+  {
+    slug: 'best-murphys-laws',
+    file: 'best-murphys-laws.md',
+    title: 'Best Murphy\'s Laws',
+    description: 'A curated starting point for the best Murphy\'s Laws.'
+  },
+  {
+    slug: 'funniest-murphys-laws',
+    file: 'funniest-murphys-laws.md',
+    title: 'Funniest Murphy\'s Laws',
+    description: 'Funny Murphy\'s Laws that capture familiar failures.'
+  },
+  {
+    slug: 'murphys-laws-about-work',
+    file: 'murphys-laws-about-work.md',
+    title: 'Murphy\'s Laws About Work',
+    description: 'Murphy\'s Laws for work, offices, meetings, and projects.'
+  },
+  {
+    slug: 'murphys-laws-about-technology',
+    file: 'murphys-laws-about-technology.md',
+    title: 'Murphy\'s Laws About Technology',
+    description: 'Murphy\'s Laws about technology, software, and systems.'
+  },
+  {
+    slug: 'murphys-law-vs-sods-law',
+    file: 'murphys-law-vs-sods-law.md',
+    title: 'Murphy\'s Law vs Sod\'s Law',
+    description: 'The difference between Murphy\'s Law and Sod\'s Law.'
+  },
+  {
+    slug: 'examples/work',
+    file: 'examples-work.md',
+    title: 'Murphy\'s Law Work Examples',
+    description: 'Workplace Murphy\'s Law examples with linked laws and practical risk-reduction notes.'
+  },
+  {
+    slug: 'examples/travel',
+    file: 'examples-travel.md',
+    title: 'Murphy\'s Law Travel Examples',
+    description: 'Travel Murphy\'s Law examples with linked laws and practical risk-reduction notes.'
+  },
+  {
+    slug: 'examples/tech',
+    file: 'examples-tech.md',
+    title: 'Murphy\'s Law Technology Examples',
+    description: 'Technology Murphy\'s Law examples with linked laws and practical risk-reduction notes.'
+  },
+  {
+    slug: 'examples/everyday-life',
+    file: 'examples-everyday-life.md',
+    title: 'Everyday Murphy\'s Law Examples',
+    description: 'Everyday Murphy\'s Law examples with linked laws and practical risk-reduction notes.'
   }
 ];
 
@@ -258,6 +313,7 @@ function buildStaticLawDetailContent(law: Law): string {
         </div>
         <div class="section-body">
           <p>Keep exploring laws from this topic or browse the full archive for neighboring ideas.</p>
+          ${renderInternalLinkList(getLawDetailInternalLinks({ categorySlug, categoryName }))}
           <div class="not-found-actions">
             ${categorySlug ? `<a href="/category/${escapeHtml(categorySlug)}" class="btn">See this category</a>` : ''}
             <a href="/browse" class="btn outline">Browse all laws</a>
@@ -642,6 +698,18 @@ function buildStaticHomeContent(): string {
           <a href="/categories" class="btn">See category groups</a>
         </div>
       </section>
+      <section class="section section-card mb-12" data-home-zone="trending-recent">
+        <div class="section-header">
+          <h2 class="section-title">Trending and Recently Added</h2>
+        </div>
+        <div class="section-body">
+          <p>Jump from the homepage into active and fresh archive entries.</p>
+          <div class="not-found-actions">
+            <a href="/browse?sort=last_voted_at" class="btn">Trending now</a>
+            <a href="/browse?sort=created_at" class="btn outline">Recently added</a>
+          </div>
+        </div>
+      </section>
       <section class="section section-card mb-12" data-home-zone="tools-submit">
         <div class="section-header">
           <h2 class="section-title"><span class="accent-text">Tools</span> and Submissions</h2>
@@ -680,6 +748,7 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
                 <li><strong>Frequency:</strong> how repeated attempts increase exposure.</li>
               </ul>
               <p class="small">This calculator is for entertainment and lightweight planning, not engineering risk certification.</p>
+              ${renderInternalLinkList(getCalculatorScenarioLinks('sods-law'))}
             </section>
           </div>
         </article>
@@ -699,6 +768,7 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
             <h3>Assumptions</h3>
             <p>The simulator treats table height, rotation, butter coverage, and launch angle as playful inputs that influence the final landing side.</p>
             <p>Enable JavaScript for the live controls, or read the explanation here to understand the joke behind the physics.</p>
+            ${renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'))}
           </section>
         </div>
       </article>
@@ -772,8 +842,8 @@ async function main(): Promise<void> {
     pageHtml = pageHtml.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${description}">`);
     
     // Canonical URL and hreflang
-    pageHtml = pageHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/category/${slug}">`);
-    pageHtml = updateHreflang(pageHtml, `https://murphys-laws.com/category/${slug}`);
+    pageHtml = pageHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${buildCanonicalUrl(`/category/${slug}`)}">`);
+    pageHtml = updateHreflang(pageHtml, buildCanonicalUrl(`/category/${slug}`));
 
     // Inject Content
     // We replace the loading content in <main>
@@ -796,6 +866,14 @@ async function main(): Promise<void> {
         <div class="static-content prose mx-auto">
           ${htmlContent}
         </div>
+        <section class="section section-card mb-8" aria-labelledby="category-internal-links-${slug}">
+          <div class="section-header">
+            <h2 id="category-internal-links-${slug}" class="section-title"><span class="accent-text">Explore</span> nearby</h2>
+          </div>
+          <div class="section-body">
+            ${renderInternalLinkList(getCategoryHubLinks(slug))}
+          </div>
+        </section>
         ${ssgLawCardsSection}
       </div>
 `;
@@ -844,8 +922,8 @@ async function main(): Promise<void> {
 
   let browseHtml = template;
   browseHtml = browseHtml.replace(/<title>.*?<\/title>/, `<title>Browse All Murphy's Laws - Murphy's Law Archive</title>`);
-  browseHtml = browseHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/browse">`);
-  browseHtml = updateHreflang(browseHtml, 'https://murphys-laws.com/browse');
+  browseHtml = browseHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${buildCanonicalUrl('/browse')}">`);
+  browseHtml = updateHreflang(browseHtml, buildCanonicalUrl('/browse'));
 
   const browseContent = `
     <div class="container page pt-0">
@@ -880,8 +958,8 @@ async function main(): Promise<void> {
     /<meta name="description"[\s\S]*?content="[\s\S]*?">/,
     `<meta name="description" content="Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.">`
   );
-  categoriesHtml = categoriesHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="https://murphys-laws.com/categories">`);
-  categoriesHtml = updateHreflang(categoriesHtml, 'https://murphys-laws.com/categories');
+  categoriesHtml = categoriesHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${buildCanonicalUrl('/categories')}">`);
+  categoriesHtml = updateHreflang(categoriesHtml, buildCanonicalUrl('/categories'));
 
   // Build grouped category cards HTML for SSG
   const categoryCardsHtml = groupCategories(categories)
@@ -966,9 +1044,9 @@ ${categoryCardsHtml.trim()}
       // Update canonical URL and hreflang
       pageHtml = pageHtml.replace(
         /<link rel="canonical" href=".*?">/,
-        `<link rel="canonical" href="https://murphys-laws.com/${page.slug}">`
+        `<link rel="canonical" href="${buildCanonicalUrl(`/${page.slug}`)}">`
       );
-      pageHtml = updateHreflang(pageHtml, `https://murphys-laws.com/${page.slug}`);
+      pageHtml = updateHreflang(pageHtml, buildCanonicalUrl(`/${page.slug}`));
 
       // Read metadata for last updated date
       let lastUpdated = null;
@@ -1181,7 +1259,7 @@ ${cardHtml.trim()}
 
   // 5. Generate Sitemap
   console.log('Generating sitemap.xml...');
-  const baseUrl = 'https://murphys-laws.com';
+  const baseUrl = SITE_URL;
   const today = new Date().toISOString().split('T')[0];
 
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>

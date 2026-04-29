@@ -8,6 +8,8 @@ import { updateMetaDescription } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { parseCalculatorState, serializeCalculatorState } from '@utils/calculator-state.ts';
+import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
 type ToastSliderKey = 'height' | 'gravity' | 'overhang' | 'butter' | 'friction' | 'inertia';
@@ -297,14 +299,14 @@ export function ButteredToastCalculator(): HTMLDivElement {
   // Generate shareable URL with parameters
   function getShareableUrl() {
     updateState();
-    const url = new URL(window.location.href);
-    url.searchParams.set('h', String(state.height));
-    url.searchParams.set('g', String(state.gravity));
-    url.searchParams.set('o', String(state.overhang));
-    url.searchParams.set('b', String(state.butter));
-    url.searchParams.set('f', String(state.friction));
-    url.searchParams.set('t', String(state.inertia));
-    return url.toString();
+    return serializeCalculatorState(window.location.href, {
+      h: state.height,
+      g: state.gravity,
+      o: state.overhang,
+      b: state.butter,
+      f: state.friction,
+      t: state.inertia,
+    });
   }
 
   // Generate share text for social platforms
@@ -316,16 +318,17 @@ export function ButteredToastCalculator(): HTMLDivElement {
   // Load parameters from URL if present
   const urlParams = new URLSearchParams(window.location.search);
   const paramKeys: Record<string, ToastSliderKey> = { h: 'height', g: 'gravity', o: 'overhang', b: 'butter', f: 'friction', t: 'inertia' };
+  const parsedState = parseCalculatorState(urlParams, Object.fromEntries(
+    Object.entries(paramKeys).map(([param, slider]) => [
+      param,
+      { min: Number(sliders[slider].min), max: Number(sliders[slider].max) }
+    ])
+  ));
 
-  Object.entries(paramKeys).forEach(([param, slider]) => {
-    const value = urlParams.get(param);
-    if (value && sliders[slider]) {
-      const numValue = parseFloat(value);
-      const min = parseFloat(sliders[slider].min);
-      const max = parseFloat(sliders[slider].max);
-      if (!isNaN(numValue) && !isNaN(min) && !isNaN(max) && numValue >= min && numValue <= max) {
-        sliders[slider].value = String(numValue);
-      }
+  Object.entries(parsedState).forEach(([param, value]) => {
+    const slider = paramKeys[param];
+    if (slider) {
+      sliders[slider].value = String(value);
     }
   });
 
@@ -333,6 +336,11 @@ export function ButteredToastCalculator(): HTMLDivElement {
   if (urlParams.has('h') || urlParams.has('g') || urlParams.has('o') || urlParams.has('b') || urlParams.has('f') || urlParams.has('t')) {
     calculateLanding();
     updateFormula();
+  }
+
+  const scenarioLinks = el.querySelector('[data-calculator-scenario-links]');
+  if (scenarioLinks) {
+    scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'));
   }
 
   const shareContainer = el.querySelector('#calculator-share-container')!;

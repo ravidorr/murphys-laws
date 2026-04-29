@@ -1,4 +1,4 @@
-import { truncateTitle } from '../src/utils/seo.ts';
+import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
 
 describe('SEO utilities', () => {
   describe('truncateTitle', () => {
@@ -81,6 +81,17 @@ describe('SEO utilities', () => {
       const title = "Murphy's Laws";
       const result = truncateTitle(title);
       expect(result).toContain("'");
+    });
+  });
+
+  describe('buildCanonicalUrl', () => {
+    it('normalizes paths against the canonical apex host', () => {
+      expect(buildCanonicalUrl('/law/123')).toBe('https://murphys-laws.com/law/123');
+      expect(buildCanonicalUrl('categories')).toBe('https://murphys-laws.com/categories');
+    });
+
+    it('removes www host variants and query strings from canonical URLs', () => {
+      expect(buildCanonicalUrl('https://www.murphys-laws.com/browse?q=toast')).toBe('https://murphys-laws.com/browse');
     });
   });
 });

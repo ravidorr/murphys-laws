@@ -10,6 +10,8 @@ import { updateMetaDescription } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { parseCalculatorState, serializeCalculatorState } from '@utils/calculator-state.ts';
+import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
 type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency';
@@ -270,13 +272,13 @@ export function Calculator(): HTMLDivElement {
   // Generate shareable URL with parameters
   function getShareableUrl() {
     updateState();
-    const url = new URL(window.location.href);
-    url.searchParams.set('u', String(state.urgency));
-    url.searchParams.set('c', String(state.complexity));
-    url.searchParams.set('i', String(state.importance));
-    url.searchParams.set('s', String(state.skill));
-    url.searchParams.set('f', String(state.frequency));
-    return url.toString();
+    return serializeCalculatorState(window.location.href, {
+      u: state.urgency,
+      c: state.complexity,
+      i: state.importance,
+      s: state.skill,
+      f: state.frequency,
+    });
   }
 
   // Generate share text for social platforms
@@ -286,19 +288,27 @@ export function Calculator(): HTMLDivElement {
   }
 
   // Load parameters from URL if present
-  const urlParams = new URLSearchParams(window.location.search);
+  const parsedState = parseCalculatorState(new URLSearchParams(window.location.search), {
+    u: { min: 1, max: 9 },
+    c: { min: 1, max: 9 },
+    i: { min: 1, max: 9 },
+    s: { min: 1, max: 9 },
+    f: { min: 1, max: 9 },
+  });
   const paramKeys: Record<string, SliderKey> = { u: 'urgency', c: 'complexity', i: 'importance', s: 'skill', f: 'frequency' };
 
-  Object.entries(paramKeys).forEach(([param, slider]) => {
-    const value = urlParams.get(param);
-    if (value && sliders[slider]) {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
-        sliders[slider].value = String(numValue);
-        sliderValues[slider].textContent = String(numValue);
-      }
+  Object.entries(parsedState).forEach(([param, value]) => {
+    const slider = paramKeys[param];
+    if (slider) {
+      sliders[slider].value = String(value);
+      sliderValues[slider].textContent = String(value);
     }
   });
+
+  const scenarioLinks = el.querySelector('[data-calculator-scenario-links]');
+  if (scenarioLinks) {
+    scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('sods-law'));
+  }
 
   const shareContainer = el.querySelector('#calculator-share-container')!;
   shareContainer.innerHTML = renderInlineShareButtonsHTML();

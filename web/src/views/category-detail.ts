@@ -22,6 +22,7 @@ import { updateMetaDescription } from '@utils/dom.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
+import { getCategoryHubLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
 function parseCategoryParams(search: string): { page: number; sort: string; order: string } {
@@ -238,6 +239,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
         const descEl = el.querySelector('#category-description')!;
         descEl.textContent = categoryDescription || 'All laws within this category.';
+        const hubLinksEl = el.querySelector('[data-category-hub-links]');
+        if (hubLinksEl) {
+          hubLinksEl.innerHTML = renderInternalLinkList(getCategoryHubLinks(category.slug));
+        }
 
         document.title = `${categoryTitle} | ${SITE_NAME}`;
         updateMetaDescription(categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}. Discover witty observations and corollaries in this category.`);

@@ -592,6 +592,16 @@ describe('Structured Data module', () => {
       expect(data.step[0]['@type']).toBe('HowToStep');
       expect(data.step[0].position).toBe(1);
     });
+
+    it('creates FAQPage schema for calculator explanations', () => {
+      setSodCalculatorStructuredData();
+
+      const el = document.head.querySelector('#jsonld-calculator-sod-faq');
+      expect(el).toBeTruthy();
+      const data = JSON.parse(el!.textContent!);
+      expect(data['@type']).toBe('FAQPage');
+      expect(data.mainEntity[0].acceptedAnswer.text).toMatch(/urgency/i);
+    });
   });
 
   describe('setToastCalculatorStructuredData', () => {
@@ -648,6 +658,16 @@ describe('Structured Data module', () => {
       expect(data.step.length).toBeGreaterThan(0);
       expect(data.step[0]['@type']).toBe('HowToStep');
       expect(data.step[0].position).toBe(1);
+    });
+
+    it('creates FAQPage schema for toast explanations', () => {
+      setToastCalculatorStructuredData();
+
+      const el = document.head.querySelector('#jsonld-calculator-toast-faq');
+      expect(el).toBeTruthy();
+      const data = JSON.parse(el!.textContent!);
+      expect(data['@type']).toBe('FAQPage');
+      expect(data.mainEntity[0].acceptedAnswer.text).toMatch(/height/i);
     });
   });
 });

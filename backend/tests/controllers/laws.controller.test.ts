@@ -28,6 +28,7 @@ interface LawServiceMock {
     submitLaw: ReturnType<typeof vi.fn>;
     suggestions: ReturnType<typeof vi.fn>;
     getRelatedLaws: ReturnType<typeof vi.fn>;
+    findDuplicateCandidates: ReturnType<typeof vi.fn>;
 }
 
 interface EmailServiceMock {
@@ -61,6 +62,7 @@ describe('LawController', () => {
             submitLaw: vi.fn(),
             suggestions: vi.fn(),
             getRelatedLaws: vi.fn(),
+            findDuplicateCandidates: vi.fn(),
         };
         emailService = {
             sendNewLawEmail: vi.fn().mockResolvedValue(true),
@@ -79,6 +81,22 @@ describe('LawController', () => {
         // Reset mocks
         vi.clearAllMocks();
         vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, limit: 3, remaining: 10, resetTime: 0 });
+    });
+
+    describe('duplicates', () => {
+        it('returns duplicate candidates for valid text', async () => {
+            lawService.findDuplicateCandidates.mockResolvedValue([{ id: 1, text: 'Existing law' }]);
+            await lawController.duplicates(req, res, { query: { text: 'Existing law with enough text' } });
+
+            expect(lawService.findDuplicateCandidates).toHaveBeenCalledWith({ text: 'Existing law with enough text', limit: 5 });
+            expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+        });
+
+        it('rejects duplicate checks with short text', async () => {
+            await lawController.duplicates(req, res, { query: { text: 'short' } });
+
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
     });
 
     describe('list', () => {
