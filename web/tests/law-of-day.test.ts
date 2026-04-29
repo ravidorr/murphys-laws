@@ -139,6 +139,7 @@ describe('LawOfTheDay component', () => {
 
     expect(el.querySelector('[data-daily-law-distribution]')).toBeTruthy();
     expect(el.querySelector('[data-daily-law-distribution]')?.innerHTML).toContain('/api/v1/feed.rss');
+    expect(el.querySelector('[data-daily-law-distribution] a:last-of-type')?.getAttribute('href')).toBe('/api/v1/law-of-day');
     expect(el.querySelector('[data-daily-law-distribution]')?.textContent).toContain('Daily Law');
   });
 

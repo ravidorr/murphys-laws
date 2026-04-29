@@ -118,7 +118,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
     <span aria-hidden="true"> · </span>
     <a href="/api/v1/feed.atom">Atom</a>
     <span aria-hidden="true"> · </span>
-    <a href="/law-of-day">Daily Law API</a>
+    <a href="/api/v1/law-of-day">Daily Law API</a>
   `;
   el.appendChild(distribution);
 
