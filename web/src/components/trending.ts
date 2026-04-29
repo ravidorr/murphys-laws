@@ -16,7 +16,7 @@ import { LAW_CARD_MIN_HEIGHT, WIDGET_CARD_COUNT } from '../utils/constants.ts';
  */
 export function Trending() {
   const el = document.createElement('div');
-  el.className = 'card';
+  el.className = 'card law-list-card';
   // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
   el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 

@@ -25,4 +25,8 @@ describe('discovery helpers', () => {
     expect(ranked[0]!.id).toBe(1);
     expect(ranked[0]!.score).toBeGreaterThan(ranked[1]!.score);
   });
+
+  it('returns null when no category can be inferred', () => {
+    expect(inferDiscoveryCategory('plain unclassified words')).toBeNull();
+  });
 });

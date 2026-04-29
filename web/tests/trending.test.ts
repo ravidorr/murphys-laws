@@ -31,6 +31,7 @@ describe('Trending component', () => {
     fetchTrendingSpy.mockReturnValue(new Promise(() => {})); // Never resolves
     const el = Trending();
 
+    expect(el.classList.contains('law-list-card')).toBe(true);
     // Check for any of the possible loading messages (they're random)
     expect(el.textContent).toMatch(/Loading|Fetching|Almost there/);
   });

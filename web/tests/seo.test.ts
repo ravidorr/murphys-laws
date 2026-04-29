@@ -93,5 +93,9 @@ describe('SEO utilities', () => {
     it('removes www host variants and query strings from canonical URLs', () => {
       expect(buildCanonicalUrl('https://www.murphys-laws.com/browse?q=toast')).toBe('https://murphys-laws.com/browse');
     });
+
+    it('keeps root canonical URL slash', () => {
+      expect(buildCanonicalUrl('/')).toBe('https://murphys-laws.com/');
+    });
   });
 });

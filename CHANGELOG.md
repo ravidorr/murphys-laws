@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Work Sans variable font bundled in the Android app for visual parity with web. [android/app/src/main/res/font/work_sans_variable.ttf](android/app/src/main/res/font/work_sans_variable.ttf) (~360 KB, single VF covers all weights via the `wght` axis), wrapped by a hand-authored `WorkSans` `FontFamily` in [android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt](android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt). The FontFamily registers the variable font at four weight slots (Normal 400, Medium 500, SemiBold 600, Bold 700) with `FontVariation.Settings(FontVariation.weight(...))` so Compose's typography system resolves `.weight(...)` requests to the correct axis position. Requires API 26+, which matches the app's `minSdk`. [shared/design-tokens/export-android-tokens.ts](shared/design-tokens/export-android-tokens.ts) now emits `fontFamily = WorkSans` for every `DS.Typography.<level>`, replacing the `FontFamily.Default` (Roboto) placeholder from PR Android-1. PR Android-3 (final phase) of the design-tokens-mobile rollout. Bundling a new font is user-visible, so Android app bumped MINOR to `1.1.0` / versionCode `4`; root to `2.4.23`.
 
 ### Changed
+- Web archive UI polish now formats homepage proof points and Daily Law
+  distribution links as design-system chips, removes the extra Trending /
+  Recently Added wrapper heading, aligns law-list card dividers with other
+  cards, shows a fallback when related laws are empty, shortens the technology
+  hub intro to avoid clipping, and falls back to readable calculator formulas
+  when MathJax is unavailable. Web bumped to `3.3.1`; iOS app bumped to
+  `1.2.1` / build `17`; Android app bumped to `1.2.1` / versionCode `8`;
+  root to `2.5.1`.
 - Web site audit surfaces now render useful static content for core internal
   routes, including homepage, developers, favorites, submit, calculators,
   categories, and law detail pages. The archive experience now has richer law

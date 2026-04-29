@@ -15,7 +15,21 @@ describe('Home view', () => {
     expect(el.querySelector('[data-home-zone="category-discovery"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="tools-submit"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="trending-recent"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="trending-recent"] > .section-header')).toBeNull();
+    expect(el.querySelector('[data-home-zone="trending-recent"] .home-discovery-grid')).toBeTruthy();
     expect(el.textContent).toMatch(/human-reviewed/i);
+  });
+
+  it('renders proof points as spaced token-friendly badges', () => {
+    const el = document.createElement('div');
+
+    renderHome(el, { id: 1, text: 'Test law', upvotes: 0, downvotes: 0 }, [], () => {});
+
+    const proofPoints = el.querySelectorAll('.home-proof-point');
+    expect(proofPoints).toHaveLength(4);
+    expect(proofPoints[0]?.querySelector('strong')?.textContent).toBe('2,400+');
+    expect(proofPoints[0]?.querySelector('span')?.textContent).toBe('laws');
+    expect(proofPoints[3]?.textContent).toContain('since 1998');
   });
 
   it('routes homepage search submissions to browse', () => {
@@ -30,7 +44,6 @@ describe('Home view', () => {
 
     expect(onNavigate).toHaveBeenCalledWith('browse');
   });
-
   it('renders Law of the Day after fetching data', async () => {
     const lawOfTheDay = {
       id: '1',

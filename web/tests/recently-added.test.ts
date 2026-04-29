@@ -30,6 +30,7 @@ describe('RecentlyAdded component', () => {
     fetchRecentlyAddedSpy.mockReturnValue(new Promise(() => {})); // Never resolves
     const el = RecentlyAdded();
 
+    expect(el.classList.contains('law-list-card')).toBe(true);
     // Check for loading placeholder (uses random messages, not "Loading")
     expect(el.querySelector('.loading-placeholder')).toBeTruthy();
     expect(el.textContent).toContain('Recently Added');

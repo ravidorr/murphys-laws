@@ -30,12 +30,25 @@ describe('internal links', () => {
     ]);
   });
 
+  it('uses a generic label when category name is missing', () => {
+    const links = getLawDetailInternalLinks({ categorySlug: 'uncategorized' });
+
+    expect(links[0]!.label).toBe('Same category');
+  });
+
   it('builds category hub links with related category and hub destinations', () => {
     const links = getCategoryHubLinks('murphys-travel-laws');
 
     expect(links.map((link) => link.href)).toContain('/examples/travel');
     expect(links.map((link) => link.href)).toContain('/category/murphys-bus-laws');
     expect(links.map((link) => link.href)).toContain('/calculator/sods-law');
+  });
+
+  it('returns fallback category hub links for unknown categories', () => {
+    expect(getCategoryHubLinks('unknown-category').map((link) => link.href)).toEqual([
+      '/best-murphys-laws',
+      '/categories'
+    ]);
   });
 
   it('builds calculator scenario links', () => {

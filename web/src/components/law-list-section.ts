@@ -20,7 +20,7 @@ import type { Law } from '../types/app.d.ts';
  */
 export function createLawListSection({ accentText, remainderText }: { accentText: string; remainderText: string }) {
   const el = document.createElement('div');
-  el.className = 'card';
+  el.className = 'card law-list-card';
   // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
   el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
