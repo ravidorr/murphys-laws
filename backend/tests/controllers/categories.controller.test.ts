@@ -53,4 +53,12 @@ describe('CategoryController', () => {
         expect(categoryService.getRelatedCategories).toHaveBeenCalledWith('murphys-office-laws', { limit: 6 });
         expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
     });
+
+    it('should honor related category limit query parameter', async () => {
+        categoryService.getRelatedCategories.mockResolvedValue([{ slug: 'work', title: 'Work' }]);
+        await categoryController.related(req, res, 'murphys-office-laws', { query: { limit: '2' } });
+
+        expect(categoryService.getRelatedCategories).toHaveBeenCalledWith('murphys-office-laws', { limit: 2 });
+        expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+    });
 });

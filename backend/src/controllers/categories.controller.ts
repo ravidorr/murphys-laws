@@ -1,5 +1,11 @@
 import { sendJson } from '../utils/http-helpers.ts';
 
+function parseLimit(value: unknown, fallback = 6): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(10, Math.trunc(parsed)));
+}
+
 export class CategoryController {
   categoryService: any;
 
@@ -22,8 +28,9 @@ export class CategoryController {
     return sendJson(res, 200, category, req);
   }
 
-  async related(req: any, res: any, slug: string) {
-    const related = await this.categoryService.getRelatedCategories(slug, { limit: 6 });
+  async related(req: any, res: any, slug: string, parsed: any = { query: {} }) {
+    const limit = parseLimit(parsed.query?.limit, 6);
+    const related = await this.categoryService.getRelatedCategories(slug, { limit });
     return sendJson(res, 200, { data: related, category_slug: slug }, req);
   }
 }
