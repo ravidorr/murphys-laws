@@ -6,7 +6,7 @@
 
 <div data-law-content hidden>
   <div data-law-card-container></div>
-  <section class="section section-card mb-12" data-law-context aria-labelledby="law-context-heading">
+  <section class="section card card--section section-card mb-12" data-law-context aria-labelledby="law-context-heading">
     <div class="section-header">
       <h3 id="law-context-heading" class="section-title"><span class="accent-text">In</span> context</h3>
     </div>
@@ -16,7 +16,7 @@
       </div>
     </div>
   </section>
-  <section class="section section-card mb-12" data-law-provenance aria-labelledby="law-provenance-heading">
+  <section class="section card card--section section-card mb-12" data-law-provenance aria-labelledby="law-provenance-heading">
     <div class="section-header">
       <h3 id="law-provenance-heading" class="section-title"><span class="accent-text">Source</span> status</h3>
     </div>
@@ -25,13 +25,13 @@
       <p class="small">Know the original source, a better attribution, or a duplicate we should merge? <a href="/contact" data-law-report-link>Report an issue</a>.</p>
     </div>
   </section>
-  <section class="section section-card mb-12" data-law-internal-links-section aria-labelledby="law-internal-links-heading">
+  <section class="section card card--section section-card mb-12" data-law-internal-links-section aria-labelledby="law-internal-links-heading">
     <div class="section-header">
       <h3 id="law-internal-links-heading" class="section-title"><span class="accent-text">Keep</span> exploring</h3>
     </div>
     <div class="section-body" data-law-internal-links></div>
   </section>
-  <section class="section section-card related-laws-section" data-related-laws hidden>
+  <section class="section card card--section section-card related-laws-section" data-related-laws hidden>
     <div class="section-header">
       <h3 class="section-title"><span class="accent-text">Related</span> Laws</h3>
     </div>
@@ -42,7 +42,7 @@
 <div data-not-found hidden></div>
 
 <template data-not-found-template>
-  <div class="card">
+  <div class="card card--section">
     <div class="card-body">
       <div class="empty-state">
         <div class="empty-state-icon">
@@ -71,16 +71,16 @@
 </template>
 
 <template data-law-card-template>
-  <section class="section section-card mb-12" data-law-card-root>
-    <div class="section-header">
-      <h3 class="section-title" data-law-title><span class="visually-hidden">Loading law title...</span></h3>
-    </div>
-    <div class="section-body">
+  <article class="card card--section law-detail-card section-card mb-12" data-law-card-root>
+    <header class="card-header section-header">
+      <h3 class="card-title section-title" data-law-title><span class="visually-hidden">Loading law title...</span></h3>
+    </header>
+    <div class="card-body section-body">
       <blockquote class="lod-quote-large" data-law-text></blockquote>
       <p class="lod-attrib" data-law-attribution hidden></p>
       <div class="small" data-law-submitted hidden></div>
     </div>
-    <div class="section-footer">
+    <footer class="card-footer section-footer">
       <div class="left">
         <div class="vote-group" role="group" aria-label="Vote. Votes are anonymous; no login required." data-tooltip="Upvote or downvote. Votes are anonymous; no login required.">
           <button type="button" class="vote-btn count-up" data-vote="up" data-id="" aria-label="Upvote this law">
@@ -109,6 +109,6 @@
           <span class="btn-text">Browse All Laws</span>
         </button>
       </div>
-    </div>
-  </section>
+    </footer>
+  </article>
 </template>

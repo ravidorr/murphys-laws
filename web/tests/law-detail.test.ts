@@ -54,6 +54,7 @@ describe('LawDetail view', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
     const el = LawDetail({ lawId: '1', onNavigate: () => { } });
     await vi.waitFor(() => expect(el.textContent).toMatch(/A Law/), { timeout: 500 });
+    expect(el.querySelector('[data-law-card-root]')?.className).toContain('card--section law-detail-card');
     expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('1');
   });
 

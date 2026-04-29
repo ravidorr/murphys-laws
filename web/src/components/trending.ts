@@ -16,7 +16,7 @@ import { LAW_CARD_MIN_HEIGHT, WIDGET_CARD_COUNT } from '../utils/constants.ts';
  */
 export function Trending() {
   const el = document.createElement('div');
-  el.className = 'card law-list-card';
+  el.className = 'card card--law-list law-list-card';
   // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
   el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
 
@@ -24,7 +24,7 @@ export function Trending() {
     <header class="card-header">
       <h3 class="card-title"><span class="accent-text">Trending</span> Now</h3>
     </header>
-    <div class="card-body"></div>
+    <div class="card-body card-body--flush"></div>
   `;
 
   // Template always provides .card-body

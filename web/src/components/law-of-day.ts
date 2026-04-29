@@ -14,7 +14,7 @@ import type { Law, OnNavigate } from '../types/app.d.ts';
 
 export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: OnNavigate }) {
   const el = document.createElement('section');
-  el.className = 'section section-card mb-12';
+  el.className = 'section card card--section section-card mb-12';
 
   if (!law) {
     const loading = createLoading({ 

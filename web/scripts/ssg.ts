@@ -285,7 +285,7 @@ function buildStaticLawDetailContent(law: Law): string {
           <li aria-current="page">${escapeHtml(title)}</li>
         </ol>
       </nav>
-      <article class="law-detail-card card">
+      <article class="card card--section law-detail-card">
         <header class="card-header">
           <h1 class="card-title">${escapeHtml(title)}</h1>
           <p class="small">Source status: ${sourceStatus}</p>
@@ -299,7 +299,7 @@ function buildStaticLawDetailContent(law: Law): string {
           </div>
         </div>
       </article>
-      <section class="section section-card mb-12" aria-labelledby="law-context-heading">
+      <section class="section card card--section section-card mb-12" aria-labelledby="law-context-heading">
         <div class="section-header">
           <h2 id="law-context-heading" class="section-title" data-section-title="In context"><span class="accent-text">In</span> context</h2>
         </div>
@@ -307,7 +307,7 @@ function buildStaticLawDetailContent(law: Law): string {
           <p>${escapeHtml(context)}</p>
         </div>
       </section>
-      <section class="section section-card mb-12" aria-labelledby="related-laws-heading">
+      <section class="section card card--section section-card mb-12" aria-labelledby="related-laws-heading">
         <div class="section-header">
           <h2 id="related-laws-heading" class="section-title" data-section-title="Related laws"><span class="accent-text">Related</span> laws</h2>
         </div>
@@ -320,7 +320,7 @@ function buildStaticLawDetailContent(law: Law): string {
           </div>
         </div>
       </section>
-      <section class="section section-card" aria-labelledby="law-actions-heading">
+      <section class="section card card--section section-card" aria-labelledby="law-actions-heading">
         <div class="section-header">
           <h2 id="law-actions-heading" class="section-title"><span class="accent-text">Improve</span> this entry</h2>
         </div>
@@ -555,7 +555,7 @@ function wrapInCardStructure(html: string, options: { lastUpdated?: string | nul
   if (!h1Match) {
     // No h1 found, wrap everything in card-body
     return `
-        <article class="card content-card">
+        <article class="card card--content content-card">
           <div class="card-body">
             ${html}
           </div>
@@ -594,7 +594,7 @@ function wrapInCardStructure(html: string, options: { lastUpdated?: string | nul
   }
   
   return `
-        <article class="card content-card">
+        <article class="card card--content content-card">
 ${headerHtml}
           <div class="card-body">
             ${bodyContent.trim()}
@@ -606,7 +606,7 @@ function buildStaticFavoritesContent(): string {
   return `
     <div class="container page">
       <h1 class="page-title mb-4" data-page-title="My Favorites"><span class="accent-text">My</span> Favorites</h1>
-      <article class="card content-card">
+      <article class="card card--empty content-card">
         <header class="card-header text-center">
           <h2 class="card-title"><span class="accent-text">Save</span> Laws You Want To Revisit</h2>
           <blockquote class="not-found-quote">
@@ -633,7 +633,7 @@ function buildStaticSubmitContent(): string {
   return `
     <div class="container page">
       <h1 class="page-title mb-4" data-page-title="Submit a Murphy's Law"><span class="accent-text">Submit</span> a Murphy's Law</h1>
-      <article class="card content-card">
+      <article class="card card--content content-card">
         <header class="card-header content-header">
           <h2 class="card-title"><span class="accent-text">Share</span> a Law With the Archive</h2>
           <p class="lead">Every submission is reviewed by a human before publication so the archive stays useful, readable, and trustworthy.</p>
@@ -661,7 +661,7 @@ function buildStaticSubmitContent(): string {
 function buildStaticHomeContent(): string {
   return `
     <div class="container page pt-0">
-      <section class="section section-card mb-12" data-home-zone="archive-search">
+      <section class="section card card--section section-card mb-12" data-home-zone="archive-search">
         <div class="section-header">
           <h1 class="section-title" data-section-title="Search the Archive"><span class="accent-text">Search</span> the Archive</h1>
         </div>
@@ -681,7 +681,7 @@ function buildStaticHomeContent(): string {
           </div>
         </div>
       </section>
-      <section class="section section-card mb-12" data-home-zone="law-of-day">
+      <section class="section card card--section section-card mb-12" data-home-zone="law-of-day">
         <div class="section-header">
           <h2 class="section-title"><span class="accent-text">Law</span> of the Day</h2>
         </div>
@@ -689,7 +689,7 @@ function buildStaticHomeContent(): string {
           <p>Enable JavaScript for today's rotating law, or browse the full archive now.</p>
         </div>
       </section>
-      <section class="section section-card mb-12" data-home-zone="category-discovery">
+      <section class="section card card--section section-card mb-12" data-home-zone="category-discovery">
         <div class="section-header">
           <h2 class="section-title"><span class="accent-text">Browse</span> by Theme</h2>
         </div>
@@ -698,7 +698,7 @@ function buildStaticHomeContent(): string {
           <a href="/categories" class="btn">See category groups</a>
         </div>
       </section>
-      <section class="section section-card mb-12" data-home-zone="trending-recent">
+      <section class="section card card--section section-card mb-12" data-home-zone="trending-recent">
         <div class="section-header">
           <h2 class="section-title">Trending and Recently Added</h2>
         </div>
@@ -710,7 +710,7 @@ function buildStaticHomeContent(): string {
           </div>
         </div>
       </section>
-      <section class="section section-card mb-12" data-home-zone="tools-submit">
+      <section class="section card card--section section-card mb-12" data-home-zone="tools-submit">
         <div class="section-header">
           <h2 class="section-title"><span class="accent-text">Tools</span> and Submissions</h2>
         </div>
@@ -731,7 +731,7 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
     return `
       <div class="container page calculator">
         <h1 class="page-title mb-4" data-page-title="Sod's Law Calculator"><span class="accent-text">Sod's</span> Law Calculator</h1>
-        <article class="card content-card">
+        <article class="card card--content content-card">
           <header class="card-header content-header">
             <h2 class="card-title"><span class="accent-text">Estimate</span> Your Risk</h2>
             <p class="lead">Model how likely a task is to go wrong using Urgency, Complexity, Importance, Skill, and Frequency.</p>
@@ -758,7 +758,7 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
   return `
     <div class="container page calculator">
       <h1 class="page-title mb-4" data-page-title="Buttered Toast Calculator"><span class="accent-text">Buttered</span> Toast Calculator</h1>
-      <article class="card content-card">
+      <article class="card card--content content-card">
         <header class="card-header content-header">
           <h2 class="card-title"><span class="accent-text">Simulate</span> the Classic Mishap</h2>
           <p class="lead">Explore why toast seems destined to land butter-side down when breakfast is already running late.</p>
@@ -866,7 +866,7 @@ async function main(): Promise<void> {
         <div class="static-content prose mx-auto">
           ${htmlContent}
         </div>
-        <section class="section section-card mb-8" aria-labelledby="category-internal-links-${slug}">
+        <section class="section card card--section section-card mb-8" aria-labelledby="category-internal-links-${slug}">
           <div class="section-header">
             <h2 id="category-internal-links-${slug}" class="section-title"><span class="accent-text">Explore</span> nearby</h2>
           </div>
@@ -967,7 +967,7 @@ async function main(): Promise<void> {
       const cards = group.categories.map(cat => {
       const lawText = cat.law_count === 1 ? 'law' : 'laws';
       return `
-      <article class="category-card" data-category-slug="${cat.slug}">
+      <article class="card card--category category-card category-card--rich" data-category-slug="${cat.slug}">
         <h3 class="category-card-title">${cat.title}</h3>
         <p class="category-card-description">Explore ${cat.law_count} ${lawText} in this category.</p>
         <div class="category-card-footer">
