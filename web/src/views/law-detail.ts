@@ -346,6 +346,18 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         initSharePopovers(relatedList as HTMLElement);
         addVotingListeners(relatedList as HTMLElement);
         relatedSection.removeAttribute('hidden');
+      } else {
+        relatedList.innerHTML = `
+          <div class="empty-state">
+            <p class="empty-state-title">No direct related laws yet</p>
+            <p class="empty-state-text">Keep exploring nearby archive entries instead.</p>
+            <div class="not-found-actions">
+              <a href="/browse" class="btn outline" data-nav="browse">Browse all laws</a>
+              <a href="/categories" class="btn outline" data-nav="categories">Browse categories</a>
+            </div>
+          </div>
+        `;
+        relatedSection.removeAttribute('hidden');
       }
     } catch {
       // Silently fail - related laws are not critical

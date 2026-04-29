@@ -83,7 +83,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
     const F = parseFloat(sliders.friction.value);
     const T = parseFloat(sliders.inertia.value);
 
-    // Generate LaTeX formula - show variable name or value based on showValues
+    // Generate formula - use MathJax only when available, otherwise show readable text.
     const hDisplay = showValues.H ? H : 'H';
     const gDisplay = showValues.g ? g : 'g';
     const oDisplay = showValues.O ? O : 'O';
@@ -91,19 +91,23 @@ export function ButteredToastCalculator(): HTMLDivElement {
     const fDisplay = showValues.F ? F : 'F';
     const tDisplay = showValues.T ? T : 'T';
 
-    const formula = `\\(P_{\\text{butter-down}} = \\left(1 - \\left| \\left( \\frac{30 \\sqrt{\\frac{${hDisplay}}{${gDisplay}}} \\cdot ${oDisplay} \\cdot ${bDisplay}}{${tDisplay} + ${fDisplay}} \\bmod{1} \\right) - 0.5 \\right| \\cdot 2 \\right) \\cdot 100\\% \\)`;
+    const readableFormula = `Butter-down probability = rotation from height ${hDisplay}, gravity ${gDisplay}, push ${oDisplay}, butter ${bDisplay}, drag ${fDisplay}, and density ${tDisplay}`;
+    const mathFormula = `\\(P_{\\text{butter-down}} = \\left(1 - \\left| \\left( \\frac{30 \\sqrt{\\frac{${hDisplay}}{${gDisplay}}} \\cdot ${oDisplay} \\cdot ${bDisplay}}{${tDisplay} + ${fDisplay}} \\bmod{1} \\right) - 0.5 \\right| \\cdot 2 \\right) \\cdot 100\\% \\)`;
 
-    formulaDisplay.textContent = formula;
+    formulaDisplay.textContent = readableFormula;
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
       // Capture MathJax reference to avoid race conditions in test environments
       const mathJax = window.MathJax;
+      formulaDisplay.textContent = mathFormula;
       requestAnimationFrame(() => {
         // Defensive check: MathJax might become undefined in test environments
         if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
+          formulaDisplay.textContent = readableFormula;
           return;
         }
 
         mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
+          /* v8 ignore start -- tooltip decoration depends on MathJax-rendered DOM in browsers */
           // Add title attributes to variables after MathJax renders
           const titles: Record<string, string> = {
             'H': 'Height of Fall (30-200 cm)',
@@ -149,8 +153,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
             }
             /* v8 ignore stop */
           });
+          /* v8 ignore stop */
         }).catch(() => {
-          // Silently handle MathJax errors
+          formulaDisplay.textContent = readableFormula;
         });
       });
     }
@@ -258,6 +263,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   // Initialize calculation on load
   calculateLanding();
+  updateFormula();
 
   // Initialize formula after MathJax is loaded
   ensureMathJax()

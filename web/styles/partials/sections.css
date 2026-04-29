@@ -28,6 +28,36 @@
   line-height: 1.7;
 }
 
+.home-proof-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.home-proof-point {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--bg) 96%, var(--muted-fg) 4%);
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+
+.home-proof-point strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.home-discovery-grid {
+  display: grid;
+  gap: 3rem;
+}
+
 .feature-list {
   list-style: none;
   padding: 0;
@@ -522,6 +552,41 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.daily-law-distribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  color: var(--muted-fg);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+}
+
+.daily-law-distribution-label {
+  color: var(--fg);
+  font-weight: var(--font-semibold);
+}
+
+.daily-law-distribution-link {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--bg) 96%, var(--muted-fg) 4%);
+  color: var(--link);
+  text-decoration: none;
+}
+
+.daily-law-distribution-link:hover,
+.daily-law-distribution-link:focus-visible {
+  color: var(--link-hover);
+  border-color: color-mix(in oklab, var(--border) 70%, var(--link) 30%);
+  background: color-mix(in oklab, var(--bg) 92%, var(--link) 8%);
 }
 
 .count-up,
@@ -1088,6 +1153,15 @@
   padding: 0 1rem 0.75rem;
   margin: 0;
   border-bottom: 1px solid var(--border);
+}
+
+.card.law-list-card .card-title {
+  padding: 0;
+  border-bottom: none;
+}
+
+.card.law-list-card .card-body {
+  padding: 0;
 }
 
 .card .card-text {

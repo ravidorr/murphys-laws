@@ -9,7 +9,8 @@ describe('LawListSection component', () => {
     });
 
     expect(el.tagName).toBe('DIV');
-    expect(el.className).toBe('card');
+    expect(el.classList.contains('card')).toBe(true);
+    expect(el.classList.contains('law-list-card')).toBe(true);
   });
 
   it('renders title with accent and remainder text', () => {

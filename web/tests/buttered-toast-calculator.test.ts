@@ -25,6 +25,37 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+
+  it('updates toast social image meta tags when present', () => {
+    const og = document.createElement('meta');
+    og.setAttribute('property', 'og:image');
+    const twitter = document.createElement('meta');
+    twitter.setAttribute('property', 'twitter:image');
+    document.head.append(og, twitter);
+
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    expect(og.getAttribute('content')).toContain('/social/buttered-toast-calculator.png');
+    expect(twitter.getAttribute('content')).toContain('/social/buttered-toast-calculator.png');
+    document.body.removeChild(el);
+    og.remove();
+    twitter.remove();
+  });
+
+  it('shows a readable formula fallback when MathJax is unavailable', () => {
+    const originalMathJax = window.MathJax;
+    window.MathJax = undefined;
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    expect(el.querySelector('#toast-formula-display')?.textContent).toContain('Butter-down probability');
+    expect(el.querySelector('#toast-formula-display')?.textContent).not.toContain('\\(');
+
+    window.MathJax = originalMathJax;
+    document.body.removeChild(el);
+  });
+
   it('L33 B0: twitter:image branch not taken when absent', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);

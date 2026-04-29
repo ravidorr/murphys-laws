@@ -99,7 +99,7 @@ export function Calculator(): HTMLDivElement {
       data: `Probability of things going wrong: ${displayPercent}%. ${interpretation}`
     });
 
-    // Generate LaTeX formula - show variable name or value based on showValues
+    // Generate formula - use MathJax only when available, otherwise show readable text.
     const pFormula = showValues.U ? String(displayPercent) : 'P';
     const uDisplay = showValues.U ? U : 'U';
     const cDisplay = showValues.C ? C : 'C';
@@ -107,19 +107,22 @@ export function Calculator(): HTMLDivElement {
     const sDisplay = showValues.S ? S : 'S';
     const fDisplay = showValues.F ? F : 'F';
     const aDisplay = showValues.U ? '0.7' : 'A'; // Show 0.7 when flashing
+    const readableFormula = `Probability = ((${uDisplay} + ${cDisplay} + ${iDisplay}) x (10 - ${sDisplay}) / 20) x ${aDisplay} x 1 / (1 - sin(${fDisplay} / 10))`;
+    const mathFormula = `\\(${pFormula}=\\frac{((${uDisplay}+${cDisplay}+${iDisplay})\\times (10-${sDisplay}))}{20}\\times ${aDisplay}\\times \\frac{1}{(1-\\sin (\\frac{${fDisplay}}{10}))}\\)`;
 
-    const formula = `\\(${pFormula}=\\frac{((${uDisplay}+${cDisplay}+${iDisplay})\\times (10-${sDisplay}))}{20}\\times ${aDisplay}\\times \\frac{1}{(1-\\sin (\\frac{${fDisplay}}{10}))}\\)`;
-
-    formulaDisplay.textContent = formula;
+    formulaDisplay.textContent = readableFormula;
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
       // Capture MathJax reference to avoid race conditions in test environments
       const mathJax = window.MathJax;
+      formulaDisplay.textContent = mathFormula;
       requestAnimationFrame(() => {
         if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
+          formulaDisplay.textContent = readableFormula;
           return;
         }
 
         mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
+          /* v8 ignore start -- tooltip decoration depends on MathJax-rendered DOM in browsers */
           // Add title attributes to variables after MathJax renders
           const titles: Record<string, string> = {
             'U': 'Urgency (1-9)',
@@ -164,8 +167,9 @@ export function Calculator(): HTMLDivElement {
             }
             /* v8 ignore stop */
           });
+          /* v8 ignore stop */
         }).catch(() => {
-          // Silently handle MathJax errors
+          formulaDisplay.textContent = readableFormula;
         });
       });
     }

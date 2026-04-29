@@ -44,4 +44,13 @@ describe('calculator state', () => {
 
     expect(state).toEqual({ u: 9, i: 4, f: 1 });
   });
+
+  it('skips non-finite serialized values', () => {
+    const url = serializeCalculatorState('https://murphys-laws.com/calculator/sods-law', {
+      u: 5,
+      c: Number.NaN,
+    });
+
+    expect(url).toBe('https://murphys-laws.com/calculator/sods-law?u=5');
+  });
 });

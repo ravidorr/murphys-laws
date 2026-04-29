@@ -68,8 +68,32 @@ describe("Calculator view", () => {
     expect(el!.querySelector('[data-calculator-scenario-links]')?.innerHTML).toContain('/examples/work');
   });
 
+  it('shows a readable formula fallback when MathJax is unavailable', () => {
+    const next = mountCalculator({ mathJaxStub: null });
+
+    expect(next.querySelector('#formula-display')?.textContent).toContain('Probability =');
+    expect(next.querySelector('#formula-display')?.textContent).not.toContain('\\(');
+  });
+
   it('L34 B0: og:image branch not taken when absent', () => {
     expect(el!.querySelector('#urgency')).toBeTruthy();
+  });
+
+
+  it('updates social image meta tags when present', () => {
+    const og = document.createElement('meta');
+    og.setAttribute('property', 'og:image');
+    const twitter = document.createElement('meta');
+    twitter.setAttribute('property', 'twitter:image');
+    document.head.append(og, twitter);
+
+    const next = mountCalculator();
+
+    expect(og.getAttribute('content')).toContain('/social/sods-calculator.png');
+    expect(twitter.getAttribute('content')).toContain('/social/sods-calculator.png');
+    next.cleanup?.();
+    og.remove();
+    twitter.remove();
   });
 
   it('L35 B0: twitter:image branch not taken when absent', () => {

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getPageContent, getPageMetadata, getRawMarkdownContent, markdownToHtml, type ContentPage } from '../src/utils/markdown-content.ts';
 import { marked } from 'marked';
+import { ContentPageView } from '../src/views/content-page.ts';
+import * as exportContext from '../src/utils/export-context.ts';
 
 describe('markdown-content.js', () => {
   describe('markdownToHtml', () => {
@@ -91,6 +93,10 @@ describe('markdown-content.js', () => {
       expect(getPageContent('murphys-law-vs-sods-law')).toContain('Sod');
     });
 
+    it('uses concise technology hub intro copy to avoid visual clipping', () => {
+      expect(getPageContent('murphys-laws-about-technology')).not.toContain('the one setting nobody remembers changing');
+    });
+
     it('returns HTML content for examples subpages', () => {
       expect(getPageContent('examples/work')).toContain('Work');
       expect(getPageContent('examples/travel')).toContain('Travel');
@@ -160,6 +166,79 @@ describe('markdown-content.js', () => {
       expect(() => {
         getPageContent('unknown-page' as ContentPage);
       }).toThrow();
+    });
+  });
+
+
+  describe('ContentPageView', () => {
+    it('renders a content page view with export cleanup', () => {
+      const clearExportSpy = vi.spyOn(exportContext, 'clearExportContent');
+      const el = ContentPageView({
+        page: 'best-murphys-laws',
+        title: "Best Murphy's Laws",
+        description: 'Best laws page',
+        onNavigate: () => {}
+      });
+
+      expect(el.className).toContain('content-page');
+      expect(document.title).toContain("Best Murphy's Laws");
+      expect(el.textContent).toContain('Best');
+      const cleanable = el as HTMLDivElement & { cleanup?: () => void };
+      expect(cleanable.cleanup).toBeTypeOf('function');
+      cleanable.cleanup!();
+      expect(clearExportSpy).toHaveBeenCalled();
+    });
+
+    it('handles content page navigation clicks', () => {
+      const onNavigate = vi.fn();
+      const el = ContentPageView({
+        page: 'best-murphys-laws',
+        title: "Best Murphy's Laws",
+        description: 'Best laws page',
+        onNavigate
+      });
+      const link = document.createElement('a');
+      link.setAttribute('data-nav', 'browse');
+      el.appendChild(link);
+
+      link.click();
+
+      expect(onNavigate).toHaveBeenCalledWith('browse');
+    });
+
+    it('ignores content page clicks without actionable navigation', () => {
+      const onNavigate = vi.fn();
+      const el = ContentPageView({
+        page: 'best-murphys-laws',
+        title: "Best Murphy's Laws",
+        description: 'Best laws page',
+        onNavigate
+      });
+      const emptyNav = document.createElement('a');
+      emptyNav.setAttribute('data-nav', '');
+      el.appendChild(emptyNav);
+
+      emptyNav.click();
+      el.click();
+
+      expect(onNavigate).not.toHaveBeenCalled();
+    });
+
+
+    it('ignores non-HTMLElement click targets', () => {
+      const onNavigate = vi.fn();
+      const el = ContentPageView({
+        page: 'best-murphys-laws',
+        title: "Best Murphy's Laws",
+        description: 'Best laws page',
+        onNavigate
+      });
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      el.appendChild(svg);
+
+      svg.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(onNavigate).not.toHaveBeenCalled();
     });
   });
 
