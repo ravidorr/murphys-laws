@@ -73,6 +73,13 @@ describe('Router', () => {
     expect(route.param).toBe('buttered-toast');
   });
 
+  it('parses examples subroutes', () => {
+    history.replaceState(null, '', '/examples/work');
+    const route = currentRoute();
+    expect(route.name).toBe('examples');
+    expect(route.param).toBe('work');
+  });
+
   it('parses generic route', () => {
     history.replaceState(null, '', '/about');
     const route = currentRoute();

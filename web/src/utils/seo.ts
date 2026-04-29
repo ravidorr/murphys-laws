@@ -1,6 +1,19 @@
 /**
  * SEO utility functions
  */
+import { SITE_URL } from './constants.ts';
+
+export function buildCanonicalUrl(pathOrUrl: string): string {
+  const base = new URL(SITE_URL);
+  const input = pathOrUrl.startsWith('http')
+    ? new URL(pathOrUrl)
+    : new URL(pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`, base);
+  input.protocol = base.protocol;
+  input.host = base.host;
+  input.search = '';
+  input.hash = '';
+  return input.toString().replace(/\/$/, input.pathname === '/' ? '/' : '');
+}
 
 /**
  * Truncate title to fit within 60 character limit for SEO

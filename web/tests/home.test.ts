@@ -14,6 +14,7 @@ describe('Home view', () => {
     expect(el.querySelector('[data-home-zone="law-of-day"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="category-discovery"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="tools-submit"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="trending-recent"]')).toBeTruthy();
     expect(el.textContent).toMatch(/human-reviewed/i);
   });
 
@@ -127,7 +128,7 @@ describe('Home view', () => {
     const other = document.createElement('span');
     el.appendChild(other);
     other.click();
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
   });
 
   it('L172 B1: nav button with data-nav triggers onNavigate', async () => {

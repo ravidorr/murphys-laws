@@ -95,6 +95,7 @@ import { Examples } from './views/examples.ts';
 import { WhyMurphysLawFeelsTrue } from './views/why-murphys-law-feels-true.ts';
 import { MurphysLawProjectManagement } from './views/murphys-law-project-management.ts';
 import { Developers } from './views/developers.ts';
+import { ContentPageView } from './views/content-page.ts';
 import { NotFound } from './views/not-found.ts';
 import { isFavoritesEnabled } from './utils/feature-flags.ts';
 import { toggleFavorite } from './utils/favorites.ts';
@@ -348,9 +349,24 @@ const routesMap = {
     clearPageStructuredData();
     return layout(Contact({ onNavigate }));
   },
-  examples: () => {
+  examples: ({ param }: { param?: string | null }) => {
     trackPageView();
     clearPageStructuredData();
+    if (param === 'work' || param === 'travel' || param === 'tech' || param === 'everyday-life') {
+      const titles: Record<string, string> = {
+        work: "Murphy's Law Work Examples",
+        travel: "Murphy's Law Travel Examples",
+        tech: "Murphy's Law Technology Examples",
+        'everyday-life': "Everyday Murphy's Law Examples"
+      };
+      const title = titles[param]!;
+      return layout(ContentPageView({
+        page: `examples/${param}` as const,
+        title,
+        description: `${title} with linked laws and practical risk-reduction notes.`,
+        onNavigate
+      }));
+    }
     return layout(Examples({ onNavigate }));
   },
   'why-murphys-law-feels-true': () => {
@@ -367,6 +383,31 @@ const routesMap = {
     trackPageView();
     clearPageStructuredData();
     return layout(Developers({ onNavigate }));
+  },
+  'best-murphys-laws': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(ContentPageView({ page: 'best-murphys-laws', title: "Best Murphy's Laws", description: "A curated starting point for the best Murphy's Laws.", onNavigate }));
+  },
+  'funniest-murphys-laws': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(ContentPageView({ page: 'funniest-murphys-laws', title: "Funniest Murphy's Laws", description: "Funny Murphy's Laws that capture familiar failures.", onNavigate }));
+  },
+  'murphys-laws-about-work': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(ContentPageView({ page: 'murphys-laws-about-work', title: "Murphy's Laws About Work", description: "Murphy's Laws for work, offices, meetings, and projects.", onNavigate }));
+  },
+  'murphys-laws-about-technology': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(ContentPageView({ page: 'murphys-laws-about-technology', title: "Murphy's Laws About Technology", description: "Murphy's Laws about technology, software, and systems.", onNavigate }));
+  },
+  'murphys-law-vs-sods-law': () => {
+    trackPageView();
+    clearPageStructuredData();
+    return layout(ContentPageView({ page: 'murphys-law-vs-sods-law', title: "Murphy's Law vs Sod's Law", description: "The difference between Murphy's Law and Sod's Law.", onNavigate }));
   },
 };
 

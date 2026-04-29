@@ -415,6 +415,31 @@ export class LawService {
     return { data: rows };
   }
 
+  async findDuplicateCandidates({ text, limit = 5 }: { text: string; limit?: number }) {
+    const normalized = text.trim().toLowerCase();
+    const words = normalized
+      .replace(/[^\w\s'-]/g, ' ')
+      .split(/\s+/)
+      .filter((word) => word.length >= 4)
+      .slice(0, 5);
+    const terms = words.length > 0 ? words : [normalized.slice(0, 24)];
+    const where = terms.map(() => "(LOWER(l.text) LIKE ? OR LOWER(COALESCE(l.title, '')) LIKE ?)").join(' OR ');
+    const params = terms.flatMap((term) => [`%${term}%`, `%${term}%`]);
+    const stmt = this.db.prepare(`
+      SELECT
+        l.id,
+        l.title,
+        l.text,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes,
+        COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes
+      FROM laws l
+      WHERE l.status = 'published' AND (${where})
+      ORDER BY upvotes DESC, l.id DESC
+      LIMIT ?;
+    `);
+    return stmt.all(...params, limit);
+  }
+
   async submitLaw({ title, text, author, email, categoryId }: SubmitLawParams) {
     const insertLawSql = `
       INSERT INTO laws (title, text, status, first_seen_file_path)

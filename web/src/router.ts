@@ -63,6 +63,11 @@ export function currentRoute(): RouteInfo {
     return { name: 'calculator', param: calcMatch[1]! };
   }
 
+  const examplesMatch = path.match(/^\/examples\/([^/]+)/);
+  if (examplesMatch) {
+    return { name: 'examples', param: examplesMatch[1]! };
+  }
+
   const genericMatch = path.match(/^\/([^/]+)/);
   if (genericMatch) {
     return { name: genericMatch[1]!, param: null };

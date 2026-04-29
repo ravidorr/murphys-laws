@@ -92,6 +92,28 @@ describe('SubmitLawSection component', () => {
     expect(el.textContent).toMatch(/duplicates/i);
   });
 
+  it('shows examples of good laws before submission', () => {
+    const el = mountSection();
+
+    expect(el.querySelector('[data-good-law-examples]')).toBeTruthy();
+    expect(el.textContent).toMatch(/Specific beats vague/i);
+  });
+
+  it('shows duplicate candidates when the law text has similar published laws', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 7, title: 'Backup Law', text: 'The backup you need is the one you forgot to test' }] })
+    });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+
+    textarea!.value = 'The backup failed before the deploy';
+    textarea!.dispatchEvent(new Event('blur'));
+
+    await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('Possible duplicates'));
+    expect(el.querySelector('[data-duplicate-candidates]')?.innerHTML).toContain('/law/7');
+  });
+
   it('submit button is disabled initially', () => {
     const el = mountSection();
     const submitBtn = el.querySelector('#submit-btn') as HTMLButtonElement | null;
@@ -491,6 +513,33 @@ describe('SubmitLawSection component', () => {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
+  });
+
+  it('shows post-submit next actions after successful submission', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, id: 123 })
+    });
+
+    const el = mountSection({ append: true });
+    const form = el.querySelector('.submit-form') as HTMLFormElement | null;
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
+    const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
+    const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
+
+    categorySelect!.innerHTML = '<option value="">Choose</option><option value="murphys-technology-laws">Technology</option>';
+    categorySelect!.value = 'murphys-technology-laws';
+    textarea!.value = 'This is a valid law text with more than ten characters';
+    textarea!.dispatchEvent(new Event('input'));
+    termsCheckbox!.checked = true;
+    termsCheckbox!.dispatchEvent(new Event('change'));
+
+    form!.dispatchEvent(new Event('submit'));
+
+    await vi.waitFor(() => expect(el.querySelector('[data-submit-next-actions]')?.innerHTML).toContain('/browse'));
+    expect(el.querySelector('[data-submit-next-actions]')?.innerHTML).toContain('/browse');
+    expect(el.querySelector('[data-submit-next-actions]')?.innerHTML).toContain('/category/murphys-technology-laws');
+    expect(el.querySelector('[data-submit-next-actions]')?.textContent).toContain('Submit another law');
   });
 
   it('shows error message on submit failure', async () => {

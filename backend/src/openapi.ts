@@ -217,6 +217,35 @@ export const OPENAPI_SPEC = {
         },
       },
     },
+    '/api/v1/laws/duplicates': {
+      get: {
+        operationId: 'getDuplicateCandidates',
+        summary: 'Find possible duplicate laws',
+        description: 'Returns published laws that may duplicate a proposed submission.',
+        parameters: [
+          { name: 'text', in: 'query', required: true, schema: { type: 'string', minLength: 10 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 10, default: 5 } },
+        ],
+        responses: {
+          '200': {
+            description: 'Possible duplicate laws',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: { type: 'array', items: { $ref: '#/components/schemas/Law' } },
+                    text: { type: 'string' },
+                    limit: { type: 'integer' },
+                  },
+                },
+              },
+            },
+          },
+          '400': { description: 'Invalid text query', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
     '/api/v1/laws/{id}': {
       get: {
         operationId: 'getLaw',
@@ -358,6 +387,32 @@ export const OPENAPI_SPEC = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Category' } } },
           },
           '404': { description: 'Category not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
+    '/api/v1/categories/{slug}/related': {
+      get: {
+        operationId: 'getRelatedCategories',
+        summary: 'Get related categories',
+        parameters: [
+          { name: 'slug', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 10, default: 6 } },
+        ],
+        responses: {
+          '200': {
+            description: 'Related categories',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: { type: 'array', items: { $ref: '#/components/schemas/Category' } },
+                    category_slug: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
