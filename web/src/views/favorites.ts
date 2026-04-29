@@ -27,7 +27,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
   if (!isFavoritesEnabled()) {
     el.innerHTML = `
       <h1 class="page-title mb-4"><span class="accent-text">My</span> Favorites</h1>
-      <div class="card content-card">
+      <div class="card card--empty content-card">
         <header class="card-header text-center">
           <h2 class="card-title"><span class="accent-text">Feature</span> Disabled</h2>
         </header>
@@ -54,7 +54,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
   function renderEmptyState() {
     return `
       <h1 class="page-title mb-4"><span class="accent-text">My</span> Favorites</h1>
-      <div class="card content-card">
+      <div class="card card--empty content-card">
         <header class="card-header text-center">
           <h2 class="card-title"><span class="accent-text">No Favorites</span> Yet</h2>
           <blockquote class="not-found-quote">
@@ -111,7 +111,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
 
     return `
       <h1 class="page-title mb-4"><span class="accent-text">My</span> Favorites</h1>
-      <div class="card">
+      <div class="card card--section">
         <header class="card-header">
           <div class="card-title-row">
             <h2 class="card-title">

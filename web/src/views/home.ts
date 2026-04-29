@@ -15,7 +15,7 @@ import { trackProductEvent } from '@utils/metrics.ts';
 import type { CleanableElement, OnNavigate, Law } from '../types/app.d.ts';
 
 const ARCHIVE_SEARCH_HTML = `
-  <section class="section section-card mb-12 browse-cta" data-home-zone="archive-search" aria-labelledby="browse-cta-heading">
+  <section class="section card card--section section-card mb-12 browse-cta" data-home-zone="archive-search" aria-labelledby="browse-cta-heading">
     <div class="section-header">
       <h1 id="browse-cta-heading" class="section-title"><span class="accent-text">Search</span> the Archive</h1>
     </div>
@@ -45,7 +45,7 @@ const ARCHIVE_SEARCH_HTML = `
 `;
 
 const CATEGORY_DISCOVERY_HTML = `
-  <section class="section section-card mb-12" data-home-zone="category-discovery" aria-labelledby="category-discovery-heading">
+  <section class="section card card--section section-card mb-12" data-home-zone="category-discovery" aria-labelledby="category-discovery-heading">
     <div class="section-header">
       <h2 id="category-discovery-heading" class="section-title"><span class="accent-text">Browse</span> by Theme</h2>
     </div>
@@ -63,7 +63,7 @@ const CATEGORY_DISCOVERY_HTML = `
 `;
 
 const SUBMIT_CTA_HTML = `
-  <section class="section section-card mb-12" aria-labelledby="submit-cta-heading">
+  <section class="section card card--section section-card mb-12" aria-labelledby="submit-cta-heading">
     <div class="section-header">
       <h2 id="submit-cta-heading" class="section-title"><span class="accent-text">Submit</span> Your Own</h2>
     </div>
@@ -77,7 +77,7 @@ const SUBMIT_CTA_HTML = `
 `;
 
 const HOME_OVERVIEW_HTML = `
-  <section class="section section-card mb-12">
+  <section class="section card card--section section-card mb-12">
     <div class="section-header">
       <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
     </div>

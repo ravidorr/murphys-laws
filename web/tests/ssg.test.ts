@@ -101,7 +101,7 @@ describe('SSG Utilities', () => {
       const html = '<h1>Title</h1><p>Content</p>';
       const result = wrapInCardStructure(html);
       
-      expect(result).toContain('<article class="card content-card">');
+      expect(result).toContain('<article class="card card--content content-card">');
       expect(result).toContain('</article>');
     });
 
@@ -123,7 +123,7 @@ describe('SSG Utilities', () => {
       const html = '<p>Just some content without a heading</p>';
       const result = wrapInCardStructure(html);
       
-      expect(result).toContain('<article class="card content-card">');
+      expect(result).toContain('<article class="card card--content content-card">');
       expect(result).toContain('<div class="card-body">');
       expect(result).toContain('Just some content without a heading');
       expect(result).not.toContain('<header');
@@ -228,6 +228,7 @@ describe('SSG Static Route Content', () => {
     expect(html).toMatch(/Source status/i);
     expect(html).toMatch(/In context/i);
     expect(html).toMatch(/Related laws/i);
+    expect(html).toContain('card--section law-detail-card');
     expect(html).toContain('/category/murphys-technology-laws');
     expect(html).toContain('/examples/tech');
     expect(html).toContain('Technology hub');

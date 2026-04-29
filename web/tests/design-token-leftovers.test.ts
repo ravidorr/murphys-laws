@@ -30,6 +30,18 @@ describe('design-token leftovers', () => {
     expect(localThis.content).not.toContain('--primary: #4f46e5;');
   });
 
+  it('defines canonical card variants with compatibility aliases', () => {
+    const components = readWebFile('styles/partials/components.css');
+    expect(components).toContain('.card--section');
+    expect(components).toContain('.section-card');
+    expect(components).toContain('.card--content');
+    expect(components).toContain('.content-card');
+    expect(components).toContain('.card--law-list');
+    expect(components).toContain('.law-list-card');
+    expect(components).toContain('.card--empty');
+    expect(components).toContain('.card-body--flush');
+  });
+
   it('does not keep stale implementation colors outside variables.css', () => {
     const localThis: FileScanLocalThis = {};
     localThis.root = root;
