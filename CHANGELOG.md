@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Law-list cards now use the same elevated card shadow, border, and row padding
+  scale as other archive cards, so Browse widgets no longer look visually flatter
+  than neighboring card surfaces. Web bumped to `3.3.3`; root to `2.5.4`.
 - Forced PostCSS resolution to `8.5.12` so Vite and Stylelint no longer pull in
   the vulnerable `postcss <8.5.10` dev-tooling copy flagged by `npm audit`.
   Root bumped to `2.5.3`.
