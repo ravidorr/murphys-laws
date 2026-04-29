@@ -668,6 +668,16 @@ describe('API utilities', () => {
       expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
     });
 
+    it('returns empty array without reporting transient fetch transport failures', async () => {
+      vi.mocked(Sentry.captureException).mockClear();
+      fetchSpy.mockRejectedValue(new TypeError('NetworkError while fetching'));
+
+      const result = await fetchSuggestions({ q: 'test' });
+
+      expect(result).toEqual({ data: [], total: 0, limit: 0, offset: 0 });
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+    });
+
     it('returns empty array when API request fails', async () => {
       fetchSpy.mockResolvedValueOnce({ ok: false, status: 500 });
 

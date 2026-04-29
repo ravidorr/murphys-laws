@@ -3,6 +3,20 @@ import * as Sentry from '@sentry/browser';
 import { API_BASE_URL, DEFAULT_FETCH_HEADERS } from './constants.ts';
 import type { Law, Category, PaginatedResponse, RelatedLawsResponse, ListResponse } from '../types/app.d.ts';
 
+function isFetchTransportError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.name === 'AbortError' ||
+    (
+      error instanceof TypeError &&
+      /networkerror.*fetch|failed to fetch|load failed|network request failed/i.test(error.message)
+    )
+  );
+}
+
 /**
  * Fetches from API with automatic fallback
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/laws')
@@ -210,7 +224,9 @@ export async function fetchSuggestions({ q, limit = 10 }: { q?: string | null; l
     return await fetchAPI('/api/v1/laws/suggestions', params) as PaginatedResponse<Law>;
   } catch (error) {
     // Gracefully handle errors - return empty array
-    Sentry.captureException(error);
+    if (!isFetchTransportError(error)) {
+      Sentry.captureException(error);
+    }
     return { data: [], total: 0, limit: 0, offset: 0 };
   }
 }
