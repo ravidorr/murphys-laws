@@ -669,11 +669,11 @@ function buildStaticHomeContent(): string {
           <p class="section-subtitle">Explore Murphy's Law history, browse thousands of laws, and find the category that fits your next mishap.</p>
         </div>
         <div class="section-body">
-          <div class="home-proof-points">
-            <span>2,400+ laws</span>
-            <span>55+ categories</span>
-            <span>Human-reviewed submissions</span>
-            <span>Curated since the late 1990s</span>
+          <div class="home-proof-points" aria-label="Archive facts">
+            <span class="home-proof-point"><strong>2,400+</strong><span>laws</span></span>
+            <span class="home-proof-point"><strong>55+</strong><span>categories</span></span>
+            <span class="home-proof-point"><strong>Human-reviewed</strong><span>submissions</span></span>
+            <span class="home-proof-point"><strong>Curated</strong><span>since 1998</span></span>
           </div>
           <div class="not-found-actions">
             <a href="/browse" class="btn">Browse All Laws</a>

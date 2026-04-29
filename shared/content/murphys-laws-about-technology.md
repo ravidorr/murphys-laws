@@ -1,6 +1,6 @@
 # Murphy's Laws About Technology
 
-Technology gives Murphy's Law more places to hide. A failure can start in code, configuration, dependencies, hardware, networks, permissions, documentation, or the one setting nobody remembers changing.
+Technology gives Murphy's Law more places to hide. Failure can start in code, configuration, dependencies, hardware, networks, permissions, or documentation.
 
 ## Common technology patterns
 

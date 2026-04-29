@@ -959,11 +959,9 @@ describe('LawDetail view', () => {
 
     await new Promise(r => setTimeout(r, 100));
 
-    // Related section should remain hidden
     const relatedSection = el.querySelector('[data-related-laws]');
-    if (relatedSection) {
-      expect(relatedSection.hasAttribute('hidden')).toBe(true);
-    }
+    expect(relatedSection?.hasAttribute('hidden')).toBe(false);
+    expect(relatedSection?.textContent).toContain('Browse all laws');
   });
 
   it('handles related laws with null data', async () => {

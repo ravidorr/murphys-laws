@@ -109,6 +109,30 @@ describe('NotFound view', () => {
     expect(searchInput).toBeTruthy();
   });
 
+  it('does not navigate for empty search query', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+    const searchForm = el.querySelector('#not-found-search-form');
+    const searchInput = el.querySelector('#not-found-search-input') as HTMLInputElement;
+    searchInput.value = '   ';
+
+    searchForm?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate when data-nav is empty', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+    const btn = document.createElement('button');
+    btn.setAttribute('data-nav', '');
+    el.appendChild(btn);
+
+    btn.click();
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('stores search query in sessionStorage and navigates to browse on search', () => {
     const onNavigate = vi.fn();
     el = NotFound({ onNavigate });

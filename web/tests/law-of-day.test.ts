@@ -138,6 +138,8 @@ describe('LawOfTheDay component', () => {
     const el = mountLaw(law);
 
     expect(el.querySelector('[data-daily-law-distribution]')).toBeTruthy();
+    expect(el.querySelector('[data-daily-law-distribution]')?.classList.contains('daily-law-distribution')).toBe(true);
+    expect(el.querySelectorAll('.daily-law-distribution-link')).toHaveLength(3);
     expect(el.querySelector('[data-daily-law-distribution]')?.innerHTML).toContain('/api/v1/feed.rss');
     expect(el.querySelector('[data-daily-law-distribution] a:last-of-type')?.getAttribute('href')).toBe('/api/v1/law-of-day');
     expect(el.querySelector('[data-daily-law-distribution]')?.textContent).toContain('Daily Law');
