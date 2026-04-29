@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Growth follow-up surfaces for the archive: new internal-link modules connect
+  laws, categories, calculators, hubs, and examples; calculators now use stable
+  shareable state helpers, scenario links, and FAQ structured data; submissions
+  now show good-law examples, duplicate candidates, and post-submit next steps;
+  new SEO hubs cover best laws, funny laws, work, technology, and Murphy's Law
+  vs. Sod's Law; examples now have work, travel, technology, and everyday-life
+  subpages; daily-law distribution links expose RSS/Atom and the Law of the Day
+  API; and backend API additions expose duplicate checks and related categories
+  for discovery loops. Backend bumped to `2.2.0`; web bumped to `3.3.0`; iOS
+  app bumped to `1.2.0` / build `16`; Android app bumped to `1.2.0` /
+  versionCode `7`; root to `2.5.0`.
 - Optional dead-man-switch ping in `backend/scripts/health-monitor.sh`. The script now sources `/etc/default/health-monitor` (root-owned, mode 600, never committed) and pings `HEALTHCHECKS_PING_URL` after every successful health check, including the post-restart recovery path. With nothing configured the script behaves identically, so dev environments are unaffected. This closes the structural gap where the on-box health monitor cannot alert when the box itself (or its Postfix relay) is dead: Healthchecks.io alarms when pings stop arriving. Setup procedure and alert-ladder semantics documented in [shared/docs/SERVER_MAINTENANCE.md](shared/docs/SERVER_MAINTENANCE.md). Backend bumped to `2.1.1`; root to `2.4.37`.
 - Work Sans variable font bundled in the Android app for visual parity with web. [android/app/src/main/res/font/work_sans_variable.ttf](android/app/src/main/res/font/work_sans_variable.ttf) (~360 KB, single VF covers all weights via the `wght` axis), wrapped by a hand-authored `WorkSans` `FontFamily` in [android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt](android/app/src/main/java/com/murphyslaws/ui/theme/WorkSans.kt). The FontFamily registers the variable font at four weight slots (Normal 400, Medium 500, SemiBold 600, Bold 700) with `FontVariation.Settings(FontVariation.weight(...))` so Compose's typography system resolves `.weight(...)` requests to the correct axis position. Requires API 26+, which matches the app's `minSdk`. [shared/design-tokens/export-android-tokens.ts](shared/design-tokens/export-android-tokens.ts) now emits `fontFamily = WorkSans` for every `DS.Typography.<level>`, replacing the `FontFamily.Default` (Roboto) placeholder from PR Android-1. PR Android-3 (final phase) of the design-tokens-mobile rollout. Bundling a new font is user-visible, so Android app bumped MINOR to `1.1.0` / versionCode `4`; root to `2.4.23`.
 

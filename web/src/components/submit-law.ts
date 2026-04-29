@@ -3,11 +3,12 @@
 
 import templateHtml from '@views/templates/submit-law-section.html?raw';
 import { showError } from './notification.ts';
-import { fetchAPI } from '../utils/api.ts';
+import { fetchAPI, fetchDuplicateCandidates } from '../utils/api.ts';
 import { apiPost } from '../utils/request.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { rankDuplicateCandidates } from '@utils/discovery.ts';
 import {
   getCachedCategories,
   setCachedCategories,
@@ -42,6 +43,8 @@ export function SubmitLawSection() {
   const requirementsDiv = el.querySelector('.submit-requirements');
   const textRequirement = el.querySelector('[data-requirement="text"]');
   const termsRequirement = el.querySelector('[data-requirement="terms"]');
+  const nextActions = el.querySelector('[data-submit-next-actions]');
+  const duplicateCandidates = el.querySelector('[data-duplicate-candidates]');
   let categoriesLoaded = false;
 
   // Populate dropdown with cached categories (template always has categorySelect)
@@ -51,6 +54,7 @@ export function SubmitLawSection() {
       cached.forEach((category) => {
         const option = document.createElement('option');
         option.value = String(category.id);
+        option.dataset.categorySlug = category.slug;
         option.textContent = stripMarkdownFootnotes(category.title);
         categorySelect!.appendChild(option);
       });
@@ -74,6 +78,7 @@ export function SubmitLawSection() {
         categories.forEach((category) => {
           const option = document.createElement('option');
           option.value = String(category.id);
+          option.dataset.categorySlug = category.slug;
           option.textContent = stripMarkdownFootnotes(category.title);
           categorySelect!.appendChild(option);
         });
@@ -172,15 +177,60 @@ export function SubmitLawSection() {
     return await apiPost('/api/v1/laws', lawData);
   }
 
+  function showNextActions(categorySlug?: string) {
+    if (!nextActions) return;
+    const categoryLink = categorySlug
+      ? `<a href="/category/${categorySlug}" class="btn outline">Browse your category</a>`
+      : '<a href="/categories" class="btn outline">Browse categories</a>';
+    nextActions.innerHTML = `
+      <div class="section section-card mt-4">
+        <div class="section-header">
+          <h3 class="section-title"><span class="accent-text">Keep</span> exploring</h3>
+        </div>
+        <div class="section-body">
+          <p>Thanks. While your submission is reviewed, compare it with nearby laws or submit another variation.</p>
+          <div class="not-found-actions">
+            <a href="/browse" class="btn">Find similar laws</a>
+            ${categoryLink}
+            <button type="button" class="btn outline" data-action="submit-another-law">Submit another law</button>
+          </div>
+        </div>
+      </div>`;
+    nextActions.removeAttribute('hidden');
+  }
+
   // Add event listeners to check validity
   textArea?.addEventListener('input', () => {
     checkSubmitValidity();
     clearMessage();
   });
 
+  textArea?.addEventListener('blur', async () => {
+    const text = textArea.value.trim();
+    if (!duplicateCandidates || text.length < 10) return;
+    try {
+      const result = await fetchDuplicateCandidates(text);
+      const ranked = rankDuplicateCandidates(text, result.data).filter((candidate) => candidate.score > 0).slice(0, 3);
+      duplicateCandidates.innerHTML = ranked.length > 0
+        ? `<p class="small"><strong>Possible duplicates:</strong></p><ul>${ranked.map((law) => `<li><a href="/law/${law.id}">${law.title || law.text}</a></li>`).join('')}</ul>`
+        : '';
+    } catch {
+      duplicateCandidates.innerHTML = '';
+    }
+  });
+
   termsCheckbox?.addEventListener('change', () => {
     checkSubmitValidity();
     clearMessage();
+  });
+
+  el.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.closest('[data-action="submit-another-law"]')) return;
+
+    nextActions?.setAttribute('hidden', '');
+    textArea?.focus();
   });
 
   // Template always has .submit-form
@@ -194,6 +244,7 @@ export function SubmitLawSection() {
     const email = (el.querySelector('#submit-email') as HTMLInputElement | null)?.value.trim();
     const anonymous = (el.querySelector('#submit-anonymous') as HTMLInputElement | null)?.checked;
     const categoryId = (el.querySelector('#submit-category') as HTMLSelectElement | null)?.value;
+    const categorySlug = categorySelect?.selectedOptions[0]?.dataset.categorySlug;
     const honeypot = (el.querySelector('#submit-website') as HTMLInputElement | null)?.value?.trim();
 
     if (honeypot) {
@@ -234,6 +285,7 @@ export function SubmitLawSection() {
         'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
         false
       );
+      showNextActions(categorySlug || undefined);
 
       // Clear form after successful submission (template always has these fields)
       setTimeout(() => {

@@ -98,6 +98,18 @@ export async function fetchRelatedLaws(lawId: number | string, { limit = 5 } = {
   return await fetchAPI(`/api/v1/laws/${numericId}/related`, params) as RelatedLawsResponse;
 }
 
+export async function fetchDuplicateCandidates(text: string, { limit = 5 } = {}): Promise<PaginatedResponse<Law>> {
+  const trimmed = text.trim();
+  if (trimmed.length < 10) {
+    return { data: [], total: 0, limit: 0, offset: 0 };
+  }
+  return await fetchAPI('/api/v1/laws/duplicates', { text: trimmed, limit: String(limit) }) as PaginatedResponse<Law>;
+}
+
+export async function fetchRelatedCategories(slug: string, { limit = 6 } = {}): Promise<ListResponse<Category>> {
+  return await fetchAPI(`/api/v1/categories/${slug}/related`, { limit: String(limit) }) as ListResponse<Category>;
+}
+
 /**
  * Fetches laws with pagination and sorting
  * @param {Object} options - Fetch options

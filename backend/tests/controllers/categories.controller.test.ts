@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { CategoryController } from '../../src/controllers/categories.controller.ts';
 
 describe('CategoryController', () => {
-    let categoryService: { listCategories: ReturnType<typeof vi.fn>; getCategory: ReturnType<typeof vi.fn> };
+    let categoryService: { listCategories: ReturnType<typeof vi.fn>; getCategory: ReturnType<typeof vi.fn>; getRelatedCategories: ReturnType<typeof vi.fn> };
     let categoryController: CategoryController;
     let req: IncomingMessage;
     let res: ServerResponse;
@@ -12,6 +12,7 @@ describe('CategoryController', () => {
         categoryService = {
             listCategories: vi.fn(),
             getCategory: vi.fn(),
+            getRelatedCategories: vi.fn(),
         };
         categoryController = new CategoryController(categoryService as never);
 
@@ -43,5 +44,21 @@ describe('CategoryController', () => {
         await categoryController.get(req, res, 999);
 
         expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+    });
+
+    it('should return related categories by slug', async () => {
+        categoryService.getRelatedCategories.mockResolvedValue([{ slug: 'work', title: 'Work' }]);
+        await categoryController.related(req, res, 'murphys-office-laws');
+
+        expect(categoryService.getRelatedCategories).toHaveBeenCalledWith('murphys-office-laws', { limit: 6 });
+        expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+    });
+
+    it('should honor related category limit query parameter', async () => {
+        categoryService.getRelatedCategories.mockResolvedValue([{ slug: 'work', title: 'Work' }]);
+        await categoryController.related(req, res, 'murphys-office-laws', { query: { limit: '2' } });
+
+        expect(categoryService.getRelatedCategories).toHaveBeenCalledWith('murphys-office-laws', { limit: 2 });
+        expect(res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
     });
 });

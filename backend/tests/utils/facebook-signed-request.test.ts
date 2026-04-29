@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import crypto from 'node:crypto';
 import {
   parseSignedRequest,
@@ -72,6 +72,18 @@ describe('facebook-signed-request', () => {
       const encodedPayload = base64UrlEncode(JSON.stringify(payload));
       const wrongSig = base64UrlEncode('wrong');
       expect(parseSignedRequest(`${wrongSig}.${encodedPayload}`, 'secret')).toBeNull();
+    });
+
+    it('should return null when same-length signature verification fails', () => {
+      const payload = { algorithm: 'HMAC-SHA256', user_id: '1' };
+      const signed = createValidSignedRequest(payload, 'secret');
+      const [signature, encodedPayload] = signed.split('.');
+      const badSignature = `${signature!.slice(0, -1)}${signature!.endsWith('A') ? 'B' : 'A'}`;
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      expect(parseSignedRequest(`${badSignature}.${encodedPayload}`, 'secret')).toBeNull();
+      expect(consoleSpy).toHaveBeenCalledWith('Signature verification failed');
+      consoleSpy.mockRestore();
     });
 
     it('should return payload for valid signed request', () => {

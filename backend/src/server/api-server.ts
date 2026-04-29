@@ -122,6 +122,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
 
   router.get('/api/v1/laws', (req, res, parsed) => lawController.list(req, res, parsed));
   router.get('/api/v1/laws/suggestions', (req, res, parsed) => lawController.suggestions(req, res, parsed));
+  router.get('/api/v1/laws/duplicates', (req, res, parsed) => lawController.duplicates(req, res, parsed));
   router.get('/api/v1/laws/random', (req, res) => lawController.getRandom(req, res));
   router.get('/api/v1/laws/:id', (req, res, id) => lawController.get(req, res, id));
   router.get('/api/v1/laws/:id/related', (req, res, id) => lawController.getRelated(req, res, id));
@@ -132,6 +133,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.delete('/api/v1/laws/:id/vote', (req, res, id) => voteController.removeVote(req, res, Number(id)));
 
   router.get('/api/v1/categories', (req, res) => categoryController.list(req, res));
+  router.get('/api/v1/categories/:slug/related', (req, res, slug, parsed) => categoryController.related(req, res, slug, parsed));
   router.get('/api/v1/categories/:id', (req, res, id) => categoryController.get(req, res, Number(id)));
 
   router.get('/api/v1/attributions', (req, res) => attributionController.list(req, res));

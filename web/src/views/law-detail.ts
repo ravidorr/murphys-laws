@@ -19,6 +19,7 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { getDefaultLawContext } from '../utils/law-context-copy.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { getLawDetailInternalLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
 
 interface LawDetailProps {
@@ -313,6 +314,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       sourceStatusEl.textContent = attributionName
         ? `Attributed to ${attributionName}`
         : 'Source not yet verified by the archive.';
+    }
+
+    const internalLinksEl = el.querySelector('[data-law-internal-links]');
+    if (internalLinksEl) {
+      internalLinksEl.innerHTML = renderInternalLinkList(getLawDetailInternalLinks({
+        categorySlug: law.category_slug,
+        categoryName: law.category_name,
+      }));
     }
 
     // Fetch and render related laws

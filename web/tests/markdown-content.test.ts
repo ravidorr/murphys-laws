@@ -83,6 +83,21 @@ describe('markdown-content.js', () => {
       expect(html).toContain('Survival Guide');
     });
 
+    it('returns HTML content for SEO hub pages', () => {
+      expect(getPageContent('best-murphys-laws')).toContain('Best');
+      expect(getPageContent('funniest-murphys-laws')).toContain('Funniest');
+      expect(getPageContent('murphys-laws-about-work')).toContain('About Work');
+      expect(getPageContent('murphys-laws-about-technology')).toContain('About Technology');
+      expect(getPageContent('murphys-law-vs-sods-law')).toContain('Sod');
+    });
+
+    it('returns HTML content for examples subpages', () => {
+      expect(getPageContent('examples/work')).toContain('Work');
+      expect(getPageContent('examples/travel')).toContain('Travel');
+      expect(getPageContent('examples/tech')).toContain('Technology');
+      expect(getPageContent('examples/everyday-life')).toContain('Everyday');
+    });
+
     it('includes last updated date for privacy page', () => {
       const html = getPageContent('privacy');
       expect(html).toContain('Last updated:');

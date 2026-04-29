@@ -156,6 +156,17 @@ describe('CategoryDetail view', () => {
     expect(breadcrumbContainer!.children.length).toBeGreaterThan(0);
   });
 
+  it('renders category hub links after category details load', async () => {
+    vi.mocked(api.fetchCategories).mockResolvedValue({
+      data: [{ id: 1, slug: 'murphys-travel-laws', title: "Murphy's Travel Laws", description: 'Travel trouble.' }]
+    });
+    const el = CategoryDetail({ categoryId: 'murphys-travel-laws', onNavigate });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-category-hub-links]')).toBeTruthy(), { timeout: 500 });
+    expect(el.querySelector('[data-category-hub-links]')?.innerHTML).toContain('/examples/travel');
+    expect(el.querySelector('[data-category-hub-links]')?.innerHTML).toContain('/category/murphys-bus-laws');
+  });
+
   it('L347 B1: setCategoryItemListSchema called when laws exist', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));

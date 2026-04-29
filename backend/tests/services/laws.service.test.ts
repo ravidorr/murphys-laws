@@ -218,6 +218,23 @@ describe('LawService', () => {
     expect(attribution.contact_value).toBeNull();
   });
 
+  it('finds duplicate candidates by shared terms', async () => {
+    db.prepare("INSERT INTO laws (title, text, status) VALUES ('Backup Law', 'The backup you need is the one you forgot to test', 'published')").run();
+    db.prepare("INSERT INTO laws (title, text, status) VALUES ('Line Law', 'The line you choose is always slowest', 'published')").run();
+
+    const duplicates = await lawService.findDuplicateCandidates({ text: 'The backup failed before the deploy', limit: 5 }) as Array<{ title: string }>;
+
+    expect(duplicates[0]!.title).toBe('Backup Law');
+  });
+
+  it('finds duplicate candidates with short fallback terms', async () => {
+    db.prepare("INSERT INTO laws (title, text, status) VALUES ('Tiny Law', 'tiny phrase match', 'published')").run();
+
+    const duplicates = await lawService.findDuplicateCandidates({ text: 'tiny phrase', limit: 5 }) as Array<{ title: string }>;
+
+    expect(duplicates[0]!.title).toBe('Tiny Law');
+  });
+
   it('should submit law without author and without categoryId', async () => {
     const lawId = await lawService.submitLaw({
       title: '',

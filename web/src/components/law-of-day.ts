@@ -109,6 +109,19 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
   footer.appendChild(socialShare);
   hydrateIcons(footer);
 
+  const distribution = document.createElement('div');
+  distribution.setAttribute('data-daily-law-distribution', '');
+  distribution.className = 'small text-muted-fg mt-4';
+  distribution.innerHTML = `
+    <strong>Daily Law distribution:</strong>
+    <a href="/api/v1/feed.rss">RSS</a>
+    <span aria-hidden="true"> · </span>
+    <a href="/api/v1/feed.atom">Atom</a>
+    <span aria-hidden="true"> · </span>
+    <a href="/api/v1/law-of-day">Daily Law API</a>
+  `;
+  el.appendChild(distribution);
+
   // Handle voting, navigation, sharing, and copy actions
   el.addEventListener('click', async (e) => {
     const t = e.target;

@@ -321,6 +321,24 @@ ssh murphys-n8n 'sudo cat /opt/n8n/docker-compose.yml'
 
 ## Troubleshooting
 
+## Daily Law Distribution
+
+The canonical source for daily distribution is `GET /api/v1/law-of-day`.
+RSS and Atom feeds are already exposed at `/api/v1/feed.rss` and
+`/api/v1/feed.atom`; use those feeds for low-risk syndication before adding new
+email or social infrastructure.
+
+Recommended rollout:
+
+1. Keep RSS/Atom as the public subscription path.
+2. If email is added, make it opt-in and link the signup copy to the privacy
+   policy before collecting addresses.
+3. If social posting is automated, run it as an operational script or external
+   scheduler that reads `/api/v1/law-of-day`; do not make social posting a web
+   app dependency.
+4. Monitor failures separately from the web/API health checks so distribution
+   problems do not hide behind normal site uptime.
+
 ### Main Server Issues
 
 **Service not starting after reboot:**
