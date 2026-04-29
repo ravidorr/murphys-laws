@@ -54,6 +54,7 @@ export function SubmitLawSection() {
       cached.forEach((category) => {
         const option = document.createElement('option');
         option.value = String(category.id);
+        option.dataset.categorySlug = category.slug;
         option.textContent = stripMarkdownFootnotes(category.title);
         categorySelect!.appendChild(option);
       });
@@ -77,6 +78,7 @@ export function SubmitLawSection() {
         categories.forEach((category) => {
           const option = document.createElement('option');
           option.value = String(category.id);
+          option.dataset.categorySlug = category.slug;
           option.textContent = stripMarkdownFootnotes(category.title);
           categorySelect!.appendChild(option);
         });
@@ -175,10 +177,10 @@ export function SubmitLawSection() {
     return await apiPost('/api/v1/laws', lawData);
   }
 
-  function showNextActions(categoryId?: string) {
+  function showNextActions(categorySlug?: string) {
     if (!nextActions) return;
-    const categoryLink = categoryId
-      ? `<a href="/category/${categoryId}" class="btn outline">Browse your category</a>`
+    const categoryLink = categorySlug
+      ? `<a href="/category/${categorySlug}" class="btn outline">Browse your category</a>`
       : '<a href="/categories" class="btn outline">Browse categories</a>';
     nextActions.innerHTML = `
       <div class="section section-card mt-4">
@@ -233,6 +235,7 @@ export function SubmitLawSection() {
     const email = (el.querySelector('#submit-email') as HTMLInputElement | null)?.value.trim();
     const anonymous = (el.querySelector('#submit-anonymous') as HTMLInputElement | null)?.checked;
     const categoryId = (el.querySelector('#submit-category') as HTMLSelectElement | null)?.value;
+    const categorySlug = categorySelect?.selectedOptions[0]?.dataset.categorySlug;
     const honeypot = (el.querySelector('#submit-website') as HTMLInputElement | null)?.value?.trim();
 
     if (honeypot) {
@@ -273,7 +276,7 @@ export function SubmitLawSection() {
         'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
         false
       );
-      showNextActions(categoryId || undefined);
+      showNextActions(categorySlug || undefined);
 
       // Clear form after successful submission (template always has these fields)
       setTimeout(() => {
