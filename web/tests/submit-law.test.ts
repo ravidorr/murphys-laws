@@ -527,8 +527,8 @@ describe('SubmitLawSection component', () => {
     const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement | null;
     const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement | null;
 
-    categorySelect!.innerHTML = '<option value="">Choose</option><option value="murphys-technology-laws">Technology</option>';
-    categorySelect!.value = 'murphys-technology-laws';
+    categorySelect!.innerHTML = '<option value="">Choose</option><option value="5" data-category-slug="murphys-technology-laws">Technology</option>';
+    categorySelect!.value = '5';
     textarea!.value = 'This is a valid law text with more than ten characters';
     textarea!.dispatchEvent(new Event('input'));
     termsCheckbox!.checked = true;
