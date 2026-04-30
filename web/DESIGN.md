@@ -382,7 +382,9 @@ Use a variant class with `card` so the surface intent is explicit:
   Legacy alias: `content-card`.
 - `card--law-list`: stacked law-list widgets such as Top Voted, Trending Now,
   and Recently Added. Legacy alias: `law-list-card`. The child rows remain
-  `law-card-mini` and are not standalone card shells.
+  `law-card-mini` and are not standalone card shells. Law-list widgets use the
+  same elevated surface treatment as section cards while keeping their body
+  flush for full-width row dividers.
 - `card--category`: category tiles. Use `category-card--rich` for the current
   grouped category cards and `category-card--compact` only for older compact
   directory tiles. Legacy alias: `category-card`.
