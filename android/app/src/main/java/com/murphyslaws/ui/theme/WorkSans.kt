@@ -11,8 +11,8 @@ import com.murphyslaws.R
  * Work Sans variable-font FontFamily for Compose.
  *
  * Backed by the single TTF at `res/font/work_sans_variable.ttf` (added in
- * PR Android-3). The wght axis lets one TTF cover every weight DESIGN.md
- * uses; we register one Font per weight slot so Compose's typography
+ * PR Android-3). The weight axis lets one TTF cover every weight DESIGN.md
+ * uses; we register one Font per weight slot, so Compose's typography
  * system can resolve `.weight(...)` requests on the family.
  *
  * Variation settings require API 26+, which matches the app's `minSdk`.
