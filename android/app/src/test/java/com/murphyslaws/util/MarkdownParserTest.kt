@@ -24,8 +24,9 @@ class MarkdownParserTest {
         )
 
         val link = annotatedString.getLinkAnnotations(0, annotatedString.length).single()
+        val linkAnnotation = link.item as androidx.compose.ui.text.LinkAnnotation.Clickable
 
         assertEquals("Read docs", annotatedString.text)
-        assertEquals(linkColor, link.item.styles?.style?.color)
+        assertEquals(linkColor.value.toLong(), linkAnnotation.styles?.style?.color?.value?.toLong())
     }
 }
