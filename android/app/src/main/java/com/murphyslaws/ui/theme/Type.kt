@@ -6,7 +6,7 @@ import androidx.compose.material3.Typography
  * Material 3 Typography mapped from shared/DESIGN.md typography levels via
  * the generated DS.Typography namespace.
  *
- * DESIGN.md exposes 9 semantic levels (display, h1..h4, body-lg..body-sm,
+ * DESIGN.md exposes 9 semantic levels (display, h1...h4, body-lg...body-sm,
  * caption); Material 3 has its own 5x3 typography slot grid (display /
  * headline / title / body / label x large/medium/small). Mapping below
  * keeps the visual hierarchy intact while populating every Material slot

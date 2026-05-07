@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
@@ -11,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.murphyslaws"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.murphyslaws"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 8
-        versionName = "1.2.1"
+        targetSdk = 37
+        versionCode = 9
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "com.murphyslaws.CustomTestRunner"
         vectorDrawables {
@@ -40,9 +39,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
     }
@@ -52,6 +48,12 @@ android {
             excludes += "META-INF/LICENSE.md"
             excludes += "META-INF/LICENSE-notice.md"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
@@ -65,7 +67,7 @@ tasks.register<Copy>("copySharedContent") {
 
 // Regenerate Android design tokens from shared/DESIGN.md.
 // Outputs (Tokens.kt, colors.xml, values-night/colors.xml, dimens.xml) are
-// gitignored; this task ensures they exist and are fresh on every build.
+// gitignore: this task ensures they exist and are up to date on every build.
 // Skipped automatically if Node/npm aren't on PATH (the build will then fail
 // at the Kotlin compile step with a clear "missing Tokens.kt" error, which
 // points at this task).
@@ -92,7 +94,7 @@ tasks.register<Exec>("exportDesignTokens") {
     }
 }
 
-// Run before processing resources
+// Run before processing resource
 tasks.named("preBuild") {
     dependsOn("copySharedContent")
     dependsOn("exportDesignTokens")
@@ -100,10 +102,10 @@ tasks.named("preBuild") {
 
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-    implementation("androidx.activity:activity-compose:1.12.1")
-    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation(platform("androidx.compose:compose-bom:2026.05.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -111,13 +113,13 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.57.2")
-    ksp("com.google.dagger:hilt-android-compiler:2.57.2")
+    implementation("com.google.dagger:hilt-android:2.59.2")
+    ksp("com.google.dagger:hilt-android-compiler:2.59.2")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
     implementation("androidx.hilt:hilt-lifecycle-viewmodel-compose:1.3.0")
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.9.6")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
 
     // Retrofit & Moshi
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
@@ -126,7 +128,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
 
     // Kotlinx Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
     // Pendo SDK
     implementation("sdk.pendo.io:pendoIO:3.9.+") {
@@ -135,8 +137,8 @@ dependencies {
 
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")
-    testImplementation("io.mockk:mockk:1.14.7")
-    testImplementation("org.mockito:mockito-core:5.20.0")
+    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("app.cash.turbine:turbine:1.2.1")
@@ -145,20 +147,20 @@ dependencies {
     // Testing - Android/Instrumented Tests
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation("io.mockk:mockk-android:1.14.7")
+    androidTestImplementation("io.mockk:mockk-android:1.14.9")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     
     // Testing - Compose UI
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.05.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     
     // Testing - Hilt
-    testImplementation("com.google.dagger:hilt-android-testing:2.57.2")
-    kspTest("com.google.dagger:hilt-android-compiler:2.57.2")
-    androidTestImplementation("com.google.dagger:hilt-android-testing:2.57.2")
-    kspAndroidTest("com.google.dagger:hilt-android-compiler:2.57.2")
+    testImplementation("com.google.dagger:hilt-android-testing:2.59.2")
+    kspTest("com.google.dagger:hilt-android-compiler:2.59.2")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.59.2")
+    kspAndroidTest("com.google.dagger:hilt-android-compiler:2.59.2")
 }
 
 // JaCoCo Configuration
@@ -199,11 +201,11 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         // Navigation
         "**/presentation/navigation/*",
         // Android integration methods in util (require Context, tested via instrumented tests)
-        "**/util/SocialShareHelper\$shareToSocial*",
-        "**/util/SocialShareHelper\$openUrl*"
+        $$"**/util/SocialShareHelper$shareToSocial*",
+        $$"**/util/SocialShareHelper$openUrl*"
     )
     
-    val debugTree = fileTree("${project.buildDir}/tmp/kotlin-classes/debug") {
+    val debugTree = fileTree(project.layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
         exclude(fileFilter)
     }
     
@@ -211,7 +213,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree(project.buildDir) {
+    executionData.setFrom(fileTree(project.layout.buildDirectory) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
     })
 }

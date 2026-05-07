@@ -227,7 +227,7 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(DS.Radius.md)
                             ) {
                                 val context = androidx.compose.ui.platform.LocalContext.current
-                                // Third-party brand colours are shared DS tokens.
+                                // Third-party brand colors are shared DS tokens.
                                 val socialButtons = listOf(
                                     Triple(SocialIcons.X, DS.Color.brandSocialX, com.murphyslaws.util.SocialPlatform.X),
                                     Triple(SocialIcons.Facebook, DS.Color.brandSocialFacebook, com.murphyslaws.util.SocialPlatform.FACEBOOK),
