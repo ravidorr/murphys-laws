@@ -729,6 +729,26 @@ describe('API utilities', () => {
       expect(Sentry.captureException).not.toHaveBeenCalled();
     });
 
+    it('treats AbortSignal.timeout rejections as transport errors, not Sentry exceptions', async () => {
+      vi.mocked(Sentry.captureException).mockClear();
+      fetchSpy.mockRejectedValue(new DOMException('The operation timed out.', 'TimeoutError'));
+
+      const result = await fetchSuggestions({ q: 'test' });
+
+      expect(result).toEqual({ data: [], total: 0, limit: 0, offset: 0 });
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+    });
+
+    it('treats DOMException AbortError as a transport error too', async () => {
+      vi.mocked(Sentry.captureException).mockClear();
+      fetchSpy.mockRejectedValue(new DOMException('The operation was aborted.', 'AbortError'));
+
+      const result = await fetchSuggestions({ q: 'test' });
+
+      expect(result).toEqual({ data: [], total: 0, limit: 0, offset: 0 });
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+    });
+
     it('returns empty array when API request fails', async () => {
       fetchSpy.mockResolvedValueOnce({ ok: false, status: 500 });
 

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `isFetchTransportError` now treats `DOMException` with name `TimeoutError`
+  (and `AbortError`) as a transport error, so `fetchSuggestions` no longer
+  forwards stalled autocomplete requests to Sentry after the 10-second
+  `AbortSignal.timeout` fires. Also accepts `DOMException` directly because
+  jsdom and some older runtimes don't extend `Error`. Web bumped to `3.3.5`;
+  root to `2.5.8`.
 - API fetches now abort after 10 seconds via `AbortSignal.timeout`, so a stalled
   backend fails fast instead of letting Firefox hang for ~60 s. Voting and
   submission timeouts surface as "The request timed out. Please try again."
