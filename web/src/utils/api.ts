@@ -4,12 +4,18 @@ import { API_BASE_URL, DEFAULT_FETCH_HEADERS, FETCH_TIMEOUT_MS } from './constan
 import type { Law, Category, PaginatedResponse, RelatedLawsResponse, ListResponse } from '../types/app.d.ts';
 
 function isFetchTransportError(error: unknown): boolean {
+  // DOMException doesn't extend Error in every runtime (notably jsdom), so
+  // accept it directly — AbortSignal.timeout() rejects with DOMException.
+  if (typeof DOMException !== 'undefined' && error instanceof DOMException) {
+    return error.name === 'AbortError' || error.name === 'TimeoutError';
+  }
   if (!(error instanceof Error)) {
     return false;
   }
 
   return (
     error.name === 'AbortError' ||
+    error.name === 'TimeoutError' ||
     (
       error instanceof TypeError &&
       /networkerror.*fetch|failed to fetch|load failed|network request failed/i.test(error.message)
