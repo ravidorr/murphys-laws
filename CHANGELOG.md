@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Sentry now drops the three cross-browser fetch transport rejections at
+  `beforeSend` - `Failed to fetch` (Chrome / Edge),
+  `NetworkError when attempting to fetch resource.` (Firefox), and `Load failed`
+  (Safari). These come from disconnected clients (offline mobile, captive
+  portals, dropped cell signal), not application bugs; views like
+  `category-detail.ts` that catch fetch errors and call
+  `Sentry.captureException` were flooding the dashboard with user-connectivity
+  noise. Web bumped to `3.3.6`; root to `2.5.10`.
+
 ### Changed
 - Refreshed `package-lock.json` to clear all 8 outstanding `npm audit`
   advisories (2 high + 6 moderate). `npm update` re-resolved

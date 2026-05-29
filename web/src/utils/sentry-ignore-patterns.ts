@@ -20,6 +20,17 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   // Android WebView JS-to-Java bridge teardown race on beforeunload (seen in Facebook in-app
   // browser calling its internal enableDidUserTypeOnKeyboardLogging analytics). Not our code.
   /Java object is gone/i,
+  // Fetch transport failures from a disconnected client (offline mobile, captive portal,
+  // DNS hiccup, dropped cell signal). Each major engine uses different phrasing for the
+  // same underlying TypeError that fetch() rejects with:
+  //   Chrome / Edge: "Failed to fetch"
+  //   Firefox:       "NetworkError when attempting to fetch resource."
+  //   Safari:        "Load failed"
+  // These aren't application bugs; views that catch fetch errors and blindly call
+  // Sentry.captureException would otherwise flood the dashboard with user-connectivity noise.
+  /^Failed to fetch$/,
+  /NetworkError when attempting to fetch resource/i,
+  /^Load failed$/,
 ];
 
 /**
