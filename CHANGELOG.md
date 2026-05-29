@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- API fetches now abort after 10 seconds via `AbortSignal.timeout`, so a stalled
+  backend fails fast instead of letting Firefox hang for ~60 s. Voting and
+  submission timeouts surface as "The request timed out. Please try again."
+  rather than the generic network error. Web bumped to `3.3.4`; root to `2.5.7`.
 - Law-list cards now use the same elevated card shadow, border, and row padding
   scale as other archive cards, so Browse widgets no longer look visually flatter
   than neighboring card surfaces. Web bumped to `3.3.3`; root to `2.5.4`.

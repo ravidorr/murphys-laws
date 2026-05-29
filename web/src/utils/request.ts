@@ -1,7 +1,7 @@
 // Generic API request utility with error handling
 // Eliminates ~325 lines of duplicate fetch logic across voting, submissions, etc.
 
-import { API_BASE_URL } from './constants.ts';
+import { API_BASE_URL, FETCH_TIMEOUT_MS } from './constants.ts';
 
 /**
  * Generic API request handler with error handling
@@ -56,9 +56,15 @@ async function fetchWithErrorHandling(url: string, options: RequestInit): Promis
   let response;
 
   try {
-    response = await fetch(url, options);
-  } catch {
-    // Network errors (offline, timeout, etc.)
+    response = await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      throw new Error('The request timed out. Please try again.');
+    }
+    // Network errors (offline, etc.)
     throw new Error('Network error. Please check your connection and try again.');
   }
 

@@ -63,6 +63,11 @@ export const DEFAULT_FETCH_HEADERS: Record<string, string> = {
   'Accept': 'application/json'
 };
 
+// Abort fetches that hang past this — browsers can otherwise wait ~60s on a
+// dead connection, which lets duplicate widget fetches pile up across SPA
+// navigations and surfaces as a delayed wave of NetworkErrors.
+export const FETCH_TIMEOUT_MS = 10_000;
+
 // Search autocomplete
 export const SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY = 240; // ms
 

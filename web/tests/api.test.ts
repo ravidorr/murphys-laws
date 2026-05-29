@@ -136,6 +136,19 @@ describe('API utilities', () => {
       expect(result).toEqual(mockLaw);
     });
 
+    it('passes an AbortSignal so stalled requests fail fast', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ id: 1 })
+      });
+
+      await fetchLaw(1);
+
+      const callArgs = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(callArgs[1].signal).toBeInstanceOf(AbortSignal);
+    });
+
     it('enters content-type check when headers.get exists and returns empty (covers L57 B1)', async () => {
       const mockLaw = { id: 1, title: 'Test', text: 'Text' };
       fetchSpy.mockResolvedValueOnce({
@@ -476,6 +489,19 @@ describe('API utilities', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ data: [{ id: 1 }] });
+    });
+
+    it('passes an AbortSignal so stalled requests fail fast', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ data: [] })
+      });
+
+      await fetchAPI('/api/laws');
+
+      const callArgs = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(callArgs[1].signal).toBeInstanceOf(AbortSignal);
     });
   });
 
