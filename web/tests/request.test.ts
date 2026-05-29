@@ -121,6 +121,26 @@ describe('request utilities', () => {
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
+    it('surfaces AbortSignal.timeout TimeoutError as a friendly timeout message', async () => {
+      const timeoutErr = new DOMException('The operation timed out.', 'TimeoutError');
+      fetchSpy.mockRejectedValue(timeoutErr);
+
+      await expect(apiRequest('/api/test')).rejects.toThrow('The request timed out. Please try again.');
+    });
+
+    it('injects an AbortSignal so stalled requests fail fast', async () => {
+      fetchSpy.mockResolvedValueOnce(asResponse({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      }));
+
+      await apiRequest('/api/test');
+
+      const callArgs = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
+      expect(callArgs[1].signal).toBeInstanceOf(AbortSignal);
+    });
+
     it('throws error when API returns non-ok response', async () => {
       fetchSpy.mockResolvedValueOnce(asResponse({
         ok: false,
