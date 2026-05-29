@@ -1,6 +1,6 @@
 // Centralized API utilities
 import * as Sentry from '@sentry/browser';
-import { API_BASE_URL, DEFAULT_FETCH_HEADERS } from './constants.ts';
+import { API_BASE_URL, DEFAULT_FETCH_HEADERS, FETCH_TIMEOUT_MS } from './constants.ts';
 import type { Law, Category, PaginatedResponse, RelatedLawsResponse, ListResponse } from '../types/app.d.ts';
 
 function isFetchTransportError(error: unknown): boolean {
@@ -31,7 +31,10 @@ export async function fetchAPI(endpoint: string, params: URLSearchParams | Recor
   const queryString = qs.toString();
   const url = `${API_BASE_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
 
-  const response = await fetch(url, { headers: DEFAULT_FETCH_HEADERS });
+  const response = await fetch(url, {
+    headers: DEFAULT_FETCH_HEADERS,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
   }
@@ -61,7 +64,10 @@ export async function fetchLaw(lawId: number | string): Promise<Law> {
   const endpoint = `/api/v1/laws/${numericId}`;
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, { headers: DEFAULT_FETCH_HEADERS });
+  const response = await fetch(url, {
+    headers: DEFAULT_FETCH_HEADERS,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch law: ${response.status}`);
   }
