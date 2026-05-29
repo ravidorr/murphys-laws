@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Refreshed `package-lock.json` to clear all 8 outstanding `npm audit`
+  advisories (2 high + 6 moderate). `npm update` re-resolved
+  `fast-uri` to `3.1.2` (via `@modelcontextprotocol/sdk` -> `ajv@8.20.0`) and
+  `@babel/plugin-transform-modules-systemjs` to `7.29.7` (via
+  `vite-plugin-pwa` -> `workbox-build@7.4.1` -> `@babel/preset-env@7.29.7`);
+  follow-on `npm audit fix` cleared the remaining moderates (`qs`, `ws`,
+  `hono`, `brace-expansion`, `ip-address`, `express-rate-limit`). Lockfile-only
+  change; no `package.json` edits. Root bumped to `2.5.9`.
+
 ### Fixed
 - `isFetchTransportError` now treats `DOMException` with name `TimeoutError`
   (and `AbortError`) as a transport error, so `fetchSuggestions` no longer
