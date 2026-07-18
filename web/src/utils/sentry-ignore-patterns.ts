@@ -31,6 +31,10 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   /^Failed to fetch$/,
   /NetworkError when attempting to fetch resource/i,
   /^Load failed$/,
+  // Native fetch cancellation messages from browser-enforced request timeouts
+  // and navigation/unload. These are expected client transport failures.
+  /^(?:TimeoutError: )?signal timed out$/,
+  /^(?:AbortError: )?The user aborted a request\.$/,
 ];
 
 /**

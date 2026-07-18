@@ -37,6 +37,13 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('Load failed')).toBe(true);
     });
 
+    it('returns true for native fetch timeout and cancellation messages', () => {
+      expect(isSentryErrorIgnored('signal timed out')).toBe(true);
+      expect(isSentryErrorIgnored('TimeoutError: signal timed out')).toBe(true);
+      expect(isSentryErrorIgnored('The user aborted a request.')).toBe(true);
+      expect(isSentryErrorIgnored('AbortError: The user aborted a request.')).toBe(true);
+    });
+
     it('returns false for application errors', () => {
       expect(isSentryErrorIgnored('Cannot read property "x" of undefined')).toBe(false);
       // Generic-sounding strings that should NOT be swept up by the fetch-transport patterns
@@ -44,12 +51,14 @@ describe('sentry-ignore-patterns', () => {
       expect(isSentryErrorIgnored('Network request failed')).toBe(false);
       expect(isSentryErrorIgnored('Service worker registration failed')).toBe(false);
       expect(isSentryErrorIgnored('Importing a module script failed')).toBe(false);
+      expect(isSentryErrorIgnored('signal timed out while loading application state')).toBe(false);
+      expect(isSentryErrorIgnored('The user aborted a request to save changes.')).toBe(false);
     });
   });
 
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(12);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(14);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
