@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Updated security dependencies to remove all high-severity npm audit findings.
+  Backend bumped to `2.2.1`; root bumped to `2.5.12`.
 - Accessibility E2E scans now wait for the asynchronously loaded stylesheet
   before checking contrast, avoiding false positives from browser-default
   button styles.
