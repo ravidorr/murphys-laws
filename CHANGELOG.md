@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Accessibility E2E scans now wait for the asynchronously loaded stylesheet
+  before checking contrast, avoiding false positives from browser-default
+  button styles.
 - Sentry now drops native browser fetch timeout and cancellation messages
   (`signal timed out` and `The user aborted a request.`) at `beforeSend`.
   These originate from the app's 10-second `AbortSignal.timeout` and browser

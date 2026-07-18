@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import type { Page } from '@playwright/test';
 const require = createRequire(import.meta.url);
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
@@ -6,10 +7,23 @@ const AxeBuilder = require('@axe-core/playwright').default;
 // WCAG AA accessibility tests using axe-core
 // These tests verify automated accessibility compliance across key pages
 
+async function waitForGlobalStyles(page: Page): Promise<void> {
+  // site.css is loaded asynchronously to avoid blocking first paint. Axe must
+  // wait for its button tokens rather than scan browser-default button styles.
+  await page.waitForFunction(() => {
+    const button = document.querySelector('form[aria-label="Site Search"] button[type="submit"]');
+    if (!button) return false;
+
+    const style = window.getComputedStyle(button);
+    return style.backgroundColor === 'rgb(13, 94, 161)' && style.color === 'rgb(255, 255, 255)';
+  });
+}
+
 test.describe('Accessibility - WCAG AA Compliance', () => {
   test('home page has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByText("Murphy's Law of the Day")).toBeVisible({ timeout: 10000 });
+    await waitForGlobalStyles(page);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -26,6 +40,7 @@ test.describe('Accessibility - WCAG AA Compliance', () => {
   test('browse page has no critical accessibility violations', async ({ page }) => {
     await page.goto('/browse');
     await expect(page.getByRole('heading', { level: 1, name: /Browse.*All.*Murphy's Laws/i })).toBeVisible({ timeout: 10000 });
+    await waitForGlobalStyles(page);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -41,6 +56,7 @@ test.describe('Accessibility - WCAG AA Compliance', () => {
   test('calculator page has no critical accessibility violations', async ({ page }) => {
     await page.goto('/calculator/sods-law');
     await expect(page.getByRole('heading', { level: 1, name: "Sod's Law Calculator" })).toBeVisible({ timeout: 10000 });
+    await waitForGlobalStyles(page);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
