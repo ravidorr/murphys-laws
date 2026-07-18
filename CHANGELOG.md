@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Sentry now drops native browser fetch timeout and cancellation messages
+  (`signal timed out` and `The user aborted a request.`) at `beforeSend`.
+  These originate from the app's 10-second `AbortSignal.timeout` and browser
+  navigation/unload, not application exceptions. Web bumped to `3.3.7`; root
+  to `2.5.11`.
 - Sentry now drops the three cross-browser fetch transport rejections at
   `beforeSend` - `Failed to fetch` (Chrome / Edge),
   `NetworkError when attempting to fetch resource.` (Firefox), and `Load failed`
