@@ -55,7 +55,9 @@ interface OptimizeResult {
   savingsPercent: string;
 }
 
-async function loadSharp(): Promise<typeof import('sharp')> {
+type SharpConstructor = (typeof import('sharp'))['default'];
+
+async function loadSharp(): Promise<SharpConstructor> {
   try {
     const sharp = await import('sharp');
     return sharp.default;
@@ -110,7 +112,7 @@ function formatBytes(bytes: number): string {
 }
 
 async function optimizeImage(
-  sharp: typeof import('sharp'),
+  sharp: SharpConstructor,
   file: ImageFile
 ): Promise<OptimizeResult[]> {
   const results: OptimizeResult[] = [];
