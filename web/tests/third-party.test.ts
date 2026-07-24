@@ -1,10 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ensureAdsense, initAnalyticsBootstrap, loadScript } from '../src/utils/third-party.ts';
+import { ensureAdsense, initAnalyticsBootstrap, loadScript, shouldLoadThirdParty } from '../src/utils/third-party.ts';
 
 /** Window plus analytics globals; Vitest's globalThis.window type doesn't merge with src/types/global.d.ts */
 type WindowWithAnalytics = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
 
 describe('third-party utilities', () => {
+  it('loads third-party scripts only on the canonical production host outside tests', () => {
+    const originalLocation = window.location;
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('PROD', false);
+    expect(shouldLoadThirdParty()).toBe(false);
+
+    vi.stubEnv('PROD', true);
+    Object.defineProperty(window, 'location', {
+      value: { hostname: 'murphys-laws.com' },
+      writable: true
+    });
+    expect(shouldLoadThirdParty()).toBe(true);
+
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
+    vi.unstubAllEnvs();
+  });
+
   describe('ensureAdsense', () => {
     let originalAdsbygoogle: unknown;
 

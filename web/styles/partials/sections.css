@@ -97,6 +97,25 @@
 }
 
 /* Category Grid (Directory) */
+.category-directory-search {
+  max-width: 36rem;
+  margin-bottom: var(--space-5);
+}
+
+.category-featured {
+  margin-bottom: var(--space-6);
+}
+
+.category-featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.category-featured-grid .category-card-description {
+  display: none;
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

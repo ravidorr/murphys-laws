@@ -4,7 +4,7 @@ import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
 import { SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.ts';
 import { ensureMathJax } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
-import { updateMetaDescription } from '@utils/dom.ts';
+import { updatePageMetadata } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
@@ -26,17 +26,12 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   /* v8 ignore next -- SSR guard: document is always defined in browser/jsdom */
   if (typeof document !== 'undefined') {
-    // Update page title
-    document.title = `Buttered Toast Landing Calculator | ${SITE_NAME}`;
-    
-    // Update meta description for SEO
-    updateMetaDescription("Will your toast land butter-side down? Calculate the probability based on height, gravity, overhang, butter factor, and more. Based on real physics!");
-    
-    const head = document.head;
-    const ogImage = head.querySelector('meta[property="og:image"]');
-    const twitterImage = head.querySelector('meta[property="twitter:image"]');
-    if (ogImage) ogImage.setAttribute('content', SOCIAL_IMAGE_TOAST);
-    if (twitterImage) twitterImage.setAttribute('content', SOCIAL_IMAGE_TOAST);
+    updatePageMetadata({
+      title: `Buttered Toast Landing Calculator | ${SITE_NAME}`,
+      description: 'Explore a playful toast-landing simulation using height, overhang, butter, friction, and inertia. For entertainment only.',
+      path: '/calculator/buttered-toast',
+      image: SOCIAL_IMAGE_TOAST
+    });
   }
 
   // Wire up interactions
@@ -74,6 +69,13 @@ export function ButteredToastCalculator(): HTMLDivElement {
   type FormulaVarKey = 'H' | 'g' | 'O' | 'B' | 'F' | 'T';
   const showValues: Record<FormulaVarKey, boolean> = { H: false, g: false, O: false, B: false, F: false, T: false };
   let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { H: null, g: null, O: null, B: null, F: null, T: null };
+
+  function clearFormulaTimeouts() {
+    new Set(Object.values(resetTimeouts)).forEach(timeout => {
+      if (timeout) clearTimeout(timeout);
+    });
+    resetTimeouts = { H: null, g: null, O: null, B: null, F: null, T: null };
+  }
 
   function updateFormula() {
     const H = parseFloat(sliders.height.value);
@@ -167,12 +169,11 @@ export function ButteredToastCalculator(): HTMLDivElement {
     updateFormula();
 
     // Clear existing timeouts
-    Object.values(resetTimeouts).forEach(timeout => {
-      if (timeout) clearTimeout(timeout);
-    });
+    clearFormulaTimeouts();
 
     // Reset all back to variable names after 2 seconds
     const timeout = setTimeout(() => {
+      if (!el.isConnected) return;
       (Object.keys(showValues) as FormulaVarKey[]).forEach(v => showValues[v] = false);
       updateFormula();
     }, 2000);
@@ -361,6 +362,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
   });
 
   (el as CleanableElement).cleanup = () => {
+    clearFormulaTimeouts();
     clearExportContent();
     teardownShare();
   };

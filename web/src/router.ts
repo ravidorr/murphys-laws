@@ -79,6 +79,14 @@ export function currentRoute(): RouteInfo {
 let renderFn: (() => void) | null = null;
 let currentCleanup: (() => void)[] = [];
 
+function migrateLegacyHashRoute(): void {
+  if (!location.hash.startsWith('#/')) return;
+  let legacyPath = location.hash.slice(1);
+  legacyPath = legacyPath.replace(/^\/calculators\//, '/calculator/');
+  if (legacyPath === '/real-life-examples') legacyPath = '/examples';
+  history.replaceState(history.state ?? {}, '', `${legacyPath}${location.search}`);
+}
+
 /** Injects a value into currentCleanup for the next render. Used only in tests to cover the L81 non-function branch. */
 export function __injectCleanupForTesting(value: unknown): void {
   currentCleanup.push(value as () => void);
@@ -96,6 +104,7 @@ function normalizeTrailingSlash(): void {
 }
 
 export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn | null = null): void {
+  migrateLegacyHashRoute();
   normalizeTrailingSlash();
 
   function render() {

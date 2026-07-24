@@ -20,6 +20,21 @@ declare module '@scripts/ssg' {
     downvotes?: number;
     created_at?: string;
     updated_at?: string;
+    editorial?: {
+      explanation: string;
+      practical_example: string;
+      source_label: string;
+      source_url: string;
+      reviewed_at: string;
+    };
+  }
+
+  export interface PageMetadata {
+    title: string;
+    description: string;
+    canonicalPath: string;
+    type?: 'website' | 'article';
+    image?: string;
   }
 
   export const CONTENT_PAGES: ContentPageMeta[];
@@ -29,6 +44,12 @@ declare module '@scripts/ssg' {
   export function buildStaticFavoritesContent(): string;
   export function buildStaticSubmitContent(): string;
   export function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): string;
-  export function buildStaticLawDetailContent(law: StaticLaw): string;
+  export function applyPageMetadata(html: string, metadata: PageMetadata): string;
+  export function validateGeneratedPage(html: string, options: {
+    canonicalPath: string;
+    forbidMailto?: boolean;
+    requireCategoryLink?: boolean;
+  }): string[];
+  export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
   export function buildStaticHomeContent(): string;
 }

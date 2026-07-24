@@ -1,11 +1,11 @@
 {
   "name": "murphys-laws-backend",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Murphy's Laws API Server",
   "type": "module",
   "main": "src/server/api-server.ts",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.16.0 <23"
   },
   "scripts": {
     "start": "tsx src/server/api-server.ts",
@@ -33,7 +33,7 @@
   "author": "",
   "license": "CC0-1.0",
   "dependencies": {
-    "@sentry/node": "^9.47.1",
+    "@sentry/node": "^10.67.0",
     "better-sqlite3": "^12.6.2",
     "canvas": "^3.2.1",
     "dotenv": "^17.0.0",

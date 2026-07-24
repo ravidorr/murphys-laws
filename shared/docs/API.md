@@ -277,6 +277,10 @@ Get search suggestions for autocomplete. Returns top matching laws based on sear
 
 #### GET /api/v1/laws/duplicates
 
+Duplicate candidates include `similarity` (0 to 1) and `match_type` (`exact` or
+`fuzzy`). Fuzzy matches require at least two shared significant terms and a
+similarity of 0.45 or greater.
+
 Find possible duplicate laws before submitting a new one.
 
 **Query Parameters:**
@@ -643,7 +647,7 @@ Get related category suggestions for internal linking and topic discovery.
       "description": "Tech truths: to err is human, to really foul things up requires a computer."
     }
   ],
-  "category_slug": "murphys-computer-laws"
+  "category_slug": "murphys-computers-laws"
 }
 ```
 

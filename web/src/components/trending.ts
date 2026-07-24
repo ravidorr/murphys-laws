@@ -9,12 +9,17 @@ import { hydrateIcons } from '@utils/icons.ts';
 import { renderLawCards } from '../utils/law-card-renderer.ts';
 import { initSharePopovers } from './social-share.ts';
 import { LAW_CARD_MIN_HEIGHT, WIDGET_CARD_COUNT } from '../utils/constants.ts';
+import type { Law } from '../types/app.d.ts';
+
+interface DiscoveryWidgetOptions {
+  seenIds?: Set<number>;
+}
 
 /**
  * Creates a Trending component that displays the 3 most recently voted laws
  * @returns {HTMLDivElement} Component element with trending laws
  */
-export function Trending() {
+export function Trending({ seenIds }: DiscoveryWidgetOptions = {}) {
   const el = document.createElement('div');
   el.className = 'card card--law-list law-list-card';
   // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
@@ -22,7 +27,7 @@ export function Trending() {
 
   el.innerHTML = `
     <header class="card-header">
-      <h3 class="card-title"><span class="accent-text">Trending</span> Now</h3>
+      <h2 class="card-title"><span class="accent-text">Trending</span> Now</h2>
     </header>
     <div class="card-body card-body--flush"></div>
   `;
@@ -36,7 +41,9 @@ export function Trending() {
     .then(data => {
       const laws = data && Array.isArray(data.data) ? data.data : [];
       // Ensure we only show exactly the configured number of laws
-      const trending = laws.slice(0, WIDGET_CARD_COUNT);
+      const trending = laws.filter((law: Law) => !seenIds?.has(law.id)).slice(0, WIDGET_CARD_COUNT);
+      trending.forEach((law: Law) => seenIds?.add(law.id));
+      el.toggleAttribute('hidden', trending.length === 0);
 
       const body = el.querySelector('.card-body')!; // same element, always present
       body.innerHTML = `

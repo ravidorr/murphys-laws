@@ -472,6 +472,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
   }
 
   const feedback = wrapper.querySelector('.share-copy-feedback');
+  let feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   const listeners: (() => void)[] = [];
 
   // Only called with wrapper (truthy) in this module
@@ -486,8 +487,10 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     if (!feedback) return;
     /* v8 ignore stop */
     feedback.classList.add('visible');
-    setTimeout(() => {
+    if (feedbackTimeout) clearTimeout(feedbackTimeout);
+    feedbackTimeout = setTimeout(() => {
       feedback.classList.remove('visible');
+      feedbackTimeout = null;
     }, 1500);
   }
 
@@ -568,6 +571,10 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
   // Return teardown function
   return () => {
     listeners.forEach(unsubscribe => unsubscribe());
+    if (feedbackTimeout) {
+      clearTimeout(feedbackTimeout);
+      feedbackTimeout = null;
+    }
   };
 }
 

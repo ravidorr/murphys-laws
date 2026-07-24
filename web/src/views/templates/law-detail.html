@@ -8,7 +8,7 @@
   <div data-law-card-container></div>
   <section class="section card card--section section-card mb-12" data-law-context aria-labelledby="law-context-heading">
     <div class="section-header">
-      <h3 id="law-context-heading" class="section-title"><span class="accent-text">In</span> context</h3>
+      <h2 id="law-context-heading" class="section-title"><span class="accent-text">In</span> context</h2>
     </div>
     <div class="section-body">
       <div class="law-context-inner">
@@ -16,9 +16,19 @@
       </div>
     </div>
   </section>
+  <section class="section card card--section section-card mb-12" data-law-editorial hidden aria-labelledby="law-editorial-heading">
+    <div class="section-header">
+      <h2 id="law-editorial-heading" class="section-title"><span class="accent-text">Editorial</span> note</h2>
+    </div>
+    <div class="section-body">
+      <p data-law-editorial-explanation></p>
+      <p><strong>Practical example:</strong> <span data-law-editorial-example></span></p>
+      <p class="small">Reviewed <time data-law-editorial-reviewed></time> · <a data-law-editorial-source></a></p>
+    </div>
+  </section>
   <section class="section card card--section section-card mb-12" data-law-provenance aria-labelledby="law-provenance-heading">
     <div class="section-header">
-      <h3 id="law-provenance-heading" class="section-title"><span class="accent-text">Source</span> status</h3>
+      <h2 id="law-provenance-heading" class="section-title"><span class="accent-text">Source</span> status</h2>
     </div>
     <div class="section-body">
       <p data-law-source-status>Source not yet verified by the archive.</p>
@@ -27,13 +37,13 @@
   </section>
   <section class="section card card--section section-card mb-12" data-law-internal-links-section aria-labelledby="law-internal-links-heading">
     <div class="section-header">
-      <h3 id="law-internal-links-heading" class="section-title"><span class="accent-text">Keep</span> exploring</h3>
+      <h2 id="law-internal-links-heading" class="section-title"><span class="accent-text">Keep</span> exploring</h2>
     </div>
     <div class="section-body" data-law-internal-links></div>
   </section>
   <section class="section card card--section section-card related-laws-section" data-related-laws hidden>
     <div class="section-header">
-      <h3 class="section-title"><span class="accent-text">Related</span> Laws</h3>
+      <h2 class="section-title"><span class="accent-text">Related</span> Laws</h2>
     </div>
     <div class="related-laws-list" data-related-laws-list></div>
   </section>
@@ -73,7 +83,7 @@
 <template data-law-card-template>
   <article class="card card--section law-detail-card section-card mb-12" data-law-card-root>
     <header class="card-header section-header">
-      <h3 class="card-title section-title" data-law-title><span class="visually-hidden">Loading law title...</span></h3>
+      <h1 class="card-title section-title" data-law-title><span class="visually-hidden">Loading law title...</span></h1>
     </header>
     <div class="card-body section-body">
       <blockquote class="lod-quote-large" data-law-text></blockquote>

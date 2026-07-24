@@ -6,7 +6,7 @@ import templateHtml from '@views/templates/sods-calculator.html?raw';
 import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.ts';
 import { ensureMathJax } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
-import { updateMetaDescription } from '@utils/dom.ts';
+import { updatePageMetadata } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
@@ -27,17 +27,12 @@ export function Calculator(): HTMLDivElement {
 
   /* v8 ignore next -- SSR guard: document is always defined in browser/jsdom */
   if (typeof document !== 'undefined') {
-    // Update page title
-    document.title = `Sod's Law Calculator | ${SITE_NAME}`;
-    
-    // Update meta description for SEO
-    updateMetaDescription("Calculate the probability of Murphy's Law striking your task. Adjust urgency, complexity, importance, skill, and frequency to see your odds of things going wrong.");
-    
-    const head = document.head;
-    const ogImage = head.querySelector('meta[property="og:image"]');
-    const twitterImage = head.querySelector('meta[property="twitter:image"]');
-    if (ogImage) ogImage.setAttribute('content', SOCIAL_IMAGE_SOD);
-    if (twitterImage) twitterImage.setAttribute('content', SOCIAL_IMAGE_SOD);
+    updatePageMetadata({
+      title: `Sod's Law Calculator | ${SITE_NAME}`,
+      description: "Explore a playful task-risk heuristic using urgency, complexity, importance, skill, and frequency. For entertainment and lightweight planning only.",
+      path: '/calculator/sods-law',
+      image: SOCIAL_IMAGE_SOD
+    });
   }
 
   // Wire up interactions
@@ -74,6 +69,13 @@ export function Calculator(): HTMLDivElement {
   const showValues: Record<FormulaVarKey, boolean> = { U: false, C: false, I: false, S: false, F: false };
   let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { U: null, C: null, I: null, S: null, F: null };
   let hasTrackedStart = false;
+
+  function clearFormulaTimeouts() {
+    new Set(Object.values(resetTimeouts)).forEach(timeout => {
+      if (timeout) clearTimeout(timeout);
+    });
+    resetTimeouts = { U: null, C: null, I: null, S: null, F: null };
+  }
 
   function updateCalculation() {
     const U = parseFloat(sliders.urgency.value);
@@ -181,12 +183,11 @@ export function Calculator(): HTMLDivElement {
     updateCalculation();
 
     // Clear existing timeouts
-    Object.values(resetTimeouts).forEach(timeout => {
-      if (timeout) clearTimeout(timeout);
-    });
+    clearFormulaTimeouts();
 
     // Reset all back to variable names after 2 seconds
     const timeout = setTimeout(() => {
+      if (!el.isConnected) return;
       (Object.keys(showValues) as FormulaVarKey[]).forEach(v => showValues[v] = false);
       updateCalculation();
     }, 2000);
@@ -326,6 +327,7 @@ export function Calculator(): HTMLDivElement {
   });
 
   (el as CleanableElement).cleanup = () => {
+    clearFormulaTimeouts();
     clearExportContent();
     teardownShare();
   };

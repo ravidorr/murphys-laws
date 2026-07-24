@@ -137,7 +137,7 @@ describe('LawController', () => {
                 categoryId: 5,
                 categorySlug: 'test-cat',
                 attribution: 'Murphy',
-                sort: 'score',
+                sort: 'relevance',
                 order: 'desc',
                 excludeCorollaries: false
             });

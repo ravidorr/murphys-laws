@@ -1,7 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { Developers } from '../src/views/developers.js';
+import * as api from '../src/utils/api.js';
+
+vi.mock('../src/utils/api.js', () => ({
+  fetchLaws: vi.fn()
+}));
 
 describe('Developers page', () => {
+  beforeEach(() => {
+    vi.mocked(api.fetchLaws).mockReset();
+    vi.mocked(api.fetchLaws).mockResolvedValue({
+      data: [],
+      total: 0,
+      limit: 1,
+      offset: 0
+    });
+  });
+
   it('renders developers page element with content-page class', () => {
     const el = Developers({ onNavigate: () => {} });
     expect(el.tagName).toBe('DIV');
@@ -80,5 +95,51 @@ describe('Developers page', () => {
     button.click();
 
     expect(navigated).toBe(false);
+  });
+
+  it('updates the supplemental archive size when the API returns a finite total', async () => {
+    vi.mocked(api.fetchLaws).mockResolvedValue({
+      data: [],
+      total: 12_345,
+      limit: 1,
+      offset: 0
+    });
+
+    const el = Developers({ onNavigate: () => {} });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-archive-size]')?.textContent).toBe('12,345 laws');
+    });
+  });
+
+  it('keeps the archive-size fallback for invalid totals or missing placeholders', async () => {
+    vi.mocked(api.fetchLaws).mockResolvedValueOnce({
+      data: [],
+      total: Number.NaN,
+      limit: 1,
+      offset: 0
+    });
+    const invalidTotalEl = Developers({ onNavigate: () => {} });
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+    expect(invalidTotalEl.querySelector('[data-archive-size]')?.textContent).toBe('the full archive');
+
+    vi.mocked(api.fetchLaws).mockResolvedValueOnce({
+      data: [],
+      total: 10,
+      limit: 1,
+      offset: 0
+    });
+    const missingPlaceholderEl = Developers({ onNavigate: () => {} });
+    missingPlaceholderEl.querySelector('[data-archive-size]')?.remove();
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+  });
+
+  it('keeps the archive-size fallback when the API request fails', async () => {
+    vi.mocked(api.fetchLaws).mockRejectedValue(new Error('offline'));
+
+    const el = Developers({ onNavigate: () => {} });
+
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalled());
+    expect(el.querySelector('[data-archive-size]')?.textContent).toBe('the full archive');
   });
 });

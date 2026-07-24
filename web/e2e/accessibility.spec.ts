@@ -94,10 +94,41 @@ test.describe('Accessibility - WCAG AA Compliance', () => {
     await page.goto('/');
     await expect(page.getByText("Murphy's Law of the Day")).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole('link', { name: 'Browse All Laws' }).first().click();
+    await page.locator('[data-home-zone="archive-search"] a[data-nav="browse"]').click();
     await expect(page).toHaveURL(/\/browse/);
 
     const mainContent = page.locator('main');
     await expect(mainContent).toHaveAttribute('tabindex', '-1');
   });
+
+  const auditedRoutes = [
+    '/',
+    '/browse',
+    '/category/murphys-computers-laws',
+    '/law/2',
+    '/submit',
+    '/favorites',
+    '/calculator/sods-law',
+    '/calculator/buttered-toast',
+  ];
+
+  for (const colorScheme of ['light', 'dark'] as const) {
+    for (const route of auditedRoutes) {
+      test(`${route} passes axe in ${colorScheme} reduced-motion mode`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(route);
+        await expect(page.locator('main h1')).toBeVisible({ timeout: 10000 });
+        await waitForGlobalStyles(page);
+
+        const results = await new AxeBuilder({ page })
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+          .analyze();
+        const seriousViolations = results.violations.filter(
+          violation => violation.impact === 'critical' || violation.impact === 'serious'
+        );
+
+        expect(seriousViolations).toEqual([]);
+      });
+    }
+  }
 });

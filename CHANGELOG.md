@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Hardened archive discovery and release quality with FTS relevance search,
+  duplicate-similarity scoring, reviewed editorial metadata, richer static
+  rendering and canonical routing, accessibility fixes, production-only
+  telemetry, and automated smoke, budget, audit, and Lighthouse gates. Backend
+  bumped to `2.3.0`; web to `3.4.0`; SDK to `0.2.0`; CLI to `0.1.1`; MCP to
+  `1.2.2`; iOS to `1.2.2` / build `18`; Android to `1.2.3` / versionCode `10`;
+  root to `2.6.0`.
+
 ### Fixed
 - Updated security dependencies to remove all high-severity npm audit findings.
   Backend bumped to `2.2.1`; root bumped to `2.5.12`.

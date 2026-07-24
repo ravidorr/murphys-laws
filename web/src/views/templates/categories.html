@@ -3,6 +3,17 @@
   Each category groups laws by domain so you can compare patterns across industries, hobbies, and daily life. Select a category to see the most relevant laws and stories curated for that topic.
 </p>
 
+<div class="category-directory-search">
+  <label for="category-filter" class="form-label">Find a category</label>
+  <input id="category-filter" type="search" class="form-control" placeholder="Try technology, work, travel…" autocomplete="off">
+  <p id="category-filter-status" class="small text-muted-fg" aria-live="polite"></p>
+</div>
+
+<section id="featured-categories" class="category-featured" aria-labelledby="featured-categories-title" hidden>
+  <h2 id="featured-categories-title">Featured categories</h2>
+  <div class="category-featured-grid"></div>
+</section>
+
 <div id="categories-grid" class="categories-grid loading-placeholder" role="status" aria-label="Loading categories">
   <p class="text-center small">Loading categories...</p>
 </div>
