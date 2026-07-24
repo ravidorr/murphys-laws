@@ -68,7 +68,7 @@
   },
   "devDependencies": {
     "fast-uri": "^3.1.3",
-    "markdownlint-cli2": "^0.21.0",
+    "markdownlint-cli2": "^0.23.1",
     "markdownlint-rule-search-replace": "^1.2.0",
     "tsx": "^4.20.3"
   },
