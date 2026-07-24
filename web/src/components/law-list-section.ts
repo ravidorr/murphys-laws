@@ -26,7 +26,7 @@ export function createLawListSection({ accentText, remainderText }: { accentText
 
   el.innerHTML = `
     <header class="card-header">
-      <h3 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h3>
+      <h2 class="card-title"><span class="accent-text">${accentText}</span>${remainderText}</h2>
     </header>
     <div class="card-body card-body--flush"></div>
   `;

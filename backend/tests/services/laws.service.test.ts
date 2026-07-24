@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import { LawService } from '../../src/services/laws.service.ts';
+import { LawService, buildFtsMatchQuery } from '../../src/services/laws.service.ts';
+
+function enableFts(db: InstanceType<typeof Database>): void {
+  db.exec(`
+    CREATE VIRTUAL TABLE laws_fts USING fts5(title, text, content='laws', content_rowid='id');
+    CREATE TRIGGER laws_fts_ai AFTER INSERT ON laws WHEN NEW.status = 'published' BEGIN
+      INSERT INTO laws_fts(rowid, title, text) VALUES (NEW.id, NEW.title, NEW.text);
+    END;
+  `);
+}
 
 describe('LawService', () => {
   let db: InstanceType<typeof Database>;
@@ -19,7 +28,8 @@ describe('LawService', () => {
         status TEXT DEFAULT 'published',
         first_seen_file_path TEXT,
         first_seen_line_number INTEGER,
-        created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+        created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
       );
       
       CREATE TABLE attributions (
@@ -99,6 +109,45 @@ describe('LawService', () => {
     expect(result.data[0].text).toBe('Apple');
   });
 
+  it('builds escaped prefix terms from multi-word and punctuated searches', () => {
+    expect(buildFtsMatchQuery('Technology, failure!')).toBe('"technology"* OR "failure"*');
+    expect(buildFtsMatchQuery('a --')).toBe('');
+  });
+
+  it('uses FTS prefixes and relevance ranking while preserving category filters', async () => {
+    enableFts(db);
+    const tech = Number(db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run().lastInsertRowid);
+    const other = Number(db.prepare("INSERT INTO categories (slug, title) VALUES ('other', 'Other')").run().lastInsertRowid);
+    const titleMatch = Number(db.prepare("INSERT INTO laws (title, text) VALUES ('Technology failure', 'A deployment stopped')").run().lastInsertRowid);
+    const textMatch = Number(db.prepare("INSERT INTO laws (title, text) VALUES ('Deployment', 'A technology failure stopped work')").run().lastInsertRowid);
+    const excluded = Number(db.prepare("INSERT INTO laws (title, text) VALUES ('Technology failure', 'Outside category')").run().lastInsertRowid);
+    db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(titleMatch, tech);
+    db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(textMatch, tech);
+    db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(excluded, other);
+
+    const result = await lawService.listLaws({ q: 'techn fail', categoryId: tech, sort: 'relevance', limit: 10, offset: 0 });
+
+    expect(result.total).toBe(2);
+    expect(result.data.map((law) => law.id)).toEqual([titleMatch, textMatch]);
+    expect(result.data[0]).toMatchObject({ category_id: tech, category_slug: 'tech', category_name: 'Technology' });
+  });
+
+  it('falls back to LIKE when FTS is unavailable', async () => {
+    db.prepare("INSERT INTO laws (title, text) VALUES ('Technology failure', 'A deployment stopped')").run();
+    const result = await lawService.listLaws({ q: 'technology failure', sort: 'relevance', limit: 10, offset: 0 });
+    expect(result.data).toHaveLength(1);
+  });
+
+  it('falls back to LIKE when an existing FTS index cannot execute a query', async () => {
+    db.prepare("INSERT INTO laws (title, text) VALUES ('Technology failure', 'A deployment stopped')").run();
+    db.exec('CREATE TABLE laws_fts (value TEXT)');
+
+    const result = await lawService.listLaws({ q: 'technology failure', sort: 'relevance', limit: 10, offset: 0 });
+
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].title).toBe('Technology failure');
+  });
+
   it('should get a single law by id', async () => {
     const info = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
     const id = Number(info.lastInsertRowid);
@@ -106,6 +155,26 @@ describe('LawService', () => {
     const law = await lawService.getLaw(id);
     expect(law).toBeDefined();
     expect(law!.text).toBe('Law 1');
+    expect(law!.created_at).toBeTruthy();
+    expect(law!.updated_at).toBeTruthy();
+  });
+
+  it('returns a reviewed editorial object only when an annotation exists', async () => {
+    const annotated = Number(db.prepare("INSERT INTO laws (text) VALUES ('Annotated law')").run().lastInsertRowid);
+    const plain = Number(db.prepare("INSERT INTO laws (text) VALUES ('Plain law')").run().lastInsertRowid);
+    db.exec(`CREATE TABLE law_annotations (
+      law_id INTEGER PRIMARY KEY, explanation TEXT, practical_example TEXT,
+      source_label TEXT, source_url TEXT, reviewed_at TEXT
+    )`);
+    db.prepare('INSERT INTO law_annotations VALUES (?, ?, ?, ?, ?, ?)').run(
+      annotated, 'Explanation', 'Example', 'Source', 'https://example.com/source', '2026-07-21'
+    );
+
+    expect((await lawService.getLaw(annotated))?.editorial).toEqual({
+      explanation: 'Explanation', practical_example: 'Example', source_label: 'Source',
+      source_url: 'https://example.com/source', reviewed_at: '2026-07-21'
+    });
+    expect((await lawService.getLaw(plain))?.editorial).toBeUndefined();
   });
 
   it('should submit a new law', async () => {
@@ -222,9 +291,40 @@ describe('LawService', () => {
     db.prepare("INSERT INTO laws (title, text, status) VALUES ('Backup Law', 'The backup you need is the one you forgot to test', 'published')").run();
     db.prepare("INSERT INTO laws (title, text, status) VALUES ('Line Law', 'The line you choose is always slowest', 'published')").run();
 
-    const duplicates = await lawService.findDuplicateCandidates({ text: 'The backup failed before the deploy', limit: 5 }) as Array<{ title: string }>;
+    const duplicates = await lawService.findDuplicateCandidates({ text: 'The backup you need failed before it was tested', limit: 5 }) as Array<{ title: string }>;
 
     expect(duplicates[0]!.title).toBe('Backup Law');
+  });
+
+  it('ranks exact duplicate ties by votes and then newest id', async () => {
+    const text = 'The exact duplicate law always fails';
+    const oldest = Number(db.prepare("INSERT INTO laws (title, text, status) VALUES ('Oldest', ?, 'published')").run(text).lastInsertRowid);
+    const voted = Number(db.prepare("INSERT INTO laws (title, text, status) VALUES ('Voted', ?, 'published')").run(text).lastInsertRowid);
+    const newest = Number(db.prepare("INSERT INTO laws (title, text, status) VALUES ('Newest', ?, 'published')").run(text).lastInsertRowid);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter-1')").run(voted);
+    db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'voter-2')").run(newest);
+
+    const duplicates = await lawService.findDuplicateCandidates({ text, limit: 5 }) as Array<{ id: number; match_type: string }>;
+
+    expect(duplicates.map(({ id }) => id)).toEqual([newest, voted, oldest]);
+    expect(duplicates.every(({ match_type }) => match_type === 'exact')).toBe(true);
+  });
+
+  it('scores fuzzy duplicate candidates without titles', async () => {
+    db.prepare("INSERT INTO laws (text, status) VALUES ('The backup failed during deployment', 'published')").run();
+
+    const duplicates = await lawService.findDuplicateCandidates({ text: 'The backup failed before deployment', limit: 5 }) as Array<{ title: string | null }>;
+
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0]!.title).toBeNull();
+  });
+
+  it('rejects unrelated duplicate candidates with only one shared significant term', async () => {
+    db.prepare("INSERT INTO laws (title, text, status) VALUES ('Backup Law', 'The backup you need is the one you forgot to test', 'published')").run();
+
+    const duplicates = await lawService.findDuplicateCandidates({ text: 'The backup failed before the deploy', limit: 5 });
+
+    expect(duplicates).toEqual([]);
   });
 
   it('finds duplicate candidates with short fallback terms', async () => {

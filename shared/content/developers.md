@@ -2,7 +2,7 @@
 
 Murphy's Law Archive offers a free REST API, a TypeScript SDK, a command-line
 interface, an MCP server for AI agents, and machine-readable feeds. Integrate
-1,500+ laws into your apps, bots, and workflows with no API key.
+{{ARCHIVE_SIZE}} into your apps, bots, and workflows with no API key.
 
 ## MCP Server
 

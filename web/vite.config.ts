@@ -63,7 +63,12 @@ export default defineConfig({
         // Exclude 404.html from precache: many hosts serve it only as fallback for unknown
         // routes and return 404 for GET /404.html, which triggers bad-precaching-response
         // and the app error banner.
-        globIgnores: ['**/404.html'],
+        globIgnores: [
+          '**/404.html',
+          '**/tex-chtml-*.js',
+          '**/jspdf.es.min-*.js',
+          '**/html2canvas.esm-*.js'
+        ],
         // App shell for SPA: all non-precached navigations (e.g. /favorites) get index.html so the router can run.
         // Use index.html, not offline.html; the offline page is for actual offline/catch handling only.
         navigateFallback: '/index.html',
@@ -78,6 +83,16 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
+          // Large calculator/export libraries are loaded only when their feature is used.
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin && /\/(tex-chtml|jspdf\.es\.min|html2canvas\.esm)-[^/]+\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'optional-feature-chunks',
+              expiration: { maxEntries: 6, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
           // Categories API - rarely changes, use StaleWhileRevalidate
           {
             urlPattern: /^https:\/\/murphys-laws\.com\/api\/v1\/categories/,
@@ -189,7 +204,7 @@ export default defineConfig({
     }),
     // Sentry plugin for source map uploads (only when all required env vars are set)
     // If any of org/project/authToken are missing, the plugin can throw in normalizeIncludeEntry (reading 'ignore' of undefined)
-    (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)
+    (process.env.SENTRY_UPLOAD === 'true' && process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)
       ? sentryVitePlugin({
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,

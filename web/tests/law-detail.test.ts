@@ -67,6 +67,29 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-law-report-link]')?.getAttribute('href')).toBe('/contact');
   });
 
+  it('renders an optional reviewed editorial annotation', async () => {
+    const law = {
+      id: '1',
+      title: 'A Law',
+      text: 'Text',
+      score: 1,
+      editorial: {
+        explanation: 'A reviewed explanation.',
+        practical_example: 'A practical example.',
+        source_label: 'Primary source',
+        source_url: 'https://example.com/source',
+        reviewed_at: '2026-07-21'
+      }
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-editorial]')?.hasAttribute('hidden')).toBe(false), { timeout: 500 });
+    expect(el.querySelector('[data-law-editorial-explanation]')?.textContent).toBe('A reviewed explanation.');
+    expect(el.querySelector('[data-law-editorial-source]')?.getAttribute('href')).toBe('https://example.com/source');
+    expect(el.querySelector('[data-law-editorial-reviewed]')?.getAttribute('datetime')).toBe('2026-07-21');
+  });
+
   it('renders internal links for law category context', async () => {
     const law = {
       id: '1',

@@ -12,11 +12,11 @@ UPDATE categories SET
   updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE slug = 'murphys-4x4-car-laws-section';
 
--- Murphy's Computer Laws (production uses singular)
+-- Murphy's Computer Laws
 UPDATE categories SET 
   description = 'Digital doom: programs are obsolete when running, bugs appear after the author leaves, and backups fail when needed.',
   updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-WHERE slug = 'murphys-computer-laws';
+WHERE slug = 'murphys-computers-laws';
 
 -- Murphy's Cowboy Action Shooting (CAS) Laws - fix slug (remove trailing "1") and add description
 UPDATE categories SET 

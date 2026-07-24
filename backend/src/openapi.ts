@@ -3,7 +3,7 @@ export const OPENAPI_SPEC = {
   info: {
     title: "Murphy's Law Archive API",
     description:
-      "A public REST API for browsing 1500+ Murphy's Laws, corollaries, and variations organized into thematic categories. No authentication required for read operations.",
+      "A public REST API for browsing thousands of Murphy's Laws, corollaries, and variations organized into thematic categories. No authentication required for read operations.",
     version: '1.0.0',
     contact: {
       url: 'https://murphys-laws.com/contact',
@@ -112,10 +112,10 @@ export const OPENAPI_SPEC = {
           {
             name: 'sort',
             in: 'query',
-            description: 'Sort field',
+            description: 'Sort field. Searches default to relevance; unfiltered lists default to score.',
             schema: {
               type: 'string',
-              enum: ['score', 'upvotes', 'created_at', 'last_voted_at'],
+              enum: ['relevance', 'score', 'upvotes', 'created_at', 'last_voted_at'],
               default: 'score',
             },
           },
@@ -512,6 +512,18 @@ export const OPENAPI_SPEC = {
           category_ids: { type: 'array', items: { type: 'integer' } },
           category_slug: { type: 'string', nullable: true },
           category_name: { type: 'string', nullable: true },
+          similarity: { type: 'number', minimum: 0, maximum: 1 },
+          match_type: { type: 'string', enum: ['exact', 'fuzzy'] },
+          editorial: {
+            type: 'object',
+            properties: {
+              explanation: { type: 'string' },
+              practical_example: { type: 'string' },
+              source_label: { type: 'string' },
+              source_url: { type: 'string', format: 'uri' },
+              reviewed_at: { type: 'string', format: 'date' },
+            },
+          },
         },
       },
       LawList: {

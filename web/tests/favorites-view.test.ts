@@ -142,7 +142,7 @@ describe('Favorites View Component', () => {
 
       expect(categoriesSection).toBeTruthy();
       expect(categoryLinks.length).toBe(3);
-      expect(categoryLinks[0]!.getAttribute('data-param')).toBe('murphys-computer-laws');
+      expect(categoryLinks[0]!.getAttribute('data-param')).toBe('murphys-computers-laws');
       expect(categoryLinks[1]!.getAttribute('data-param')).toBe('murphys-love-laws');
       expect(categoryLinks[2]!.getAttribute('data-param')).toBe('murphys-technology-laws');
     });
@@ -314,8 +314,8 @@ describe('Favorites View Component', () => {
 
     it('L265 B1: nav link with data-param passes param to onNavigate', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      (el.querySelector('[data-param="murphys-computer-laws"]') as HTMLElement).click();
-      expect(localThis.mockNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+      (el.querySelector('[data-param="murphys-computers-laws"]') as HTMLElement).click();
+      expect(localThis.mockNavigate).toHaveBeenCalledWith('category', 'murphys-computers-laws');
     });
 
     it('L273 B1: keydown on law card with lawId calls onNavigate', () => {
@@ -341,11 +341,11 @@ describe('Favorites View Component', () => {
 
     it('navigates to category with param when category link is clicked', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
-      const categoryLink = el.querySelector('[data-param="murphys-computer-laws"]') as HTMLElement | null;
+      const categoryLink = el.querySelector('[data-param="murphys-computers-laws"]') as HTMLElement | null;
 
       categoryLink?.click();
 
-      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+      expect(vi.mocked(localThis.mockNavigate)).toHaveBeenCalledWith('category', 'murphys-computers-laws');
     });
 
     it('navigates to law detail when law card is clicked', () => {

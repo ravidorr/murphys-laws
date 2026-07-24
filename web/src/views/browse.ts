@@ -20,7 +20,8 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { handleCopyAction } from '../utils/copy-actions.ts';
 import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
-import { updateMetaDescription } from '../utils/dom.ts';
+import { updatePageMetadata } from '../utils/dom.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
 const BROWSE_TITLE = "Browse All Murphy's Laws | Murphy's Law Archive";
@@ -32,7 +33,7 @@ function parseBrowseParams(search: string): { filters: SearchFilters; sort: stri
   const q = params.get('q') ?? '';
   const categoryId = params.get('category_id');
   const attribution = params.get('attribution') ?? '';
-  const sort = params.get('sort') ?? 'score';
+  const sort = params.get('sort') ?? (q ? 'relevance' : 'score');
   const order = params.get('order') ?? 'desc';
   const page = Math.max(1, parseInt(params.get('page') ?? '1', 10) || 1);
   const filters: SearchFilters = { q };
@@ -46,7 +47,8 @@ function buildBrowseSearch(filters: SearchFilters, sort: string, order: string, 
   if (filters.q) params.set('q', filters.q);
   if (filters.category_id !== undefined && filters.category_id !== '') params.set('category_id', String(filters.category_id));
   if (filters.attribution) params.set('attribution', filters.attribution);
-  if (sort && sort !== 'score') params.set('sort', sort);
+  const defaultSort = filters.q ? 'relevance' : 'score';
+  if (sort && sort !== defaultSort) params.set('sort', sort);
   if (order && order !== 'desc') params.set('order', order);
   if (page > 1) params.set('page', String(page));
   const qs = params.toString();
@@ -62,7 +64,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   let totalLaws = 0;
   let laws: Law[] = [];
   let currentFilters: SearchFilters = searchQuery !== undefined && searchQuery !== '' ? { ...initial.filters, q: searchQuery } : initial.filters;
-  let currentSort = initial.sort;
+  let currentSort = searchQuery ? 'relevance' : initial.sort;
   let currentOrder = initial.order;
 
   // Render law cards
@@ -87,8 +89,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
 
   // Render the page
   async function render() {
-    document.title = BROWSE_TITLE;
-    updateMetaDescription(BROWSE_DESCRIPTION);
+    updatePageMetadata({ title: BROWSE_TITLE, description: BROWSE_DESCRIPTION, path: '/browse' });
     el.innerHTML = templateHtml;
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
 
@@ -151,6 +152,9 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
+      if (laws.length === 0 && hasActiveFilters(currentFilters)) {
+        trackProductEvent('archive.no_results', { surface: 'browse' });
+      }
       await updateDisplay();
 
       // Register export content
@@ -222,6 +226,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       if (pageAttr) {
         const page = parseInt(pageAttr, 10);
         if (!isNaN(page) && page > 0) {
+          trackProductEvent('archive.pagination', { surface: 'browse', action: page > currentPage ? 'next' : 'previous' });
           loadPage(page);
         }
       }
@@ -233,6 +238,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
       if (t.closest('button')) return;
+      trackProductEvent('archive.result_open', { surface: 'browse' });
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }
@@ -264,7 +270,10 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   const searchComponent = AdvancedSearch({
     initialFilters: currentFilters,
     onSearch: (filters) => {
+      trackProductEvent('archive.search', { surface: 'browse', result: 'submitted' });
       currentFilters = filters;
+      currentSort = filters.q ? 'relevance' : 'score';
+      currentOrder = 'desc';
       updateWidgetsVisibility();
       currentPage = 1;
       loadPage(1);
@@ -273,9 +282,10 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
 
   const widgetsContainer = el.querySelector('[data-widgets]')!;
-  widgetsContainer.appendChild(TopVoted());
-  widgetsContainer.appendChild(Trending());
-  widgetsContainer.appendChild(RecentlyAdded());
+  const seenWidgetLawIds = new Set<number>();
+  widgetsContainer.appendChild(TopVoted({ seenIds: seenWidgetLawIds }));
+  widgetsContainer.appendChild(Trending({ seenIds: seenWidgetLawIds }));
+  widgetsContainer.appendChild(RecentlyAdded({ seenIds: seenWidgetLawIds }));
 
   updateWidgetsVisibility();
 

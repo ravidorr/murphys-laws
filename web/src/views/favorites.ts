@@ -88,7 +88,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
           <div class="not-found-categories mt-8">
             <p class="small text-muted-fg mb-4">Or explore popular categories:</p>
             <div class="not-found-category-links">
-              <button type="button" class="btn outline" data-nav="category" data-param="murphys-computer-laws">Computer Laws</button>
+              <button type="button" class="btn outline" data-nav="category" data-param="murphys-computers-laws">Computer Laws</button>
               <button type="button" class="btn outline" data-nav="category" data-param="murphys-love-laws">Love Laws</button>
               <button type="button" class="btn outline" data-nav="category" data-param="murphys-technology-laws">Technology Laws</button>
             </div>

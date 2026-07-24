@@ -32,9 +32,9 @@ export class LawController {
       : null;
 
     // Sorting parameters with validation
-    const allowedSortFields = ['score', 'upvotes', 'created_at', 'last_voted_at'];
+    const allowedSortFields = ['relevance', 'score', 'upvotes', 'created_at', 'last_voted_at'];
     const sortCandidate = typeof query.sort === 'string' ? query.sort : '';
-    const sort = allowedSortFields.includes(sortCandidate) ? sortCandidate : 'score';
+    const sort = allowedSortFields.includes(sortCandidate) ? sortCandidate : (q ? 'relevance' : 'score');
     const order = query.order === 'asc' ? 'asc' : 'desc';
 
     const excludeCorollaries = query.exclude_corollaries === '1' || query.exclude_corollaries === 'true';

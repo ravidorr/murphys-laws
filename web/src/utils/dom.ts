@@ -1,12 +1,18 @@
 // DOM utilities and event listener management
 import { hydrateIcons } from './icons.ts';
 import { renderLinkButtonHTML } from './button.ts';
+import { SITE_URL, SITE_DEFAULT_SOCIAL_IMAGE } from './constants.ts';
 
 interface SocialMetaOptions {
   title?: string;
   description?: string;
   url?: string;
   image?: string;
+}
+
+interface PageMetaOptions extends SocialMetaOptions {
+  path: string;
+  type?: 'website' | 'article';
 }
 
 /**
@@ -18,6 +24,19 @@ export function updateMetaDescription(description: string): void {
   if (meta) {
     meta.setAttribute('content', description);
   }
+}
+
+export function updatePageMetadata({ title, description, path, image = SITE_DEFAULT_SOCIAL_IMAGE, type = 'website' }: PageMetaOptions): void {
+  if (typeof document === 'undefined') return;
+  const canonicalUrl = `${SITE_URL}${path === '/' ? '/' : path.replace(/\/$/, '')}`;
+  if (title) document.title = title;
+  if (description) updateMetaDescription(description);
+
+  const canonical = document.querySelector('link[rel="canonical"]');
+  canonical?.setAttribute('href', canonicalUrl);
+  document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((link) => link.setAttribute('href', canonicalUrl));
+  document.querySelector('meta[property="og:type"]')?.setAttribute('content', type);
+  updateSocialMetaTags({ title, description, url: canonicalUrl, image });
 }
 
 /**

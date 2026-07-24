@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import { safeParseJsonArray } from '../utils/helpers.ts';
+import { isUsefulDuplicateMatch, scoreDuplicateSimilarity } from '../../../shared/modules/duplicate-similarity.ts';
 
 type Db = InstanceType<typeof Database>;
 
@@ -40,7 +41,18 @@ interface ListLawRow {
   downvotes: number;
   score: number;
   last_voted_at: string;
+  category_id?: number | null;
+  category_slug?: string | null;
+  category_name?: string | null;
   [key: string]: unknown;
+}
+
+interface ListedLawRow {
+  [key: string]: unknown;
+  id: number;
+  title?: string | null;
+  text: string;
+  attributions: unknown[];
 }
 
 interface LawDbRow {
@@ -63,6 +75,14 @@ interface LawOfTheDayHistoryRow {
   law_id: number;
 }
 
+interface EditorialRow {
+  explanation: string;
+  practical_example: string;
+  source_label: string;
+  source_url: string;
+  reviewed_at: string;
+}
+
 interface CandidateRow {
   id: number;
 }
@@ -76,6 +96,18 @@ export interface SuggestionsParams {
   limit?: number;
 }
 
+export function buildFtsMatchQuery(query: string): string {
+  const tokens = query
+    .normalize('NFKC')
+    .toLowerCase()
+    .match(/[\p{L}\p{N}]+/gu)
+    ?.filter((token) => token.length >= 2)
+    .slice(0, 10) ?? [];
+  return [...new Set(tokens)]
+    .map((token) => `"${token.replace(/"/g, '""')}"*`)
+    .join(' OR ');
+}
+
 export interface SubmitLawParams {
   title: string;
   text: string;
@@ -86,12 +118,31 @@ export interface SubmitLawParams {
 
 export class LawService {
   private db: Db;
+  private ftsDisabled = false;
 
   constructor(db: Db) {
     this.db = db;
   }
 
-  async listLaws({ limit, offset, q = '', categoryId = null, categorySlug = null, attribution = '', sort = 'score', order = 'desc', excludeCorollaries = false }: ListLawsParams) {
+  private hasFtsIndex(): boolean {
+    if (this.ftsDisabled) return false;
+    try {
+      return Boolean(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'laws_fts'").get());
+    } catch {
+      return false;
+    }
+  }
+
+  private hasAnnotationsTable(): boolean {
+    try {
+      return Boolean(this.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'law_annotations'").get());
+    } catch {
+      return false;
+    }
+  }
+
+  async listLaws(params: ListLawsParams): Promise<{ data: ListedLawRow[]; total: number }> {
+    const { limit, offset, q = '', categoryId = null, categorySlug = null, attribution = '', sort = 'score', order = 'desc', excludeCorollaries = false } = params;
     const baseSelect = `
       SELECT
         l.id,
@@ -110,7 +161,10 @@ export class LawService {
         COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0) AS downvotes,
         (COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) -
          COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'down'), 0)) AS score,
-        COALESCE((SELECT MAX(v.created_at) FROM votes v WHERE v.law_id = l.id), l.created_at) AS last_voted_at
+        COALESCE((SELECT MAX(v.created_at) FROM votes v WHERE v.law_id = l.id), l.created_at) AS last_voted_at,
+        (SELECT c.id FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_id,
+        (SELECT c.slug FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_slug,
+        (SELECT c.title FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_name
       FROM laws l
       WHERE l.status = 'published'`;
 
@@ -118,6 +172,8 @@ export class LawService {
     const hasCategory = categoryId !== null && !isNaN(categoryId);
     const hasCategorySlug = categorySlug && categorySlug.length > 0;
     const hasAttribution = attribution && attribution.length > 0;
+    const ftsQuery = buildFtsMatchQuery(q);
+    const useFts = Boolean(hasQ && ftsQuery && this.hasFtsIndex());
 
     const like = `%${q}%`;
     const attributionLike = `%${attribution}%`;
@@ -133,10 +189,17 @@ export class LawService {
     let countWhere = "WHERE l.status = 'published'" + (excludeCorollaries ? noCorollaryCondition : '');
 
     if (hasQ) {
-      where += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";
-      countWhere += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";
-      countParams.push(like, like);
-      listParams.push(like, like);
+      if (useFts) {
+        where += " AND l.id IN (SELECT rowid FROM laws_fts WHERE laws_fts MATCH ?)";
+        countWhere += " AND l.id IN (SELECT rowid FROM laws_fts WHERE laws_fts MATCH ?)";
+        countParams.push(ftsQuery);
+        listParams.push(ftsQuery);
+      } else {
+        where += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";
+        countWhere += " AND (l.text LIKE ? OR COALESCE(l.title,'') LIKE ?)";
+        countParams.push(like, like);
+        listParams.push(like, like);
+      }
     }
 
     if (hasCategory) {
@@ -165,6 +228,11 @@ export class LawService {
     const orderDirection = order === 'asc' ? 'ASC' : 'DESC';
     let orderBy;
     switch (sort) {
+      case 'relevance':
+        orderBy = useFts
+          ? `(SELECT bm25(laws_fts, 5.0, 1.0) FROM laws_fts WHERE rowid = l.id AND laws_fts MATCH ?) ASC, score DESC, l.id DESC`
+          : `score DESC, upvotes DESC, l.id DESC`;
+        break;
       case 'upvotes':
         orderBy = `upvotes ${orderDirection}, l.id DESC`;
         break;
@@ -183,20 +251,29 @@ export class LawService {
     const countSql = `SELECT COUNT(1) AS total FROM laws l ${countWhere};`;
     const listSql = `${baseSelect}${where}\nORDER BY ${orderBy}\nLIMIT ? OFFSET ?;`;
 
-    const countStmt = this.db.prepare(countSql);
-    const countResult = countStmt.get(...countParams) as CountRow | undefined;
-    const total = countResult ? countResult.total : 0;
+    try {
+      const countStmt = this.db.prepare(countSql);
+      const countResult = countStmt.get(...countParams) as CountRow | undefined;
+      const total = countResult ? countResult.total : 0;
 
-    listParams.push(limit, offset);
-    const listStmt = this.db.prepare(listSql);
-    const rows = listStmt.all(...listParams) as ListLawRow[];
+      if (sort === 'relevance' && useFts) listParams.push(ftsQuery);
+      listParams.push(limit, offset);
+      const listStmt = this.db.prepare(listSql);
+      const rows = listStmt.all(...listParams) as ListLawRow[];
 
-    const data = rows.map((r: ListLawRow) => ({
-      ...r,
-      attributions: safeParseJsonArray(r.attributions),
-    }));
+      const data = rows.map((r: ListLawRow) => ({
+        ...r,
+        attributions: safeParseJsonArray(r.attributions),
+      }));
 
-    return { data, total };
+      return { data, total };
+    } catch (error) {
+      if (useFts) {
+        this.ftsDisabled = true;
+        return this.listLaws(params);
+      }
+      throw error;
+    }
   }
 
   async getLaw(id: number): Promise<LawRow | undefined> {
@@ -207,6 +284,8 @@ export class LawService {
         l.text,
         l.first_seen_file_path AS file_path,
         l.first_seen_line_number AS line_number,
+        l.created_at,
+        l.updated_at,
         COALESCE((
           SELECT json_group_array(json_object(
             'name', a.name,
@@ -244,6 +323,15 @@ export class LawService {
             law.category_context = cat.law_context;
           }
         }
+      }
+
+
+      if (this.hasAnnotationsTable()) {
+        const editorial = this.db.prepare(`
+          SELECT explanation, practical_example, source_label, source_url, reviewed_at
+          FROM law_annotations WHERE law_id = ?
+        `).get(id) as EditorialRow | undefined;
+        if (editorial) law.editorial = editorial;
       }
     }
 
@@ -437,7 +525,19 @@ export class LawService {
       ORDER BY upvotes DESC, l.id DESC
       LIMIT ?;
     `);
-    return stmt.all(...params, limit);
+    const candidateLimit = Math.min(Math.max(limit * 10, 20), 50);
+    const candidates = stmt.all(...params, candidateLimit) as Array<{ id: number; title?: string | null; text: string; upvotes: number; downvotes: number }>;
+    return candidates
+      .map((candidate) => {
+        const textMatch = scoreDuplicateSimilarity(text, candidate.text);
+        const match = textMatch.match_type === 'exact'
+          ? textMatch
+          : scoreDuplicateSimilarity(text, `${candidate.title || ''} ${candidate.text}`.trim());
+        return { ...candidate, ...match };
+      })
+      .filter(isUsefulDuplicateMatch)
+      .sort((a, b) => b.similarity - a.similarity || b.upvotes - a.upvotes || b.id - a.id)
+      .slice(0, limit);
   }
 
   async submitLaw({ title, text, author, email, categoryId }: SubmitLawParams) {

@@ -14,9 +14,7 @@ describe('Home view', () => {
     expect(el.querySelector('[data-home-zone="law-of-day"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="category-discovery"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="tools-submit"]')).toBeTruthy();
-    expect(el.querySelector('[data-home-zone="trending-recent"]')).toBeTruthy();
-    expect(el.querySelector('[data-home-zone="trending-recent"] > .section-header')).toBeNull();
-    expect(el.querySelector('[data-home-zone="trending-recent"] .home-discovery-grid')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="trending"]')).toBeTruthy();
     expect(el.textContent).toMatch(/human-reviewed/i);
   });
 
@@ -27,8 +25,8 @@ describe('Home view', () => {
 
     const proofPoints = el.querySelectorAll('.home-proof-point');
     expect(proofPoints).toHaveLength(4);
-    expect(proofPoints[0]?.querySelector('strong')?.textContent).toBe('2,400+');
-    expect(proofPoints[0]?.querySelector('span')?.textContent).toBe('laws');
+    expect(proofPoints[0]?.querySelector('strong')?.textContent).toBe('Complete');
+    expect(proofPoints[0]?.querySelector('span')?.textContent).toBe('archive');
     expect(proofPoints[3]?.textContent).toContain('since 1998');
   });
 
@@ -43,6 +41,28 @@ describe('Home view', () => {
     form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
     expect(onNavigate).toHaveBeenCalledWith('browse');
+  });
+
+  it('preserves the homepage query through the shared search flow', () => {
+    const el = document.createElement('div');
+    const onSearch = vi.fn();
+    renderHome(el, null, [], vi.fn(), onSearch);
+    const form = el.querySelector('form[role="search"]') as HTMLFormElement;
+    const input = form.querySelector('input[type="search"]') as HTMLInputElement;
+    input.value = 'technology failure';
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' });
+  });
+
+  it('applies the persisted homepage module-order variant', () => {
+    localStorage.setItem('murphys-experiment:homepage-module-order-v1', 'trending-first');
+    const el = document.createElement('div');
+    renderHome(el, null, [], vi.fn());
+    const modules = [...el.querySelectorAll('[data-home-zone]')].map((node) => node.getAttribute('data-home-zone'));
+    expect(modules.indexOf('trending')).toBeLessThan(modules.indexOf('category-discovery'));
+    localStorage.removeItem('murphys-experiment:homepage-module-order-v1');
   });
   it('renders Law of the Day after fetching data', async () => {
     const lawOfTheDay = {
@@ -141,7 +161,7 @@ describe('Home view', () => {
     const other = document.createElement('span');
     el.appendChild(other);
     other.click();
-    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
   it('L172 B1: nav button with data-nav triggers onNavigate', async () => {
@@ -616,47 +636,29 @@ describe('renderHome function', () => {
     expect(el.textContent).toMatch(/Calculator|Submit/i);
   });
 
-  it('renders overview section with title in section-header and description in section-subheader', () => {
+  it('keeps long educational copy off the discovery-first homepage', () => {
     const el = document.createElement('div');
     renderHome(el, null, [], vi.fn());
 
-    // Science of Murphy's Law section is rendered last (below Submit a Law)
-    const sectionCards = el.querySelectorAll('.section-card');
-    const sectionCard = Array.from(sectionCards).find(
-      (s) => s.textContent?.includes('Anything that can go wrong, will go wrong')
-    );
-    expect(sectionCard).toBeTruthy();
-
-    const header = sectionCard!.querySelector('.section-header');
-    expect(header).toBeTruthy();
-    expect(header!.querySelector('.section-title')).toBeTruthy();
-    const subtitle = sectionCard!.querySelector('.section-subtitle');
-    expect(subtitle).toBeTruthy();
-    expect(subtitle!.textContent).toMatch(/Anything that can go wrong, will go wrong/);
+    expect(el.textContent).not.toMatch(/Anything that can go wrong, will go wrong/);
+    expect(el.textContent).not.toMatch(/Why Murphy's Law Still Matters/);
   });
 
-  it('Science section is a plain section with body visible (no details/summary)', () => {
+  it('keeps the Buttered Toast calculator off the featured homepage tools', () => {
     const el = document.createElement('div');
     renderHome(el, null, [], vi.fn());
 
-    const scienceSection = Array.from(el.querySelectorAll('.section-card')).find(
-      (s) => s.textContent?.includes('Anything that can go wrong, will go wrong')
-    );
-    expect(scienceSection).toBeTruthy();
-    expect(scienceSection!.querySelector('details')).toBeNull();
-    expect(scienceSection!.querySelector('summary')).toBeNull();
-    expect(scienceSection!.querySelector('.section-body')).toBeTruthy();
-    expect(scienceSection!.textContent).toMatch(/Why Murphy's Law Still Matters/);
+    expect(el.textContent).toMatch(/Sod's Law Calculator/);
+    expect(el.textContent).not.toMatch(/Buttered Toast Landing Calculator/);
   });
 
-  it('renders Articles section with links to origin-story and new long-form articles', () => {
+  it('keeps article links reachable outside the homepage', () => {
     const el = document.createElement('div');
     renderHome(el, null, [], vi.fn());
 
-    expect(el.querySelector('[data-nav="origin-story"]')).toBeTruthy();
-    expect(el.querySelector('[data-nav="why-murphys-law-feels-true"]')).toBeTruthy();
-    expect(el.querySelector('[data-nav="murphys-law-project-management"]')).toBeTruthy();
-    expect(el.textContent).toMatch(/Articles/);
+    expect(el.querySelector('[data-nav="origin-story"]')).toBeNull();
+    expect(el.querySelector('[data-nav="why-murphys-law-feels-true"]')).toBeNull();
+    expect(el.querySelector('[data-nav="murphys-law-project-management"]')).toBeNull();
   });
 });
 

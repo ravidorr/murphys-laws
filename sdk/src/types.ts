@@ -3,6 +3,14 @@ export interface Attribution {
   note?: string;
 }
 
+export interface LawEditorial {
+  explanation: string;
+  practical_example: string;
+  source_label: string;
+  source_url: string;
+  reviewed_at: string;
+}
+
 export interface Law {
   id: number;
   title?: string | null;
@@ -14,6 +22,9 @@ export interface Law {
   category_id?: number;
   category_name?: string;
   category_slug?: string;
+  similarity?: number;
+  match_type?: 'exact' | 'fuzzy';
+  editorial?: LawEditorial;
   [key: string]: unknown;
 }
 
@@ -46,7 +57,7 @@ export interface SearchLawsParams {
   category_slug?: string;
   limit?: number;
   offset?: number;
-  sort?: 'score' | 'created_at' | 'id';
+  sort?: 'relevance' | 'score' | 'upvotes' | 'created_at' | 'last_voted_at' | 'id';
   order?: 'asc' | 'desc';
 }
 
