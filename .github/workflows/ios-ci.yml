@@ -8,12 +8,17 @@ on:
       - 'ios/**'
       - 'shared/DESIGN.md'
       - 'shared/design-tokens/**'
+      - 'web/DESIGN.md'
+      - 'web/styles/partials/variables.css'
       - '.github/workflows/ios-ci.yml'
   pull_request:
     paths:
       - 'ios/**'
       - 'shared/DESIGN.md'
       - 'shared/design-tokens/**'
+      - 'web/DESIGN.md'
+      - 'web/styles/partials/variables.css'
+      - '.github/workflows/ios-ci.yml'
 
 jobs:
   build-and-test:
@@ -32,13 +37,16 @@ jobs:
       - name: Install dependencies (root - npm workspaces)
         run: npm ci
 
+      - name: Check design-system conformance
+        run: npm run design:conformance
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.4'
 
-      # Tokens.swift and Assets.xcassets/DS/ are gitignored; regenerate
-      # them from shared/DESIGN.md so the Swift compiler can resolve
+      # Tokens.swift and Assets.xcassets/DS/ are gitignored; regenerate them
+      # from the authoritative design system so the Swift compiler can resolve
       # `DS.Color.*` and `DS.Typography.*` references.
       - name: Regenerate iOS design tokens
         run: npm run design:export:ios

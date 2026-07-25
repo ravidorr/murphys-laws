@@ -4,7 +4,7 @@
 
 import templateHtml from '@views/templates/sods-calculator.html?raw';
 import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.ts';
-import { ensureMathJax } from '@utils/mathjax.ts';
+import { renderSodsFormula } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updatePageMetadata } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
@@ -101,7 +101,6 @@ export function Calculator(): HTMLDivElement {
       data: `Probability of things going wrong: ${displayPercent}%. ${interpretation}`
     });
 
-    // Generate formula - use MathJax only when available, otherwise show readable text.
     const pFormula = showValues.U ? String(displayPercent) : 'P';
     const uDisplay = showValues.U ? U : 'U';
     const cDisplay = showValues.C ? C : 'C';
@@ -109,72 +108,15 @@ export function Calculator(): HTMLDivElement {
     const sDisplay = showValues.S ? S : 'S';
     const fDisplay = showValues.F ? F : 'F';
     const aDisplay = showValues.U ? '0.7' : 'A'; // Show 0.7 when flashing
-    const readableFormula = `Probability = ((${uDisplay} + ${cDisplay} + ${iDisplay}) x (10 - ${sDisplay}) / 20) x ${aDisplay} x 1 / (1 - sin(${fDisplay} / 10))`;
-    const mathFormula = `\\(${pFormula}=\\frac{((${uDisplay}+${cDisplay}+${iDisplay})\\times (10-${sDisplay}))}{20}\\times ${aDisplay}\\times \\frac{1}{(1-\\sin (\\frac{${fDisplay}}{10}))}\\)`;
-
-    formulaDisplay.textContent = readableFormula;
-    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-      // Capture MathJax reference to avoid race conditions in test environments
-      const mathJax = window.MathJax;
-      formulaDisplay.textContent = mathFormula;
-      requestAnimationFrame(() => {
-        if (!mathJax || typeof mathJax.typesetPromise !== 'function') {
-          formulaDisplay.textContent = readableFormula;
-          return;
-        }
-
-        mathJax.typesetPromise([formulaDisplay as HTMLElement]).then(() => {
-          /* v8 ignore start -- tooltip decoration depends on MathJax-rendered DOM in browsers */
-          // Add title attributes to variables after MathJax renders
-          const titles: Record<string, string> = {
-            'U': 'Urgency (1-9)',
-            'C': 'Complexity (1-9)',
-            'I': 'Importance (1-9)',
-            'S': 'Skill (1-9)',
-            'F': 'Frequency (1-9)',
-            'A': 'Activity constant (0.7)',
-            'P': 'Probability'
-          };
-
-          const variables = formulaDisplay.querySelectorAll('mjx-mi');
-
-          variables.forEach((mi) => {
-            // MathJax CHTML uses Unicode in class names (e.g., mjx-c1D443 = U+1D443 = Italic P)
-            // Map Unicode Math Italic characters to regular letters
-            const unicodeMap: Record<string, string> = {
-              '1D443': 'P', // 𝑃
-              '1D448': 'U', // 𝑈
-              '1D436': 'C', // 𝐶
-              '1D43C': 'I', // 𝐼
-              '1D446': 'S', // 𝑆
-              '1D439': 'F', // 𝐹
-              '1D434': 'A'  // 𝐴
-            };
-
-            // Get the first mjx-c child to identify the variable
-            /* v8 ignore start -- MathJax typesetPromise callback: only reachable when MathJax renders in a real browser */
-            const mjxC = mi.querySelector('mjx-c');
-            if (mjxC) {
-              const classMatch = mjxC.className.match(/mjx-c([0-9A-F]+)/);
-              if (classMatch) {
-                const unicodeHex = classMatch[1] as string | undefined;
-                if (unicodeHex) {
-                  const letter = unicodeMap[unicodeHex];
-
-                  if (letter && titles[letter]) {
-                    mi.setAttribute('data-tooltip', titles[letter]);
-                  }
-                }
-              }
-            }
-            /* v8 ignore stop */
-          });
-          /* v8 ignore stop */
-        }).catch(() => {
-          formulaDisplay.textContent = readableFormula;
-        });
-      });
-    }
+    renderSodsFormula(formulaDisplay, {
+      probability: pFormula,
+      urgency: uDisplay,
+      complexity: cDisplay,
+      importance: iDisplay,
+      skill: sDisplay,
+      frequency: fDisplay,
+      activity: aDisplay,
+    });
   }
 
   function flashAllVariables() {
@@ -215,14 +157,6 @@ export function Calculator(): HTMLDivElement {
   });
 
   updateCalculation();
-
-  ensureMathJax()
-    .then(() => {
-      updateCalculation();
-    })
-    .catch(() => {
-      updateCalculation();
-    });
 
   function updateResultInterpretation(score: number) {
     let interpretation: string;

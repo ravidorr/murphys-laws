@@ -1,1 +1,1 @@
-declare module 'mathjax/es5/tex-chtml.js';
+// Native MathML rendering requires no third-party module declaration.

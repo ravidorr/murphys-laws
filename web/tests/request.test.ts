@@ -115,9 +115,13 @@ describe('request utilities', () => {
     });
 
     it('throws error on network failure', async () => {
-      fetchSpy.mockRejectedValue(new Error('Network failed'));
+      const networkFailure = new Error('Network failed');
+      fetchSpy.mockRejectedValue(networkFailure);
 
-      await expect(apiRequest('/api/test')).rejects.toThrow('Network error');
+      await expect(apiRequest('/api/test')).rejects.toMatchObject({
+        message: expect.stringContaining('Network error'),
+        cause: networkFailure,
+      });
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -125,7 +129,10 @@ describe('request utilities', () => {
       const timeoutErr = new DOMException('The operation timed out.', 'TimeoutError');
       fetchSpy.mockRejectedValue(timeoutErr);
 
-      await expect(apiRequest('/api/test')).rejects.toThrow('The request timed out. Please try again.');
+      await expect(apiRequest('/api/test')).rejects.toMatchObject({
+        message: 'The request timed out. Please try again.',
+        cause: timeoutErr,
+      });
     });
 
     it('injects an AbortSignal so stalled requests fail fast', async () => {

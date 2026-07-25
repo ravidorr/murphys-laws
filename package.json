@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -51,7 +51,8 @@
     "check:web-budgets": "node scripts/check-web-budgets.mjs",
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../sdk && npm install && cd ../cli && npm install && cd ../mcp && npm install",
     "design:sync": "tsx shared/design-tokens/sync-design-tokens.ts",
-    "design:check": "tsx shared/design-tokens/sync-design-tokens.ts --check && tsx shared/design-tokens/design-md-lint.ts && tsx shared/design-tokens/export-ios-tokens.ts --check && tsx shared/design-tokens/export-android-tokens.ts --check && npm run design:test",
+    "design:check": "tsx shared/design-tokens/sync-design-tokens.ts --check && tsx shared/design-tokens/design-md-lint.ts && tsx shared/design-tokens/export-ios-tokens.ts --check && tsx shared/design-tokens/export-android-tokens.ts --check && npm run design:conformance && npm run design:test",
+    "design:conformance": "tsx shared/design-tokens/design-conformance.ts",
     "design:export": "tsx shared/design-tokens/export-design-tokens.ts",
     "design:export:ios": "tsx shared/design-tokens/export-ios-tokens.ts",
     "design:export:android": "tsx shared/design-tokens/export-android-tokens.ts",
@@ -79,13 +80,7 @@
     },
     "postcss": "8.5.23",
     "serialize-javascript": "7.0.5",
-    "html-encoding-sniffer": "4.0.0",
-    "workbox-build": {
-      "brace-expansion": "5.0.8",
-      "@rollup/plugin-terser": {
-        "serialize-javascript": "7.0.5"
-      }
-    }
+    "html-encoding-sniffer": "4.0.0"
   },
   "optionalDependencies": {
     "@esbuild/darwin-x64": "^0.25.10",

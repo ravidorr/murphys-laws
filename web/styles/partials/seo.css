@@ -9,11 +9,11 @@
 .calc-info-title,
 .calc-info-subtitle {
   margin: 0 0 1rem;
-  font-weight: 700;
+  font-weight: var(--font-bold);
 }
 
 .calc-info-subtitle {
-  font-size: 1rem;
+  font-size: var(--text-base);
 }
 
 .calc-info-list {

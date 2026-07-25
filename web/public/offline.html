@@ -7,214 +7,34 @@
   <title>Offline - Murphy's Law Archive</title>
   <meta name="description" content="You're currently offline. Some content may be unavailable.">
   <meta name="robots" content="noindex, nofollow">
-  <style>
-    /* CSS Variables - must match variables.css exactly */
-    :root {
-      --bg: #fff;
-      --fg: #111827;
-      --muted-fg: #4b5563;
-      --primary: #030213;
-      --btn-primary-bg: #0d5ea1;
-      --btn-primary-fg: #fff;
-      --surface: #fff;
-      --surface-border: #d1d5db;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0b0b11;
-        --fg: #e9eaee;
-        --muted-fg: #9ca3af;
-        --primary: #6366f1;
-        --surface: #15151d;
-        --surface-border: #4b5563;
-      }
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-      min-height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .offline-icon {
-      width: 80px;
-      height: 80px;
-      margin-bottom: 1.5rem;
-      color: var(--muted-fg);
-    }
-
-    h1, .page-title {
-      font-size: clamp(1.75rem, 3vw, 2.25rem);
-      font-weight: 700;
-      line-height: 1.2;
-      margin: 0 0 0.75rem;
-      color: var(--fg);
-    }
-
-    .accent-text {
-      color: var(--btn-primary-bg);
-    }
-
-    .description {
-      color: var(--muted-fg);
-      margin-bottom: 2rem;
-      max-width: 400px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--surface-border);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .card h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: var(--fg);
-    }
-
-    .card ul {
-      list-style: none;
-      text-align: left;
-    }
-
-    .card li {
-      padding: 0.5rem 0;
-      color: var(--muted-fg);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .card li::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      background: var(--btn-primary-bg);
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 500;
-      border-radius: 0.5rem;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s, transform 0.1s;
-    }
-
-    .btn-primary {
-      background: var(--btn-primary-bg);
-      color: var(--btn-primary-fg);
-    }
-
-    .btn-primary:hover {
-      filter: brightness(1.1);
-    }
-
-    .btn-primary:active {
-      transform: scale(0.98);
-    }
-
-    .btn svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    .home-link {
-      margin-top: 1rem;
-      color: var(--btn-primary-bg);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .home-link:hover {
-      text-decoration: underline;
-    }
-
-    .murphy-quote {
-      margin-top: 3rem;
-      font-style: italic;
-      color: var(--muted-fg);
-      font-size: 0.9rem;
-    }
-  </style>
+  <link rel="stylesheet" href="/styles/partials/variables.css">
+  <link rel="stylesheet" href="/styles/fallback-pages.css">
 </head>
 
-<body>
-  <div class="container">
-    <!-- Offline/Cloud Icon -->
-    <svg class="offline-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-      <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-
-    <h1 class="page-title"><span class="accent-text">You're</span> Offline</h1>
-    <p class="description">
+<body class="static-fallback">
+  <main class="static-fallback__container">
+    <h1 class="static-fallback__title"><span class="accent-text">You're</span> Offline</h1>
+    <p class="static-fallback__description">
       It looks like you've lost your internet connection. Don't worry, Murphy predicted this would happen.
     </p>
 
-    <div class="card">
+    <section class="static-fallback__card">
       <h2>What you can still do:</h2>
       <ul>
         <li>View previously browsed laws (if cached)</li>
         <li>Browse cached categories</li>
         <li>Check your favorites</li>
       </ul>
-    </div>
+    </section>
 
-    <button type="button" class="btn btn-primary" onclick="window.location.reload()">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-      </svg>
-      Try Again
-    </button>
+    <button type="button" class="static-fallback__action" data-retry>Try Again</button>
+    <a href="/" class="static-fallback__home">Go to Home</a>
 
-    <a href="/" class="home-link">Go to Home</a>
-
-    <p class="murphy-quote">
+    <p class="static-fallback__quote">
       "Anything that can go wrong will go wrong... including your internet connection."
     </p>
-  </div>
-
-  <script>
-    // Check if we're back online and reload
-    window.addEventListener('online', function() {
-      window.location.reload();
-    });
-  </script>
+  </main>
+  <script src="/offline.js"></script>
 </body>
 
 </html>

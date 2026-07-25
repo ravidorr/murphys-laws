@@ -128,9 +128,9 @@ struct AboutView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: Constants.UI.spacingL) {
+                VStack(alignment: .leading, spacing: DS.Spacing.s6) {
                     // Header
-                    VStack(spacing: Constants.UI.spacingM) {
+                    VStack(spacing: DS.Spacing.s4) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .dsTypography(DS.Typography.display)
                             .foregroundColor(DS.Color.btnPrimaryBg)
@@ -151,7 +151,7 @@ struct AboutView: View {
                     Divider()
 
                     // What is Murphy's Law
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         Text("What is Murphy's Law?")
                             .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
@@ -173,7 +173,7 @@ struct AboutView: View {
                     Divider()
 
                     // Features
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         Text("Features")
                             .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
@@ -214,7 +214,7 @@ struct AboutView: View {
                     Divider()
 
                     // Credits
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         Text("Credits")
                             .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
@@ -253,11 +253,11 @@ struct FeatureRow: View {
     let description: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: Constants.UI.spacingM) {
+        HStack(alignment: .top, spacing: DS.Spacing.s4) {
             Image(systemName: icon)
                 .dsTypography(DS.Typography.h3)
                 .foregroundColor(DS.Color.btnPrimaryBg)
-                .frame(width: 32)
+                .frame(width: DS.Spacing.s8)
 
             VStack(alignment: .leading, spacing: DS.Spacing.s1) {
                 Text(title)

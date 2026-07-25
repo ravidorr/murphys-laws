@@ -674,7 +674,7 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const resultCount = el.querySelector('#category-result-count') as HTMLElement | null;
-      expect(resultCount!.style.display).toBe('none');
+      expect(resultCount!.hidden).toBe(true);
     });
   });
 

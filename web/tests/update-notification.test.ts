@@ -191,7 +191,7 @@ describe('Update Notification Component', () => {
       // Notification should start animating out (still in DOM but with reverse animation)
       localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
       if (localThis.notification) {
-        expect(localThis.notification.style.animation).toContain('reverse');
+        expect(localThis.notification.classList.contains('pwa-notification--exiting')).toBe(true);
       }
     });
 
@@ -199,7 +199,7 @@ describe('Update Notification Component', () => {
       const notification = showUpdateNotification({ type: 'offline' });
       expect(notification.parentNode).toBe(document.body);
       vi.advanceTimersByTime(5000);
-      expect(notification.style.animation).toContain('reverse');
+      expect(notification.classList.contains('pwa-notification--exiting')).toBe(true);
     });
 
     it('setTimeout callback does nothing when notification already removed (L77 false branch)', () => {
@@ -207,7 +207,7 @@ describe('Update Notification Component', () => {
       notification.remove();
       expect(notification.parentNode).toBeNull();
       vi.advanceTimersByTime(5000);
-      expect(notification.style.animation).toBe('');
+      expect(notification.classList.contains('pwa-notification--exiting')).toBe(false);
     });
 
     it('does not auto-dismiss update notification', () => {

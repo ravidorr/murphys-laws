@@ -10,8 +10,7 @@
   ],
   "web/styles/partials/variables.css": [
     "stylelint --config web/.stylelintrc.json --fix",
-    "tsx shared/design-tokens/sync-design-tokens.ts --hook",
-    "git add web/DESIGN.md shared/DESIGN.md"
+    "tsx shared/design-tokens/sync-design-tokens.ts --hook"
   ],
   "web/**/*.html": [
     "npx html-validate --config web/.htmlvalidate.json"

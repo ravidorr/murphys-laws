@@ -41,8 +41,21 @@ interface RunExportLocalThis {
 
 function sampleCss(): string {
   return `:root {
+  --font-sans: 'Work Sans', system-ui;
+  --font-mono: ui-monospace, monospace;
   --space-1: 0.25rem;
   --space-4: 1rem;
+  --rounded-sm: 0.25rem;
+  --rounded-md: 0.375rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 9999px;
+  --component-control-min-size: 2.75rem;
+  --component-icon-button-size: 2.75rem;
+  --component-brand-badge-size: 2.75rem;
+  --component-icon-size: 1.5rem;
+  --component-button-icon-size: 1.25rem;
+  --component-checkbox-size: 1.25rem;
   --bg: #ffffff;
   --fg: #111827;
   --primary: #030213;
@@ -169,7 +182,7 @@ describe('buildDtcgDocument', () => {
     expect(bg.$type).toBe('color');
 
     const rounded = btnPrimary['rounded'] as DtcgLeafToken;
-    expect(rounded.$value).toBe('{dimension.radius.md}');
+    expect(rounded.$value).toBe('{dimension.radius.lg}');
     expect(rounded.$type).toBe('dimension');
 
     const typography = btnPrimary['typography'] as DtcgLeafToken;
@@ -177,13 +190,13 @@ describe('buildDtcgDocument', () => {
     expect(typography.$type).toBe('typography');
   });
 
-  it('round-trips every entry from the sync script COMPONENTS map', async () => {
+  it('round-trips every entry from the sync script component contracts', async () => {
     const localThis: BuildLocalThis = {};
     localThis.parsed = classifyTokens(parseCssVariables(sampleCss()));
     localThis.doc = buildDtcgDocument(localThis.parsed);
 
-    const { COMPONENTS } = await import('./sync-design-tokens.ts');
-    for (const name of Object.keys(COMPONENTS)) {
+    const { buildComponents } = await import('./sync-design-tokens.ts');
+    for (const name of Object.keys(buildComponents(localThis.parsed))) {
       expect(localThis.doc.component[name]).toBeDefined();
     }
   });

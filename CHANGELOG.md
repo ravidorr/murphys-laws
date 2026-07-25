@@ -16,7 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.2`; iOS to `1.2.2` / build `18`; Android to `1.2.3` / versionCode `10`;
   root to `2.6.0`.
 
+### Changed
+- Aligned the web, iOS, and Android implementations with the authoritative
+  cross-platform design system, added generated platform tokens and canonical
+  components, and enforced the no-React/no-inline-CSS contract in source and
+  generated web output. Backend bumped to `2.3.1`; web to `3.4.3`; iOS to
+  `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
+
 ### Fixed
+- Service-worker cache revisions now hash all generated deployable content, so
+  content-only SSG deployments install a fresh cache instead of retaining
+  stale HTML under an unchanged URL-derived revision. Only the application
+  shell and static assets are precached; generated pages use network-first
+  runtime caching.
+- Static 404 and offline pages now load a generated copy of the authoritative
+  design tokens, keeping their external fallback stylesheet fully styled in
+  production builds without inline CSS.
 - CTA labels now stay on one line, keeping text and icons side by side across
   desktop and mobile layouts. Web bumped to `3.4.2`; root to `2.6.2`.
 - Pinned iOS CI to the macOS 15 runner that provides Xcode 16.4, and stabilized

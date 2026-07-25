@@ -19,7 +19,7 @@ struct LawOfDayCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+            VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                 // Badge
                 HStack {
                     Image(systemName: "star.fill")
@@ -42,7 +42,7 @@ struct LawOfDayCard: View {
                     .dsTypography(DS.Typography.h4)
                     .foregroundColor(DS.Color.fg)
                     .multilineTextAlignment(.leading)
-                    .padding(.vertical, Constants.UI.spacingS)
+                    .padding(.vertical, DS.Spacing.s2)
 
                 // Attribution (if exists)
                 if let attribution = law.attributions?.first {
@@ -77,13 +77,19 @@ struct LawOfDayCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 LinearGradient(
-                    colors: [DS.Color.favoriteBg.opacity(0.7), DS.Color.orangeBg.opacity(0.5)],
+                    colors: [
+                        DS.Color.favoriteBg.opacity(DS.Opacity.strong),
+                        DS.Color.orangeBg.opacity(DS.Opacity.medium)
+                    ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
-            .cornerRadius(Constants.UI.cornerRadiusL)
-            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+            .overlay {
+                RoundedRectangle(cornerRadius: DS.Radius.xl)
+                    .stroke(DS.Color.favoriteBorder, lineWidth: DS.Border.standard)
+            }
         }
         .buttonStyle(.plain)
     }

@@ -24,9 +24,8 @@ struct LawDetailView: View {
         Group {
             if viewModel.isLoading && viewModel.law == nil {
                 // Show loading state
-                VStack(spacing: Constants.UI.spacingM) {
+                VStack(spacing: DS.Spacing.s4) {
                     ProgressView()
-                        .scaleEffect(1.5)
                     Text("Loading law...")
                         .dsTypography(DS.Typography.bodySm)
                         .foregroundColor(DS.Color.mutedFg)
@@ -42,9 +41,9 @@ struct LawDetailView: View {
             } else if let law = viewModel.law {
                 // Show law content
                 ScrollView {
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingL) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s6) {
                         // Law content
-                        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                             // Title (if exists)
                             if let title = law.title, !title.isEmpty {
                                 Text(title)
@@ -57,12 +56,12 @@ struct LawDetailView: View {
                             Text(law.text)
                                 .dsTypography(DS.Typography.h4)
                                 .foregroundColor(DS.Color.fg)
-                                .padding(.vertical, Constants.UI.spacingS)
+                                .padding(.vertical, DS.Spacing.s2)
 
                             // Categories
                             if let categories = law.categories, !categories.isEmpty {
                                 ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: Constants.UI.spacingS) {
+                                    HStack(spacing: DS.Spacing.s2) {
                                         ForEach(categories) { category in
                                             CategoryChip(category: category)
                                         }
@@ -75,8 +74,8 @@ struct LawDetailView: View {
                         Divider()
 
                         // Voting section
-                        VStack(spacing: Constants.UI.spacingM) {
-                            HStack(spacing: Constants.UI.spacingL) {
+                        VStack(spacing: DS.Spacing.s4) {
+                            HStack(spacing: DS.Spacing.s6) {
                                 // Upvote button
                                 VoteButton(
                                     voteType: .up,
@@ -108,7 +107,7 @@ struct LawDetailView: View {
 
                         // Attribution section
                         if let attributions = law.attributions, !attributions.isEmpty {
-                            VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                            VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                                 Text("Attribution")
                                     .dsTypography(DS.Typography.h4)
                                     .foregroundColor(DS.Color.fg)
@@ -189,7 +188,7 @@ struct VoteButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: Constants.UI.spacingS) {
+            VStack(spacing: DS.Spacing.s2) {
                 Image(systemName: voteType.iconName)
                     .dsTypography(DS.Typography.h3)
                     .foregroundColor(isSelected ? iconColor : DS.Color.mutedFg)
@@ -202,11 +201,8 @@ struct VoteButton: View {
                     .dsTypography(DS.Typography.caption)
                     .foregroundColor(DS.Color.mutedFg)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(isSelected ? iconColor.opacity(0.1) : DS.Color.surface)
-            .cornerRadius(Constants.UI.cornerRadiusM)
         }
+        .buttonStyle(DSVoteButtonStyle(color: iconColor, isSelected: isSelected))
         .accessibilityIdentifier(voteType.displayName)
         .accessibilityLabel(voteType.displayName)
         .accessibilityValue("\(count) votes")
@@ -232,11 +228,11 @@ struct CategoryChip: View {
             Text(category.title)
                 .dsTypography(DS.Typography.caption)
         }
-        .padding(.horizontal, Constants.UI.spacingM)
-        .padding(.vertical, Constants.UI.spacingS)
-        .background(category.iconColor.opacity(0.2))
+        .padding(.horizontal, DS.Spacing.s4)
+        .padding(.vertical, DS.Spacing.s2)
+        .background(category.iconColor.opacity(DS.Opacity.soft))
         .foregroundColor(category.iconColor)
-        .cornerRadius(Constants.UI.cornerRadiusM)
+        .clipShape(Capsule())
     }
 }
 

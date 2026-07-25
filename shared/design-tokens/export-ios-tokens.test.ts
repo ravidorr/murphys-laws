@@ -48,8 +48,22 @@ interface RunLocalThis {
 
 function sampleCss(): string {
   return `:root {
+  --font-sans: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
   --space-1: 0.25rem;
+  --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
+  --rounded-sm: 0.25rem;
+  --rounded-md: 0.375rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 9999px;
+  --component-control-min-size: 2.75rem;
+  --component-icon-button-size: 2.75rem;
+  --component-brand-badge-size: 2.75rem;
+  --component-icon-size: 1.5rem;
+  --component-button-icon-size: 1.25rem;
+  --component-checkbox-size: 1.25rem;
 
   --bg: #ffffff;
   --fg: #111827;
@@ -362,6 +376,19 @@ describe('buildIosArtifacts', () => {
     expect(swift).toContain('public static let mutedFg ='); // identifier camelCased
   });
 
+  it('renders the formula stylesheet from shared color, typography, spacing, and font tokens', () => {
+    const parsed = classifyTokens(parseCssVariables(sampleCss()));
+    const { formulaCss } = buildIosArtifacts(parsed);
+
+    expect(formulaCss).toContain('--formula-fg: #111827');
+    expect(formulaCss).toContain('--formula-text-base: 16px');
+    expect(formulaCss).toContain('--formula-space-5: 20px');
+    expect(formulaCss).toContain(
+      "font-family: 'Work Sans', ui-sans-serif, system-ui, sans-serif",
+    );
+    expect(formulaCss).toContain('padding-right: var(--formula-space-5)');
+  });
+
   it('renders typography levels with pre-computed additive lineSpacing for SwiftUI', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { swift } = buildIosArtifacts(parsed);
@@ -382,13 +409,13 @@ describe('buildIosArtifacts', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { swift } = buildIosArtifacts(parsed);
     expect(swift).toContain(
-      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 48).weight(.bold)',
+      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 48, relativeTo: .largeTitle).weight(.bold)',
     );
     expect(swift).toContain(
-      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 16).weight(.regular)',
+      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 16, relativeTo: .body).weight(.regular)',
     );
     expect(swift).toContain(
-      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 12).weight(.medium)',
+      'font: SwiftUI.Font.custom("WorkSans-Regular", size: 12, relativeTo: .caption).weight(.medium)',
     );
     // Guard against a regression to Font.system.
     expect(swift).not.toContain('Font.system(size:');
@@ -425,6 +452,9 @@ describe('runIosExport', () => {
     expect(localThis.code).toBe(0);
     expect(
       localThis.written!.has('/virt/ios/DesignSystem/Tokens.swift'),
+    ).toBe(true);
+    expect(
+      localThis.written!.has('/virt/ios/Resources/math-formula.css'),
     ).toBe(true);
     expect(
       localThis.written!.has('/virt/ios/Assets.xcassets/DS/Contents.json'),

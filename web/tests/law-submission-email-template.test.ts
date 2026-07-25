@@ -100,11 +100,11 @@ describe('Law submission email template', () => {
       const html = lawSubmissionTemplate.createLawSubmissionEmailHtml(lawData);
 
       expect(html).toContain('<h2>New Murphy\'s Law Submitted!</h2>');
-      expect(html).toContain('Law ID:</td><td style="padding: 8px;">123');
-      expect(html).toContain('Title:</td><td style="padding: 8px;">Murphy&#39;s First Law');
-      expect(html).toContain('Text:</td><td style="padding: 8px;">Anything that can go wrong will go wrong.');
-      expect(html).toContain('Author:</td><td style="padding: 8px;">Edward Murphy');
-      expect(html).toContain('Email:</td><td style="padding: 8px;">murphy@example.com');
+      expect(html).toContain('Law ID:</th><td>123');
+      expect(html).toContain('Title:</th><td>Murphy&#39;s First Law');
+      expect(html).toContain('Text:</th><td>Anything that can go wrong will go wrong.');
+      expect(html).toContain('Author:</th><td>Edward Murphy');
+      expect(html).toContain('Email:</th><td>murphy@example.com');
       expect(html).toContain('<a href="http://murphys-laws.com/admin">Review submissions</a>');
     });
 
@@ -116,11 +116,11 @@ describe('Law submission email template', () => {
 
       const html = lawSubmissionTemplate.createLawSubmissionEmailHtml(lawData);
 
-      expect(html).toContain('Law ID:</td><td style="padding: 8px;">456');
+      expect(html).toContain('Law ID:</th><td>456');
       expect(html).toContain('<em>(no title)</em>');
-      expect(html).toContain('Text:</td><td style="padding: 8px;">The law text only.');
-      expect(html).toContain('Author:</td><td style="padding: 8px;">Anonymous');
-      expect(html).toContain('Email:</td><td style="padding: 8px;">Not provided');
+      expect(html).toContain('Text:</th><td>The law text only.');
+      expect(html).toContain('Author:</th><td>Anonymous');
+      expect(html).toContain('Email:</th><td>Not provided');
     });
 
     it('escapes HTML to prevent XSS attacks', () => {
@@ -206,7 +206,7 @@ describe('Law submission email template', () => {
       expect(html).toContain(`href="${url}"`);
     });
 
-    it('preserves table structure in HTML', () => {
+    it('preserves semantic table structure without inline CSS', () => {
       const lawData = {
         id: 222,
         text: 'Test law'
@@ -214,9 +214,10 @@ describe('Law submission email template', () => {
 
       const html = lawSubmissionTemplate.createLawSubmissionEmailHtml(lawData);
 
-      expect(html).toContain('<table style="border-collapse: collapse; margin: 20px 0;">');
-      expect(html).toContain('<tr><td style="padding: 8px; font-weight: bold;">');
+      expect(html).toContain('<table>');
+      expect(html).toContain('<tr><th scope="row">');
       expect(html).toMatch(/<\/table>/);
+      expect(html).not.toContain('style=');
     });
 
     it('includes npm run review instruction', () => {

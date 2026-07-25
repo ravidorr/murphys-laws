@@ -96,9 +96,8 @@ struct AccessibleLoadingView: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: Constants.UI.spacingM) {
+        VStack(spacing: DS.Spacing.s4) {
             ProgressView()
-                .scaleEffect(1.5)
             Text(message)
                 .dsTypography(DS.Typography.bodyMd)
                 .foregroundColor(DS.Color.mutedFg)
@@ -157,7 +156,7 @@ extension View {
 }
 
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: DS.Spacing.s5) {
         AccessibleLoadingView(message: "Loading laws...")
 
         Button("Sample Button") {

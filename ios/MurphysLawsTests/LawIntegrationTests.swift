@@ -59,6 +59,8 @@ struct LawIntegrationTests {
     @Test("User can vote on a law")
     func testVotingOnLaw() async throws {
         let votingService = VotingService.shared
+        votingService.clearAllVotes()
+        defer { votingService.clearAllVotes() }
 
         // Initially no vote
         let initialVote = votingService.getVote(for: 1)

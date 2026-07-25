@@ -3,6 +3,10 @@
    ========================== */
 
 :root {
+  /* Font families */
+  --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', consolas, 'Liberation Mono', monospace;
+
   /* Spacing scale (based on 4px base unit) */
   --space-1: 0.25rem;   /* 4px */
   --space-2: 0.5rem;    /* 8px */
@@ -14,6 +18,21 @@
   --space-10: 2.5rem;   /* 40px */
   --space-12: 3rem;     /* 48px */
   --space-16: 4rem;     /* 64px */
+
+  /* Shape scale */
+  --rounded-sm: 0.25rem;     /* 4px: checkboxes and compact details */
+  --rounded-md: 0.375rem;    /* 6px: brand badge and tooltips */
+  --rounded-lg: 0.5rem;      /* 8px: buttons and form controls */
+  --rounded-xl: 0.75rem;     /* 12px: cards, dropdowns, and modals */
+  --rounded-full: 624.9375rem; /* 9999px: pills and circles */
+
+  /* Shared component metrics */
+  --component-control-min-size: 2.75rem; /* 44px */
+  --component-icon-button-size: 2.75rem; /* 44px */
+  --component-brand-badge-size: 2.75rem; /* 44px */
+  --component-icon-size: 1.5rem;         /* 24px */
+  --component-button-icon-size: 1.25rem; /* 20px */
+  --component-checkbox-size: 1.25rem;    /* 20px */
 
   /* Typography scale (Major Third 1.25 ratio) */
   --text-xs: 0.75rem;     /* 12px */
@@ -46,7 +65,10 @@
   --muted-fg: #4b5563; /* Darker grey for better contrast (was #6b7280) */
   --primary: #030213;
   --text-high-contrast: #000; /* For text requiring high contrast (WCAG AA) */
-  --border: rgb(0 0 0 / 25%); /* Increased opacity for visibility */
+  --border: #00000040; /* Increased opacity for visibility */
+  --control-border: #0000002e;
+  --control-surface: #00000006;
+  --overlay-scrim: #0009;
   --surface: #fff;
   --surface-border: #d1d5db;
   --link: #0d5ea1;
@@ -97,6 +119,7 @@
   /* UI colors */
   --white: #fff;
   --highlight: #fef08a;
+  --highlight-fg: #111827;
   --tooltip-bg: #1f2937;
   --tooltip-fg: #f9fafb;
   --tooltip-bg-inverse: #fff;
@@ -117,12 +140,20 @@
   --gradient-dark-2: #1a1a1a;
   
   /* Shadow colors */
-  --shadow-light: rgb(0 0 0 / 15%);
-  --shadow-medium: rgb(0 0 0 / 20%);
-  --shadow-dark: rgb(0 0 0 / 30%);
-  --shadow-blue: rgb(13 94 161 / 30%);
-  --shadow-blue-dark: rgb(13 94 161 / 40%);
-  --shadow-white-inset: rgb(255 255 255 / 10%);
+  --shadow-subtle: #0000001a;
+  --shadow-light: #00000026;
+  --shadow-medium: #0003;
+  --shadow-dark: #0000004d;
+  --shadow-blue: #0d5ea14d;
+  --shadow-blue-dark: #0d5ea166;
+  --shadow-blue-transparent: #0d5ea100;
+  --shadow-white-subtle: #ffffff0f;
+  --shadow-white-faint: #ffffff14;
+  --shadow-white-inset: #ffffff1a;
+  --shadow-white-outline: #ffffff24;
+  --shadow-high-contrast-light: #00000040;
+  --shadow-high-contrast-medium: #00000059;
+  --border-high-contrast-dark: #ffffff80;
   
   /* Dark mode specific colors */
   --dark-bg-primary: #0b0b11;
@@ -130,12 +161,18 @@
   --dark-muted-fg: #9ca3af; /* Lightened grey for dark mode contrast */
   --dark-primary: #6366f1; /* Lightened primary for dark mode */
   --dark-text-high-contrast: #fff; /* For text requiring high contrast in dark mode */
-  --dark-border: rgb(255 255 255 / 25%);
+  --dark-border: #ffffff40;
+  --dark-border-muted: #ffffff38;
+  --dark-border-strong: #ffffff52;
+  --dark-border-hover: #ffffff59;
   --dark-surface: #15151d;
   --dark-surface-border: #4b5563;
   --dark-link: #9ecbff;
   --dark-link-visited: #b8a6ff;
   --dark-link-hover: #cfe5ff;
+  --dark-accent: #a5b4fc;
+  --dark-error: #f87171;
+  --dark-success: #4ade80;
   
   /* Dark mode semantic colors */
   --dark-success-bg: #103424;

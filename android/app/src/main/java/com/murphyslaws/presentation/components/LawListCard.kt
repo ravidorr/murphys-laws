@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.murphyslaws.domain.model.Law
+import com.murphyslaws.ui.components.DSCard
 import com.murphyslaws.ui.theme.DS
 
 @Composable
@@ -18,13 +19,10 @@ fun LawListCard(
     law: Law,
     onClick: () -> Unit
 ) {
-    Card(
+    DSCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
     ) {
         Column(
             modifier = Modifier.padding(DS.Spacing.s4),
@@ -60,7 +58,7 @@ fun LawListCard(
                         Icons.Default.ThumbUp,
                         contentDescription = null,
                         tint = DS.Color.success,
-                        modifier = Modifier.size(DS.Spacing.s4)
+                        modifier = Modifier.size(DS.Component.iconSize)
                     )
                     Text(
                         text = law.upvotes.toString(),
@@ -77,7 +75,7 @@ fun LawListCard(
                         Icons.Default.ThumbDown,
                         contentDescription = null,
                         tint = DS.Color.error,
-                        modifier = Modifier.size(DS.Spacing.s4)
+                        modifier = Modifier.size(DS.Component.iconSize)
                     )
                     Text(
                         text = law.downvotes.toString(),

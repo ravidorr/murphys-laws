@@ -10,10 +10,6 @@ export const LAW_CARD_MIN_HEIGHT = 400; // px - Space for 3 law cards (~120px ea
 export const LAW_CARD_ITEM_HEIGHT = 120; // px - Approximate height of each law card
 export const WIDGET_CARD_COUNT = 3; // Number of laws to display in widget cards
 
-// MathJax configuration
-export const MATHJAX_POLL_INTERVAL = 50; // ms - Interval to poll for MathJax initialization
-export const MATHJAX_MAX_ATTEMPTS = 200; // Maximum attempts to wait for MathJax (10 seconds total)
-
 // Site metadata
 export const SITE_NAME = "Murphy's Law Archive";
 

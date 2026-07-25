@@ -20,7 +20,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--rounded-lg);
   box-shadow: 0 4px 12px var(--shadow-medium), 0 2px 4px var(--shadow-light);
   pointer-events: auto;
   opacity: 0;
@@ -59,8 +59,8 @@
 
 .notification-icon {
   flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: var(--component-button-icon-size);
+  height: var(--component-button-icon-size);
 }
 
 .notification-success .notification-icon {
@@ -72,8 +72,8 @@
 }
 
 .notification-message {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
   line-height: 1.4;
   padding-top: 0.125rem;
 }
@@ -90,9 +90,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem; /* Match button height (44px) */
-  border-radius: 0.25rem;
+  width: var(--component-icon-button-size);
+  height: var(--component-icon-button-size);
+  border-radius: var(--rounded-lg);
 }
 
 .notification-close:hover {
@@ -107,8 +107,8 @@
 }
 
 .notification-close svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: var(--component-button-icon-size);
+  height: var(--component-button-icon-size);
 }
 
 /* Mobile responsive */

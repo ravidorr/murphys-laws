@@ -1,8 +1,6 @@
 package com.murphyslaws.presentation.calculators
 
 import android.content.Intent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,36 +8,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.murphyslaws.domain.model.RiskLevel
+import com.murphyslaws.ui.components.DSButton
+import com.murphyslaws.ui.components.DSOutlinedButton
+import com.murphyslaws.ui.components.DSResultCard
 import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +53,7 @@ fun CalculatorsScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val riskPresentation = viewModel.riskLevel.presentation
 
     Scaffold(
         topBar = {
@@ -79,37 +84,33 @@ fun CalculatorsScreen(
             )
 
             // Result Card
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = viewModel.riskLevel.color.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(DS.Radius.xl)
-                    )
-                    .border(
-                        width = DS.Spacing.s1 / 2,
-                        color = viewModel.riskLevel.color.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(DS.Radius.xl)
-                    )
-                    .padding(DS.Spacing.s6),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
+            DSResultCard(
+                tint = riskPresentation.color,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = viewModel.riskLevel.emoji,
-                    style = DS.Typography.display
-                )
-                Text(
-                    text = "${String.format(java.util.Locale.US, "%.1f", viewModel.probability)}%",
-                    style = DS.Typography.display,
-                    fontWeight = FontWeight.Bold,
-                    color = viewModel.riskLevel.color
-                )
-                Text(
-                    text = viewModel.riskLevel.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(
+                    modifier = Modifier.padding(DS.Spacing.s6),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
+                ) {
+                    Icon(
+                        imageVector = riskPresentation.icon,
+                        contentDescription = null,
+                        tint = riskPresentation.color,
+                        modifier = Modifier.size(DS.Component.iconSize)
+                    )
+                    Text(
+                        text = "${String.format(java.util.Locale.US, "%.1f", viewModel.probability)}%",
+                        style = DS.Typography.display,
+                        fontWeight = FontWeight.Bold,
+                        color = riskPresentation.color
+                    )
+                    Text(
+                        text = riskPresentation.label,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // Sliders
@@ -157,7 +158,7 @@ fun CalculatorsScreen(
 
             // Actions
             Column(verticalArrangement = Arrangement.spacedBy(DS.Spacing.s3)) {
-                Button(
+                DSButton(
                     onClick = {
                         val sendIntent: Intent = Intent().apply {
                             action = Intent.ACTION_SEND
@@ -169,12 +170,16 @@ fun CalculatorsScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Filled.Share, contentDescription = null)
+                    Icon(
+                        Icons.Filled.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(DS.Component.buttonIconSize)
+                    )
                     Spacer(modifier = Modifier.width(DS.Spacing.s2))
                     Text("Share Results")
                 }
 
-                OutlinedButton(
+                DSOutlinedButton(
                     onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "message/rfc822" // Email MIME type
@@ -192,16 +197,24 @@ fun CalculatorsScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Filled.Email, contentDescription = null)
+                    Icon(
+                        Icons.Filled.Email,
+                        contentDescription = null,
+                        modifier = Modifier.size(DS.Component.buttonIconSize)
+                    )
                     Spacer(modifier = Modifier.width(DS.Spacing.s2))
                     Text("Email Results")
                 }
 
-                TextButton(
+                DSOutlinedButton(
                     onClick = viewModel::reset,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Filled.Refresh, contentDescription = null)
+                    Icon(
+                        Icons.Filled.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(DS.Component.buttonIconSize)
+                    )
                     Spacer(modifier = Modifier.width(DS.Spacing.s2))
                     Text("Reset")
                 }
@@ -212,3 +225,28 @@ fun CalculatorsScreen(
         }
     }
 }
+
+private data class RiskPresentation(
+    val label: String,
+    val icon: ImageVector,
+    val color: Color
+)
+
+private val RiskLevel.presentation: RiskPresentation
+    get() = when (this) {
+        RiskLevel.LOW -> RiskPresentation(
+            label = "Low risk of failure",
+            icon = Icons.Filled.CheckCircle,
+            color = DS.Color.riskLow
+        )
+        RiskLevel.MEDIUM -> RiskPresentation(
+            label = "Moderate risk of failure",
+            icon = Icons.Filled.Warning,
+            color = DS.Color.riskMedium
+        )
+        RiskLevel.HIGH -> RiskPresentation(
+            label = "High risk of failure",
+            icon = Icons.Filled.Error,
+            color = DS.Color.riskHigh
+        )
+    }

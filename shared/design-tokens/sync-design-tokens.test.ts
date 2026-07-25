@@ -38,10 +38,26 @@ interface RunLocalThis {
 
 function sampleCss(): string {
   return `:root {
+  --font-sans: 'Work Sans', system-ui;
+  --font-mono: ui-monospace, monospace;
+
   /* Spacing scale */
   --space-1: 0.25rem;   /* 4px */
   --space-4: 1rem;      /* 16px */
   --space-16: 4rem;     /* 64px */
+
+  --rounded-sm: 0.25rem;
+  --rounded-md: 0.375rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 9999px;
+
+  --component-control-min-size: 2.75rem;
+  --component-icon-button-size: 2.75rem;
+  --component-brand-badge-size: 2.75rem;
+  --component-icon-size: 1.5rem;
+  --component-button-icon-size: 1.25rem;
+  --component-checkbox-size: 1.25rem;
 
   /* Colors - hex OK */
   --bg: #fff;
@@ -161,6 +177,16 @@ describe('classifyTokens', () => {
     expect(localThis.classified.spacing.get('16')).toBe('64px');
   });
 
+  it('classifies radius, component metrics, and font families', () => {
+    const classified = classifyTokens(parseCssVariables(sampleCss()));
+
+    expect(classified.rounded.get('lg')).toBe('8px');
+    expect(classified.rounded.get('full')).toBe('9999px');
+    expect(classified.componentMetrics.get('control-min-size')).toBe('44px');
+    expect(classified.componentMetrics.get('checkbox-size')).toBe('20px');
+    expect(classified.fontFamilies.get('sans')).toBe("'Work Sans', system-ui");
+  });
+
   it('accepts px values directly in --space-* and preserves them', () => {
     const localThis: ClassifyLocalThis = {};
     localThis.vars = new Map([['space-2', '8px']]);
@@ -197,6 +223,8 @@ describe('renderFrontMatter', () => {
     expect(localThis.yaml).toContain('  "1": "4px"');
     expect(localThis.yaml).toContain('components:');
     expect(localThis.yaml).toContain('  btn-primary:');
+    expect(localThis.yaml).toContain('    rounded: "{rounded.lg}"');
+    expect(localThis.yaml).toContain('    height: "44px"');
     expect(localThis.yaml).toContain(
       '    backgroundColor: "{colors.btn-primary-bg}"',
     );
@@ -216,7 +244,7 @@ describe('renderFrontMatter', () => {
     expect(localThis.yaml).toContain('\n  search-autocomplete:\n');
 
     expect(localThis.yaml).toContain(
-      '  search-autocomplete:\n    backgroundColor: "{colors.surface}"\n    textColor: "{colors.fg}"\n    rounded: "{rounded.lg}"\n    typography: "{typography.body-md}"',
+      '  search-autocomplete:\n    backgroundColor: "{colors.surface}"\n    textColor: "{colors.fg}"\n    rounded: "{rounded.xl}"\n    typography: "{typography.body-md}"',
     );
   });
 
@@ -246,6 +274,9 @@ describe('renderFrontMatter', () => {
         ['alpha-extra', '#654321'],
       ]),
       spacing: new Map(),
+      rounded: new Map(),
+      componentMetrics: new Map(),
+      fontFamilies: new Map(),
     };
     localThis.yaml = renderFrontMatter(localThis.parsed);
 
@@ -262,6 +293,9 @@ describe('renderFrontMatter', () => {
     localThis.parsed = {
       colors: new Map(),
       spacing: new Map([['1', '4px']]),
+      rounded: new Map(),
+      componentMetrics: new Map(),
+      fontFamilies: new Map(),
     };
     localThis.yaml = renderFrontMatter(localThis.parsed);
 

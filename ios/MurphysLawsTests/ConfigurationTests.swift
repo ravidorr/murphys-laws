@@ -64,27 +64,29 @@ final class ConfigurationTests: XCTestCase {
     // MARK: - UI Constants Tests
 
     func testUISpacing() {
-        XCTAssertEqual(Constants.UI.spacingXS, DS.Spacing.s1)
-        XCTAssertEqual(Constants.UI.spacingS, DS.Spacing.s2)
-        XCTAssertEqual(Constants.UI.spacingM, DS.Spacing.s4)
-        XCTAssertEqual(Constants.UI.spacingL, DS.Spacing.s6)
-        XCTAssertEqual(Constants.UI.spacingXL, DS.Spacing.s8)
+        XCTAssertEqual(DS.Spacing.s1, 4)
+        XCTAssertEqual(DS.Spacing.s2, 8)
+        XCTAssertEqual(DS.Spacing.s4, 16)
+        XCTAssertEqual(DS.Spacing.s6, 24)
+        XCTAssertEqual(DS.Spacing.s8, 32)
 
         // Verify spacing increases
-        XCTAssertLessThan(Constants.UI.spacingXS, Constants.UI.spacingS)
-        XCTAssertLessThan(Constants.UI.spacingS, Constants.UI.spacingM)
-        XCTAssertLessThan(Constants.UI.spacingM, Constants.UI.spacingL)
-        XCTAssertLessThan(Constants.UI.spacingL, Constants.UI.spacingXL)
+        XCTAssertLessThan(DS.Spacing.s1, DS.Spacing.s2)
+        XCTAssertLessThan(DS.Spacing.s2, DS.Spacing.s4)
+        XCTAssertLessThan(DS.Spacing.s4, DS.Spacing.s6)
+        XCTAssertLessThan(DS.Spacing.s6, DS.Spacing.s8)
     }
 
     func testUICornerRadius() {
-        XCTAssertEqual(Constants.UI.cornerRadiusS, DS.Radius.lg)
-        XCTAssertEqual(Constants.UI.cornerRadiusM, DS.Radius.xl)
-        XCTAssertEqual(Constants.UI.cornerRadiusL, DS.Radius.xl)
+        XCTAssertEqual(DS.Radius.sm, 4)
+        XCTAssertEqual(DS.Radius.md, 6)
+        XCTAssertEqual(DS.Radius.lg, 8)
+        XCTAssertEqual(DS.Radius.xl, 12)
 
         // Verify corner radius stays on the shared DS scale
-        XCTAssertLessThan(Constants.UI.cornerRadiusS, Constants.UI.cornerRadiusM)
-        XCTAssertEqual(Constants.UI.cornerRadiusM, Constants.UI.cornerRadiusL)
+        XCTAssertLessThan(DS.Radius.sm, DS.Radius.md)
+        XCTAssertLessThan(DS.Radius.md, DS.Radius.lg)
+        XCTAssertLessThan(DS.Radius.lg, DS.Radius.xl)
     }
 
     func testUIAnimationDuration() {
