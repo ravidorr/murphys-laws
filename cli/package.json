@@ -54,7 +54,7 @@
     "jiti": "^2.6.1",
     "tsx": "^4.20.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.56.0",
+    "typescript-eslint": "8.65.0",
     "vitest": "^4.0.18"
   }
 }

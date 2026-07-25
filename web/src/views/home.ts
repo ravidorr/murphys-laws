@@ -4,8 +4,6 @@ import { LawOfTheDay } from '@components/law-of-day.ts';
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.ts';
 import { Trending } from '@components/trending.ts';
 import { fetchLawOfTheDay } from '../utils/api.ts';
-import { createErrorState } from '../utils/dom.ts';
-import { renderLoadingHTML } from '../components/loading.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { hydrateIcons } from '@utils/icons.ts';
@@ -14,6 +12,11 @@ import { exposeExperiment, getExperimentVariant, HOME_MODULE_ORDER_EXPERIMENT, t
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.d.ts';
 
 type OnSearch = (filters: SearchFilters) => void;
+type DailyLawState = 'loading' | 'ready' | 'empty' | 'error';
+
+interface RenderHomeOptions {
+  dailyLawState?: DailyLawState;
+}
 
 const ARCHIVE_SEARCH_HTML = `
   <section class="section card card--section section-card mb-12 browse-cta" data-home-zone="archive-search" aria-labelledby="browse-cta-heading">
@@ -77,9 +80,53 @@ const SUBMIT_CTA_HTML = `
   </section>
 `;
 
+function renderDailyLawZone(
+  zone: HTMLElement,
+  law: Law | null,
+  onNavigate: OnNavigate,
+  requestedState: DailyLawState
+): void {
+  const state = requestedState === 'ready' && !law ? 'empty' : requestedState;
+  zone.replaceChildren();
+  zone.dataset.dailyLawState = state;
+  zone.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+
+  if (state === 'loading' || (state === 'ready' && law)) {
+    zone.appendChild(LawOfTheDay({ law, onNavigate }));
+    return;
+  }
+
+  const fallback = document.createElement('section');
+  fallback.className = 'section card card--section section-card mb-12';
+  const message = state === 'error'
+    ? 'The daily law could not be loaded. The rest of the archive is still available.'
+    : 'There is no daily law available right now. Explore the complete archive instead.';
+  const action = state === 'error'
+    ? '<button type="button" class="btn outline" data-action="retry">Try Again</button>'
+    : '<a href="/browse" class="btn outline" data-nav="browse">Browse All Laws</a>';
+
+  fallback.innerHTML = `
+    <div class="section-header">
+      <h2 class="section-title"><span class="accent-text">Murphy's</span> Law of the Day</h2>
+    </div>
+    <div class="section-body">
+      <p>${message}</p>
+      ${action}
+    </div>
+  `;
+  zone.appendChild(fallback);
+}
+
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
-export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories: unknown, onNavigate: OnNavigate, onSearch?: OnSearch): void {
+export function renderHome(
+  el: HTMLElement,
+  lawOfTheDay: Law | null,
+  _categories: unknown,
+  onNavigate: OnNavigate,
+  onSearch?: OnSearch,
+  options: RenderHomeOptions = {}
+): void {
   el.innerHTML = '';
 
   // Primary discovery zone
@@ -100,13 +147,16 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
     });
   }
 
-  if (lawOfTheDay) {
-    const lawZone = document.createElement('section');
-    lawZone.setAttribute('data-home-zone', 'law-of-day');
-    const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
-    lawZone.appendChild(widget);
-    el.appendChild(lawZone);
-  }
+  const lawZone = document.createElement('div');
+  lawZone.className = 'min-h-400';
+  lawZone.setAttribute('data-home-zone', 'law-of-day');
+  renderDailyLawZone(
+    lawZone,
+    lawOfTheDay,
+    onNavigate,
+    options.dailyLawState ?? (lawOfTheDay ? 'ready' : 'empty')
+  );
+  el.appendChild(lawZone);
 
   const categoryWrap = document.createElement('div');
   categoryWrap.innerHTML = CATEGORY_DISCOVERY_HTML;
@@ -145,15 +195,22 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
   el.className = 'container page pt-0 min-h-400';
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = renderLoadingHTML({ size: 'large' });
+  renderHome(el, null, [], onNavigate, onSearch, { dailyLawState: 'loading' });
 
   function fetchAndRender() {
+    const lawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+    if (lawZone) {
+      renderDailyLawZone(lawZone, null, onNavigate, 'loading');
+    }
+
     fetchLawOfTheDay()
-      .catch((): null => null)
       .then((lawJson): void => {
         const lawOfTheDay = lawJson && lawJson.data && lawJson.data[0] ? lawJson.data[0] : null;
-        
-        renderHome(el, lawOfTheDay, [], onNavigate, onSearch);
+
+        const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+        if (currentLawZone) {
+          renderDailyLawZone(currentLawZone, lawOfTheDay, onNavigate, lawOfTheDay ? 'ready' : 'empty');
+        }
         // Signal that meaningful content is ready for ads - pass element for validation
         triggerAdSense(el);
 
@@ -169,18 +226,16 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
         }
       })
       .catch(() => {
-        el.innerHTML = '';
-        const errorEl = createErrorState('Ironically, something went wrong while loading Murphy\'s Laws. Please try again.');
-        const retryBtn = errorEl.querySelector('button.btn.outline');
-        if (retryBtn) {
-          retryBtn.removeAttribute('onclick');
-          retryBtn.setAttribute('data-action', 'retry');
+        const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+        if (currentLawZone) {
+          renderDailyLawZone(currentLawZone, null, onNavigate, 'error');
         }
-        el.appendChild(errorEl);
+        clearExportContent();
+        triggerAdSense(el);
       });
   }
 
-  // Initial render: loading, then fetch
+  // The complete page structure is already rendered; only the reserved daily-law slot changes.
   fetchAndRender();
 
   el.addEventListener('click', (e) => {
