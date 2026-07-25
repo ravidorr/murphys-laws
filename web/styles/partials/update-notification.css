@@ -8,8 +8,8 @@
   z-index: 10000;
   background: var(--surface);
   border: 1px solid var(--surface-border);
-  border-radius: var(--space-3);
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 10%), 0 8px 10px -6px rgb(0 0 0 / 10%);
+  border-radius: var(--rounded-xl);
+  box-shadow: 0 10px 25px -5px var(--shadow-subtle), 0 8px 10px -6px var(--shadow-subtle);
   padding: var(--space-4) var(--space-5);
   max-width: calc(100vw - 2rem);
   width: 400px;
@@ -17,6 +17,10 @@
   flex-direction: column;
   gap: var(--space-3);
   animation: pwa-slide-up 0.3s ease-out;
+}
+
+.pwa-notification--exiting {
+  animation: pwa-slide-up 300ms ease-out reverse;
 }
 
 @keyframes pwa-slide-up {
@@ -38,8 +42,8 @@
 }
 
 .pwa-notification-icon {
-  width: 24px;
-  height: 24px;
+  width: var(--component-icon-size);
+  height: var(--component-icon-size);
   flex-shrink: 0;
   color: var(--btn-primary-bg);
 }
@@ -52,7 +56,7 @@
 .pwa-notification-title {
   display: block;
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--fg);
   margin-bottom: calc(var(--space-1) / 2);
 }
@@ -71,13 +75,22 @@
 }
 
 .pwa-notification-btn {
+  min-width: var(--component-control-min-size);
+  min-height: var(--component-control-min-size);
   padding: var(--space-2) var(--space-4);
   font-size: var(--text-sm);
-  font-weight: 500;
-  border-radius: var(--space-1);
+  font-weight: var(--font-medium);
+  border-radius: var(--rounded-sm);
   border: none;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwa-notification,
+  .pwa-notification--exiting {
+    animation-duration: 1ms;
+  }
 }
 
 .pwa-notification-btn:active {

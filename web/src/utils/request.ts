@@ -62,10 +62,14 @@ async function fetchWithErrorHandling(url: string, options: RequestInit): Promis
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'TimeoutError') {
-      throw new Error('The request timed out. Please try again.');
+      throw new Error('The request timed out. Please try again.', {
+        cause: error,
+      });
     }
     // Network errors (offline, etc.)
-    throw new Error('Network error. Please check your connection and try again.');
+    throw new Error('Network error. Please check your connection and try again.', {
+      cause: error,
+    });
   }
 
   // Handle non-OK responses

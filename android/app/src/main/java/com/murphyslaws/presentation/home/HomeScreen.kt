@@ -1,6 +1,5 @@
 package com.murphyslaws.presentation.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,16 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,6 +31,11 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.murphyslaws.ui.components.DSCircularIconButton
+import com.murphyslaws.ui.components.DSBrandBadge
+import com.murphyslaws.ui.components.DSCard
+import com.murphyslaws.ui.components.DSIconButton
+import com.murphyslaws.ui.components.DSRow
 import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,10 +50,16 @@ fun HomeScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        "Murphy's Laws",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
+                    ) {
+                        DSBrandBadge()
+                        Text(
+                            "Murphy's Laws",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
                 }
             )
         }
@@ -67,45 +73,28 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(DS.Spacing.s4)
         ) {
             // Search Bar (clickable, navigates to search screen)
-            Card(
+            DSRow(
+                onClick = onNavigateToSearch,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onNavigateToSearch() },
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                border = androidx.compose.foundation.BorderStroke(
-                    DS.Spacing.s1 / 4,
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(DS.Spacing.s4),
-                    horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s3),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Search laws...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(DS.Component.iconSize)
+                )
+                Text(
+                    "Search laws...",
+                    modifier = Modifier.padding(start = DS.Spacing.s3),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // Law of the Day Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            DSCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(DS.Spacing.s4),
@@ -180,16 +169,16 @@ fun HomeScreen(
                                     horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(
+                                    DSIconButton(
                                         onClick = { viewModel.onUpvoteClicked() },
                                         enabled = !uiState.isVoting,
-                                        modifier = Modifier.size(DS.Spacing.s8)
+                                        modifier = Modifier.size(DS.Component.iconButtonSize)
                                     ) {
                                         Icon(
                                             Icons.Filled.ThumbUp,
                                             contentDescription = "Upvote",
                                             tint = DS.Color.success,
-                                            modifier = Modifier.size(DS.Spacing.s5)
+                                            modifier = Modifier.size(DS.Component.buttonIconSize)
                                         )
                                     }
                                     Text(
@@ -203,16 +192,16 @@ fun HomeScreen(
                                     horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(
+                                    DSIconButton(
                                         onClick = { viewModel.onDownvoteClicked() },
                                         enabled = !uiState.isVoting,
-                                        modifier = Modifier.size(DS.Spacing.s8)
+                                        modifier = Modifier.size(DS.Component.iconButtonSize)
                                     ) {
                                         Icon(
                                             Icons.Filled.ThumbDown,
                                             contentDescription = "Downvote",
                                             tint = DS.Color.error,
-                                            modifier = Modifier.size(DS.Spacing.s5)
+                                            modifier = Modifier.size(DS.Component.buttonIconSize)
                                         )
                                     }
                                     Text(
@@ -224,7 +213,7 @@ fun HomeScreen(
 
                             // Share Buttons
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(DS.Radius.md)
+                                horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
                             ) {
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 // Third-party brand colors are shared DS tokens.
@@ -237,7 +226,7 @@ fun HomeScreen(
                                 )
 
                                 socialButtons.forEach { (icon, color, platform) ->
-                                    Surface(
+                                    DSCircularIconButton(
                                         onClick = {
                                             val law = uiState.lawOfDay?.law
                                             if (law != null) {
@@ -253,18 +242,14 @@ fun HomeScreen(
                                                 )
                                             }
                                         },
-                                        shape = androidx.compose.foundation.shape.CircleShape,
-                                        color = color,
-                                        modifier = Modifier.size(DS.Spacing.s6 + DS.Spacing.s1)
+                                        color = color
                                     ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = icon,
-                                                contentDescription = platform.contentDescription,
-                                                tint = DS.Color.brandSocialIconFg,
-                                                modifier = Modifier.size(DS.Spacing.s6)
-                                            )
-                                        }
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = platform.contentDescription,
+                                            tint = DS.Color.brandSocialIconFg,
+                                            modifier = Modifier.size(DS.Component.iconSize)
+                                        )
                                     }
                                 }
                             }

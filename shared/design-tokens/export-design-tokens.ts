@@ -25,8 +25,7 @@ import {
   parseCssVariables,
   classifyTokens,
   TYPOGRAPHY_LEVELS,
-  ROUNDED_SCALE,
-  COMPONENTS,
+  buildComponents,
   type ClassifiedTokens,
   type TypographyLevel,
 } from './sync-design-tokens.ts';
@@ -58,6 +57,7 @@ export interface DtcgDocument {
   $description: string;
   color: DtcgGroup;
   dimension: DtcgGroup;
+  fontFamily: DtcgGroup;
   typography: DtcgGroup;
   component: DtcgGroup;
 }
@@ -88,8 +88,18 @@ export function buildDtcgDocument(parsed: ClassifiedTokens): DtcgDocument {
   }
 
   const radius: DtcgGroup = {};
-  for (const [name, dim] of Object.entries(ROUNDED_SCALE)) {
+  for (const [name, dim] of parsed.rounded) {
     radius[name] = { $value: dim, $type: 'dimension' };
+  }
+
+  const componentMetric: DtcgGroup = {};
+  for (const [name, dim] of parsed.componentMetrics) {
+    componentMetric[name] = { $value: dim, $type: 'dimension' };
+  }
+
+  const fontFamily: DtcgGroup = {};
+  for (const [name, family] of parsed.fontFamilies) {
+    fontFamily[name] = { $value: family, $type: 'fontFamily' };
   }
 
   const typography: DtcgGroup = {};
@@ -98,7 +108,7 @@ export function buildDtcgDocument(parsed: ClassifiedTokens): DtcgDocument {
   }
 
   const component: DtcgGroup = {};
-  for (const [name, entries] of Object.entries(COMPONENTS)) {
+  for (const [name, entries] of Object.entries(buildComponents(parsed))) {
     const group: DtcgGroup = {};
     for (const [prop, value] of Object.entries(entries)) {
       group[prop] = {
@@ -117,7 +127,8 @@ export function buildDtcgDocument(parsed: ClassifiedTokens): DtcgDocument {
       'shared/design-tokens/export-design-tokens.ts. Do not hand-edit; re-run ' +
       '`npm run design:export` to regenerate.',
     color,
-    dimension: { spacing, radius },
+    dimension: { spacing, radius, component: componentMetric },
+    fontFamily,
     typography,
     component,
   };

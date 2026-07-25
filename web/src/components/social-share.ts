@@ -578,12 +578,9 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
   };
 }
 
-// Global click handler to close popovers when clicking outside
-let globalListenersInitialized = false;
-/* v8 ignore start -- globalListenersInitialized prevents duplicate init on re-import; not testable without module reset */
-if (typeof document !== 'undefined' && !globalListenersInitialized) {
-  globalListenersInitialized = true;
-
+// Global handlers are installed once when this ES module is evaluated.
+/* v8 ignore start -- document is always defined in the browser */
+if (typeof document !== 'undefined') {
   document.addEventListener('click', () => {
     document.querySelectorAll('.share-popover.open').forEach(popover => {
       popover.classList.remove('open');

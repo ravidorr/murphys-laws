@@ -112,6 +112,8 @@ describe('Sod\'s email template helpers', () => {
     expect(self.html).toContain('&lt;5&gt;');
     expect(self.html).toContain('50% &amp; rising');
     expect(self.html).toContain('Close &lt;call&gt; &amp; stay &quot;calm&quot;');
+    expect(self.html).not.toContain('style=');
+    expect(self.html).not.toContain('<style');
   });
 
   it('strips the outer shell when building preview HTML', () => {

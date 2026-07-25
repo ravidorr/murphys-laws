@@ -14,6 +14,7 @@
   <!-- PWA theme colors for browser chrome -->
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b0b11" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="canonical" href="https://murphys-laws.com/">
   <link rel="alternate" hreflang="en" href="https://murphys-laws.com/">
   <link rel="alternate" hreflang="x-default" href="https://murphys-laws.com/">
@@ -48,82 +49,13 @@
     content="Explore Murphy's Law corollaries and experiment with interactive calculators that quantify inevitable mishaps.">
   <meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
 
-  <link rel="preload" href="styles/site.css" as="style">
-  <link rel="stylesheet" href="styles/site.css" media="print" onload="this.media='all'">
-  <noscript>
-    <link rel="stylesheet" href="styles/site.css">
-  </noscript>
+  <link rel="stylesheet" href="/styles/site.css">
   <script>
     window.dataLayer = window.dataLayer || [];
     window.gtag = window.gtag || function gtag() {
       window.dataLayer.push(arguments);
     };
   </script>
-  <!-- Critical CSS: Prevents FOUC while main stylesheet loads asynchronously -->
-  <style>
-    /* CSS Variables - must match variables.css exactly */
-    :root {
-      --bg: #fff;
-      --fg: #111827;
-      --muted-fg: #4b5563;
-      --primary: #030213;
-      --btn-primary-bg: #0d5ea1;
-      --btn-primary-fg: #fff;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --bg: #0b0b11;
-        --fg: #e9eaee;
-        --muted-fg: #9ca3af;
-        --primary: #6366f1;
-      }
-    }
-
-    :root[data-theme="dark"] {
-      --bg: #0b0b11;
-      --fg: #e9eaee;
-      --muted-fg: #9ca3af;
-      --primary: #6366f1;
-    }
-
-    /* Base styles - must match base.css exactly */
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
-    }
-    
-    /* Prevent horizontal scroll from tooltips */
-    #app {
-      overflow-x: clip;
-    }
-
-    /* Skip link for keyboard navigation */
-    .skip-link {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      background: var(--btn-primary-bg);
-      color: var(--btn-primary-fg);
-      padding: 0.75rem 1rem;
-      z-index: 9999;
-      text-decoration: none;
-      border-radius: 0 0 0.5rem 0;
-    }
-    .skip-link:focus {
-      left: 0;
-    }
-
-    /* Loading state placeholder */
-    .loading-message {
-      margin-top: 2rem;
-      color: var(--muted-fg);
-    }
-  </style>
   <!-- Apply stored theme before render to prevent flash -->
   <script>
     (function() {

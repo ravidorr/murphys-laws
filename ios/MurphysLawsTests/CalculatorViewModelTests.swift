@@ -120,7 +120,7 @@ final class CalculatorViewModelTests: XCTestCase {
         XCTAssertEqual(riskLevel.rawValue, "High")
     }
 
-    func testRiskColor_Low() {
+    func testRiskPresentation_Low() {
         // Given
         viewModel.urgency = 1.0
         viewModel.complexity = 1.0
@@ -130,15 +130,14 @@ final class CalculatorViewModelTests: XCTestCase {
 
         // When
         viewModel.calculate()
-        let color = viewModel.riskColor
+        let presentation = CalculatorRiskPresentation(viewModel.riskLevel)
 
         // Then
-        // Color should be green for low risk
-        XCTAssertNotNil(color)
-        XCTAssertEqual(color, "green")
+        XCTAssertEqual(presentation.symbolName, "checkmark.circle.fill")
+        XCTAssertEqual(presentation.description, "Low risk of failure")
     }
 
-    func testRiskColor_Medium() {
+    func testRiskPresentation_Medium() {
         // Given - Values that produce medium risk (30-60%)
         viewModel.urgency = 6.0
         viewModel.complexity = 6.0
@@ -148,18 +147,17 @@ final class CalculatorViewModelTests: XCTestCase {
 
         // When
         viewModel.calculate()
-        let color = viewModel.riskColor
+        let presentation = CalculatorRiskPresentation(viewModel.riskLevel)
 
         // Then
-        // Color should be yellow for medium risk
-        XCTAssertNotNil(color)
-        XCTAssertEqual(color, "yellow")
+        XCTAssertEqual(presentation.symbolName, "exclamationmark.triangle.fill")
+        XCTAssertEqual(presentation.description, "Moderate risk of failure")
         // Verify probability is in medium range
         XCTAssertGreaterThanOrEqual(viewModel.probability, 30)
         XCTAssertLessThan(viewModel.probability, 60)
     }
 
-    func testRiskColor_High() {
+    func testRiskPresentation_High() {
         // Given
         viewModel.urgency = 10.0
         viewModel.complexity = 10.0
@@ -169,12 +167,11 @@ final class CalculatorViewModelTests: XCTestCase {
 
         // When
         viewModel.calculate()
-        let color = viewModel.riskColor
+        let presentation = CalculatorRiskPresentation(viewModel.riskLevel)
 
         // Then
-        // Color should be red for high risk
-        XCTAssertNotNil(color)
-        XCTAssertEqual(color, "red")
+        XCTAssertEqual(presentation.symbolName, "xmark.octagon.fill")
+        XCTAssertEqual(presentation.description, "High risk of failure")
     }
 
     func testResetValues() {

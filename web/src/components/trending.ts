@@ -8,7 +8,7 @@ import { addVotingListeners } from '../utils/voting.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { renderLawCards } from '../utils/law-card-renderer.ts';
 import { initSharePopovers } from './social-share.ts';
-import { LAW_CARD_MIN_HEIGHT, WIDGET_CARD_COUNT } from '../utils/constants.ts';
+import { WIDGET_CARD_COUNT } from '../utils/constants.ts';
 import type { Law } from '../types/app.d.ts';
 
 interface DiscoveryWidgetOptions {
@@ -21,9 +21,7 @@ interface DiscoveryWidgetOptions {
  */
 export function Trending({ seenIds }: DiscoveryWidgetOptions = {}) {
   const el = document.createElement('div');
-  el.className = 'card card--law-list law-list-card';
-  // Reserve space for law cards to prevent layout shift (using LAW_CARD_MIN_HEIGHT constant)
-  el.style.minHeight = `${LAW_CARD_MIN_HEIGHT}px`;
+  el.className = 'card card--law-list law-list-card law-list-card--reserved';
 
   el.innerHTML = `
     <header class="card-header">

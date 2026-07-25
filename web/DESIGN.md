@@ -76,6 +76,32 @@ colors:
   dark-dark-fg: "#f0d6d6"
   dark-favorite-color: "#f06292"
   dark-favorite-bg: "#3c1525"
+  border: "#00000040"
+  border-high-contrast-dark: "#ffffff80"
+  control-border: "#0000002e"
+  control-surface: "#00000006"
+  dark-accent: "#a5b4fc"
+  dark-border: "#ffffff40"
+  dark-border-hover: "#ffffff59"
+  dark-border-muted: "#ffffff38"
+  dark-border-strong: "#ffffff52"
+  dark-error: "#f87171"
+  dark-success: "#4ade80"
+  highlight-fg: "#111827"
+  overlay-scrim: "#00000099"
+  shadow-blue: "#0d5ea14d"
+  shadow-blue-dark: "#0d5ea166"
+  shadow-blue-transparent: "#0d5ea100"
+  shadow-dark: "#0000004d"
+  shadow-high-contrast-light: "#00000040"
+  shadow-high-contrast-medium: "#00000059"
+  shadow-light: "#00000026"
+  shadow-medium: "#00000033"
+  shadow-subtle: "#0000001a"
+  shadow-white-faint: "#ffffff14"
+  shadow-white-inset: "#ffffff1a"
+  shadow-white-outline: "#ffffff24"
+  shadow-white-subtle: "#ffffff0f"
 typography:
   display:
     fontFamily: "Work Sans, system-ui"
@@ -144,45 +170,74 @@ components:
   btn-primary:
     backgroundColor: "{colors.btn-primary-bg}"
     textColor: "{colors.btn-primary-fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+    height: "44px"
   btn-outline:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+    height: "44px"
+  icon-button:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    width: "44px"
+    height: "44px"
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
   section-card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
   input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+    height: "44px"
+  select:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    typography: "{typography.body-md}"
+    height: "44px"
+  checkbox:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.sm}"
+    width: "20px"
+    height: "20px"
+  slider:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.full}"
+    typography: "{typography.body-md}"
+    height: "44px"
   modal:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
   nav-dropdown:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.xl}"
   brand-badge:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.white}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.md}"
+    width: "44px"
+    height: "44px"
   blockquote:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
   pagination:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
   calc-ok:
     backgroundColor: "{colors.success-bg}"
     textColor: "{colors.success-text}"
@@ -205,7 +260,7 @@ components:
   notification:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
     typography: "{typography.body-sm}"
   header:
     textColor: "{colors.fg}"
@@ -219,7 +274,7 @@ components:
   search-autocomplete:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
     typography: "{typography.body-md}"
   tooltip:
     backgroundColor: "{colors.tooltip-bg}"
@@ -244,13 +299,36 @@ components:
   bottom-navigation:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.muted-fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
     typography: "{typography.caption}"
   form-input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+  law-card-mini:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-md}"
+  category-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-md}"
+  proof-point:
+    textColor: "{colors.fg}"
+    typography: "{typography.body-sm}"
+  message:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-sm}"
+  vote-group:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    height: "44px"
 ---
 # Murphy's Law Archive - Design System
 
@@ -341,20 +419,44 @@ tokenized; the three tiers below live directly in
 
 Corner radii use a five-level scale, exposed as the `rounded` tokens
 in the YAML front matter: `sm` 4 px, `md` 6 px, `lg` 8 px, `xl` 12 px,
-`full` 9999 px (pill). Buttons use `md`, cards and modals use `lg`,
-the brand badge uses `full`. There is no "none" level: zero radius is
-a deliberate choice, not a token.
+`full` 9999 px (pill). Checkboxes use `sm`; the brand badge uses `md`;
+buttons, icon buttons, inputs, selects, and pagination use `lg`; cards,
+dropdowns, and modals use `xl`. There is no "none" level: zero radius is
+reserved for deliberate structural joins inside compound components.
+
+All interactive controls have a minimum 44 px hit area. Standard icons are
+24 px, button icons and checkboxes are 20 px, and the square brand badge is
+44 px. These values are the `--component-*` variables in `variables.css`
+and generate the native `DS.Component` namespaces.
 
 ## Components
 
-The `components` section in the YAML front matter assigns color and
-shape tokens to the core shipped components. It is not exhaustive - it
-covers the primitives that agents most often need to reproduce
-(buttons, cards, inputs, modal, brand badge, blockquote, pagination,
-tooltips, social share buttons, bottom navigation, form input, and the
-calculator state/result surfaces). Dark-mode overrides are handled in
-`theme.css`; agents should assume any component is theme-aware and use
-the `dark-*` color tokens for dark surfaces.
+The `components` section in the YAML front matter assigns color, shape,
+typography, and size tokens to the shipped primitives:
+
+- Core: button, outline button, icon button, and icon.
+- Forms: form field, input, select, checkbox, and slider.
+- Cards: card, law-card-mini, category-card, and proof-point.
+- Feedback: calculator result, message, notification, and vote group.
+- Navigation: brand badge, breadcrumb, and pagination.
+
+Dark-mode overrides are handled in `theme.css`; every component is
+theme-aware and uses semantic `dark-*` counterparts. Breadcrumb and
+pagination are web navigation patterns. Native apps use platform navigation,
+search, sheets, safe-area behavior, and system focus treatment.
+
+### States
+
+Every interactive component defines default, hover, focus-visible, pressed,
+disabled, and loading states. Form and feedback components additionally define
+success and error states. State changes use semantic attributes and predefined
+classes on web, and native control state on iOS and Android; presentation never
+depends on inline values or presentation data in domain models.
+
+Buttons and inputs use a visible blue focus ring. Hover transitions use
+150-200 ms; pressed states dim rather than move. Under
+`prefers-reduced-motion: reduce`, non-essential transitions and animations
+are removed.
 
 ## Card System
 
@@ -404,8 +506,12 @@ Use a variant class with `card` so the surface intent is explicit:
 ## Do's and Don'ts
 
 - Do keep type doing the heavy lifting. Chrome should be quiet.
+- Do use Work Sans through `--font-sans` and monospace text through
+  `--font-mono`.
 - Do use semantic color tokens (`success-*`, `error-*`, etc.) - never
   raw hex in components.
+- Do use a real icon library: 24 px by default and 20 px inside buttons.
+- Do keep every interactive target at least 44 by 44 px.
 - Do keep contrast at WCAG AA or better. The token values already pass;
   reach for them, not "close enough" shades.
 - Don't introduce Material Design 3 components or styles. Stitch will
@@ -413,8 +519,12 @@ Use a variant class with `card` so the surface intent is explicit:
   output.
 - Don't ship emojis in UI copy - ESLint and markdownlint both reject
   them repo-wide.
-- Don't use inline styles. `html-validate` blocks them; put styles in
-  the relevant partial under `web/styles/partials/`.
+- Don't use React, ReactDOM, JSX, TSX, Babel-in-browser, or React tooling.
+  Web UI is semantic HTML rendered by vanilla TypeScript DOM helpers.
+- Don't use inline CSS: no `style` attributes, `<style>` elements,
+  JavaScript `.style` mutations, CSS-in-JS, injected stylesheets, or inline
+  custom properties. Put all CSS in external partials and express runtime
+  state with semantic elements, attributes, and predefined classes.
 - Don't leave raw third-party brand colors in platform code. Add or use
   a `brand-social-*` token so web, iOS, and Android stay aligned.
 - Don't edit the YAML front matter by hand. It is regenerated from
@@ -428,20 +538,24 @@ Claude, Stitch, Figma). The authoritative values live in
 `shared/design-tokens/sync-design-tokens.ts` parses that file and regenerates
 the YAML front matter above; it does not touch this Markdown body.
 
-- **Change a color or spacing value:** edit `variables.css`, then run
+- **Change a concrete token value:** edit `variables.css`, then run
   `npm run design:sync`. CI enforces no drift via
   `npm run design:check` in `ci:web`.
-- **Change a typography level, component contract, or radius scale:**
-  edit the constants at the top of `sync-design-tokens.ts` and re-run
-  `design:sync`. These are semantic decisions that do not have a 1:1
-  representation in CSS.
+- **Change a typography level or component assignment:** edit the semantic
+  contract in `sync-design-tokens.ts` and re-run `design:sync`.
+- **Change a radius, font-family, or component metric value:** edit its CSS
+  variable; the sync and native exporters parse it directly.
+- **Generate iOS tokens:** run `npm run design:export:ios` from the repository
+  root. From `ios/`, `generate-xcode-project.sh` targets that root script with
+  `npm --prefix ..`; do not target the `web` workspace.
 - **Use Stitch for ideation:** seed Stitch with this file. Keep
   generated mockups in `web/.stitch/` (gitignored). Do not ship
   Stitch-generated HTML/CSS; translate mockups by hand into the
   vanilla-TS components under `web/src/components/`.
 - **Validate:** `npm run design:check` runs
-  `design:sync --check` for drift and `@google/design.md lint` for
-  structural correctness and WCAG contrast.
+  `design:sync --check` for drift and the repository-native DESIGN.md linter
+  for structural correctness, WCAG contrast, and cross-platform exporter
+  wiring.
 
 ## Unavoidable Platform Exceptions
 

@@ -7,6 +7,7 @@
  * - Smart timing based on user engagement
  * - Analytics tracking for install outcomes
  */
+import { hydrateIcons } from '../utils/icons.ts';
 
 /** The beforeinstallprompt event fired by the browser when a PWA can be installed */
 interface BeforeInstallPromptEvent extends Event {
@@ -455,9 +456,7 @@ export function showIOSInstallInstructions() {
         <span class="install-step-number">1</span>
         <span class="install-step-text">
           Tap the Share button
-          <svg class="install-step-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
-          </svg>
+          <span class="install-step-icon" data-icon="share"></span>
         </span>
       </div>
       <div class="install-step">
@@ -478,6 +477,7 @@ export function showIOSInstallInstructions() {
       </button>
     </div>
   `;
+  hydrateIcons(prompt);
 
   prompt.addEventListener('click', (e) => {
     const target = e.target;

@@ -9,7 +9,7 @@ import XCTest
 
 final class SubmitLawViewTests: XCTestCase {
 
-    func testSubmittingOverlayUsesStableBlackScrim() throws {
+    func testSubmittingOverlayUsesSemanticScrimToken() throws {
         let sourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -17,12 +17,12 @@ final class SubmitLawViewTests: XCTestCase {
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
 
         XCTAssertTrue(
-            source.contains("Color.black.opacity(0.3)"),
-            "Submitting overlay should dim in both light and dark mode with a stable black scrim"
+            source.contains("DS.Color.overlayScrim"),
+            "Submitting overlay should use the stable semantic scrim token"
         )
         XCTAssertFalse(
-            source.contains("DS.Color.fg.opacity(0.3)"),
-            "Adaptive foreground becomes near-white in dark mode and brightens the page"
+            source.contains(".opacity("),
+            "Submitting overlay opacity belongs in the shared color token"
         )
     }
 }

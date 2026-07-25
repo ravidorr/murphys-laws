@@ -10,29 +10,6 @@ vi.mock('@sentry/browser', () => ({
 
 import * as Sentry from '@sentry/browser';
 
-vi.mock('jspdf', () => {
-  const mockInstance = {
-    text: vi.fn(),
-    setFontSize: vi.fn(),
-    setFont: vi.fn(),
-    splitTextToSize: vi.fn((text: string) => [text]),
-    addPage: vi.fn(),
-    setPage: vi.fn(),
-    getNumberOfPages: vi.fn().mockReturnValue(1),
-    getTextWidth: vi.fn().mockReturnValue(50),
-    save: vi.fn(),
-    internal: {
-      pageSize: { getWidth: () => 210, getHeight: () => 297 }
-    }
-  };
-  const jsPDF = vi.fn(function (this: unknown) {
-    return mockInstance;
-  });
-  return { jsPDF, __getMockJsPDFInstance: () => mockInstance };
-});
-
-// Import after mocking (mock adds __getMockJsPDFInstance at runtime)
-import * as jspdfModule from 'jspdf';
 import {
   exportToPDF,
   exportToCSV,
@@ -42,21 +19,6 @@ import {
   generateFilename,
   escapeCSVValue
 } from '../src/utils/export.ts';
-
-interface MockJsPDFInstance {
-  text: ReturnType<typeof vi.fn>;
-  setFontSize: ReturnType<typeof vi.fn>;
-  setFont: ReturnType<typeof vi.fn>;
-  splitTextToSize: ReturnType<typeof vi.fn>;
-  addPage: ReturnType<typeof vi.fn>;
-  setPage: ReturnType<typeof vi.fn>;
-  getNumberOfPages: ReturnType<typeof vi.fn>;
-  getTextWidth: ReturnType<typeof vi.fn>;
-  save: ReturnType<typeof vi.fn>;
-  internal: { pageSize: { getWidth: () => number; getHeight: () => number } };
-}
-
-const mockJsPDF = (jspdfModule as typeof jspdfModule & { __getMockJsPDFInstance: () => MockJsPDFInstance }).__getMockJsPDFInstance();
 
 /** Compatible with Law for export tests */
 interface MockLaw {
@@ -192,7 +154,6 @@ describe('Export Utilities', () => {
     ];
     localThis.mockContent = '# About\n\nThis is **markdown** content with [a link](https://example.com).';
 
-    // Reset jsPDF mock
     vi.clearAllMocks();
   });
 
@@ -995,231 +956,151 @@ describe('Export Utilities', () => {
   });
 
   describe('exportToPDF', () => {
-    describe('with LAWS content type', () => {
-      it('creates PDF document', async () => {
-        const content = {
-          type: ContentType.LAWS,
-          title: 'Test Laws',
-          data: localThis.mockLaws!
-        };
+    it('downloads law content using the requested filename', async () => {
+      const content = {
+        type: ContentType.LAWS,
+        title: 'Test Laws',
+        data: localThis.mockLaws!
+      };
 
-        await exportToPDF(content);
+      await exportToPDF(content, 'custom.pdf');
 
-        expect(mockJsPDF.save).toHaveBeenCalled();
-      });
-
-      it('adds site header', async () => {
-        const content = {
-          type: ContentType.LAWS,
-          title: 'Test',
-          data: localThis.mockLaws!
-        };
-
-        await exportToPDF(content);
-
-        expect(mockJsPDF.text).toHaveBeenCalled();
-        expect(mockJsPDF.setFontSize).toHaveBeenCalledWith(18);
-      });
-
-      it('calls save with filename', async () => {
-        const content = {
-          type: ContentType.LAWS,
-          title: 'Test Laws',
-          data: localThis.mockLaws!
-        };
-
-        await exportToPDF(content, 'custom.pdf');
-
-        expect(mockJsPDF.save).toHaveBeenCalledWith('custom.pdf');
-      });
+      expect(localThis.mockAnchor!.download).toBe('custom.pdf');
+      expect(localThis.mockAnchor!.click).toHaveBeenCalledOnce();
+      expect(getBlobText()).toContain('%PDF-1.4');
+      expect(getBlobText()).toContain("Murphy's Law");
+      expect(getBlobText()).toContain('Edward A. Murphy Jr.');
     });
 
-    describe('with SINGLE_LAW content type', () => {
-      it('formats single law correctly', async () => {
-        const content = {
-          type: ContentType.SINGLE_LAW,
-          title: "Murphy's Law",
-          data: localThis.mockSingleLaw!
-        };
-
-        await exportToPDF(content);
-
-        expect(mockJsPDF.save).toHaveBeenCalled();
+    it('paginates long content exports', async () => {
+      await exportToPDF({
+        type: ContentType.CONTENT,
+        title: 'Long content',
+        data: Array.from(
+          { length: 120 },
+          (_, index) => `# Heading ${index}\n\nThis is **formatted** [content](https://example.com).`
+        ).join('\n')
       });
+
+      expect(localThis.mockAnchor!.download).toBe('long-content.pdf');
+      expect(getBlobText().match(/\/Type \/Page\b/g)?.length).toBeGreaterThan(1);
+      expect(getBlobText()).toContain('Page 1 of');
     });
 
-    describe('with CONTENT content type', () => {
-      it('formats text content', async () => {
-        const content = {
-          type: ContentType.CONTENT,
-          title: 'About',
-          data: localThis.mockContent!
-        };
+    it('formats and paginates category exports', async () => {
+      const categories = Array.from({ length: 100 }, (_, index) => ({
+        id: index,
+        name: `Category ${index}`,
+        slug: `category-${index}`,
+        law_count: index
+      }));
 
-        await exportToPDF(content);
-
-        expect(mockJsPDF.save).toHaveBeenCalled();
+      await exportToPDF({
+        type: ContentType.CATEGORIES,
+        title: 'Categories',
+        data: categories
       });
 
-      it('handles CONTENT with empty data (L146)', async () => {
-        const content = {
-          type: ContentType.CONTENT,
-          title: 'Empty',
-          data: ''
-        };
-
-        await exportToPDF(content);
-
-        expect(mockJsPDF.save).toHaveBeenCalled();
-      });
+      expect(localThis.mockAnchor!.download).toBe('categories.pdf');
+      expect(getBlobText()).toContain('Category 0 \\(0 laws\\)');
+      expect(getBlobText().match(/\/Type \/Page\b/g)?.length).toBeGreaterThan(1);
     });
 
-    describe('with CATEGORIES content type', () => {
-      it('formats categories list', async () => {
-        const content = {
-          type: ContentType.CATEGORIES,
-          title: 'Categories',
-          data: localThis.mockCategories!
-        };
+    it('normalizes, escapes, and wraps difficult PDF text', async () => {
+      const longWord = 'x'.repeat(100);
+      const mediumWords = `${'y'.repeat(50)} ${'z'.repeat(50)}`;
 
-        await exportToPDF(content);
-
-        expect(mockJsPDF.save).toHaveBeenCalled();
+      await exportToPDF({
+        type: ContentType.SINGLE_LAW,
+        title: 'PDF edge cases',
+        data: {
+          ...localThis.mockSingleLaw!,
+          text:
+            `${longWord}\nshort ${longWord}\n${mediumWords}\n` +
+            'Café “quote” — wait… \\ (now)',
+        },
       });
 
-      it('uses cat.title when present, else cat.name (L176 L180)', async () => {
-        const categoriesWithTitle = [
-          { id: 1, name: 'Name Only', slug: 'name-only', law_count: 5 },
-          { id: 2, name: 'Display Name', title: 'Category Title', slug: 'cat', law_count: 10 }
-        ];
-        const content = {
-          type: ContentType.CATEGORIES,
-          title: 'Categories',
-          data: categoriesWithTitle
-        };
-        await exportToPDF(content);
-        expect(mockJsPDF.text).toHaveBeenCalled();
-        const textCalls = mockJsPDF.text.mock.calls.map((c: unknown[]) => String(c[0]));
-        expect(textCalls.some((t: string) => t.includes('Name Only') || t.includes('Category Title'))).toBe(true);
-      });
-
-      it('uses cat.name when title missing and law_count 0 (L165 L180 L181)', async () => {
-        const categoriesEdge = [
-          { id: 1, name: 'Name Only', slug: 'n', law_count: 0 },
-          { id: 2, title: 'With Title', slug: 't', law_count: 5 }
-        ];
-        const content = {
-          type: ContentType.CATEGORIES,
-          title: 'Cat',
-          data: categoriesEdge
-        };
-        await exportToPDF(content);
-        expect(mockJsPDF.text).toHaveBeenCalled();
-      });
-
-      it('L165 B1: exportToPDF categories branch', async () => {
-        const content = {
-          type: ContentType.CATEGORIES,
-          title: 'Categories',
-          data: localThis.mockCategories!
-        };
-        await exportToPDF(content);
-        expect(mockJsPDF.save).toHaveBeenCalled();
-      });
+      expect(getBlobText()).toContain('Cafe "quote" - wait...');
+      expect(getBlobText()).toContain('\\\\ \\(now\\)');
+      expect(getBlobText()).toContain('x'.repeat(88));
+      expect(getBlobText()).toContain('y'.repeat(50));
     });
 
-    describe('page overflow handling', () => {
-      it('adds new page when laws overflow', async () => {
-        // Create many laws to trigger page overflow
-        const manyLaws = Array.from({ length: 50 }, (_, i) => ({
-          id: i + 1,
-          title: `Law ${i + 1}`,
-          text: 'This is a law that takes up space on the page.',
-          attribution: 'Author'
-        }));
-
-        // Mock splitTextToSize to return multiple lines (simulates long text)
-        mockJsPDF.splitTextToSize.mockImplementation((text) => {
-          // Return array of 10 lines to simulate text wrapping
-          return Array(10).fill(text.substring(0, 50));
-        });
-
-        const content = {
-          type: ContentType.LAWS,
-          title: 'Many Laws',
-          data: manyLaws
-        };
-
-        await exportToPDF(content);
-
-        // Should have called addPage at least once due to overflow
-        expect(mockJsPDF.addPage).toHaveBeenCalled();
-        expect(mockJsPDF.save).toHaveBeenCalled();
+    it('handles empty content and incomplete category data', async () => {
+      await exportToPDF({
+        type: ContentType.CONTENT,
+        title: 'Empty content',
+        data: '',
       });
+      expect(getBlobText()).toContain('Empty content');
 
-      it('adds new page when content text overflows', async () => {
-        // Create very long content
-        const longContent = Array(100).fill('This is a paragraph of text. ').join('\n\n');
-
-        // Mock splitTextToSize to return many lines
-        mockJsPDF.splitTextToSize.mockImplementation(() => {
-          return Array(100).fill('Line of text');
-        });
-
-        const content = {
-          type: ContentType.CONTENT,
-          title: 'Long Content',
-          data: longContent
-        };
-
-        await exportToPDF(content);
-
-        expect(mockJsPDF.addPage).toHaveBeenCalled();
-        expect(mockJsPDF.save).toHaveBeenCalled();
+      await exportToPDF({
+        type: ContentType.CATEGORIES,
+        title: 'Partial categories',
+        data: [
+          { title: 'Title value', law_count: 2 },
+          { name: 'Name value', law_count: 0 },
+          {},
+        ],
       });
+      expect(getBlobText()).toContain('Title value \\(2 laws\\)');
+      expect(getBlobText()).toContain('Name value \\(0 laws\\)');
 
-      it('adds new page when categories overflow', async () => {
-        // Create many categories
-        const manyCategories = Array.from({ length: 100 }, (_, i) => ({
-          id: i + 1,
-          name: `Category ${i + 1}`,
-          slug: `category-${i + 1}`,
-          law_count: 10
-        }));
-
-        const content = {
+      await exportToPDF(
+        {
           type: ContentType.CATEGORIES,
-          title: 'Many Categories',
-          data: manyCategories
-        };
+          title: undefined as unknown as string,
+          data: {} as unknown as MockCategory[],
+        },
+        'partial.pdf',
+      );
+      expect(localThis.mockAnchor!.download).toBe('partial.pdf');
+    });
+  });
 
-        await exportToPDF(content);
+  describe('structured export edge cases', () => {
+    it('handles non-array category data without failing', () => {
+      const malformedCategories = {
+        type: ContentType.CATEGORIES,
+        title: 'Categories',
+        data: {} as unknown as MockCategory[],
+      };
 
-        expect(mockJsPDF.addPage).toHaveBeenCalled();
-        expect(mockJsPDF.save).toHaveBeenCalled();
+      exportToCSV(malformedCategories);
+      expect(getBlobText()).toBe('');
+
+      exportToMarkdown(malformedCategories);
+      expect(getBlobText()).toContain('# Categories');
+
+      exportToText(malformedCategories);
+      expect(getBlobText()).toContain('CATEGORIES');
+    });
+
+    it('uses every category-name fallback in Markdown', () => {
+      exportToMarkdown({
+        type: ContentType.CATEGORIES,
+        title: 'Partial categories',
+        data: [
+          { title: 'Title value', law_count: 2 },
+          { name: 'Name value', law_count: 1 },
+          {},
+        ],
       });
 
-      it('adds footer to all pages when document has multiple pages', async () => {
-        // Mock getNumberOfPages to return 3 pages
-        mockJsPDF.getNumberOfPages.mockReturnValue(3);
+      expect(getBlobText()).toContain('**Title value**');
+      expect(getBlobText()).toContain('**Name value**');
+      expect(getBlobText()).toContain('- **** (0 laws)');
+    });
 
-        const content = {
-          type: ContentType.LAWS,
-          title: 'Test',
-          data: localThis.mockLaws!
-        };
-
-        await exportToPDF(content);
-
-        // Should call setPage for each page to add footer
-        expect(mockJsPDF.setPage).toHaveBeenCalledWith(1);
-        expect(mockJsPDF.setPage).toHaveBeenCalledWith(2);
-        expect(mockJsPDF.setPage).toHaveBeenCalledWith(3);
-        expect(mockJsPDF.setPage).toHaveBeenCalledTimes(3);
-
-        // Reset mock for other tests
-        mockJsPDF.getNumberOfPages.mockReturnValue(1);
+    it('exports a single non-array law to plain text', () => {
+      exportToText({
+        type: ContentType.SINGLE_LAW,
+        title: 'Single law',
+        data: localThis.mockSingleLaw!,
       });
+
+      expect(getBlobText()).toContain("Murphy's Law");
     });
   });
 
@@ -1233,7 +1114,8 @@ describe('Export Utilities', () => {
 
       await exportContent(content, 'pdf');
 
-      expect(mockJsPDF.save).toHaveBeenCalled();
+      expect(localThis.mockAnchor!.download).toMatch(/\.pdf$/);
+      expect(getBlobText()).toContain('%PDF-1.4');
     });
 
     it('routes to exportToCSV for csv format', () => {

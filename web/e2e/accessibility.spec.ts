@@ -8,8 +8,8 @@ const AxeBuilder = require('@axe-core/playwright').default;
 // These tests verify automated accessibility compliance across key pages
 
 async function waitForGlobalStyles(page: Page): Promise<void> {
-  // site.css is loaded asynchronously to avoid blocking first paint. Axe must
-  // wait for its button tokens rather than scan browser-default button styles.
+  // Wait until the external stylesheet is applied so Axe does not scan
+  // browser-default button styles during navigation.
   await page.waitForFunction(() => {
     const button = document.querySelector('form[aria-label="Site Search"] button[type="submit"]');
     if (!button) return false;

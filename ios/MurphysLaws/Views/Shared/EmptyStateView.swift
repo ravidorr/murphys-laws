@@ -20,7 +20,7 @@ struct EmptyStateView: View {
     }
 
     var body: some View {
-        VStack(spacing: Constants.UI.spacingL) {
+        VStack(spacing: DS.Spacing.s6) {
             Image(systemName: systemImage)
                 .dsTypography(DS.Typography.display)
                 .foregroundColor(DS.Color.mutedFg)

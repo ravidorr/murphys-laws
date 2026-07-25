@@ -52,30 +52,20 @@ async function sendAlert(subject: string, message: string): Promise<void> {
       html: `
         <!DOCTYPE html>
         <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #dc2626; color: white; padding: 20px; border-radius: 5px; }
-            .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 5px; }
-            .footer { margin-top: 20px; font-size: 0.9em; color: #666; }
-            code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
-          </style>
-        </head>
         <body>
-          <div class="container">
-            <div class="header">
+          <main>
+            <header>
               <h1>Health Check Alert</h1>
-            </div>
-            <div class="content">
+            </header>
+            <section>
               <h2>${subject}</h2>
               <p>${message.replace(/\n/g, '<br>')}</p>
-              <p style="margin-top: 20px;"><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-            </div>
-            <div class="footer">
+              <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+            </section>
+            <footer>
               <p>This is an automated health check notification from Murphy's Laws monitoring system.</p>
-            </div>
-          </div>
+            </footer>
+          </main>
         </body>
         </html>
       `,

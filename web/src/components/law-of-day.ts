@@ -10,6 +10,7 @@ import { hydrateIcons, createIcon } from '../utils/icons.ts';
 import { createLoading } from './loading.ts';
 import { isFavoritesEnabled } from '../utils/feature-flags.ts';
 import { isFavorite, toggleFavorite } from '../utils/favorites.ts';
+import { copyToClipboard } from '../utils/clipboard.ts';
 import type { Law, OnNavigate } from '../types/app.d.ts';
 
 export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: OnNavigate }) {
@@ -131,21 +132,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       e.stopPropagation();
       const textToCopy = copyTextBtn.getAttribute('data-copy-value') || law.text || '';
       if (textToCopy) {
-        try {
-          await navigator.clipboard.writeText(textToCopy);
-          showSuccess('Law text copied to clipboard!');
-        } catch {
-          // Fallback
-          const textArea = document.createElement('textarea');
-          textArea.value = textToCopy;
-          textArea.style.position = 'fixed';
-          textArea.style.opacity = '0';
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-          showSuccess('Law text copied to clipboard!');
-        }
+        await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
       }
       return;
     }
@@ -155,21 +142,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
     if (copyLinkBtn) {
       e.stopPropagation();
       const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || `${window.location.origin}/law/${law.id}`;
-      try {
-        await navigator.clipboard.writeText(linkToCopy);
-        showSuccess('Link copied to clipboard!');
-      } catch {
-        // Fallback
-        const textArea = document.createElement('textarea');
-        textArea.value = linkToCopy;
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showSuccess('Link copied to clipboard!');
-      }
+      await copyToClipboard(linkToCopy, 'Link copied to clipboard!');
       return;
     }
 

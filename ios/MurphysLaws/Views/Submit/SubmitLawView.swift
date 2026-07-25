@@ -20,9 +20,11 @@ struct SubmitLawView: View {
                 Section {
                     TextField("Law text (required)", text: $viewModel.lawText, axis: .vertical)
                         .lineLimit(3...10)
+                        .dsField()
                         .accessibilityIdentifier("SubmitLawTextField")
 
                     TextField("Title (optional)", text: $viewModel.title)
+                        .dsField()
                         .accessibilityIdentifier("SubmitLawTitleField")
                 } header: {
                     Text("Law Content")
@@ -63,8 +65,10 @@ struct SubmitLawView: View {
                 // Attribution section
                 Section {
                     TextField("Your name", text: $viewModel.authorName)
+                        .dsField()
 
                     TextField("Email (optional)", text: $viewModel.authorEmail)
+                        .dsField()
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
@@ -99,22 +103,20 @@ struct SubmitLawView: View {
             }
             .overlay {
                 if viewModel.isSubmitting {
-                    Color.black.opacity(0.3)
+                    DS.Color.overlayScrim
                         .ignoresSafeArea()
 
-                    VStack(spacing: Constants.UI.spacingM) {
+                    VStack(spacing: DS.Spacing.s4) {
                         ProgressView()
-                            .scaleEffect(1.5)
                         Text("Submitting...")
                             .dsTypography(DS.Typography.h4)
                             .foregroundColor(DS.Color.fg)
                     }
                     .padding()
                     .background(
-                        RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
+                        RoundedRectangle(cornerRadius: DS.Radius.xl)
                             .fill(DS.Color.surface)
                     )
-                    .shadow(radius: 10)
                 }
             }
             .alert("Success!", isPresented: $showingSuccess) {
@@ -145,4 +147,3 @@ struct SubmitLawView: View {
 #Preview {
     SubmitLawView()
 }
-

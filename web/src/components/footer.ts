@@ -49,7 +49,6 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
 
       const ad = document.createElement('ins');
       ad.className = 'adsbygoogle footer-ad';
-      ad.style.display = 'block';
       ad.setAttribute('data-ad-client', 'ca-pub-3615614508734124');
       ad.setAttribute('data-ad-slot', '4091490183');
       ad.setAttribute('data-ad-format', 'auto');

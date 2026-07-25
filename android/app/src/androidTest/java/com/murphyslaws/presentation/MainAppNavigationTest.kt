@@ -54,7 +54,7 @@ class MainAppNavigationTest {
 
         // Then
         composeTestRule
-            .onNodeWithText("Calculators feature coming soon")
+            .onNodeWithText("Sod's Law Calculator")
             .assertIsDisplayed()
     }
 
@@ -67,7 +67,7 @@ class MainAppNavigationTest {
 
         // Then
         composeTestRule
-            .onNodeWithText("Submit Law feature coming soon")
+            .onNodeWithText("Law Text (Required)")
             .assertIsDisplayed()
     }
 
@@ -80,7 +80,7 @@ class MainAppNavigationTest {
 
         // Then
         composeTestRule
-            .onNodeWithText("More options coming soon")
+            .onNodeWithText("About Murphy's Laws")
             .assertIsDisplayed()
     }
 }

@@ -50,7 +50,7 @@ export function ExportMenu(): HTMLDivElement {
   const toggleBtn = document.createElement('button');
   toggleBtn.type = 'button';
   toggleBtn.id = 'export-toggle';
-  toggleBtn.className = 'export-toggle';
+  toggleBtn.className = 'icon-btn export-toggle';
   toggleBtn.setAttribute('data-tooltip', 'Download page');
   toggleBtn.setAttribute('data-tooltip-pos', 'bottom');
   toggleBtn.setAttribute('aria-label', 'Download page content');
