@@ -4,6 +4,16 @@ import type { CleanableElement } from '../src/types/app.js';
 import { Home, renderHome } from '../src/views/home.ts';
 import * as exportContext from '../src/utils/export-context.js';
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+}
+
 describe('Home view', () => {
   it('renders homepage zones around the discovery and contribution loops', () => {
     const el = document.createElement('div');
@@ -16,6 +26,110 @@ describe('Home view', () => {
     expect(el.querySelector('[data-home-zone="tools-submit"]')).toBeTruthy();
     expect(el.querySelector('[data-home-zone="trending"]')).toBeTruthy();
     expect(el.textContent).toMatch(/human-reviewed/i);
+  });
+
+  it('renders the complete homepage structure while the daily law is pending', () => {
+    const dailyLaw = createDeferred<unknown>();
+    globalThis.fetch = vi.fn().mockImplementation((input: string | URL | Request) => {
+      const payload = String(input).includes('/law-of-day')
+        ? dailyLaw.promise
+        : Promise.resolve({ data: [] });
+      return payload.then(data => ({ ok: true, json: async () => data }));
+    });
+
+    const el = Home({ onNavigate: vi.fn() });
+    const zones = [...el.querySelectorAll('[data-home-zone]')]
+      .map(node => node.getAttribute('data-home-zone'));
+    const dailyLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
+
+    expect(zones).toEqual(expect.arrayContaining([
+      'archive-search',
+      'law-of-day',
+      'category-discovery',
+      'trending',
+      'tools-submit'
+    ]));
+    expect(dailyLawZone.dataset.dailyLawState).toBe('loading');
+    expect(dailyLawZone.getAttribute('aria-busy')).toBe('true');
+    expect(dailyLawZone.classList.contains('min-h-400')).toBe(true);
+    expect(dailyLawZone.querySelector('[role="status"]')).toBeTruthy();
+  });
+
+  it('updates only the reserved daily-law slot and preserves homepage interactions', async () => {
+    const dailyLaw = createDeferred<unknown>();
+    globalThis.fetch = vi.fn().mockImplementation((input: string | URL | Request) => {
+      const payload = String(input).includes('/law-of-day')
+        ? dailyLaw.promise
+        : Promise.resolve({ data: [] });
+      return payload.then(data => ({ ok: true, json: async () => data }));
+    });
+
+    const el = Home({ onNavigate: vi.fn() });
+    const archiveZone = el.querySelector('[data-home-zone="archive-search"]')!;
+    const trendingZone = el.querySelector('[data-home-zone="trending"]')!;
+    const searchInput = archiveZone.querySelector('input[type="search"]') as HTMLInputElement;
+    searchInput.value = 'retained query';
+
+    dailyLaw.resolve({
+      law: { id: 42, text: 'The daily failure arrives on schedule.', upvotes: 3, downvotes: 0 }
+    });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-law-id="42"]')).toBeTruthy();
+    });
+
+    expect(el.querySelector('[data-home-zone="archive-search"]')).toBe(archiveZone);
+    expect(el.querySelector('[data-home-zone="trending"]')).toBe(trendingZone);
+    expect(searchInput.value).toBe('retained query');
+    expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('ready');
+  });
+
+  it('keeps a stable daily-law fallback when no law is available', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: null })
+    });
+
+    const el = Home({ onNavigate: vi.fn() });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('empty');
+    });
+
+    const dailyLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
+    expect(dailyLawZone.classList.contains('min-h-400')).toBe(true);
+    expect(dailyLawZone.getAttribute('aria-busy')).toBe('false');
+    expect(dailyLawZone.textContent).toMatch(/no daily law available/i);
+    expect(dailyLawZone.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it('normalizes a ready daily-law state without a law to the empty fallback', () => {
+    const el = document.createElement('div');
+
+    renderHome(el, null, [], vi.fn(), undefined, { dailyLawState: 'ready' });
+
+    expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('empty');
+  });
+
+  it('keeps the homepage intact and exposes a daily-law retry after failure', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((input: string | URL | Request) => {
+      if (String(input).includes('/law-of-day')) {
+        return Promise.reject(new Error('Daily law unavailable'));
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+    });
+
+    const el = Home({ onNavigate: vi.fn() });
+    const archiveZone = el.querySelector('[data-home-zone="archive-search"]');
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('error');
+    });
+
+    expect(el.querySelector('[data-home-zone="archive-search"]')).toBe(archiveZone);
+    expect(el.querySelector('[data-home-zone="trending"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="tools-submit"]')).toBeTruthy();
+    expect(el.querySelector('[data-home-zone="law-of-day"] [data-action="retry"]')).toBeTruthy();
   });
 
   it('renders proof points as spaced token-friendly badges', () => {
@@ -64,6 +178,16 @@ describe('Home view', () => {
     expect(modules.indexOf('trending')).toBeLessThan(modules.indexOf('category-discovery'));
     localStorage.removeItem('murphys-experiment:homepage-module-order-v1');
   });
+
+  it('applies the persisted themes-first homepage module-order variant', () => {
+    localStorage.setItem('murphys-experiment:homepage-module-order-v1', 'themes-first');
+    const el = document.createElement('div');
+    renderHome(el, null, [], vi.fn());
+    const modules = [...el.querySelectorAll('[data-home-zone]')].map((node) => node.getAttribute('data-home-zone'));
+    expect(modules.indexOf('category-discovery')).toBeLessThan(modules.indexOf('trending'));
+    localStorage.removeItem('murphys-experiment:homepage-module-order-v1');
+  });
+
   it('renders Law of the Day after fetching data', async () => {
     const lawOfTheDay = {
       id: '1',
