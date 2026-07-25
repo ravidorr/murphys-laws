@@ -17,6 +17,7 @@
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+  white-space: nowrap;
   box-sizing: border-box;
   transition: background-color .15s ease, border-color .15s ease, filter .15s ease, box-shadow .15s ease;
 }
