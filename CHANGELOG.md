@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Fixed
+- CTA labels now stay on one line, keeping text and icons side by side across
+  desktop and mobile layouts. Web bumped to `3.4.2`; root to `2.6.2`.
 - Pinned iOS CI to the macOS 15 runner that provides Xcode 16.4, and stabilized
   homepage loading so the Daily Law updates inside reserved space without
   shifting the rest of the page. Web bumped to `3.4.1`; root to `2.6.1`.
