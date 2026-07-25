@@ -22,6 +22,8 @@
     --border: var(--dark-border);
     --primary: var(--dark-primary);
     --text-high-contrast: var(--dark-text-high-contrast);
+    --error: #f87171;
+    --success: #4ade80;
   }
 }
 
@@ -33,6 +35,8 @@
   --border: var(--dark-border);
   --primary: var(--dark-primary);
   --text-high-contrast: var(--dark-text-high-contrast);
+  --error: #f87171;
+  --success: #4ade80;
 }
 
 /* Dark mode component styles - apply when dark variables are active */
@@ -165,6 +169,7 @@
   :root:not([data-theme="light"]) .btn,
   :root:not([data-theme="light"]) button {
     box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
+    color: var(--btn-primary-fg);
   }
 
   :root:not([data-theme="light"]) .btn.outline,
@@ -185,6 +190,7 @@
 :root[data-theme="dark"] .btn,
 :root[data-theme="dark"] button {
   box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
+  color: var(--btn-primary-fg);
 }
 
 :root[data-theme="dark"] .btn.outline,

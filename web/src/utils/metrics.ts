@@ -8,7 +8,11 @@ import * as Sentry from '@sentry/browser';
 const metricsEnabled =
   typeof import.meta !== 'undefined' &&
   !!import.meta.env?.VITE_SENTRY_DSN &&
-  !!import.meta.env?.PROD;
+  !!import.meta.env?.PROD &&
+  (import.meta.env?.MODE === 'test' || (
+    typeof window !== 'undefined' &&
+    window.location.hostname === 'murphys-laws.com'
+  ));
 
 function hasMetrics(): boolean {
   return metricsEnabled && typeof Sentry.metrics?.count === 'function';
@@ -17,6 +21,8 @@ function hasMetrics(): boolean {
 export type ProductEventName =
   | 'archive.search'
   | 'archive.no_results'
+  | 'archive.result_open'
+  | 'archive.pagination'
   | 'category.click'
   | 'law.related_click'
   | 'law.vote'
@@ -25,9 +31,11 @@ export type ProductEventName =
   | 'calculator.start'
   | 'calculator.complete'
   | 'submit.start'
-  | 'submit.complete';
+  | 'submit.complete'
+  | 'experiment.exposure'
+  | 'experiment.conversion';
 
-type ProductEventTags = Partial<Record<'surface' | 'result' | 'category' | 'action' | 'calculator', string>>;
+type ProductEventTags = Partial<Record<'surface' | 'result' | 'category' | 'action' | 'calculator' | 'experiment' | 'variant', string>>;
 
 /**
  * Increment a counter (e.g. button clicks, API calls).
@@ -43,6 +51,9 @@ export function count(name: string, value: number = 1, options?: { tags?: Record
 
 export function trackProductEvent(name: ProductEventName, tags: ProductEventTags = {}): void {
   count(`product.${name}`, 1, { tags });
+  if (typeof window !== 'undefined' && import.meta.env.PROD && window.location.hostname === 'murphys-laws.com') {
+    window.gtag?.('event', name.replace(/\./g, '_'), tags);
+  }
 }
 
 /**

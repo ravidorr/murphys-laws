@@ -598,4 +598,31 @@ describe('Router', () => {
     const { forceRender: freshForceRender } = await import('../src/router.ts');
     expect(() => freshForceRender()).not.toThrow();
   });
+
+  it('migrates legacy calculator hash routes', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    defineRoute('calculator', () => document.createElement('div'));
+    history.replaceState({ source: 'legacy' }, '', '/?from=bookmark#/calculators/sods-law');
+
+    startRouter(rootEl);
+
+    expect(location.pathname).toBe('/calculator/sods-law');
+    expect(location.search).toBe('?from=bookmark');
+    expect(history.state).toEqual({ source: 'legacy' });
+    document.body.removeChild(rootEl);
+  });
+
+  it('migrates the legacy real-life examples hash route with empty history state', () => {
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    defineRoute('examples', () => document.createElement('div'));
+    history.replaceState(null, '', '/#/real-life-examples');
+
+    startRouter(rootEl);
+
+    expect(location.pathname).toBe('/examples');
+    expect(history.state).toEqual({});
+    document.body.removeChild(rootEl);
+  });
 });

@@ -20,4 +20,4 @@ The bug disappears while someone is watching and returns after the logs are turn
 
 - [Murphy's Laws about Technology](/murphys-laws-about-technology)
 - [Murphy's Technology Laws](/category/murphys-technology-laws)
-- [Murphy's Computer Laws](/category/murphys-computer-laws)
+- [Murphy's Computer Laws](/category/murphys-computers-laws)

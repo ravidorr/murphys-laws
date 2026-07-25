@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript SDK for the Murphy's Laws public REST API",
   "type": "module",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.16.0 <23"
   },
   "scripts": {
     "start": "tsx src/index.ts",
@@ -52,7 +52,7 @@
     "jiti": "^2.6.1",
     "tsx": "^4.20.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.56.0",
+    "typescript-eslint": "8.65.0",
     "vitest": "^4.0.18"
   }
 }

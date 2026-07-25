@@ -278,7 +278,7 @@ describe('Browse view', () => {
     await vi.waitFor(() => {
       expect(el.querySelector('#browse-breadcrumb')).toBeTruthy();
     }, { timeout: 500 });
-    vi.unmock('../src/components/breadcrumb.js');
+    vi.doUnmock('../src/components/breadcrumb.js');
   });
 
   it('updates result count on pagination', async () => {

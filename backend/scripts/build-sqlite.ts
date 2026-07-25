@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
+import { execFileSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -103,6 +104,19 @@ function q(v: string | number | null | undefined): string {
   return `'${s}'`;
 }
 
+function getStableContentTimestamp(file: string): string {
+  const repositoryRoot = path.resolve(ROOT, '..');
+  try {
+    const relativePath = path.relative(repositoryRoot, file);
+    return execFileSync('git', ['log', '-1', '--format=%cI', '--', relativePath], {
+      cwd: repositoryRoot,
+      encoding: 'utf8'
+    }).trim() || '2000-01-01T00:00:00Z';
+  } catch {
+    return '2000-01-01T00:00:00Z';
+  }
+}
+
 async function buildSQL(): Promise<string> {
   const files = await listMarkdownFiles(SOURCE_DIR);
   const statements: string[] = ['BEGIN TRANSACTION;'];
@@ -112,6 +126,7 @@ async function buildSQL(): Promise<string> {
     const rel = path.relative(ROOT, file);
     const slug = slugify(basename);
     const content = await fs.readFile(file, 'utf8');
+    const contentTimestamp = getStableContentTimestamp(file);
     const lines = content.split('\n');
 
     const titleLine = lines.find((l) => l.trim().startsWith('#'));
@@ -181,13 +196,13 @@ async function buildSQL(): Promise<string> {
       body = normalizeText(body);
 
       statements.push(
-        `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
-        `VALUES (NULL, ${q(lawTitle)}, ${q(body)}, ${q(rawMd)}, NULL, ${q(rel)}, ${position})\n` +
+        `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number, created_at, updated_at)\n` +
+        `VALUES (NULL, ${q(lawTitle)}, ${q(body)}, ${q(rawMd)}, NULL, ${q(rel)}, ${position}, ${q(contentTimestamp)}, ${q(contentTimestamp)})\n` +
         `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO UPDATE SET\n` +
         `  title = excluded.title,\n` +
         `  text = excluded.text,\n` +
         `  raw_markdown = excluded.raw_markdown,\n` +
-        `  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now');`
+        `  updated_at = excluded.updated_at;`
       );
 
       statements.push(
@@ -228,13 +243,13 @@ async function buildSQL(): Promise<string> {
         subText = normalizeText(subText);
 
         statements.push(
-          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number)\n` +
-          `VALUES (NULL, ${q(subTitle)}, ${q(subText)}, ${q(subRaw)}, NULL, ${q(rel)}, ${subPos})\n` +
+          `INSERT INTO laws (slug, title, text, raw_markdown, origin_note, first_seen_file_path, first_seen_line_number, created_at, updated_at)\n` +
+          `VALUES (NULL, ${q(subTitle)}, ${q(subText)}, ${q(subRaw)}, NULL, ${q(rel)}, ${subPos}, ${q(contentTimestamp)}, ${q(contentTimestamp)})\n` +
           `ON CONFLICT(first_seen_file_path, first_seen_line_number) DO UPDATE SET\n` +
           `  title = excluded.title,\n` +
           `  text = excluded.text,\n` +
           `  raw_markdown = excluded.raw_markdown,\n` +
-          `  updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now');`
+          `  updated_at = excluded.updated_at;`
         );
 
         for (const att of subAtts) {

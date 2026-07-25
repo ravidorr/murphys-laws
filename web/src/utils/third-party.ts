@@ -8,6 +8,12 @@ let adsensePromise: Promise<void> | undefined;
 // Track loaded scripts without polluting DOM attributes
 const loadedScripts = new Set<string>();
 
+export function shouldLoadThirdParty(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (import.meta.env.MODE === 'test') return true;
+  return import.meta.env.PROD && window.location.hostname === 'murphys-laws.com';
+}
+
 export function toAbsoluteUrl(src: string): string {
   if (typeof document === 'undefined') {
     return src;
@@ -125,7 +131,7 @@ function cleanupInteractionListeners(listener: EventListener): void {
 }
 
 export function initAnalyticsBootstrap(): void {
-  if (analyticsBootstrapStarted || typeof window === 'undefined') {
+  if (analyticsBootstrapStarted || !shouldLoadThirdParty()) {
     return;
   }
 
@@ -153,7 +159,7 @@ export function initAnalyticsBootstrap(): void {
 }
 
 export function ensureAdsense(): Promise<void> {
-  if (typeof window === 'undefined') {
+  if (!shouldLoadThirdParty()) {
     return Promise.resolve();
   }
 
@@ -185,4 +191,3 @@ export function ensureAdsense(): Promise<void> {
 
   return adsensePromise;
 }
-

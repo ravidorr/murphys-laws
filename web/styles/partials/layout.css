@@ -47,26 +47,8 @@ header.sticky {
   border: none;
   cursor: pointer;
   position: relative;
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.3s ease;
-  animation: heartbeat 2s ease-in-out infinite, pulse-glow 2s ease-in-out infinite;
-}
-
-@keyframes heartbeat {
-  0%, 100% {
-    transform: scale(1);
-  }
-
-  25% {
-    transform: scale(1.05);
-  }
-
-  50% {
-    transform: scale(1);
-  }
-
-  75% {
-    transform: scale(1.05);
-  }
+  transition: background 0.2s ease, box-shadow 0.3s ease;
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
@@ -116,10 +98,8 @@ header.sticky {
 }
 
 .brand-badge:hover {
-  transform: scale(1.1);
   background: linear-gradient(135deg, var(--primary) 0%, var(--btn-primary-bg) 100%);
   box-shadow: 0 4px 12px var(--shadow-blue), 0 0 0 0 rgb(13 94 161 / 0%);
-  animation: heartbeat 2s ease-in-out infinite;
 }
 
 .brand-badge:hover::after {
@@ -129,10 +109,6 @@ header.sticky {
 .brand-badge:hover::before {
   opacity: 1;
   visibility: visible;
-}
-
-.brand-badge:active {
-  transform: scale(0.95);
 }
 
 .brand-content {
@@ -404,7 +380,7 @@ header form[role="search"] input {
 }
 
 /* Mobile autocomplete adjustments */
-@media (width <= 600px) {
+@media (width <= 640px) {
   .search-autocomplete {
     max-height: 15rem;
     font-size: 0.875rem;
@@ -478,29 +454,46 @@ header form[role="search"] input {
     padding: 0.25rem 0.75rem;
   }
 
-  header.sticky .flex.h-16 {
+  header.sticky .header-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    height: auto;
     gap: 0.5rem;
+    padding-block: 0.5rem;
   }
 
-  /* Mobile search toggle */
-  header.sticky form[role="search"] {
+  header.sticky .header-actions {
+    display: contents;
+  }
+
+  header.sticky .header-utility-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  header.sticky .header-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
     position: relative;
+    width: 100%;
   }
 
-  header.sticky form[role="search"] input {
-    width: 120px;
+  header.sticky .header-search input {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     height: 44px; /* Match button min-height */
   }
 
-  header.sticky form[role="search"] .btn {
+  header.sticky .header-search .btn {
     padding: 0.5rem;
     min-width: 44px;
     min-height: 44px;
   }
 
-  header.sticky form[role="search"] .btn-text {
+  header.sticky .header-search .btn-text {
     display: none;
   }
 }
@@ -510,10 +503,6 @@ header form[role="search"] input {
     font-size: 1.25rem;
   }
 
-  header.sticky form[role="search"] input {
-    width: 80px;
-    height: 44px; /* Match button min-height */
-  }
 }
 
 /* Ensure touch targets meet 44px minimum */

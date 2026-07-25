@@ -33,6 +33,7 @@ vi.mock('../src/components/notification.js', () => ({
 }));
 vi.mock('../src/utils/constants.js', () => ({
   SITE_URL: 'https://murphys-laws.com',
+  SITE_DEFAULT_SOCIAL_IMAGE: 'https://murphys-laws.com/social/home.png',
   SITE_NAME: "Murphy's Law Archive",
   LAWS_PER_PAGE: 10,
   getRandomLoadingMessage: () => 'Loading...',

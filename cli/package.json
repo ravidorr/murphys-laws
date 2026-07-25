@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Command-line interface for the Murphy's Laws public REST API",
   "type": "module",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.16.0 <23"
   },
   "scripts": {
     "start": "tsx src/index.ts",
@@ -43,7 +43,7 @@
   "homepage": "https://murphys-laws.com/developers",
   "license": "CC0-1.0",
   "dependencies": {
-    "murphys-laws-sdk": "^0.1.0"
+    "murphys-laws-sdk": "^0.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
@@ -54,7 +54,7 @@
     "jiti": "^2.6.1",
     "tsx": "^4.20.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.56.0",
+    "typescript-eslint": "8.65.0",
     "vitest": "^4.0.18"
   }
 }

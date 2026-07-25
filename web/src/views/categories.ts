@@ -5,11 +5,11 @@ import templateHtml from '@views/templates/categories.html?raw';
 import { fetchCategories } from '../utils/api.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { getRandomLoadingMessage, getCategoryDisplayName } from '../utils/constants.ts';
-import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { groupCategories } from '@utils/category-groups.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
-import { updateMetaDescription } from '@utils/dom.ts';
+import { updatePageMetadata } from '@utils/dom.ts';
 import type { CleanableElement, OnNavigate, Category } from '../types/app.d.ts';
 
 export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
@@ -18,18 +18,27 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
   el.setAttribute('aria-live', 'polite');
 
   let categories: Category[] = [];
+  let categoryQuery = '';
+  const featuredSlugs = new Set([
+    'murphys-technology-laws',
+    'murphys-office-laws',
+    'murphys-travel-laws',
+    'murphys-love-laws',
+    'murphys-computers-laws'
+  ]);
 
   // Render a single category card
   function renderCategoryCard(category: Category) {
     const title = getCategoryDisplayName(category.slug, stripMarkdownFootnotes(category.title));
-    const description = category.description || 'Explore laws in this category.';
+    const rawDescription = category.description || 'Explore laws in this category.';
+    const description = rawDescription.length > 150 ? `${rawDescription.slice(0, 147).trimEnd()}…` : rawDescription;
     const lawCount = category.law_count || 0;
     const lawText = lawCount === 1 ? 'law' : 'laws';
 
     return `
-      <article class="card card--category category-card category-card--rich" data-category-slug="${category.slug}" tabindex="0" role="link" aria-label="${title} - ${lawCount} ${lawText}">
-        <h3 class="category-card-title">${title}</h3>
-        <p class="category-card-description">${description}</p>
+      <a href="/category/${escapeHtml(category.slug)}" class="card card--category category-card category-card--rich" data-category-slug="${escapeHtml(category.slug)}" aria-label="${escapeHtml(title)} - ${lawCount} ${lawText}">
+        <h3 class="category-card-title">${escapeHtml(title)}</h3>
+        <p class="category-card-description">${escapeHtml(description)}</p>
         <div class="category-card-footer">
           <span class="category-card-count">
             <span class="icon" data-icon="list" aria-hidden="true"></span>
@@ -39,7 +48,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
             <span class="icon" data-icon="arrowRight" aria-hidden="true"></span>
           </span>
         </div>
-      </article>
+      </a>
     `;
   }
 
@@ -59,8 +68,8 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       .map((group) => `
         <section class="category-cluster" data-category-cluster="${group.name}">
           <header class="category-cluster-header">
-            <h2 class="category-cluster-title">${group.name}</h2>
-            <p class="category-cluster-description">${group.description}</p>
+            <h2 class="category-cluster-title">${escapeHtml(group.name)}</h2>
+            <p class="category-cluster-description">${escapeHtml(group.description)}</p>
           </header>
           <div class="categories-grid">
             ${group.categories.map(renderCategoryCard).join('')}
@@ -79,16 +88,36 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
   }
 
   function updateDisplay() {
+    const normalizedQuery = categoryQuery.trim().toLowerCase();
+    const visibleCategories = normalizedQuery
+      ? categories.filter((category) => `${category.title} ${category.description || ''}`.toLowerCase().includes(normalizedQuery))
+      : categories;
     const grid = el.querySelector('#categories-grid')!;
     grid.classList.remove('loading-placeholder');
     grid.removeAttribute('role');
     grid.removeAttribute('aria-label');
-    grid.innerHTML = renderCategories(categories);
+    grid.innerHTML = renderCategories(visibleCategories);
     hydrateIcons(grid);
 
-    // Update page title and meta description
-    document.title = `Browse Murphy's Laws by Category | Murphy's Law Archive`;
-    updateMetaDescription(`Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.`);
+    const status = el.querySelector('#category-filter-status');
+    if (status) status.textContent = normalizedQuery ? `${visibleCategories.length} categories found` : `${categories.length} categories`;
+
+    const featured = el.querySelector('#featured-categories');
+    const featuredGrid = featured?.querySelector('.category-featured-grid');
+    if (featured && featuredGrid && !normalizedQuery) {
+      const featuredCategories = categories.filter((category) => featuredSlugs.has(category.slug));
+      featuredGrid.innerHTML = featuredCategories.map(renderCategoryCard).join('');
+      featured.toggleAttribute('hidden', featuredCategories.length === 0);
+      hydrateIcons(featuredGrid);
+    } else {
+      featured?.setAttribute('hidden', '');
+    }
+
+    updatePageMetadata({
+      title: `Browse Murphy's Laws by Category | Murphy's Law Archive`,
+      description: `Explore all ${categories.length} categories of Murphy's Laws, from technology and work to travel and everyday life.`,
+      path: '/categories'
+    });
   }
 
   // Load categories
@@ -140,6 +169,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     // Handle category card click
     const card = target.closest('.category-card');
     if (card) {
+      e.preventDefault();
       const slug = card.getAttribute('data-category-slug');
       if (slug) {
         trackProductEvent('category.click', { surface: 'categories', category: slug });
@@ -154,6 +184,13 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       grid.innerHTML = `<p class="text-center small">${getRandomLoadingMessage()}</p>`;
       loadCategories();
     }
+  });
+
+  el.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.id !== 'category-filter') return;
+    categoryQuery = target.value;
+    updateDisplay();
   });
 
   // Handle keyboard navigation for category cards

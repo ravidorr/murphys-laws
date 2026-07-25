@@ -223,6 +223,30 @@ describe('Header component', () => {
     document.body.removeChild(el);
   });
 
+  it('closes an open dropdown on Escape and restores focus', () => {
+    const el = Header({
+      onSearch: () => {},
+      onNavigate: () => {},
+      currentPage: 'home'
+    });
+    document.body.appendChild(el);
+    const menuToggle = el.querySelector('#nav-menu-toggle') as HTMLElement;
+    const navDropdown = el.querySelector('#nav-dropdown') as HTMLElement;
+
+    menuToggle.click();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(navDropdown.classList.contains('open')).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(navDropdown.classList.contains('open')).toBe(false);
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(menuToggle);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    (el as CleanableElement).cleanup?.();
+    el.remove();
+  });
+
   it('calls cleanup function to remove event listeners', () => {
     const el = Header({
       onSearch: () => {},
@@ -440,6 +464,34 @@ describe('Header component', () => {
     expect(form).toBeTruthy();
     expect(input).toBeTruthy();
     expect(SearchAutocomplete).toHaveBeenCalled();
+  });
+
+  it('falls back to the generic form input for autocomplete', () => {
+    const originalQuerySelector = Element.prototype.querySelector;
+    vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+      if (this.tagName === 'FORM' && selector === 'input[aria-label="Search"]') return null;
+      return originalQuerySelector.call(this, selector);
+    });
+
+    const el = Header({ onSearch: () => {}, onNavigate: () => {} });
+    const autocompleteOptions = vi.mocked(SearchAutocomplete).mock.calls.at(-1)?.[0];
+
+    expect(autocompleteOptions?.inputElement).toBe(el.querySelector('input'));
+    vi.restoreAllMocks();
+    (el as CleanableElement).cleanup?.();
+  });
+
+  it('navigates from an autocomplete selection only when a law id exists', () => {
+    const onNavigate = vi.fn();
+    const el = Header({ onSearch: () => {}, onNavigate });
+    const autocompleteOptions = vi.mocked(SearchAutocomplete).mock.calls.at(-1)?.[0];
+
+    autocompleteOptions?.onSelect({ id: 42 } as Law);
+    autocompleteOptions?.onSelect({ id: 0 } as Law);
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith('law', '42');
+    (el as CleanableElement).cleanup?.();
   });
 
   it('L155 B1: form submit passes input value to onSearch', () => {

@@ -21,7 +21,8 @@ describe('FeedService', () => {
         status TEXT DEFAULT 'published',
         first_seen_file_path TEXT,
         first_seen_line_number INTEGER,
-        created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+        created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
       );
       
       CREATE TABLE attributions (

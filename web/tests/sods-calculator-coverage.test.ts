@@ -18,6 +18,9 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   });
 
   afterEach(() => {
+    Array.from(container.children).forEach((child) => {
+      (child as HTMLElement & { cleanup?: () => void }).cleanup?.();
+    });
     if (container.parentNode) {
       container.parentNode.removeChild(container);
     }
@@ -338,7 +341,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
 
   it('handles ensureMathJax failure gracefully', async () => {
     // We need to mock the module BEFORE import
-    vi.mock('../src/utils/mathjax.ts', () => ({
+    vi.doMock('../src/utils/mathjax.ts', () => ({
       ensureMathJax: vi.fn(() => Promise.reject(new Error('Load failed')))
     }));
 

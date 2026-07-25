@@ -4,6 +4,8 @@
  * preventing "Google-served ads on screens without publisher-content" violations.
  */
 
+import { shouldLoadThirdParty } from './third-party.ts';
+
 declare global {
   interface Window {
     adsbygoogle?: unknown[];
@@ -13,6 +15,7 @@ declare global {
 let isAdSenseInitialized: boolean = false;
 
 function initAdSense(): void {
+  if (!shouldLoadThirdParty()) return;
   // Prevent double loading
   if (isAdSenseInitialized || window.adsbygoogle || document.querySelector('script[src*="adsbygoogle"]')) {
     return;
@@ -37,6 +40,7 @@ function initAdSense(): void {
  * specific events will trigger the ad loading.
  */
 export function setupAdSense(): void {
+  if (!shouldLoadThirdParty()) return;
   document.addEventListener('murphys-laws-content-ready', () => {
     // specific events will trigger the ad loading.
     if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {

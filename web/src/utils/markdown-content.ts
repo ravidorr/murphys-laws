@@ -235,7 +235,8 @@ export function getPageContent(page: ContentPage): string {
     throw new Error(`Unknown page: ${page}`);
   }
 
-  let html = marked.parse(markdown, { async: false });
+  const displayMarkdown = markdown.replace('{{ARCHIVE_SIZE}}', '<span data-archive-size>the full archive</span>');
+  let html = marked.parse(displayMarkdown, { async: false });
 
   // Apply styling enhancements
   html = enhanceMarkdownHtml(html);
@@ -343,5 +344,5 @@ export function getRawMarkdownContent(page: ContentPage): string {
     'examples/everyday-life': examplesEverydayLifeMd
   };
 
-  return contentMap[page] || '';
+  return (contentMap[page] || '').replace('{{ARCHIVE_SIZE}}', 'the full archive');
 }

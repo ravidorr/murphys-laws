@@ -54,6 +54,9 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
     e.stopPropagation();
     const isOpen = navDropdown?.classList.toggle('open');
     navToggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    if (isOpen) {
+      navDropdown?.querySelector<HTMLElement>('a[href]')?.focus();
+    }
   };
 
   navToggle?.addEventListener('click', handleToggleClick);
@@ -67,6 +70,15 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
   };
 
   document.addEventListener('click', handleDocumentClick);
+
+  const handleDocumentKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape' || !navDropdown?.classList.contains('open')) return;
+    navDropdown.classList.remove('open');
+    navToggle?.setAttribute('aria-expanded', 'false');
+    if (navToggle instanceof HTMLElement) navToggle.focus();
+  };
+
+  document.addEventListener('keydown', handleDocumentKeydown);
 
   // Theme toggle functionality
   const updateThemeToggle = (theme: Theme) => {
@@ -108,6 +120,7 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
   // Store cleanup function on the element
   (header as CleanableElement).cleanup = () => {
     document.removeEventListener('click', handleDocumentClick);
+    document.removeEventListener('keydown', handleDocumentKeydown);
     document.removeEventListener('themechange', handleThemeChange);
   };
 
