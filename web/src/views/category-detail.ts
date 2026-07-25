@@ -18,7 +18,7 @@ import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { handleCopyAction } from '../utils/copy-actions.ts';
 import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
-import { updateMetaDescription } from '@utils/dom.ts';
+import { updatePageMetadata } from '@utils/dom.ts';
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
@@ -104,9 +104,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
   // Render the page structure
-  async function render() {
+  function render() {
     el.innerHTML = templateHtml;
-    await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
 
     el.querySelector('#category-detail-title')!.innerHTML = formatPageTitle(categoryTitle);
 
@@ -244,8 +243,11 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
           hubLinksEl.innerHTML = renderInternalLinkList(getCategoryHubLinks(category.slug));
         }
 
-        document.title = `${categoryTitle} | ${SITE_NAME}`;
-        updateMetaDescription(categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}. Discover witty observations and corollaries in this category.`);
+        updatePageMetadata({
+          title: `${categoryTitle} | ${SITE_NAME}`,
+          description: categoryDescription || `Browse all Murphy's Laws related to ${categoryTitle}. Discover witty observations and corollaries in this category.`,
+          path: `/category/${category.slug}`
+        });
 
         const breadcrumbContainer = el.querySelector('#category-breadcrumb')!;
         const breadcrumb = Breadcrumb({

@@ -8,10 +8,59 @@ import {
   buildStaticSubmitContent,
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
-  buildStaticHomeContent
+  buildStaticHomeContent,
+  applyPageMetadata,
+  validateGeneratedPage
 } from '@scripts/ssg';
 
+const metadataTemplate = `<!doctype html><html><head>
+<title>Home</title>
+<meta name="description" content="Home description">
+<link rel="canonical" href="https://murphys-laws.com/">
+<link rel="alternate" hreflang="en" href="https://murphys-laws.com/">
+<link rel="alternate" hreflang="x-default" href="https://murphys-laws.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://murphys-laws.com/">
+<meta property="og:title" content="Home">
+<meta property="og:description" content="Home description">
+<meta property="og:image" content="https://murphys-laws.com/social/home.png">
+<meta property="twitter:url" content="https://murphys-laws.com/">
+<meta property="twitter:title" content="Home">
+<meta property="twitter:description" content="Home description">
+<meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
+</head><body><h1>Home</h1></body></html>`;
+
 describe('SSG Utilities', () => {
+  it('applies consistent route metadata to every social and canonical field', () => {
+    const result = applyPageMetadata(metadataTemplate, {
+      title: 'Submit a Law',
+      description: 'Submit a reviewed law.',
+      canonicalPath: '/submit',
+      type: 'article'
+    });
+
+    expect(result).toContain('<title>Submit a Law</title>');
+    expect(result).toContain('rel="canonical" href="https://murphys-laws.com/submit"');
+    expect(result).toContain('property="og:title" content="Submit a Law"');
+    expect(result).toContain('property="twitter:description" content="Submit a reviewed law."');
+    expect(result).not.toContain('Home description');
+  });
+
+  it('rejects duplicate headings, contributor email links, and missing category navigation', () => {
+    const invalid = metadataTemplate
+      .replace('</body>', '<h1>Duplicate</h1><a href="mailto:person@example.com">Email</a></body>');
+
+    expect(validateGeneratedPage(invalid, {
+      canonicalPath: '/',
+      forbidMailto: true,
+      requireCategoryLink: true
+    })).toEqual(expect.arrayContaining([
+      'expected one h1, found 2',
+      'contains a public mailto link',
+      'missing navigable category link'
+    ]));
+  });
+
   describe('wrapFirstWordWithAccent', () => {
     it('wraps first word with accent-text span for multi-word text', () => {
       const result = wrapFirstWordWithAccent('About Murphy\'s Law');
@@ -220,7 +269,14 @@ describe('SSG Static Route Content', () => {
       category_name: "Murphy's Technology Laws",
       attributions: [{ name: 'QA Engineer' }],
       upvotes: 7,
-      downvotes: 2
+      downvotes: 2,
+      editorial: {
+        explanation: 'A reviewed explanation.',
+        practical_example: 'A practical example.',
+        source_label: 'Primary source',
+        source_url: 'https://example.com/source',
+        reviewed_at: '2026-07-21'
+      }
     });
 
     expect(html).toContain('Anything tested can fail.');
@@ -233,6 +289,9 @@ describe('SSG Static Route Content', () => {
     expect(html).toContain('/examples/tech');
     expect(html).toContain('Technology hub');
     expect(html).toContain('/contact');
+    expect(html).toContain('A reviewed explanation.');
+    expect(html).toContain('https://example.com/source');
+    expect(html).toContain('datetime="2026-07-21"');
   });
 
   it('renders static homepage content around the primary loops', () => {
@@ -245,7 +304,7 @@ describe('SSG Static Route Content', () => {
     expect(html).toContain('home-proof-point');
     expect(html).toContain('/categories');
     expect(html).toContain('/submit');
-    expect(html).toContain('Trending and Recently Added');
+    expect(html).toContain('Trending</span> Now');
     expect(html).not.toMatch(/Loading/i);
   });
 });

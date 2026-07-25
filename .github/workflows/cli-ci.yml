@@ -37,8 +37,7 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Build SDK (CLI imports from murphys-laws-sdk/dist)
         run: npm run build

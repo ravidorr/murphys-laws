@@ -107,11 +107,138 @@ describe('SubmitLawSection component', () => {
     const el = mountSection({ append: true });
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement | null;
 
-    textarea!.value = 'The backup failed before the deploy';
+    textarea!.value = 'The backup you need failed before it was tested';
     textarea!.dispatchEvent(new Event('blur'));
 
     await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('Possible duplicates'));
     expect(el.querySelector('[data-duplicate-candidates]')?.innerHTML).toContain('/law/7');
+  });
+
+  it('labels exact duplicate candidates separately', async () => {
+    const text = 'The exact duplicate law always fails';
+    vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+      data: [{ id: 8, title: 'Exact Law', text }],
+      total: 1,
+      limit: 5,
+      offset: 0
+    });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+    textarea.value = text;
+    textarea.dispatchEvent(new Event('blur'));
+
+    await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('Already in the archive'));
+    expect(el.querySelector('[data-duplicate-candidates]')?.textContent).not.toContain('% similar');
+  });
+
+  it('uses law text for untitled fuzzy duplicate candidates', async () => {
+    vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+      data: [{ id: 9, text: 'The backup failed during deployment' }],
+      total: 1,
+      limit: 5,
+      offset: 0
+    });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+    textarea.value = 'The backup failed before deployment';
+    textarea.dispatchEvent(new Event('blur'));
+
+    await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('The backup failed during deployment'));
+    expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('% similar');
+  });
+
+  it('clears duplicate results for short text and empty responses', async () => {
+    const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+      data: [],
+      total: 0,
+      limit: 5,
+      offset: 0
+    });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+    const candidates = el.querySelector('[data-duplicate-candidates]') as HTMLElement;
+    candidates.innerHTML = 'stale';
+
+    textarea.value = 'short';
+    textarea.dispatchEvent(new Event('blur'));
+    expect(candidates.innerHTML).toBe('');
+    expect(duplicateSpy).not.toHaveBeenCalled();
+
+    textarea.value = 'A valid unique law without matches';
+    textarea.dispatchEvent(new Event('blur'));
+    await vi.waitFor(() => expect(duplicateSpy).toHaveBeenCalled());
+    expect(candidates.innerHTML).toBe('');
+  });
+
+  it('ignores stale duplicate responses', async () => {
+    let resolveFirst: ((value: Awaited<ReturnType<typeof api.fetchDuplicateCandidates>>) => void) | undefined;
+    vi.spyOn(api, 'fetchDuplicateCandidates')
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce({
+        data: [{ id: 11, text: 'The second backup failed during deployment' }],
+        total: 1,
+        limit: 5,
+        offset: 0
+      });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+    textarea.value = 'The first backup failed during deployment';
+    textarea.dispatchEvent(new Event('blur'));
+    textarea.value = 'The second backup failed before deployment';
+    textarea.dispatchEvent(new Event('blur'));
+    await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('second backup'));
+
+    resolveFirst?.({
+      data: [{ id: 10, text: 'The first backup failed during deployment' }],
+      total: 1,
+      limit: 5,
+      offset: 0
+    });
+    await Promise.resolve();
+    expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('second backup');
+  });
+
+  it('clears duplicate results when the current request fails', async () => {
+    vi.spyOn(api, 'fetchDuplicateCandidates').mockRejectedValue(new Error('offline'));
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+    const candidates = el.querySelector('[data-duplicate-candidates]') as HTMLElement;
+    candidates.innerHTML = 'stale';
+
+    textarea.value = 'A valid law that triggers duplicate lookup';
+    textarea.dispatchEvent(new Event('blur'));
+
+    await vi.waitFor(() => expect(candidates.innerHTML).toBe(''));
+  });
+
+  it('does not run a delayed duplicate lookup after the section is detached', async () => {
+    vi.useFakeTimers();
+    const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates');
+    const el = mountSection();
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+    textarea.value = 'A valid law that would trigger duplicate lookup';
+    textarea.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(duplicateSpy).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('ignores submit-action clicks from unrelated and non-element targets', () => {
+    const el = mountSection();
+    const unrelated = document.createElement('button');
+    el.appendChild(unrelated);
+    unrelated.click();
+
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: document.createTextNode('text') });
+    el.dispatchEvent(event);
+
+    expect(el.querySelector('[data-submit-next-actions]')?.hasAttribute('hidden')).toBe(true);
   });
 
   it('submit button is disabled initially', () => {

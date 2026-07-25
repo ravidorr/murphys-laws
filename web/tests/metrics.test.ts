@@ -90,4 +90,24 @@ describe('metrics', () => {
       tags: { surface: 'home', result: 'submitted' }
     });
   });
+
+  it('forwards product events to gtag only on the canonical production host', async () => {
+    import.meta.env.VITE_SENTRY_DSN = 'https://key@o1.ingest.sentry.io/1';
+    import.meta.env.PROD = true;
+    const originalLocation = window.location;
+    const gtag = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { hostname: 'murphys-laws.com' },
+      writable: true
+    });
+    window.gtag = gtag;
+    vi.resetModules();
+
+    const { trackProductEvent } = await import('../src/utils/metrics.ts');
+    trackProductEvent('archive.result_open', { surface: 'browse' });
+
+    expect(gtag).toHaveBeenCalledWith('event', 'archive_result_open', { surface: 'browse' });
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
+    window.gtag = undefined;
+  });
 });

@@ -2,17 +2,21 @@
 
 import { LawOfTheDay } from '@components/law-of-day.ts';
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.ts';
-import { ButteredToastCalculatorSimple } from '@components/buttered-toast-calculator-simple.ts';
 import { Trending } from '@components/trending.ts';
-import { RecentlyAdded } from '@components/recently-added.ts';
 import { fetchLawOfTheDay } from '../utils/api.ts';
-import { createErrorState } from '../utils/dom.ts';
-import { renderLoadingHTML } from '../components/loading.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
-import type { CleanableElement, OnNavigate, Law } from '../types/app.d.ts';
+import { exposeExperiment, getExperimentVariant, HOME_MODULE_ORDER_EXPERIMENT, type HomeModuleOrderVariant } from '@utils/experiments.ts';
+import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.d.ts';
+
+type OnSearch = (filters: SearchFilters) => void;
+type DailyLawState = 'loading' | 'ready' | 'empty' | 'error';
+
+interface RenderHomeOptions {
+  dailyLawState?: DailyLawState;
+}
 
 const ARCHIVE_SEARCH_HTML = `
   <section class="section card card--section section-card mb-12 browse-cta" data-home-zone="archive-search" aria-labelledby="browse-cta-heading">
@@ -23,7 +27,7 @@ const ARCHIVE_SEARCH_HTML = `
       <p class="section-subtitle">Start with the complete Murphy's Law archive, then save, vote, share, or submit the next inevitable discovery.</p>
     </div>
     <div class="section-body">
-      <form role="search" class="not-found-search-form" aria-label="Search the archive" data-nav="browse">
+      <form role="search" class="not-found-search-form" aria-label="Search the archive">
         <input type="search" class="form-control" placeholder="Search laws, categories, and mishaps" aria-label="Search laws">
         <button type="submit" class="btn primary">
           <span class="btn-text">Search the Archive</span>
@@ -31,7 +35,7 @@ const ARCHIVE_SEARCH_HTML = `
         </button>
       </form>
       <div class="home-proof-points" aria-label="Archive facts">
-        <span class="home-proof-point"><strong>2,400+</strong><span>laws</span></span>
+        <span class="home-proof-point"><strong>Complete</strong><span>archive</span></span>
         <span class="home-proof-point"><strong>55+</strong><span>categories</span></span>
         <span class="home-proof-point"><strong>Human-reviewed</strong><span>submissions</span></span>
         <span class="home-proof-point"><strong>Curated</strong><span>since 1998</span></span>
@@ -76,58 +80,53 @@ const SUBMIT_CTA_HTML = `
   </section>
 `;
 
-const HOME_OVERVIEW_HTML = `
-  <section class="section card card--section section-card mb-12">
+function renderDailyLawZone(
+  zone: HTMLElement,
+  law: Law | null,
+  onNavigate: OnNavigate,
+  requestedState: DailyLawState
+): void {
+  const state = requestedState === 'ready' && !law ? 'empty' : requestedState;
+  zone.replaceChildren();
+  zone.dataset.dailyLawState = state;
+  zone.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+
+  if (state === 'loading' || (state === 'ready' && law)) {
+    zone.appendChild(LawOfTheDay({ law, onNavigate }));
+    return;
+  }
+
+  const fallback = document.createElement('section');
+  fallback.className = 'section card card--section section-card mb-12';
+  const message = state === 'error'
+    ? 'The daily law could not be loaded. The rest of the archive is still available.'
+    : 'There is no daily law available right now. Explore the complete archive instead.';
+  const action = state === 'error'
+    ? '<button type="button" class="btn outline" data-action="retry">Try Again</button>'
+    : '<a href="/browse" class="btn outline" data-nav="browse">Browse All Laws</a>';
+
+  fallback.innerHTML = `
     <div class="section-header">
-      <h2 class="section-title"><span class="accent-text">The</span> Science of Murphy's Law</h2>
-    </div>
-    <div class="section-subheader">
-      <p class="section-subtitle">"Anything that can go wrong, will go wrong." First articulated in 1949 by Captain Edward A. Murphy Jr. during rocket sled experiments at Edwards Air Force Base.</p>
+      <h2 class="section-title"><span class="accent-text">Murphy's</span> Law of the Day</h2>
     </div>
     <div class="section-body">
-      <div class="content-section">
-        <h3>Why Murphy's Law Still Matters</h3>
-        <p>
-          Murphy's Law is more than a punchline. It is a call to excellence: plan for failure, design for resilience, and keep your sense of humor when the "impossible" happens anyway.
-        </p>
-        <p>
-          Our archive is the world's most comprehensive collection of these universal insights. We curate the most enduring formulations - from classical corollaries and field-specific variants in <a href="#/categories" data-nav="categories">aviation, healthcare, and technology</a> to the daily frustrations of modern life.
-        </p>
-        <ul>
-          <li><strong>Verified Origins:</strong> Entries with documented sources and real-world relevance.</li>
-          <li><strong>Community Curation:</strong> Vote on <a href="#/submit" data-nav="submit">submissions</a> to surface the most insightful laws.</li>
-          <li><strong>Practical Resilience:</strong> Every <a href="#/categories" data-nav="categories">category</a> offers lessons in risk management and defensive design.</li>
-        </ul>
-
-        <h3>Master the Chaos</h3>
-        <p>
-          Whether you are an engineer auditing a safety system or a traveler seeking perspective after a missed flight, our tools help you explore these patterns with purpose.
-        </p>
-        <ul>
-          <li><strong>Daily Insight:</strong> The Law of the Day delivers your morning dose of reality.</li>
-          <li><strong>Predict the Inevitable:</strong> Use the <a href="#/calculators/sods-law" data-nav="calculators/sods-law">Sod's Law</a> and <a href="#/calculators/buttered-toast" data-nav="calculators/buttered-toast">Buttered Toast</a> calculators to model your next mishap.</li>
-          <li><strong>The Living Record:</strong> See how Murphy's Law manifests in <a href="#/real-life-examples" data-nav="real-life-examples">real-world projects, travel, and technology</a>.</li>
-        </ul>
-        <p class="text-center mt-4">
-          <em>Don't just wait for things to go wrong. Understand why they do.</em>
-        </p>
-
-        <h3>Articles</h3>
-        <p>Dive deeper with long-form reads on the history, psychology, and practical use of Murphy's Law:</p>
-        <ul>
-          <li><a href="#/origin-story" data-nav="origin-story">The True Origin of Murphy's Law</a> – Captain Murphy, Project MX981, and the birth of the maxim.</li>
-          <li><a href="#/why-murphys-law-feels-true" data-nav="why-murphys-law-feels-true">Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)</a> – Negativity bias, availability heuristic, and confirmation bias.</li>
-          <li><a href="#/murphys-law-project-management" data-nav="murphys-law-project-management">Project Management vs. The Universe: A Survival Guide</a> – Plan for failure, scope creep, and communication.</li>
-        </ul>
-      </div>
+      <p>${message}</p>
+      ${action}
     </div>
-  </section>
-`;
-
+  `;
+  zone.appendChild(fallback);
+}
 
 // Exported for testing
 // Note: _categories parameter kept for backward compatibility with tests
-export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories: unknown, onNavigate: OnNavigate): void {
+export function renderHome(
+  el: HTMLElement,
+  lawOfTheDay: Law | null,
+  _categories: unknown,
+  onNavigate: OnNavigate,
+  onSearch?: OnSearch,
+  options: RenderHomeOptions = {}
+): void {
   el.innerHTML = '';
 
   // Primary discovery zone
@@ -141,42 +140,46 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
     searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
       trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
-      onNavigate('browse');
+      const input = searchForm.querySelector('input[type="search"]');
+      const query = input instanceof HTMLInputElement ? input.value.trim() : '';
+      if (onSearch) onSearch({ q: query });
+      else onNavigate('browse');
     });
   }
 
-  if (lawOfTheDay) {
-    const lawZone = document.createElement('section');
-    lawZone.setAttribute('data-home-zone', 'law-of-day');
-    const widget = LawOfTheDay({ law: lawOfTheDay, onNavigate });
-    lawZone.appendChild(widget);
-    el.appendChild(lawZone);
-  }
+  const lawZone = document.createElement('div');
+  lawZone.className = 'min-h-400';
+  lawZone.setAttribute('data-home-zone', 'law-of-day');
+  renderDailyLawZone(
+    lawZone,
+    lawOfTheDay,
+    onNavigate,
+    options.dailyLawState ?? (lawOfTheDay ? 'ready' : 'empty')
+  );
+  el.appendChild(lawZone);
 
   const categoryWrap = document.createElement('div');
   categoryWrap.innerHTML = CATEGORY_DISCOVERY_HTML;
   const categorySection = categoryWrap.firstElementChild!;
   hydrateIcons(categorySection as HTMLElement);
-  el.appendChild(categorySection);
 
-  const trendingRecentZone = document.createElement('section');
-  trendingRecentZone.setAttribute('data-home-zone', 'trending-recent');
-  trendingRecentZone.className = 'section mb-12';
-  const discoveryGrid = document.createElement('div');
-  discoveryGrid.className = 'home-discovery-grid';
-  discoveryGrid.appendChild(Trending());
-  discoveryGrid.appendChild(RecentlyAdded());
-  trendingRecentZone.appendChild(discoveryGrid);
-  el.appendChild(trendingRecentZone);
+  const trendingZone = document.createElement('section');
+  trendingZone.setAttribute('data-home-zone', 'trending');
+  trendingZone.className = 'section mb-12';
+  trendingZone.appendChild(Trending());
+  const variant = getExperimentVariant<HomeModuleOrderVariant>(HOME_MODULE_ORDER_EXPERIMENT, ['themes-first', 'trending-first']);
+  exposeExperiment(HOME_MODULE_ORDER_EXPERIMENT, variant);
+  if (variant === 'trending-first') {
+    el.append(trendingZone, categorySection);
+  } else {
+    el.append(categorySection, trendingZone);
+  }
 
   const toolsZone = document.createElement('section');
   toolsZone.setAttribute('data-home-zone', 'tools-submit');
 
   const calcWidget = SodCalculatorSimple({ onNavigate });
   toolsZone.appendChild(calcWidget);
-
-  const toastWidget = ButteredToastCalculatorSimple({ onNavigate });
-  toolsZone.appendChild(toastWidget);
 
   const submitWrap = document.createElement('div');
   submitWrap.innerHTML = SUBMIT_CTA_HTML;
@@ -185,27 +188,29 @@ export function renderHome(el: HTMLElement, lawOfTheDay: Law | null, _categories
   hydrateIcons(toolsZone);
   el.appendChild(toolsZone);
 
-  // Add Science of Murphy's Law section (below Submit a Law)
-  const scienceWrap = document.createElement('div');
-  scienceWrap.innerHTML = HOME_OVERVIEW_HTML;
-  const scienceSection = scienceWrap.firstElementChild!;
-  el.appendChild(scienceSection);
 }
 
-export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
+export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearch?: OnSearch }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page pt-0 min-h-400';
   el.setAttribute('aria-live', 'polite');
 
-  el.innerHTML = renderLoadingHTML({ size: 'large' });
+  renderHome(el, null, [], onNavigate, onSearch, { dailyLawState: 'loading' });
 
   function fetchAndRender() {
+    const lawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+    if (lawZone) {
+      renderDailyLawZone(lawZone, null, onNavigate, 'loading');
+    }
+
     fetchLawOfTheDay()
-      .catch((): null => null)
       .then((lawJson): void => {
         const lawOfTheDay = lawJson && lawJson.data && lawJson.data[0] ? lawJson.data[0] : null;
-        
-        renderHome(el, lawOfTheDay, [], onNavigate);
+
+        const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+        if (currentLawZone) {
+          renderDailyLawZone(currentLawZone, lawOfTheDay, onNavigate, lawOfTheDay ? 'ready' : 'empty');
+        }
         // Signal that meaningful content is ready for ads - pass element for validation
         triggerAdSense(el);
 
@@ -221,18 +226,16 @@ export function Home({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement
         }
       })
       .catch(() => {
-        el.innerHTML = '';
-        const errorEl = createErrorState('Ironically, something went wrong while loading Murphy\'s Laws. Please try again.');
-        const retryBtn = errorEl.querySelector('button.btn.outline');
-        if (retryBtn) {
-          retryBtn.removeAttribute('onclick');
-          retryBtn.setAttribute('data-action', 'retry');
+        const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+        if (currentLawZone) {
+          renderDailyLawZone(currentLawZone, null, onNavigate, 'error');
         }
-        el.appendChild(errorEl);
+        clearExportContent();
+        triggerAdSense(el);
       });
   }
 
-  // Initial render: loading, then fetch
+  // The complete page structure is already rendered; only the reserved daily-law slot changes.
   fetchAndRender();
 
   el.addEventListener('click', (e) => {

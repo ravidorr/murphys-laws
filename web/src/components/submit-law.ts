@@ -6,7 +6,7 @@ import { showError } from './notification.ts';
 import { fetchAPI, fetchDuplicateCandidates } from '../utils/api.ts';
 import { apiPost } from '../utils/request.ts';
 import { hydrateIcons } from '@utils/icons.ts';
-import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { rankDuplicateCandidates } from '@utils/discovery.ts';
 import {
@@ -15,6 +15,7 @@ import {
   deferUntilIdle
 } from '../utils/category-cache.ts';
 import type { Category } from '../types/app.d.ts';
+import { isUsefulDuplicateMatch } from '@shared/modules/duplicate-similarity.ts';
 
 interface SubmitLawPayload extends Record<string, unknown> {
   text: string;
@@ -46,6 +47,8 @@ export function SubmitLawSection() {
   const nextActions = el.querySelector('[data-submit-next-actions]');
   const duplicateCandidates = el.querySelector('[data-duplicate-candidates]');
   let categoriesLoaded = false;
+  let duplicateTimer: ReturnType<typeof setTimeout> | undefined;
+  let duplicateRequestId = 0;
 
   // Populate dropdown with cached categories (template always has categorySelect)
   function populateFromCache() {
@@ -203,20 +206,37 @@ export function SubmitLawSection() {
   textArea?.addEventListener('input', () => {
     checkSubmitValidity();
     clearMessage();
+    if (duplicateTimer) clearTimeout(duplicateTimer);
+    duplicateTimer = setTimeout(() => {
+      if (!el.isConnected) return;
+      void checkForDuplicates();
+    }, 500);
   });
 
-  textArea?.addEventListener('blur', async () => {
-    const text = textArea.value.trim();
-    if (!duplicateCandidates || text.length < 10) return;
+  async function checkForDuplicates() {
+    const text = textArea?.value.trim() || '';
+    if (!duplicateCandidates || text.length < 10) {
+      if (duplicateCandidates) duplicateCandidates.innerHTML = '';
+      return;
+    }
+    const requestId = ++duplicateRequestId;
     try {
       const result = await fetchDuplicateCandidates(text);
-      const ranked = rankDuplicateCandidates(text, result.data).filter((candidate) => candidate.score > 0).slice(0, 3);
+      if (requestId !== duplicateRequestId) return;
+      const ranked = rankDuplicateCandidates(text, result.data).filter(isUsefulDuplicateMatch).slice(0, 3);
+      const exact = ranked.filter((candidate) => candidate.match_type === 'exact');
+      const fuzzy = ranked.filter((candidate) => candidate.match_type === 'fuzzy');
       duplicateCandidates.innerHTML = ranked.length > 0
-        ? `<p class="small"><strong>Possible duplicates:</strong></p><ul>${ranked.map((law) => `<li><a href="/law/${law.id}">${law.title || law.text}</a></li>`).join('')}</ul>`
+        ? `${exact.length > 0 ? '<p class="small"><strong>Already in the archive:</strong></p>' : '<p class="small"><strong>Possible duplicates:</strong></p>'}<ul>${[...exact, ...fuzzy].map((law) => `<li><a href="/law/${law.id}">${escapeHtml(law.title || law.text)}</a>${law.match_type === 'fuzzy' ? ` <span class="small text-muted-fg">${Math.round(law.similarity * 100)}% similar</span>` : ''}</li>`).join('')}</ul>`
         : '';
     } catch {
-      duplicateCandidates.innerHTML = '';
+      if (requestId === duplicateRequestId) duplicateCandidates.innerHTML = '';
     }
+  }
+
+  textArea?.addEventListener('blur', () => {
+    if (duplicateTimer) clearTimeout(duplicateTimer);
+    void checkForDuplicates();
   });
 
   termsCheckbox?.addEventListener('change', () => {
@@ -310,4 +330,3 @@ export function SubmitLawSection() {
 
   return el;
 }
-

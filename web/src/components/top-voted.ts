@@ -3,12 +3,17 @@
 import { fetchTopVoted } from '../utils/api.ts';
 import { createLawListSection } from './law-list-section.ts';
 import { WIDGET_CARD_COUNT } from '../utils/constants.ts';
+import type { Law } from '../types/app.d.ts';
+
+interface DiscoveryWidgetOptions {
+  seenIds?: Set<number>;
+}
 
 /**
  * Creates a Top Voted component that displays the 3 highest voted laws
  * @returns {HTMLDivElement} Component element with top voted laws
  */
-export function TopVoted(): HTMLDivElement {
+export function TopVoted({ seenIds }: DiscoveryWidgetOptions = {}): HTMLDivElement {
   const { el, renderLaws, renderError } = createLawListSection({
     accentText: 'Top',
     remainderText: ' Voted',
@@ -19,7 +24,9 @@ export function TopVoted(): HTMLDivElement {
     .then(data => {
       const laws = data && Array.isArray(data.data) ? data.data : [];
       // Double-check: ensure we only show exactly the configured number of laws
-      const topLaws = laws.slice(0, WIDGET_CARD_COUNT);
+      const topLaws = laws.filter((law: Law) => !seenIds?.has(law.id)).slice(0, WIDGET_CARD_COUNT);
+      topLaws.forEach((law: Law) => seenIds?.add(law.id));
+      el.toggleAttribute('hidden', topLaws.length === 0);
       // Render with explicit limit
       renderLaws(topLaws, { skip: 0, limit: WIDGET_CARD_COUNT, rankOffset: 1 });
     })

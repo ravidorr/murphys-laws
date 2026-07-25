@@ -20,6 +20,17 @@ export interface Law {
   attributions?: Attribution[];
   submittedBy?: string;
   last_voted_at?: string;
+  similarity?: number;
+  match_type?: 'exact' | 'fuzzy';
+  editorial?: LawEditorial;
+}
+
+export interface LawEditorial {
+  explanation: string;
+  practical_example: string;
+  source_label: string;
+  source_url: string;
+  reviewed_at: string;
 }
 
 /** Attribution payload returned by the API */

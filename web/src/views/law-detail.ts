@@ -5,7 +5,7 @@ import { escapeHtml } from '../utils/sanitize.ts';
 import { toggleVote, getUserVote } from '../utils/voting.ts';
 import { getRandomLoadingMessage } from '../utils/constants.ts';
 import { SocialShare, initSharePopovers } from '../components/social-share.ts';
-import { updateSocialMetaTags } from '../utils/dom.ts';
+import { updatePageMetadata } from '../utils/dom.ts';
 // Note: law-detail uses template-based loading with getRandomLoadingMessage()
 // for text replacement, which is compatible with the unified loading approach
 import { hydrateIcons, createIcon } from '@utils/icons.ts';
@@ -19,6 +19,7 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { getDefaultLawContext } from '../utils/law-context-copy.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { HOME_MODULE_ORDER_EXPERIMENT, trackExperimentOutcome } from '@utils/experiments.ts';
 import { getLawDetailInternalLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
 
@@ -222,11 +223,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     const lawText = law.text || '';
     const ogImageUrl = `${window.location.origin}/api/v1/og/law/${law.id}.png`;
 
-    updateSocialMetaTags({
+    updatePageMetadata({
       title: `${lawTitle} - Murphy's Laws`,
       description: lawText,
-      url: lawUrl,
-      image: ogImageUrl
+      path: `/law/${law.id}`,
+      image: ogImageUrl,
+      type: 'article'
     });
 
     // Register export content for this law
@@ -258,6 +260,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     }
 
     showLaw();
+    trackExperimentOutcome(HOME_MODULE_ORDER_EXPERIMENT, 'law_detail_open');
 
     lawCardContainer?.replaceChildren();
 
@@ -306,6 +309,27 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         ? law.category_context
         : getDefaultLawContext();
       contextTextEl.textContent = contextText;
+    }
+
+    const editorialSection = el.querySelector('[data-law-editorial]');
+    if (editorialSection && law.editorial) {
+      const editorial = law.editorial;
+      const explanation = el.querySelector('[data-law-editorial-explanation]');
+      const example = el.querySelector('[data-law-editorial-example]');
+      const reviewed = el.querySelector('[data-law-editorial-reviewed]');
+      const source = el.querySelector('[data-law-editorial-source]');
+      if (explanation) explanation.textContent = editorial.explanation;
+      if (example) example.textContent = editorial.practical_example;
+      if (reviewed) {
+        reviewed.textContent = editorial.reviewed_at;
+        reviewed.setAttribute('datetime', editorial.reviewed_at);
+      }
+      if (source instanceof HTMLAnchorElement && /^https:\/\//.test(editorial.source_url)) {
+        source.href = editorial.source_url;
+        source.rel = 'noopener noreferrer';
+        source.textContent = editorial.source_label;
+      }
+      editorialSection.removeAttribute('hidden');
     }
 
     const sourceStatusEl = el.querySelector('[data-law-source-status]');

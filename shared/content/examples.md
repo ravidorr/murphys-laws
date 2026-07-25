@@ -13,7 +13,7 @@ Your phone maintains a healthy charge all day while sitting unused on your desk.
 ### The Update Curse
 Critical software updates always seem to install themselves right when you're about to give an important presentation. The loading bar moves at a glacial pace, seemingly aware of your mounting anxiety.
 
-Explore more failures in [Murphy's Technology Laws](/category/murphys-technology-laws) and [Murphy's Computer Laws](/category/murphys-computer-laws).
+Explore more failures in [Murphy's Technology Laws](/category/murphys-technology-laws) and [Murphy's Computer Laws](/category/murphys-computers-laws).
 
 ## Work and Career Examples
 

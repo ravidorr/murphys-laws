@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createErrorState, updateSocialMetaTags, updateMetaDescription } from '../src/utils/dom.ts';
+import { createErrorState, updateSocialMetaTags, updateMetaDescription, updatePageMetadata } from '../src/utils/dom.ts';
 
 describe('DOM utilities', () => {
   describe('createErrorState', () => {
@@ -162,6 +162,43 @@ describe('DOM utilities', () => {
       }).not.toThrow();
 
       g.document = savedDocument;
+    });
+  });
+
+  describe('updatePageMetadata', () => {
+    beforeEach(() => {
+      document.head.innerHTML = `
+        <link rel="canonical" href="">
+        <link rel="alternate" hreflang="en" href="">
+        <meta name="description" content="">
+        <meta property="og:type" content="">
+        <meta property="og:title" content="">
+        <meta property="og:description" content="">
+        <meta property="og:url" content="">
+        <meta property="og:image" content="">
+      `;
+    });
+
+    it('normalizes a trailing slash and updates canonical metadata', () => {
+      updatePageMetadata({
+        title: 'Category',
+        description: 'Category description',
+        path: '/category/test/',
+        type: 'article'
+      });
+
+      expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://murphys-laws.com/category/test');
+      expect(document.querySelector('link[rel="alternate"]')?.getAttribute('href')).toBe('https://murphys-laws.com/category/test');
+      expect(document.querySelector('meta[property="og:type"]')?.getAttribute('content')).toBe('article');
+    });
+
+    it('preserves the root URL and allows omitted title and description', () => {
+      document.title = 'Existing';
+      updatePageMetadata({ path: '/' });
+
+      expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://murphys-laws.com/');
+      expect(document.title).toBe('Existing');
+      expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('');
     });
   });
 });

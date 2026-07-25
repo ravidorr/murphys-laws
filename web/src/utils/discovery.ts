@@ -1,4 +1,5 @@
 import type { Law } from '../types/app.d.ts';
+import { scoreDuplicateSimilarity } from '@shared/modules/duplicate-similarity.ts';
 
 const DISCOVERY_TERMS: Record<string, { terms: string[]; category: string }> = {
   meeting: { terms: ['work', 'office', 'project'], category: 'murphys-office-laws' },
@@ -37,13 +38,14 @@ export function inferDiscoveryCategory(text: string): string | null {
   return null;
 }
 
-export function rankDuplicateCandidates(text: string, candidates: Pick<Law, 'id' | 'text' | 'title'>[]): Array<Pick<Law, 'id' | 'text' | 'title'> & { score: number }> {
-  const terms = new Set(tokenize(text));
+export function rankDuplicateCandidates(text: string, candidates: Pick<Law, 'id' | 'text' | 'title'>[]): Array<Pick<Law, 'id' | 'text' | 'title'> & { score: number; similarity: number; match_type: 'exact' | 'fuzzy'; shared_terms: number }> {
   return candidates
     .map((candidate) => {
-      const candidateTerms = tokenize(`${candidate.title || ''} ${candidate.text}`);
-      const score = candidateTerms.reduce((total, term) => total + (terms.has(term) ? 1 : 0), 0);
-      return { ...candidate, score };
+      const textMatch = scoreDuplicateSimilarity(text, candidate.text);
+      const match = textMatch.match_type === 'exact'
+        ? textMatch
+        : scoreDuplicateSimilarity(text, `${candidate.title || ''} ${candidate.text}`.trim());
+      return { ...candidate, ...match, score: match.shared_terms };
     })
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.similarity - a.similarity || b.score - a.score);
 }

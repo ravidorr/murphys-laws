@@ -28,16 +28,21 @@ export async function updateSearchInfo(infoElement: HTMLElement | null, filters:
   }
 
   if (filters.category_id) {
-    // Fetch category name
-    try {
-      const category = await fetchAPI(`/api/v1/categories/${filters.category_id}`) as { title?: string };
-      if (category && category.title) {
-        filterParts.push(`in category <strong>${escapeHtml(stripMarkdownFootnotes(category.title))}</strong>`);
-      } else {
+    const numericCategoryId = typeof filters.category_id === 'number' || /^\d+$/.test(String(filters.category_id));
+    if (numericCategoryId) {
+      try {
+        const category = await fetchAPI(`/api/v1/categories/${filters.category_id}`) as { title?: string };
+        if (category && category.title) {
+          filterParts.push(`in category <strong>${escapeHtml(stripMarkdownFootnotes(category.title))}</strong>`);
+        } else {
+          filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
+        }
+      } catch {
         filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
       }
-    } catch {
-      filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
+    } else {
+      const categoryLabel = String(filters.category_id).replace(/^murphys-/, '').replace(/-laws$/, '').replace(/-/g, ' ');
+      filterParts.push(`in category <strong>${escapeHtml(categoryLabel)}</strong>`);
     }
   }
 

@@ -1,11 +1,17 @@
-// Initialize Sentry first to capture all errors
+// Initialize Sentry first to capture all errors on the production origin only.
 import * as Sentry from '@sentry/browser';
 import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
 import { isServiceWorkerTransientError } from './utils/error-handler.ts';
 
 // Initialize Sentry for production error tracking. Metrics are automatically
 // enabled (SDK 10.25+); use the metrics API for count/gauge/distribution.
-if (import.meta.env.VITE_SENTRY_DSN) {
+const isCanonicalTelemetryRuntime = import.meta.env.PROD && (
+  import.meta.env.MODE === 'test' || (
+    typeof window !== 'undefined' &&
+    window.location.hostname === 'murphys-laws.com'
+  )
+);
+if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.MODE,
@@ -76,7 +82,8 @@ const updateSW = registerSW({
 import { defineRoute, navigate, startRouter, forceRender, currentRoute } from './router.ts';
 import { Header } from './components/header.ts';
 import { Footer } from './components/footer.ts';
-import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS } from './utils/constants.ts';
+import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from './utils/constants.ts';
+import { updatePageMetadata } from './utils/dom.ts';
 import { Home } from './views/home.ts';
 import { Browse } from './views/browse.ts';
 import { LawDetail } from './views/law-detail.ts';
@@ -120,11 +127,6 @@ import {
 } from './components/install-prompt.ts';
 import type { SearchFilters } from './types/app.d.ts';
 
-// App state (no framework)
-const state = {
-  searchQuery: '',
-};
-
 // Actions
 function onNavigate(page: string, param?: string): void {
   // Handle compound routes like "calculator/sods-law"
@@ -147,13 +149,17 @@ function handleCategoryNavigation(categoryId: string | number): void {
 /**
  * Handle search query navigation - navigates to or refreshes the browse page
  */
-function handleSearchNavigation() {
-  const { name } = currentRoute();
-  if (name === 'browse') {
-    forceRender();
-  } else {
-    navigate('browse');
+function handleSearchNavigation(filters: SearchFilters) {
+  const params = new URLSearchParams();
+  if (filters.q) params.set('q', filters.q);
+  if (filters.attribution) params.set('attribution', filters.attribution);
+  const search = params.toString();
+  const target = `/browse${search ? `?${search}` : ''}`;
+
+  if (`${location.pathname}${location.search}` !== target) {
+    history.pushState({ name: 'browse' }, '', target);
   }
+  forceRender();
 }
 
 /**
@@ -176,12 +182,10 @@ function handleClearFilters() {
  * @param {string} [filters.attribution] - Attribution filter
  */
 function onSearch(filters: SearchFilters): void {
-  state.searchQuery = filters.q || '';
-
   if (filters.category_id) {
     handleCategoryNavigation(filters.category_id);
   } else if (filters.q || filters.attribution) {
-    handleSearchNavigation();
+    handleSearchNavigation(filters);
   } else {
     handleClearFilters();
   }
@@ -195,7 +199,14 @@ if (!app) throw new Error('App container #app not found');
 setSiteStructuredData();
 
 // Layout wrapper: header + page + footer
-function layout(node: HTMLElement, { hideAds = false } = {}): HTMLElement {
+function layout(node: HTMLElement, { hideAds = false, socialImage = SITE_DEFAULT_SOCIAL_IMAGE } = {}): HTMLElement {
+  const description = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  updatePageMetadata({
+    title: document.title,
+    description,
+    path: location.pathname,
+    image: socialImage
+  });
   const wrap = document.createElement('div');
   wrap.className = 'min-h-screen flex flex-col';
 
@@ -258,7 +269,12 @@ const routesMap = {
   home: () => {
     trackPageView();
     setHomeStructuredData();
-    return layout(Home({ onNavigate }));
+    updatePageMetadata({
+      title: "Murphy's Law Archive: Laws, Corollaries & Sod's Law Calculator",
+      description: "Search and explore the complete Murphy's Law archive, discover themed collections, and try playful calculators.",
+      path: '/'
+    });
+    return layout(Home({ onNavigate, onSearch }));
   },
   category: ({ param }: { param?: string | null }) => {
     trackPageView();
@@ -268,7 +284,7 @@ const routesMap = {
   browse: () => {
     trackPageView();
     setBrowseStructuredData();
-    return layout(Browse({ searchQuery: state.searchQuery, onNavigate }));
+    return layout(Browse({ onNavigate }));
   },
   categories: () => {
     trackPageView();
@@ -280,7 +296,7 @@ const routesMap = {
     clearPageStructuredData();
     // If feature disabled, redirect to home
     if (!isFavoritesEnabled()) {
-      return layout(Home({ onNavigate }));
+      return layout(Home({ onNavigate, onSearch }));
     }
     return layout(Favorites({ onNavigate }));
   },
@@ -291,6 +307,11 @@ const routesMap = {
   },
   submit: () => {
     trackPageView();
+    updatePageMetadata({
+      title: "Submit a Murphy's Law | Murphy's Law Archive",
+      description: "Submit a Murphy's Law for human review, with attribution guidance and duplicate checking.",
+      path: '/submit'
+    });
     const container = document.createElement('div');
     container.className = 'container page pt-0';
 
@@ -311,18 +332,18 @@ const routesMap = {
     // Handle /calculator/sods-law and /calculator/buttered-toast
     if (param === 'buttered-toast') {
       setToastCalculatorStructuredData();
-      return layout(ButteredToastCalculator());
+      return layout(ButteredToastCalculator(), { socialImage: SOCIAL_IMAGE_TOAST });
     }
     // Default to Sod's Law Calculator (handles /calculator/sods-law and legacy /calculator)
     setSodCalculatorStructuredData();
-    return layout(Calculator());
+    return layout(Calculator(), { socialImage: SOCIAL_IMAGE_SOD });
   },
   // Keep legacy routes for backward compatibility
   toastcalculator: () => {
     trackPageView();
     trackCalculatorUse();
     setToastCalculatorStructuredData();
-    return layout(ButteredToastCalculator());
+    return layout(ButteredToastCalculator(), { socialImage: SOCIAL_IMAGE_TOAST });
   },
   'origin-story': () => {
     trackPageView();
@@ -524,7 +545,7 @@ function showErrorBanner(): void {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
-    if (import.meta.env.PROD && typeof Sentry !== 'undefined') {
+    if (isCanonicalTelemetryRuntime && typeof Sentry !== 'undefined') {
       Sentry.captureException(event.error || new Error(event.message), { extra: { filename: event.filename, lineno: event.lineno } });
     }
     if (!isServiceWorkerTransientError(event.error || event.message)) {

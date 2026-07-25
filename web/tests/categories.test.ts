@@ -22,11 +22,14 @@ vi.mock('../src/utils/icons.js', () => ({
   createIcon: vi.fn(() => document.createElement('span'))
 }));
 vi.mock('../src/utils/constants.js', () => ({
+  SITE_DEFAULT_SOCIAL_IMAGE: 'https://murphys-laws.com/social/home.png',
+  SITE_URL: 'https://murphys-laws.com',
   getRandomLoadingMessage: () => 'Loading...',
   getCategoryDisplayName: (_slug: string, apiTitle: string) => apiTitle
 }));
 vi.mock('../src/utils/sanitize.js', () => ({
-  stripMarkdownFootnotes: vi.fn((text) => text)
+  stripMarkdownFootnotes: vi.fn((text) => text),
+  escapeHtml: vi.fn((text) => text)
 }));
 
 interface CategoriesTestContext {
@@ -44,7 +47,7 @@ describe('Categories view', () => {
       data: [
         { 
           id: 1, 
-          slug: 'murphys-computer-laws', 
+          slug: 'murphys-computers-laws',
           title: "Murphy's Computer Laws", 
           description: 'Digital doom: programs are obsolete when running.',
           law_count: 163
@@ -109,6 +112,80 @@ describe('Categories view', () => {
     expect(el.textContent).toContain('Explore laws in this category.');
   });
 
+  it('truncates long category descriptions', async () => {
+    vi.mocked(api.fetchCategories).mockResolvedValue({
+      data: [{
+        id: 1,
+        slug: 'long-description',
+        title: 'Long Description',
+        description: 'A'.repeat(180),
+        law_count: 2
+      }]
+    });
+
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-card-description')).toBeTruthy());
+
+    const description = el.querySelector('.category-card-description')?.textContent ?? '';
+    expect(description).toHaveLength(148);
+    expect(description.endsWith('…')).toBe(true);
+  });
+
+  it('filters categories and hides featured cards while searching', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-card')).toBeTruthy());
+    const filter = el.querySelector('#category-filter') as HTMLInputElement;
+
+    filter.value = 'digital doom';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(el.querySelectorAll('#categories-grid .category-card')).toHaveLength(1);
+    expect(el.querySelector('#category-filter-status')?.textContent).toBe('1 categories found');
+    expect(el.querySelector('#featured-categories')?.hasAttribute('hidden')).toBe(true);
+
+    filter.value = '';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(el.querySelector('#category-filter-status')?.textContent).toBe('3 categories');
+    expect(el.querySelector('#featured-categories')?.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('ignores unrelated input, key, and click events', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-card')).toBeTruthy());
+    const unrelatedInput = document.createElement('input');
+    unrelatedInput.id = 'unrelated';
+    el.appendChild(unrelatedInput);
+
+    unrelatedInput.dispatchEvent(new Event('input', { bubbles: true }));
+    unrelatedInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    unrelatedInput.click();
+
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('handles filtering when the optional status element is absent', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-card')).toBeTruthy());
+    el.querySelector('#category-filter-status')?.remove();
+    const filter = el.querySelector('#category-filter') as HTMLInputElement;
+
+    filter.value = 'computer';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(el.querySelectorAll('#categories-grid .category-card')).toHaveLength(1);
+  });
+
+  it('ignores Enter on an element outside a category card', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-card')).toBeTruthy());
+    const button = document.createElement('button');
+    el.appendChild(button);
+
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(localThis.onNavigate).not.toHaveBeenCalled();
+  });
+
   it('displays law counts', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -136,7 +213,7 @@ describe('Categories view', () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    const cards = el.querySelectorAll('.category-card');
+    const cards = el.querySelectorAll('#categories-grid .category-card');
     expect(cards.length).toBe(3);
     expect(el.querySelector('[data-category-cluster="Technology"]')?.textContent).toContain("Murphy's Computer Laws");
     expect(el.querySelector('[data-category-cluster="Everyday Life"]')?.textContent).toContain("Murphy's Alarm Clock Laws");
@@ -146,21 +223,21 @@ describe('Categories view', () => {
   it('L139 B1: click on category card triggers onNavigate with slug', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
-    const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
+    const card = el.querySelector('.category-card[data-category-slug="murphys-computers-laws"]');
     expect(card).toBeTruthy();
     (card as HTMLElement)!.click();
-    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computers-laws');
   });
 
   it('navigates to category on card click', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
+    const card = el.querySelector('.category-card[data-category-slug="murphys-computers-laws"]');
     expect(card).toBeTruthy();
     
     (card as HTMLElement)!.click();
-    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computers-laws');
   });
 
   it('L149 B1: keydown on category card enters card branch', async () => {
@@ -213,8 +290,8 @@ describe('Categories view', () => {
 
     const card = el.querySelector('.category-card');
     expect(card).toBeTruthy();
-    expect(card!.getAttribute('tabindex')).toBe('0');
-    expect(card!.getAttribute('role')).toBe('link');
+    expect(card!.tagName).toBe('A');
+    expect(card!.getAttribute('href')).toMatch(/^\/category\//);
     expect(card!.classList.contains('card')).toBe(true);
     expect(card!.classList.contains('card--category')).toBe(true);
     expect(card!.classList.contains('category-card--rich')).toBe(true);

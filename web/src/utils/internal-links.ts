@@ -23,7 +23,7 @@ const CATEGORY_LINKS: Record<string, InternalLink[]> = {
     { href: '/examples/tech', label: 'Technology examples', description: 'Real situations where tech goes sideways.' },
     { href: '/calculator/sods-law', label: "Sod's Law Calculator", description: 'Model task risk with urgency and complexity.' },
   ],
-  'murphys-computer-laws': [
+  'murphys-computers-laws': [
     { href: '/murphys-laws-about-technology', label: 'Technology hub', description: 'Software, hardware, and system failures.' },
     { href: '/examples/tech', label: 'Technology examples', description: 'Common tech scenarios with linked laws.' },
     { href: '/category/murphys-technology-laws', label: 'Related technology laws', description: 'A broader technical category.' },

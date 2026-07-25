@@ -1,5 +1,5 @@
 <div class="container">
-  <div class="flex h-16 items-center justify-between gap-4">
+  <div class="header-row flex h-16 items-center justify-between gap-4">
     <div class="brand-wrapper">
       <button class="brand-badge" id="nav-menu-toggle" type="button" aria-label="Open main menu" aria-expanded="false">
         M
@@ -56,18 +56,20 @@
       </nav>
     </div>
 
-    <div class="flex items-center gap-2">
-      <form role="search" class="flex items-center gap-2" aria-label="Site Search">
+    <div class="header-actions flex items-center gap-2">
+      <form role="search" class="header-search flex items-center gap-2" aria-label="Site Search">
         <input type="text" id="header-search" name="search" aria-label="Search" placeholder="Search laws..." class="input">
         <button type="submit" class="btn">
           <span class="icon" data-icon="search" aria-hidden="true"></span>
           <span class="btn-text">Search</span>
         </button>
       </form>
-      <div id="export-menu-container"></div>
-      <button type="button" id="theme-toggle" class="theme-toggle" data-tooltip="Auto mode" data-tooltip-pos="bottom" aria-label="Theme: Auto. Click for light mode">
-        <span class="icon" data-icon="sunMoon" aria-hidden="true"></span>
-      </button>
+      <div class="header-utility-actions flex items-center gap-2">
+        <div id="export-menu-container"></div>
+        <button type="button" id="theme-toggle" class="theme-toggle" data-tooltip="Auto mode" data-tooltip-pos="bottom" aria-label="Theme: Auto. Click for light mode">
+          <span class="icon" data-icon="sunMoon" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

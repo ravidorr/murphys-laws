@@ -754,31 +754,32 @@ describe('ButteredToastCalculator view', () => {
 
   it('hides copy feedback after timeout', async () => {
     vi.useFakeTimers();
-    const el = ButteredToastCalculator();
+    const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
     document.body.appendChild(el);
 
-    const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText: writeTextMock }
-    });
+    try {
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        clipboard: { writeText: writeTextMock }
+      });
 
-    const copyBtn = el.querySelector('[data-action="copy-link"]');
-    expect(copyBtn).toBeTruthy();
-    copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
+      const copyBtn = el.querySelector('[data-action="copy-link"]');
+      expect(copyBtn).toBeTruthy();
+      copyBtn!.dispatchEvent(new Event('click', { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
 
-    await vi.waitFor(() => {
       const feedback = el.querySelector('.share-copy-feedback');
       expect(feedback).toBeTruthy();
       expect(feedback!.classList.contains('visible')).toBe(true);
-    });
 
-    vi.advanceTimersByTime(1600);
-
-    const feedbackAfter = el.querySelector('.share-copy-feedback');
-    expect(feedbackAfter!.classList.contains('visible')).toBe(false);
-    vi.useRealTimers();
-
-    document.body.removeChild(el);
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(feedback!.classList.contains('visible')).toBe(false);
+    } finally {
+      el.cleanup?.();
+      el.remove();
+      vi.useRealTimers();
+    }
   });
 
   it('updateState captures current slider values in share URL', async () => {
@@ -883,7 +884,7 @@ describe('ButteredToastCalculator view', () => {
 
   it('handles ensureMathJax rejection gracefully', async () => {
     // Mock ensureMathJax to reject
-    vi.mock('../src/utils/mathjax.ts', () => ({
+    vi.doMock('../src/utils/mathjax.ts', () => ({
       ensureMathJax: vi.fn(() => Promise.reject(new Error('MathJax load failed')))
     }));
 

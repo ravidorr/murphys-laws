@@ -36,7 +36,7 @@ describe('LawListSection component', () => {
 
     const title = el.querySelector('.card-title');
     expect(title).toBeTruthy();
-    expect(title!.tagName).toBe('H3');
+    expect(title!.tagName).toBe('H2');
   });
 
   it('shows loading placeholder initially', () => {

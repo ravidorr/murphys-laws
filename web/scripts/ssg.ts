@@ -22,6 +22,13 @@ interface Law {
   downvotes?: number;
   created_at?: string;
   updated_at?: string;
+  editorial?: {
+    explanation: string;
+    practical_example: string;
+    source_label: string;
+    source_url: string;
+    reviewed_at: string;
+  };
 }
 
 interface ContentPageMeta {
@@ -31,14 +38,39 @@ interface ContentPageMeta {
   description: string;
 }
 
+interface PageMetadata {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  image?: string;
+  type?: 'website' | 'article';
+}
+
+interface ContentMetadataEntry {
+  lastUpdated?: string;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DIST_DIR = path.resolve(__dirname, '../dist');
 const SHARED_DATA_DIR = path.resolve(__dirname, '../../shared/data/murphys-laws');
 const SHARED_CONTENT_DIR = path.resolve(__dirname, '../../shared/content');
 
+async function readContentMetadata(): Promise<Record<string, ContentMetadataEntry>> {
+  try {
+    const raw = await fs.readFile(path.join(SHARED_CONTENT_DIR, 'metadata.json'), 'utf-8');
+    return JSON.parse(raw) as Record<string, ContentMetadataEntry>;
+  } catch {
+    return {};
+  }
+}
+
 // API configuration for fetching laws
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
+const REVIEWED_LAW_IDS = [
+  2, 4, 8, 10, 14, 24, 28, 32, 33, 43, 44, 48, 50,
+  61, 62, 68, 71, 72, 73, 75, 76, 77, 87, 90, 91
+];
 
 // Content pages metadata for SSG
 const CONTENT_PAGES: ContentPageMeta[] = [
@@ -187,6 +219,20 @@ async function fetchAllLaws(): Promise<Law[]> {
   }
 }
 
+async function mergeReviewedLawDetails(laws: Law[]): Promise<Law[]> {
+  if (laws.length === 0) return laws;
+
+  const details = await Promise.all(REVIEWED_LAW_IDS.map(async (lawId) => {
+    const response = await fetch(`${API_BASE_URL}/api/v1/laws/${lawId}`);
+    if (!response.ok) throw new Error(`Could not fetch reviewed law ${lawId}: API returned ${response.status}`);
+    const law = await response.json() as Law;
+    if (!law.editorial) throw new Error(`Reviewed law ${lawId} is missing its editorial annotation`);
+    return law;
+  }));
+  const detailsById = new Map(details.map((law) => [law.id, law]));
+  return laws.map((law) => detailsById.has(law.id) ? { ...law, ...detailsById.get(law.id)! } : law);
+}
+
 /**
  * Fetch first page of laws for SSG pre-render (browse, category)
  */
@@ -260,7 +306,7 @@ function getLawAttributionName(law: Law): string | null {
   return law.author || law.attribution || null;
 }
 
-function buildStaticLawDetailContent(law: Law): string {
+function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = []): string {
   const title = law.title || "Murphy's Law";
   const attributionName = getLawAttributionName(law);
   const sourceStatus = attributionName
@@ -282,6 +328,7 @@ function buildStaticLawDetailContent(law: Law): string {
         <ol>
           <li><a href="/">Home</a></li>
           <li><a href="/browse">Browse</a></li>
+          ${categorySlug ? `<li><a href="/category/${escapeHtml(categorySlug)}">${escapeHtml(categoryName)}</a></li>` : ''}
           <li aria-current="page">${escapeHtml(title)}</li>
         </ol>
       </nav>
@@ -307,12 +354,21 @@ function buildStaticLawDetailContent(law: Law): string {
           <p>${escapeHtml(context)}</p>
         </div>
       </section>
+      ${law.editorial ? `<section class="section card card--section section-card mb-12" aria-labelledby="law-editorial-heading">
+        <div class="section-header"><h2 id="law-editorial-heading" class="section-title"><span class="accent-text">Editorial</span> note</h2></div>
+        <div class="section-body">
+          <p>${escapeHtml(law.editorial.explanation)}</p>
+          <p><strong>Practical example:</strong> ${escapeHtml(law.editorial.practical_example)}</p>
+          <p class="small">Reviewed <time datetime="${escapeHtml(law.editorial.reviewed_at)}">${escapeHtml(law.editorial.reviewed_at)}</time> · <a href="${escapeHtml(law.editorial.source_url)}" rel="noopener noreferrer">${escapeHtml(law.editorial.source_label)}</a></p>
+        </div>
+      </section>` : ''}
       <section class="section card card--section section-card mb-12" aria-labelledby="related-laws-heading">
         <div class="section-header">
           <h2 id="related-laws-heading" class="section-title" data-section-title="Related laws"><span class="accent-text">Related</span> laws</h2>
         </div>
         <div class="section-body">
           <p>Keep exploring laws from this topic or browse the full archive for neighboring ideas.</p>
+          ${relatedLaws.length > 0 ? `<div class="related-laws-list">${renderStaticLawCards(relatedLaws, '')}</div>` : ''}
           ${renderInternalLinkList(getLawDetailInternalLinks({ categorySlug, categoryName }))}
           <div class="not-found-actions">
             ${categorySlug ? `<a href="/category/${escapeHtml(categorySlug)}" class="btn">See this category</a>` : ''}
@@ -346,6 +402,32 @@ function updateHreflang(html: string, url: string): string {
   return html;
 }
 
+function replaceMetaContent(html: string, attribute: 'name' | 'property', key: string, content: string): string {
+  const escaped = escapeHtml(content);
+  const pattern = new RegExp(`<meta ${attribute}="${key}"[\\s\\S]*?content="[\\s\\S]*?">`);
+  return html.replace(pattern, `<meta ${attribute}="${key}" content="${escaped}">`);
+}
+
+function applyPageMetadata(html: string, metadata: PageMetadata): string {
+  const canonicalUrl = buildCanonicalUrl(metadata.canonicalPath);
+  const image = metadata.image || `${SITE_URL}/social/home.png`;
+  const type = metadata.type || 'website';
+  let result = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(metadata.title)}</title>`);
+  result = replaceMetaContent(result, 'name', 'description', metadata.description);
+  result = result.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${canonicalUrl}">`);
+  result = updateHreflang(result, canonicalUrl);
+  result = replaceMetaContent(result, 'property', 'og:type', type);
+  result = replaceMetaContent(result, 'property', 'og:url', canonicalUrl);
+  result = replaceMetaContent(result, 'property', 'og:title', metadata.title);
+  result = replaceMetaContent(result, 'property', 'og:description', metadata.description);
+  result = replaceMetaContent(result, 'property', 'og:image', image);
+  result = replaceMetaContent(result, 'property', 'twitter:url', canonicalUrl);
+  result = replaceMetaContent(result, 'property', 'twitter:title', metadata.title);
+  result = replaceMetaContent(result, 'property', 'twitter:description', metadata.description);
+  result = replaceMetaContent(result, 'property', 'twitter:image', image);
+  return result;
+}
+
 /**
  * Escape string for JSON embedding
  * @param {string} str - String to escape
@@ -365,10 +447,63 @@ function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
+interface GeneratedPageExpectations {
+  canonicalPath: string;
+  forbidMailto?: boolean;
+  requireCategoryLink?: boolean;
+}
+
+function validateGeneratedPage(html: string, expectations: GeneratedPageExpectations): string[] {
+  const failures: string[] = [];
+  const h1Count = (html.match(/<h1\b/gi) || []).length;
+  if (h1Count !== 1) failures.push(`expected one h1, found ${h1Count}`);
+  if (expectations.forbidMailto && /mailto:/i.test(html)) failures.push('contains a public mailto link');
+  const expectedCanonical = `rel="canonical" href="${buildCanonicalUrl(expectations.canonicalPath)}"`;
+  if (!html.includes(expectedCanonical)) failures.push(`missing canonical ${expectations.canonicalPath}`);
+  if (!/<meta name="description" content="[^"].*?">/i.test(html)) failures.push('missing route description');
+  if (!/<meta property="og:title" content="[^"].*?">/i.test(html)) failures.push('missing Open Graph title');
+  if (!/<meta property="twitter:title" content="[^"].*?">/i.test(html)) failures.push('missing Twitter title');
+  if (expectations.requireCategoryLink && !/href="\/category\/[^"/]+"/i.test(html)) {
+    failures.push('missing navigable category link');
+  }
+  return failures;
+}
+
+async function validateGeneratedOutput(): Promise<void> {
+  const checks: Array<{ file: string; expectations: GeneratedPageExpectations }> = [
+    { file: 'browse/index.html', expectations: { canonicalPath: '/browse' } },
+    { file: 'categories/index.html', expectations: { canonicalPath: '/categories', requireCategoryLink: true } },
+    { file: 'submit/index.html', expectations: { canonicalPath: '/submit' } },
+    { file: 'calculator/sods-law/index.html', expectations: { canonicalPath: '/calculator/sods-law' } },
+    { file: 'calculator/buttered-toast/index.html', expectations: { canonicalPath: '/calculator/buttered-toast' } }
+  ];
+
+  for (const { file, expectations } of checks) {
+    const html = await fs.readFile(path.join(DIST_DIR, file), 'utf-8');
+    const failures = validateGeneratedPage(html, expectations);
+    if (failures.length > 0) throw new Error(`Invalid generated page ${file}: ${failures.join('; ')}`);
+  }
+
+  for (const routeName of ['category', 'law']) {
+    const routeDir = path.join(DIST_DIR, routeName);
+    const entries = await fs.readdir(routeDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const relativePath = `${routeName}/${entry.name}/index.html`;
+      const html = await fs.readFile(path.join(DIST_DIR, relativePath), 'utf-8');
+      const failures = validateGeneratedPage(html, {
+        canonicalPath: `/${routeName}/${entry.name}`,
+        forbidMailto: true
+      });
+      if (failures.length > 0) throw new Error(`Invalid generated page ${relativePath}: ${failures.join('; ')}`);
+    }
+  }
+}
+
 /**
  * Generate HTML page for a single law with correct OG meta tags
  */
-function generateLawPage(law: Law, template: string): string {
+function generateLawPage(law: Law, template: string, relatedLaws: Law[] = []): string {
   let pageHtml = template;
   
   const title = law.title || "Murphy's Law";
@@ -376,64 +511,19 @@ function generateLawPage(law: Law, template: string): string {
   const lawUrl = `${SITE_URL}/law/${law.id}`;
   const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
   
-  // Update page title
-  const pageTitle = `${escapeHtml(title)} - Murphy's Law Archive`;
-  pageHtml = pageHtml.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
-  
-  // Update meta description
-  pageHtml = pageHtml.replace(
-    /<meta name="description" content=".*?">/,
-    `<meta name="description" content="${escapeHtml(description)}">`
-  );
-  
-  // Update canonical URL and hreflang
-  pageHtml = pageHtml.replace(
-    /<link rel="canonical" href=".*?">/,
-    `<link rel="canonical" href="${lawUrl}">`
-  );
-  pageHtml = updateHreflang(pageHtml, lawUrl);
-  
-  // Update OG tags
-  pageHtml = pageHtml.replace(
-    /<meta property="og:url" content=".*?">/,
-    `<meta property="og:url" content="${lawUrl}">`
-  );
-  pageHtml = pageHtml.replace(
-    /<meta property="og:title" content=".*?">/,
-    `<meta property="og:title" content="${escapeHtml(title)} - Murphy's Laws">`
-  );
-  pageHtml = pageHtml.replace(
-    /<meta property="og:description"[\s\S]*?content="[\s\S]*?">/,
-    `<meta property="og:description" content="${escapeHtml(description)}">`
-  );
-  pageHtml = pageHtml.replace(
-    /<meta property="og:image" content=".*?">/,
-    `<meta property="og:image" content="${ogImageUrl}">`
-  );
-  
-  // Update Twitter Card tags
-  pageHtml = pageHtml.replace(
-    /<meta property="twitter:url" content=".*?">/,
-    `<meta property="twitter:url" content="${lawUrl}">`
-  );
-  pageHtml = pageHtml.replace(
-    /<meta property="twitter:title" content=".*?">/,
-    `<meta property="twitter:title" content="${escapeHtml(title)} - Murphy's Laws">`
-  );
-  pageHtml = pageHtml.replace(
-    /<meta property="twitter:description"[\s\S]*?content="[\s\S]*?">/,
-    `<meta property="twitter:description" content="${escapeHtml(description)}">`
-  );
-  pageHtml = pageHtml.replace(
-    /<meta property="twitter:image" content=".*?">/,
-    `<meta property="twitter:image" content="${ogImageUrl}">`
-  );
+  pageHtml = applyPageMetadata(pageHtml, {
+    title: `${title} - Murphy's Law Archive`,
+    description,
+    canonicalPath: `/law/${law.id}`,
+    image: ogImageUrl,
+    type: 'article'
+  });
   
   // Get attribution name
   const attributionName = getLawAttributionName(law);
 
   // Build static content for law detail page
-  const staticContent = buildStaticLawDetailContent(law);
+  const staticContent = buildStaticLawDetailContent(law, relatedLaws);
   
   // Inject content into main
   pageHtml = pageHtml.replace(
@@ -473,29 +563,36 @@ function generateLawPage(law: Law, template: string): string {
   
   pageHtml = injectJsonLd(pageHtml, lawJsonLd);
 
+  const breadcrumbItems = [
+    {
+      '@type': 'ListItem',
+      'position': 1,
+      'name': 'Home',
+      'item': SITE_URL
+    },
+    {
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Browse',
+      'item': `${SITE_URL}/browse`
+    },
+    ...(law.category_slug && law.category_name ? [{
+      '@type': 'ListItem',
+      'position': 3,
+      'name': law.category_name,
+      'item': `${SITE_URL}/category/${law.category_slug}`
+    }] : []),
+    {
+      '@type': 'ListItem',
+      'position': law.category_slug && law.category_name ? 4 : 3,
+      'name': title,
+      'item': lawUrl
+    }
+  ];
   const breadcrumbJsonLd = generateJsonLd({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    'itemListElement': [
-      {
-        '@type': 'ListItem',
-        'position': 1,
-        'name': 'Home',
-        'item': SITE_URL
-      },
-      {
-        '@type': 'ListItem',
-        'position': 2,
-        'name': 'Browse',
-        'item': `${SITE_URL}/browse`
-      },
-      {
-        '@type': 'ListItem',
-        'position': 3,
-        'name': title,
-        'item': lawUrl
-      }
-    ]
+    'itemListElement': breadcrumbItems
   });
 
   pageHtml = injectJsonLd(pageHtml, breadcrumbJsonLd);
@@ -669,8 +766,13 @@ function buildStaticHomeContent(): string {
           <p class="section-subtitle">Explore Murphy's Law history, browse thousands of laws, and find the category that fits your next mishap.</p>
         </div>
         <div class="section-body">
+          <form action="/browse" method="get" role="search" class="not-found-search-form" aria-label="Search the archive">
+            <label class="visually-hidden" for="static-home-search">Search laws</label>
+            <input id="static-home-search" type="search" name="q" class="form-control" placeholder="Search laws, categories, and mishaps">
+            <button type="submit" class="btn primary">Search the Archive</button>
+          </form>
           <div class="home-proof-points" aria-label="Archive facts">
-            <span class="home-proof-point"><strong>2,400+</strong><span>laws</span></span>
+            <span class="home-proof-point"><strong>Complete</strong><span>archive</span></span>
             <span class="home-proof-point"><strong>55+</strong><span>categories</span></span>
             <span class="home-proof-point"><strong>Human-reviewed</strong><span>submissions</span></span>
             <span class="home-proof-point"><strong>Curated</strong><span>since 1998</span></span>
@@ -698,16 +800,13 @@ function buildStaticHomeContent(): string {
           <a href="/categories" class="btn">See category groups</a>
         </div>
       </section>
-      <section class="section card card--section section-card mb-12" data-home-zone="trending-recent">
+      <section class="section card card--section section-card mb-12" data-home-zone="trending">
         <div class="section-header">
-          <h2 class="section-title">Trending and Recently Added</h2>
+          <h2 class="section-title"><span class="accent-text">Trending</span> Now</h2>
         </div>
         <div class="section-body">
-          <p>Jump from the homepage into active and fresh archive entries.</p>
-          <div class="not-found-actions">
-            <a href="/browse?sort=last_voted_at" class="btn">Trending now</a>
-            <a href="/browse?sort=created_at" class="btn outline">Recently added</a>
-          </div>
+          <p>See the laws receiving attention now, then continue into the complete archive.</p>
+          <a href="/browse?sort=last_voted_at" class="btn">Trending now</a>
         </div>
       </section>
       <section class="section card card--section section-card mb-12" data-home-zone="tools-submit">
@@ -715,10 +814,9 @@ function buildStaticHomeContent(): string {
           <h2 class="section-title"><span class="accent-text">Tools</span> and Submissions</h2>
         </div>
         <div class="section-body">
-          <p>Try the calculators for playful risk modeling, then submit your own law for human review.</p>
+          <p>Try the featured Sod's Law heuristic, then submit your own law for human review.</p>
           <div class="not-found-actions">
             <a href="/calculator/sods-law" class="btn">Try Sod's Law Calculator</a>
-            <a href="/calculator/buttered-toast" class="btn outline">Try Buttered Toast</a>
             <a href="/submit" class="btn outline">Submit a Law</a>
           </div>
         </div>
@@ -768,6 +866,7 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
             <h3>Assumptions</h3>
             <p>The simulator treats table height, rotation, butter coverage, and launch angle as playful inputs that influence the final landing side.</p>
             <p>Enable JavaScript for the live controls, or read the explanation here to understand the joke behind the physics.</p>
+            <p class="small">This simplified model is for entertainment, not engineering, safety, or scientific prediction.</p>
             ${renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'))}
           </section>
         </div>
@@ -777,6 +876,7 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
 
 async function main(): Promise<void> {
   console.log('Starting Static Site Generation (SSG)...');
+  const contentMetadata = await readContentMetadata();
 
   // Ensure dist exists (it should after build)
   try {
@@ -796,6 +896,11 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const laws = await mergeReviewedLawDetails(await fetchAllLaws());
+  if (laws.length === 0) {
+    throw new Error('SSG requires a populated laws API; refusing to generate empty archive pages.');
+  }
+
   // 1. Generate Category Pages
   console.log('Generating category pages...');
   const files = await fs.readdir(SHARED_DATA_DIR);
@@ -812,9 +917,6 @@ async function main(): Promise<void> {
     const titleToken = tokens.find((t): t is import('marked').Tokens.Heading => t.type === 'heading' && t.depth === 1);
     const title = titleToken && 'text' in titleToken ? titleToken.text : slug.replace(/-/g, ' ');
     
-    // Convert to HTML
-    const htmlContent = marked.parser(tokens);
-
     // Count laws (list items)
     const law_count = (content.match(/^\s*\*/gm) || []).length;
 
@@ -828,26 +930,12 @@ async function main(): Promise<void> {
     // Inject into template
     let pageHtml = template;
     
-    // Update Title (truncate if needed to stay under 70 chars)
-    const truncatedTitle = truncateTitle(title);
-    const titleTag = `<title>${truncatedTitle} - Murphy's Law Archive</title>`;
-    pageHtml = pageHtml.replace(/<title>.*?<\/title>/, titleTag);
-    
-    // Update Description (first 160 chars of text)
-    const listToken = tokens.find((t): t is import('marked').Tokens.List => t.type === 'list');
-    const firstText = (listToken && 'items' in listToken && listToken.items?.[0] && 'text' in listToken.items[0])
-      ? listToken.items[0].text
-      : '';
-    const description = firstText.substring(0, 160).replace(/"/g, '&quot;') || `Read ${title} at Murphy's Law Archive.`;
-    pageHtml = pageHtml.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${description}">`);
-    
-    // Canonical URL and hreflang
-    pageHtml = pageHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${buildCanonicalUrl(`/category/${slug}`)}">`);
-    pageHtml = updateHreflang(pageHtml, buildCanonicalUrl(`/category/${slug}`));
-
-    // Inject Content
-    // We replace the loading content in <main>
     const descriptionText = generateCategoryDescription(title, law_count);
+    pageHtml = applyPageMetadata(pageHtml, {
+      title: `${truncateTitle(title)} - Murphy's Law Archive`,
+      description: descriptionText,
+      canonicalPath: `/category/${slug}`
+    });
 
     // Pre-render first page of laws from API for SEO and no-JS users
     const CATEGORY_LAWS_PER_PAGE = 25;
@@ -860,12 +948,9 @@ async function main(): Promise<void> {
     const staticContent = `
       <div class="container page pt-0">
         <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
-          <span class="accent-text">${title.split(' ')[0]}</span> ${title.split(' ').slice(1).join(' ')}
+          ${wrapFirstWordWithAccent(escapeHtml(title))}
         </h1>
         <p class="lead text-center mb-8 text-muted-fg max-w-2xl mx-auto">${descriptionText}</p>
-        <div class="static-content prose mx-auto">
-          ${htmlContent}
-        </div>
         <section class="section card card--section section-card mb-8" aria-labelledby="category-internal-links-${slug}">
           <div class="section-header">
             <h2 id="category-internal-links-${slug}" class="section-title"><span class="accent-text">Explore</span> nearby</h2>
@@ -920,10 +1005,11 @@ async function main(): Promise<void> {
     ? `<p class="text-center text-muted-fg mb-6" aria-live="polite">Showing 1&ndash;${Math.min(LAWS_PER_PAGE, browseTotal)} of ${browseTotal} laws.</p>`
     : '';
 
-  let browseHtml = template;
-  browseHtml = browseHtml.replace(/<title>.*?<\/title>/, `<title>Browse All Murphy's Laws - Murphy's Law Archive</title>`);
-  browseHtml = browseHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${buildCanonicalUrl('/browse')}">`);
-  browseHtml = updateHreflang(browseHtml, buildCanonicalUrl('/browse'));
+  let browseHtml = applyPageMetadata(template, {
+    title: "Browse All Murphy's Laws - Murphy's Law Archive",
+    description: "Search and filter the complete collection of Murphy's Laws, corollaries, and field observations.",
+    canonicalPath: '/browse'
+  });
 
   const browseContent = `
     <div class="container page pt-0">
@@ -952,14 +1038,11 @@ async function main(): Promise<void> {
   const categoriesDir = path.join(DIST_DIR, 'categories');
   await fs.mkdir(categoriesDir, { recursive: true });
 
-  let categoriesHtml = template;
-  categoriesHtml = categoriesHtml.replace(/<title>.*?<\/title>/, `<title>Browse Murphy's Laws by Category - Murphy's Law Archive</title>`);
-  categoriesHtml = categoriesHtml.replace(
-    /<meta name="description"[\s\S]*?content="[\s\S]*?">/,
-    `<meta name="description" content="Explore all ${categories.length} categories of Murphy's Laws - from computer laws to engineering principles. Find the perfect law for every situation.">`
-  );
-  categoriesHtml = categoriesHtml.replace(/<link rel="canonical" href=".*?">/, `<link rel="canonical" href="${buildCanonicalUrl('/categories')}">`);
-  categoriesHtml = updateHreflang(categoriesHtml, buildCanonicalUrl('/categories'));
+  let categoriesHtml = applyPageMetadata(template, {
+    title: "Browse Murphy's Laws by Category - Murphy's Law Archive",
+    description: `Explore all ${categories.length} categories of Murphy's Laws, from technology and work to travel and everyday life.`,
+    canonicalPath: '/categories'
+  });
 
   // Build grouped category cards HTML for SSG
   const categoryCardsHtml = groupCategories(categories)
@@ -967,13 +1050,13 @@ async function main(): Promise<void> {
       const cards = group.categories.map(cat => {
       const lawText = cat.law_count === 1 ? 'law' : 'laws';
       return `
-      <article class="card card--category category-card category-card--rich" data-category-slug="${cat.slug}">
-        <h3 class="category-card-title">${cat.title}</h3>
+      <a href="/category/${escapeHtml(cat.slug)}" class="card card--category category-card category-card--rich" data-category-slug="${escapeHtml(cat.slug)}">
+        <h3 class="category-card-title">${escapeHtml(cat.title)}</h3>
         <p class="category-card-description">Explore ${cat.law_count} ${lawText} in this category.</p>
         <div class="category-card-footer">
           <span class="category-card-count">${cat.law_count} ${lawText}</span>
         </div>
-      </article>`;
+      </a>`;
       }).join('');
       return `
       <section class="category-cluster" data-category-cluster="${group.name}">
@@ -1021,7 +1104,8 @@ ${categoryCardsHtml.trim()}
     try {
       // Read the markdown content
       const mdPath = path.join(SHARED_CONTENT_DIR, page.file);
-      const mdContent = await fs.readFile(mdPath, 'utf-8');
+      const rawMdContent = await fs.readFile(mdPath, 'utf-8');
+      const mdContent = rawMdContent.replace('{{ARCHIVE_SIZE}}', `${laws.length.toLocaleString('en-US')} laws`);
       
       // Convert to HTML
       let htmlContent = await marked.parse(mdContent);
@@ -1032,31 +1116,20 @@ ${categoryCardsHtml.trim()}
       // Build page HTML
       let pageHtml = template;
       
-      // Update title
-      pageHtml = pageHtml.replace(/<title>.*?<\/title>/, `<title>${page.title} - Murphy's Law Archive</title>`);
-      
-      // Update description
-      pageHtml = pageHtml.replace(
-        /<meta name="description" content=".*?">/,
-        `<meta name="description" content="${page.description}">`
-      );
-      
-      // Update canonical URL and hreflang
-      pageHtml = pageHtml.replace(
-        /<link rel="canonical" href=".*?">/,
-        `<link rel="canonical" href="${buildCanonicalUrl(`/${page.slug}`)}">`
-      );
-      pageHtml = updateHreflang(pageHtml, buildCanonicalUrl(`/${page.slug}`));
+      pageHtml = applyPageMetadata(pageHtml, {
+        title: `${page.title} - Murphy's Law Archive`,
+        description: page.description,
+        canonicalPath: `/${page.slug}`,
+        type: 'article'
+      });
 
       // Read metadata for last updated date
       let lastUpdated = null;
       try {
-        const metadataPath = path.join(SHARED_CONTENT_DIR, 'metadata.json');
-        const metadataContent = await fs.readFile(metadataPath, 'utf-8');
-        const metadata = JSON.parse(metadataContent);
         // Only show lastUpdated for privacy and terms pages
-        if ((page.slug === 'privacy' || page.slug === 'terms') && metadata[page.slug]?.lastUpdated) {
-          lastUpdated = metadata[page.slug].lastUpdated;
+        const metadataEntry = contentMetadata[page.slug];
+        if ((page.slug === 'privacy' || page.slug === 'terms') && metadataEntry?.lastUpdated) {
+          lastUpdated = metadataEntry.lastUpdated;
         }
       } catch {
         // Ignore metadata errors, proceed without lastUpdated
@@ -1084,7 +1157,7 @@ ${cardHtml.trim()}
         'headline': page.title,
         'description': page.description,
         'url': contentPageUrl,
-        'dateModified': new Date().toISOString(),
+        'dateModified': contentMetadata[page.slug]?.lastUpdated,
         'author': {
           '@type': 'Person',
           'name': 'Raanan Avidor'
@@ -1179,17 +1252,11 @@ ${cardHtml.trim()}
     const routeDir = path.join(DIST_DIR, ...route.pathParts);
     await fs.mkdir(routeDir, { recursive: true });
 
-    let routeHtml = template;
-    routeHtml = routeHtml.replace(/<title>.*?<\/title>/, `<title>${route.title}</title>`);
-    routeHtml = routeHtml.replace(
-      /<meta name="description" content=".*?">/,
-      `<meta name="description" content="${route.description}">`
-    );
-    routeHtml = routeHtml.replace(
-      /<link rel="canonical" href=".*?">/,
-      `<link rel="canonical" href="${SITE_URL}/${routePath}">`
-    );
-    routeHtml = updateHreflang(routeHtml, `${SITE_URL}/${routePath}`);
+    let routeHtml = applyPageMetadata(template, {
+      title: route.title,
+      description: route.description,
+      canonicalPath: `/${routePath}`
+    });
     routeHtml = routeHtml.replace(
       /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
       `<main id="main-content" class="flex-1 container page">${route.content}</main>`
@@ -1201,17 +1268,25 @@ ${cardHtml.trim()}
   // 3c. Generate Law Detail Pages
   // Pre-render individual law pages with correct OG meta tags for social sharing
   console.log('Generating law detail pages...');
-  const laws = await fetchAllLaws();
-  
   if (laws.length > 0) {
     const lawDir = path.join(DIST_DIR, 'law');
     await fs.mkdir(lawDir, { recursive: true });
+    const lawsByCategory = new Map<string, Law[]>();
+    for (const law of laws) {
+      if (!law.category_slug) continue;
+      const categoryLaws = lawsByCategory.get(law.category_slug) || [];
+      categoryLaws.push(law);
+      lawsByCategory.set(law.category_slug, categoryLaws);
+    }
     
     for (const law of laws) {
       const lawPageDir = path.join(lawDir, String(law.id));
       await fs.mkdir(lawPageDir, { recursive: true });
       
-      const lawPageHtml = generateLawPage(law, template);
+      const relatedLaws = law.category_slug
+        ? (lawsByCategory.get(law.category_slug) || []).filter((candidate) => candidate.id !== law.id).slice(0, 3)
+        : [];
+      const lawPageHtml = generateLawPage(law, template, relatedLaws);
       await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
     }
     console.log(`Generated ${laws.length} law detail pages.`);
@@ -1260,35 +1335,31 @@ ${cardHtml.trim()}
   // 5. Generate Sitemap
   console.log('Generating sitemap.xml...');
   const baseUrl = SITE_URL;
-  const today = new Date().toISOString().split('T')[0];
-
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}/</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>${baseUrl}/browse</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>${baseUrl}/categories</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
 
   // Add content pages
   for (const page of CONTENT_PAGES) {
+    const lastmod = contentMetadata[page.slug]?.lastUpdated;
     sitemap += `
   <url>
     <loc>${baseUrl}/${page.slug}</loc>
-    <lastmod>${today}</lastmod>
+    ${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`;
@@ -1300,7 +1371,6 @@ ${cardHtml.trim()}
     sitemap += `
   <url>
     <loc>${baseUrl}/${routePath}</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>`;
@@ -1311,7 +1381,6 @@ ${cardHtml.trim()}
     sitemap += `
   <url>
     <loc>${baseUrl}/category/${cat.slug}</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`;
@@ -1319,10 +1388,11 @@ ${cardHtml.trim()}
 
   // Add law detail routes
   for (const law of laws) {
+    const lastmod = law.updated_at || law.created_at;
     sitemap += `
   <url>
     <loc>${baseUrl}/law/${law.id}</loc>
-    <lastmod>${today}</lastmod>
+    ${lastmod ? `<lastmod>${lastmod.split('T')[0]}</lastmod>` : ''}
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`;
@@ -1386,6 +1456,9 @@ ${cardHtml.trim()}
 
   await fs.writeFile(path.join(DIST_DIR, 'image-sitemap.xml'), imageSitemap);
   console.log('Generated image-sitemap.xml');
+
+  await validateGeneratedOutput();
+  console.log('Validated generated route output.');
   
   console.log('SSG Complete!');
 }
@@ -1393,7 +1466,10 @@ ${cardHtml.trim()}
 // Only run main() when executed directly, not when imported for testing
 const isMainModule = import.meta.url === `file://${process.argv[1]}`;
 if (isMainModule) {
-  main().catch(console.error);
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
 
 // Export functions for testing
@@ -1406,5 +1482,7 @@ export {
   buildStaticSubmitContent,
   buildStaticHomeContent,
   buildStaticCalculatorContent,
-  buildStaticLawDetailContent
+  buildStaticLawDetailContent,
+  applyPageMetadata,
+  validateGeneratedPage
 };
