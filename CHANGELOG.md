@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Dark-mode autocomplete matches now use the highlight foreground token, so
+  matched text remains high-contrast on the yellow highlight surface.
 - Updated service workers now remain waiting until the user chooses Refresh,
   and offline-readiness notifications appear only after the initial
   installation. Web bumped to `3.4.5`; root to `2.6.5`.

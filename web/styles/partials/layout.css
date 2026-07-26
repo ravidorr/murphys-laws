@@ -374,13 +374,13 @@ header form[role="search"] input {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .search-suggestion-highlight {
     background: var(--highlight);
-    color: var(--fg);
+    color: var(--highlight-fg);
   }
 }
 
 :root[data-theme="dark"] .search-suggestion-highlight {
   background: var(--highlight);
-  color: var(--fg);
+  color: var(--highlight-fg);
 }
 
 /* Mobile autocomplete adjustments */

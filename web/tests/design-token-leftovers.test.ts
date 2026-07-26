@@ -69,6 +69,17 @@ describe('design-token leftovers', () => {
     expect(localThis.content).toMatch(/\.card--law-list \.law-card-mini,\n\.law-list-card \.law-card-mini\s*\{[^}]*padding:\s*var\(--space-4\) var\(--space-5\);/);
   });
 
+  it('keeps dark autocomplete matches readable on the highlight surface', () => {
+    const layout = readWebFile('styles/partials/layout.css');
+
+    expect(layout).toMatch(
+      /:root:not\(\[data-theme="light"\]\) \.search-suggestion-highlight\s*\{[^}]*color:\s*var\(--highlight-fg\);/,
+    );
+    expect(layout).toMatch(
+      /:root\[data-theme="dark"\] \.search-suggestion-highlight\s*\{[^}]*color:\s*var\(--highlight-fg\);/,
+    );
+  });
+
   it('does not keep stale implementation colors outside variables.css', () => {
     const localThis: FileScanLocalThis = {};
     localThis.root = root;
