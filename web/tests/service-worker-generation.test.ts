@@ -70,6 +70,24 @@ describe("service worker generation", () => {
     expect(source).not.toMatch(/workbox|react|babel/i);
   });
 
+  it("bypasses cache storage for unlisted same-origin API routes", () => {
+    const source = renderServiceWorker({
+      revision: "test-revision",
+      urls: ["/", "/index.html"],
+    });
+    const apiBypass = source.indexOf("if (isApi) return;");
+    const sameOriginFallback = source.indexOf(
+      "if (sameOrigin) {",
+      apiBypass,
+    );
+
+    expect(source).toContain(
+      "const isApi = sameOrigin && url.pathname.startsWith('/api/');",
+    );
+    expect(apiBypass).toBeGreaterThan(-1);
+    expect(sameOriginFallback).toBeGreaterThan(apiBypass);
+  });
+
   it("changes the cache revision when an excluded SSG page changes content", () => {
     const directoryEntries = new Map<string, fs.Dirent[]>([
       ["/dist", [entry("index.html", "file"), entry("law", "directory")]],

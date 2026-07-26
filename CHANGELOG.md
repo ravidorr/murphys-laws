@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Unlisted same-origin API routes now bypass service-worker Cache Storage, so
+  dynamic responses such as advanced-search submitters cannot become
+  indefinitely stale. Web bumped to `3.4.4`; root to `2.6.4`.
 - Service-worker cache revisions now hash all generated deployable content, so
   content-only SSG deployments install a fresh cache instead of retaining
   stale HTML under an unchanged URL-derived revision. Only the application
