@@ -72,7 +72,7 @@ test.describe('QA regressions', () => {
       if (message.type() === 'error') consoleErrors.push(message.text());
     });
 
-    await page.goto('/category/murphys-computers-laws');
+    await page.goto('/category/murphys-computer-laws');
     await expect(page.locator('main h1')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.law-card-mini').first()).toBeVisible({ timeout: 10000 });
     await page.waitForLoadState('networkidle');
@@ -100,7 +100,7 @@ test.describe('QA regressions', () => {
 
   for (const route of [
     '/browse',
-    '/category/murphys-computers-laws',
+    '/category/murphys-computer-laws',
     '/law/2',
     '/submit',
     '/calculator/sods-law',

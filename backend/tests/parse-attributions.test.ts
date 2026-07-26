@@ -1,7 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { parseAttributions } from '../scripts/build-sqlite.ts';
+import { canonicalCategorySlug, parseAttributions } from '../scripts/build-sqlite.ts';
 
 describe('parseAttributions', () => {
+  it('uses canonical category slugs for renamed archive files', () => {
+    expect(canonicalCategorySlug('murphys-cars-4x4-laws')).toBe('murphys-4x4-car-laws');
+    expect(canonicalCategorySlug('murphys-cars-open-road-laws')).toBe('murphys-law-of-the-open-road');
+    expect(canonicalCategorySlug('murphys-computers-laws')).toBe('murphys-computer-laws');
+    expect(canonicalCategorySlug('murphys-cowboy-action-shooting-laws')).toBe('murphys-cowboy-action-shooting-cas-laws');
+    expect(canonicalCategorySlug('murphys-helicopters-war-laws')).toBe('murphys-helicopters-warfare-laws');
+    expect(canonicalCategorySlug('murphys-marine-corp-laws')).toBe('murphys-marine-corps-laws');
+    expect(canonicalCategorySlug('murphys-mechanics-laws')).toBe('murphys-laws-of-mechanics');
+    expect(canonicalCategorySlug('murphys-repairmen-laws')).toBe('murphys-repairmans-laws');
+    expect(canonicalCategorySlug('murphys-tanks-war-laws')).toBe('murphys-tank-warfare-laws');
+    expect(canonicalCategorySlug('murphys-technology-laws')).toBe('murphys-technology-laws');
+  });
+
   it('parses mailto simple', () => {
     const input = 'The alarm will never go off. Sent by [Brad Johnson](mailto:brad42681@yahoo.com).';
     const res = parseAttributions(input);

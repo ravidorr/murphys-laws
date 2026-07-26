@@ -197,5 +197,6 @@ describe('NotFound view', () => {
 
     const categoryLinks = el.querySelectorAll('.not-found-category-links button');
     expect(categoryLinks.length).toBeGreaterThan(0);
+    expect(categoryLinks[0]?.getAttribute('data-param')).toBe('murphys-computer-laws');
   });
 });

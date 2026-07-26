@@ -31,6 +31,22 @@ interface Law {
   };
 }
 
+interface Category {
+  slug: string;
+  title: string;
+  law_count: number;
+}
+
+interface CategoryListResponse {
+  data: Category[];
+}
+
+type FetchCategoriesRequest = (url: string) => Promise<{
+  ok: boolean;
+  status: number;
+  json(): Promise<unknown>;
+}>;
+
 interface ContentPageMeta {
   slug: string;
   file: string;
@@ -53,7 +69,6 @@ interface ContentMetadataEntry {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DIST_DIR = path.resolve(__dirname, '../dist');
-const SHARED_DATA_DIR = path.resolve(__dirname, '../../shared/data/murphys-laws');
 const SHARED_CONTENT_DIR = path.resolve(__dirname, '../../shared/content');
 
 async function readContentMetadata(): Promise<Record<string, ContentMetadataEntry>> {
@@ -217,6 +232,44 @@ async function fetchAllLaws(): Promise<Law[]> {
     console.warn(`Warning: Could not fetch laws from API: ${message}`);
     return [];
   }
+}
+
+/**
+ * Fetch the category source of truth used by the API and application.  SSG
+ * must not derive public routes from archived source filenames: those can
+ * outlive a renamed category and create empty, indexable landing pages.
+ */
+async function fetchAllCategories(fetchRequest: FetchCategoriesRequest = fetch): Promise<Category[]> {
+  const response = await fetchRequest(`${API_BASE_URL}/api/v1/categories`);
+  if (!response.ok) {
+    throw new Error(`Category API returned ${response.status}`);
+  }
+
+  const payload = await response.json() as Partial<CategoryListResponse>;
+  if (!Array.isArray(payload.data) || payload.data.length === 0) {
+    throw new Error('Category API returned no categories; refusing to generate an incomplete sitemap.');
+  }
+
+  const slugs = new Set<string>();
+  return payload.data.map((category, index) => {
+    const slug = typeof category.slug === 'string' ? category.slug.trim() : '';
+    const title = typeof category.title === 'string' ? category.title.trim() : '';
+    const lawCount = Number(category.law_count);
+
+    if (!slug || !title || !Number.isInteger(lawCount) || lawCount < 0) {
+      throw new Error(`Invalid category at API index ${index}.`);
+    }
+    if (slugs.has(slug)) {
+      throw new Error(`Category API returned duplicate slug "${slug}".`);
+    }
+    slugs.add(slug);
+
+    return { slug, title, law_count: lawCount };
+  });
+}
+
+function categorySitemapPaths(categories: Category[]): string[] {
+  return categories.map(({ slug }) => `/category/${slug}`);
 }
 
 async function mergeReviewedLawDetails(laws: Law[]): Promise<Law[]> {
@@ -900,28 +953,11 @@ async function main(): Promise<void> {
   if (laws.length === 0) {
     throw new Error('SSG requires a populated laws API; refusing to generate empty archive pages.');
   }
+  const categories = await fetchAllCategories();
 
   // 1. Generate Category Pages
   console.log('Generating category pages...');
-  const files = await fs.readdir(SHARED_DATA_DIR);
-  const mdFiles = files.filter(f => f.endsWith('.md'));
-
-  const categories = [];
-
-  for (const file of mdFiles) {
-    const slug = file.replace('.md', '');
-    const content = await fs.readFile(path.join(SHARED_DATA_DIR, file), 'utf-8');
-    
-    // Parse Markdown
-    const tokens = marked.lexer(content);
-    const titleToken = tokens.find((t): t is import('marked').Tokens.Heading => t.type === 'heading' && t.depth === 1);
-    const title = titleToken && 'text' in titleToken ? titleToken.text : slug.replace(/-/g, ' ');
-    
-    // Count laws (list items)
-    const law_count = (content.match(/^\s*\*/gm) || []).length;
-
-    // Collect category info for the Browse page
-    categories.push({ slug, title, law_count });
+  for (const { slug, title, law_count } of categories) {
 
     // Output directory: dist/category/[slug]/
     const outDir = path.join(DIST_DIR, 'category', slug);
@@ -991,7 +1027,7 @@ async function main(): Promise<void> {
     await fs.writeFile(path.join(outDir, 'index.html'), pageHtml);
     // console.log(`Generated category/${slug}/index.html`);
   }
-  console.log(`Generated ${mdFiles.length} category pages.`);
+  console.log(`Generated ${categories.length} category pages.`);
 
   // 2. Generate Browse Page (first page of laws pre-rendered for SEO and no-JS)
   console.log('Generating browse page...');
@@ -1377,10 +1413,10 @@ ${cardHtml.trim()}
   }
 
   // Add category routes
-  for (const cat of categories) {
+  for (const categoryPath of categorySitemapPaths(categories)) {
     sitemap += `
   <url>
-    <loc>${baseUrl}/category/${cat.slug}</loc>
+    <loc>${baseUrl}${categoryPath}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`;
@@ -1484,5 +1520,7 @@ export {
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
   applyPageMetadata,
-  validateGeneratedPage
+  validateGeneratedPage,
+  fetchAllCategories,
+  categorySitemapPaths
 };
