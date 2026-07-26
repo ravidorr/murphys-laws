@@ -24,7 +24,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     'murphys-office-laws',
     'murphys-travel-laws',
     'murphys-love-laws',
-    'murphys-computers-laws'
+    'murphys-computer-laws'
   ]);
 
   // Render a single category card

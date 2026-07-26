@@ -104,7 +104,7 @@ test.describe('Accessibility - WCAG AA Compliance', () => {
   const auditedRoutes = [
     '/',
     '/browse',
-    '/category/murphys-computers-laws',
+    '/category/murphys-computer-laws',
     '/law/2',
     '/submit',
     '/favorites',

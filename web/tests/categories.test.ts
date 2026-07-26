@@ -47,7 +47,7 @@ describe('Categories view', () => {
       data: [
         { 
           id: 1, 
-          slug: 'murphys-computers-laws',
+          slug: 'murphys-computer-laws',
           title: "Murphy's Computer Laws", 
           description: 'Digital doom: programs are obsolete when running.',
           law_count: 163
@@ -223,21 +223,21 @@ describe('Categories view', () => {
   it('L139 B1: click on category card triggers onNavigate with slug', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
-    const card = el.querySelector('.category-card[data-category-slug="murphys-computers-laws"]');
+    const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
     expect(card).toBeTruthy();
     (card as HTMLElement)!.click();
-    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computers-laws');
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
   });
 
   it('navigates to category on card click', async () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    const card = el.querySelector('.category-card[data-category-slug="murphys-computers-laws"]');
+    const card = el.querySelector('.category-card[data-category-slug="murphys-computer-laws"]');
     expect(card).toBeTruthy();
     
     (card as HTMLElement)!.click();
-    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computers-laws');
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
   });
 
   it('L149 B1: keydown on category card enters card branch', async () => {

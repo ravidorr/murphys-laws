@@ -8,7 +8,7 @@ describe('category groups', () => {
 
   it('groups known category slugs into editorial clusters', () => {
     const groups = groupCategories([
-      { slug: 'murphys-computers-laws', title: "Murphy's Computer Laws" },
+      { slug: 'murphys-computer-laws', title: "Murphy's Computer Laws" },
       { slug: 'murphys-office-laws', title: "Murphy's Office Laws" },
       { slug: 'murphys-travel-laws', title: "Murphy's Travel Laws" },
       { slug: 'murphys-love-laws', title: "Murphy's Love Laws" },

@@ -126,7 +126,7 @@ Example response:
 ```json
 [
   {"id": 1, "slug": "murphys-laws", "title": "Murphy's Laws", "description": "The foundational laws...", "law_count": 228},
-  {"id": 2, "slug": "murphys-computers-laws", "title": "Murphy's Computer Laws", "description": "Digital doom...", "law_count": 182}
+  {"id": 2, "slug": "murphys-computer-laws", "title": "Murphy's Computer Laws", "description": "Digital doom...", "law_count": 161}
 ]
 ```
 
@@ -176,27 +176,27 @@ Machine-readable API definition.
 
 Complete list of category slugs for use with the `category_slug` parameter:
 
-murphys-laws, murphys-love-laws, murphys-war-laws, murphys-computers-laws,
+murphys-laws, murphys-love-laws, murphys-war-laws, murphys-computer-laws,
 murphys-miscellaneous-laws, murphys-technology-laws, murphys-commerce-laws,
 murphys-music-laws, murphys-teaching-laws, murphys-emt-laws,
-murphys-cowboy-action-shooting-laws, murphys-nurses-laws,
+murphys-cowboy-action-shooting-cas-laws, murphys-nurses-laws,
 murphys-photography-laws, murphys-military-police-laws,
 murphys-employees-laws, murphys-cops-laws, murphys-office-laws,
 murphys-volunteer-bushfire-brigade-laws, murphys-toddlers-laws,
-murphys-bus-laws, murphys-cars-laws, murphys-cars-open-road-laws,
+murphys-bus-laws, murphys-cars-laws, murphys-law-of-the-open-road,
 murphys-graphic-design-laws, murphys-jagged-alliance-2-laws,
 murphys-sewing-laws, murphys-horse-laws, murphys-college-student-laws,
-murphys-cars-4x4-laws, murphys-real-estate-laws,
+murphys-4x4-car-laws, murphys-real-estate-laws,
 murphys-transformers-laws, murphys-game-mastering-laws,
 murphys-lotto-laws, murphys-fighting-airplanes-laws,
 murphys-martial-arts-laws, murphys-travel-laws, murphys-golf-laws,
 murphys-political-laws, murphys-role-playing-by-internet-message-board-laws,
 murphys-desert-war-laws, murphys-mothers-laws,
 murphys-unformatted-character-sheets-laws, murphys-alarm-clock-laws,
-murphys-mechanics-laws, murphys-scouting-laws, murphys-tv-laws,
+murphys-laws-of-mechanics, murphys-scouting-laws, murphys-tv-laws,
 murphys-elevator-laws, murphys-printing-laws, murphys-microbiology-laws,
-murphys-rental-laws, murphys-tanks-war-laws, murphys-helicopters-war-laws,
-murphys-sport-laws, murphys-repairmen-laws, murphys-marine-corp-laws,
+murphys-rental-laws, murphys-tank-warfare-laws, murphys-helicopters-warfare-laws,
+murphys-sport-laws, murphys-repairmans-laws, murphys-marine-corps-laws,
 murphys-gravity-laws
 
 ## Content Pages
