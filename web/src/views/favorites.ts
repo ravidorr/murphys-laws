@@ -236,9 +236,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
     // Find the card element specifically (not the button which also has data-law-id)
     const card = el.querySelector(`.law-card-mini[data-law-id="${lawId}"]`);
     if (card) {
-      (card as HTMLElement).style.opacity = '0';
-      (card as HTMLElement).style.transform = 'translateX(-20px)';
-      (card as HTMLElement).style.transition = 'opacity 0.2s, transform 0.2s';
+      card.classList.add('is-removing');
 
       setTimeout(() => {
         render(); // Re-render to update count and potentially show empty state

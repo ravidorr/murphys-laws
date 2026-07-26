@@ -16,7 +16,7 @@ struct LawCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+        VStack(alignment: .leading, spacing: DS.Spacing.s4) {
             // Title (if exists)
             if let title = law.title, !title.isEmpty {
                 Text(title)
@@ -54,9 +54,7 @@ struct LawCard: View {
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(DS.Color.surface)
-        .cornerRadius(Constants.UI.cornerRadiusM)
-        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .dsCard()
     }
 }
 

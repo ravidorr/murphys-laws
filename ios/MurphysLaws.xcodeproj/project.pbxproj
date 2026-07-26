@@ -16,7 +16,9 @@
 		10952B8EEFAD0407EDE9DFB0 /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 535B04B1531B0D7550DD7476 /* FilterView.swift */; };
 		1457BFE82CAF8FB0EC363E4A /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAD370BFF1AC8D9BFE0797D6 /* HomeView.swift */; };
 		18B2B23B6AA8DF414FA05B5E /* LawCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94DB4C9BA2F0079E2D78FB04 /* LawCard.swift */; };
+		1B0AFF51BFF555E5D3D93DA4 /* funniest-murphys-laws.md in Resources */ = {isa = PBXBuildFile; fileRef = C06208ECBC0F1E05F32B922E /* funniest-murphys-laws.md */; };
 		1C0840FA71D93ED0392D220C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */; };
+		1D54043347D6A7B707DA81B0 /* murphys-laws-about-work.md in Resources */ = {isa = PBXBuildFile; fileRef = 8E7E35103DA0076B77165AE2 /* murphys-laws-about-work.md */; };
 		233026A451FEC2E7BDFB3B00 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B1CE1D0D5BBBFCA0B25BDAD /* Tokens.swift */; };
 		2415D906EA78909FD8952FA5 /* CategoryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD778841889D217C2EBB0E52 /* CategoryRepositoryTests.swift */; };
 		27C5F22B9A2B55EDFC842A58 /* Law.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86C7CE3B4E821D79B4BBE67 /* Law.swift */; };
@@ -31,7 +33,9 @@
 		3913E1CF37BFD2FAC495C6D7 /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC173281AAC9AB2537D2E88 /* CalculatorView.swift */; };
 		425CF7AF7AE6FC7DB0C0B1C6 /* CalculatorUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52E7F37A98F3CA8F2BD0F4D9 /* CalculatorUITests.swift */; };
 		441EC254A6EC2BD33FFE37AA /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = E590CE9B0966A46756CFD59E /* Constants.swift */; };
+		449F6C2EE8B017BEF0E2FBDC /* examples-tech.md in Resources */ = {isa = PBXBuildFile; fileRef = DD9A652048220EF8CDACE9D0 /* examples-tech.md */; };
 		47DFA74389ABF15BDB38B1A9 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4F34741B6B923F827DA291 /* NetworkMonitor.swift */; };
+		4902F5D71EC60790ADA7DC3A /* examples-work.md in Resources */ = {isa = PBXBuildFile; fileRef = 7BF2D6590A010829DD615C24 /* examples-work.md */; };
 		49FA408589A664074331A528 /* LawRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CE1346FFCDE3DDCEE69F106 /* LawRepository.swift */; };
 		4E90F0387B2BF874415C4500 /* WorkSans-VariableFont_wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3929DE2CC4B5B795D4BE2F8C /* WorkSans-VariableFont_wght.ttf */; };
 		570CDB085531F71165768CA2 /* contact.md in Resources */ = {isa = PBXBuildFile; fileRef = A672C864CF2F5E72DA79A157 /* contact.md */; };
@@ -47,9 +51,11 @@
 		6891D05E8E23DC16A876B5F3 /* ConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5D9214B6274780F3522A9A /* ConfigurationTests.swift */; };
 		68F89301754F774C83368547 /* SkeletonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6976190389183045AEF94B77 /* SkeletonViews.swift */; };
 		6B10B13B7AE06BF0E117BC81 /* DeepLinkHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4541A481E11F081CB97C844D /* DeepLinkHandlerTests.swift */; };
+		6FFBEB27D5F518B9C754DE31 /* best-murphys-laws.md in Resources */ = {isa = PBXBuildFile; fileRef = D7FA9660485D42E714700C9B /* best-murphys-laws.md */; };
 		7037DAAB12DB3321919685BA /* SharedContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63604559CDF030DAA4E19857 /* SharedContentLoader.swift */; };
 		785A84043E4DE8B70F1FCBF2 /* LawListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1999A69F6DE44010272F8C39 /* LawListViewModelTests.swift */; };
 		790EE3B979BE88B35925407D /* SubmitLawViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */; };
+		79591D8F6B2E9E585D4DC420 /* math-formula.css in Resources */ = {isa = PBXBuildFile; fileRef = 751035B03690504F25327864 /* math-formula.css */; };
 		7AF98FDDDB1C5BC4CEE3708D /* CategoryListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B83F281BE7A7BBD7D62846 /* CategoryListViewModel.swift */; };
 		7BF4E65D740F1E5EF938F577 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = E721EC9623E2602B825284F3 /* Category.swift */; };
 		7C3A233C7AE978C92D9C70B2 /* SubmitLawViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ED35108A86C24ABEEC2340 /* SubmitLawViewTests.swift */; };
@@ -61,9 +67,11 @@
 		83AD706EFA259347D1E5A070 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A19AE0D86C2E4368051DF /* HomeViewModel.swift */; };
 		856456CDF4801386D903ABE9 /* about.md in Resources */ = {isa = PBXBuildFile; fileRef = 32E1F355F1B1B2B0E9EB623A /* about.md */; };
 		86DA34046A005DB14FC1A8C7 /* CalculatorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4072C53A25F93FC2BD1DE3C2 /* CalculatorViewModel.swift */; };
+		89BFB2F988B65509EDE00727 /* examples-travel.md in Resources */ = {isa = PBXBuildFile; fileRef = 26AF1DB4177DA2DD479F02DA /* examples-travel.md */; };
 		93FFD48B5BAE325A86D17F2D /* origin-story.md in Resources */ = {isa = PBXBuildFile; fileRef = 32013771A81B66F612EA1630 /* origin-story.md */; };
 		965288B19590BB92A395599A /* DesignSystemViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54899E03EF2404EFAC953259 /* DesignSystemViewModifiers.swift */; };
 		96E5D32DD2EC24DF512231D3 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B4A796B4499D025053AB61 /* ImageCache.swift */; };
+		972A251274D72D92BD1E9227 /* examples-everyday-life.md in Resources */ = {isa = PBXBuildFile; fileRef = 33C7439A27A47DD52334C8DD /* examples-everyday-life.md */; };
 		9962FA39F054E552E4A53EC5 /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3214E7B231B1EC47DE05628 /* MarkdownContentView.swift */; };
 		9AEE2150D8895461B646DE44 /* ErrorRecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 777876C8204949327A0A235A /* ErrorRecoveryView.swift */; };
 		A6D22316403D29027EF0BE04 /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02C7B2C07C7831C3F337A46 /* DeepLinkHandler.swift */; };
@@ -73,9 +81,12 @@
 		BE4DDF80244FC55575461BAB /* LawDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */; };
 		BE9786768FCF14C0D710891A /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D82E0DB96380D6B43EB875C /* AnalyticsService.swift */; };
 		C0FC9E94CA63824209E14A84 /* developers.md in Resources */ = {isa = PBXBuildFile; fileRef = 27BA8CFAC99338C45B02B78B /* developers.md */; };
+		C49B992837200CDADB93EDD8 /* DesignSystemComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 790D0E07E443DBE12FE7C93A /* DesignSystemComponents.swift */; };
 		C5C061DFFF91CB361AAC27DE /* CalculatorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA45708E5874015B18EDD4FB /* CalculatorViewModelTests.swift */; };
+		C7CDF542E22CF52DAE013A6C /* murphys-laws-about-technology.md in Resources */ = {isa = PBXBuildFile; fileRef = 431933A3F117103BEBBA34E7 /* murphys-laws-about-technology.md */; };
 		CA85A3ADACB50B0865AA0417 /* examples.md in Resources */ = {isa = PBXBuildFile; fileRef = C89A344FB7FF7F7B7058C771 /* examples.md */; };
 		CAB71F994408C2A896D339E2 /* SkeletonViewsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17AC931D9701AE54E3FD873 /* SkeletonViewsTests.swift */; };
+		CAF29C02C568027B7FC1D34C /* murphys-law-vs-sods-law.md in Resources */ = {isa = PBXBuildFile; fileRef = E093223E193637EED39E4664 /* murphys-law-vs-sods-law.md */; };
 		D90D2F00B3CCC17C64A8E325 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A3B86BE05FF749E63F97CF /* ContentView.swift */; };
 		D9E7FEE430FABE2B6AF6B823 /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832943453DFD4547D8FA2E46 /* BrowseView.swift */; };
 		DCF27A24341C260A48F1FD00 /* CategoryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774EAD86A11EAC1EF16ACA06 /* CategoryRepository.swift */; };
@@ -107,7 +118,7 @@
 /* Begin PBXFileReference section */
 		045708B48A09D6F63EAD5ACA /* LawDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailView.swift; sourceTree = "<group>"; };
 		04A3B86BE05FF749E63F97CF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		05D3A80693C0D4F6F23A4104 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		05D3A80693C0D4F6F23A4104 /* .gitignore */ = {isa = PBXFileReference; path = .gitignore; sourceTree = "<group>"; };
 		0A4A458B2333FBA01D004AED /* MurphysLaws.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = MurphysLaws.xcodeproj; sourceTree = "<group>"; };
 		0A8E6DB264C66FF0D6F1FF55 /* AccessibilityHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityHelpers.swift; sourceTree = "<group>"; };
 		0D82E0DB96380D6B43EB875C /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
@@ -118,6 +129,7 @@
 		1B5D9214B6274780F3522A9A /* ConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationTests.swift; sourceTree = "<group>"; };
 		1C55D3A6FD616CB1C4AD8F18 /* LaunchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchScreen.swift; sourceTree = "<group>"; };
 		265273D4ACC856695FD2CF50 /* Vote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vote.swift; sourceTree = "<group>"; };
+		26AF1DB4177DA2DD479F02DA /* examples-travel.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "examples-travel.md"; sourceTree = "<group>"; };
 		27BA8CFAC99338C45B02B78B /* developers.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = developers.md; sourceTree = "<group>"; };
 		2B1CE1D0D5BBBFCA0B25BDAD /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		2C701DDAFDC7AC488AB74994 /* MockLawRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockLawRepository.swift; sourceTree = "<group>"; };
@@ -125,6 +137,7 @@
 		2D10A8A7AFBD611262C3B081 /* BrowseViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseViewTests.swift; sourceTree = "<group>"; };
 		32013771A81B66F612EA1630 /* origin-story.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "origin-story.md"; sourceTree = "<group>"; };
 		32E1F355F1B1B2B0E9EB623A /* about.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = about.md; sourceTree = "<group>"; };
+		33C7439A27A47DD52334C8DD /* examples-everyday-life.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "examples-everyday-life.md"; sourceTree = "<group>"; };
 		3477A49BD60F83BD8E852DCE /* LawDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawDetailViewModel.swift; sourceTree = "<group>"; };
 		34D87D391AFBA8AF59AC4B16 /* MathFormulaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathFormulaView.swift; sourceTree = "<group>"; };
 		35C477ADD7125EA55A6731A1 /* privacy.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = privacy.md; sourceTree = "<group>"; };
@@ -132,6 +145,7 @@
 		3A7E37EBA9C7D670BEBAFBB9 /* metadata.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = metadata.json; sourceTree = "<group>"; };
 		401F0A8FA88BC3C74BF94D41 /* ImprovedTestExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImprovedTestExample.swift; sourceTree = "<group>"; };
 		4072C53A25F93FC2BD1DE3C2 /* CalculatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorViewModel.swift; sourceTree = "<group>"; };
+		431933A3F117103BEBBA34E7 /* murphys-laws-about-technology.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "murphys-laws-about-technology.md"; sourceTree = "<group>"; };
 		43B83F281BE7A7BBD7D62846 /* CategoryListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryListViewModel.swift; sourceTree = "<group>"; };
 		4541A481E11F081CB97C844D /* DeepLinkHandlerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkHandlerTests.swift; sourceTree = "<group>"; };
 		4B254F29435390C11AEDA12F /* MurphysLawsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurphysLawsApp.swift; sourceTree = "<group>"; };
@@ -148,11 +162,15 @@
 		6976190389183045AEF94B77 /* SkeletonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonViews.swift; sourceTree = "<group>"; };
 		6E36A786E080D591D637BCB1 /* DeviceID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceID.swift; sourceTree = "<group>"; };
 		7177C5E1B86D3F44D909EA74 /* terms.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = terms.md; sourceTree = "<group>"; };
+		751035B03690504F25327864 /* math-formula.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "math-formula.css"; sourceTree = "<group>"; };
 		774EAD86A11EAC1EF16ACA06 /* CategoryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepository.swift; sourceTree = "<group>"; };
 		777876C8204949327A0A235A /* ErrorRecoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorRecoveryView.swift; sourceTree = "<group>"; };
+		790D0E07E443DBE12FE7C93A /* DesignSystemComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemComponents.swift; sourceTree = "<group>"; };
+		7BF2D6590A010829DD615C24 /* examples-work.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "examples-work.md"; sourceTree = "<group>"; };
 		802D6D49BE09E472F3916020 /* Config.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Config.plist; sourceTree = "<group>"; };
 		82B01D6709922CB8EF82B5F8 /* murphys-law-project-management.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "murphys-law-project-management.md"; sourceTree = "<group>"; };
 		832943453DFD4547D8FA2E46 /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
+		8E7E35103DA0076B77165AE2 /* murphys-laws-about-work.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "murphys-laws-about-work.md"; sourceTree = "<group>"; };
 		94DB4C9BA2F0079E2D78FB04 /* LawCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawCard.swift; sourceTree = "<group>"; };
 		99C0F3DDC9B54E0D329D3602 /* SearchAndFilterUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAndFilterUITests.swift; sourceTree = "<group>"; };
 		9FFB5ACB0A550ADD1E46ABA5 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
@@ -164,6 +182,7 @@
 		B17943F77C37909ACCAABCD5 /* NavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUITests.swift; sourceTree = "<group>"; };
 		B3ED35108A86C24ABEEC2340 /* SubmitLawViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawViewTests.swift; sourceTree = "<group>"; };
 		BA6DB5EC23A4BAA854110169 /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
+		C06208ECBC0F1E05F32B922E /* funniest-murphys-laws.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "funniest-murphys-laws.md"; sourceTree = "<group>"; };
 		C39071912628B8D7170205D3 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
 		C6CB77C95FF85B4ABE3488D9 /* LawOfDayCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LawOfDayCard.swift; sourceTree = "<group>"; };
 		C6FDC3EDA6F01BC05B88F558 /* SubmitLawView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawView.swift; sourceTree = "<group>"; };
@@ -180,8 +199,11 @@
 		D3214E7B231B1EC47DE05628 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		D5B769A933753CDE8E606F18 /* VotingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VotingService.swift; sourceTree = "<group>"; };
 		D62C955AD19A9AF5E90C5C7B /* CategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesView.swift; sourceTree = "<group>"; };
+		D7FA9660485D42E714700C9B /* best-murphys-laws.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "best-murphys-laws.md"; sourceTree = "<group>"; };
 		DD778841889D217C2EBB0E52 /* CategoryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRepositoryTests.swift; sourceTree = "<group>"; };
+		DD9A652048220EF8CDACE9D0 /* examples-tech.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "examples-tech.md"; sourceTree = "<group>"; };
 		DFBFDFC98563BB7365C66C02 /* SubmitLawViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubmitLawViewModel.swift; sourceTree = "<group>"; };
+		E093223E193637EED39E4664 /* murphys-law-vs-sods-law.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "murphys-law-vs-sods-law.md"; sourceTree = "<group>"; };
 		E3E26F45D2C953790DF82253 /* MurphysLawsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MurphysLawsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E486AD4C8B7C12A517DABD10 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		E590CE9B0966A46756CFD59E /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
@@ -248,13 +270,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		292D8E772F9EA9D40076B643 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		2A949C29CF73FF0CA72524A7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -297,6 +312,7 @@
 		46B54205DF960326C53E931B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				751035B03690504F25327864 /* math-formula.css */,
 				87CF8FEF991EFB714EC04657 /* Fonts */,
 			);
 			path = Resources;
@@ -320,11 +336,20 @@
 			isa = PBXGroup;
 			children = (
 				32E1F355F1B1B2B0E9EB623A /* about.md */,
+				D7FA9660485D42E714700C9B /* best-murphys-laws.md */,
 				A672C864CF2F5E72DA79A157 /* contact.md */,
 				27BA8CFAC99338C45B02B78B /* developers.md */,
+				33C7439A27A47DD52334C8DD /* examples-everyday-life.md */,
+				DD9A652048220EF8CDACE9D0 /* examples-tech.md */,
+				26AF1DB4177DA2DD479F02DA /* examples-travel.md */,
+				7BF2D6590A010829DD615C24 /* examples-work.md */,
 				C89A344FB7FF7F7B7058C771 /* examples.md */,
+				C06208ECBC0F1E05F32B922E /* funniest-murphys-laws.md */,
 				3A7E37EBA9C7D670BEBAFBB9 /* metadata.json */,
 				82B01D6709922CB8EF82B5F8 /* murphys-law-project-management.md */,
+				E093223E193637EED39E4664 /* murphys-law-vs-sods-law.md */,
+				431933A3F117103BEBBA34E7 /* murphys-laws-about-technology.md */,
+				8E7E35103DA0076B77165AE2 /* murphys-laws-about-work.md */,
 				32013771A81B66F612EA1630 /* origin-story.md */,
 				35C477ADD7125EA55A6731A1 /* privacy.md */,
 				7177C5E1B86D3F44D909EA74 /* terms.md */,
@@ -442,6 +467,7 @@
 			isa = PBXGroup;
 			children = (
 				E590CE9B0966A46756CFD59E /* Constants.swift */,
+				790D0E07E443DBE12FE7C93A /* DesignSystemComponents.swift */,
 				54899E03EF2404EFAC953259 /* DesignSystemViewModifiers.swift */,
 				6E36A786E080D591D637BCB1 /* DeviceID.swift */,
 			);
@@ -553,12 +579,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B2415D4427A1103A70F1877B /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 292D8E772F9EA9D40076B643 /* Products */;
-					ProjectRef = 0A4A458B2333FBA01D004AED /* MurphysLaws.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				1E8E90165E23502BED88EE9E /* MurphysLaws */,
@@ -578,11 +598,21 @@
 				7E774E26E9DCF9B05AD0480D /* MurphysLaws.xcodeproj in Resources */,
 				4E90F0387B2BF874415C4500 /* WorkSans-VariableFont_wght.ttf in Resources */,
 				856456CDF4801386D903ABE9 /* about.md in Resources */,
+				6FFBEB27D5F518B9C754DE31 /* best-murphys-laws.md in Resources */,
 				570CDB085531F71165768CA2 /* contact.md in Resources */,
 				C0FC9E94CA63824209E14A84 /* developers.md in Resources */,
+				972A251274D72D92BD1E9227 /* examples-everyday-life.md in Resources */,
+				449F6C2EE8B017BEF0E2FBDC /* examples-tech.md in Resources */,
+				89BFB2F988B65509EDE00727 /* examples-travel.md in Resources */,
+				4902F5D71EC60790ADA7DC3A /* examples-work.md in Resources */,
 				CA85A3ADACB50B0865AA0417 /* examples.md in Resources */,
+				1B0AFF51BFF555E5D3D93DA4 /* funniest-murphys-laws.md in Resources */,
+				79591D8F6B2E9E585D4DC420 /* math-formula.css in Resources */,
 				3647DDB26DB825290958844E /* metadata.json in Resources */,
 				57A0F91D690F48CCBE13D941 /* murphys-law-project-management.md in Resources */,
+				CAF29C02C568027B7FC1D34C /* murphys-law-vs-sods-law.md in Resources */,
+				C7CDF542E22CF52DAE013A6C /* murphys-laws-about-technology.md in Resources */,
+				1D54043347D6A7B707DA81B0 /* murphys-laws-about-work.md in Resources */,
 				93FFD48B5BAE325A86D17F2D /* origin-story.md in Resources */,
 				833F54FA7761F05D2F291A9A /* privacy.md in Resources */,
 				0D33E931464ABCDD06C5CF13 /* terms.md in Resources */,
@@ -646,6 +676,7 @@
 				D90D2F00B3CCC17C64A8E325 /* ContentView.swift in Sources */,
 				EC9526CC7C7A4F04282B2FCC /* DateFormatters.swift in Sources */,
 				A6D22316403D29027EF0BE04 /* DeepLinkHandler.swift in Sources */,
+				C49B992837200CDADB93EDD8 /* DesignSystemComponents.swift in Sources */,
 				965288B19590BB92A395599A /* DesignSystemViewModifiers.swift in Sources */,
 				34F065D0F50A69B0C27C6D45 /* DeviceID.swift in Sources */,
 				34F2B212CC93A76669E59B20 /* EmptyStateView.swift in Sources */,
@@ -764,7 +795,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 19;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -783,7 +814,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1.10;
+				MARKETING_VERSION = 1.2.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -905,7 +936,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 19;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -918,7 +949,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1.10;
+				MARKETING_VERSION = 1.2.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -31,13 +31,14 @@
 
 .calc-slider-group label {
   display: block;
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   margin-bottom: .5rem;
 }
 
 /* Range slider base styles */
 .calc-slider-group input[type="range"] {
   width: 100%;
+  min-height: var(--component-control-min-size);
   margin: 11px 0;
   background-color: transparent;
   appearance: none;
@@ -51,7 +52,7 @@
 .calc-slider-group input[type="range"]::-webkit-slider-runnable-track {
   background: var(--btn-primary-bg);
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--rounded-full);
   width: 100%;
   height: 6px;
   cursor: pointer;
@@ -63,7 +64,7 @@
   height: 28px;
   background: var(--bg);
   border: 5px solid var(--btn-primary-bg);
-  border-radius: 14px;
+  border-radius: var(--rounded-full);
   cursor: pointer;
   appearance: none;
 }
@@ -76,7 +77,7 @@
 .calc-slider-group input[type="range"]::-moz-range-track {
   background: var(--btn-primary-bg);
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--rounded-full);
   width: 100%;
   height: 6px;
   cursor: pointer;
@@ -87,7 +88,7 @@
   height: 28px;
   background: var(--bg);
   border: 5px solid var(--btn-primary-bg);
-  border-radius: 14px;
+  border-radius: var(--rounded-full);
   cursor: pointer;
 }
 
@@ -105,13 +106,13 @@
 .calc-slider-group input[type="range"]::-ms-fill-lower {
   background: var(--btn-primary-bg);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--rounded-md);
 }
 
 .calc-slider-group input[type="range"]::-ms-fill-upper {
   background: var(--btn-primary-bg);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--rounded-md);
 }
 
 .calc-slider-group input[type="range"]::-ms-thumb {
@@ -119,7 +120,7 @@
   height: 28px;
   background: var(--bg);
   border: 5px solid var(--btn-primary-bg);
-  border-radius: 14px;
+  border-radius: var(--rounded-full);
   cursor: pointer;
   margin-top: 0;
 }
@@ -134,13 +135,13 @@
 
 /* Label without input (for constants) */
 .label-without-input {
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   margin: 0;
 }
 
 /* Slider value display */
 .calc-slider-value {
-  font-weight: 700;
+  font-weight: var(--font-bold);
   color: var(--primary);
   margin-left: .5rem;
 }
@@ -148,139 +149,69 @@
 /* Result display container */
 .calc-result-display {
   padding: 1rem;
-  border-radius: .5rem;
+  border-radius: var(--rounded-lg);
   transition: background-color .3s ease, color .3s ease;
 }
 
 /* Score display */
 .calc-score {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: var(--text-5xl);
+  font-weight: var(--font-extrabold);
   display: block;
 }
 
 /* Info section at bottom of calculator */
 .calc-info {
-  font-size: .9rem;
+  font-size: var(--text-sm);
   color: var(--muted-fg);
   margin-top: 1rem;
 }
 
-/* Hide raw LaTeX before MathJax renders */
-.formula:not(:has(mjx-container)) {
-  color: transparent;
-  min-height: 8rem; /* Prevent layout shift */
-}
-
-/* Bigger typeset for MathJax formula on calculator page */
+/* Native MathML formula */
 .formula {
-  margin: 0 0 2rem;
-  padding: 4rem 1rem 1.5rem;
-  overflow: visible;
+  margin: 0 0 var(--space-8);
+  padding: var(--space-8) var(--space-4) var(--space-6);
+  overflow: auto visible;
 }
 
-.formula mjx-container {
-  font-size: 240% !important;
-  line-height: 2.4;
+.formula math {
+  display: block;
+  font-size: var(--text-5xl) !important;
+  line-height: var(--leading-relaxed);
   min-width: min-content;
-  overflow: auto visible;
-  padding: 0 1rem;
+  padding: 0 var(--space-4);
 }
 
 /* Responsive formula sizing */
 @media (width <= 768px) {
   .formula {
-    padding: 3.5rem 0.5rem 1rem;
+    padding: var(--space-8) var(--space-2) var(--space-4);
   }
 
-  .formula mjx-container {
-    font-size: 180% !important;
-    line-height: 2.2;
-    padding: 0 0.5rem;
+  .formula math {
+    font-size: var(--text-4xl) !important;
+    line-height: var(--leading-normal);
+    padding: 0 var(--space-2);
   }
 }
 
 @media (width <= 480px) {
   .formula {
-    padding: 3rem 0.25rem 0.75rem;
+    padding: var(--space-6) var(--space-1) var(--space-3);
   }
 
-  .formula mjx-container {
-    font-size: 140% !important;
-    line-height: 2;
-    padding: 0 0.25rem;
+  .formula math {
+    font-size: var(--text-2xl) !important;
+    line-height: var(--leading-normal);
+    padding: 0 var(--space-1);
   }
 }
 
-/* Make formula variables with tooltips interactive */
-.formula mjx-mi[data-tooltip] {
-  cursor: help;
+/* Native title tooltips retain variable definitions without runtime markup. */
+.formula mi[title] {
   border-bottom: 2px dotted var(--primary);
-  padding-bottom: 2px;
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.formula mjx-mi[data-tooltip]:hover {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  border-bottom-style: solid;
-}
-
-/* Custom tooltip - professional and polished */
-.formula mjx-mi[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  display: block;
-  transform: translateX(-50%) translateY(-4px);
-  margin-bottom: 12px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, var(--gradient-dark-1) 0%, var(--gradient-dark-2) 100%);
-  color: var(--white);
-  font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  line-height: 1.4;
-  white-space: nowrap;
-  border-radius: 8px;
-  box-shadow:
-    0 2px 8px var(--shadow-medium),
-    0 8px 24px var(--shadow-dark),
-    0 0 0 1px var(--shadow-white-inset) inset;
-  z-index: 1000;
-  pointer-events: none;
-  animation: tooltip-fade-in 0.2s ease-out;
-}
-
-@keyframes tooltip-fade-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-4px);
-  }
-}
-
-/* Tooltip arrow - enhanced */
-.formula mjx-mi[data-tooltip]:hover::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(1px);
-  margin-bottom: 0;
-  border: 10px solid transparent;
-  border-top-color: var(--gradient-dark-1);
-  z-index: 1000;
-  pointer-events: none;
-  filter: drop-shadow(0 2px 2px var(--shadow-light));
-  animation: tooltip-fade-in 0.2s ease-out;
+  cursor: help;
+  padding-bottom: var(--space-1);
 }
 
 
@@ -335,7 +266,7 @@
   background: transparent;
   color: var(--fg);
   border: 1px solid var(--border);
-  font-weight: 500;
+  font-weight: var(--font-medium);
 }
 
 .form-actions .btn:hover {
@@ -352,7 +283,7 @@
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
   border: 1px solid var(--btn-primary-bg);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
 }
 
 .form-actions #send-email:hover {
@@ -373,8 +304,8 @@
 .share-status {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
+  border-radius: var(--rounded-md);
+  font-weight: var(--font-medium);
   animation: slide-in 0.3s ease;
 }
 
@@ -422,7 +353,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgb(0 0 0 / 60%);
+  background: var(--overlay-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -447,13 +378,13 @@
 
 .modal-content {
   background: var(--bg);
-  border-radius: 0.75rem;
+  border-radius: var(--rounded-xl);
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 30%);
+  box-shadow: 0 20px 60px var(--shadow-dark);
   animation: modal-slide-up 0.3s ease;
 }
 
@@ -485,17 +416,17 @@
 .close-button {
   background: none;
   border: none;
-  font-size: 2rem;
+  font-size: var(--text-3xl);
   line-height: 1;
   color: var(--muted-fg);
   cursor: pointer;
   padding: 0;
-  width: 2.75rem;
-  height: 2.75rem; /* Match button height (44px) */
+  width: var(--component-icon-button-size);
+  height: var(--component-icon-button-size);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.25rem;
+  border-radius: var(--rounded-lg);
   transition: all 0.2s ease;
 }
 

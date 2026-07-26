@@ -10,11 +10,6 @@ describe('Sod\'s Law Calculator - Coverage', () => {
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    
-    // Ensure MathJax is defined on window
-    window.MathJax = {
-      typesetPromise: vi.fn(() => Promise.resolve())
-    };
   });
 
   afterEach(() => {
@@ -24,8 +19,6 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     if (container.parentNode) {
       container.parentNode.removeChild(container);
     }
-    // Clean up MathJax
-    (window as unknown as { MathJax?: unknown }).MathJax = undefined;
     vi.restoreAllMocks();
   });
 
@@ -61,12 +54,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     expect(scoreDisplay?.textContent).toBeDefined();
   });
 
-  it('handles MathJax being undefined during formula update', async () => {
-    const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
-
-    (globalThis.window as unknown as { MathJax?: unknown }).MathJax = undefined;
-    
+  it('renders MathML during formula updates without a runtime loader', () => {
     const el = Calculator();
     container.appendChild(el);
     
@@ -74,96 +62,21 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     slider.value = '7';
     slider.dispatchEvent(new Event('input'));
     
-    // Should not throw even if MathJax is missing
-    expect(true).toBe(true);
-
-    window.requestAnimationFrame = originalRAF;
+    expect(el.querySelector('#formula-display math')).toBeTruthy();
+    expect(el.querySelector('#formula-display')?.textContent).toContain('7');
   });
 
-  it('handles MathJax.typesetPromise being missing', async () => {
-    (globalThis.window as unknown as { MathJax?: Record<string, unknown> }).MathJax = {}; // Missing typesetPromise
-    
+  it('maps native MathML variables to accessible tooltips', () => {
     const el = Calculator();
     container.appendChild(el);
-    
-    const slider = el.querySelector('#urgency') as HTMLInputElement;
-    slider.value = '7';
-    slider.dispatchEvent(new Event('input'));
-    
-    expect(true).toBe(true);
-  });
 
-  it('maps MathJax Unicode characters to tooltips', async () => {
-    // Mock requestAnimationFrame to run immediately
-    const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
-
-    const el = Calculator();
-    container.appendChild(el);
-    
-    // Override MathJax mock to simulate rendering
-    const typesetMock = vi.fn((elements?: HTMLElement[]) => {
-      if (!elements?.length) return Promise.resolve();
-      const display = elements[0]!;
-      display.innerHTML = ''; // Clear text
-
-      const miP = document.createElement('mjx-mi');
-      const cP = document.createElement('mjx-c');
-      cP.className = 'mjx-c1D443'; // Italic P
-      miP.appendChild(cP);
-
-      const miU = document.createElement('mjx-mi');
-      const cU = document.createElement('mjx-c');
-      cU.className = 'mjx-c1D448'; // Italic U
-      miU.appendChild(cU);
-
-      display.appendChild(miP);
-      display.appendChild(miU);
-
-      return Promise.resolve();
-    });
-    window.MathJax!.typesetPromise = typesetMock;
-    
-    // Trigger updateCalculation
-    const slider = el.querySelector('#urgency') as HTMLInputElement;
-    slider.dispatchEvent(new Event('input'));
-    
-    // Wait for microtasks (promise chain)
-    await new Promise(resolve => setTimeout(resolve, 0));
-    
-    // Check if tooltips were added
     const formulaDisplay = el.querySelector('#formula-display');
-    expect(formulaDisplay).toBeTruthy();
-    const miP = formulaDisplay!.querySelector('mjx-mi:first-child');
-    const miU = formulaDisplay!.querySelector('mjx-mi:last-child');
+    const miP = formulaDisplay!.querySelector('mi[title="Probability"]');
+    const miU = formulaDisplay!.querySelector('mi[title="Urgency (1-9)"]');
     expect(miP).toBeTruthy();
     expect(miU).toBeTruthy();
     expect(miP!.getAttribute('data-tooltip')).toBe('Probability');
     expect(miU!.getAttribute('data-tooltip')).toBe('Urgency (1-9)');
-
-    window.requestAnimationFrame = originalRAF;
-  });
-
-  it('handles MathJax typesetPromise rejection gracefully', async () => {
-    // Mock requestAnimationFrame
-    const originalRAF = window.requestAnimationFrame;
-    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
-
-    const el = Calculator();
-    container.appendChild(el);
-    
-    // Mock rejection
-    window.MathJax!.typesetPromise = vi.fn(() => Promise.reject(new Error('MathJax error')));
-    
-    const slider = el.querySelector('#urgency') as HTMLInputElement;
-    
-    // Should not throw
-    await expect(async () => {
-      slider.dispatchEvent(new Event('input'));
-      await new Promise(resolve => setTimeout(resolve, 0));
-    }).not.toThrow();
-
-    window.requestAnimationFrame = originalRAF;
   });
 
   it('handles calculation interpretation for risky scores (2-4)', () => {
@@ -299,7 +212,7 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     
     // Formula should now contain values instead of variables
     const formulaDisplay = el.querySelector('#formula-display');
-    // We can't easily check textContent due to MathJax, but we know it triggers updateCalculation
+    // Native MathML updates synchronously with the calculation.
     
     vi.advanceTimersByTime(2100);
     // Should reset back to variables
@@ -339,28 +252,13 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     expect(getInterp(9, 9, 9, 1, 9)).toMatch(/catastrophe/i);
   });
 
-  it('handles ensureMathJax failure gracefully', async () => {
-    // We need to mock the module BEFORE import
-    vi.doMock('../src/utils/mathjax.ts', () => ({
-      ensureMathJax: vi.fn(() => Promise.reject(new Error('Load failed')))
-    }));
-
-    // Re-import Calculator to use the mock
-    vi.resetModules();
-    const { Calculator } = await import('../src/views/sods-calculator.ts');
-    
+  it('keeps formula rendering free of injected style elements', () => {
     const el = Calculator();
     container.appendChild(el);
-    
-    // Wait for promises
-    await new Promise(resolve => setTimeout(resolve, 0));
-    
-    // Formula display should still have content (updateCalculation called)
+
     const formulaDisplay = el.querySelector('#formula-display');
-    expect(formulaDisplay).toBeTruthy();
-    expect(formulaDisplay!.textContent).toBeTruthy();
-    
-    vi.clearAllMocks();
+    expect(formulaDisplay?.querySelector('math')).toBeTruthy();
+    expect(el.querySelector('style')).toBeNull();
   });
 
   it('loads valid URL parameters and updates slider values and displays', async () => {

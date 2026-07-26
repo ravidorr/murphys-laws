@@ -15,12 +15,12 @@ struct ErrorRecoveryView: View {
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
     var body: some View {
-        VStack(spacing: Constants.UI.spacingL) {
+        VStack(spacing: DS.Spacing.s6) {
             Image(systemName: errorIcon)
-                .font(.system(size: 64))
+                .dsTypography(DS.Typography.display)
                 .foregroundColor(errorColor)
 
-            VStack(spacing: Constants.UI.spacingS) {
+            VStack(spacing: DS.Spacing.s2) {
                 Text(errorTitle)
                     .dsTypography(DS.Typography.h3)
                     .foregroundColor(DS.Color.fg)
@@ -33,7 +33,7 @@ struct ErrorRecoveryView: View {
             }
 
             if !networkMonitor.isConnected {
-                HStack(spacing: Constants.UI.spacingS) {
+                HStack(spacing: DS.Spacing.s2) {
                     Image(systemName: "wifi.slash")
                         .foregroundColor(DS.Color.error)
                     Text("No internet connection")
@@ -42,12 +42,12 @@ struct ErrorRecoveryView: View {
                 }
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
+                    RoundedRectangle(cornerRadius: DS.Radius.xl)
                         .fill(DS.Color.errorBg)
                 )
             }
 
-            VStack(spacing: Constants.UI.spacingS) {
+            VStack(spacing: DS.Spacing.s2) {
                 Button {
                     Task {
                         isRetrying = true
@@ -68,18 +68,18 @@ struct ErrorRecoveryView: View {
                     .padding()
                     .background(DS.Color.btnPrimaryBg)
                     .foregroundColor(DS.Color.btnPrimaryFg)
-                    .cornerRadius(Constants.UI.cornerRadiusM)
+                    .cornerRadius(DS.Radius.xl)
                 }
                 .disabled(isRetrying || !networkMonitor.isConnected)
 
                 if errorSuggestions.count > 0 {
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s2) {
                         Text("Try these solutions:")
                             .dsTypography(DS.Typography.caption)
                             .foregroundColor(DS.Color.mutedFg)
 
                         ForEach(errorSuggestions, id: \.self) { suggestion in
-                            HStack(alignment: .top, spacing: Constants.UI.spacingS) {
+                            HStack(alignment: .top, spacing: DS.Spacing.s2) {
                                 Text("•")
                                     .foregroundColor(DS.Color.mutedFg)
                                 Text(suggestion)
@@ -90,7 +90,7 @@ struct ErrorRecoveryView: View {
                     }
                     .padding()
                     .background(
-                        RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
+                        RoundedRectangle(cornerRadius: DS.Radius.xl)
                             .fill(DS.Color.surface)
                     )
                 }

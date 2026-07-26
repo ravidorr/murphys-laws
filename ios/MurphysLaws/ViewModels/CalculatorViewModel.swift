@@ -29,25 +29,6 @@ class CalculatorViewModel: ObservableObject {
         case low = "Low"
         case medium = "Medium"
         case high = "High"
-
-        var description: String {
-            switch self {
-            case .low:
-                return "Low risk of failure"
-            case .medium:
-                return "Moderate risk of failure"
-            case .high:
-                return "High risk of failure"
-            }
-        }
-
-        var emoji: String {
-            switch self {
-            case .low: return "🟢"
-            case .medium: return "🟡"
-            case .high: return "🔴"
-            }
-        }
     }
 
     init() {
@@ -116,18 +97,6 @@ class CalculatorViewModel: ObservableObject {
         return "\\frac{(\(u)+\(c)+\(i)) \\times (10-\(s))}{20} \\times 1.0 \\times \\frac{1}{1-\\sin(\\frac{\(f)}{10})}"
     }
 
-    // MARK: - Risk Color
-    var riskColor: String {
-        switch riskLevel {
-        case .low:
-            return "green"
-        case .medium:
-            return "yellow"
-        case .high:
-            return "red"
-        }
-    }
-
     // MARK: - Share Results
     func shareViaEmail(to email: String) async {
         isSharing = true
@@ -154,7 +123,7 @@ class CalculatorViewModel: ObservableObject {
     // MARK: - Share Text (for iOS share sheet)
     var shareText: String {
         """
-        My task has a \(String(format: "%.1f", probability))% chance of going wrong! \(riskLevel.emoji)
+        My task has a \(String(format: "%.1f", probability))% chance of going wrong.
 
         Sod's Law Calculator
         Urgency: \(Int(urgency))

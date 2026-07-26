@@ -12,11 +12,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.murphyslaws.ui.components.DSButton
+import com.murphyslaws.ui.components.DSOutlinedTextField
 import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,10 +85,10 @@ fun SubmitLawScreen(
             )
 
             // Law Text (Required)
-            OutlinedTextField(
+            DSOutlinedTextField(
                 value = uiState.text,
                 onValueChange = { viewModel.onTextChange(it) },
-                label = { Text("Law Text (Required)") },
+                label = "Law Text (Required)",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(DS.Spacing.s10 + DS.Spacing.s16 + DS.Spacing.s6),
@@ -97,28 +97,28 @@ fun SubmitLawScreen(
             )
 
             // Title (Optional)
-            OutlinedTextField(
+            DSOutlinedTextField(
                 value = uiState.title,
                 onValueChange = { viewModel.onTitleChange(it) },
-                label = { Text("Title (Optional)") },
+                label = "Title (Optional)",
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
             // Name (Optional)
-            OutlinedTextField(
+            DSOutlinedTextField(
                 value = uiState.name,
                 onValueChange = { viewModel.onNameChange(it) },
-                label = { Text("Your Name (Optional)") },
+                label = "Your Name (Optional)",
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
             // Email (Optional)
-            OutlinedTextField(
+            DSOutlinedTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Your Email (Optional)") },
+                label = "Your Email (Optional)",
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -126,7 +126,7 @@ fun SubmitLawScreen(
 
             Spacer(modifier = Modifier.height(DS.Spacing.s2))
 
-            Button(
+            DSButton(
                 onClick = { viewModel.submitLaw() },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = uiState.text.isNotBlank() && !uiState.isLoading

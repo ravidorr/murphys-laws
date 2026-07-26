@@ -29,14 +29,14 @@ interface TestLocals {
 describe('keyboard-help-modal', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
-    document.body.style.overflow = '';
+    document.body.classList.remove('is-scroll-locked');
     destroyKeyboardHelpModal();
   });
 
   afterEach(() => {
     destroyKeyboardHelpModal();
     document.body.innerHTML = '';
-    document.body.style.overflow = '';
+    document.body.classList.remove('is-scroll-locked');
   });
 
   describe('openKeyboardHelpModal', () => {
@@ -60,7 +60,7 @@ describe('keyboard-help-modal', () => {
 
     it('sets body overflow to hidden', () => {
       openKeyboardHelpModal();
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.classList.contains('is-scroll-locked')).toBe(true);
     });
 
     it('focuses the close button', () => {
@@ -109,10 +109,10 @@ describe('keyboard-help-modal', () => {
 
     it('restores body overflow', () => {
       openKeyboardHelpModal();
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(document.body.classList.contains('is-scroll-locked')).toBe(true);
 
       closeKeyboardHelpModal();
-      expect(document.body.style.overflow).toBe('');
+      expect(document.body.classList.contains('is-scroll-locked')).toBe(false);
     });
 
     it('restores focus to previous element', () => {

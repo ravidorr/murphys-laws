@@ -33,15 +33,17 @@ fi
 echo "✅ XcodeGen found"
 echo ""
 
-# Regenerate iOS design tokens from shared/DESIGN.md before XcodeGen runs.
+# Regenerate iOS design tokens from the authoritative design system before
+# XcodeGen runs. The exporter is a root package script, so this command must
+# target the repository root rather than the web workspace.
 # The outputs (Assets.xcassets/DS/ and DesignSystem/Tokens.swift) are
-# gitignored; they're a deterministic function of shared/DESIGN.md and
-# we re-derive them here so Xcode always sees the freshest values.
+# gitignored; they're a deterministic function of the canonical web tokens
+# and design contract, and we re-derive them here so Xcode sees fresh values.
 # Requires Node + npm. Skipped automatically if Node isn't on PATH (a
 # clear error from the script will surface in that case).
 if command -v npm &> /dev/null; then
-    echo "🎨 Regenerating iOS design tokens from shared/DESIGN.md..."
-    npm --prefix ../web run design:export:ios
+    echo "🎨 Regenerating iOS design tokens..."
+    npm --prefix .. run design:export:ios
     echo ""
 else
     echo "⚠️  npm not found on PATH; skipping iOS design-token regeneration."

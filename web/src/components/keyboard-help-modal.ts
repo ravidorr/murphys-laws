@@ -106,7 +106,7 @@ export function openKeyboardHelpModal() {
   firstFocusable?.focus();
   
   // Prevent body scroll
-  document.body.style.overflow = 'hidden';
+  document.body.classList.add('is-scroll-locked');
 }
 
 /**
@@ -118,7 +118,7 @@ export function closeKeyboardHelpModal() {
   modalElement.classList.add('hidden');
   
   // Restore body scroll
-  document.body.style.overflow = '';
+  document.body.classList.remove('is-scroll-locked');
   
   // Restore focus to previous element
   if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
@@ -136,6 +136,7 @@ export function destroyKeyboardHelpModal() {
     modalElement.parentNode.removeChild(modalElement);
   }
   modalElement = null;
+  document.body.classList.remove('is-scroll-locked');
   previousActiveElement = null;
   focusableElements = [];
   firstFocusable = null;

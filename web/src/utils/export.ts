@@ -2,7 +2,7 @@
  * @fileoverview Export Utilities
  *
  * Provides functions to export page content to various formats:
- * - PDF (using jsPDF)
+ * - PDF (using a dependency-free PDF writer)
  * - CSV (for structured data)
  * - Markdown
  * - Plain Text
@@ -70,139 +70,163 @@ export function generateFilename(title: string, extension: string): string {
   return `${safeName || 'murphys-laws'}.${extension}`;
 }
 
+const PDF_MAX_LINE_LENGTH = 88;
+const PDF_LINES_PER_PAGE = 48;
+
+function normalizePdfText(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, '-')
+    .replace(/…/g, '...')
+    .replace(/[^\x20-\x7e\n]/g, '?');
+}
+
+function wrapPdfText(value: unknown): string[] {
+  return normalizePdfText(value)
+    .split('\n')
+    .flatMap((paragraph) => {
+      if (paragraph.length === 0) return [''];
+
+      const lines: string[] = [];
+      let current = '';
+      for (const word of paragraph.split(/\s+/)) {
+        if (word.length > PDF_MAX_LINE_LENGTH) {
+          if (current) {
+            lines.push(current);
+            current = '';
+          }
+          for (let offset = 0; offset < word.length; offset += PDF_MAX_LINE_LENGTH) {
+            lines.push(word.slice(offset, offset + PDF_MAX_LINE_LENGTH));
+          }
+          continue;
+        }
+
+        const candidate = current ? `${current} ${word}` : word;
+        if (candidate.length > PDF_MAX_LINE_LENGTH) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = candidate;
+        }
+      }
+      if (current) lines.push(current);
+      return lines;
+    });
+}
+
+function escapePdfString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+function buildPdfDocument(lines: string[]): string {
+  const pages: string[][] = [];
+  for (let offset = 0; offset < lines.length; offset += PDF_LINES_PER_PAGE) {
+    pages.push(lines.slice(offset, offset + PDF_LINES_PER_PAGE));
+  }
+
+  const fontObject = 3 + (pages.length * 2);
+  const objects: string[] = [];
+  const pageReferences: string[] = [];
+
+  pages.forEach((pageLines, index) => {
+    const pageObject = 3 + (index * 2);
+    const contentObject = pageObject + 1;
+    pageReferences.push(`${pageObject} 0 R`);
+
+    const body = pageLines
+      .map((line) => `(${escapePdfString(line)}) Tj\nT*`)
+      .join('\n');
+    const footer = escapePdfString(
+      `Page ${index + 1} of ${pages.length} | Exported ${getDateString()} | ${SITE_URL}`,
+    );
+    const stream = [
+      'BT',
+      '/F1 10 Tf',
+      '14 TL',
+      '50 742 Td',
+      body,
+      'ET',
+      'BT',
+      '/F1 8 Tf',
+      `50 30 Td`,
+      `(${footer}) Tj`,
+      'ET',
+    ].join('\n');
+
+    objects[pageObject] =
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ` +
+      `/Resources << /Font << /F1 ${fontObject} 0 R >> >> ` +
+      `/Contents ${contentObject} 0 R >>`;
+    objects[contentObject] =
+      `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+  });
+
+  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objects[2] =
+    `<< /Type /Pages /Kids [${pageReferences.join(' ')}] ` +
+    `/Count ${pages.length} >>`;
+  objects[fontObject] =
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+
+  let document = '%PDF-1.4\n%MurphysLaws\n';
+  const offsets = [0];
+  for (let object = 1; object <= fontObject; object++) {
+    offsets[object] = document.length;
+    document += `${object} 0 obj\n${objects[object]}\nendobj\n`;
+  }
+
+  const xrefOffset = document.length;
+  document += `xref\n0 ${fontObject + 1}\n`;
+  document += '0000000000 65535 f \n';
+  for (let object = 1; object <= fontObject; object++) {
+    document += `${String(offsets[object]).padStart(10, '0')} 00000 n \n`;
+  }
+  document +=
+    `trailer\n<< /Size ${fontObject + 1} /Root 1 0 R >>\n` +
+    `startxref\n${xrefOffset}\n%%EOF`;
+  return document;
+}
+
 /**
- * Export content to PDF using jsPDF.
- * PDF generation uses jsPDF for client-side generation.
- * This avoids server load and works offline.
- * Page breaks are calculated based on content height.
+ * Export content to a downloadable PDF without runtime styling or third-party
+ * rendering dependencies.
  *
  * @param {Object} content - Export content from context
  * @param {string} [filename] - Optional filename (auto-generated if not provided)
  */
 export async function exportToPDF(content: ExportContent, filename?: string): Promise<void> {
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF();
   const { type, title, data } = content;
+  const sourceLines: string[] = [SITE_NAME, title, ''];
 
-  let y = 20;
-  const margin = 20;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const contentWidth = pageWidth - (margin * 2);
-
-  // Header - Site name
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text(SITE_NAME, margin, y);
-  y += 10;
-
-  // Title
-  doc.setFontSize(14);
-  doc.text(title, margin, y);
-  y += 15;
-
-  // Content based on type
   if (type === ContentType.LAWS || type === ContentType.SINGLE_LAW) {
     const laws = (Array.isArray(data) ? data : [data]) as Partial<Law>[];
-
     laws.forEach((law) => {
-      // Check for page break - leave room for at least text + attribution
-      if (y > pageHeight - 50) {
-        doc.addPage();
-        y = 20;
-      }
-
-      // Law text (combines title and text if both exist)
-      const lawText = getLawDisplayText(law);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const textLines = doc.splitTextToSize(lawText, contentWidth);
-
-      // Check if text will overflow
-      if (y + (textLines.length * 5) > pageHeight - 30) {
-        doc.addPage();
-        y = 20;
-      }
-
-      doc.text(textLines, margin, y);
-      y += textLines.length * 5 + 3;
-
-      // Attribution (if present)
-      if (law.attribution) {
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(9);
-        doc.text(`- ${law.attribution}`, margin, y);
-        y += 8;
-      }
-
-      y += 5; // Space between laws
+      sourceLines.push(getLawDisplayText(law));
+      if (law.attribution) sourceLines.push(`- ${law.attribution}`);
+      sourceLines.push('');
     });
   } else if (type === ContentType.CONTENT) {
-    // Content pages (about, privacy, etc.) - render as text
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-
-    // Strip markdown for PDF (basic conversion)
     const plainText = String(data || '')
-      .replace(/^#{1,6}\s+/gm, '') // Remove markdown headers
-      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
-      .replace(/\*([^*]+)\*/g, '$1') // Remove italic
-      .replace(/`([^`]+)`/g, '$1') // Remove code
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // Convert links to text
-
-    const lines = doc.splitTextToSize(plainText, contentWidth);
-    let lineIndex = 0;
-
-    while (lineIndex < lines.length) {
-      if (y > pageHeight - 20) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(lines[lineIndex], margin, y);
-      y += 5;
-      lineIndex++;
-    }
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    sourceLines.push(plainText);
   } else if (type === ContentType.CATEGORIES && Array.isArray(data)) {
-    // Categories list
     const categories = data as Partial<Category>[];
-    doc.setFontSize(10);
-
-    categories.forEach((cat) => {
-      if (y > pageHeight - 20) {
-        doc.addPage();
-        y = 20;
-      }
-
-      doc.setFont('helvetica', 'bold');
-      doc.text(cat.title || cat.title || cat.name || '', margin, y);
-
-      doc.setFont('helvetica', 'normal');
-      const countText = ` (${cat.law_count || 0} laws)`;
-      const nameWidth = doc.getTextWidth(cat.title || cat.title || cat.name || '');
-      doc.text(countText, margin + nameWidth, y);
-
-      y += 7;
+    categories.forEach((category) => {
+      const categoryName = category.title || category.name || '';
+      sourceLines.push(`${categoryName} (${category.law_count || 0} laws)`);
     });
   }
 
-  // Footer with page numbers and export date
-  const pageCount = doc.getNumberOfPages();
-  const exportDate = getDateString();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `Page ${i} of ${pageCount} | Exported ${exportDate} | ${SITE_URL}`,
-      pageWidth / 2,
-      pageHeight - 10,
-      { align: 'center' }
-    );
-  }
-
-  // Save the PDF
-  const outputFilename = filename || generateFilename(title, 'pdf');
-  doc.save(outputFilename);
+  const lines = sourceLines.flatMap(wrapPdfText);
+  const blob = new Blob([buildPdfDocument(lines)], { type: 'application/pdf' });
+  downloadFile(blob, filename || generateFilename(title, 'pdf'));
 }
 
 /**

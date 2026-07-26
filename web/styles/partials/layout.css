@@ -34,16 +34,16 @@ header.sticky {
 }
 
 .brand-badge {
-  width: 3.2rem;
-  height: 3.2rem;
+  width: var(--component-brand-badge-size);
+  height: var(--component-brand-badge-size);
   background: var(--primary);
   color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: .375rem;
-  font-size: 2.4rem;
-  font-weight: 900;
+  border-radius: var(--rounded-md);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-extrabold);
   border: none;
   cursor: pointer;
   position: relative;
@@ -57,7 +57,7 @@ header.sticky {
   }
 
   50% {
-    box-shadow: 0 0 0 6px rgb(13 94 161 / 0%);
+    box-shadow: 0 0 0 6px var(--shadow-blue-transparent);
   }
 }
 
@@ -86,9 +86,9 @@ header.sticky {
   padding: 0.35rem 0.6rem;
   background: var(--fg);
   color: var(--bg);
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: var(--rounded-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
@@ -99,7 +99,7 @@ header.sticky {
 
 .brand-badge:hover {
   background: linear-gradient(135deg, var(--primary) 0%, var(--btn-primary-bg) 100%);
-  box-shadow: 0 4px 12px var(--shadow-blue), 0 0 0 0 rgb(13 94 161 / 0%);
+  box-shadow: 0 4px 12px var(--shadow-blue), 0 0 0 0 var(--shadow-blue-transparent);
 }
 
 .brand-badge:hover::after {
@@ -118,7 +118,7 @@ header.sticky {
 }
 
 .brand-name {
-  font-size: 2rem;
+  font-size: var(--text-3xl);
   line-height: 1;
   margin: 0;
 }
@@ -129,7 +129,7 @@ header.sticky {
 }
 
 .brand-subtitle {
-  font-size: 1rem;
+  font-size: var(--text-base);
   letter-spacing: -.05rem;
   color: var(--muted-fg);
   margin: 0;
@@ -142,7 +142,7 @@ header.sticky {
   left: 0;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: .75rem;
+  border-radius: var(--rounded-xl);
   box-shadow: 0 8px 24px var(--shadow-medium);
   min-width: 250px;
   opacity: 0;
@@ -175,11 +175,11 @@ header.sticky {
 }
 
 .nav-dropdown li:first-child .nav-dropdown-item {
-  border-radius: .75rem .75rem 0 0;
+  border-radius: var(--rounded-xl) var(--rounded-xl) 0 0;
 }
 
 .nav-dropdown li:last-child .nav-dropdown-item {
-  border-radius: 0 0 .75rem .75rem;
+  border-radius: 0 0 var(--rounded-xl) var(--rounded-xl);
 }
 
 .nav-dropdown-item:hover {
@@ -187,7 +187,7 @@ header.sticky {
 }
 
 .nav-dropdown-item .icon {
-  font-size: 1.25rem;
+  font-size: var(--text-xl);
   color: var(--primary);
 }
 
@@ -247,7 +247,7 @@ footer .footer-nav {
   align-items: center;
   justify-content: center;
   color: var(--muted-fg);
-  font-size: .75rem;
+  font-size: var(--text-xs);
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -293,7 +293,7 @@ footer .footer-nav li:last-child::after {
 }
 
 footer .footer-nav a {
-  font-size: .875rem;
+  font-size: var(--text-sm);
   color: var(--muted-fg);
 }
 
@@ -308,10 +308,14 @@ header form[role="search"] {
   flex-shrink: 0;
 }
 
+.search-autocomplete-host {
+  position: relative;
+}
+
 header form[role="search"] input {
   width: auto;
   flex: 0 0 auto;
-  height: 2.75rem; /* Match button height (44px) */
+  height: var(--component-control-min-size);
   box-sizing: border-box;
 }
 
@@ -324,8 +328,8 @@ header form[role="search"] input {
   margin-top: 0.25rem;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 4px 6px -1px var(--shadow-subtle), 0 2px 4px -2px var(--shadow-subtle);
   max-height: 20rem;
   overflow-y: auto;
   z-index: 100;
@@ -361,7 +365,7 @@ header form[role="search"] input {
 
 .search-suggestion-highlight {
   background: color-mix(in oklab, var(--primary) 20%, transparent);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--primary);
   padding: 0;
 }
@@ -370,20 +374,20 @@ header form[role="search"] input {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .search-suggestion-highlight {
     background: var(--highlight);
-    color: #111827;
+    color: var(--highlight-fg);
   }
 }
 
 :root[data-theme="dark"] .search-suggestion-highlight {
   background: var(--highlight);
-  color: #111827;
+  color: var(--highlight-fg);
 }
 
 /* Mobile autocomplete adjustments */
 @media (width <= 640px) {
   .search-autocomplete {
     max-height: 15rem;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
   }
 
   .search-suggestion-item {
@@ -404,8 +408,8 @@ header form[role="search"] input {
   margin-top: 0.25rem;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 4px 6px -1px var(--shadow-subtle), 0 2px 4px -2px var(--shadow-subtle);
   max-height: 16rem;
   overflow-y: auto;
   z-index: 100;
@@ -439,15 +443,15 @@ header form[role="search"] input {
   }
 
   .brand-name {
-    font-size: 1.5rem;
+    font-size: var(--text-2xl);
   }
 
   .brand-badge {
-    width: 2.75rem;
-    height: 2.75rem;
-    font-size: 2rem;
-    min-width: 44px;
-    min-height: 44px;
+    width: var(--component-brand-badge-size);
+    height: var(--component-brand-badge-size);
+    font-size: var(--text-2xl);
+    min-width: var(--component-brand-badge-size);
+    min-height: var(--component-brand-badge-size);
   }
 
   header.sticky .container {
@@ -483,14 +487,14 @@ header form[role="search"] input {
     min-width: 0;
     flex: 1 1 auto;
     padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    height: 44px; /* Match button min-height */
+    font-size: var(--text-sm);
+    height: var(--component-control-min-size);
   }
 
   header.sticky .header-search .btn {
     padding: 0.5rem;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: var(--component-control-min-size);
+    min-height: var(--component-control-min-size);
   }
 
   header.sticky .header-search .btn-text {
@@ -500,7 +504,7 @@ header form[role="search"] input {
 
 @media (width <= 480px) {
   .brand-name {
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
   }
 
 }
@@ -510,8 +514,8 @@ header form[role="search"] input {
 .vote-btn,
 .btn,
 button {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: var(--component-control-min-size);
+  min-width: var(--component-control-min-size);
 }
 
 .vote-btn {

@@ -43,16 +43,19 @@ describe('ButteredToastCalculator view', () => {
     twitter.remove();
   });
 
-  it('shows a readable formula fallback when MathJax is unavailable', () => {
-    const originalMathJax = window.MathJax;
-    window.MathJax = undefined;
+  it('renders a native accessible MathML formula', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    expect(el.querySelector('#toast-formula-display')?.textContent).toContain('Butter-down probability');
-    expect(el.querySelector('#toast-formula-display')?.textContent).not.toContain('\\(');
+    const formula = el.querySelector('#toast-formula-display');
+    expect(formula?.querySelector('math')).toBeTruthy();
+    expect(formula?.querySelector('mi[title*="Height of fall"]')).toBeTruthy();
+    expect(formula?.textContent).not.toContain('\\(');
+    expect((formula as HTMLElement | null)?.tabIndex).toBe(0);
+    expect(formula?.getAttribute('aria-label')).toBe(
+      'Buttered toast probability formula',
+    );
 
-    window.MathJax = originalMathJax;
     document.body.removeChild(el);
   });
 
@@ -324,148 +327,15 @@ describe('ButteredToastCalculator view', () => {
     vi.useRealTimers();
   });
 
-  it('polls for MathJax when not initially available', () => {
-    vi.useFakeTimers();
-
-    // Temporarily remove MathJax
-    const originalMathJax = window.MathJax;
-    delete window.MathJax;
-
+  it('updates native MathML values on slider input', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    // Simulate MathJax loading after 500ms
-    vi.advanceTimersByTime(500);
-
-    // Restore MathJax with typesetPromise
-    window.MathJax = {
-      typesetPromise: vi.fn().mockResolvedValue(undefined)
-    };
-
-    // Advance to trigger the poll check
-    vi.advanceTimersByTime(100);
-
-    // Clean up
-    window.MathJax = originalMathJax;
-    document.body.removeChild(el);
-    vi.useRealTimers();
-  });
-
-  it('stops polling for MathJax after timeout', () => {
-    vi.useFakeTimers();
-
-    // Temporarily remove MathJax
-    const originalMathJax = window.MathJax;
-    delete window.MathJax;
-
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    // Advance past the 10-second polling timeout
-    vi.advanceTimersByTime(11000);
-
-    // Restore MathJax
-    window.MathJax = originalMathJax;
-    document.body.removeChild(el);
-    vi.useRealTimers();
-  });
-
-  it('handles MathJax warning when not available', () => {
-
-    // Temporarily remove MathJax
-    const originalMathJax = window.MathJax;
-    delete window.MathJax;
-
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    // Trigger formula update
+    input(el, 'toast-height').value = '100';
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-
-    // Restore
-    window.MathJax = originalMathJax;
-    document.body.removeChild(el);
-  });
-
-  it('re-renders formula when MathJax loads during polling', () => {
-    vi.useFakeTimers();
-
-    // Temporarily remove MathJax
-    const originalMathJax = window.MathJax;
-    delete window.MathJax;
-
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    // Simulate MathJax loading after 200ms
-    vi.advanceTimersByTime(200);
-
-    const mockTypesetPromise = vi.fn().mockResolvedValue(undefined);
-    window.MathJax = {
-      typesetPromise: mockTypesetPromise
-    };
-
-    // Trigger the poll check
-    vi.advanceTimersByTime(100);
-
-    // Clean up
-    window.MathJax = originalMathJax;
-    document.body.removeChild(el);
-    vi.useRealTimers();
-  });
-
-  it('calls MathJax after formula update', async () => {
-    const mockTypesetPromise = vi.fn().mockResolvedValue(undefined);
-    const originalMathJax = window.MathJax;
-
-    window.MathJax = {
-      typesetPromise: mockTypesetPromise
-    };
-
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    // Trigger formula update
-    input(el, 'toast-height').dispatchEvent(new Event('input'));
-
-    // Wait for requestAnimationFrame to execute
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    // Wait for async MathJax call
-    await vi.waitFor(() => {
-      expect(mockTypesetPromise).toHaveBeenCalled();
-    }, { timeout: 100 });
-
-    // Restore
-    window.MathJax = originalMathJax;
-    document.body.removeChild(el);
-  });
-
-  it('handles MathJax typeset error gracefully', async () => {
-    const mockTypesetPromise = vi.fn().mockRejectedValue(new Error('MathJax error'));
-    const originalMathJax = window.MathJax;
-
-    window.MathJax = {
-      typesetPromise: mockTypesetPromise
-    };
-
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    // Trigger formula update
-    input(el, 'toast-height').dispatchEvent(new Event('input'));
-
-    // Wait for requestAnimationFrame to execute
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    // Wait for async MathJax call and error handling
-    await vi.waitFor(() => {
-      expect(mockTypesetPromise).toHaveBeenCalled();
-    }, { timeout: 100 });
-
-    // Restore
-    window.MathJax = originalMathJax;
+    expect(el.querySelector('#toast-formula-display math')).toBeTruthy();
+    expect(el.querySelector('#toast-formula-display')?.textContent).toContain('100');
     document.body.removeChild(el);
   });
 
@@ -818,96 +688,15 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('handles MathJax becoming undefined during requestAnimationFrame', async () => {
+  it('does not introduce a runtime style element while rendering formulas', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
-    // Set up MathJax to be available initially
-    const originalMathJax = window.MathJax;
-    window.MathJax = {
-      typesetPromise: vi.fn().mockResolvedValue(undefined)
-    };
-
-    // Trigger formula update
-    input(el, 'toast-height').value = '100';
     input(el, 'toast-height').dispatchEvent(new Event('input'));
 
-    // Remove MathJax to simulate it becoming undefined
-    (window as unknown as { MathJax?: unknown }).MathJax = undefined;
-
-    // Wait for requestAnimationFrame
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    // Should not throw
-    expect(true).toBe(true);
-
-    // Restore
-    window.MathJax = originalMathJax;
+    expect(el.querySelector('style')).toBeNull();
+    expect(el.querySelector('#toast-formula-display math')).toBeTruthy();
     document.body.removeChild(el);
-  });
-
-  it('handles MathJax.typesetPromise becoming non-function during RAF', async () => {
-    const originalRAF = window.requestAnimationFrame;
-    let rafCallback: FrameRequestCallback | null = null;
-
-    // Capture the RAF callback instead of executing immediately
-    window.requestAnimationFrame = (cb: FrameRequestCallback) => {
-      rafCallback = cb;
-      return 1;
-    };
-
-    const el = ButteredToastCalculator();
-    document.body.appendChild(el);
-
-    // Set up MathJax with typesetPromise (optional so we can clear it to test defensive check)
-    const originalMathJax = window.MathJax;
-    const mathJaxRef: { typesetPromise?: () => Promise<unknown> } = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
-    window.MathJax = mathJaxRef as unknown as typeof window.MathJax;
-
-    // Trigger formula update (which schedules RAF)
-    input(el, 'toast-height').dispatchEvent(new Event('input'));
-
-    // Now remove typesetPromise to make it non-function
-    mathJaxRef.typesetPromise = undefined;
-
-    // Execute the RAF callback - should hit the defensive check
-    if (rafCallback) (rafCallback as FrameRequestCallback)(performance.now());
-
-    // Should not throw
-    expect(true).toBe(true);
-
-    // Restore
-    window.MathJax = originalMathJax;
-    window.requestAnimationFrame = originalRAF;
-    document.body.removeChild(el);
-  });
-
-  it('handles ensureMathJax rejection gracefully', async () => {
-    // Mock ensureMathJax to reject
-    vi.doMock('../src/utils/mathjax.ts', () => ({
-      ensureMathJax: vi.fn(() => Promise.reject(new Error('MathJax load failed')))
-    }));
-
-    // Re-import to use the mock
-    vi.resetModules();
-    const { ButteredToastCalculator: FreshCalculator } = await import('../src/views/buttered-toast-calculator.ts');
-
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-
-    const el = FreshCalculator();
-    container.appendChild(el);
-
-    // Wait for promise rejection to be handled
-    await new Promise(resolve => setTimeout(resolve, 10));
-
-    // Formula should still be displayed (updateFormula called in catch)
-    const formulaDisplay = el.querySelector('#toast-formula-display');
-    expect(formulaDisplay).toBeTruthy();
-    expect(formulaDisplay!.textContent).toBeTruthy();
-
-    document.body.removeChild(container);
-    vi.clearAllMocks();
   });
 
   it('cleanup function runs without throwing (covers clearExportContent and teardownShare)', () => {

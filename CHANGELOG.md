@@ -16,7 +16,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.2`; iOS to `1.2.2` / build `18`; Android to `1.2.3` / versionCode `10`;
   root to `2.6.0`.
 
+### Changed
+- Android CI now enables KVM acceleration, caches Gradle state, builds only
+  required debug artifacts, cancels superseded runs, and enforces a 30-minute
+  timeout. Root bumped to `2.6.6`.
+- Aligned the web, iOS, and Android implementations with the authoritative
+  cross-platform design system, added generated platform tokens and canonical
+  components, and enforced the no-React/no-inline-CSS contract in source and
+  generated web output. Backend bumped to `2.3.1`; web to `3.4.3`; iOS to
+  `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
+
 ### Fixed
+- Dark-mode autocomplete matches now use the highlight foreground token, so
+  matched text remains high-contrast on the yellow highlight surface. Web
+  bumped to `3.4.6`; root to `2.6.7`.
+- Updated service workers now remain waiting until the user chooses Refresh,
+  and offline-readiness notifications appear only after the initial
+  installation. Web bumped to `3.4.5`; root to `2.6.5`.
+- Unlisted same-origin API routes now bypass service-worker Cache Storage, so
+  dynamic responses such as advanced-search submitters cannot become
+  indefinitely stale. Web bumped to `3.4.4`; root to `2.6.4`.
+- Service-worker cache revisions now hash all generated deployable content, so
+  content-only SSG deployments install a fresh cache instead of retaining
+  stale HTML under an unchanged URL-derived revision. Only the application
+  shell and static assets are precached; generated pages use network-first
+  runtime caching.
+- Static 404 and offline pages now load a generated copy of the authoritative
+  design tokens, keeping their external fallback stylesheet fully styled in
+  production builds without inline CSS.
 - CTA labels now stay on one line, keeping text and icons side by side across
   desktop and mobile layouts. Web bumped to `3.4.2`; root to `2.6.2`.
 - Pinned iOS CI to the macOS 15 runner that provides Xcode 16.4, and stabilized

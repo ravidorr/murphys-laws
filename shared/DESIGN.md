@@ -76,6 +76,32 @@ colors:
   dark-dark-fg: "#f0d6d6"
   dark-favorite-color: "#f06292"
   dark-favorite-bg: "#3c1525"
+  border: "#00000040"
+  border-high-contrast-dark: "#ffffff80"
+  control-border: "#0000002e"
+  control-surface: "#00000006"
+  dark-accent: "#a5b4fc"
+  dark-border: "#ffffff40"
+  dark-border-hover: "#ffffff59"
+  dark-border-muted: "#ffffff38"
+  dark-border-strong: "#ffffff52"
+  dark-error: "#f87171"
+  dark-success: "#4ade80"
+  highlight-fg: "#111827"
+  overlay-scrim: "#00000099"
+  shadow-blue: "#0d5ea14d"
+  shadow-blue-dark: "#0d5ea166"
+  shadow-blue-transparent: "#0d5ea100"
+  shadow-dark: "#0000004d"
+  shadow-high-contrast-light: "#00000040"
+  shadow-high-contrast-medium: "#00000059"
+  shadow-light: "#00000026"
+  shadow-medium: "#00000033"
+  shadow-subtle: "#0000001a"
+  shadow-white-faint: "#ffffff14"
+  shadow-white-inset: "#ffffff1a"
+  shadow-white-outline: "#ffffff24"
+  shadow-white-subtle: "#ffffff0f"
 typography:
   display:
     fontFamily: "Work Sans, system-ui"
@@ -144,45 +170,74 @@ components:
   btn-primary:
     backgroundColor: "{colors.btn-primary-bg}"
     textColor: "{colors.btn-primary-fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+    height: "44px"
   btn-outline:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+    height: "44px"
+  icon-button:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    width: "44px"
+    height: "44px"
   card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
   section-card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
   input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+    height: "44px"
+  select:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    typography: "{typography.body-md}"
+    height: "44px"
+  checkbox:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.sm}"
+    width: "20px"
+    height: "20px"
+  slider:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.full}"
+    typography: "{typography.body-md}"
+    height: "44px"
   modal:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
   nav-dropdown:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.xl}"
   brand-badge:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.white}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.md}"
+    width: "44px"
+    height: "44px"
   blockquote:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
   pagination:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.lg}"
   calc-ok:
     backgroundColor: "{colors.success-bg}"
     textColor: "{colors.success-text}"
@@ -205,7 +260,7 @@ components:
   notification:
     backgroundColor: "{colors.bg}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
     typography: "{typography.body-sm}"
   header:
     textColor: "{colors.fg}"
@@ -219,7 +274,7 @@ components:
   search-autocomplete:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
     typography: "{typography.body-md}"
   tooltip:
     backgroundColor: "{colors.tooltip-bg}"
@@ -244,13 +299,36 @@ components:
   bottom-navigation:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.muted-fg}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.xl}"
     typography: "{typography.caption}"
   form-input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.lg}"
     typography: "{typography.body-md}"
+  law-card-mini:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-md}"
+  category-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-md}"
+  proof-point:
+    textColor: "{colors.fg}"
+    typography: "{typography.body-sm}"
+  message:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-sm}"
+  vote-group:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.lg}"
+    height: "44px"
 ---
 # Murphy's Law Archive - Design Tokens (Shared)
 

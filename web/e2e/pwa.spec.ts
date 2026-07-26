@@ -83,16 +83,9 @@ test.describe('PWA Manifest', () => {
     // Wait for app to load
     await expect(page.getByText("Murphy's Law of the Day")).toBeVisible({ timeout: 10000 });
 
-    // Check for manifest link (injected by vite-plugin-pwa in production build)
-    // In dev mode, manifest may not be present, so this is a conditional check
+    // The manifest is linked directly so installability does not depend on a runtime plugin.
     const manifestLink = page.locator('link[rel="manifest"]');
-    const hasManifest = await manifestLink.count() > 0;
-
-    // Log for debugging in CI
-    if (!hasManifest) {
-      // In dev mode without service worker, manifest might not be injected
-      console.log('Note: Manifest link not found (expected in dev mode)');
-    }
+    await expect(manifestLink).toHaveAttribute('href', '/manifest.webmanifest');
   });
 
   test('theme-color meta tags are present', async ({ page }) => {

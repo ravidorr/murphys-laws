@@ -52,11 +52,11 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
 }
 
 // Register PWA service worker for offline support
-import { registerSW } from 'virtual:pwa-register';
+import { registerServiceWorker } from './utils/service-worker-registration.ts';
 import { showUpdateAvailable, showOfflineReady } from './components/update-notification.ts';
 import { scheduleServiceWorkerUpdateCheck } from './utils/service-worker-update.ts';
 
-const updateSW = registerSW({
+const updateSW = registerServiceWorker({
   onNeedRefresh() {
     // Show notification when new content is available
     showUpdateAvailable(updateSW);
@@ -82,7 +82,7 @@ const updateSW = registerSW({
 import { defineRoute, navigate, startRouter, forceRender, currentRoute } from './router.ts';
 import { Header } from './components/header.ts';
 import { Footer } from './components/footer.ts';
-import { MATHJAX_POLL_INTERVAL, MATHJAX_MAX_ATTEMPTS, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from './utils/constants.ts';
+import { SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from './utils/constants.ts';
 import { updatePageMetadata } from './utils/dom.ts';
 import { Home } from './views/home.ts';
 import { Browse } from './views/browse.ts';
@@ -227,38 +227,6 @@ function layout(node: HTMLElement, { hideAds = false, socialImage = SITE_DEFAULT
   wrap.appendChild(main);
   wrap.appendChild(footer);
 
-  // Ask MathJax (if present) to typeset this freshly rendered view.
-  // We wait until MathJax is loaded and the node is attached to the DOM.
-  const typesetWhenReady = (element: HTMLElement): void => {
-    const MATHJAX_DEFER_TIMEOUT = 0;
-
-    let attempts = 0;
-
-    const attempt = () => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      const mj = window.MathJax;
-      if (mj && typeof mj.typesetPromise === 'function') {
-        mj.typesetPromise([element]).catch(() => {
-          // Silently handle MathJax errors
-        });
-        return;
-      }
-
-      attempts += 1;
-      if (attempts < MATHJAX_MAX_ATTEMPTS) {
-        // Try again shortly in case MathJax script (loaded async) isn't ready yet
-        setTimeout(attempt, MATHJAX_POLL_INTERVAL);
-      }
-    };
-    // Defer so the router can attach the element to the DOM first
-    setTimeout(attempt, MATHJAX_DEFER_TIMEOUT);
-  };
-
-  typesetWhenReady(wrap);
-  
   hydrateIcons(wrap);
   
   return wrap;

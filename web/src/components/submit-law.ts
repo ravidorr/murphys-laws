@@ -156,7 +156,7 @@ export function SubmitLawSection() {
   function showMessage(message: string, isError = false) {
     messageDiv!.className = `submit-message ${isError ? 'error' : 'success'}`;
     messageDiv!.textContent = message;
-    messageDiv!.style.display = 'block';
+    messageDiv!.hidden = false;
     messageDiv!.setAttribute('role', isError ? 'alert' : 'status');
     messageDiv!.setAttribute('aria-live', isError ? 'assertive' : 'polite');
   }
@@ -164,7 +164,7 @@ export function SubmitLawSection() {
   // Clear message
   function clearMessage() {
     messageDiv!.textContent = '';
-    messageDiv!.style.display = 'none';
+    messageDiv!.hidden = true;
   }
 
   // Set loading state (template always has submitBtn and .btn-text)

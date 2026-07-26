@@ -1,301 +1,142 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  isIgnorableWarning,
-  isWcagFailureWarning,
+  contrastRatio,
   runDesignMdLint,
-  type RunLintOptions,
+  validateDesignSystem,
 } from './design-md-lint.ts';
+import {
+  buildDesignMd,
+  classifyTokens,
+  parseCssVariables,
+} from './sync-design-tokens.ts';
 
-interface IgnorableLocalThis {
-  finding?: Parameters<typeof isIgnorableWarning>[0];
-  result?: boolean;
+const CSS = `:root {
+  --font-sans: 'Work Sans', sans-serif;
+  --font-mono: monospace;
+  --space-1: 0.25rem;
+  --rounded-sm: 0.25rem;
+  --rounded-md: 0.375rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 624.9375rem;
+  --component-control-min-size: 2.75rem;
+  --component-icon-button-size: 2.75rem;
+  --component-brand-badge-size: 2.75rem;
+  --component-icon-size: 1.5rem;
+  --component-button-icon-size: 1.25rem;
+  --component-checkbox-size: 1.25rem;
+  --bg: #ffffff;
+  --fg: #111827;
+  --surface: #ffffff;
+  --btn-primary-bg: #0d5ea1;
+  --btn-primary-fg: #ffffff;
+  --primary: #030213;
+  --white: #ffffff;
+  --muted-fg: #4b5563;
+  --text-high-contrast: #000000;
+  --success-bg: #dcfce7;
+  --success-text: #166534;
+  --warning-bg: #fff8e1;
+  --warning-text: #5a4300;
+  --orange-bg: #ffe9d6;
+  --orange-text: #6a2e00;
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --dark-bg: #f0d6d6;
+  --dark-text: #2b0000;
+  --tooltip-bg: #1f2937;
+  --tooltip-fg: #f9fafb;
+  --tooltip-bg-inverse: #ffffff;
+  --tooltip-fg-inverse: #1f2937;
+  --brand-social-email: #4b5563;
+  --brand-social-icon-fg: #ffffff;
+}`;
+
+const BODY = `# Design system
+
+## Typography
+
+Accessibility is non-negotiable. Use semantic color tokens.
+
+## Components
+
+### States
+
+Focus, hover, pressed, disabled, loading, success, and error states are required.
+Use transitions and animations, with \`prefers-reduced-motion: reduce\`.
+`;
+
+function design(css = CSS): string {
+  return buildDesignMd({
+    parsed: classifyTokens(parseCssVariables(css)),
+    existingContent: BODY,
+  });
 }
 
-interface RunLintLocalThis {
-  stdout?: string;
-  stderr?: string;
-  status?: number | null;
-  lastArgs?: string[];
-  logs?: string[];
-  errors?: string[];
-  options?: RunLintOptions;
-  code?: 0 | 1;
-}
-
-function buildRunLintLocalThis(
-  stdout: string,
-  status: number | null = 0,
-): RunLintLocalThis {
-  const localThis: RunLintLocalThis = {};
-  localThis.stdout = stdout;
-  localThis.stderr = '';
-  localThis.status = status;
-  localThis.logs = [];
-  localThis.errors = [];
-  localThis.options = {
-    designMdPath: '/virt/DESIGN.md',
-    packageSpec: '@google/design.md@0.1.1',
-    runner: (args: string[]) => {
-      localThis.lastArgs = args;
-      return {
-        status: localThis.status === undefined ? 0 : localThis.status,
-        stdout: localThis.stdout ?? '',
-        stderr: localThis.stderr ?? '',
-      };
-    },
-    logger: {
-      log: (...args: unknown[]): void => {
-        localThis.logs!.push(args.map((a) => String(a)).join(' '));
-      },
-      error: (...args: unknown[]): void => {
-        localThis.errors!.push(args.map((a) => String(a)).join(' '));
-      },
-    },
-  };
-  return localThis;
-}
-
-describe('isIgnorableWarning', () => {
-  it('ignores "defined but never referenced by any component" warnings', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'warning',
-      path: 'colors.dark-error-bg',
-      message: "'dark-error-bg' is defined but never referenced by any component.",
-    };
-    localThis.result = isIgnorableWarning(localThis.finding);
-
-    expect(localThis.result).toBe(true);
+describe('local design.md lint', () => {
+  it('computes WCAG contrast for opaque and alpha colors', () => {
+    expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 3);
+    expect(contrastRatio('#00000099', '#ffffff')).toBeGreaterThan(5.5);
+    expect(contrastRatio('bad', '#ffffff')).toBeUndefined();
   });
 
-  it('does not ignore other warnings', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'warning',
-      path: 'components.btn-primary',
-      message: 'textColor (#fff) on backgroundColor (#ccc) fails WCAG AA.',
-    };
-    localThis.result = isIgnorableWarning(localThis.finding);
-
-    expect(localThis.result).toBe(false);
-  });
-
-  it('never treats errors as ignorable', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'error',
-      message: 'is defined but never referenced by any component',
-    };
-    localThis.result = isIgnorableWarning(localThis.finding);
-
-    expect(localThis.result).toBe(false);
-  });
-
-  it('never treats infos as ignorable warnings', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'info',
-      message: 'something is defined but never referenced by any component',
-    };
-    localThis.result = isIgnorableWarning(localThis.finding);
-
-    expect(localThis.result).toBe(false);
-  });
-});
-
-describe('isWcagFailureWarning', () => {
-  it('detects "below WCAG AA" contrast-ratio warnings', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'warning',
-      path: 'components.btn-primary',
-      message:
-        'textColor (#fff) on backgroundColor (#ccc) has contrast ratio 3.1:1, below WCAG AA minimum of 4.5:1.',
-    };
-    localThis.result = isWcagFailureWarning(localThis.finding);
-
-    expect(localThis.result).toBe(true);
-  });
-
-  it('detects AAA-level contrast failures too', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'warning',
-      message: 'contrast 5:1, below WCAG AAA threshold.',
-    };
-    localThis.result = isWcagFailureWarning(localThis.finding);
-
-    expect(localThis.result).toBe(true);
-  });
-
-  it('does not flag passing or unrelated warnings', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'warning',
-      message: "'primary' is defined but never referenced by any component.",
-    };
-    localThis.result = isWcagFailureWarning(localThis.finding);
-
-    expect(localThis.result).toBe(false);
-  });
-
-  it('does not flag error-severity findings (they already fail)', () => {
-    const localThis: IgnorableLocalThis = {};
-    localThis.finding = {
-      severity: 'error',
-      message: 'below WCAG AA',
-    };
-    localThis.result = isWcagFailureWarning(localThis.finding);
-
-    expect(localThis.result).toBe(false);
-  });
-});
-
-describe('runDesignMdLint', () => {
-  it('returns 0 when there are only ignored warnings and infos', () => {
-    const report = {
-      findings: [
-        {
-          severity: 'warning',
-          path: 'colors.dark-bg-primary',
-          message: "'dark-bg-primary' is defined but never referenced by any component.",
-        },
-        { severity: 'info', message: 'Design system defines 52 colors.' },
-      ],
-      summary: { errors: 0, warnings: 1, infos: 1 },
-    };
-    const localThis = buildRunLintLocalThis(JSON.stringify(report));
-
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(0);
-    expect(localThis.errors!.length).toBe(0);
-    expect(localThis.logs!.some((l) => l.startsWith('info  '))).toBe(true);
-    expect(
-      localThis.logs!.some((l) =>
-        l.includes('0 error(s), 0 warning(s), 1 ignored-warning(s)'),
-      ),
-    ).toBe(true);
-  });
-
-  it('returns 1 and logs errors when the linter reports structural errors', () => {
-    const report = {
-      findings: [
-        {
-          severity: 'error',
-          path: 'colors.primary',
-          message: "Invalid color value 'oops'.",
-        },
-      ],
-      summary: { errors: 1, warnings: 0, infos: 0 },
-    };
-    const localThis = buildRunLintLocalThis(JSON.stringify(report));
-
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(1);
-    expect(
-      localThis.errors!.some((e) => e.includes("Invalid color value 'oops'")),
-    ).toBe(true);
-  });
-
-  it('surfaces non-ignorable non-WCAG warnings without failing the run', () => {
-    const report = {
-      findings: [
-        {
-          severity: 'warning',
-          path: 'colors.primary',
-          message: "'primary' uses an unusual color-space annotation.",
-        },
-      ],
-      summary: { errors: 0, warnings: 1, infos: 0 },
-    };
-    const localThis = buildRunLintLocalThis(JSON.stringify(report));
-
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(0);
-    expect(
-      localThis.logs!.some(
-        (l) => l.startsWith('warn  ') && l.includes('color-space'),
-      ),
-    ).toBe(true);
-  });
-
-  it('promotes WCAG-failure warnings to errors and fails the run', () => {
-    const report = {
-      findings: [
-        {
-          severity: 'warning',
-          path: 'components.btn-primary',
-          message:
-            'textColor (#ffffff) on backgroundColor (#aaccff) has contrast ratio 1.64:1, below WCAG AA minimum of 4.5:1.',
-        },
-      ],
-      summary: { errors: 0, warnings: 1, infos: 0 },
-    };
-    const localThis = buildRunLintLocalThis(JSON.stringify(report));
-
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(1);
-    expect(
-      localThis.errors!.some(
-        (e) => e.includes('below WCAG AA') && e.includes('promoted from warning'),
-      ),
-    ).toBe(true);
-  });
-
-  it('forwards the expected argv to the upstream package via the runner', () => {
-    const report = { findings: [], summary: { errors: 0, warnings: 0, infos: 0 } };
-    const localThis = buildRunLintLocalThis(JSON.stringify(report));
-
-    runDesignMdLint(localThis.options!);
-
-    expect(localThis.lastArgs).toEqual([
-      '--yes',
-      '@google/design.md@0.1.1',
-      'lint',
-      '--format',
-      'json',
-      '/virt/DESIGN.md',
+  it('accepts synchronized, documented contracts', () => {
+    expect(validateDesignSystem(design(), CSS)).toEqual([
+      expect.objectContaining({ severity: 'info' }),
     ]);
   });
 
-  it('fails with a helpful error when the upstream command cannot run', () => {
-    const localThis = buildRunLintLocalThis('', null);
-    localThis.stderr = 'spawn npx ENOENT';
+  it('rejects front-matter drift and incomplete documentation', () => {
+    const findings = validateDesignSystem(
+      design().replace('version: alpha', 'version: changed').replace('### States', ''),
+      CSS,
+    );
 
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(1);
-    expect(
-      localThis.errors!.some((e) => e.includes('design.md lint failed to run')),
-    ).toBe(true);
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'front-matter', severity: 'error' }),
+        expect.objectContaining({
+          path: 'documentation.states',
+          severity: 'error',
+        }),
+      ]),
+    );
   });
 
-  it('fails with a parse error when the upstream command emits non-JSON output', () => {
-    const localThis = buildRunLintLocalThis('not json at all');
+  it('rejects invalid and inaccessible color contracts', () => {
+    const invalidCss = CSS
+      .replace('--fg: #111827;', '--fg: #zzzzzz;')
+      .replace('--btn-primary-bg: #0d5ea1;', '--btn-primary-bg: #ffffff;');
+    const findings = validateDesignSystem(design(invalidCss), invalidCss);
 
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(1);
-    expect(
-      localThis.errors!.some((e) =>
-        e.includes('Could not parse design.md lint output as JSON'),
-      ),
-    ).toBe(true);
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'components.btn-outline.textColor',
+          severity: 'error',
+        }),
+        expect.objectContaining({
+          path: 'components.btn-primary',
+          severity: 'error',
+        }),
+      ]),
+    );
   });
 
-  it('treats upstream exit code > 1 as runtime failure', () => {
-    const localThis = buildRunLintLocalThis('', 2);
-    localThis.stderr = 'panic';
+  it('fails clearly when an input file is missing', () => {
+    const errors: string[] = [];
+    const code = runDesignMdLint({
+      designMdPath: '/design',
+      variablesCssPath: '/tokens',
+      existsFile: () => false,
+      readFile: () => '',
+      logger: {
+        log: () => undefined,
+        error: (message) => errors.push(String(message)),
+      },
+    });
 
-    localThis.code = runDesignMdLint(localThis.options!);
-
-    expect(localThis.code).toBe(1);
-    expect(
-      localThis.errors!.some((e) => e.includes('design.md lint failed to run')),
-    ).toBe(true);
+    expect(code).toBe(1);
+    expect(errors[0]).toContain('/design not found');
   });
 });

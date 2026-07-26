@@ -91,12 +91,12 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [ ] **WhatsApp Share (iOS):** iOS uses native `ShareLink` which already shows WhatsApp if installed. Consider adding a dedicated WhatsApp button for consistency with other platforms.
 
 ## Technical / Performance
-- [x] **PWA / Service Worker:** ~~Add offline support and make the app installable.~~ Done - implemented using vite-plugin-pwa with Workbox. Features: installable app with custom install prompt, offline fallback page, smart caching strategies for API responses (StaleWhileRevalidate for categories, NetworkFirst for laws), auto-update notifications. iOS Safari users see step-by-step "Add to Home Screen" instructions. See `web/src/components/install-prompt.js` and `web/src/components/update-notification.js`.
+- [x] **PWA / Service Worker:** ~~Add offline support and make the app installable.~~ Done - implemented with the repository-native service-worker generator. Features: installable app with custom install prompt, offline fallback page, smart caching strategies for API responses (stale-while-revalidate for categories, network-first for laws), and auto-update notifications. iOS Safari users see step-by-step "Add to Home Screen" instructions. See `web/src/components/install-prompt.ts` and `web/src/components/update-notification.ts`.
 - [ ] **Code Splitting:** Lazy load calculator code to reduce initial bundle size.
 - [x] **API Response Caching:** ~~Cache categories and attributions more aggressively on the client.~~ Done - implemented localStorage caching with 1-hour TTL, cache-first strategy with background refresh, and schema versioning for forward compatibility. See `web/src/utils/category-cache.ts`.
 - [ ] **Prefetching:** Prefetch related laws on hover for faster navigation.
 - [x] **Error Tracking:** ~~Integrate Sentry or similar service for production error monitoring.~~ Done - integrated Sentry for both frontend (@sentry/browser) and backend (@sentry/node). Errors are captured via Sentry.captureException/captureMessage. Source maps uploaded during build for better stack traces. See `.env.example` for configuration.
-- [x] **Export to PDF/CSV:** ~~Allow users to export search results or collections.~~ Done - added universal page export feature accessible from header. Supports PDF, CSV, Markdown, and plain text formats. Uses jsPDF for PDF generation. Export available on law pages, categories, and content pages. Calculators and 404 excluded (interactive tools don't benefit from static export). See `web/src/utils/export.js` and `web/src/utils/export-context.js`.
+- [x] **Export to PDF/CSV:** ~~Allow users to export search results or collections.~~ Done - added universal page export feature accessible from the header. Supports PDF, CSV, Markdown, and plain text formats. PDF generation is dependency-free and does not inject runtime styles. Export is available on law pages, categories, and content pages; calculators and 404 are excluded. See `web/src/utils/export.ts` and `web/src/utils/export-context.ts`.
 
 ## Completed
 
@@ -113,4 +113,4 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 
 ### Performance
 - [x] **Image Optimization:** ~~Implement automated image optimization (e.g., WebP conversion, responsive images) for all images used on the site.~~ Done - created `web/scripts/optimize-images.mjs` using Sharp. Optimized `home.png` from 482KB to 127KB (73% savings), generated WebP at 35KB (93% savings). Run with `npm run optimize:images`.
-- [x] **Critical CSS Generation:** ~~Explore tools to automatically generate critical CSS for each page to further improve LCP.~~ Already implemented - inline critical CSS exists in `index.html` with async stylesheet loading.
+- [x] **Critical CSS Generation:** ~~Explore tools to automatically generate critical CSS for each page to further improve LCP.~~ Superseded by a synchronous external shell stylesheet so the application stays styled without inline CSS or asynchronous token loading.

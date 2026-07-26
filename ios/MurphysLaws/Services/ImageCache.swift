@@ -123,12 +123,18 @@ extension CachedAsyncImage where Content == Image, Placeholder == ProgressView<E
         image
             .resizable()
             .aspectRatio(contentMode: .fill)
-            .frame(width: 100, height: 100)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(
+                width: DS.Layout.thumbnailSize,
+                height: DS.Layout.thumbnailSize
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
     } placeholder: {
         Rectangle()
             .fill(DS.Color.surface)
-            .frame(width: 100, height: 100)
+            .frame(
+                width: DS.Layout.thumbnailSize,
+                height: DS.Layout.thumbnailSize
+            )
             .overlay(ProgressView())
     }
 }

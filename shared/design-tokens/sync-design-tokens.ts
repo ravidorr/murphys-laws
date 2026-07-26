@@ -1,13 +1,14 @@
 /**
  * Sync web/DESIGN.md YAML front matter from web/styles/partials/variables.css.
  *
- * variables.css is the source of truth for concrete color / spacing values.
+ * variables.css is the source of truth for concrete color, spacing, radius,
+ * font-family, and component-metric values.
  * DESIGN.md is a derived artifact whose YAML front matter mirrors those
  * tokens for AI agents, Figma, Stitch, and any other DESIGN.md consumer.
  *
  * The markdown body of DESIGN.md is authored and is preserved verbatim;
- * typography / components / rounded blocks are semantic and are owned by
- * this script (they do not appear in variables.css as atomic primitives).
+ * Typography levels and component assignments are semantic and are owned by
+ * this script; their atomic values come from variables.css.
  */
 
 import fs from 'node:fs';
@@ -30,10 +31,16 @@ const SHARED_DESIGN_MD_PATH = path.resolve(
 
 const HEX_COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const SPACING_KEY_RE = /^space-(\d+)$/;
+const ROUNDED_KEY_RE = /^rounded-([a-z0-9-]+)$/;
+const COMPONENT_METRIC_KEY_RE = /^component-([a-z0-9-]+)$/;
+const FONT_FAMILY_KEY_RE = /^font-(sans|mono)$/;
 
 export interface ClassifiedTokens {
   colors: Map<string, string>;
   spacing: Map<string, string>;
+  rounded: Map<string, string>;
+  componentMetrics: Map<string, string>;
+  fontFamilies: Map<string, string>;
 }
 
 /**
@@ -66,15 +73,17 @@ export function parseCssVariables(cssContent: string): Map<string, string> {
  *   `var(--other)`) are intentionally excluded - DESIGN.md only allows
  *   `#HEX` in the YAML front matter and agents would otherwise see
  *   broken token values.
- * - spacing: any variable named `space-N`, emitted as a `Npx` Dimension.
- *   Input is expected in rem (matching the Tailwind-style 1rem = 16px
- *   convention used in variables.css).
+ * - spacing / rounded / componentMetrics: rem/px values normalized to px.
+ * - fontFamilies: the two explicit `font-sans` / `font-mono` stacks.
  */
 export function classifyTokens(
   vars: Map<string, string>,
 ): ClassifiedTokens {
   const colors = new Map<string, string>();
   const spacing = new Map<string, string>();
+  const rounded = new Map<string, string>();
+  const componentMetrics = new Map<string, string>();
+  const fontFamilies = new Map<string, string>();
 
   for (const [name, value] of vars) {
     const spaceMatch = name.match(SPACING_KEY_RE);
@@ -85,13 +94,34 @@ export function classifyTokens(
       }
       continue;
     }
+    const roundedMatch = name.match(ROUNDED_KEY_RE);
+    if (roundedMatch && roundedMatch[1] !== undefined) {
+      const px = remOrPxToPx(value);
+      if (px !== null) {
+        rounded.set(roundedMatch[1], `${px}px`);
+      }
+      continue;
+    }
+    const metricMatch = name.match(COMPONENT_METRIC_KEY_RE);
+    if (metricMatch && metricMatch[1] !== undefined) {
+      const px = remOrPxToPx(value);
+      if (px !== null) {
+        componentMetrics.set(metricMatch[1], `${px}px`);
+      }
+      continue;
+    }
+    const fontMatch = name.match(FONT_FAMILY_KEY_RE);
+    if (fontMatch && fontMatch[1] !== undefined) {
+      fontFamilies.set(fontMatch[1], value);
+      continue;
+    }
     const normalized = normalizeHex(value);
     if (normalized !== null) {
       colors.set(name, normalized);
     }
   }
 
-  return { colors, spacing };
+  return { colors, spacing, rounded, componentMetrics, fontFamilies };
 }
 
 function normalizeHex(raw: string): string | null {
@@ -195,65 +225,75 @@ export const TYPOGRAPHY_LEVELS: Record<string, TypographyLevel> = {
 };
 
 /**
- * Corner-radius scale. Derived from observed border-radius values in
- * components.css and calculator.css; not currently tokenized in CSS.
- */
-export const ROUNDED_SCALE: Record<string, string> = {
-  sm: '4px',
-  md: '6px',
-  lg: '8px',
-  xl: '12px',
-  full: '9999px',
-};
-
-/**
  * Component contracts. Each entry references color tokens from the
  * generated `colors` block via DESIGN.md's `{path.to.token}` syntax.
  * Keep this aligned with web/styles/partials/components.css and theme.css.
  */
-export const COMPONENTS: Record<string, Record<string, string>> = {
+const COMPONENTS: Record<string, Record<string, string>> = {
   'btn-primary': {
     backgroundColor: '{colors.btn-primary-bg}',
     textColor: '{colors.btn-primary-fg}',
-    rounded: '{rounded.md}',
+    rounded: '{rounded.lg}',
     typography: '{typography.body-md}',
   },
   'btn-outline': {
     backgroundColor: '{colors.bg}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.md}',
+    rounded: '{rounded.lg}',
     typography: '{typography.body-md}',
+  },
+  'icon-button': {
+    backgroundColor: '{colors.bg}',
+    textColor: '{colors.fg}',
+    rounded: '{rounded.lg}',
   },
   card: {
     backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.lg}',
+    rounded: '{rounded.xl}',
   },
   'section-card': {
     backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.lg}',
+    rounded: '{rounded.xl}',
   },
   input: {
     backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
+    rounded: '{rounded.lg}',
+    typography: '{typography.body-md}',
+  },
+  select: {
+    backgroundColor: '{colors.surface}',
+    textColor: '{colors.fg}',
+    rounded: '{rounded.lg}',
+    typography: '{typography.body-md}',
+  },
+  checkbox: {
+    backgroundColor: '{colors.surface}',
+    textColor: '{colors.fg}',
     rounded: '{rounded.sm}',
+  },
+  slider: {
+    backgroundColor: '{colors.surface}',
+    textColor: '{colors.fg}',
+    rounded: '{rounded.full}',
     typography: '{typography.body-md}',
   },
   modal: {
     backgroundColor: '{colors.bg}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.lg}',
+    rounded: '{rounded.xl}',
   },
   'nav-dropdown': {
     backgroundColor: '{colors.bg}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.md}',
+    rounded: '{rounded.xl}',
   },
   'brand-badge': {
     backgroundColor: '{colors.primary}',
     textColor: '{colors.white}',
-    rounded: '{rounded.full}',
+    rounded: '{rounded.md}',
   },
   blockquote: {
     backgroundColor: '{colors.bg}',
@@ -262,7 +302,7 @@ export const COMPONENTS: Record<string, Record<string, string>> = {
   pagination: {
     backgroundColor: '{colors.bg}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.md}',
+    rounded: '{rounded.lg}',
   },
   'calc-ok': {
     backgroundColor: '{colors.success-bg}',
@@ -297,7 +337,7 @@ export const COMPONENTS: Record<string, Record<string, string>> = {
   notification: {
     backgroundColor: '{colors.bg}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.lg}',
+    rounded: '{rounded.xl}',
     typography: '{typography.body-sm}',
   },
   // Sticky header. The shipped background is a translucent color-mix over
@@ -326,7 +366,7 @@ export const COMPONENTS: Record<string, Record<string, string>> = {
   'search-autocomplete': {
     backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.lg}',
+    rounded: '{rounded.xl}',
     typography: '{typography.body-md}',
   },
   tooltip: {
@@ -356,16 +396,91 @@ export const COMPONENTS: Record<string, Record<string, string>> = {
   'bottom-navigation': {
     backgroundColor: '{colors.surface}',
     textColor: '{colors.muted-fg}',
-    rounded: '{rounded.lg}',
+    rounded: '{rounded.xl}',
     typography: '{typography.caption}',
   },
   'form-input': {
     backgroundColor: '{colors.surface}',
     textColor: '{colors.fg}',
-    rounded: '{rounded.sm}',
+    rounded: '{rounded.lg}',
     typography: '{typography.body-md}',
   },
 };
+
+function componentMetric(
+  parsed: ClassifiedTokens,
+  key: string,
+  fallback: string,
+): string {
+  return parsed.componentMetrics.get(key) ?? fallback;
+}
+
+export function buildComponents(
+  parsed: ClassifiedTokens,
+): Record<string, Record<string, string>> {
+  const controlSize = componentMetric(parsed, 'control-min-size', '44px');
+  const iconButtonSize = componentMetric(parsed, 'icon-button-size', '44px');
+  const brandBadgeSize = componentMetric(parsed, 'brand-badge-size', '44px');
+  const checkboxSize = componentMetric(parsed, 'checkbox-size', '20px');
+
+  return {
+    ...COMPONENTS,
+    'btn-primary': {
+      ...COMPONENTS['btn-primary']!,
+      height: controlSize,
+    },
+    'btn-outline': {
+      ...COMPONENTS['btn-outline']!,
+      height: controlSize,
+    },
+    'icon-button': {
+      ...COMPONENTS['icon-button']!,
+      width: iconButtonSize,
+      height: iconButtonSize,
+    },
+    input: { ...COMPONENTS.input!, height: controlSize },
+    select: { ...COMPONENTS.select!, height: controlSize },
+    checkbox: {
+      ...COMPONENTS.checkbox!,
+      width: checkboxSize,
+      height: checkboxSize,
+    },
+    slider: { ...COMPONENTS.slider!, height: controlSize },
+    'brand-badge': {
+      ...COMPONENTS['brand-badge']!,
+      width: brandBadgeSize,
+      height: brandBadgeSize,
+    },
+    'law-card-mini': {
+      backgroundColor: '{colors.surface}',
+      textColor: '{colors.fg}',
+      rounded: '{rounded.xl}',
+      typography: '{typography.body-md}',
+    },
+    'category-card': {
+      backgroundColor: '{colors.surface}',
+      textColor: '{colors.fg}',
+      rounded: '{rounded.xl}',
+      typography: '{typography.body-md}',
+    },
+    'proof-point': {
+      textColor: '{colors.fg}',
+      typography: '{typography.body-sm}',
+    },
+    message: {
+      backgroundColor: '{colors.bg}',
+      textColor: '{colors.fg}',
+      rounded: '{rounded.xl}',
+      typography: '{typography.body-sm}',
+    },
+    'vote-group': {
+      backgroundColor: '{colors.surface}',
+      textColor: '{colors.fg}',
+      rounded: '{rounded.lg}',
+      height: controlSize,
+    },
+  };
+}
 
 const NAME = "Murphy's Law Archive";
 const VERSION = 'alpha';
@@ -506,7 +621,7 @@ export function renderFrontMatter(parsed: ClassifiedTokens): string {
   }
 
   lines.push('rounded:');
-  for (const [level, dim] of Object.entries(ROUNDED_SCALE)) {
+  for (const [level, dim] of parsed.rounded) {
     lines.push(`  ${quoteYamlKey(level)}: ${yamlString(dim)}`);
   }
 
@@ -527,7 +642,7 @@ export function renderFrontMatter(parsed: ClassifiedTokens): string {
   }
 
   lines.push('components:');
-  for (const [name, props] of Object.entries(COMPONENTS)) {
+  for (const [name, props] of Object.entries(buildComponents(parsed))) {
     lines.push(`  ${quoteYamlKey(name)}:`);
     for (const [prop, value] of Object.entries(props)) {
       lines.push(`    ${quoteYamlKey(prop)}: ${yamlString(value)}`);
@@ -620,25 +735,54 @@ tokenized; the three tiers below live directly in
 
 Corner radii use a five-level scale, exposed as the \`rounded\` tokens
 in the YAML front matter: \`sm\` 4 px, \`md\` 6 px, \`lg\` 8 px, \`xl\` 12 px,
-\`full\` 9999 px (pill). Buttons use \`md\`, cards and modals use \`lg\`,
-the brand badge uses \`full\`. There is no "none" level: zero radius is
-a deliberate choice, not a token.
+\`full\` 9999 px (pill). Checkboxes use \`sm\`; the brand badge uses \`md\`;
+buttons, icon buttons, inputs, selects, and pagination use \`lg\`; cards,
+dropdowns, and modals use \`xl\`. There is no "none" level: zero radius is
+reserved for deliberate structural joins inside compound components.
+
+All interactive controls have a minimum 44 px hit area. Standard icons are
+24 px, button icons and checkboxes are 20 px, and the square brand badge is
+44 px. These values are the \`--component-*\` variables in \`variables.css\`
+and generate the native \`DS.Component\` namespaces.
 
 ## Components
 
-The \`components\` section in the YAML front matter assigns color and
-shape tokens to the core shipped components. It is not exhaustive - it
-covers the primitives that agents most often need to reproduce
-(buttons, cards, inputs, modal, brand badge, blockquote, pagination,
-and the calculator state pills). Dark-mode overrides are handled in
-\`theme.css\`; agents should assume any component is theme-aware and
-use the \`dark-*\` color tokens for dark surfaces.
+The \`components\` section in the YAML front matter assigns color, shape,
+typography, and size tokens to the shipped primitives:
+
+- Core: button, outline button, icon button, and icon.
+- Forms: form field, input, select, checkbox, and slider.
+- Cards: card, law-card-mini, category-card, and proof-point.
+- Feedback: calculator result, message, notification, and vote group.
+- Navigation: brand badge, breadcrumb, and pagination.
+
+Dark-mode overrides are handled in \`theme.css\`; every component is
+theme-aware and uses semantic \`dark-*\` counterparts. Breadcrumb and
+pagination are web navigation patterns. Native apps use platform navigation,
+search, sheets, safe-area behavior, and system focus treatment.
+
+### States
+
+Every interactive component defines default, hover, focus-visible, pressed,
+disabled, and loading states. Form and feedback components additionally define
+success and error states. State changes use semantic attributes and predefined
+classes on web, and native control state on iOS and Android; presentation never
+depends on inline values or presentation data in domain models.
+
+Buttons and inputs use a visible blue focus ring. Hover transitions use
+150-200 ms; pressed states dim rather than move. Under
+\`prefers-reduced-motion: reduce\`, non-essential transitions and animations
+are removed.
 
 ## Do's and Don'ts
 
 - Do keep type doing the heavy lifting. Chrome should be quiet.
+- Do use Work Sans through \`--font-sans\` and monospace text through
+  \`--font-mono\`.
 - Do use semantic color tokens (\`success-*\`, \`error-*\`, etc.) - never
   raw hex in components.
+- Do use a real icon library: 24 px by default and 20 px inside buttons.
+- Do keep every interactive target at least 44 by 44 px.
 - Do keep contrast at WCAG AA or better. The token values already pass;
   reach for them, not "close enough" shades.
 - Don't introduce Material Design 3 components or styles. Stitch will
@@ -646,10 +790,14 @@ use the \`dark-*\` color tokens for dark surfaces.
   output.
 - Don't ship emojis in UI copy - ESLint and markdownlint both reject
   them repo-wide.
-- Don't use inline styles. \`html-validate\` blocks them; put styles in
-  the relevant partial under \`web/styles/partials/\`.
+- Don't use React, ReactDOM, JSX, TSX, Babel-in-browser, or React tooling.
+  Web UI is semantic HTML rendered by vanilla TypeScript DOM helpers.
+- Don't use inline CSS: no \`style\` attributes, \`<style>\` elements,
+  JavaScript \`.style\` mutations, CSS-in-JS, injected stylesheets, or inline
+  custom properties. Put all CSS in external partials and express runtime
+  state with semantic elements, attributes, and predefined classes.
 - Don't edit the YAML front matter by hand. It is regenerated from
-  \`variables.css\` by \`npm run design:sync\` in the \`web\` workspace.
+  \`variables.css\` by \`npm run design:sync\` from the repository root.
 
 ## Workflow
 
@@ -659,20 +807,24 @@ Claude, Stitch, Figma). The authoritative values live in
 \`shared/design-tokens/sync-design-tokens.ts\` parses that file and regenerates
 the YAML front matter above; it does not touch this Markdown body.
 
-- **Change a color or spacing value:** edit \`variables.css\`, then run
+- **Change a concrete token value:** edit \`variables.css\`, then run
   \`npm run design:sync\`. CI enforces no drift via
   \`npm run design:check\` in \`ci:web\`.
-- **Change a typography level, component contract, or radius scale:**
-  edit the constants at the top of \`sync-design-tokens.ts\` and re-run
-  \`design:sync\`. These are semantic decisions that do not have a 1:1
-  representation in CSS.
+- **Change a typography level or component assignment:** edit the semantic
+  contract in \`sync-design-tokens.ts\` and re-run \`design:sync\`.
+- **Change a radius, font-family, or component metric value:** edit its CSS
+  variable; the sync and native exporters parse it directly.
+- **Generate iOS tokens:** run \`npm run design:export:ios\` from the repository
+  root. From \`ios/\`, \`generate-xcode-project.sh\` targets that root script
+  with \`npm --prefix ..\`; do not target the \`web\` workspace.
 - **Use Stitch for ideation:** seed Stitch with this file. Keep
   generated mockups in \`web/.stitch/\` (gitignored). Do not ship
   Stitch-generated HTML/CSS; translate mockups by hand into the
   vanilla-TS components under \`web/src/components/\`.
 - **Validate:** \`npm run design:check\` runs
-  \`design:sync --check\` for drift and \`@google/design.md lint\` for
-  structural correctness and WCAG contrast.
+  \`design:sync --check\` for drift and the repository-native DESIGN.md linter
+  for structural correctness, WCAG contrast, and cross-platform exporter
+  wiring.
 `;
 
 export interface BuildInput {

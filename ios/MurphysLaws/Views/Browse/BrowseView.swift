@@ -151,7 +151,7 @@ struct BrowseView: View {
 
     private var activeFiltersBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Constants.UI.spacingS) {
+            HStack(spacing: DS.Spacing.s2) {
                 // Category filter chip
                 if let categoryID = selectedCategoryID {
                     FilterChip(
@@ -185,11 +185,11 @@ struct BrowseView: View {
                             .fontWeight(.medium)
                             .foregroundColor(DS.Color.error)
                     }
-                    .padding(.leading, Constants.UI.spacingS)
+                    .padding(.leading, DS.Spacing.s2)
                 }
             }
             .padding(.horizontal)
-            .padding(.vertical, Constants.UI.spacingS)
+            .padding(.vertical, DS.Spacing.s2)
         }
         .background(DS.Color.surface)
         .task {
@@ -237,7 +237,7 @@ struct LawListRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
+        VStack(alignment: .leading, spacing: DS.Spacing.s2) {
             // Title (if exists)
             if let title = law.title, !title.isEmpty {
                 Text(title)
@@ -269,15 +269,15 @@ struct LawListRow: View {
                 if let firstCategory = law.categories?.first {
                     Text(firstCategory.title)
                         .dsTypography(DS.Typography.caption)
-                        .padding(.horizontal, Constants.UI.spacingS)
-                        .padding(.vertical, 4)
-                        .background(firstCategory.iconColor.opacity(0.2))
+                        .padding(.horizontal, DS.Spacing.s2)
+                        .padding(.vertical, DS.Spacing.s1)
+                        .background(firstCategory.iconColor.opacity(DS.Opacity.soft))
                         .foregroundColor(firstCategory.iconColor)
-                        .cornerRadius(Constants.UI.cornerRadiusS)
+                        .cornerRadius(DS.Radius.lg)
                 }
             }
         }
-        .padding(.vertical, Constants.UI.spacingS)
+        .padding(.vertical, DS.Spacing.s2)
         .accessibilityIdentifier("LawListRow-\(law.id)")
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(law.title ?? "Law"): \(law.text)")
@@ -318,11 +318,14 @@ struct FilterChip: View {
         .padding(.vertical, DS.Spacing.s2)
         .background(
             Capsule()
-                .fill(color.opacity(0.15))
+                .fill(color.opacity(DS.Opacity.subtle))
         )
         .overlay(
             Capsule()
-                .strokeBorder(color.opacity(0.3), lineWidth: 1)
+                .strokeBorder(
+                    color.opacity(DS.Opacity.muted),
+                    lineWidth: DS.Border.standard
+                )
         )
     }
 }

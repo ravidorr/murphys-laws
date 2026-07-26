@@ -318,11 +318,11 @@ describe('SubmitLawSection component', () => {
 
     textarea!.value = 'Valid law text with enough characters here';
     textarea!.dispatchEvent(new Event('input'));
-    expect(messageDiv!.style.display).toBe('none');
+    expect(messageDiv!.hidden).toBe(true);
 
     textarea!.value = '';
     textarea!.dispatchEvent(new Event('input'));
-    expect(messageDiv!.style.display).toBe('none');
+    expect(messageDiv!.hidden).toBe(true);
   });
 
   it('L132 B1: clearMessage when trimmedLength 0 or >= 10', () => {
@@ -331,10 +331,10 @@ describe('SubmitLawSection component', () => {
     const messageDiv = el.querySelector('.submit-message') as HTMLElement | null;
     textarea!.value = 'Valid law text with enough characters here';
     textarea!.dispatchEvent(new Event('input'));
-    expect(messageDiv!.style.display).toBe('none');
+    expect(messageDiv!.hidden).toBe(true);
     textarea!.value = '';
     textarea!.dispatchEvent(new Event('input'));
-    expect(messageDiv!.style.display).toBe('none');
+    expect(messageDiv!.hidden).toBe(true);
   });
 
   it('L197 B0: honeypot filled rejects submission', async () => {
@@ -770,7 +770,7 @@ describe('SubmitLawSection component', () => {
     const messageDiv = el.querySelector('.submit-message') as HTMLElement | null;
 
     // Message div should be hidden initially
-    expect(messageDiv!.style.display).toBe('');
+    expect(messageDiv!.hidden).toBe(true);
     expect(messageDiv!.textContent).toBe('');
 
   });

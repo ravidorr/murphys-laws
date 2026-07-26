@@ -48,6 +48,17 @@ function sampleCss(): string {
   return `:root {
   --space-1: 0.25rem;
   --space-4: 1rem;
+  --rounded-sm: 0.25rem;
+  --rounded-md: 0.375rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 9999px;
+  --component-control-min-size: 2.75rem;
+  --component-icon-button-size: 2.75rem;
+  --component-brand-badge-size: 2.75rem;
+  --component-icon-size: 1.5rem;
+  --component-button-icon-size: 1.25rem;
+  --component-checkbox-size: 1.25rem;
 
   --bg: #ffffff;
   --fg: #111827;
@@ -205,7 +216,7 @@ describe('hexToComposeArgb', () => {
 });
 
 describe('buildAndroidArtifacts', () => {
-  it('emits a Kotlin file declaring object DS with Color, Spacing, Radius, Typography', () => {
+  it('emits a Kotlin file declaring object DS with Color, Spacing, Radius, Component, Typography', () => {
     const localThis: ArtifactsLocalThis = {};
     localThis.parsed = classifyTokens(parseCssVariables(sampleCss()));
     localThis.artifacts = buildAndroidArtifacts(localThis.parsed);
@@ -214,6 +225,7 @@ describe('buildAndroidArtifacts', () => {
     expect(localThis.artifacts.kt).toContain('object Color {');
     expect(localThis.artifacts.kt).toContain('object Spacing {');
     expect(localThis.artifacts.kt).toContain('object Radius {');
+    expect(localThis.artifacts.kt).toContain('object Component {');
     expect(localThis.artifacts.kt).toContain('object Typography {');
   });
 
@@ -249,6 +261,7 @@ describe('buildAndroidArtifacts', () => {
     expect(kt).toContain('val s4: Dp = 16.dp');
     expect(kt).toContain('val sm: Dp = 4.dp');
     expect(kt).toContain('val full: Dp = 9999.dp');
+    expect(kt).toContain('val controlMinSize: Dp = 44.dp');
   });
 
   it('emits typography levels with absolute lineHeight (CSS multiplier x fontSize) so Compose can render directly', () => {
@@ -300,7 +313,7 @@ describe('buildAndroidArtifacts', () => {
     expect(colorsNightXml).not.toContain('ds_btn_primary_fg');
   });
 
-  it('emits dimens.xml with ds_space_<n> and ds_radius_<level> entries', () => {
+  it('emits dimens.xml with spacing, radius, and component entries', () => {
     const parsed = classifyTokens(parseCssVariables(sampleCss()));
     const { dimensXml } = buildAndroidArtifacts(parsed);
 
@@ -308,6 +321,9 @@ describe('buildAndroidArtifacts', () => {
     expect(dimensXml).toContain('<dimen name="ds_space_4">16dp</dimen>');
     expect(dimensXml).toContain('<dimen name="ds_radius_sm">4dp</dimen>');
     expect(dimensXml).toContain('<dimen name="ds_radius_full">9999dp</dimen>');
+    expect(dimensXml).toContain(
+      '<dimen name="ds_component_control_min_size">44dp</dimen>',
+    );
   });
 });
 

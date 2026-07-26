@@ -8,21 +8,28 @@
 import SwiftUI
 import WebKit
 
+enum MathFormulaSize: String {
+    case bodySm = "body-sm"
+    case bodyMd = "body-md"
+    case bodyLg = "body-lg"
+    case h3
+}
+
 struct MathFormulaView: View {
     let latex: String
-    let fontSize: CGFloat
-    @State private var renderedHeight: CGFloat = 60
-    @State private var renderedWidth: CGFloat = 300
+    let size: MathFormulaSize
+    @State private var renderedHeight: CGFloat = DS.Spacing.s16
+    @State private var renderedWidth: CGFloat = DS.Layout.contentRailWidth
     
-    init(_ latex: String, fontSize: CGFloat = 16) {
+    init(_ latex: String, size: MathFormulaSize = .bodyMd) {
         self.latex = latex
-        self.fontSize = fontSize
+        self.size = size
     }
     
     var body: some View {
         MathJaxWebView(
             latex: latex,
-            fontSize: fontSize,
+            size: size,
             renderedHeight: $renderedHeight,
             renderedWidth: $renderedWidth
         )
@@ -32,7 +39,7 @@ struct MathFormulaView: View {
 
 struct MathJaxWebView: UIViewRepresentable {
     let latex: String
-    let fontSize: CGFloat
+    let size: MathFormulaSize
     @Binding var renderedHeight: CGFloat
     @Binding var renderedWidth: CGFloat
     
@@ -56,19 +63,17 @@ struct MathJaxWebView: UIViewRepresentable {
     }
     
     func updateUIView(_ webView: WKWebView, context: Context) {
-        let html = createHTML(latex: latex, fontSize: fontSize)
-        webView.loadHTMLString(html, baseURL: nil)
+        let html = createHTML(latex: latex, size: size)
+        webView.loadHTMLString(html, baseURL: Bundle.main.resourceURL)
     }
     
-    private func createHTML(latex: String, fontSize: CGFloat) -> String {
-        let isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
-        let textColor = isDarkMode ? "#FFFFFF" : "#000000"
-        
+    private func createHTML(latex: String, size: MathFormulaSize) -> String {
         return """
         <!DOCTYPE html>
         <html>
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <link rel="stylesheet" href="math-formula.css">
             <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
             <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
             <script>
@@ -104,40 +109,8 @@ struct MathJaxWebView: UIViewRepresentable {
                     window.webkit.messageHandlers.sizeChanged.postMessage({height: height, width: width});
                 }
             </script>
-            <style>
-                * {
-                    box-sizing: border-box;
-                }
-                html, body {
-                    margin: 0;
-                    padding: 0;
-                    width: 100%;
-                    overflow-x: visible;
-                    overflow-y: hidden;
-                }
-                body {
-                    padding: 12px 16px;
-                    font-size: \(fontSize)px;
-                    color: \(textColor);
-                    background: transparent;
-                    display: flex;
-                    align-items: center;
-                    justify-content: flex-start;
-                    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
-                }
-                .math-container {
-                    display: inline-block;
-                    white-space: nowrap;
-                    min-width: 100%;
-                    padding-right: 20px;
-                }
-                mjx-container {
-                    display: inline-block !important;
-                    margin: 0 !important;
-                }
-            </style>
         </head>
-        <body>
+        <body class="formula-size--\(size.rawValue)">
             <div class="math-container">
                 $$\(latex)$$
             </div>
@@ -163,7 +136,7 @@ struct MathJaxWebView: UIViewRepresentable {
             webView.evaluateJavaScript("document.body.scrollHeight") { result, error in
                 if let height = result as? CGFloat {
                     DispatchQueue.main.async {
-                        self.parent.renderedHeight = max(height, 40)
+                        self.parent.renderedHeight = max(height, DS.Spacing.s10)
                     }
                 }
             }
@@ -171,7 +144,7 @@ struct MathJaxWebView: UIViewRepresentable {
             webView.evaluateJavaScript("document.body.scrollWidth") { result, error in
                 if let width = result as? CGFloat {
                     DispatchQueue.main.async {
-                        self.parent.renderedWidth = max(width, 100)
+                        self.parent.renderedWidth = max(width, DS.Layout.thumbnailSize)
                     }
                 }
             }
@@ -181,12 +154,12 @@ struct MathJaxWebView: UIViewRepresentable {
             if message.name == "sizeChanged", let dict = message.body as? [String: Any] {
                 if let height = dict["height"] as? CGFloat {
                     DispatchQueue.main.async {
-                        self.parent.renderedHeight = max(height, 40)
+                        self.parent.renderedHeight = max(height, DS.Spacing.s10)
                     }
                 }
                 if let width = dict["width"] as? CGFloat {
                     DispatchQueue.main.async {
-                        self.parent.renderedWidth = max(width, 100)
+                        self.parent.renderedWidth = max(width, DS.Layout.thumbnailSize)
                     }
                 }
             }
@@ -195,25 +168,25 @@ struct MathJaxWebView: UIViewRepresentable {
 }
 
 #Preview {
-    VStack(spacing: 20) {
+    VStack(spacing: DS.Spacing.s5) {
         Text("Sod's Law Formula")
             .dsTypography(DS.Typography.h4)
         
-        MathFormulaView("\\frac{(U+C+I) \\times (10-S)}{20} \\times A \\times \\frac{1}{1-\\sin(\\frac{F}{10})}", fontSize: 18)
+        MathFormulaView("\\frac{(U+C+I) \\times (10-S)}{20} \\times A \\times \\frac{1}{1-\\sin(\\frac{F}{10})}", size: .bodyLg)
             .background(DS.Color.surface)
             .cornerRadius(DS.Radius.lg)
         
         Text("Einstein's Formula")
             .dsTypography(DS.Typography.h4)
         
-        MathFormulaView("E = mc^2", fontSize: 24)
+        MathFormulaView("E = mc^2", size: .h3)
             .background(DS.Color.surface)
             .cornerRadius(DS.Radius.lg)
         
         Text("Quadratic Formula")
             .dsTypography(DS.Typography.h4)
         
-        MathFormulaView("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}", fontSize: 16)
+        MathFormulaView("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}")
             .background(DS.Color.surface)
             .cornerRadius(DS.Radius.lg)
     }

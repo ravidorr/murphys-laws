@@ -1,36 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Calculator } from '../src/views/sods-calculator.js';
 
-/** Window with optional MathJax (matches src/types/global.d.ts) */
-interface WindowWithMathJax extends Window {
-  MathJax?: {
-    typesetPromise?: (elements?: HTMLElement[]) => Promise<void>;
-  };
-}
-
-function getWindow(): WindowWithMathJax {
-  return window as WindowWithMathJax;
-}
-
 type CalculatorEl = HTMLDivElement & { cleanup?: () => void };
 
 describe("Calculator view", () => {
   let el: CalculatorEl | null;
-  let originalMathJax: WindowWithMathJax['MathJax'];
   let originalFetch: typeof globalThis.fetch;
 
-  type MountOptions = { mathJaxStub?: { typesetPromise: (elements?: HTMLElement[]) => Promise<void> } | null };
-  function mountCalculator({ mathJaxStub }: MountOptions = {}) {
+  function mountCalculator() {
     el?.cleanup?.();
     if (el?.parentNode) el.parentNode.removeChild(el);
-
-    if (mathJaxStub === null) {
-      getWindow().MathJax = undefined;
-    } else if (mathJaxStub) {
-      getWindow().MathJax = mathJaxStub;
-    } else {
-      getWindow().MathJax = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
-    }
 
     el = Calculator();
     document.body.appendChild(el);
@@ -39,7 +18,6 @@ describe("Calculator view", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    originalMathJax = getWindow().MathJax;
     originalFetch = globalThis.fetch;
     mountCalculator();
   });
@@ -54,7 +32,6 @@ describe("Calculator view", () => {
     if (el?.parentNode) el.parentNode.removeChild(el);
     el = null;
     vi.useRealTimers();
-    getWindow().MathJax = originalMathJax;
     globalThis.fetch = originalFetch;
   });
 
@@ -68,11 +45,16 @@ describe("Calculator view", () => {
     expect(el!.querySelector('[data-calculator-scenario-links]')?.innerHTML).toContain('/examples/work');
   });
 
-  it('shows a readable formula fallback when MathJax is unavailable', () => {
-    const next = mountCalculator({ mathJaxStub: null });
+  it('renders a native accessible MathML formula', () => {
+    const formula = el!.querySelector('#formula-display');
 
-    expect(next.querySelector('#formula-display')?.textContent).toContain('Probability =');
-    expect(next.querySelector('#formula-display')?.textContent).not.toContain('\\(');
+    expect(formula?.querySelector('math')).toBeTruthy();
+    expect(formula?.querySelector('mi[title="Probability"]')).toBeTruthy();
+    expect(formula?.textContent).not.toContain('\\(');
+    expect((formula as HTMLElement | null)?.tabIndex).toBe(0);
+    expect(formula?.getAttribute('aria-label')).toBe(
+      "Sod's Law probability formula",
+    );
   });
 
   it('L34 B0: og:image branch not taken when absent', () => {
@@ -105,13 +87,12 @@ describe("Calculator view", () => {
     expect(el!.querySelector('#frequency')).toBeTruthy();
   });
 
-  it('L104 B0: MathJax defensive return when typesetPromise missing in RAF', async () => {
-    const ref: { typesetPromise?: (el: HTMLElement[]) => Promise<void> } = { typesetPromise: vi.fn().mockResolvedValue(undefined) };
-    getWindow().MathJax = ref as WindowWithMathJax['MathJax'];
+  it('updates the native formula synchronously on slider input', () => {
+    (el!.querySelector('#urgency') as HTMLInputElement).value = '7';
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
-    ref.typesetPromise = undefined;
-    await vi.runAllTimersAsync();
-    expect(el!.querySelector('#formula-display')).toBeTruthy();
+
+    expect(el!.querySelector('#formula-display math')).toBeTruthy();
+    expect(el!.querySelector('#formula-display')?.textContent).toContain('7');
   });
 
   it('L235 L236 B1: updateState uses score and interpretation display textContent', async () => {
@@ -253,31 +234,6 @@ describe("Calculator view", () => {
     vi.advanceTimersByTime(2100);
 
     expect(el!.querySelector('#formula-display')).toBeTruthy();
-  });
-
-  it('polls for MathJax when not initially available', async () => {
-    mountCalculator({ mathJaxStub: null });
-
-    vi.advanceTimersByTime(500);
-
-    const mathJaxMock = {
-      typesetPromise: vi.fn().mockResolvedValue(undefined)
-    };
-    mountCalculator({ mathJaxStub: mathJaxMock });
-
-    vi.advanceTimersByTime(100);
-    await vi.runOnlyPendingTimersAsync(); // Allow requestAnimationFrame to execute
-
-    const formulaDisplay = el!.querySelector('#formula-display');
-    expect(mathJaxMock.typesetPromise).toHaveBeenCalledWith([formulaDisplay]);
-  });
-
-  it('stops polling for MathJax after timeout', () => {
-    mountCalculator({ mathJaxStub: null });
-
-    vi.advanceTimersByTime(11000);
-
-    expect(getWindow().MathJax).toBeUndefined();
   });
 
   it('shows formula with values when sliders change and hides after timeout', () => {

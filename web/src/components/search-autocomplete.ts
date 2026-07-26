@@ -40,7 +40,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     // Insert after input element's parent (form)
     const form = inputElement.closest('form');
     if (form) {
-      form.style.position = 'relative';
+      form.classList.add('search-autocomplete-host');
       form.appendChild(dropdown);
     } else {
       // Fallback: insert after input

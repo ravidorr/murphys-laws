@@ -104,7 +104,7 @@ class CalculatorViewModel : ViewModel() {
     
     val shareText: String
         get() = """
-            My task has a ${String.format(Locale.US, "%.1f", probability)}% chance of going wrong! ${riskLevel.emoji}
+            My task has a ${String.format(Locale.US, "%.1f", probability)}% chance of going wrong.
 
             Sod's Law Calculator
             Urgency: ${urgency.toInt()}

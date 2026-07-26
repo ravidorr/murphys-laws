@@ -15,13 +15,10 @@ struct CalculatorView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Constants.UI.spacingL) {
+                VStack(spacing: DS.Spacing.s6) {
                     // Header section
-                    VStack(spacing: Constants.UI.spacingM) {
-                        Text("Sod's Law Calculator")
-                            .dsTypography(DS.Typography.h2)
-                            .fontWeight(.bold)
-                            .foregroundColor(DS.Color.fg)
+                    VStack(spacing: DS.Spacing.s4) {
+                        DSHeading("Sod's Law Calculator")
 
                         Text("Calculate the probability of your task going wrong")
                             .dsTypography(DS.Typography.bodySm)
@@ -31,32 +28,37 @@ struct CalculatorView: View {
                     .padding()
 
                     // Result card
-                    VStack(spacing: Constants.UI.spacingM) {
-                        Text("\(viewModel.riskLevel.emoji)")
+                    VStack(spacing: DS.Spacing.s4) {
+                        Image(systemName: riskPresentation.symbolName)
                             .dsTypography(DS.Typography.display)
+                            .foregroundStyle(riskPresentation.color)
+                            .accessibilityHidden(true)
 
                         Text("\(String(format: "%.1f", viewModel.probability))%")
                             .dsTypography(DS.Typography.display)
-                            .foregroundColor(riskColor)
+                            .foregroundColor(riskPresentation.color)
 
-                        Text(viewModel.riskLevel.description)
+                        Text(riskPresentation.description)
                             .dsTypography(DS.Typography.h4)
                             .foregroundColor(DS.Color.mutedFg)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(
-                        RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusL)
-                            .fill(riskColor.opacity(0.1))
+                        RoundedRectangle(cornerRadius: DS.Radius.xl)
+                            .fill(riskPresentation.color.opacity(DS.Opacity.faint))
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusL)
-                            .stroke(riskColor.opacity(0.3), lineWidth: 2)
+                        RoundedRectangle(cornerRadius: DS.Radius.xl)
+                            .stroke(
+                                riskPresentation.color.opacity(DS.Opacity.muted),
+                                lineWidth: DS.Border.strong
+                            )
                     )
                     .padding(.horizontal)
 
                     // Input sliders
-                    VStack(spacing: Constants.UI.spacingL) {
+                    VStack(spacing: DS.Spacing.s6) {
                         ParameterSlider(
                             title: "Urgency",
                             icon: "clock.fill",
@@ -95,7 +97,7 @@ struct CalculatorView: View {
                     .padding(.horizontal)
 
                     // Formula section
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         HStack {
                             Text("Formula")
                                 .dsTypography(DS.Typography.h4)
@@ -106,62 +108,50 @@ struct CalculatorView: View {
                                 .foregroundColor(DS.Color.mutedFg)
                         }
 
-                        VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.s2) {
                             ScrollView(.horizontal, showsIndicators: false) {
-                                MathFormulaView(viewModel.formulaString, fontSize: 16)
+                                MathFormulaView(viewModel.formulaString)
                                     .padding()
                             }
                             .background(DS.Color.surface)
-                            .cornerRadius(Constants.UI.cornerRadiusM)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
 
                             Text("With your values:")
                                 .dsTypography(DS.Typography.caption)
                                 .foregroundColor(DS.Color.mutedFg)
 
                             ScrollView(.horizontal, showsIndicators: false) {
-                                MathFormulaView(viewModel.formulaWithValues, fontSize: 14)
+                                MathFormulaView(viewModel.formulaWithValues, size: .bodySm)
                                     .padding()
                             }
                             .background(DS.Color.surface)
-                            .cornerRadius(Constants.UI.cornerRadiusM)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
                         }
                     }
                     .padding()
 
                     // Action buttons
-                    VStack(spacing: Constants.UI.spacingM) {
+                    VStack(spacing: DS.Spacing.s4) {
                         Button {
                             showingShareSheet = true
                         } label: {
                             Label("Share Results", systemImage: "square.and.arrow.up")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(DS.Color.btnPrimaryBg)
-                                .foregroundColor(DS.Color.btnPrimaryFg)
-                                .cornerRadius(Constants.UI.cornerRadiusM)
                         }
+                        .buttonStyle(DSButtonStyle())
 
                         Button {
                             showingEmailForm = true
                         } label: {
                             Label("Email Results", systemImage: "envelope.fill")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(DS.Color.surface)
-                                .foregroundColor(DS.Color.fg)
-                                .cornerRadius(Constants.UI.cornerRadiusM)
                         }
+                        .buttonStyle(DSButtonStyle(.secondary))
 
                         Button {
                             viewModel.reset()
                         } label: {
                             Label("Reset", systemImage: "arrow.counterclockwise")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(DS.Color.surface)
-                                .foregroundColor(DS.Color.fg)
-                                .cornerRadius(Constants.UI.cornerRadiusM)
                         }
+                        .buttonStyle(DSButtonStyle(.secondary))
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
@@ -183,11 +173,30 @@ struct CalculatorView: View {
         }
     }
 
-    private var riskColor: Color {
-        switch viewModel.riskLevel {
-        case .low: return DS.Color.riskLow
-        case .medium: return DS.Color.riskMedium
-        case .high: return DS.Color.riskHigh
+    private var riskPresentation: CalculatorRiskPresentation {
+        CalculatorRiskPresentation(viewModel.riskLevel)
+    }
+}
+
+struct CalculatorRiskPresentation {
+    let color: Color
+    let symbolName: String
+    let description: String
+
+    init(_ riskLevel: CalculatorViewModel.RiskLevel) {
+        switch riskLevel {
+        case .low:
+            color = DS.Color.riskLow
+            symbolName = "checkmark.circle.fill"
+            description = "Low risk of failure"
+        case .medium:
+            color = DS.Color.riskMedium
+            symbolName = "exclamationmark.triangle.fill"
+            description = "Moderate risk of failure"
+        case .high:
+            color = DS.Color.riskHigh
+            symbolName = "xmark.octagon.fill"
+            description = "High risk of failure"
         }
     }
 }
@@ -200,7 +209,7 @@ struct ParameterSlider: View {
     let description: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
+        VStack(alignment: .leading, spacing: DS.Spacing.s2) {
             HStack {
                 Image(systemName: icon)
                     .foregroundColor(DS.Color.btnPrimaryBg)
@@ -212,11 +221,11 @@ struct ParameterSlider: View {
                     .dsTypography(DS.Typography.h4)
                     .fontWeight(.semibold)
                     .foregroundColor(DS.Color.btnPrimaryBg)
-                    .frame(minWidth: 30)
+                    .frame(minWidth: DS.Layout.valueLabelWidth)
             }
 
             Slider(value: $value, in: 1...10, step: 1)
-                .tint(DS.Color.btnPrimaryBg)
+                .dsSlider()
                 .accessibilityIdentifier("\(title) Slider")
 
             Text(description)
@@ -225,7 +234,7 @@ struct ParameterSlider: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: Constants.UI.cornerRadiusM)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .fill(DS.Color.surface)
         )
     }
@@ -243,6 +252,7 @@ struct EmailFormView: View {
             Form {
                 Section {
                     TextField("Email address", text: $email)
+                        .dsField()
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
@@ -253,7 +263,7 @@ struct EmailFormView: View {
                 }
 
                 Section {
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s2) {
                         Text("Probability: \(String(format: "%.1f", viewModel.probability))%")
                         Text("Risk Level: \(viewModel.riskLevel.rawValue)")
                         Text("Urgency: \(Int(viewModel.urgency))")
