@@ -7,7 +7,18 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji';
+  font-family: var(--font-sans);
+}
+
+body.is-scroll-locked {
+  overflow: hidden;
+}
+
+.clipboard-proxy {
+  position: fixed;
+  inset: 0 auto auto -9999px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Prevent horizontal scroll from tooltips extending past viewport.
@@ -20,7 +31,7 @@ mark {
   background: var(--highlight);
   color: inherit;
   padding: 0.125rem 0;
-  border-radius: 0.25rem;
+  border-radius: var(--rounded-sm);
 }
 
 /* Skip link for keyboard navigation (WCAG 2.4.1) */
@@ -33,7 +44,7 @@ mark {
   padding: 0.75rem 1rem;
   z-index: 9999;
   text-decoration: none;
-  border-radius: 0 0 0.5rem;
+  border-radius: 0 0 var(--rounded-lg);
 }
 
 .skip-link:focus {
@@ -79,7 +90,7 @@ mark {
   justify-content: center;
   gap: 1rem;
   z-index: 9999;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 /* Creative Commons license icons */

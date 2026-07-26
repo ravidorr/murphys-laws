@@ -33,7 +33,7 @@ struct FilterView: View {
                         HStack {
                             Image(systemName: "square.grid.2x2")
                                 .foregroundColor(DS.Color.btnPrimaryBg)
-                                .frame(width: 24)
+                                .frame(width: DS.Component.iconSize)
                             Text("All Categories")
                             Spacer()
                             if selectedCategoryID == nil {

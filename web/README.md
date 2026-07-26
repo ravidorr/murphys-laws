@@ -124,14 +124,14 @@ The application is a fully installable PWA with offline support.
 
 **Caching Strategies:**
 
-| Resource | Strategy | TTL |
-|----------|----------|-----|
-| Static assets (JS, CSS) | CacheFirst | Versioned |
-| Images | CacheFirst | 30 days |
-| Categories API | StaleWhileRevalidate | 1 hour |
-| Laws API | NetworkFirst | 1 hour |
-| Law of the Day | NetworkFirst | 24 hours |
-| Google Fonts | CacheFirst | 1 year |
+| Resource | Strategy | Bound |
+|----------|----------|-------|
+| Static assets (JS, CSS) | Cache first | Build revision |
+| Images | Cache first | 100 entries |
+| Categories API | Stale while revalidate | Build revision |
+| Laws API | Network first | Build revision |
+| Law of the Day | Network first | Build revision |
+| Google Fonts | Cache first | 30 entries |
 
 **Install Prompt:**
 - Shown at most once per session and only after a qualifying user action (e.g. download, calculator use, share/copy link)
@@ -142,20 +142,28 @@ The application is a fully installable PWA with offline support.
 
 **Configuration:**
 
-PWA is configured in `vite.config.ts` using `vite-plugin-pwa`. The plugin generates:
-- `manifest.webmanifest` - App manifest with icons, theme colors, screenshots
-- `sw.js` - Service worker with Workbox caching
-- Auto-injects manifest link and registers service worker
+PWA support is repository-native and has no UI-framework or Babel runtime:
+- `public/manifest.webmanifest` defines icons, theme colors, and screenshots
+- `scripts/generate-service-worker.ts` emits `sw.js` after SSG with a revision
+  derived from all deployable generated content while precaching only the
+  application shell and static assets
+- `scripts/generate-fallback-tokens.ts` copies the authoritative CSS variables
+  into `dist/styles/partials/variables.css` for the static 404 and offline pages
+- `src/utils/service-worker-registration.ts` registers and updates the worker
+  only on the canonical production host
+- `index.html` links the manifest directly
 - `404.html` is excluded from precache so SW install does not fail when the server returns 404 for GET `/404.html` (common when 404 is only used as fallback)
 - `navigateFallback` is `/index.html` (app shell): all non-precached navigations (e.g. `/favorites`, `/browse`) receive the SPA shell so the client router can run. The offline page (`offline.html`) is used only for actual offline/catch handling, not as the navigation fallback
 
 **Development:**
 
-Service worker is disabled in development mode (`devOptions.enabled: false`) to avoid caching issues. Test PWA features with production build:
+Service-worker registration is limited to `murphys-laws.com`. Development and
+local preview hosts unregister existing workers so cached production-build
+shells cannot outlive the preview server. Validate the generated worker with a
+production build:
 
 ```bash
 npm run build
-npm run preview
 ```
 
 ### Page Export
@@ -163,7 +171,7 @@ npm run preview
 The application includes a universal export feature accessible from the header (download icon next to theme toggle).
 
 **Supported Formats:**
-- **PDF** - Formatted document with header, page numbers, and site branding (uses jsPDF)
+- **PDF** - Dependency-free downloadable document with pagination and site branding
 - **CSV** - Structured data export with Full Text column (available for law lists and categories)
 - **Markdown** - Numbered list format with attribution on separate lines, clickable footer link
 - **Plain Text** - Simple text format with footer

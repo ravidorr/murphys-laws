@@ -69,7 +69,7 @@ struct CategoryRow: View {
         HStack {
             Image(systemName: category.iconName)
                 .foregroundColor(category.iconColor)
-                .frame(width: 24)
+                .frame(width: DS.Component.iconSize)
             Text(category.title)
             Spacer()
             if let isSelected {
@@ -186,7 +186,7 @@ struct LawRowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.UI.spacingS) {
+        VStack(alignment: .leading, spacing: DS.Spacing.s2) {
             if let title = law.title, !title.isEmpty {
                 Text(title)
                     .dsTypography(DS.Typography.h4)
@@ -214,7 +214,7 @@ struct LawRowView: View {
                     .foregroundColor(DS.Color.mutedFg)
             }
         }
-        .padding(.vertical, Constants.UI.spacingS)
+        .padding(.vertical, DS.Spacing.s2)
     }
 }
 

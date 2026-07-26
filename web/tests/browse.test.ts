@@ -321,7 +321,7 @@ describe('Browse view', () => {
 
     await vi.waitFor(() => {
       const resultCount = el.querySelector('#browse-result-count') as HTMLElement | null;
-      expect(resultCount?.style.display).toBe('none');
+      expect(resultCount?.hidden).toBe(true);
     }, { timeout: 1000 });
   });
 

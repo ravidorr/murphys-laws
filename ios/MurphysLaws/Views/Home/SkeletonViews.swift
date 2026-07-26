@@ -16,11 +16,11 @@ struct SkeletonModifier: ViewModifier {
     // dominating the layout. Asset Catalog pairs the light/dark variants
     // automatically; we no longer hand-branch on colorScheme.
     var baseColor: Color {
-        DS.Color.mutedFg.opacity(0.18)
+        DS.Color.mutedFg.opacity(DS.Opacity.skeletonBase)
     }
 
     var highlightColor: Color {
-        DS.Color.mutedFg.opacity(0.32)
+        DS.Color.mutedFg.opacity(DS.Opacity.skeletonHighlight)
     }
     
     func body(content: Content) -> some View {
@@ -39,7 +39,7 @@ struct SkeletonModifier: ViewModifier {
                 .mask(content)
             )
             .onAppear {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                withAnimation(.easeInOut(duration: DS.Motion.shimmerDuration).repeatForever(autoreverses: false)) {
                     isAnimating = true
                 }
             }
@@ -55,59 +55,80 @@ extension View {
 // MARK: - Skeleton Law of Day Card
 struct SkeletonLawOfDayCard: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+        VStack(alignment: .leading, spacing: DS.Spacing.s4) {
             // Badge
             HStack {
                 Circle()
-                    .frame(width: 20, height: 20)
+                    .frame(
+                        width: DS.Component.buttonIconSize,
+                        height: DS.Component.buttonIconSize
+                    )
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 120, height: 16)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthLg,
+                        height: DS.Layout.Skeleton.heightSm
+                    )
                     .skeleton()
             }
             
             // Title placeholder
-            RoundedRectangle(cornerRadius: 4)
-                .frame(height: 28)
+            RoundedRectangle(cornerRadius: DS.Radius.sm)
+                .frame(height: DS.Layout.Skeleton.heightXl)
                 .skeleton()
             
-            RoundedRectangle(cornerRadius: 4)
-                .frame(width: 200, height: 28)
+            RoundedRectangle(cornerRadius: DS.Radius.sm)
+                .frame(
+                    width: DS.Layout.Skeleton.width2xl,
+                    height: DS.Layout.Skeleton.heightXl
+                )
                 .skeleton()
             
             // Text placeholder
-            VStack(alignment: .leading, spacing: 8) {
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(height: 20)
+            VStack(alignment: .leading, spacing: DS.Spacing.s2) {
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(height: DS.Layout.Skeleton.heightLg)
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(height: 20)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(height: DS.Layout.Skeleton.heightLg)
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 250, height: 20)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.width3xl,
+                        height: DS.Layout.Skeleton.heightLg
+                    )
                     .skeleton()
             }
-            .padding(.vertical, Constants.UI.spacingS)
+            .padding(.vertical, DS.Spacing.s2)
             
             Divider()
             
             // Vote counts placeholder
             HStack {
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 60, height: 16)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthSm,
+                        height: DS.Layout.Skeleton.heightSm
+                    )
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 60, height: 16)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthSm,
+                        height: DS.Layout.Skeleton.heightSm
+                    )
                     .skeleton()
                 
                 Spacer()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 80, height: 16)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthMd,
+                        height: DS.Layout.Skeleton.heightSm
+                    )
                     .skeleton()
             }
         }
@@ -115,65 +136,96 @@ struct SkeletonLawOfDayCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             LinearGradient(
-                colors: [DS.Color.favoriteBg.opacity(0.7), DS.Color.orangeBg.opacity(0.5)],
+                colors: [
+                    DS.Color.favoriteBg.opacity(DS.Opacity.strong),
+                    DS.Color.orangeBg.opacity(DS.Opacity.medium)
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         )
-        .cornerRadius(Constants.UI.cornerRadiusL)
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        .cornerRadius(DS.Radius.xl)
+        .shadow(
+            color: DS.Color.shadowLight,
+            radius: DS.Shadow.cardRadius,
+            x: .zero,
+            y: DS.Shadow.cardYOffset
+        )
     }
 }
 
 // MARK: - Skeleton Law Card
 struct SkeletonLawCard: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+        VStack(alignment: .leading, spacing: DS.Spacing.s4) {
             // Title placeholder
-            RoundedRectangle(cornerRadius: 4)
-                .frame(height: 18)
+            RoundedRectangle(cornerRadius: DS.Radius.sm)
+                .frame(height: DS.Layout.Skeleton.heightMd)
                 .skeleton()
             
-            RoundedRectangle(cornerRadius: 4)
-                .frame(width: 150, height: 18)
+            RoundedRectangle(cornerRadius: DS.Radius.sm)
+                .frame(
+                    width: DS.Layout.Skeleton.widthXl,
+                    height: DS.Layout.Skeleton.heightMd
+                )
                 .skeleton()
             
             // Text placeholder
-            VStack(alignment: .leading, spacing: 6) {
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(height: 16)
+            VStack(
+                alignment: .leading,
+                spacing: DS.Layout.Skeleton.compactSpacing
+            ) {
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(height: DS.Layout.Skeleton.heightSm)
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(height: 16)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(height: DS.Layout.Skeleton.heightSm)
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 200, height: 16)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.width2xl,
+                        height: DS.Layout.Skeleton.heightSm
+                    )
                     .skeleton()
             }
             
             // Vote counts placeholder
             HStack {
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 50, height: 14)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthXs,
+                        height: DS.Layout.Skeleton.heightXs
+                    )
                     .skeleton()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 50, height: 14)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthXs,
+                        height: DS.Layout.Skeleton.heightXs
+                    )
                     .skeleton()
                 
                 Spacer()
                 
-                RoundedRectangle(cornerRadius: 4)
-                    .frame(width: 80, height: 20)
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .frame(
+                        width: DS.Layout.Skeleton.widthMd,
+                        height: DS.Layout.Skeleton.heightLg
+                    )
                     .skeleton()
             }
         }
         .padding()
         .background(DS.Color.surface)
-        .cornerRadius(Constants.UI.cornerRadiusM)
-        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .cornerRadius(DS.Radius.xl)
+        .shadow(
+            color: DS.Color.shadowSubtle,
+            radius: DS.Shadow.smallRadius,
+            x: .zero,
+            y: DS.Shadow.smallYOffset
+        )
     }
 }
 
@@ -185,6 +237,6 @@ struct SkeletonLawCard: View {
 
 #Preview("Skeleton Law Card") {
     SkeletonLawCard()
-        .frame(width: 300)
+        .frame(width: DS.Layout.contentRailWidth)
         .padding()
 }

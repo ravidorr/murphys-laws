@@ -18,16 +18,28 @@ describe('design-token leftovers', () => {
     ['index.html'],
     ['public/404.html'],
     ['public/offline.html'],
-  ])('keeps critical CSS aligned with current DS values in %s', (relativePath) => {
+  ])('loads critical CSS externally in %s', (relativePath) => {
     const localThis: FileScanLocalThis = {};
     localThis.content = readWebFile(relativePath);
 
-    expect(localThis.content).toContain('--btn-primary-bg: #0d5ea1;');
-    expect(localThis.content).toContain('--muted-fg: #4b5563;');
-    expect(localThis.content).toContain('--primary: #6366f1;');
-    expect(localThis.content).not.toContain('--btn-primary-bg: #1173d4;');
-    expect(localThis.content).not.toContain('--muted-fg: #6b7280;');
-    expect(localThis.content).not.toContain('--primary: #4f46e5;');
+    expect(localThis.content).toMatch(/<link rel="stylesheet" href="[^"]+\.css">/);
+    expect(localThis.content).not.toContain('<style');
+    expect(localThis.content).not.toMatch(/\sstyle\s*=/);
+  });
+
+  it('loads the complete site stylesheet synchronously without an inline loader', () => {
+    const index = readWebFile('index.html');
+    const variables = readWebFile('styles/partials/variables.css');
+    const site = readWebFile('styles/site.css');
+
+    expect(index.match(/href="\/styles\/site\.css"/g)).toHaveLength(1);
+    expect(index).not.toMatch(/rel="preload"[^>]+as="style"/);
+    expect(index).not.toMatch(/media="print"[^>]+onload=/);
+    expect(variables).toContain('--btn-primary-bg: #0d5ea1;');
+    expect(variables).toContain('--muted-fg: #4b5563;');
+    expect(variables).toContain('--dark-primary: #6366f1;');
+    expect(site).toContain("@import url('./partials/variables.css');");
+    expect(site).toContain("@import url('./partials/base.css');");
   });
 
   it('defines canonical card variants with compatibility aliases', () => {
@@ -54,7 +66,18 @@ describe('design-token leftovers', () => {
     const localThis: FileScanLocalThis = {};
     localThis.content = readWebFile('styles/partials/sections.css');
 
-    expect(localThis.content).toMatch(/\.card--law-list \.law-card-mini,\n\.law-list-card \.law-card-mini\s*\{[^}]*padding:\s*1rem 1\.25rem;/);
+    expect(localThis.content).toMatch(/\.card--law-list \.law-card-mini,\n\.law-list-card \.law-card-mini\s*\{[^}]*padding:\s*var\(--space-4\) var\(--space-5\);/);
+  });
+
+  it('keeps dark autocomplete matches readable on the highlight surface', () => {
+    const layout = readWebFile('styles/partials/layout.css');
+
+    expect(layout).toMatch(
+      /:root:not\(\[data-theme="light"\]\) \.search-suggestion-highlight\s*\{[^}]*color:\s*var\(--highlight-fg\);/,
+    );
+    expect(layout).toMatch(
+      /:root\[data-theme="dark"\] \.search-suggestion-highlight\s*\{[^}]*color:\s*var\(--highlight-fg\);/,
+    );
   });
 
   it('does not keep stale implementation colors outside variables.css', () => {

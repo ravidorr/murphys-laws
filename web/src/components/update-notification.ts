@@ -4,6 +4,7 @@
  * Shows a notification when a new version of the app is available
  * or when the app is ready for offline use.
  */
+import { hydrateIcons } from '@utils/icons.ts';
 
 /**
  * Create and show the update notification
@@ -27,13 +28,7 @@ export function showUpdateNotification({ type, onUpdate, onDismiss }: { type: 'u
 
   const isUpdate = type === 'update';
 
-  const icon = isUpdate
-    ? `<svg class="pwa-notification-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-      </svg>`
-    : `<svg class="pwa-notification-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>`;
+  const icon = isUpdate ? 'refresh' : 'checkCircle';
 
   const title = isUpdate ? 'Update Available' : 'Ready for Offline';
   const message = isUpdate
@@ -42,7 +37,7 @@ export function showUpdateNotification({ type, onUpdate, onDismiss }: { type: 'u
 
   notification.innerHTML = `
     <div class="pwa-notification-content">
-      ${icon}
+      <span class="icon pwa-notification-icon" data-icon="${icon}" aria-hidden="true"></span>
       <div class="pwa-notification-text">
         <strong class="pwa-notification-title">${title}</strong>
         <p class="pwa-notification-message">${message}</p>
@@ -53,6 +48,7 @@ export function showUpdateNotification({ type, onUpdate, onDismiss }: { type: 'u
       <button class="pwa-notification-btn pwa-notification-btn-secondary" data-action="dismiss">${isUpdate ? 'Later' : 'Got it'}</button>
     </div>
   `;
+  hydrateIcons(notification);
 
   // Event handlers
   notification.addEventListener('click', (e) => {
@@ -75,7 +71,7 @@ export function showUpdateNotification({ type, onUpdate, onDismiss }: { type: 'u
   if (!isUpdate) {
     setTimeout(() => {
       if (notification.parentNode) {
-        notification.style.animation = 'pwa-slide-up 0.3s ease-out reverse';
+        notification.classList.add('pwa-notification--exiting');
         notification.addEventListener('animationend', () => notification.remove());
       }
     }, 5000);

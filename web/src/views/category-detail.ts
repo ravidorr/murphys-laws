@@ -131,10 +131,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       const start = (currentPage - 1) * LAWS_PER_PAGE + 1;
       const end = Math.min(currentPage * LAWS_PER_PAGE, totalLaws);
       resultCountEl.textContent = `Showing ${start}-${end} of ${totalLaws} laws`;
-      resultCountEl.style.display = '';
+      resultCountEl.hidden = false;
     } else {
       resultCountEl.textContent = '';
-      resultCountEl.style.display = 'none';
+      resultCountEl.hidden = true;
     }
 
     await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);

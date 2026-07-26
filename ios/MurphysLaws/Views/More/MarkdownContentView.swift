@@ -30,7 +30,7 @@ struct MarkdownContentView: View {
                     errorView(error)
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: Constants.UI.spacingL) {
+                        VStack(alignment: .leading, spacing: DS.Spacing.s6) {
                             // Show last updated date if available
                             if let lastUpdated = SharedContentLoader.shared.getLastUpdated(for: page) {
                                 Text("Last updated: \(lastUpdated)")
@@ -112,7 +112,7 @@ struct MarkdownContentView: View {
     }
 
     private func errorView(_ message: String) -> some View {
-        VStack(spacing: Constants.UI.spacingM) {
+        VStack(spacing: DS.Spacing.s4) {
             Image(systemName: "exclamationmark.triangle")
                 .dsTypography(DS.Typography.display)
                 .foregroundColor(DS.Color.warningText)
@@ -292,7 +292,7 @@ struct MarkdownSection: Identifiable {
                 .fontWeight(.bold)
                 .foregroundColor(DS.Color.fg)
                 .padding(.horizontal)
-                .padding(.top, Constants.UI.spacingM)
+                .padding(.top, DS.Spacing.s4)
             
         case .header2:
             Text(content)
@@ -300,7 +300,7 @@ struct MarkdownSection: Identifiable {
                 .fontWeight(.semibold)
                 .foregroundColor(DS.Color.fg)
                 .padding(.horizontal)
-                .padding(.top, Constants.UI.spacingM)
+                .padding(.top, DS.Spacing.s4)
             
         case .header3:
             Text(content)
@@ -308,17 +308,17 @@ struct MarkdownSection: Identifiable {
                 .fontWeight(.semibold)
                 .foregroundColor(DS.Color.fg)
                 .padding(.horizontal)
-                .padding(.top, Constants.UI.spacingS)
+                .padding(.top, DS.Spacing.s2)
             
         case .paragraph:
             renderTextWithLinks(content: content, font: DS.Typography.bodyMd.font, isItalic: false, onNavigate: onNavigate)
                 .padding(.horizontal)
             
         case .quote:
-            HStack(alignment: .top, spacing: Constants.UI.spacingS) {
+            HStack(alignment: .top, spacing: DS.Spacing.s2) {
                 Rectangle()
-                    .fill(DS.Color.btnPrimaryBg.opacity(0.3))
-                    .frame(width: 4)
+                    .fill(DS.Color.btnPrimaryBg.opacity(DS.Opacity.muted))
+                    .frame(width: DS.Spacing.s1)
                 
                 renderTextWithLinks(content: content, font: DS.Typography.bodyMd.font, isItalic: true, onNavigate: onNavigate)
                     .foregroundColor(DS.Color.mutedFg)
@@ -326,14 +326,14 @@ struct MarkdownSection: Identifiable {
             .padding(.horizontal)
             
         case .bullet:
-            HStack(alignment: .top, spacing: Constants.UI.spacingS) {
+            HStack(alignment: .top, spacing: DS.Spacing.s2) {
                 Text("•")
                     .dsTypography(DS.Typography.bodyMd)
                     .foregroundColor(DS.Color.btnPrimaryBg)
                 renderTextWithLinks(content: content, font: DS.Typography.bodyMd.font, isItalic: false, onNavigate: onNavigate)
             }
             .padding(.horizontal)
-            .padding(.leading, Constants.UI.spacingM)
+            .padding(.leading, DS.Spacing.s4)
         }
     }
     

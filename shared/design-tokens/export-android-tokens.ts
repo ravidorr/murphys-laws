@@ -44,7 +44,6 @@ import {
   parseCssVariables,
   classifyTokens,
   TYPOGRAPHY_LEVELS,
-  ROUNDED_SCALE,
   type ClassifiedTokens,
   type TypographyLevel,
 } from './sync-design-tokens.ts';
@@ -328,7 +327,19 @@ function renderKotlin(
 
   // Radius
   lines.push('    object Radius {');
-  for (const [key, dim] of Object.entries(ROUNDED_SCALE)) {
+  for (const [key, dim] of parsed.rounded) {
+    const px = parsePx(dim);
+    if (px === null) continue;
+    lines.push(
+      `        val ${kotlinIdentifier(key)}: Dp = ${px}.dp`,
+    );
+  }
+  lines.push('    }');
+  lines.push('');
+
+  // Shared component metrics
+  lines.push('    object Component {');
+  for (const [key, dim] of parsed.componentMetrics) {
     const px = parsePx(dim);
     if (px === null) continue;
     lines.push(
@@ -429,11 +440,18 @@ function renderDimensXml(parsed: ClassifiedTokens): string {
       `    <dimen name="${androidResourceName('ds_space', key)}">${px}dp</dimen>`,
     );
   }
-  for (const [key, dim] of Object.entries(ROUNDED_SCALE)) {
+  for (const [key, dim] of parsed.rounded) {
     const px = parsePx(dim);
     if (px === null) continue;
     lines.push(
       `    <dimen name="${androidResourceName('ds_radius', key)}">${px}dp</dimen>`,
+    );
+  }
+  for (const [key, dim] of parsed.componentMetrics) {
+    const px = parsePx(dim);
+    if (px === null) continue;
+    lines.push(
+      `    <dimen name="${androidResourceName('ds_component', key)}">${px}dp</dimen>`,
     );
   }
   lines.push('</resources>');

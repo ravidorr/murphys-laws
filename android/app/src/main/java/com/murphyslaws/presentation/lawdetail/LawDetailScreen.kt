@@ -14,6 +14,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.domain.model.Law
 import com.murphyslaws.presentation.home.SocialIcons
+import com.murphyslaws.ui.components.DSCircularIconButton
+import com.murphyslaws.ui.components.DSCard
+import com.murphyslaws.ui.components.DSIconButton
 import com.murphyslaws.ui.theme.DS
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,11 +55,8 @@ fun LawDetailScreen(
             verticalArrangement = Arrangement.spacedBy(DS.Spacing.s4)
         ) {
             // Law Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            DSCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(DS.Spacing.s4),
@@ -95,16 +95,16 @@ fun LawDetailScreen(
                                 horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                IconButton(
+                                DSIconButton(
                                     onClick = { viewModel.onUpvoteClicked() },
                                     enabled = !uiState.isVoting,
-                                    modifier = Modifier.size(DS.Spacing.s8)
+                                    modifier = Modifier.size(DS.Component.iconButtonSize)
                                 ) {
                                     Icon(
                                         Icons.Filled.ThumbUp,
                                         contentDescription = "Upvote",
                                         tint = DS.Color.success,
-                                        modifier = Modifier.size(DS.Spacing.s5)
+                                        modifier = Modifier.size(DS.Component.buttonIconSize)
                                     )
                                 }
                                 Text(
@@ -118,16 +118,16 @@ fun LawDetailScreen(
                                 horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s1),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                IconButton(
+                                DSIconButton(
                                     onClick = { viewModel.onDownvoteClicked() },
                                     enabled = !uiState.isVoting,
-                                    modifier = Modifier.size(DS.Spacing.s8)
+                                    modifier = Modifier.size(DS.Component.iconButtonSize)
                                 ) {
                                     Icon(
                                         Icons.Filled.ThumbDown,
                                         contentDescription = "Downvote",
                                         tint = DS.Color.error,
-                                        modifier = Modifier.size(DS.Spacing.s5)
+                                        modifier = Modifier.size(DS.Component.buttonIconSize)
                                     )
                                 }
                                 Text(
@@ -139,7 +139,7 @@ fun LawDetailScreen(
 
                         // Share Buttons
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(DS.Radius.md)
+                            horizontalArrangement = Arrangement.spacedBy(DS.Spacing.s2)
                         ) {
                             val context = LocalContext.current
                             // Third-party brand colors are shared DS tokens.
@@ -152,7 +152,7 @@ fun LawDetailScreen(
                             )
 
                             socialButtons.forEach { (icon, color, platform) ->
-                                Surface(
+                                DSCircularIconButton(
                                     onClick = {
                                         val url = "https://murphys-laws.com/law/${displayLaw.id}"
                                         val title = displayLaw.title ?: "Murphy's Law"
@@ -165,18 +165,14 @@ fun LawDetailScreen(
                                             description = description
                                         )
                                     },
-                                    shape = androidx.compose.foundation.shape.CircleShape,
-                                    color = color,
-                                    modifier = Modifier.size(DS.Spacing.s6 + DS.Spacing.s1)
+                                    color = color
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = platform.contentDescription,
-                                            tint = DS.Color.brandSocialIconFg,
-                                            modifier = Modifier.size(DS.Spacing.s6)
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = platform.contentDescription,
+                                        tint = DS.Color.brandSocialIconFg,
+                                        modifier = Modifier.size(DS.Component.iconSize)
+                                    )
                                 }
                             }
                         }

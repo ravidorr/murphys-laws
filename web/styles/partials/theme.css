@@ -22,8 +22,8 @@
     --border: var(--dark-border);
     --primary: var(--dark-primary);
     --text-high-contrast: var(--dark-text-high-contrast);
-    --error: #f87171;
-    --success: #4ade80;
+    --error: var(--dark-error);
+    --success: var(--dark-success);
   }
 }
 
@@ -35,8 +35,8 @@
   --border: var(--dark-border);
   --primary: var(--dark-primary);
   --text-high-contrast: var(--dark-text-high-contrast);
-  --error: #f87171;
-  --success: #4ade80;
+  --error: var(--dark-error);
+  --success: var(--dark-success);
 }
 
 /* Dark mode component styles - apply when dark variables are active */
@@ -72,7 +72,7 @@
   :root:not([data-theme="light"]) .brand-badge {
     background: var(--primary);
     color: var(--white);
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px var(--shadow-dark);
+    box-shadow: 0 0 0 1px var(--shadow-white-outline), 0 4px 16px var(--shadow-dark);
   }
 
   :root:not([data-theme="light"]) .brand-badge::before {
@@ -82,14 +82,14 @@
   }
 
   :root:not([data-theme="light"]) .brand-badge:hover {
-    box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px rgb(255 255 255 / 14%);
+    box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px var(--shadow-white-outline);
   }
 }
 
 :root[data-theme="dark"] .brand-badge {
   background: var(--primary);
   color: var(--white);
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 4px 16px var(--shadow-dark);
+  box-shadow: 0 0 0 1px var(--shadow-white-outline), 0 4px 16px var(--shadow-dark);
 }
 
 :root[data-theme="dark"] .brand-badge::before {
@@ -99,7 +99,7 @@
 }
 
 :root[data-theme="dark"] .brand-badge:hover {
-  box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px rgb(255 255 255 / 14%);
+  box-shadow: 0 4px 12px var(--shadow-blue-dark), 0 0 0 1px var(--shadow-white-outline);
 }
 
 /* Cards - dark mode */
@@ -107,34 +107,34 @@
   :root:not([data-theme="light"]) .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     border-color: var(--border);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+    box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
   }
 
   :root:not([data-theme="light"]) .section-card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+    box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
   }
 
   :root:not([data-theme="light"]) .law-detail .card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+    box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
   }
 }
 
 :root[data-theme="dark"] .card {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
   border-color: var(--border);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
 }
 
 :root[data-theme="dark"] .section-card {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
 }
 
 :root[data-theme="dark"] .law-detail .card {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
 }
 
 /* Footer - dark mode */
@@ -168,14 +168,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .btn,
   :root:not([data-theme="light"]) button {
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
+    box-shadow: 0 0 0 1px var(--shadow-white-faint) inset;
     color: var(--btn-primary-fg);
   }
 
   :root:not([data-theme="light"]) .btn.outline,
   :root:not([data-theme="light"]) button.outline {
     background: color-mix(in oklab, var(--bg) 86%, white 14%);
-    border-color: rgb(255 255 255 / 22%);
+    border-color: var(--dark-border-muted);
   }
 
   :root:not([data-theme="light"]) .btn.outline:hover,
@@ -183,20 +183,20 @@
   :root:not([data-theme="light"]) .btn.outline:focus-visible,
   :root:not([data-theme="light"]) button.outline:focus-visible {
     background: color-mix(in oklab, var(--bg) 80%, white 20%);
-    border-color: rgb(255 255 255 / 32%);
+    border-color: var(--dark-border-strong);
   }
 }
 
 :root[data-theme="dark"] .btn,
 :root[data-theme="dark"] button {
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) inset;
+  box-shadow: 0 0 0 1px var(--shadow-white-faint) inset;
   color: var(--btn-primary-fg);
 }
 
 :root[data-theme="dark"] .btn.outline,
 :root[data-theme="dark"] button.outline {
   background: color-mix(in oklab, var(--bg) 86%, white 14%);
-  border-color: rgb(255 255 255 / 22%);
+  border-color: var(--dark-border-muted);
 }
 
 :root[data-theme="dark"] .btn.outline:hover,
@@ -204,7 +204,7 @@
 :root[data-theme="dark"] .btn.outline:focus-visible,
 :root[data-theme="dark"] button.outline:focus-visible {
   background: color-mix(in oklab, var(--bg) 80%, white 20%);
-  border-color: rgb(255 255 255 / 32%);
+  border-color: var(--dark-border-strong);
 }
 
 /* Inputs - dark mode */
@@ -218,7 +218,7 @@
   :root:not([data-theme="light"]) .share-form-container .form-group input {
     background: color-mix(in oklab, var(--bg) 92%, white 8%);
     color: var(--fg);
-    border: 1.5px solid rgb(255 255 255 / 25%);
+    border: 1.5px solid var(--dark-border);
   }
 
   :root:not([data-theme="light"]) input[type='text']:hover,
@@ -228,12 +228,12 @@
   :root:not([data-theme="light"]) .form-control:hover,
   :root:not([data-theme="light"]) .share-form-container .form-group textarea:hover,
   :root:not([data-theme="light"]) .share-form-container .form-group input:hover {
-    border-color: rgb(255 255 255 / 35%);
+    border-color: var(--dark-border-hover);
   }
 
   :root:not([data-theme="light"]) .submit-checkbox-group input[type="checkbox"] {
     background: color-mix(in oklab, var(--bg) 92%, white 8%);
-    border: 1.5px solid rgb(255 255 255 / 25%);
+    border: 1.5px solid var(--dark-border);
   }
 }
 
@@ -246,7 +246,7 @@
 :root[data-theme="dark"] .share-form-container .form-group input {
   background: color-mix(in oklab, var(--bg) 92%, white 8%);
   color: var(--fg);
-  border: 1.5px solid rgb(255 255 255 / 25%);
+  border: 1.5px solid var(--dark-border);
 }
 
 :root[data-theme="dark"] input[type='text']:hover,
@@ -256,12 +256,12 @@
 :root[data-theme="dark"] .form-control:hover,
 :root[data-theme="dark"] .share-form-container .form-group textarea:hover,
 :root[data-theme="dark"] .share-form-container .form-group input:hover {
-  border-color: rgb(255 255 255 / 35%);
+  border-color: var(--dark-border-hover);
 }
 
 :root[data-theme="dark"] .submit-checkbox-group input[type="checkbox"] {
   background: color-mix(in oklab, var(--bg) 92%, white 8%);
-  border: 1.5px solid rgb(255 255 255 / 25%);
+  border: 1.5px solid var(--dark-border);
 }
 
 /* Content cards - dark mode */
@@ -269,14 +269,14 @@
   :root:not([data-theme="light"]) .content-card {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
     border-color: var(--border);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+    box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
   }
 }
 
 :root[data-theme="dark"] .content-card {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
   border-color: var(--border);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
 }
 
 /* Code blocks and tables - dark mode */
@@ -314,13 +314,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .nav-dropdown {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+    box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
   }
 }
 
 :root[data-theme="dark"] .nav-dropdown {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 8px 24px var(--shadow-dark);
+  box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
 }
 
 /* Search field select dropdowns - dark mode */
@@ -358,13 +358,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .modal-content {
     background: color-mix(in oklab, var(--bg) 88%, white 12%);
-    box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 20px 60px rgb(0 0 0 / 50%);
+    box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 20px 60px color-mix(in oklab, var(--text-high-contrast) 50%, transparent 50%);
   }
 }
 
 :root[data-theme="dark"] .modal-content {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 6%) inset, 0 20px 60px rgb(0 0 0 / 50%);
+  box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 20px 60px color-mix(in oklab, var(--text-high-contrast) 50%, transparent 50%);
 }
 
 /* Voting buttons - dark mode */
@@ -449,7 +449,7 @@
 
   /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
   :root:not([data-theme="light"]) .calc-slider-value {
-    color: #a5b4fc;
+    color: var(--dark-accent);
   }
 }
 
@@ -484,18 +484,18 @@
 
 /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
 :root[data-theme="dark"] .calc-slider-value {
-  color: #a5b4fc;
+  color: var(--dark-accent);
 }
 
 /* Search highlight - dark mode (ensure dark text on light yellow background for WCAG 1.4.3) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) mark {
-    color: #111827;
+    color: var(--highlight-fg);
   }
 }
 
 :root[data-theme="dark"] mark {
-  color: #111827;
+  color: var(--highlight-fg);
 }
 
 /* ==========================
@@ -508,16 +508,16 @@
 @media (prefers-contrast: more) {
   :root {
     /* Increase border visibility */
-    --border: rgb(0 0 0 / 50%);
+    --border: color-mix(in oklab, var(--text-high-contrast) 50%, transparent 50%);
 
     /* Increase shadow visibility */
-    --shadow-light: rgb(0 0 0 / 25%);
-    --shadow-medium: rgb(0 0 0 / 35%);
+    --shadow-light: var(--shadow-high-contrast-light);
+    --shadow-medium: var(--shadow-high-contrast-medium);
   }
 
   /* Enhanced focus indicators */
   :focus-visible {
-    outline: 3px solid #000 !important;
+    outline: 3px solid var(--text-high-contrast) !important;
     outline-offset: 3px !important;
   }
 
@@ -572,11 +572,11 @@
 /* High contrast in dark mode */
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --border: rgb(255 255 255 / 50%);
+    --border: var(--border-high-contrast-dark);
   }
 
   :root:not([data-theme="light"]) :focus-visible {
-    outline-color: #fff !important;
+    outline-color: var(--dark-text-high-contrast) !important;
   }
 
   :root:not([data-theme="light"]) .btn.outline,
@@ -602,11 +602,11 @@
 
 @media (prefers-contrast: more) {
   :root[data-theme="dark"] {
-    --border: rgb(255 255 255 / 50%);
+    --border: var(--border-high-contrast-dark);
   }
 
   :root[data-theme="dark"] :focus-visible {
-    outline-color: #fff !important;
+    outline-color: var(--dark-text-high-contrast) !important;
   }
 
   :root[data-theme="dark"] .btn.outline,
@@ -632,13 +632,13 @@
 
 /* Manual high contrast toggle via data attribute (for testing) */
 :root[data-contrast="more"] {
-  --border: rgb(0 0 0 / 50%);
-  --shadow-light: rgb(0 0 0 / 25%);
-  --shadow-medium: rgb(0 0 0 / 35%);
+  --border: color-mix(in oklab, var(--text-high-contrast) 50%, transparent 50%);
+  --shadow-light: var(--shadow-high-contrast-light);
+  --shadow-medium: var(--shadow-high-contrast-medium);
 }
 
 :root[data-contrast="more"] :focus-visible {
-  outline: 3px solid #000 !important;
+  outline: 3px solid var(--text-high-contrast) !important;
   outline-offset: 3px !important;
 }
 
@@ -688,12 +688,12 @@
 /* High contrast + dark mode via data attribute */
 :root[data-contrast="more"][data-theme="dark"],
 :root[data-contrast="more"]:not([data-theme="light"]) {
-  --border: rgb(255 255 255 / 50%);
+  --border: var(--border-high-contrast-dark);
 }
 
 :root[data-contrast="more"][data-theme="dark"] :focus-visible,
 :root[data-contrast="more"]:not([data-theme="light"]) :focus-visible {
-  outline-color: #fff !important;
+  outline-color: var(--dark-text-high-contrast) !important;
 }
 
 :root[data-contrast="more"][data-theme="dark"] .btn.outline,

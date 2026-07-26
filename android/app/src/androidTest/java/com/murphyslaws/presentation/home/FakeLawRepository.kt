@@ -36,25 +36,34 @@ class FakeLawRepository : LawRepository {
         }
     }
     
-    override suspend fun searchLaws(): Result<List<Law>> {
+    override suspend fun searchLaws(
+        query: String,
+        limit: Int,
+        offset: Int
+    ): Result<List<Law>> {
         return Result.success(emptyList()) // Return empty list for tests
     }
     
-    override suspend fun voteLaw(): Result<VoteResponse> {
+    override suspend fun voteLaw(lawId: Int, voteType: String): Result<VoteResponse> {
         // For tests, just return a success response
         return Result.success(VoteResponse(upvotes = 43, downvotes = 7))
     }
     
-    override suspend fun unvoteLaw(): Result<VoteResponse> {
+    override suspend fun unvoteLaw(lawId: Int): Result<VoteResponse> {
         // For tests, just return a success response
         return Result.success(VoteResponse(upvotes = 42, downvotes = 7))
     }
 
-    override suspend fun getLaws(): Result<List<Law>> {
-        return searchLaws()
+    override suspend fun getLaws(limit: Int, offset: Int): Result<List<Law>> {
+        return searchLaws(query = "", limit = limit, offset = offset)
     }
 
-    override suspend fun submitLaw(): Result<Unit> {
+    override suspend fun submitLaw(
+        text: String,
+        title: String?,
+        name: String?,
+        email: String?
+    ): Result<Unit> {
         return Result.success(Unit)
     }
 }

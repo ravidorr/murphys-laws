@@ -15,9 +15,9 @@ struct HomeView: View {
         NavigationStack {
             // Always show content immediately - no conditional rendering at the top level
             ScrollView {
-                VStack(spacing: Constants.UI.spacingL) {
+                VStack(spacing: DS.Spacing.s6) {
                     // Law of the Day - Show skeleton or actual content
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         Text("Law of the Day")
                             .dsTypography(DS.Typography.h3)
                             .fontWeight(.bold)
@@ -35,7 +35,7 @@ struct HomeView: View {
                     .padding(.horizontal)
 
                     // Top Voted Section - Show skeleton or actual content
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         Text("Top Voted Laws")
                             .dsTypography(DS.Typography.h4)
                             .fontWeight(.semibold)
@@ -43,11 +43,11 @@ struct HomeView: View {
                             .padding(.horizontal)
 
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: Constants.UI.spacingM) {
+                            HStack(spacing: DS.Spacing.s4) {
                                 if !viewModel.topVotedLaws.isEmpty {
                                     ForEach(viewModel.topVotedLaws) { law in
                                         LawCard(law: law)
-                                            .frame(width: 300)
+                                            .frame(width: DS.Layout.contentRailWidth)
                                             .onTapGesture {
                                                 selectedLaw = law
                                             }
@@ -56,7 +56,7 @@ struct HomeView: View {
                                     // Always show skeleton cards when no data
                                     ForEach(0..<3, id: \.self) { _ in
                                         SkeletonLawCard()
-                                            .frame(width: 300)
+                                            .frame(width: DS.Layout.contentRailWidth)
                                     }
                                 }
                             }
@@ -65,7 +65,7 @@ struct HomeView: View {
                     }
 
                     // Recently Added Section - Show skeleton or actual content
-                    VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                    VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                         Text("Recently Added")
                             .dsTypography(DS.Typography.h4)
                             .fontWeight(.semibold)
@@ -73,11 +73,11 @@ struct HomeView: View {
                             .padding(.horizontal)
 
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: Constants.UI.spacingM) {
+                            HStack(spacing: DS.Spacing.s4) {
                                 if !viewModel.recentlyAdded.isEmpty {
                                     ForEach(viewModel.recentlyAdded) { law in
                                         LawCard(law: law)
-                                            .frame(width: 300)
+                                            .frame(width: DS.Layout.contentRailWidth)
                                             .onTapGesture {
                                                 selectedLaw = law
                                             }
@@ -86,7 +86,7 @@ struct HomeView: View {
                                     // Always show skeleton cards when no data
                                     ForEach(0..<3, id: \.self) { _ in
                                         SkeletonLawCard()
-                                            .frame(width: 300)
+                                            .frame(width: DS.Layout.contentRailWidth)
                                     }
                                 }
                             }
@@ -131,9 +131,9 @@ struct HomeView: View {
 #Preview("Loading State with Skeletons") {
     NavigationStack {
         ScrollView {
-            VStack(spacing: Constants.UI.spacingL) {
+            VStack(spacing: DS.Spacing.s6) {
                 // Law of the Day Skeleton
-                VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                     Text("Law of the Day")
                         .dsTypography(DS.Typography.h3)
                         .fontWeight(.bold)
@@ -144,7 +144,7 @@ struct HomeView: View {
                 .padding(.horizontal)
                 
                 // Top Voted Section Skeleton
-                VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                     Text("Top Voted Laws")
                         .dsTypography(DS.Typography.h4)
                         .fontWeight(.semibold)
@@ -152,10 +152,10 @@ struct HomeView: View {
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: Constants.UI.spacingM) {
+                        HStack(spacing: DS.Spacing.s4) {
                             ForEach(0..<3, id: \.self) { _ in
                                 SkeletonLawCard()
-                                    .frame(width: 300)
+                                    .frame(width: DS.Layout.contentRailWidth)
                             }
                         }
                         .padding(.horizontal)
@@ -163,7 +163,7 @@ struct HomeView: View {
                 }
                 
                 // Recently Added Section Skeleton
-                VStack(alignment: .leading, spacing: Constants.UI.spacingM) {
+                VStack(alignment: .leading, spacing: DS.Spacing.s4) {
                     Text("Recently Added")
                         .dsTypography(DS.Typography.h4)
                         .fontWeight(.semibold)
@@ -171,10 +171,10 @@ struct HomeView: View {
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: Constants.UI.spacingM) {
+                        HStack(spacing: DS.Spacing.s4) {
                             ForEach(0..<3, id: \.self) { _ in
                                 SkeletonLawCard()
-                                    .frame(width: 300)
+                                    .frame(width: DS.Layout.contentRailWidth)
                             }
                         }
                         .padding(.horizontal)

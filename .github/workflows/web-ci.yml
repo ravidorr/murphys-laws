@@ -10,6 +10,7 @@ on:
       - 'backend/scripts/build-sqlite.ts'
       - 'backend/src/**'
       - 'shared/modules/**'
+      - 'shared/DESIGN.md'
       - 'shared/design-tokens/**'
       - 'package.json'
       - 'package-lock.json'
@@ -22,10 +23,12 @@ on:
       - 'backend/scripts/build-sqlite.ts'
       - 'backend/src/**'
       - 'shared/modules/**'
+      - 'shared/DESIGN.md'
       - 'shared/design-tokens/**'
       - 'package.json'
       - 'package-lock.json'
       - '.nvmrc'
+      - '.github/workflows/web-ci.yml'
 
 jobs:
   test-and-build:
@@ -69,12 +72,18 @@ jobs:
         run: npm run lint:html
         working-directory: web
 
+      - name: Check design system
+        run: npm run design:check
+
       - name: Run unit tests
         run: npm test
         working-directory: web
 
       - name: Build
         run: npm run build:web
+
+      - name: Check generated web conformance
+        run: npm run design:conformance
 
       - name: Check bundle and service-worker budgets
         run: npm run check:web-budgets

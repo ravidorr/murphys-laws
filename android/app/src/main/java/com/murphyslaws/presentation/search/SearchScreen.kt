@@ -23,6 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import com.murphyslaws.ui.theme.DS
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.murphyslaws.domain.model.Law
+import com.murphyslaws.ui.components.DSCard
+import com.murphyslaws.ui.components.DSMessage
+import com.murphyslaws.ui.components.DSOutlinedTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,18 +54,17 @@ fun SearchScreen(
                 .padding(paddingValues)
         ) {
             // Search Field
-            OutlinedTextField(
+            DSOutlinedTextField(
                 value = uiState.query,
                 onValueChange = { viewModel.onQueryChange(it) },
+                label = "Search Murphy's Laws",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(DS.Spacing.s4),
-                placeholder = { Text("Search Murphy's Laws...") },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
                 },
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium
+                singleLine = true
             )
 
             // Content
@@ -169,13 +171,10 @@ private fun LawSearchResultCard(
     law: Law,
     onClick: () -> Unit
 ) {
-    Card(
+    DSCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
     ) {
         Column(
             modifier = Modifier.padding(DS.Spacing.s4),
@@ -209,7 +208,7 @@ private fun LawSearchResultCard(
                         Icons.Default.ThumbUp,
                         contentDescription = null,
                         tint = DS.Color.success,
-                        modifier = Modifier.size(DS.Spacing.s4)
+                        modifier = Modifier.size(DS.Component.iconSize)
                     )
                     Text(
                         law.upvotes.toString(),
@@ -225,7 +224,7 @@ private fun LawSearchResultCard(
                         Icons.Default.ThumbDown,
                         contentDescription = null,
                         tint = DS.Color.error,
-                        modifier = Modifier.size(DS.Spacing.s4)
+                        modifier = Modifier.size(DS.Component.iconSize)
                     )
                     Text(
                         law.downvotes.toString(),
@@ -266,21 +265,10 @@ private fun ErrorMessage(error: String) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(DS.Spacing.s2),
+        DSMessage(
+            text = "Error loading results: $error",
+            isError = true,
             modifier = Modifier.padding(DS.Spacing.s4)
-        ) {
-            Text(
-                "Error loading results",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.error
-            )
-            Text(
-                error,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        )
     }
 }

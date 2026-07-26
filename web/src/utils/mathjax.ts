@@ -1,136 +1,192 @@
-let loaderPromise: Promise<unknown> | undefined;
+const MATHML_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
 
-/** Test-only: inject a custom loader so tests can simulate import failure without vi.mock. */
-let loaderForTesting: (() => Promise<unknown>) | undefined;
+type FormulaValue = string | number;
+type MathTag = 'math' | 'mrow' | 'mi' | 'mn' | 'mo' | 'mfrac' | 'msqrt' | 'mtext';
 
-export function setLoaderForTesting(loader: (() => Promise<unknown>) | undefined): void {
-  loaderForTesting = loader;
+export interface SodsFormulaValues {
+  probability: FormulaValue;
+  urgency: FormulaValue;
+  complexity: FormulaValue;
+  importance: FormulaValue;
+  skill: FormulaValue;
+  frequency: FormulaValue;
+  activity: FormulaValue;
 }
 
-const MATHJAX_FONT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/output/chtml/fonts/woff-v2';
+export interface ToastFormulaValues {
+  height: FormulaValue;
+  gravity: FormulaValue;
+  overhang: FormulaValue;
+  butter: FormulaValue;
+  friction: FormulaValue;
+  inertia: FormulaValue;
+}
 
-function configureMathJax(): void {
-  if (typeof window === 'undefined') {
-    return;
+function mathElement(tag: MathTag, text?: FormulaValue): MathMLElement {
+  const element = document.createElementNS(
+    MATHML_NAMESPACE,
+    tag,
+  ) as MathMLElement;
+  if (text !== undefined) {
+    element.textContent = String(text);
   }
-
-  window.MathJax = {
-    loader: { load: [] },
-    chtml: {
-      fontURL: MATHJAX_FONT_URL,
-    },
-    tex: {
-      inlineMath: [['\\(', '\\)']],
-      displayMath: [['\\[', '\\]']],
-      packages: { '[+]': ['html'] },
-    },
-    startup: { typeset: false },
-    options: {
-      enableMenu: false,
-      enableAssistiveMml: false,
-      a11y: { speech: false },
-      renderActions: {
-        addMathTitles: [
-          200,
-          (doc: Document) => {
-            for (const node of (doc as unknown as { math: Array<{ typesetRoot: Element | null }> }).math) {
-              const element = node.typesetRoot;
-              if (element) {
-                element.querySelectorAll('mjx-mi').forEach((mi: Element) => {
-                  const text = mi.textContent?.trim();
-                  const titles: Record<string, string> = {
-                    U: 'Urgency (1-9)',
-                    C: 'Complexity (1-9)',
-                    I: 'Importance (1-9)',
-                    S: 'Skill (1-9)',
-                    F: 'Frequency (1-9)',
-                    A: 'Activity constant (0.7)',
-                  };
-                  if (text && titles[text]) {
-                    mi.setAttribute('title', titles[text]);
-                  }
-                });
-              }
-            }
-          },
-        ],
-      },
-    },
-  };
+  return element;
 }
 
-export async function ensureMathJax(): Promise<unknown> {
-  if (typeof window === 'undefined') {
-    return undefined;
+function row(...children: MathMLElement[]): MathMLElement {
+  const element = mathElement('mrow');
+  element.append(...children);
+  return element;
+}
+
+function operator(value: string): MathMLElement {
+  return mathElement('mo', value);
+}
+
+function numberOrVariable(
+  value: FormulaValue,
+  title?: string,
+): MathMLElement {
+  const isNumber = typeof value === 'number' || /^-?\d+(?:\.\d+)?$/.test(value);
+  const element = mathElement(isNumber ? 'mn' : 'mi', value);
+  if (!isNumber && title) {
+    element.setAttribute('title', title);
+    element.setAttribute('data-tooltip', title);
   }
-
-  if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-    return window.MathJax;
-  }
-
-  if (!loaderPromise) {
-    loaderPromise = (async () => {
-      configureMathJax();
-
-      try {
-        if (loaderForTesting) {
-          await loaderForTesting();
-        } else {
-          await import('mathjax/es5/tex-chtml.js');
-        }
-      } catch (error) {
-        loaderPromise = undefined;
-        // Module import failures are typically caused by:
-        // - Stale service worker cache (old HTML references new chunks)
-        // - Network connectivity issues  
-        // - Mobile Safari ES module bugs
-        // These are transient issues outside our control, so we don't report to Sentry.
-        // MathJax is non-critical - pages still render without math formatting
-        console.error('Failed to load MathJax:', error);
-        return undefined;
-      }
-
-      const mj = window.MathJax;
-      const appRoot = document.getElementById('app');
-      if (mj && typeof mj.typesetPromise === 'function' && appRoot) {
-        mj.typesetPromise([appRoot]).catch(() => {
-          // Silently handle MathJax errors
-        });
-      }
-
-      return mj;
-    })();
-  }
-
-  return loaderPromise;
+  return element;
 }
 
-/**
- * Resets the MathJax loader state.
- * ONLY FOR TESTING PURPOSES.
- */
-export function resetMathJaxStateForTesting(): void {
-  loaderPromise = undefined;
+function fraction(
+  numerator: MathMLElement,
+  denominator: MathMLElement,
+): MathMLElement {
+  const element = mathElement('mfrac');
+  element.append(numerator, denominator);
+  return element;
 }
 
-/* v8 ignore start -- HMR disposal: only runs in Vite dev mode, not in tests or production builds */
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    loaderPromise = undefined;
-
-    if (typeof window !== 'undefined') {
-      delete window.MathJax;
-    }
-
-    if (typeof document !== 'undefined') {
-      document
-        .querySelectorAll('style[data-mathjax],link[data-mathjax]')
-        .forEach((el) => {
-          if (el.parentNode) {
-            el.parentNode.removeChild(el);
-          }
-        });
-    }
-  });
+function squareRoot(value: MathMLElement): MathMLElement {
+  const element = mathElement('msqrt');
+  element.append(value);
+  return element;
 }
-/* v8 ignore stop */
+
+export function renderSodsFormula(
+  container: Element,
+  values: SodsFormulaValues,
+): void {
+  const math = mathElement('math');
+  math.setAttribute('display', 'block');
+  math.setAttribute(
+    'aria-label',
+    `Probability equals urgency plus complexity plus importance, multiplied by ten minus skill, divided by twenty, multiplied by activity, multiplied by one divided by one minus sine of frequency divided by ten.`,
+  );
+
+  const summedInputs = row(
+    operator('('),
+    numberOrVariable(values.urgency, 'Urgency (1-9)'),
+    operator('+'),
+    numberOrVariable(values.complexity, 'Complexity (1-9)'),
+    operator('+'),
+    numberOrVariable(values.importance, 'Importance (1-9)'),
+    operator(')'),
+  );
+  const skillFactor = row(
+    operator('('),
+    mathElement('mn', 10),
+    operator('−'),
+    numberOrVariable(values.skill, 'Skill (1-9)'),
+    operator(')'),
+  );
+  const frequencyFraction = fraction(
+    numberOrVariable(values.frequency, 'Frequency (1-9)'),
+    mathElement('mn', 10),
+  );
+  const sine = row(
+    mathElement('mi', 'sin'),
+    operator('('),
+    frequencyFraction,
+    operator(')'),
+  );
+
+  math.append(
+    row(
+      numberOrVariable(values.probability, 'Probability'),
+      operator('='),
+      fraction(
+        row(summedInputs, operator('×'), skillFactor),
+        mathElement('mn', 20),
+      ),
+      operator('×'),
+      numberOrVariable(values.activity, 'Activity constant (0.7)'),
+      operator('×'),
+      fraction(
+        mathElement('mn', 1),
+        row(mathElement('mn', 1), operator('−'), sine),
+      ),
+    ),
+  );
+
+  container.replaceChildren(math);
+}
+
+export function renderToastFormula(
+  container: Element,
+  values: ToastFormulaValues,
+): void {
+  const math = mathElement('math');
+  math.setAttribute('display', 'block');
+  math.setAttribute(
+    'aria-label',
+    'Butter-down probability derived from height, gravity, overhang, butter, friction, and toast inertia.',
+  );
+
+  const rotation = fraction(
+    row(
+      mathElement('mn', 30),
+      operator('×'),
+      squareRoot(
+        fraction(
+          numberOrVariable(values.height, 'Height of fall (30-200 cm)'),
+          numberOrVariable(values.gravity, 'Gravity (162-2479 cm/s²)'),
+        ),
+      ),
+      operator('×'),
+      numberOrVariable(values.overhang, 'Initial overhang or push (1-20 cm)'),
+      operator('×'),
+      numberOrVariable(values.butter, 'Butter factor (1.0-2.0)'),
+    ),
+    row(
+      numberOrVariable(values.inertia, 'Toast inertia (250-500)'),
+      operator('+'),
+      numberOrVariable(values.friction, 'Air friction or drag (0-100)'),
+    ),
+  );
+
+  const label = mathElement('mtext', 'P butter-down');
+  math.append(
+    row(
+      label,
+      operator('='),
+      operator('('),
+      mathElement('mn', 1),
+      operator('−'),
+      operator('|'),
+      operator('('),
+      rotation,
+      mathElement('mtext', ' mod 1'),
+      operator(')'),
+      operator('−'),
+      mathElement('mn', '0.5'),
+      operator('|'),
+      operator('×'),
+      mathElement('mn', 2),
+      operator(')'),
+      operator('×'),
+      mathElement('mn', 100),
+      operator('%'),
+    ),
+  );
+
+  container.replaceChildren(math);
+}
