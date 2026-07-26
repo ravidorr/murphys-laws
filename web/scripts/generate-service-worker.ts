@@ -222,7 +222,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   const sameOrigin = url.origin === self.location.origin;
-  const isApi = url.pathname.startsWith('/api/');
+  const isApi = sameOrigin && url.pathname.startsWith('/api/');
 
   if (request.mode === 'navigate' && sameOrigin) {
     if (isApi || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
@@ -242,6 +242,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirst(request, \`\${RUNTIME}-api-laws\`));
     return;
   }
+
+  if (isApi) return;
 
   if (/^https:\\/\\/fonts\\.(googleapis|gstatic)\\.com\\//i.test(url.href)) {
     event.respondWith(cacheFirst(request, \`\${RUNTIME}-fonts\`, 30));
