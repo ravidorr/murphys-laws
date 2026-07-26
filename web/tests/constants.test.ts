@@ -281,7 +281,7 @@ describe('Constants', () => {
 
   describe('getCategoryDisplayName', () => {
     it('returns override when slug is in CATEGORY_DISPLAY_NAME_OVERRIDES', () => {
-      const slug = 'murphys-cars-4x4-laws';
+      const slug = 'murphys-4x4-car-laws';
       const result = getCategoryDisplayName(slug, "Murphy's 4X4 Car Laws Section");
       expect(result).toBe(CATEGORY_DISPLAY_NAME_OVERRIDES[slug]);
       expect(result).toBe("Murphy's 4x4 & Off-Road Laws");

@@ -10,7 +10,9 @@ import {
   buildStaticLawDetailContent,
   buildStaticHomeContent,
   applyPageMetadata,
-  validateGeneratedPage
+  validateGeneratedPage,
+  fetchAllCategories,
+  categorySitemapPaths
 } from '@scripts/ssg';
 
 const metadataTemplate = `<!doctype html><html><head>
@@ -206,6 +208,27 @@ describe('SSG Utilities', () => {
 });
 
 describe('SSG Static Route Content', () => {
+  it('uses the category API as the sitemap source of truth', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          { slug: 'murphys-computer-laws', title: "Murphy's Computer Laws", law_count: 161 },
+          { slug: 'murphys-law-of-the-open-road', title: "Murphy's Law of the Open Road", law_count: 20 }
+        ]
+      })
+    });
+
+    const categories = await fetchAllCategories(fetchRequest);
+
+    expect(categorySitemapPaths(categories)).toEqual([
+      '/category/murphys-computer-laws',
+      '/category/murphys-law-of-the-open-road'
+    ]);
+    expect(categorySitemapPaths(categories)).not.toContain('/category/murphys-computers-laws');
+  });
+
   it('includes developers as a generated content page', () => {
     expect(CONTENT_PAGES.map((page) => page.slug)).toContain('developers');
   });
