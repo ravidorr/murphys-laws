@@ -22,7 +22,10 @@ interface ServiceWorkerFakes {
   worker: ServiceWorker;
 }
 
-function createFakes(hostname = SERVICE_WORKER_PRODUCTION_HOST): ServiceWorkerFakes {
+function createFakes(
+  hostname = SERVICE_WORKER_PRODUCTION_HOST,
+  hasController = true,
+): ServiceWorkerFakes {
   const containerListeners = new Map<string, Listener>();
   const registrationListeners = new Map<string, Listener>();
   const workerListeners = new Map<string, Listener>();
@@ -51,7 +54,7 @@ function createFakes(hostname = SERVICE_WORKER_PRODUCTION_HOST): ServiceWorkerFa
 
   const register = vi.fn().mockResolvedValue(registration);
   const serviceWorker = {
-    controller: worker,
+    controller: hasController ? worker : null,
     ready: Promise.resolve(registration),
     register,
     getRegistrations: vi.fn().mockResolvedValue([registration]),
@@ -110,7 +113,7 @@ describe('service worker registration', () => {
     expect(fakes.register).not.toHaveBeenCalled();
   });
 
-  it('registers, reports readiness, refreshes, and reloads once', async () => {
+  it('registers, reports an existing update, refreshes, and reloads once', async () => {
     const fakes = createFakes();
     const onNeedRefresh = vi.fn();
     const onOfflineReady = vi.fn();
@@ -121,10 +124,11 @@ describe('service worker registration', () => {
       fakes.runtime,
     );
 
-    await vi.waitFor(() => expect(onOfflineReady).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(fakes.register).toHaveBeenCalledOnce());
     expect(fakes.register).toHaveBeenCalledWith('/sw.js');
     expect(onRegisteredSW).toHaveBeenCalledWith('/sw.js', fakes.registration);
     expect(onNeedRefresh).toHaveBeenCalledOnce();
+    expect(onOfflineReady).not.toHaveBeenCalled();
 
     fakes.registrationListeners.get('updatefound')?.();
     Object.defineProperty(fakes.worker, 'state', { value: 'installed' });
@@ -140,6 +144,32 @@ describe('service worker registration', () => {
 
     fakes.containerListeners.get('controllerchange')?.();
     fakes.containerListeners.get('controllerchange')?.();
+    expect(fakes.reload).toHaveBeenCalledOnce();
+  });
+
+  it('announces offline readiness only when installing without a controller', async () => {
+    const fakes = createFakes(SERVICE_WORKER_PRODUCTION_HOST, false);
+    const onNeedRefresh = vi.fn();
+    const onOfflineReady = vi.fn();
+
+    registerServiceWorker({ onNeedRefresh, onOfflineReady }, fakes.runtime);
+
+    await vi.waitFor(() => expect(onOfflineReady).toHaveBeenCalledOnce());
+    expect(onNeedRefresh).not.toHaveBeenCalled();
+  });
+
+  it('reloads immediately when an announced update no longer has a waiting worker', async () => {
+    const fakes = createFakes();
+    const updateServiceWorker = registerServiceWorker({}, fakes.runtime);
+
+    await vi.waitFor(() => expect(fakes.register).toHaveBeenCalledOnce());
+    Object.defineProperty(fakes.registration, 'waiting', { value: null });
+
+    await updateServiceWorker(true);
+    await updateServiceWorker(true);
+
+    expect(fakes.update).toHaveBeenCalledTimes(2);
+    expect(fakes.postMessage).not.toHaveBeenCalled();
     expect(fakes.reload).toHaveBeenCalledOnce();
   });
 

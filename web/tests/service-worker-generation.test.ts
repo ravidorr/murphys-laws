@@ -70,6 +70,24 @@ describe("service worker generation", () => {
     expect(source).not.toMatch(/workbox|react|babel/i);
   });
 
+  it("keeps canonical-host updates waiting for the user's Refresh action", () => {
+    const source = renderServiceWorker({
+      revision: "test-revision",
+      urls: ["/", "/index.html"],
+    });
+    const installHandler = source.slice(
+      source.indexOf("self.addEventListener('install'"),
+      source.indexOf("self.addEventListener('activate'"),
+    );
+
+    expect(installHandler).toContain(
+      "if (!IS_CANONICAL_HOST) {\n    event.waitUntil(self.skipWaiting());",
+    );
+    expect(installHandler).not.toContain(
+      ".then(() => self.skipWaiting())",
+    );
+  });
+
   it("bypasses cache storage for unlisted same-origin API routes", () => {
     const source = renderServiceWorker({
       revision: "test-revision",
