@@ -20,9 +20,14 @@ on:
       - 'web/styles/partials/variables.css'
       - '.github/workflows/android-ci.yml'
 
+concurrency:
+  group: android-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -49,8 +54,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Check for Gradle wrapper
         id: check_gradle
@@ -65,12 +80,13 @@ jobs:
         if: steps.check_gradle.outputs.exists == 'true'
         run: chmod +x android/gradlew
 
-      - name: Clean build and unit tests (if project exists)
+      - name: Build, lint, and unit tests (if project exists)
         if: steps.check_gradle.outputs.exists == 'true'
         run: |
           cd android
-          ./gradlew clean build test \
+          ./gradlew assembleDebug assembleDebugAndroidTest lintDebug testDebugUnitTest \
             --no-daemon \
+            --build-cache \
             -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=768m" \
             --max-workers=4
 
@@ -83,8 +99,10 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          disable-linux-hw-accel: false
+          emulator-boot-timeout: 300
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: cd android && ./gradlew connectedDebugAndroidTest --no-daemon --max-workers=2
+          script: cd android && ./gradlew connectedDebugAndroidTest --no-daemon --build-cache --max-workers=2
 
       - name: Upload APK
         if: steps.check_gradle.outputs.exists == 'true'

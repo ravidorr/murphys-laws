@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Android CI now enables KVM acceleration, caches Gradle state, builds only
+  required debug artifacts, cancels superseded runs, and enforces a 30-minute
+  timeout. Root bumped to `2.6.6`.
 - Aligned the web, iOS, and Android implementations with the authoritative
   cross-platform design system, added generated platform tokens and canonical
   components, and enforced the no-React/no-inline-CSS contract in source and
