@@ -48,6 +48,23 @@ test.describe('QA regressions', () => {
     });
   }
 
+  for (const viewport of [
+    { name: 'mobile', width: 320, height: 640 },
+    { name: 'desktop', width: 1440, height: 900 },
+  ]) {
+    test(`buttered toast formula fits at ${viewport.name} width`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/calculator/buttered-toast');
+
+      const formula = page.locator('#toast-formula-display');
+      await expect(formula.locator('math')).toBeVisible();
+      await expect(formula).toHaveAttribute('aria-label', 'Buttered toast probability formula');
+
+      expect(await formula.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
+
   test('homepage search keeps the query in the URL, form, and results', async ({ page }) => {
     await page.goto('/');
     const homeSearch = page.locator('[data-home-zone="archive-search"] input[type="search"]');
