@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Legacy calculator URLs now permanently redirect to their canonical calculator pages
+  instead of returning a static 404. Root bumped to `2.6.9`.
+- Archive routes now preserve backend rendering for newly published laws and
+  categories, return real 404s for unknown paths, and keep canonical category
+  slugs aligned across generated pages, UI links, API documentation, and AI
+  discovery files. Backend bumped to `2.3.2`; web to `3.4.7`; root to `2.6.8`.
 - Dark-mode autocomplete matches now use the highlight foreground token, so
   matched text remains high-contrast on the yellow highlight surface. Web
   bumped to `3.4.6`; root to `2.6.7`.

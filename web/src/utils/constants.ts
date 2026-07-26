@@ -15,8 +15,8 @@ export const SITE_NAME = "Murphy's Law Archive";
 
 /** Editorial display-name overrides for category slugs (cleaner titles without changing URLs) */
 export const CATEGORY_DISPLAY_NAME_OVERRIDES: Record<string, string> = {
-  'murphys-cars-4x4-laws': "Murphy's 4x4 & Off-Road Laws",
-  'murphys-helicopters-war-laws': "Murphy's Helicopter & Warfare Laws",
+  'murphys-4x4-car-laws': "Murphy's 4x4 & Off-Road Laws",
+  'murphys-helicopters-warfare-laws': "Murphy's Helicopter & Warfare Laws",
   'murphys-unformatted-character-sheets-laws': "Murphy's RPG Character Sheet Laws",
 };
 

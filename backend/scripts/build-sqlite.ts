@@ -13,6 +13,21 @@ const ROOT = path.resolve(__dirname, '..');
 const SOURCE_DIR = path.join(ROOT, '../shared/data/murphys-laws');
 const DB_PATH = path.join(ROOT, 'murphys.db');
 
+// The source archive predates the canonical public URLs. Keep fresh database
+// builds aligned with the category slugs served by production and emitted by
+// SSG, while retaining the original source filenames.
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  'murphys-cars-4x4-laws': 'murphys-4x4-car-laws',
+  'murphys-cars-open-road-laws': 'murphys-law-of-the-open-road',
+  'murphys-computers-laws': 'murphys-computer-laws',
+  'murphys-cowboy-action-shooting-laws': 'murphys-cowboy-action-shooting-cas-laws',
+  'murphys-helicopters-war-laws': 'murphys-helicopters-warfare-laws',
+  'murphys-marine-corp-laws': 'murphys-marine-corps-laws',
+  'murphys-mechanics-laws': 'murphys-laws-of-mechanics',
+  'murphys-repairmen-laws': 'murphys-repairmans-laws',
+  'murphys-tanks-war-laws': 'murphys-tank-warfare-laws',
+};
+
 export interface Attribution {
   name: string;
   contact_type: string;
@@ -33,6 +48,10 @@ function slugify(s: string): string {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
+}
+
+export function canonicalCategorySlug(slug: string): string {
+  return CATEGORY_SLUG_ALIASES[slug] ?? slug;
 }
 
 async function listMarkdownFiles(dir: string): Promise<string[]> {
@@ -124,7 +143,7 @@ async function buildSQL(): Promise<string> {
   for (const file of files) {
     const basename = path.basename(file, '.md');
     const rel = path.relative(ROOT, file);
-    const slug = slugify(basename);
+    const slug = canonicalCategorySlug(slugify(basename));
     const content = await fs.readFile(file, 'utf8');
     const contentTimestamp = getStableContentTimestamp(file);
     const lines = content.split('\n');

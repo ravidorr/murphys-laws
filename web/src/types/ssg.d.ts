@@ -37,6 +37,12 @@ declare module '@scripts/ssg' {
     image?: string;
   }
 
+  export interface StaticCategory {
+    slug: string;
+    title: string;
+    law_count: number;
+  }
+
   export const CONTENT_PAGES: ContentPageMeta[];
   export function wrapFirstWordWithAccent(text: string): string;
   export function enhanceMarkdownHtml(html: string): string;
@@ -52,4 +58,10 @@ declare module '@scripts/ssg' {
   }): string[];
   export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
   export function buildStaticHomeContent(): string;
+  export function fetchAllCategories(fetchRequest?: (url: string) => Promise<{
+    ok: boolean;
+    status: number;
+    json(): Promise<unknown>;
+  }>): Promise<StaticCategory[]>;
+  export function categorySitemapPaths(categories: StaticCategory[]): string[];
 }

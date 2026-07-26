@@ -647,7 +647,7 @@ Get related category suggestions for internal linking and topic discovery.
       "description": "Tech truths: to err is human, to really foul things up requires a computer."
     }
   ],
-  "category_slug": "murphys-computers-laws"
+  "category_slug": "murphys-computer-laws"
 }
 ```
 

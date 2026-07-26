@@ -125,6 +125,17 @@ describe('Header component', () => {
     document.body.removeChild(el);
   });
 
+  it('keeps an accessible name on the header search button when its text is hidden on mobile', () => {
+    const el = Header({
+      onSearch: () => {},
+      onNavigate: () => {},
+      currentPage: 'home'
+    });
+
+    const submit = el.querySelector('.header-search button[type="submit"]');
+    expect(submit?.getAttribute('aria-label')).toBe('Search');
+  });
+
   it('has navigation menu toggle', () => {
     const el = Header({
       onSearch: () => {},
