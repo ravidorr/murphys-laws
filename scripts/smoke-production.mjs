@@ -36,6 +36,8 @@ async function expectNotFound(route) {
 await expectRedirect('http://murphys-laws.com/browse', `${canonicalOrigin}/browse`);
 await expectRedirect('https://www.murphys-laws.com/browse', `${canonicalOrigin}/browse`);
 await expectRedirect(`${canonicalOrigin}/submit/`, `${canonicalOrigin}/submit`);
+await expectRedirect(`${canonicalOrigin}/calculator`, `${canonicalOrigin}/calculator/sods-law`);
+await expectRedirect(`${canonicalOrigin}/toastcalculator`, `${canonicalOrigin}/calculator/buttered-toast`);
 await expectRedirect(`${canonicalOrigin}/category/murphys-computers-laws`, `${canonicalOrigin}/category/murphys-computer-laws`);
 await expectRedirect(`${canonicalOrigin}/category/murphys-cars-4x4-laws`, `${canonicalOrigin}/category/murphys-4x4-car-laws`);
 await expectRedirect(`${canonicalOrigin}/category/murphys-cars-open-road-laws`, `${canonicalOrigin}/category/murphys-law-of-the-open-road`);
