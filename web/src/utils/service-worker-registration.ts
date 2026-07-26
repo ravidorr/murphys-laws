@@ -54,7 +54,13 @@ export function registerServiceWorker(
   ) => {
     reloadAfterActivation = reloadPage;
     await registration?.update();
-    registration?.waiting?.postMessage({ type: 'SKIP_WAITING' });
+    const waitingWorker = registration?.waiting;
+    if (waitingWorker) {
+      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    } else if (reloadPage && !hasReloaded) {
+      hasReloaded = true;
+      runtime?.reload();
+    }
   };
 
   if (!runtime) {
@@ -77,6 +83,8 @@ export function registerServiceWorker(
       runtime.reload();
     }
   });
+
+  const hadController = Boolean(runtime.serviceWorker.controller);
 
   void runtime.serviceWorker
     .register('/sw.js')
@@ -104,7 +112,9 @@ export function registerServiceWorker(
       return runtime.serviceWorker.ready;
     })
     .then(() => {
-      options.onOfflineReady?.();
+      if (!hadController) {
+        options.onOfflineReady?.();
+      }
     })
     .catch((error: unknown) => {
       options.onRegisterError?.(
