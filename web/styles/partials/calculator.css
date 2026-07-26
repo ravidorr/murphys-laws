@@ -182,6 +182,16 @@
   padding: 0 var(--space-4);
 }
 
+/* The toast expression is longer than the shared calculator formulas. */
+#toast-formula-display {
+  container-type: inline-size;
+  overflow-x: hidden;
+}
+
+#toast-formula-display math {
+  font-size: min(var(--text-5xl), 2.7cqw) !important;
+}
+
 /* Responsive formula sizing */
 @media (width <= 768px) {
   .formula {
