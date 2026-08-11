@@ -317,7 +317,7 @@ describe('LawController', () => {
             expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 10 });
         });
 
-        it('should handle non-numeric limit gracefully', async () => {
+        it('should reject a non-numeric limit', async () => {
             req.url = '/api/v1/laws/1/related?limit=abc';
             req.headers.host = 'localhost:8787';
             lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
@@ -325,8 +325,20 @@ describe('LawController', () => {
 
             await lawController.getRelated(req, res, 1);
 
-            // NaN becomes 5 after Math.max(1, Math.min(10, NaN)) returns NaN, which || 5 handles
-            expect(lawService.getRelatedLaws).toHaveBeenCalledWith(1, { limit: 5 });
+            expect(lawService.getRelatedLaws).not.toHaveBeenCalled();
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
+
+        it('should reject a fractional limit', async () => {
+            req.url = '/api/v1/laws/1/related?limit=1.5';
+            req.headers.host = 'localhost:8787';
+            lawService.getLaw.mockResolvedValue({ id: 1, text: 'Test Law' });
+            lawService.getRelatedLaws.mockResolvedValue([]);
+
+            await lawController.getRelated(req, res, 1);
+
+            expect(lawService.getRelatedLaws).not.toHaveBeenCalled();
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
 
         it('should return response with data and law_id', async () => {

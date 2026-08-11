@@ -1,5 +1,4 @@
 import type {
-  IncomingHttpHeaders,
   IncomingMessage,
   OutgoingHttpHeaders,
   ServerResponse,
@@ -24,19 +23,6 @@ function getAllowedOrigins(): string[] {
     : ['*'];
 }
 
-function getForwardedFor(headers: IncomingHttpHeaders): string | null {
-  const forwardedFor = headers['x-forwarded-for'];
-  if (typeof forwardedFor === 'string') {
-    /* v8 ignore next -- split(',')[0] always returns a string, trim() never returns undefined */
-    return forwardedFor.split(',')[0]?.trim() ?? null;
-  }
-  if (Array.isArray(forwardedFor) && forwardedFor[0]) {
-    /* v8 ignore next -- split(',')[0] always returns a string, trim() never returns undefined */
-    return forwardedFor[0].split(',')[0]?.trim() ?? null;
-  }
-  return null;
-}
-
 // Helper to read POST body
 export function readBody<T = Record<string, unknown>>(req: IncomingMessage): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -58,12 +44,8 @@ export function readBody<T = Record<string, unknown>>(req: IncomingMessage): Pro
 
 // Helper to get voter identifier (IP address for now, can be extended with session/user ID)
 export function getVoterIdentifier(req: IncomingMessage): string {
-  // Try to get real IP from proxy headers first
-  const forwardedFor = getForwardedFor(req.headers);
-  if (forwardedFor) {
-    return forwardedFor;
-  }
-
+  // Nginx overwrites this header with the connected client's address. Do not
+  // trust X-Forwarded-For: callers can supply its leading values themselves.
   const realIp = req.headers['x-real-ip'];
   if (typeof realIp === 'string' && realIp.trim()) {
     return realIp;

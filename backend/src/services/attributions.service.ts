@@ -27,10 +27,11 @@ export class AttributionService {
 
   async listAttributions(): Promise<{ name: string }[]> {
     const stmt = this.db.prepare(`
-      SELECT DISTINCT name
-      FROM attributions
-      WHERE name IS NOT NULL AND name != ''
-      ORDER BY name;
+      SELECT DISTINCT a.name
+      FROM attributions a
+      JOIN laws l ON l.id = a.law_id
+      WHERE l.status = 'published' AND a.name IS NOT NULL AND a.name != ''
+      ORDER BY a.name;
     `);
     const rows = stmt.all() as { name: string }[];
     const seen = new Set<string>();
@@ -55,17 +56,19 @@ export class AttributionService {
 
     const sql = hasQ
       ? `
-      SELECT DISTINCT name
-      FROM attributions
-      WHERE name IS NOT NULL AND name != '' AND name LIKE ?
-      ORDER BY name
+      SELECT DISTINCT a.name
+      FROM attributions a
+      JOIN laws l ON l.id = a.law_id
+      WHERE l.status = 'published' AND a.name IS NOT NULL AND a.name != '' AND a.name LIKE ?
+      ORDER BY a.name
       LIMIT ?
     `
       : `
-      SELECT DISTINCT name
-      FROM attributions
-      WHERE name IS NOT NULL AND name != ''
-      ORDER BY name
+      SELECT DISTINCT a.name
+      FROM attributions a
+      JOIN laws l ON l.id = a.law_id
+      WHERE l.status = 'published' AND a.name IS NOT NULL AND a.name != ''
+      ORDER BY a.name
       LIMIT ?
     `;
     const stmt = this.db.prepare(sql);

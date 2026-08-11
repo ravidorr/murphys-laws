@@ -5,6 +5,26 @@ All notable changes to the Murphy's Laws project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.12] - 2026-08-11
+
+### Fixed
+- Preserved escaped HTML entities while highlighting raw search suggestions.
+  Web bumped to `3.4.10`; root to `2.6.12`.
+
+---
+
+## [2.6.11] - 2026-08-11
+
+### Fixed
+- Hardened search suggestion rendering, trusted-client rate limiting, submitted-law
+  visibility, transactional submissions, and related-law limit validation.
+- Corrected law text entity rendering and restored backend test type checking.
+  Backend bumped to `2.3.3`; web to `3.4.9`; MCP to `1.2.3`; root to `2.6.11`.
+- Updated transitive dependencies to resolve all high-severity npm audit findings.
+- Updated the MCP SDK and its Hono server dependency to resolve all remaining npm audit findings.
+
+---
+
 ## [Unreleased]
 
 ### Added

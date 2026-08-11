@@ -86,12 +86,13 @@ describe('HTTP Helpers', () => {
   });
 
   describe('getVoterIdentifier', () => {
-    it('should use x-forwarded-for if present', () => {
+    it('ignores a caller-controlled x-forwarded-for header', () => {
       req.headers['x-forwarded-for'] = '10.0.0.1, 10.0.0.2';
-      expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('10.0.0.1');
+      expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('127.0.0.1');
     });
 
-    it('should use x-real-ip if present', () => {
+    it('prefers the proxy-overwritten x-real-ip header', () => {
+      req.headers['x-forwarded-for'] = '10.0.0.1, 10.0.0.2';
       req.headers['x-real-ip'] = '10.0.0.2';
       expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('10.0.0.2');
     });
@@ -105,9 +106,9 @@ describe('HTTP Helpers', () => {
       expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('unknown');
     });
 
-    it('should use first element when x-forwarded-for is array', () => {
+    it('ignores x-forwarded-for arrays', () => {
       req.headers['x-forwarded-for'] = ['10.0.0.1, 10.0.0.2'];
-      expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('10.0.0.1');
+      expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('127.0.0.1');
     });
 
     it('should use first element when x-real-ip is array', () => {
@@ -115,7 +116,7 @@ describe('HTTP Helpers', () => {
       expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('10.0.0.3');
     });
 
-    it('should fallback to socket when x-forwarded-for trims to empty', () => {
+    it('falls back to socket when only x-forwarded-for is present', () => {
       req.headers['x-forwarded-for'] = '  ,  ';
       expect(httpHelpers.getVoterIdentifier(asReq(req))).toBe('127.0.0.1');
     });
