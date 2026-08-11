@@ -53,12 +53,17 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
 
   // Highlight matching text in suggestion
   function highlightMatch(text: string, query: string) {
-    const escapedText = escapeHtml(text);
-    if (!query || !text) return escapedText;
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery || !text) return escapeHtml(text);
     
-    const escapedQuery = escapeHtml(query.trim()).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedQuery})`, 'gi');
-    return escapedText.replace(regex, '<mark class="search-suggestion-highlight">$1</mark>');
+    return text.split(regex).map((segment, index) => {
+      const escapedSegment = escapeHtml(segment);
+      return index % 2 === 1
+        ? `<mark class="search-suggestion-highlight">${escapedSegment}</mark>`
+        : escapedSegment;
+    }).join('');
   }
 
   // Render suggestions dropdown
