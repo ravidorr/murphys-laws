@@ -200,6 +200,39 @@ describe('SearchAutocomplete', () => {
     expect(item!.innerHTML).toContain('search-suggestion-highlight');
   });
 
+  it('renders API-provided markup as text while preserving highlights', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'malicious <img src=x onerror=alert(1)>', title: undefined }
+    ]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'malicious';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const item = document.querySelector('.search-suggestion-item');
+    expect(item?.textContent).toContain('<img src=x onerror=alert(1)>');
+    expect(item?.querySelector('img')).toBeNull();
+    expect(item?.querySelector('mark')).toBeTruthy();
+  });
+
+  it('highlights raw text without modifying escaped HTML entities', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Fault < issue', title: undefined }
+    ]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'lt';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const item = document.querySelector('.search-suggestion-item');
+    expect(item?.textContent?.trim()).toBe('Fault < issue');
+    expect(item?.querySelector('mark')?.textContent).toBe('lt');
+    expect(item?.innerHTML).toContain('&lt; issue');
+    expect(item?.innerHTML).not.toContain('&<mark');
+  });
+
   it('should handle keyboard navigation with ArrowDown', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
       { id: 1, text: 'Test law 1', title: undefined },
