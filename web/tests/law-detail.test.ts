@@ -58,6 +58,14 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('1');
   });
 
+  it('renders law text containing ampersands without entity text', async () => {
+    const law = { id: '1', title: 'A Law', text: 'A Smith & Wesson beats four aces.', score: 1 };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-text]')?.textContent).toBe(law.text), { timeout: 500 });
+  });
+
   it('renders source status and report issue action for fetched law details', async () => {
     const law = { id: '1', title: 'A Law', text: 'Text', score: 1, attributions: [{ name: 'Known Source' }] };
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });

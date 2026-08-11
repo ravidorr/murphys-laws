@@ -9,6 +9,10 @@ describe('AttributionService', () => {
     beforeEach(() => {
         db = new Database(':memory:');
         db.exec(`
+      CREATE TABLE laws (
+        id INTEGER PRIMARY KEY,
+        status TEXT NOT NULL
+      );
       CREATE TABLE attributions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         law_id INTEGER,
@@ -22,9 +26,10 @@ describe('AttributionService', () => {
     });
 
     it('should list unique attribution names', async () => {
-        db.prepare("INSERT INTO attributions (name) VALUES ('Author A')").run();
-        db.prepare("INSERT INTO attributions (name) VALUES ('Author B')").run();
-        db.prepare("INSERT INTO attributions (name) VALUES ('Author A')").run(); // Duplicate
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'published'), (3, 'published')").run();
+        db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'Author A')").run();
+        db.prepare("INSERT INTO attributions (law_id, name) VALUES (2, 'Author B')").run();
+        db.prepare("INSERT INTO attributions (law_id, name) VALUES (3, 'Author A')").run(); // Duplicate
 
         const attributions = await attributionService.listAttributions();
         expect(attributions).toHaveLength(2);
@@ -32,6 +37,7 @@ describe('AttributionService', () => {
     });
 
     it('should not expose emails in list (map to Anonymous)', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'published')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'user@example.com')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (2, 'other@site.org')").run();
 
@@ -41,6 +47,7 @@ describe('AttributionService', () => {
     });
 
     it('should dedupe Anonymous when multiple emails', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'published')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'a@b.com')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (2, 'c@d.com')").run();
 
@@ -50,6 +57,7 @@ describe('AttributionService', () => {
     });
 
     it('searchSubmitters returns matching display-safe names', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'published'), (3, 'published')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'Alice')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (2, 'Bob')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (3, 'Alicia')").run();
@@ -59,6 +67,7 @@ describe('AttributionService', () => {
     });
 
     it('searchSubmitters with empty q returns up to limit', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'published'), (3, 'published')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'A')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (2, 'B')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (3, 'C')").run();
@@ -68,10 +77,19 @@ describe('AttributionService', () => {
     });
 
     it('searchSubmitters never returns emails', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'user@example.com')").run();
         const result = await attributionService.searchSubmitters('user', 20);
         expect(result.some(a => a.name.includes('@'))).toBe(false);
         expect(result.map(a => a.name)).toContain('Anonymous');
+    });
+
+    it('excludes attributions belonging to unreviewed laws', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'in_review')").run();
+        db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'Published Author'), (2, 'Pending Submitter')").run();
+
+        await expect(attributionService.listAttributions()).resolves.toEqual([{ name: 'Published Author' }]);
+        await expect(attributionService.searchSubmitters('', 20)).resolves.toEqual([{ name: 'Published Author' }]);
     });
 });
 
