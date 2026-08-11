@@ -216,6 +216,23 @@ describe('SearchAutocomplete', () => {
     expect(item?.querySelector('mark')).toBeTruthy();
   });
 
+  it('highlights raw text without modifying escaped HTML entities', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+      { id: 1, text: 'Fault < issue', title: undefined }
+    ]));
+
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'lt';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const item = document.querySelector('.search-suggestion-item');
+    expect(item?.textContent?.trim()).toBe('Fault < issue');
+    expect(item?.querySelector('mark')?.textContent).toBe('lt');
+    expect(item?.innerHTML).toContain('&lt; issue');
+    expect(item?.innerHTML).not.toContain('&<mark');
+  });
+
   it('should handle keyboard navigation with ArrowDown', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
       { id: 1, text: 'Test law 1', title: undefined },
