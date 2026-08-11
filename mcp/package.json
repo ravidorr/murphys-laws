@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-mcp",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "MCP server for Murphy's Laws - exposes thousands of laws to AI agents via Model Context Protocol",
   "type": "module",
   "main": "dist/index.js",
@@ -44,7 +44,8 @@
   "homepage": "https://murphys-laws.com/developers",
   "license": "CC0-1.0",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@hono/node-server": "^2.1.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "murphys-laws-sdk": "^0.2.0",
     "zod": "^3.25.67"
   },

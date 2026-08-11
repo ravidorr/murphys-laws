@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/browser';
 import { debounce } from '../utils/debounce.ts';
 import { fetchSuggestions } from '../utils/api.ts';
 import { SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY } from '../utils/constants.ts';
+import { escapeHtml } from '../utils/sanitize.ts';
 import type { Law } from '../types/app.d.ts';
 
 interface SearchAutocompleteOptions {
@@ -52,10 +53,12 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
 
   // Highlight matching text in suggestion
   function highlightMatch(text: string, query: string) {
-    if (!query || !text) return text;
+    const escapedText = escapeHtml(text);
+    if (!query || !text) return escapedText;
     
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark class="search-suggestion-highlight">$1</mark>');
+    const escapedQuery = escapeHtml(query.trim()).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return escapedText.replace(regex, '<mark class="search-suggestion-highlight">$1</mark>');
   }
 
   // Render suggestions dropdown

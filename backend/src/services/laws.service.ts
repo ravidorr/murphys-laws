@@ -541,37 +541,48 @@ export class LawService {
   }
 
   async submitLaw({ title, text, author, email, categoryId }: SubmitLawParams) {
-    const insertLawSql = `
-      INSERT INTO laws (title, text, status, first_seen_file_path)
-      VALUES (?, ?, 'in_review', 'web-submission')
-      RETURNING id;
-    `;
-
-    const insertLawStmt = this.db.prepare(insertLawSql);
-    const lawResult = insertLawStmt.get(title, text) as InsertLawResult | undefined;
-
-    if (!lawResult) {
-      throw new Error('Failed to insert law');
-    }
-
-    const lawId = lawResult.id;
-
-    if (author || email) {
-      const contactType = email ? 'email' : 'text';
-      const contactValue = email || null;
-      const name = author || 'Anonymous';
-      const insertAttrStmt = this.db.prepare(`
-        INSERT INTO attributions (law_id, name, contact_type, contact_value)
-        VALUES (?, ?, ?, ?);
-      `);
-      insertAttrStmt.run(lawId, name, contactType, contactValue);
-    }
-
     if (categoryId) {
-      const insertCatStmt = this.db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)');
-      insertCatStmt.run(lawId, categoryId);
+      const category = this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(categoryId);
+      if (!category) {
+        throw new Error('Invalid category ID');
+      }
     }
 
-    return lawId;
+    const submit = this.db.transaction(() => {
+      const insertLawSql = `
+        INSERT INTO laws (title, text, status, first_seen_file_path)
+        VALUES (?, ?, 'in_review', 'web-submission')
+        RETURNING id;
+      `;
+
+      const insertLawStmt = this.db.prepare(insertLawSql);
+      const lawResult = insertLawStmt.get(title, text) as InsertLawResult | undefined;
+
+      if (!lawResult) {
+        throw new Error('Failed to insert law');
+      }
+
+      const lawId = lawResult.id;
+
+      if (author || email) {
+        const contactType = email ? 'email' : 'text';
+        const contactValue = email || null;
+        const name = author || 'Anonymous';
+        const insertAttrStmt = this.db.prepare(`
+          INSERT INTO attributions (law_id, name, contact_type, contact_value)
+          VALUES (?, ?, ?, ?);
+        `);
+        insertAttrStmt.run(lawId, name, contactType, contactValue);
+      }
+
+      if (categoryId) {
+        const insertCatStmt = this.db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)');
+        insertCatStmt.run(lawId, categoryId);
+      }
+
+      return lawId;
+    });
+
+    return submit();
   }
 }

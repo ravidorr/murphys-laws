@@ -111,9 +111,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       }
     }
 
-    const safeText = escapeHtml(law.text || '');
     /* v8 ignore start -- textEl is always present in the law card template clone */
-    if (textEl) textEl.textContent = safeText;
+    if (textEl) textEl.textContent = law.text || '';
     /* v8 ignore stop */
 
     const attsHtml = renderAttributionsList(law.attributions);

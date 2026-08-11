@@ -85,7 +85,10 @@ export class LawController {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const limitParam = url.searchParams.get('limit');
     const limitNum = limitParam ? Number(limitParam) : 5;
-    const limit = Number.isNaN(limitNum) ? 5 : Math.max(1, Math.min(10, limitNum));
+    if (!Number.isInteger(limitNum)) {
+      return badRequest(res, 'Limit must be an integer', req);
+    }
+    const limit = Math.max(1, Math.min(10, limitNum));
 
     const relatedLaws = await this.lawService.getRelatedLaws(lawId, { limit });
 

@@ -271,6 +271,18 @@ describe('LawService', () => {
     expect(rel.category_id).toBe(categoryId);
   });
 
+  it('does not persist a law when its category does not exist', async () => {
+    await expect(lawService.submitLaw({
+      title: 'Invalid category',
+      text: 'This submission must roll back completely.',
+      author: '',
+      email: '',
+      categoryId: 999999,
+    })).rejects.toThrow('Invalid category ID');
+
+    expect(db.prepare("SELECT COUNT(*) AS count FROM laws WHERE title = 'Invalid category'").get()).toEqual({ count: 0 });
+  });
+
   it('should submit law with author only (no email) and set contact_type text', async () => {
     const lawId = await lawService.submitLaw({
       title: 'T',
