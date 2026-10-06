@@ -7,12 +7,12 @@ This document outlines additional tasks and potential improvements for the Murph
 The following items were identified during comprehensive UX, UI, Accessibility, Microcopy, and SEO skill reviews but not yet implemented.
 
 ### UX Improvements
-- [ ] **Move Submit Form to Dedicated Page:** The submit form on the home page creates cognitive overload. Move to dedicated `/submit` route to simplify home page and improve first-time visitor experience.
+- [x] **Move Submit Form to Dedicated Page:** ~~The submit form on the home page creates cognitive overload. Move to dedicated `/submit` route to simplify home page and improve first-time visitor experience.~~ Done - the full submission form is available at `/submit`; the home page now provides a focused call to action.
 - [ ] **Consolidate Browse Page Sidebars:** "Top Voted", "Trending Now", and "Recently Added" sections show similar laws. Consolidate into single "Popular" section or convert to sort options only.
 - [ ] **Add "Back to Top" Button:** Long pages (browse, categories) need a floating "back to top" button for easier navigation.
 - [ ] **Expand Search Field on Desktop:** Currently collapsed behind icon. Consider showing expanded search input on desktop widths for better discoverability.
 - [ ] **Simplify Home Page:** Home page has Law of Day + 2 calculators + submit form. Consider removing calculators from home page (they have dedicated pages) to focus on content discovery.
-- [ ] **Group Categories:** 55 flat categories are hard to scan. Add groupings (e.g., "Technology", "Workplace", "Daily Life") or popularity badges.
+- [x] **Group Categories:** ~~55 flat categories are hard to scan. Add groupings (e.g., "Technology", "Workplace", "Daily Life") or popularity badges.~~ Done - category directory groups categories into Technology, Work, Transport, Relationships, Everyday Life, Historical and Military, and Specialized clusters.
 
 ### UI Improvements
 - [ ] **Implement 12-Column Grid System:** Current layout lacks consistent grid. Define explicit 12-column grid with 24px gutters for more precise layouts.
@@ -24,7 +24,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [ ] **Add Skip Links for Calculator Sections:** Long home page could benefit from skip links to jump to specific calculators.
 
 ### SEO Improvements
-- [ ] **FAQ Structured Data for Calculators:** Add FAQ schema to Sod's Law and Buttered Toast calculators explaining how they work and what they calculate.
+- [x] **FAQ Structured Data for Calculators:** ~~Add FAQ schema to Sod's Law and Buttered Toast calculators explaining how they work and what they calculate.~~ Done - both calculators publish `FAQPage` JSON-LD with their relevant questions and answers.
 - [ ] **"What is Murphy's Law?" Section:** Add a dedicated section or expand the home page description to target featured snippet for "What is Murphy's Law?" queries.
 - [ ] **Calculator Meta Descriptions:** Current calculator page meta descriptions could be more compelling with specific value propositions.
 
@@ -53,8 +53,8 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [x] **Print Styles:** ~~Add print-optimized CSS for law pages.~~ Done - added `web/styles/partials/print.css` with `@media print` rules. Hides interactive elements (search, widgets, pagination, vote buttons) and optimizes typography for clean paper output.
 
 ## SEO Recommendations (Content & Technical)
-- [ ] **"Murphy's Law vs Sod's Law" Comparison Page:** Create a dedicated page explaining the differences between Murphy's Law and Sod's Law. This is a high-volume search query with no dedicated content currently.
-- [ ] **"Murphy's Law Examples" Page:** Create a curated page targeting "Murphy's Law examples" keyword cluster with real-world scenarios organized by category.
+- [x] **"Murphy's Law vs Sod's Law" Comparison Page:** ~~Create a dedicated page explaining the differences between Murphy's Law and Sod's Law. This is a high-volume search query with no dedicated content currently.~~ Done - dedicated `/murphys-law-vs-sods-law` content page compares the two maxims and links to related content.
+- [x] **"Murphy's Law Examples" Page:** ~~Create a curated page targeting "Murphy's Law examples" keyword cluster with real-world scenarios organized by category.~~ Done - `/examples` organizes real-world scenarios by technology, work, everyday life, and travel, with dedicated subpages for each.
 - [ ] **Breadcrumb Schema on All Pages:** Add BreadcrumbList structured data to law detail pages, calculator pages, and content pages (currently only on browse and category pages).
 - [ ] **Internal Linking Improvements:** Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.
 - [ ] **Visual Content:** Add historical photos (Edward Murphy, Dr. John Stapp, rocket sled experiments), infographics showing Murphy's Law variations, and embedded video explaining the origin story.
