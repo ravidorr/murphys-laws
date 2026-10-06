@@ -1072,6 +1072,23 @@ describe('CategoryDetail view', () => {
       expect(track).not.toHaveBeenCalled();
     });
 
+    it('does not report a failed search when the visitor later changes sorting', async () => {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('Network error'));
+
+      mod.getLocalThis().onSearch!({ q: 'computer' });
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(3));
+
+      expect(track).not.toHaveBeenCalledWith('search_performed', expect.anything());
+    });
+
     it('ignores an earlier load that resolves after an in-category search', async () => {
       const initialResponse = { data: [{ id: 101, title: 'Old Law', text: 'Old result' }], total: 1, limit: 10, offset: 0 };
       const searchResponse = { data: [{ id: 102, title: 'New Law', text: 'New result' }], total: 1, limit: 10, offset: 0 };

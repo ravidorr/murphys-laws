@@ -1809,6 +1809,23 @@ describe('Browse view', () => {
       expect(searchEvents()).toHaveLength(1);
     });
 
+    it('does not report a failed search when the visitor later changes sorting', async () => {
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      fetchLawsSpy.mockRejectedValueOnce(new Error('Network error'));
+
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await waitForResults(el);
+
+      expect(searchEvents()).toHaveLength(0);
+    });
+
     it('ignores an earlier load that resolves after an Advanced Search submission', async () => {
       const initialResponse = { data: [{ id: 1, title: 'Old Law', text: 'Old result' }], total: 1, limit: 25, offset: 0 };
       const searchResponse = { data: [{ id: 2, title: 'New Law', text: 'New result' }], total: 1, limit: 25, offset: 0 };
