@@ -2,15 +2,11 @@
 import * as Sentry from '@sentry/browser';
 import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
 import { isServiceWorkerTransientError } from './utils/error-handler.ts';
+import { initializeNovusAgent, isCanonicalRuntime } from './utils/novus-agent.ts';
 
 // Initialize Sentry for production error tracking. Metrics are automatically
 // enabled (SDK 10.25+); use the metrics API for count/gauge/distribution.
-const isCanonicalTelemetryRuntime = import.meta.env.PROD && (
-  import.meta.env.MODE === 'test' || (
-    typeof window !== 'undefined' &&
-    window.location.hostname === 'murphys-laws.com'
-  )
-);
+const isCanonicalTelemetryRuntime = isCanonicalRuntime();
 if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -51,14 +47,8 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
   });
 }
 
-// Novus by Pendo: on the canonical production host the snippet in index.html stubs
-// window.pendo and loads the agent; elsewhere it does nothing. Initialize under the
-// same guard as Sentry, exactly once, as an anonymous visitor: an empty id lets Pendo
-// reuse the visitor id it stored on an earlier visit, or create a new one. The site
-// has no sign-in, so there is no pendo.identify() or pendo.clearSession() call.
-if (isCanonicalTelemetryRuntime && window.pendo) {
-  window.pendo.initialize({ visitor: { id: '' } });
-}
+// Novus by Pendo: initialized only on the canonical production host (see utils/novus-agent.ts).
+initializeNovusAgent();
 
 // Register PWA service worker for offline support
 import { registerServiceWorker } from './utils/service-worker-registration.ts';
