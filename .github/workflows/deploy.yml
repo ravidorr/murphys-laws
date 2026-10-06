@@ -112,6 +112,7 @@ jobs:
               echo "ERROR: Missing $TARGET_DIR/.nvmrc"
               exit 1
             fi
+            nvm install
             nvm use
 
             # Verify Node version matches .nvmrc
