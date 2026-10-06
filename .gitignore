@@ -73,8 +73,7 @@ android/.DS_Store
 backend/node_modules/
 web/node_modules/
 
-# Workspace-specific package-lock.json (should only be at root)
-backend/package-lock.json
+# The backend lockfile is deployed to ensure production uses the tested dependency graph.
 web/package-lock.json
 
 # Platform-specific build outputs
