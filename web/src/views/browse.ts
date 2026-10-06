@@ -379,6 +379,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     const [sort, order] = value.split('-');
     currentSort = sort ?? '';
     currentOrder = order ?? '';
+    pendingSearchSurface = null;
     currentPage = 1;
     loadPage(1);
   });
