@@ -1826,6 +1826,30 @@ describe('Browse view', () => {
       expect(searchEvents()).toHaveLength(0);
     });
 
+    it('does not report sort results when sorting supersedes an in-flight search', async () => {
+      const searchResponse = { data: [{ id: 3, title: 'Search Law', text: 'Search result' }], total: 1, limit: 25, offset: 0 };
+      const sortResponse = { data: [{ id: 4, title: 'Sorted Law', text: 'Sort result' }], total: 1, limit: 25, offset: 0 };
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      fetchLawsSpy.mockImplementationOnce(() => searchLoad).mockResolvedValueOnce(sortResponse);
+
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2));
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(el.textContent).toContain('Sorted Law'));
+
+      expect(searchEvents()).toHaveLength(0);
+      resolveSearch(searchResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(searchEvents()).toHaveLength(0);
+    });
+
     it('reports a search when the visitor retries its failed request', async () => {
       const el = Browse({ onNavigate: () => { } });
       await waitForResults(el);
