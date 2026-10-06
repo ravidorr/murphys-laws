@@ -61,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Production deployments now synchronize a stale PM2 daemon with the installed
+  CLI before querying its process metadata. Root bumped to `2.6.19`.
 - Production deployments now install dependencies from a committed backend lockfile,
   preventing stale server-side dependency trees from breaking npm installs. Root bumped
   to `2.6.18`.
