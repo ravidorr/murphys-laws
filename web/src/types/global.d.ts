@@ -15,7 +15,8 @@ interface PendoOptions {
 
 /**
  * Novus by Pendo agent. The snippet in index.html defines `window.pendo` and queues
- * initialize/identify/updateOptions/pageLoad/track calls until the agent script loads.
+ * initialize/identify/updateOptions/pageLoad/track/trackAgent/clearSession calls until the
+ * agent script loads.
  */
 interface PendoAgent {
   initialize: (options?: PendoOptions) => void;
@@ -23,6 +24,7 @@ interface PendoAgent {
   updateOptions: (options: PendoOptions) => void;
   pageLoad: (url?: string) => void;
   track: (event: string, properties?: Record<string, unknown>) => void;
+  trackAgent: (...args: unknown[]) => void;
   clearSession: () => void;
 }
 

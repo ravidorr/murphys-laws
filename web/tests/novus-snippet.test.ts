@@ -14,6 +14,10 @@ function readNovusSnippet(): string {
   return snippet;
 }
 
+function readPendoAgentType(): string {
+  return fs.readFileSync(path.join(root, 'src', 'types', 'global.d.ts'), 'utf8');
+}
+
 function runSnippetOnHost(hostname: string) {
   const insertBefore = vi.fn();
   const scriptElement: { async?: boolean; src?: string } = {};
@@ -37,6 +41,16 @@ describe('Novus agent snippet in index.html', () => {
     expect(insertBefore).toHaveBeenCalledTimes(1);
     expect(scriptElement.src).toMatch(/^https:\/\/cdn\.pendo\.io\/agent\/static\/.+\/pendo\.js$/);
     expect(fakeWindow.pendo).toBeDefined();
+  });
+
+  it('queues every method declared on the Pendo agent type', () => {
+    const snippet = readNovusSnippet();
+    const agentType = readPendoAgentType();
+
+    ['initialize', 'identify', 'updateOptions', 'pageLoad', 'track', 'trackAgent', 'clearSession'].forEach((method) => {
+      expect(snippet).toContain(`'${method}'`);
+      expect(agentType).toMatch(new RegExp(`\\b${method}:`));
+    });
   });
 
   it.each([
