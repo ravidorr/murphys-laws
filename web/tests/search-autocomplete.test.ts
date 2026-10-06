@@ -982,4 +982,63 @@ describe('SearchAutocomplete', () => {
     inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(autocomplete.isOpen()).toBe(false);
   });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([
+        { id: 1, text: 'First law' },
+        { id: 2, text: 'Second law' },
+        { id: 3, text: 'Third law' }
+      ]));
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    async function openSuggestions(query: string) {
+      autocomplete = SearchAutocomplete({ inputElement, onSelect });
+      inputElement.value = query;
+      inputElement.dispatchEvent(new Event('input'));
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+
+    it('reports a clicked suggestion with the typed query and its rank', async () => {
+      const calls: string[] = [];
+      track.mockImplementation(() => calls.push('track'));
+      onSelect = vi.fn(() => calls.push('select'));
+      await openSuggestions('  Toast LAW ');
+
+      (document.querySelector('.search-suggestion-item[data-index="1"]') as HTMLElement).click();
+
+      // Reported before onSelect navigates away
+      expect(calls).toEqual(['track', 'select']);
+      expect(track).toHaveBeenCalledWith('search_suggestion_selected', {
+        query: 'toast law',
+        query_length: 9,
+        suggestion_position: 2,
+        suggestions_count: 3,
+        law_id: '2',
+        selection_method: 'click',
+      });
+    });
+
+    it('reports a suggestion chosen with the arrow keys and Enter', async () => {
+      await openSuggestions('law');
+
+      inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+      inputElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+
+      expect(track).toHaveBeenCalledWith('search_suggestion_selected', expect.objectContaining({
+        suggestion_position: 3,
+        law_id: '3',
+        selection_method: 'keyboard',
+      }));
+    });
+  });
 });

@@ -131,4 +131,46 @@ describe('copy-actions', () => {
       expect(copyToClipboardSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/category/murphys-technology-laws');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    function copyButton(action: string, value: string) {
+      const btn = document.createElement('button');
+      btn.setAttribute('data-action', action);
+      btn.setAttribute('data-copy-value', value);
+      btn.setAttribute('data-law-id', '42');
+      return btn;
+    }
+
+    it('reports law card copies after the text is copied', async () => {
+      await handleCopyAction(new Event('click'), copyButton('copy-text', 'Law text'));
+      await handleCopyAction(new Event('click'), copyButton('copy-link', 'https://murphys-laws.com/law/42'));
+
+      expect(track).toHaveBeenCalledWith('law_shared', {
+        law_id: '42', share_method: 'copy_text', surface: 'law_card', page_path: '/category/murphys-technology-laws'
+      });
+      expect(track).toHaveBeenCalledWith('law_shared', {
+        law_id: '42', share_method: 'copy_link', surface: 'law_card', page_path: '/category/murphys-technology-laws'
+      });
+    });
+
+    it('does not report copy buttons with nothing to copy', async () => {
+      await handleCopyAction(new Event('click'), copyButton('copy-text', ''));
+      await handleCopyAction(new Event('click'), copyButton('copy-link', ''));
+
+      expect(track).not.toHaveBeenCalled();
+    });
+  });
 });

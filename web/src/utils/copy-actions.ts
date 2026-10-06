@@ -3,6 +3,17 @@
 
 import { copyToClipboard } from './clipboard.ts';
 import { recordQualifyingUserAction } from '../components/install-prompt.ts';
+import { trackPendoEvent, getPagePath } from './pendo.ts';
+
+// Report a completed copy from a law card's Share popover
+function trackLawCopied(button: Element, shareMethod: 'copy_text' | 'copy_link'): void {
+  trackPendoEvent('law_shared', {
+    law_id: button.getAttribute('data-law-id'),
+    share_method: shareMethod,
+    surface: 'law_card',
+    page_path: getPagePath(),
+  });
+}
 
 /**
  * Handles copy-text and copy-link button clicks via event delegation.
@@ -16,6 +27,7 @@ export async function handleCopyAction(e: Event, target: Element): Promise<boole
     const textToCopy = copyTextBtn.getAttribute('data-copy-value') || '';
     if (textToCopy) {
       await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
+      trackLawCopied(copyTextBtn, 'copy_text');
     }
     return true;
   }
@@ -27,6 +39,7 @@ export async function handleCopyAction(e: Event, target: Element): Promise<boole
     const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || '';
     if (linkToCopy) {
       await copyToClipboard(linkToCopy, 'Link copied to clipboard!');
+      trackLawCopied(copyLinkBtn, 'copy_link');
     }
     return true;
   }

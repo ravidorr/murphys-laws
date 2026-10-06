@@ -23,6 +23,7 @@ import { Breadcrumb } from '../components/breadcrumb.ts';
 import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
 import { getCategoryHubLinks, renderInternalLinkList } from '@utils/internal-links.ts';
+import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
 function parseCategoryParams(search: string): { page: number; sort: string; order: string } {
@@ -58,6 +59,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   let currentSort = initialParams.sort;
   let currentOrder = initialParams.order;
   let categoryNumericId: number | null = null; // Will be set after fetching category details
+  // Set by the in-category search form; pagination and sort reloads leave it false
+  let pendingSearch = false;
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
   // Always wraps only the first word (typically "Murphy's") in accent color
@@ -179,6 +182,14 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
+      if (pendingSearch) {
+        pendingSearch = false;
+        const searchProperties = { ...getSearchProperties(currentFilters, currentSort), search_surface: 'category_detail' };
+        trackPendoEvent('search_performed', { ...searchProperties, order: currentOrder, results_count: totalLaws });
+        if (totalLaws === 0) {
+          trackPendoEvent('search_no_results', searchProperties);
+        }
+      }
       await updateDisplay();
 
       // Register export content for this category
@@ -263,6 +274,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
           initialFilters: { category_id: category.id },
           onSearch: (filters) => {
             currentFilters = { ...filters, category_id: category.id };
+            // The category itself is always applied; only a keyword or submitter makes this a search
+            pendingSearch = Boolean(filters.q || filters.attribution);
             loadPage(1);
           }
         });

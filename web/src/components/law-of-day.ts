@@ -11,6 +11,7 @@ import { createLoading } from './loading.ts';
 import { isFavoritesEnabled } from '../utils/feature-flags.ts';
 import { isFavorite, toggleFavorite } from '../utils/favorites.ts';
 import { copyToClipboard } from '../utils/clipboard.ts';
+import { trackPendoEvent, getPagePath } from '../utils/pendo.ts';
 import type { Law, OnNavigate } from '../types/app.d.ts';
 
 export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: OnNavigate }) {
@@ -104,7 +105,8 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
     title: twitterText,
     description: lawText,
     lawText: lawText,
-    lawId: String(law.id)
+    lawId: String(law.id),
+    surface: 'law_of_day'
   });
 
   footer.appendChild(socialShare);
@@ -121,6 +123,16 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
   `;
   el.appendChild(distribution);
 
+  // Report a completed copy from the widget's Share popover
+  const trackLawCopied = (shareMethod: 'copy_text' | 'copy_link') => {
+    trackPendoEvent('law_shared', {
+      law_id: String(law.id),
+      share_method: shareMethod,
+      surface: 'law_of_day',
+      page_path: getPagePath(),
+    });
+  };
+
   // Handle voting, navigation, sharing, and copy actions
   el.addEventListener('click', async (e) => {
     const t = e.target;
@@ -133,6 +145,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       const textToCopy = copyTextBtn.getAttribute('data-copy-value') || law.text || '';
       if (textToCopy) {
         await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
+        trackLawCopied('copy_text');
       }
       return;
     }
@@ -143,6 +156,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       e.stopPropagation();
       const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || `${window.location.origin}/law/${law.id}`;
       await copyToClipboard(linkToCopy, 'Link copied to clipboard!');
+      trackLawCopied('copy_link');
       return;
     }
 
@@ -157,7 +171,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
         id: lawId,
         text: law.text || '',
         title: law.title || '',
-      });
+      }, 'law_of_day');
 
       // Update button visual state
       const newTooltip = isNowFavorite ? 'Remove from favorites' : 'Add to favorites';
@@ -184,7 +198,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       if (!voteType) return;
 
       try {
-        const result = await toggleVote(law.id, voteType);
+        const result = await toggleVote(law.id, voteType, 'law_of_day');
 
         const upBtn = el.querySelector('[data-vote="up"]')!;
         const downBtn = el.querySelector('[data-vote="down"]')!;

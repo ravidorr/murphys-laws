@@ -9,9 +9,9 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { hydrateIcons } from '@utils/icons.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { exposeExperiment, getExperimentVariant, HOME_MODULE_ORDER_EXPERIMENT, type HomeModuleOrderVariant } from '@utils/experiments.ts';
-import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.d.ts';
+import type { CleanableElement, OnNavigate, SearchFilters, SearchSurface, Law } from '../types/app.d.ts';
 
-type OnSearch = (filters: SearchFilters) => void;
+type OnSearch = (filters: SearchFilters, surface?: SearchSurface) => void;
 type DailyLawState = 'loading' | 'ready' | 'empty' | 'error';
 
 interface RenderHomeOptions {
@@ -142,7 +142,7 @@ export function renderHome(
       trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
       const input = searchForm.querySelector('input[type="search"]');
       const query = input instanceof HTMLInputElement ? input.value.trim() : '';
-      if (onSearch) onSearch({ q: query });
+      if (onSearch) onSearch({ q: query }, 'home');
       else onNavigate('browse');
     });
   }

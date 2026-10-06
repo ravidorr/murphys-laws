@@ -1881,3 +1881,118 @@ describe('initInlineShareButtons', () => {
     teardown();
   });
 });
+
+describe('Pendo tracking', () => {
+  type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+  let track: ReturnType<typeof vi.fn<PendoTrack>>;
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    track = vi.fn<PendoTrack>();
+    window.pendo = { track };
+    document.body.innerHTML = '';
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    // Keep the browser from following share links in jsdom
+    container.addEventListener('click', (e) => e.preventDefault());
+  });
+
+  afterEach(() => {
+    delete window.pendo;
+    document.body.innerHTML = '';
+  });
+
+  it('SocialShare reports social shares with the law and surface, but leaves copies to the copy handlers', () => {
+    container.appendChild(SocialShare({ url: 'https://test.com/law/5', lawText: 'Law', lawId: '5', surface: 'law_detail' }));
+
+    (container.querySelector('.share-popover a .icon-circle.facebook') as HTMLElement).click();
+    (container.querySelector('.share-popover [data-action="copy-link"]') as HTMLElement).click();
+
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith('law_shared', expect.objectContaining({
+      law_id: '5', share_method: 'facebook', surface: 'law_detail'
+    }));
+  });
+
+  it('SocialShare reports unrecognised links as other and defaults the surface', () => {
+    const share = SocialShare({ url: 'https://test.com/law/5' });
+    container.appendChild(share);
+    const customLink = document.createElement('a');
+    customLink.href = '#';
+    share.querySelector('.share-popover')!.appendChild(customLink);
+
+    customLink.click();
+
+    expect(track).toHaveBeenCalledWith('law_shared', expect.objectContaining({ share_method: 'other', surface: 'unknown' }));
+    expect(track.mock.calls[0]![1]).not.toHaveProperty('law_id');
+  });
+
+  it('initSharePopovers reports law card shares with the card law ID', () => {
+    container.innerHTML = renderShareButtonsHTML({ lawId: '123', lawText: 'Test law' });
+    initSharePopovers(container);
+
+    (container.querySelector('.share-popover a .icon-circle.whatsapp') as HTMLElement).click();
+
+    expect(track).toHaveBeenCalledWith('law_shared', expect.objectContaining({
+      law_id: '123', share_method: 'whatsapp', surface: 'law_card'
+    }));
+  });
+
+  describe('calculator result shares', () => {
+    beforeEach(() => {
+      container.innerHTML = renderInlineShareButtonsHTML();
+      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+    });
+
+    it('reports social shares and completed copies with the current result', async () => {
+      const teardown = initInlineShareButtons(container, {
+        getShareableUrl: () => 'https://test.com/calculator/sods-law?u=5',
+        getShareText: () => 'My score',
+        calculator: 'sods-law',
+        getShareResult: () => ({ probability_percent: 42, risk_level: 'elevated' })
+      });
+
+      (container.querySelector('[data-share="reddit"]') as HTMLElement).click();
+      (container.querySelector('[data-action="copy-text"]') as HTMLElement).click();
+      (container.querySelector('[data-action="copy-link"]') as HTMLElement).click();
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledTimes(3));
+      ['reddit', 'copy_text', 'copy_link'].forEach((shareMethod) => {
+        expect(track).toHaveBeenCalledWith('calculator_result_shared', {
+          probability_percent: 42,
+          risk_level: 'elevated',
+          calculator: 'sods-law',
+          share_method: shareMethod,
+        });
+      });
+      teardown();
+    });
+
+    it('reports nothing for inline share buttons that are not tied to a calculator', async () => {
+      const teardown = initInlineShareButtons(container, {
+        getShareableUrl: () => 'https://test.com/page',
+        getShareText: () => 'Text'
+      });
+
+      (container.querySelector('[data-share="email"]') as HTMLElement).click();
+      (container.querySelector('[data-action="copy-text"]') as HTMLElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(track).not.toHaveBeenCalled();
+      teardown();
+    });
+
+    it('reports the calculator even without a result provider', () => {
+      const teardown = initInlineShareButtons(container, {
+        getShareableUrl: () => 'https://test.com/page',
+        getShareText: () => 'Text',
+        calculator: 'buttered-toast'
+      });
+
+      (container.querySelector('[data-share="twitter"]') as HTMLElement).click();
+
+      expect(track).toHaveBeenCalledWith('calculator_result_shared', { calculator: 'buttered-toast', share_method: 'twitter' });
+      teardown();
+    });
+  });
+});

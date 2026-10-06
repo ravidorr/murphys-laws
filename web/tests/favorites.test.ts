@@ -445,4 +445,46 @@ describe('Favorites Service', () => {
       expect(favorites[0]!.title).toBe('');
     });
   });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/browse');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    it('reports adds and removals with the collection size after the change', () => {
+      addFavorite({ id: 2, text: 'Other law' });
+
+      expect(toggleFavorite({ id: 1, text: 'Law' }, 'law_detail')).toBe(true);
+      expect(toggleFavorite({ id: 1, text: 'Law' }, 'law_detail')).toBe(false);
+
+      expect(track).toHaveBeenCalledWith('law_favorite_toggled', {
+        law_id: '2', action: 'add', surface: 'unknown', favorites_count: 1, page_path: '/browse'
+      });
+      expect(track).toHaveBeenCalledWith('law_favorite_toggled', {
+        law_id: '1', action: 'add', surface: 'law_detail', favorites_count: 2, page_path: '/browse'
+      });
+      expect(track).toHaveBeenCalledWith('law_favorite_toggled', {
+        law_id: '1', action: 'remove', surface: 'law_detail', favorites_count: 1, page_path: '/browse'
+      });
+    });
+
+    it('does not report saves or removals that change nothing', () => {
+      addFavorite({ id: 1, text: 'Law' }, 'law_card');
+      track.mockClear();
+
+      addFavorite({ id: 1, text: 'Law again' }, 'law_card');
+      removeFavorite(99, 'law_card');
+
+      expect(track).not.toHaveBeenCalled();
+    });
+  });
 });

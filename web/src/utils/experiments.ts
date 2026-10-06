@@ -1,4 +1,5 @@
 import { trackProductEvent } from './metrics.ts';
+import { trackPendoEvent } from './pendo.ts';
 
 export const HOME_MODULE_ORDER_EXPERIMENT = 'homepage-module-order-v1';
 export type HomeModuleOrderVariant = 'themes-first' | 'trending-first';
@@ -22,6 +23,8 @@ export function getExperimentVariant<T extends string>(experiment: string, varia
 
 export function exposeExperiment(experiment: string, variant: string): void {
   trackProductEvent('experiment.exposure', { experiment, variant });
+  // Lets Pendo split later behavior (searches, votes, shares, submissions) by variant
+  trackPendoEvent('experiment_exposed', { experiment, variant });
 }
 
 export function trackExperimentOutcome(experiment: string, outcome: string): void {

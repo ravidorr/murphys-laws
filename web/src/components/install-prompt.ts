@@ -8,6 +8,7 @@
  * - Analytics tracking for install outcomes
  */
 import { hydrateIcons } from '../utils/icons.ts';
+import { trackPendoEvent } from '../utils/pendo.ts';
 
 /** The beforeinstallprompt event fired by the browser when a PWA can be installed */
 interface BeforeInstallPromptEvent extends Event {
@@ -21,8 +22,14 @@ interface NavigatorStandalone extends Navigator {
   standalone?: boolean;
 }
 
+/** Which install UI the visitor responded to */
+type InstallPromptType = 'install_prompt' | 'ios_instructions';
+
 // Store the deferred prompt event
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
+
+// Whether the browser's install dialog was opened from our prompt this session (for install_source)
+let installTriggeredFromPrompt = false;
 
 // Track if user has dismissed the prompt (to avoid showing again this session)
 let promptDismissedThisSession = false;
@@ -80,6 +87,7 @@ const engagement = {
  */
 export function _resetForTesting() {
   deferredPrompt = null;
+  installTriggeredFromPrompt = false;
   promptDismissedThisSession = false;
   promptShownThisSession = false;
   qualifyingUserActionHappened = false;
@@ -245,6 +253,35 @@ export function isSafari() {
   return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 }
 
+/** Coarse device platform reported with install analytics */
+function getDevicePlatform(): string {
+  if (isIOS()) return 'ios';
+  return /android/i.test(navigator.userAgent) ? 'android' : 'desktop';
+}
+
+/** Engagement that qualified the visitor for the prompt, reported with install analytics */
+function getEngagementProperties() {
+  return {
+    page_views: engagement.pageViews,
+    laws_viewed: engagement.lawsViewed,
+    calculator_used: engagement.calculatorUsed,
+    time_on_site_seconds: Math.round((Date.now() - engagement.startTime) / 1000),
+  };
+}
+
+/**
+ * Report the visitor's answer to our install prompt or to the browser's own install dialog,
+ * which isn't a page click that Pendo could capture.
+ */
+function trackPromptResponse(response: string, promptType: InstallPromptType) {
+  trackPendoEvent('pwa_install_prompt_responded', {
+    response,
+    prompt_type: promptType,
+    platform: getDevicePlatform(),
+    ...getEngagementProperties(),
+  });
+}
+
 /**
  * Initialize the install prompt system
  * Sets up event listeners and tracking
@@ -269,6 +306,10 @@ export function initInstallPrompt() {
     deferredPrompt = null;
     hideInstallPrompt();
     console.log('PWA was installed');
+    trackPendoEvent('pwa_installed', {
+      install_source: installTriggeredFromPrompt ? 'custom_prompt' : 'browser_ui',
+      ...getEngagementProperties(),
+    });
   });
 
   // Track time on site only; do not trigger prompt from interval
@@ -405,8 +446,10 @@ export function showInstallPrompt() {
       await triggerInstall();
     } else if (action === 'dismiss') {
       dismissPrompt();
+      trackPromptResponse('not_now', 'install_prompt');
     } else if (action === 'never') {
       dismissPromptNeverShowAgain();
+      trackPromptResponse('never_show_again', 'install_prompt');
     }
   });
 
@@ -486,8 +529,10 @@ export function showIOSInstallInstructions() {
     const action = target.getAttribute('data-action');
     if (action === 'dismiss') {
       dismissPrompt();
+      trackPromptResponse('got_it', 'ios_instructions');
     } else if (action === 'never') {
       dismissPromptNeverShowAgain();
+      trackPromptResponse('never_show_again', 'ios_instructions');
     }
   });
 
@@ -508,6 +553,7 @@ async function triggerInstall() {
   if (!deferredPrompt) return;
 
   // Show the browser's install prompt
+  installTriggeredFromPrompt = true;
   deferredPrompt.prompt();
 
   // Wait for the user's choice
@@ -519,6 +565,7 @@ async function triggerInstall() {
   } else {
     console.log('User dismissed the install prompt');
   }
+  trackPromptResponse(outcome === 'accepted' ? 'accepted' : 'declined', 'install_prompt');
 
   // Clear the deferred prompt (can only be used once)
   deferredPrompt = null;

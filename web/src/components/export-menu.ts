@@ -22,6 +22,7 @@ import {
   generateFilename
 } from '../utils/export.ts';
 import { recordQualifyingUserAction } from './install-prompt.ts';
+import { trackPendoEvent, getPagePath } from '../utils/pendo.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
 /**
@@ -147,8 +148,9 @@ export function ExportMenu(): HTMLDivElement {
   /**
    * Handle format selection
    * @param {string} format - Format identifier
+   * @param {string} triggerMethod - Whether the item was clicked or chosen with the keyboard
    */
-  async function handleExport(format: string) {
+  async function handleExport(format: string, triggerMethod: 'click' | 'keyboard') {
     const content = getExportContent();
     if (!content) {
       return;
@@ -172,6 +174,16 @@ export function ExportMenu(): HTMLDivElement {
         exportToText(content, filename);
         break;
     }
+
+    // Reported after the file is produced; the menu click alone doesn't say what was exported
+    trackPendoEvent('content_exported', {
+      format,
+      content_type: content.type,
+      export_title: content.title,
+      item_count: Array.isArray(content.data) ? content.data.length : 1,
+      page_path: getPagePath(),
+      trigger_method: triggerMethod,
+    });
 
     closeDropdown();
   }
@@ -210,7 +222,7 @@ export function ExportMenu(): HTMLDivElement {
         e.preventDefault();
         if (document.activeElement?.hasAttribute('data-format')) {
           const format = document.activeElement.getAttribute('data-format') ?? '';
-          handleExport(format);
+          handleExport(format, 'keyboard');
         }
         break;
 
@@ -239,7 +251,7 @@ export function ExportMenu(): HTMLDivElement {
     const item = (e.target as HTMLElement).closest('[data-format]');
     if (item) {
       const format = item.getAttribute('data-format') ?? '';
-      handleExport(format);
+      handleExport(format, 'click');
     }
   });
 

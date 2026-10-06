@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { LawDetail } from '../src/views/law-detail.js';
+import { LawDetail, describeLawLoadFailure, getReferrerDomain } from '../src/views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
 import type { CleanableElement } from '../src/types/app.js';
 
@@ -293,7 +293,7 @@ describe('LawDetail view', () => {
     if (voteBtn) {
       (voteBtn as HTMLElement).click();
       await new Promise(r => setTimeout(r, 0)); // Wait for async handler
-      expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'up');
+      expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'up', 'law_detail');
     }
   });
 
@@ -374,7 +374,7 @@ describe('LawDetail view', () => {
     if (downvoteBtn) {
       (downvoteBtn as HTMLElement).click();
       await new Promise(r => setTimeout(r, 0)); // Wait for async handler
-      expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'down');
+      expect(toggleVoteSpy).toHaveBeenCalledWith(law.id, 'down', 'law_detail');
     }
   });
 
@@ -560,7 +560,7 @@ describe('LawDetail view', () => {
     downvoteCount = el.querySelector('[data-downvote-count]');
     expect(upvoteCount?.textContent).toBe('6');
     expect(downvoteCount?.textContent).toBe('2');
-    expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up');
+    expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up', 'law_detail');
     expect(getUserVoteSpy).toHaveBeenCalledWith('7');
   });
 
@@ -624,7 +624,7 @@ describe('LawDetail view', () => {
       const event = new MouseEvent('click', { bubbles: true });
       icon.dispatchEvent(event);
       await vi.waitFor(() => {
-        expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up');
+        expect(toggleVoteSpy).toHaveBeenCalledWith('7', 'up', 'law_detail');
       });
     }
   });
@@ -1298,5 +1298,127 @@ describe('LawDetail view', () => {
 
     // Calling cleanup should not throw
     expect(() => (el as CleanableElement).cleanup!()).not.toThrow();
+  });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/law/7');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      Reflect.deleteProperty(document, 'referrer');
+    });
+
+    it('reports a law that cannot be found, with the HTTP status', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+
+      LawDetail({ lawId: '7', onNavigate: () => { } });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('law_not_found', {
+          law_id: '7',
+          failure_reason: 'not_found',
+          http_status: 404,
+          is_retry: false,
+          referrer_domain: 'direct',
+        });
+      }, { timeout: 500 });
+    });
+
+    it('reports a missing law ID', () => {
+      LawDetail({ lawId: '', onNavigate: () => { } });
+
+      expect(track).toHaveBeenCalledWith('law_not_found', {
+        failure_reason: 'missing_id',
+        is_retry: false,
+        referrer_domain: 'direct',
+      });
+    });
+
+    it('reports failed retries', async () => {
+      globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+      const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry-law"]')).toBeTruthy(), { timeout: 500 });
+
+      (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('law_not_found', expect.objectContaining({
+          failure_reason: 'network',
+          is_retry: true,
+        }));
+      }, { timeout: 500 });
+      expect(track).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports copies from the main card and from related law cards', async () => {
+      const law = { id: '7', title: 'Test Law', text: 'Test text', upvotes: 5, downvotes: 2 };
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => law });
+      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+      const el = LawDetail({ lawId: law.id, onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('[data-law-card-root] [data-action="copy-link"]')).toBeTruthy(), { timeout: 500 });
+
+      (el.querySelector('[data-law-card-root] [data-action="copy-link"]') as HTMLElement).click();
+      const relatedCard = document.createElement('article');
+      relatedCard.className = 'law-card-mini';
+      relatedCard.innerHTML = '<button type="button" data-action="copy-text" data-copy-value="Related text" data-law-id="9"></button>';
+      el.querySelector('[data-related-laws-list]')!.appendChild(relatedCard);
+      (relatedCard.querySelector('button') as HTMLElement).click();
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('law_shared', {
+          law_id: '7', share_method: 'copy_link', surface: 'law_detail', page_path: '/law/7'
+        });
+        expect(track).toHaveBeenCalledWith('law_shared', {
+          law_id: '9', share_method: 'copy_text', surface: 'law_card', page_path: '/law/7'
+        });
+      }, { timeout: 500 });
+    });
+
+    describe('describeLawLoadFailure', () => {
+      it.each([
+        [new Error('Failed to fetch law: 404'), { failure_reason: 'not_found', http_status: 404 }],
+        [new Error('Failed to fetch law: 503'), { failure_reason: 'server_error', http_status: 503 }],
+        [new Error('Failed to fetch law: 410'), { failure_reason: 'http_error', http_status: 410 }],
+        [new Error('Invalid law ID'), { failure_reason: 'invalid_id' }],
+        [new Error('API returned non-JSON response'), { failure_reason: 'invalid_response' }],
+        [new DOMException('signal timed out', 'TimeoutError'), { failure_reason: 'timeout' }],
+        [new DOMException('The operation was aborted.', 'AbortError'), { failure_reason: 'timeout' }],
+        [new TypeError('Failed to fetch'), { failure_reason: 'network' }],
+        [new Error('Unexpected render failure'), { failure_reason: 'unknown' }],
+        [{}, { failure_reason: 'unknown' }],
+        ['offline', { failure_reason: 'unknown' }],
+        [null, { failure_reason: 'unknown' }],
+      ])('maps %s', (error, expected) => {
+        expect(describeLawLoadFailure(error)).toEqual(expected);
+      });
+    });
+
+    describe('getReferrerDomain', () => {
+      it('reports in-app navigation as internal', () => {
+        window.history.replaceState({ name: 'law', param: '7' }, '', '/law/7');
+
+        expect(getReferrerDomain()).toBe('internal');
+      });
+
+      it('reports the linking host for landing page views', () => {
+        Object.defineProperty(document, 'referrer', { value: 'https://news.ycombinator.com/item?id=1', configurable: true });
+
+        expect(getReferrerDomain()).toBe('news.ycombinator.com');
+      });
+
+      it('reports direct visits and unreadable referrers', () => {
+        expect(getReferrerDomain()).toBe('direct');
+
+        Object.defineProperty(document, 'referrer', { value: 'not a url', configurable: true });
+        expect(getReferrerDomain()).toBe('unknown');
+      });
+    });
   });
 });

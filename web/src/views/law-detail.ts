@@ -19,6 +19,7 @@ import { setExportContent, clearExportContent, ContentType } from '../utils/expo
 import { Breadcrumb } from '../components/breadcrumb.ts';
 import { getDefaultLawContext } from '../utils/law-context-copy.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { trackPendoEvent, getPagePath } from '@utils/pendo.ts';
 import { HOME_MODULE_ORDER_EXPERIMENT, trackExperimentOutcome } from '@utils/experiments.ts';
 import { getLawDetailInternalLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
@@ -27,6 +28,43 @@ interface LawDetailProps {
   lawId: string;
   onNavigate: (page: string, param?: string) => void;
   onStructuredData?: (law: Law) => void;
+}
+
+interface LawLoadFailure {
+  failure_reason: string;
+  http_status?: number;
+}
+
+/** Map a fetchLaw() rejection to a reason and, when the API answered, its HTTP status. Exported for testing. */
+export function describeLawLoadFailure(error: unknown): LawLoadFailure {
+  const message = error instanceof Error ? error.message : '';
+  const status = /^Failed to fetch law: (\d{3})$/.exec(message)?.[1];
+  if (status) {
+    const httpStatus = Number(status);
+    const failureReason = httpStatus === 404 ? 'not_found' : httpStatus >= 500 ? 'server_error' : 'http_error';
+    return { failure_reason: failureReason, http_status: httpStatus };
+  }
+  if (message === 'Invalid law ID') return { failure_reason: 'invalid_id' };
+  if (message === 'API returned non-JSON response') return { failure_reason: 'invalid_response' };
+  // AbortSignal.timeout() rejects with a DOMException, which isn't an Error in every runtime
+  const errorName = typeof error === 'object' && error !== null && 'name' in error ? String(error.name) : '';
+  if (errorName === 'TimeoutError' || errorName === 'AbortError') return { failure_reason: 'timeout' };
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) return { failure_reason: 'network' };
+  return { failure_reason: 'unknown' };
+}
+
+/**
+ * External host that linked here, 'direct' without a referrer, or 'internal' for in-app navigation.
+ * Exported for testing.
+ */
+export function getReferrerDomain(): string {
+  // The router pushes history state for in-app navigation; a landing page view has none
+  if (history.state != null) return 'internal';
+  try {
+    return document.referrer ? new URL(document.referrer).hostname : 'direct';
+  } catch {
+    return 'unknown';
+  }
 }
 
 export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProps): HTMLDivElement {
@@ -76,6 +114,26 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     loadingState?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
     lawContent?.removeAttribute('hidden');
+  }
+
+  // A page view of /law/:id can't tell a broken inbound link from a successful view
+  function trackLawNotFound(failure: LawLoadFailure, isRetry: boolean) {
+    trackPendoEvent('law_not_found', {
+      law_id: lawId || undefined,
+      ...failure,
+      is_retry: isRetry,
+      referrer_domain: getReferrerDomain(),
+    });
+  }
+
+  // Copy buttons sit in the main card's Share popover or on a related law card
+  function trackLawCopied(button: Element, shareMethod: 'copy_text' | 'copy_link') {
+    trackPendoEvent('law_shared', {
+      law_id: button.getAttribute('data-law-id') ?? lawId,
+      share_method: shareMethod,
+      surface: button.closest('.law-card-mini') ? 'law_card' : 'law_detail',
+      page_path: getPagePath(),
+    });
   }
 
   function renderLawCard(law: Law) {
@@ -286,7 +344,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
             title: twitterText,
             description: lawText,
             lawText,
-            lawId: String(law.id)
+            lawId: String(law.id),
+            surface: 'law_detail'
           });
 
           footer.appendChild(socialShare);
@@ -393,16 +452,18 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   if (!lawId) {
     showNotFound();
     clearExportContent();
+    trackLawNotFound({ failure_reason: 'missing_id' }, false);
   } else {
     fetchLaw(lawId)
       .then(data => {
         el.setAttribute('aria-busy', 'false');
         renderLaw(data);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         el.setAttribute('aria-busy', 'false');
         showNotFound();
         clearExportContent();
+        trackLawNotFound(describeLawLoadFailure(error), false);
       });
   }
 
@@ -421,10 +482,11 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
           el.setAttribute('aria-busy', 'false');
           renderLaw(data);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           el.setAttribute('aria-busy', 'false');
           showNotFound();
           clearExportContent();
+          trackLawNotFound(describeLawLoadFailure(error), true);
         });
       return;
     }
@@ -469,6 +531,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       }
       if (textToCopy) {
         await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
+        trackLawCopied(copyTextBtn, 'copy_text');
       }
       return;
     }
@@ -479,6 +542,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       e.stopPropagation();
       const linkToCopy = copyLinkBtn.getAttribute('data-copy-value') || window.location.href;
       await copyToClipboard(linkToCopy, 'Link copied to clipboard!');
+      trackLawCopied(copyLinkBtn, 'copy_link');
       return;
     }
 
@@ -496,7 +560,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         id: lawId,
         text: lawText,
         title: lawTitle,
-      });
+      }, 'law_detail');
       trackProductEvent('law.favorite', { surface: 'law_detail', action: isNowFavorite ? 'add' : 'remove' });
 
       // Update button visual state
@@ -539,7 +603,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         id: lawId,
         text: lawText,
         title: lawTitle,
-      });
+      }, 'law_card');
       trackProductEvent('law.favorite', { surface: 'related_laws', action: isNowFavorite ? 'add' : 'remove' });
 
       // Update button visual state
@@ -592,7 +656,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       if (!voteType) return;
 
       try {
-        const result = await toggleVote(lawId, voteType);
+        const result = await toggleVote(lawId, voteType, 'law_detail');
         trackProductEvent('law.vote', { surface: 'law_detail', action: voteType });
 
         // Update vote counts in UI
