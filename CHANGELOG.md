@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Refreshed the project checklist to reflect shipped submission, category, calculator FAQ,
+  comparison, and examples content. Root bumped to `2.6.15`.
 - Android CI now enables KVM acceleration, caches Gradle state, builds only
   required debug artifacts, cancels superseded runs, and enforces a 30-minute
   timeout. Root bumped to `2.6.6`.
