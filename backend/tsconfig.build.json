@@ -18,6 +18,7 @@
   ],
   "exclude": [
     "tests",
+    "../shared/modules/**/*.test.ts",
     "node_modules",
     "coverage"
   ]
