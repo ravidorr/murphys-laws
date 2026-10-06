@@ -118,6 +118,10 @@ jobs:
             if ! command -v pm2 > /dev/null; then
               npm install --global pm2
             fi
+            # Keep the PM2 daemon aligned with the installed CLI. A stale daemon
+            # writes upgrade notices before `pm2 jlist` JSON, breaking the
+            # interpreter verification below.
+            pm2 update
 
             # Verify Node version matches .nvmrc
             ACTUAL_NODE_VERSION=$(node --version)
