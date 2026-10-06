@@ -55,7 +55,18 @@ describe('Privacy page', () => {
     });
 
     expect(el.textContent).toMatch(/Cookies & Analytics/);
-    expect(el.textContent).toMatch(/first-party cookies/);
+    expect(el.textContent).toMatch(/first-party storage/);
+  });
+
+  it('discloses Pendo analytics collection, retention, and opt-out', () => {
+    const el = Privacy({
+      onNavigate: () => {}
+    });
+
+    expect(el.textContent).toMatch(/Pendo \/ Novus by Pendo analytics/);
+    expect(el.textContent).toMatch(/persistent anonymous visitor identifier/);
+    expect(el.textContent).toMatch(/Pendo's applicable data-retention terms/);
+    expect(el.textContent).toMatch(/request an opt-out from Pendo analytics/);
   });
 
   it('shows Third-Party Services section', () => {
