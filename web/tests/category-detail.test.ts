@@ -1089,6 +1089,30 @@ describe('CategoryDetail view', () => {
       expect(track).not.toHaveBeenCalledWith('search_performed', expect.anything());
     });
 
+    it('does not report sort results when sorting supersedes an in-flight search', async () => {
+      const searchResponse = { data: [{ id: 103, title: 'Search Law', text: 'Search result' }], total: 1, limit: 10, offset: 0 };
+      const sortResponse = { data: [{ id: 104, title: 'Sorted Law', text: 'Sort result' }], total: 1, limit: 10, offset: 0 };
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      vi.mocked(api.fetchLaws).mockImplementationOnce(() => searchLoad).mockResolvedValueOnce(sortResponse);
+
+      mod.getLocalThis().onSearch!({ q: 'computer' });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(el.textContent).toContain('Sorted Law'));
+
+      expect(track).not.toHaveBeenCalledWith('search_performed', expect.anything());
+      resolveSearch(searchResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(track).not.toHaveBeenCalledWith('search_performed', expect.anything());
+    });
+
     it('reports an in-category search when the visitor retries its failed request', async () => {
       const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
       const el = CategoryDetail({ categoryId, onNavigate });
