@@ -26,7 +26,7 @@ class MainAppNavigationTest {
     }
 
     @Test
-    fun mainApp_displaysBottomNavigation() {
+    fun mainApp_startsAndDisplaysBottomNavigation() {
         // Then (MainActivity already sets content with MainApp)
         composeTestRule
             .onNodeWithText("All Laws")
