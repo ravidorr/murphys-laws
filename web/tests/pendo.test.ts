@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getErrorMessage,
   getPagePath,
+  getQueryProperties,
   getRequestErrorType,
   getSearchProperties,
   normalizeQuery,
@@ -76,10 +77,11 @@ describe('Pendo track events helper', () => {
   });
 
   describe('getSearchProperties', () => {
-    it('describes active search filters', () => {
-      expect(getSearchProperties({ q: ' Toast ', category_id: 12, attribution: 'Arthur Bloch' }, 'relevance')).toEqual({
-        query: 'toast',
-        query_length: 5,
+    it('describes active search filters without retaining free text', () => {
+      const query = 'alice@example.com report';
+      expect(getSearchProperties({ q: query, category_id: 12, attribution: 'Arthur Bloch' }, 'relevance')).toEqual({
+        query_length: query.length,
+        query_token_count: 2,
         category_id: '12',
         attribution: 'Arthur Bloch',
         sort: 'relevance',
@@ -88,11 +90,18 @@ describe('Pendo track events helper', () => {
 
     it('leaves out filters that are not set', () => {
       expect(getSearchProperties({ category_id: '' }, 'score')).toEqual({
-        query: undefined,
         query_length: 0,
+        query_token_count: 0,
         category_id: undefined,
         attribution: undefined,
         sort: 'score',
+      });
+    });
+
+    it('returns only length and token count for PII-like queries', () => {
+      expect(getQueryProperties('  alice@example.com   call  ')).toEqual({
+        query_length: 22,
+        query_token_count: 2,
       });
     });
   });

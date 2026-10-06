@@ -3,7 +3,7 @@
 
 import { apiPost, apiDelete } from './request.ts';
 import { showSuccess } from '../components/notification.ts';
-import { trackPendoEvent, getPagePath, getRequestErrorType, getErrorMessage } from './pendo.ts';
+import { trackPendoEvent, getPagePath, getRequestErrorType } from './pendo.ts';
 import type { VoteType, VoteResponse } from '../types/app.d.ts';
 
 const VOTES_KEY = 'murphy_votes';
@@ -113,7 +113,6 @@ export async function toggleVote(lawId: string | number, voteType: VoteType, sur
     trackPendoEvent('law_vote_failed', {
       ...voteProperties,
       error_type: getRequestErrorType(error),
-      error_message: getErrorMessage(error),
     });
     throw error;
   }

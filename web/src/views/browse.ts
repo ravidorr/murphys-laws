@@ -78,6 +78,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   let currentFilters: SearchFilters = searchQuery !== undefined && searchQuery !== '' ? { ...initial.filters, q: searchQuery } : initial.filters;
   let currentSort = searchQuery ? 'relevance' : initial.sort;
   let currentOrder = initial.order;
+  let loadGeneration = 0;
 
   // A search that arrives through the URL (header/home search box or a shared link) is reported once its
   // results load; the history entry is then marked so back/forward and reloads don't count it again.
@@ -86,10 +87,16 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     ? historyState.searchSurface ?? 'direct_url'
     : null;
 
-  function trackSearchPerformed(surface: SearchSurface) {
-    const searchProperties = { ...getSearchProperties(currentFilters, currentSort), search_surface: surface };
-    trackPendoEvent('search_performed', { ...searchProperties, order: currentOrder, results_count: totalLaws });
-    if (totalLaws === 0) {
+  function trackSearchPerformed(
+    surface: SearchSurface,
+    filters: SearchFilters,
+    sort: string,
+    order: string,
+    resultsCount: number
+  ) {
+    const searchProperties = { ...getSearchProperties(filters, sort), search_surface: surface };
+    trackPendoEvent('search_performed', { ...searchProperties, order, results_count: resultsCount });
+    if (resultsCount === 0) {
       trackPendoEvent('search_no_results', searchProperties);
     }
     history.replaceState({ ...getBrowseHistoryState(), searchTracked: true }, '');
@@ -175,6 +182,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   // Load laws for current page
   async function loadPage(page: number) {
     currentPage = page;
+    const generation = ++loadGeneration;
+    const requestFilters = { ...currentFilters };
+    const requestSort = currentSort;
+    const requestOrder = currentOrder;
+    const requestSearchSurface = pendingSearchSurface;
 
     const cardText = el.querySelector('#browse-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
@@ -189,20 +201,23 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       const data = await fetchLaws({
         limit: LAWS_PER_PAGE,
         offset,
-        sort: currentSort,
-        order: currentOrder,
-        ...currentFilters
+        sort: requestSort,
+        order: requestOrder,
+        ...requestFilters
       });
+      if (generation !== loadGeneration) return;
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
-      if (laws.length === 0 && hasActiveFilters(currentFilters)) {
+      if (laws.length === 0 && hasActiveFilters(requestFilters)) {
         trackProductEvent('archive.no_results', { surface: 'browse' });
       }
       // Pagination and sort reloads leave this unset, so only new searches are reported
-      if (pendingSearchSurface) {
-        trackSearchPerformed(pendingSearchSurface);
-        pendingSearchSurface = null;
+      if (requestSearchSurface) {
+        trackSearchPerformed(requestSearchSurface, requestFilters, requestSort, requestOrder, totalLaws);
+        if (pendingSearchSurface === requestSearchSurface) {
+          pendingSearchSurface = null;
+        }
       }
       await updateDisplay();
 
@@ -225,6 +240,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
         history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
       }
     } catch {
+      if (generation !== loadGeneration) return;
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">

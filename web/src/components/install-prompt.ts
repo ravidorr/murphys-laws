@@ -553,7 +553,6 @@ async function triggerInstall() {
   if (!deferredPrompt) return;
 
   // Show the browser's install prompt
-  installTriggeredFromPrompt = true;
   deferredPrompt.prompt();
 
   // Wait for the user's choice
@@ -561,8 +560,10 @@ async function triggerInstall() {
 
   // Log for analytics
   if (outcome === 'accepted') {
+    installTriggeredFromPrompt = true;
     console.log('User accepted the install prompt');
   } else {
+    installTriggeredFromPrompt = false;
     console.log('User dismissed the install prompt');
   }
   trackPromptResponse(outcome === 'accepted' ? 'accepted' : 'declined', 'install_prompt');

@@ -345,7 +345,6 @@ describe('Voting utilities', () => {
         surface: 'unknown',
         page_path: '/browse',
         error_type: 'rate_limited',
-        error_message: 'Rate limit exceeded. Please try again later.',
       });
       expect(track).not.toHaveBeenCalledWith('law_voted', expect.anything());
     });

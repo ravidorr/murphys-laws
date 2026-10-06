@@ -4,7 +4,7 @@ import { hydrateIcons } from '@utils/icons.ts';
 import { trackPendoEvent } from '@utils/pendo.ts';
 import { createDebouncedTask } from '@utils/debounce.ts';
 import { CALCULATOR_RISK_LEVELS, CALCULATOR_RESULT_SETTLE_MS, type CalculatorResultBand } from '@utils/calculator-state.ts';
-import type { OnNavigate } from '../types/app.d.ts';
+import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
 type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency';
 
@@ -145,6 +145,10 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
       onNavigate(nav);
     }
   });
+
+  (el as CleanableElement).cleanup = () => {
+    calculatorUsed.flush();
+  };
 
   return el;
 }

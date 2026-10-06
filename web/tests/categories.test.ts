@@ -525,8 +525,8 @@ describe('Categories view', () => {
       vi.advanceTimersByTime(1);
       expect(track).toHaveBeenCalledTimes(1);
       expect(track).toHaveBeenCalledWith('categories_filtered', {
-        filter_query: 'computer',
         query_length: 8,
+        query_token_count: 1,
         results_count: 1,
         total_categories: 3,
       });
@@ -548,7 +548,9 @@ describe('Categories view', () => {
       typeFilter('zebra');
       vi.advanceTimersByTime(800);
 
-      expect(track).toHaveBeenCalledWith('categories_filtered', expect.objectContaining({ filter_query: 'zebra', results_count: 0 }));
+      expect(track).toHaveBeenCalledWith('categories_filtered', expect.objectContaining({
+        query_length: 5, query_token_count: 1, results_count: 0
+      }));
     });
 
     it('reports a filter that is still settling when the view unmounts', async () => {
@@ -557,7 +559,9 @@ describe('Categories view', () => {
       typeFilter('love');
       (el as CleanableElement).cleanup!();
 
-      expect(track).toHaveBeenCalledWith('categories_filtered', expect.objectContaining({ filter_query: 'love', results_count: 1 }));
+      expect(track).toHaveBeenCalledWith('categories_filtered', expect.objectContaining({
+        query_length: 4, query_token_count: 1, results_count: 1
+      }));
       vi.advanceTimersByTime(800);
       expect(track).toHaveBeenCalledTimes(1);
     });
