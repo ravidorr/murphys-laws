@@ -51,6 +51,14 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
   });
 }
 
+// Novus by Pendo: the snippet in index.html stubs window.pendo and loads the agent.
+// Initialize exactly once, as an anonymous visitor: an empty id lets Pendo reuse the
+// visitor id it stored on an earlier visit, or create a new one. The site has no
+// sign-in, so there is no pendo.identify() or pendo.clearSession() call.
+if (window.pendo) {
+  window.pendo.initialize({ visitor: { id: '' } });
+}
+
 // Register PWA service worker for offline support
 import { registerServiceWorker } from './utils/service-worker-registration.ts';
 import { showUpdateAvailable, showOfflineReady } from './components/update-notification.ts';
