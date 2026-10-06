@@ -241,6 +241,9 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       }
     } catch {
       if (generation !== loadGeneration) return;
+      if (pendingSearchSurface === requestSearchSurface) {
+        pendingSearchSurface = null;
+      }
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">

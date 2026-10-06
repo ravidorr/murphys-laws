@@ -180,6 +180,9 @@ export function renderHome(
 
   const calcWidget = SodCalculatorSimple({ onNavigate });
   toolsZone.appendChild(calcWidget);
+  (toolsZone as CleanableElement).cleanup = () => {
+    (calcWidget as CleanableElement).cleanup?.();
+  };
 
   const submitWrap = document.createElement('div');
   submitWrap.innerHTML = SUBMIT_CTA_HTML;
@@ -309,6 +312,7 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup =() => {
+    (el.querySelector('[data-home-zone="tools-submit"]') as CleanableElement | null)?.cleanup?.();
     clearExportContent();
   };
 

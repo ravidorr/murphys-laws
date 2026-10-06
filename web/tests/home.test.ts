@@ -969,4 +969,16 @@ describe('Home view keyboard navigation for law cards', () => {
     expect(clearSpy).toHaveBeenCalled();
     clearSpy.mockRestore();
   });
+
+  it('cleanup flushes the home calculator widget', () => {
+    const el = Home({ onNavigate: () => {} });
+    const toolsZone = el.querySelector('[data-home-zone="tools-submit"]')!;
+    const calculator = toolsZone.firstElementChild as CleanableElement;
+    const calculatorCleanup = vi.fn();
+    calculator.cleanup = calculatorCleanup;
+
+    (el as CleanableElement).cleanup!();
+
+    expect(calculatorCleanup).toHaveBeenCalledOnce();
+  });
 });

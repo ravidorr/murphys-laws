@@ -219,6 +219,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       }
     } catch {
       if (generation !== loadGeneration) return;
+      if (shouldTrackSearch) pendingSearch = false;
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">
