@@ -114,6 +114,9 @@ jobs:
             fi
             nvm install
             nvm use
+            if ! command -v pm2 > /dev/null; then
+              npm install --global pm2
+            fi
 
             # Verify Node version matches .nvmrc
             ACTUAL_NODE_VERSION=$(node --version)
