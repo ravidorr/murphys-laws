@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SodCalculatorSimple } from '../src/components/sod-calculator-simple.js';
 
 interface SodCalculatorSimpleContext {
@@ -219,5 +219,55 @@ describe('SodCalculatorSimple component', () => {
 
     // Should not trigger navigation
     expect(navigated).toBeNull();
+  });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      vi.useRealTimers();
+    });
+
+    it('reports the home widget result once the sliders settle', () => {
+      const el = mountCalculator();
+      const slide = (id: string, value: string) => {
+        const slider = el.querySelector(`#${id}`) as HTMLInputElement;
+        slider.value = value;
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+
+      slide('urgency', '9');
+      slide('complexity', '9');
+      slide('importance', '9');
+      slide('skill', '1');
+      slide('frequency', '9');
+      vi.advanceTimersByTime(999);
+      expect(track).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('calculator_used', {
+        calculator: 'sods-law',
+        surface: 'home_widget',
+        probability_percent: 100,
+        risk_level: 'critical',
+        urgency: 9,
+        complexity: 9,
+        importance: 9,
+        skill: 1,
+        frequency: 9,
+        from_shared_link: false,
+        adjustment_count: 5,
+      });
+    });
   });
 });

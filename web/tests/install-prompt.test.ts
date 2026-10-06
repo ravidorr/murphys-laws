@@ -1672,4 +1672,113 @@ describe('Install Prompt Component', () => {
       expect(localStorage.getItem('pwa_install_never_show')).toBe('1');
     });
   });
+
+  describe('Pendo tracking', () => {
+    const originalUserAgent = navigator.userAgent;
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
+    });
+
+    function setUserAgent(userAgent: string) {
+      Object.defineProperty(navigator, 'userAgent', { value: userAgent, configurable: true });
+    }
+
+    function showPromptWithChoice(outcome: 'accepted' | 'dismissed') {
+      const promptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(promptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+    }
+
+    it('reports the answer given in the browser install dialog with the qualifying engagement', async () => {
+      setUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36');
+      _setEngagementForTesting({ pageViews: 4, lawsViewed: 2, calculatorUsed: true, startTime: Date.now() - 45000 });
+      showPromptWithChoice('accepted');
+
+      (document.querySelector('.install-prompt [data-action="install"]') as HTMLElement).click();
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('pwa_install_prompt_responded', expect.objectContaining({
+        response: 'accepted',
+        prompt_type: 'install_prompt',
+        platform: 'android',
+        page_views: 4,
+        laws_viewed: 2,
+        calculator_used: true,
+      })));
+      expect(track.mock.calls[0]![1]!.time_on_site_seconds).toBeGreaterThanOrEqual(45);
+    });
+
+    it('reports a declined browser dialog and credits a later install to the custom prompt', async () => {
+      setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36');
+      initInstallPrompt();
+      showPromptWithChoice('dismissed');
+
+      (document.querySelector('.install-prompt [data-action="install"]') as HTMLElement).click();
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('pwa_install_prompt_responded', expect.objectContaining({
+        response: 'declined',
+        prompt_type: 'install_prompt',
+        platform: 'desktop',
+      })));
+
+      window.dispatchEvent(new Event('appinstalled'));
+      expect(track).toHaveBeenCalledWith('pwa_installed', expect.objectContaining({ install_source: 'custom_prompt' }));
+    });
+
+    it('credits installs from the browser menu to browser_ui', () => {
+      initInstallPrompt();
+
+      window.dispatchEvent(new Event('appinstalled'));
+
+      expect(track).toHaveBeenCalledWith('pwa_installed', expect.objectContaining({
+        install_source: 'browser_ui',
+        page_views: 0,
+        laws_viewed: 0,
+        calculator_used: false,
+      }));
+      expect(track).not.toHaveBeenCalledWith('pwa_installed', expect.objectContaining({ install_source: 'custom_prompt' }));
+    });
+
+    it.each([
+      ['dismiss', 'not_now'],
+      ['never', 'never_show_again'],
+    ])('reports "%s" on the install prompt as %s', (action, response) => {
+      showPromptWithChoice('dismissed');
+
+      (document.querySelector(`.install-prompt [data-action="${action}"]`) as HTMLElement).click();
+
+      expect(track).toHaveBeenCalledWith('pwa_install_prompt_responded', expect.objectContaining({
+        response,
+        prompt_type: 'install_prompt',
+      }));
+    });
+
+    it.each([
+      ['dismiss', 'got_it'],
+      ['never', 'never_show_again'],
+    ])('reports "%s" on the iOS instructions as %s', (action, response) => {
+      setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1');
+      showIOSInstallInstructions();
+
+      (document.querySelector(`.install-prompt [data-action="${action}"]`) as HTMLElement).click();
+
+      expect(track).toHaveBeenCalledWith('pwa_install_prompt_responded', expect.objectContaining({
+        response,
+        prompt_type: 'ios_instructions',
+        platform: 'ios',
+      }));
+    });
+  });
 });

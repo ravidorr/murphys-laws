@@ -546,4 +546,94 @@ describe("Calculator view", () => {
     expect(copiedUrl).toContain('f=7');
   });
 
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    function slide(id: string, value: string) {
+      const slider = el!.querySelector(`#${id}`) as HTMLInputElement;
+      slider.value = value;
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    it('reports one calculator_used with the inputs and result once the sliders settle', () => {
+      slide('urgency', '9');
+      vi.advanceTimersByTime(500);
+      slide('complexity', '9');
+      slide('importance', '9');
+      slide('skill', '1');
+      slide('frequency', '9');
+      vi.advanceTimersByTime(999);
+      expect(track).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('calculator_used', {
+        calculator: 'sods-law',
+        surface: 'calculator_page',
+        probability_percent: 100,
+        risk_level: 'critical',
+        urgency: 9,
+        complexity: 9,
+        importance: 9,
+        skill: 1,
+        frequency: 9,
+        from_shared_link: false,
+        adjustment_count: 5,
+      });
+    });
+
+    it('flags shared-link sessions and reports a still-settling result on unmount', () => {
+      el?.cleanup?.();
+      if (el?.parentNode) el.parentNode.removeChild(el);
+      vi.stubGlobal('location', {
+        ...window.location,
+        search: '?u=7&c=8&i=3&s=6&f=4',
+        href: 'http://localhost:3000/calculator/sods-law?u=7&c=8&i=3&s=6&f=4'
+      });
+      el = Calculator();
+      document.body.appendChild(el);
+      vi.unstubAllGlobals();
+
+      slide('urgency', '8');
+      el.cleanup!();
+
+      expect(track).toHaveBeenCalledWith('calculator_used', expect.objectContaining({
+        urgency: 8,
+        complexity: 8,
+        from_shared_link: true,
+        adjustment_count: 1,
+      }));
+      vi.advanceTimersByTime(1000);
+      expect(track).toHaveBeenCalledTimes(1);
+    });
+
+    it('shares the current result with calculator_result_shared', async () => {
+      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+      slide('urgency', '1');
+      slide('complexity', '1');
+      slide('importance', '1');
+      slide('skill', '9');
+      slide('frequency', '1');
+
+      (el!.querySelector('[data-action="copy-link"]') as HTMLElement).click();
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('calculator_result_shared', {
+        probability_percent: 1,
+        risk_level: 'low',
+        calculator: 'sods-law',
+        share_method: 'copy_link',
+      }));
+    });
+  });
 });

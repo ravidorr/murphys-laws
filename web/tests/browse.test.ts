@@ -1710,4 +1710,154 @@ describe('Browse view', () => {
 
     expect(writeTextMock).toHaveBeenCalledWith('Law text to copy');
   });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    const searchEvents = () => track.mock.calls.filter(([name]) => name === 'search_performed');
+
+    async function waitForResults(el: HTMLElement) {
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy();
+      }, { timeout: 1000 });
+    }
+
+    it('reports a header search once its results load and marks the history entry', async () => {
+      window.history.replaceState({ name: 'browse', searchSurface: 'header' }, '', '/browse?q=Murphy');
+
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+
+      expect(track).toHaveBeenCalledWith('search_performed', {
+        query: 'murphy',
+        query_length: 6,
+        sort: 'relevance',
+        search_surface: 'header',
+        order: 'desc',
+        results_count: 2,
+      });
+      expect(track).not.toHaveBeenCalledWith('search_no_results', expect.anything());
+      expect(window.history.state).toMatchObject({ searchSurface: 'header', searchTracked: true });
+
+      // Back/forward and reloads render the same history entry again
+      await waitForResults(Browse({ onNavigate: () => { } }));
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('attributes a /browse link opened directly to direct_url', async () => {
+      window.history.replaceState(null, '', '/browse?q=toast&attribution=Arthur%20Bloch');
+
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query: 'toast',
+        attribution: 'Arthur Bloch',
+        search_surface: 'direct_url',
+      }));
+    });
+
+    it('reports searches without results as search_no_results', async () => {
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?q=zebra');
+
+      Browse({ onNavigate: () => { } });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('search_no_results', {
+          query: 'zebra',
+          query_length: 5,
+          sort: 'relevance',
+          search_surface: 'home',
+        });
+      }, { timeout: 1000 });
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({ results_count: 0 }));
+    });
+
+    it('reports Advanced Search submissions but not sorting or clearing the form', async () => {
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      expect(searchEvents()).toHaveLength(0);
+
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(searchEvents()).toHaveLength(1), { timeout: 1000 });
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query: 'gravity',
+        search_surface: 'browse_advanced',
+      }));
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      (el.querySelector('#clear-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(4), { timeout: 1000 });
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('reports results opened by card click, title link and keyboard with their rank', async () => {
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=law&page=2');
+      const onNavigate = vi.fn();
+      const el = Browse({ onNavigate });
+      await waitForResults(el);
+      const [firstCard, secondCard] = Array.from(el.querySelectorAll<HTMLElement>('#browse-laws-list .law-card-mini'));
+
+      secondCard!.click();
+      (firstCard!.querySelector('a[data-nav="law"]') as HTMLElement).click();
+      firstCard!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(track).toHaveBeenCalledWith('search_result_opened', {
+        query: 'law',
+        query_length: 3,
+        sort: 'relevance',
+        law_id: '2',
+        result_position: 27,
+        page: 2,
+        results_count: 2,
+        has_filters: true,
+        open_method: 'card_click',
+      });
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '1', result_position: 26, open_method: 'title_link'
+      }));
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '1', result_position: 26, open_method: 'keyboard'
+      }));
+      expect(searchEvents()).toHaveLength(0);
+      expect(onNavigate).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not report laws opened from the sidebar widgets', async () => {
+      vi.mocked(api.fetchTopVoted).mockResolvedValue({
+        data: [{ id: 99, title: 'Widget Law', text: 'Shown in Top Voted', upvotes: 50, downvotes: 0 }],
+        total: 1,
+        limit: 3,
+        offset: 0
+      });
+      const onNavigate = vi.fn();
+      const el = Browse({ onNavigate });
+      let widgetCard: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        widgetCard = el.querySelector('[data-widgets] .law-card-mini[data-law-id="99"]');
+        expect(widgetCard).toBeTruthy();
+      }, { timeout: 1000 });
+
+      widgetCard!.click();
+
+      expect(onNavigate).toHaveBeenCalledWith('law', '99');
+      expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.anything());
+    });
+  });
 });

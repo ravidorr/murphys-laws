@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CALCULATOR_RISK_LEVELS,
   parseCalculatorState,
   serializeCalculatorState
 } from '../src/utils/calculator-state.ts';
@@ -52,5 +53,9 @@ describe('calculator state', () => {
     });
 
     expect(url).toBe('https://murphys-laws.com/calculator/sods-law?u=5');
+  });
+
+  it('maps every result band to an analytics risk level, safest first', () => {
+    expect(Object.values(CALCULATOR_RISK_LEVELS)).toEqual(['low', 'moderate', 'elevated', 'high', 'critical']);
   });
 });

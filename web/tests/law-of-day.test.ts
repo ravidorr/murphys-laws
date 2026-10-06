@@ -153,7 +153,7 @@ describe('LawOfTheDay component', () => {
     upvoteBtn?.click();
 
     await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up');
+      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up', 'law_of_day');
     });
   });
 
@@ -165,7 +165,7 @@ describe('LawOfTheDay component', () => {
     downvoteBtn?.click();
 
     await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'down');
+      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'down', 'law_of_day');
     });
   });
 
@@ -744,7 +744,7 @@ describe('LawOfTheDay component', () => {
       expect(favoriteBtn?.getAttribute('data-law-id')).toBe('99');
       favoriteBtn!.click();
       await vi.waitFor(() => {
-        expect(toggleFavoriteSpy).toHaveBeenCalledWith(expect.objectContaining({ id: '99' }));
+        expect(toggleFavoriteSpy).toHaveBeenCalledWith(expect.objectContaining({ id: '99' }), 'law_of_day');
       });
     });
 
@@ -816,7 +816,7 @@ describe('LawOfTheDay component', () => {
           id: '1',
           text: 'Test law',
           title: 'Test Title',
-        });
+        }, 'law_of_day');
       });
     });
 
@@ -886,6 +886,40 @@ describe('LawOfTheDay component', () => {
       await new Promise(r => setTimeout(r, 10));
 
       expect(toggleFavoriteSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/');
+      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    it('reports social shares and completed copies from the widget Share popover', async () => {
+      const law = { id: 5, text: 'Test law text', title: 'Test', upvotes: 1, downvotes: 0 };
+      const el = mountLaw(law, { append: true });
+      // Keep jsdom from following the share link
+      el.addEventListener('click', (e) => e.preventDefault());
+
+      (el.querySelector('.share-popover a .icon-circle.twitter') as HTMLElement).click();
+      (el.querySelector('.share-popover [data-action="copy-text"]') as HTMLElement).click();
+      (el.querySelector('.share-popover [data-action="copy-link"]') as HTMLElement).click();
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledTimes(3));
+      ['twitter', 'copy_text', 'copy_link'].forEach((shareMethod) => {
+        expect(track).toHaveBeenCalledWith('law_shared', {
+          law_id: '5', share_method: shareMethod, surface: 'law_of_day', page_path: '/'
+        });
+      });
     });
   });
 });

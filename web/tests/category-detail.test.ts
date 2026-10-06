@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import type { OnNavigate } from '../src/types/app.d.ts';
 import { CategoryDetail } from '../src/views/category-detail.js';
 import * as api from '../src/utils/api.js';
@@ -999,6 +999,76 @@ describe('CategoryDetail view', () => {
 
       expect(writeTextMock).toHaveBeenCalled();
       expect(execCommandMock).toHaveBeenCalledWith('copy');
+    });
+  });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      // Earlier tests leave sort/page parameters in the URL
+      window.history.replaceState(null, '', '/category/1');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    async function renderWithSearch() {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      return mod.getLocalThis();
+    }
+
+    it('reports in-category searches when their results load', async () => {
+      const search = await renderWithSearch();
+      expect(track).not.toHaveBeenCalled();
+
+      search.onSearch!({ q: 'Computer', category_id: 2 });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('search_performed', {
+          query: 'computer',
+          query_length: 8,
+          category_id: '1',
+          sort: 'score',
+          search_surface: 'category_detail',
+          order: 'desc',
+          results_count: 2,
+        });
+      });
+      expect(track).not.toHaveBeenCalledWith('search_no_results', expect.anything());
+    });
+
+    it('reports in-category searches without results', async () => {
+      const search = await renderWithSearch();
+      vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
+
+      search.onSearch!({ attribution: 'Arthur Bloch' });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('search_no_results', {
+          query_length: 0,
+          category_id: '1',
+          attribution: 'Arthur Bloch',
+          sort: 'score',
+          search_surface: 'category_detail',
+        });
+      });
+    });
+
+    it('does not report clearing the form, which only reloads the category', async () => {
+      const search = await renderWithSearch();
+
+      search.onSearch!({});
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(track).not.toHaveBeenCalled();
     });
   });
 });

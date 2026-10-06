@@ -38,10 +38,18 @@ describe('anonymous experiment registry', () => {
 
   it('tracks exposure and assigned-variant outcomes', () => {
     localStorage.setItem(`murphys-experiment:${HOME_MODULE_ORDER_EXPERIMENT}`, 'themes-first');
+    const track = vi.fn<(eventName: string, properties?: Record<string, unknown>) => void>();
+    window.pendo = { track };
 
     exposeExperiment(HOME_MODULE_ORDER_EXPERIMENT, 'themes-first');
     trackExperimentOutcome(HOME_MODULE_ORDER_EXPERIMENT, 'browse');
+    delete window.pendo;
 
+    expect(track).toHaveBeenCalledWith('experiment_exposed', {
+      experiment: HOME_MODULE_ORDER_EXPERIMENT,
+      variant: 'themes-first'
+    });
+    expect(track).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('experiment.exposure', {
       experiment: HOME_MODULE_ORDER_EXPERIMENT,
       variant: 'themes-first'

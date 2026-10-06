@@ -125,7 +125,7 @@ import {
   trackLawView,
   trackCalculatorUse
 } from './components/install-prompt.ts';
-import type { SearchFilters } from './types/app.d.ts';
+import type { SearchFilters, SearchSurface } from './types/app.d.ts';
 
 // Actions
 function onNavigate(page: string, param?: string): void {
@@ -149,15 +149,19 @@ function handleCategoryNavigation(categoryId: string | number): void {
 /**
  * Handle search query navigation - navigates to or refreshes the browse page
  */
-function handleSearchNavigation(filters: SearchFilters) {
+function handleSearchNavigation(filters: SearchFilters, surface?: SearchSurface) {
   const params = new URLSearchParams();
   if (filters.q) params.set('q', filters.q);
   if (filters.attribution) params.set('attribution', filters.attribution);
   const search = params.toString();
   const target = `/browse${search ? `?${search}` : ''}`;
 
+  // Browse reads searchSurface from history.state to attribute the search to its entry point
+  const state = { name: 'browse', searchSurface: surface };
   if (`${location.pathname}${location.search}` !== target) {
-    history.pushState({ name: 'browse' }, '', target);
+    history.pushState(state, '', target);
+  } else {
+    history.replaceState(state, '', target);
   }
   forceRender();
 }
@@ -180,12 +184,13 @@ function handleClearFilters() {
  * @param {string} [filters.q] - Search query text
  * @param {string|number} [filters.category_id] - Category ID for category navigation
  * @param {string} [filters.attribution] - Attribution filter
+ * @param {SearchSurface} [surface] - Search box the visitor used (for analytics)
  */
-function onSearch(filters: SearchFilters): void {
+function onSearch(filters: SearchFilters, surface?: SearchSurface): void {
   if (filters.category_id) {
     handleCategoryNavigation(filters.category_id);
   } else if (filters.q || filters.attribution) {
-    handleSearchNavigation(filters);
+    handleSearchNavigation(filters, surface);
   } else {
     handleClearFilters();
   }
@@ -452,7 +457,7 @@ if (isFavoritesEnabled()) {
         id: lawId,
         text: lawText,
         title: lawTitle,
-      });
+      }, 'law_card');
 
       // Update button visual state
       const newTooltip = isNowFavorite ? 'Remove from favorites' : 'Add to favorites';

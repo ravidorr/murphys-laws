@@ -167,7 +167,7 @@ describe('Home view', () => {
 
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
-    expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' });
+    expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' }, 'home');
   });
 
   it('applies the persisted homepage module-order variant', () => {

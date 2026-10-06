@@ -19,3 +19,28 @@ export function debounce<A extends readonly unknown[]>(
     }, wait);
   };
 }
+
+/**
+ * Debounced task that can also be flushed: schedule() (re)starts the wait, and flush() runs a
+ * pending task immediately, e.g. when a view unmounts before the wait has elapsed.
+ */
+export function createDebouncedTask(task: () => void, wait: number): { schedule: () => void; flush: () => void } {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  function run() {
+    timeoutId = undefined;
+    task();
+  }
+
+  return {
+    schedule() {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(run, wait);
+    },
+    flush() {
+      if (timeoutId === undefined) return;
+      clearTimeout(timeoutId);
+      run();
+    },
+  };
+}

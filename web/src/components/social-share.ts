@@ -9,6 +9,7 @@ import { createButton, renderShareLinkHTML } from '../utils/button.ts';
 import { copyToClipboard } from '../utils/clipboard.ts';
 import { recordQualifyingUserAction } from './install-prompt.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { trackPendoEvent, getPagePath, type PendoTrackProperties } from '@utils/pendo.ts';
 
 interface BuildShareUrlsOptions {
   url?: string;
@@ -24,6 +25,8 @@ interface SocialShareOptions {
   description?: string;
   lawText?: string;
   lawId?: string;
+  /** Where the popover is shown, reported with law_shared ('law_detail', 'law_of_day') */
+  surface?: string;
   /** Optional URL builder for tests; when provided, used instead of buildShareUrls. */
   getShareUrls?: (opts: BuildShareUrlsOptions) => Record<string, string>;
 }
@@ -44,6 +47,10 @@ interface InitInlineShareButtonsOptions {
   getShareableUrl?: () => string;
   getShareText?: () => string;
   emailSubject?: string;
+  /** Calculator whose result is shared; calculator_result_shared is only reported when set */
+  calculator?: string;
+  /** Current result reported with calculator_result_shared */
+  getShareResult?: () => PendoTrackProperties;
 }
 
 /**
@@ -79,6 +86,28 @@ export function normalizeShareUrl(url: string): string {
   } catch {
     return trimmed;
   }
+}
+
+/**
+ * Identify the platform of a share popover link from its icon circle (e.g. 'twitter', 'email').
+ */
+function getSharePlatform(link: Element): string {
+  const iconCircle = link.querySelector('.icon-circle');
+  const platform = SHARE_PLATFORMS.social.find(({ id }) => iconCircle?.classList.contains(id));
+  return platform ? platform.id : 'other';
+}
+
+/**
+ * Report a social share from a law's Share popover. Copy actions are reported by the
+ * handlers that perform the copy, since some surfaces have no copy handler.
+ */
+function trackLawSharedViaLink(link: Element, lawId: string | null | undefined, surface: string): void {
+  trackPendoEvent('law_shared', {
+    law_id: lawId,
+    share_method: getSharePlatform(link),
+    surface,
+    page_path: getPagePath(),
+  });
 }
 
 /**
@@ -122,7 +151,7 @@ export function buildShareUrls({ url, title, description = '', lawText, emailSub
  * @param {string} options.lawId - The law ID for data attributes
  * @returns {HTMLElement} - Social share popover container
  */
-export function SocialShare({ url, title, description, lawText, lawId, getShareUrls }: SocialShareOptions = {}) {
+export function SocialShare({ url, title, description, lawText, lawId, surface = 'unknown', getShareUrls }: SocialShareOptions = {}) {
   const wrapper = document.createElement('div');
   wrapper.className = 'share-wrapper';
 
@@ -266,7 +295,9 @@ export function SocialShare({ url, title, description, lawText, lawId, getShareU
   popover.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     // Don't stop propagation for links - let them navigate
-    if (target.closest('a')) {
+    const shareLink = target.closest('a');
+    if (shareLink) {
+      trackLawSharedViaLink(shareLink, lawId, surface);
       // Close popover after clicking a share link
       setTimeout(() => {
         popover.classList.remove('open');
@@ -397,7 +428,10 @@ export function initSharePopovers(container: Document | HTMLElement = document) 
     popover.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       // Let links navigate, then close
-      if (target.closest('a')) {
+      const shareLink = target.closest('a');
+      if (shareLink) {
+        // Law card popovers carry the law ID on their copy buttons
+        trackLawSharedViaLink(shareLink, popover.querySelector('[data-law-id]')?.getAttribute('data-law-id'), 'law_card');
         setTimeout(() => {
           popover.classList.remove('open');
           trigger.setAttribute('aria-expanded', 'false');
@@ -463,9 +497,11 @@ export function renderInlineShareButtonsHTML({ url: _url, title: _title, lawText
  * @param {Function} options.getShareableUrl - Function that returns the shareable URL
  * @param {Function} options.getShareText - Function that returns the share text
  * @param {string} options.emailSubject - Custom email subject (optional)
+ * @param {string} options.calculator - Calculator whose result is shared (enables calculator_result_shared)
+ * @param {Function} options.getShareResult - Function that returns the current result for analytics
  * @returns {Function} Teardown function to remove event listeners
  */
-export function initInlineShareButtons(container: HTMLElement, { getShareableUrl, getShareText, emailSubject }: InitInlineShareButtonsOptions = {}) {
+export function initInlineShareButtons(container: HTMLElement, { getShareableUrl, getShareText, emailSubject, calculator, getShareResult }: InitInlineShareButtonsOptions = {}) {
   const wrapper = container.querySelector('.share-buttons-inline');
   if (!wrapper) {
     return () => {};
@@ -474,6 +510,16 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
   const feedback = wrapper.querySelector('.share-copy-feedback');
   let feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   const listeners: (() => void)[] = [];
+
+  // Inline share buttons are only used for calculator results, so shares are reported as such
+  function trackResultShared(shareMethod: string) {
+    if (!calculator) return;
+    trackPendoEvent('calculator_result_shared', {
+      ...getShareResult?.(),
+      calculator,
+      share_method: shareMethod,
+    });
+  }
 
   // Only called with wrapper (truthy) in this module
   function addListener(target: EventTarget | null, event: string, handler: EventListener) {
@@ -540,8 +586,10 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     trackProductEvent('law.share', { surface: 'inline_share', action: action || 'copy' });
     if (action === 'copy-link') {
       await copyToClipboard(textToCopy, 'Link copied to clipboard!');
+      trackResultShared('copy_link');
     } else {
       await copyToClipboard(textToCopy, 'Law text copied to clipboard!');
+      trackResultShared('copy_text');
     }
     showCopyFeedback();
   }
@@ -554,6 +602,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
       updateShareLinks();
       const platform = target.closest('[data-share]')?.getAttribute('data-share') || 'social';
       trackProductEvent('law.share', { surface: 'inline_share', action: platform });
+      trackResultShared(platform);
       return; // Let the link navigate
     }
     // Handle copy buttons

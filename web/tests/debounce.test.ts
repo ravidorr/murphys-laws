@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
-import { debounce } from '../src/utils/debounce.ts';
+import { debounce, createDebouncedTask } from '../src/utils/debounce.ts';
 
 type DebouncedFn = (...args: unknown[]) => unknown;
 
@@ -138,5 +138,53 @@ describe('debounce', () => {
     localThis.debounced!();
     vi.advanceTimersByTime(0);
     expect(localThis.func).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createDebouncedTask', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('runs the task once after the last schedule()', () => {
+    const task = vi.fn();
+    const debounced = createDebouncedTask(task, 100);
+
+    debounced.schedule();
+    vi.advanceTimersByTime(60);
+    debounced.schedule();
+    vi.advanceTimersByTime(99);
+    expect(task).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it('flush() runs a pending task immediately and only once', () => {
+    const task = vi.fn();
+    const debounced = createDebouncedTask(task, 100);
+
+    debounced.schedule();
+    debounced.flush();
+    expect(task).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(100);
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it('flush() does nothing when no task is pending', () => {
+    const task = vi.fn();
+    const debounced = createDebouncedTask(task, 100);
+
+    debounced.flush();
+    debounced.schedule();
+    vi.advanceTimersByTime(100);
+    debounced.flush();
+
+    expect(task).toHaveBeenCalledTimes(1);
   });
 });
