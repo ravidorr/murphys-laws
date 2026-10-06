@@ -1,6 +1,5 @@
 package com.murphyslaws.presentation
 
-import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -12,16 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import sdk.pendo.io.Pendo
 import com.murphyslaws.presentation.browse.BrowseScreen
 import com.murphyslaws.presentation.calculators.CalculatorsScreen
 import com.murphyslaws.presentation.home.HomeScreen
@@ -50,40 +45,6 @@ object AdditionalRoutes {
 @Composable
 fun MainApp() {
     val navController = rememberNavController()
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    // Register NavController with Pendo for Compose navigation tracking
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                Pendo.setComposeNavigationController(navController)
-
-                // Start Pendo session after navigation controller is set
-                val visitorId = "ravidor@gmail.com"
-                val accountId = "ACME"
-                val visitorData = mapOf<String, Any>()
-                val accountData = mapOf<String, Any>()
-                try {
-                    Pendo.startSession(
-                        visitorId,
-                        accountId,
-                        visitorData,
-                        accountData
-                    )
-                } catch (e: Exception) {
-                    Log.e("MainApp", "Error starting Pendo session", e)
-                }
-            } else if (event == Lifecycle.Event.ON_PAUSE) {
-                Pendo.setComposeNavigationController(null)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            Pendo.setComposeNavigationController(null)
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 
     val items = listOf(
         BottomNavScreen.Home,

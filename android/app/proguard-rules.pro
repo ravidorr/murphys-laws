@@ -10,6 +10,3 @@
 -dontwarn org.openjsse.javax.net.ssl.SSLParameters
 -dontwarn org.openjsse.javax.net.ssl.SSLSocket
 -dontwarn org.openjsse.net.ssl.OpenJSSE
-
-# Pendo SDK ProGuard rules
--optimizations *,!code/allocation/variable
