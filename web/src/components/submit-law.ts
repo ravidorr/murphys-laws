@@ -8,6 +8,7 @@ import { apiPost } from '../utils/request.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { trackPendoEvent, getRequestErrorType } from '@utils/pendo.ts';
 import { rankDuplicateCandidates } from '@utils/discovery.ts';
 import {
   getCachedCategories,
@@ -49,6 +50,9 @@ export function SubmitLawSection() {
   let categoriesLoaded = false;
   let duplicateTimer: ReturnType<typeof setTimeout> | undefined;
   let duplicateRequestId = 0;
+  // Duplicate-checker state for the law being written; reset after a successful submission
+  let duplicateWarningShown = false;
+  const reportedDuplicateMatchIds = new Set<string>();
 
   // Populate dropdown with cached categories (template always has categorySelect)
   function populateFromCache() {
@@ -229,6 +233,22 @@ export function SubmitLawSection() {
       duplicateCandidates.innerHTML = ranked.length > 0
         ? `${exact.length > 0 ? '<p class="small"><strong>Already in the archive:</strong></p>' : '<p class="small"><strong>Possible duplicates:</strong></p>'}<ul>${[...exact, ...fuzzy].map((law) => `<li><a href="/law/${law.id}">${escapeHtml(law.title || law.text)}</a>${law.match_type === 'fuzzy' ? ` <span class="small text-muted-fg">${Math.round(law.similarity * 100)}% similar</span>` : ''}</li>`).join('')}</ul>`
         : '';
+      const topMatch = ranked[0];
+      if (topMatch) {
+        duplicateWarningShown = true;
+        // The check reruns as the visitor types, so report each distinct top match once
+        const topMatchId = String(topMatch.id);
+        if (!reportedDuplicateMatchIds.has(topMatchId)) {
+          reportedDuplicateMatchIds.add(topMatchId);
+          trackPendoEvent('law_duplicate_detected', {
+            exact_match_count: exact.length,
+            fuzzy_match_count: fuzzy.length,
+            top_similarity: Math.round(topMatch.similarity * 100),
+            top_match_law_id: topMatchId,
+            text_length: text.length,
+          });
+        }
+      }
     } catch {
       if (requestId === duplicateRequestId) duplicateCandidates.innerHTML = '';
     }
@@ -267,18 +287,31 @@ export function SubmitLawSection() {
     const categorySlug = categorySelect?.selectedOptions[0]?.dataset.categorySlug;
     const honeypot = (el.querySelector('#submit-website') as HTMLInputElement | null)?.value?.trim();
 
+    // Only non-personal details are reported: never the text, author or email themselves
+    const failureContext = {
+      text_length: text ? text.length : 0,
+      category_id: categoryId || undefined,
+      is_anonymous: Boolean(anonymous),
+    };
+    const trackSubmissionFailed = (failureReason: string) => {
+      trackPendoEvent('law_submission_failed', { ...failureContext, failure_reason: failureReason });
+    };
+
     if (honeypot) {
+      trackSubmissionFailed('spam_trap');
       showError('Submission rejected.');
       setLoading(false);
       return;
     }
 
     if (!text) {
+      trackSubmissionFailed('missing_text');
       showError('Please enter law text');
       return;
     }
 
     if (!termsCheckbox?.checked) {
+      trackSubmissionFailed('terms_not_accepted');
       showError('Please accept the terms to submit');
       return;
     }
@@ -298,8 +331,22 @@ export function SubmitLawSection() {
     clearMessage();
 
     try {
-      await submitLaw(lawData);
+      const response = await submitLaw(lawData) as { id?: number | string } | null;
       trackProductEvent('submit.complete', { surface: 'submit_form', result: 'success' });
+      // The law is now in the human review queue
+      trackPendoEvent('law_submitted', {
+        submission_id: response?.id != null ? String(response.id) : undefined,
+        category_id: lawData.category_id,
+        category_slug: categorySlug || undefined,
+        has_title: Boolean(lawData.title),
+        text_length: text.length,
+        is_anonymous: Boolean(anonymous),
+        has_author: Boolean(lawData.author),
+        has_email: Boolean(lawData.email),
+        duplicate_warning_shown: duplicateWarningShown,
+      });
+      duplicateWarningShown = false;
+      reportedDuplicateMatchIds.clear();
 
       showMessage(
         'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
@@ -322,6 +369,7 @@ export function SubmitLawSection() {
       }, 300);
 
     } catch (error) {
+      trackSubmissionFailed(getRequestErrorType(error));
       showError(error instanceof Error ? error.message : 'Failed to submit law. Please try again.');
     } finally {
       setLoading(false);

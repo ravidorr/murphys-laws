@@ -3,6 +3,7 @@
 
 import { apiPost, apiDelete } from './request.ts';
 import { showSuccess } from '../components/notification.ts';
+import { trackPendoEvent, getPagePath, getRequestErrorType } from './pendo.ts';
 import type { VoteType, VoteResponse } from '../types/app.d.ts';
 
 const VOTES_KEY = 'murphy_votes';
@@ -79,20 +80,41 @@ export async function unvoteLaw(lawId: string | number): Promise<VoteResponse> {
 
 /**
  * Toggle vote (if same type clicked, remove; if different, change; if no vote, add)
+ * Reports law_voted / law_vote_failed to Pendo for every voting surface.
  * @param {number|string} lawId - Law ID
  * @param {string} voteType - 'up' or 'down'
+ * @param {string} surface - Where the vote was cast ('law_card', 'law_detail', 'law_of_day')
  * @returns {Promise<Object>} Response with upvotes and downvotes
  * @throws {Error} If toggle fails
  */
-export async function toggleVote(lawId: string | number, voteType: VoteType): Promise<VoteResponse> {
+export async function toggleVote(lawId: string | number, voteType: VoteType, surface = 'unknown'): Promise<VoteResponse> {
   const currentVote = getUserVote(lawId);
+  const isRemoval = currentVote === voteType;
+  const voteProperties = {
+    law_id: String(lawId),
+    vote_type: voteType,
+    vote_action: isRemoval ? 'removed' : currentVote ? 'switched' : 'added',
+    surface,
+    page_path: getPagePath(),
+  };
 
-  if (currentVote === voteType) {
-    // Same vote clicked - remove it
-    return await unvoteLaw(lawId);
-  } else {
-    // Different vote or no vote - set new vote
-    return await voteLaw(lawId, voteType);
+  try {
+    // Same vote clicked - remove it; different vote or no vote - set new vote
+    const result = isRemoval ? await unvoteLaw(lawId) : await voteLaw(lawId, voteType);
+    trackPendoEvent('law_voted', {
+      ...voteProperties,
+      previous_vote: currentVote ?? 'none',
+      upvotes: result.upvotes,
+      downvotes: result.downvotes,
+    });
+    return result;
+  } catch (error) {
+    // Most surfaces swallow vote errors silently, so this is the only record of them
+    trackPendoEvent('law_vote_failed', {
+      ...voteProperties,
+      error_type: getRequestErrorType(error),
+    });
+    throw error;
   }
 }
 
@@ -116,7 +138,7 @@ export function addVotingListeners(el: HTMLElement): void {
       if (!lawId || !voteType) return;
 
       try {
-        const result = await toggleVote(lawId, voteType);
+        const result = await toggleVote(lawId, voteType, 'law_card');
 
         // Update vote counts in UI
         const lawCard = voteBtn.closest('.law-card-mini');

@@ -49,7 +49,7 @@ describe('Novus agent snippet in index.html', () => {
 
     ['initialize', 'identify', 'updateOptions', 'pageLoad', 'track', 'trackAgent', 'clearSession'].forEach((method) => {
       expect(snippet).toContain(`'${method}'`);
-      expect(agentType).toMatch(new RegExp(`\\b${method}:`));
+      expect(agentType).toMatch(new RegExp(`\\b${method}\\??:`));
     });
   });
 

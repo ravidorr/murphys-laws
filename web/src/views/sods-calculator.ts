@@ -10,7 +10,15 @@ import { updatePageMetadata } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
-import { parseCalculatorState, serializeCalculatorState } from '@utils/calculator-state.ts';
+import { trackPendoEvent } from '@utils/pendo.ts';
+import { createDebouncedTask } from '@utils/debounce.ts';
+import {
+  parseCalculatorState,
+  serializeCalculatorState,
+  CALCULATOR_RISK_LEVELS,
+  CALCULATOR_RESULT_SETTLE_MS,
+  type CalculatorResultBand
+} from '@utils/calculator-state.ts';
 import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
@@ -70,6 +78,27 @@ export function Calculator(): HTMLDivElement {
   let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { U: null, C: null, I: null, S: null, F: null };
   let hasTrackedStart = false;
 
+  // Latest result and session details reported with calculator_used / calculator_result_shared
+  let probabilityPercent = 0;
+  let riskLevel = CALCULATOR_RISK_LEVELS['calc-ok'];
+  let adjustmentCount = 0;
+  let fromSharedLink = false;
+  const calculatorUsed = createDebouncedTask(() => {
+    trackPendoEvent('calculator_used', {
+      calculator: 'sods-law',
+      surface: 'calculator_page',
+      probability_percent: probabilityPercent,
+      risk_level: riskLevel,
+      urgency: Number(sliders.urgency.value),
+      complexity: Number(sliders.complexity.value),
+      importance: Number(sliders.importance.value),
+      skill: Number(sliders.skill.value),
+      frequency: Number(sliders.frequency.value),
+      from_shared_link: fromSharedLink,
+      adjustment_count: adjustmentCount,
+    });
+  }, CALCULATOR_RESULT_SETTLE_MS);
+
   function clearFormulaTimeouts() {
     new Set(Object.values(resetTimeouts)).forEach(timeout => {
       if (timeout) clearTimeout(timeout);
@@ -89,6 +118,7 @@ export function Calculator(): HTMLDivElement {
     const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
     const displayScore = Math.min(score, 8.6);
     const displayPercent = Math.round((displayScore / 8.6) * 100);
+    probabilityPercent = displayPercent;
 
     scoreValueDisplay.textContent = `${displayPercent}%`;
     updateResultInterpretation(displayScore);
@@ -153,6 +183,9 @@ export function Calculator(): HTMLDivElement {
 
       flashAllVariables();
       trackProductEvent('calculator.complete', { surface: 'calculator_page', calculator: 'sods-law' });
+      // calculator.complete fires on every drag step; calculator_used waits for the result to settle
+      adjustmentCount++;
+      calculatorUsed.schedule();
     });
   });
 
@@ -160,7 +193,7 @@ export function Calculator(): HTMLDivElement {
 
   function updateResultInterpretation(score: number) {
     let interpretation: string;
-    let cls: string;
+    let cls: CalculatorResultBand;
 
     if (score < 2) {
       interpretation = "You're probably safe. What could possibly go wrong?";
@@ -182,6 +215,7 @@ export function Calculator(): HTMLDivElement {
     scoreInterpretationDisplay.textContent = interpretation;
     resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
     resultDisplay.classList.add(cls);
+    riskLevel = CALCULATOR_RISK_LEVELS[cls];
   }
 
   const state = {
@@ -235,6 +269,7 @@ export function Calculator(): HTMLDivElement {
     f: { min: 1, max: 9 },
   });
   const paramKeys: Record<string, SliderKey> = { u: 'urgency', c: 'complexity', i: 'importance', s: 'skill', f: 'frequency' };
+  fromSharedLink = Object.keys(parsedState).length > 0;
 
   Object.entries(parsedState).forEach(([param, value]) => {
     const slider = paramKeys[param];
@@ -257,10 +292,14 @@ export function Calculator(): HTMLDivElement {
   const teardownShare = initInlineShareButtons(el, {
     getShareableUrl,
     getShareText,
-    emailSubject: "Check out my Sod's Law calculation"
+    emailSubject: "Check out my Sod's Law calculation",
+    calculator: 'sods-law',
+    getShareResult: () => ({ probability_percent: probabilityPercent, risk_level: riskLevel })
   });
 
   (el as CleanableElement).cleanup = () => {
+    // Report a result that was still settling when the visitor left
+    calculatorUsed.flush();
     clearFormulaTimeouts();
     clearExportContent();
     teardownShare();

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import type { OnNavigate } from '../src/types/app.d.ts';
 import type { CleanableElement } from '../src/types/app.js';
 import { Categories } from '../src/views/categories.js';
@@ -485,5 +485,85 @@ describe('Categories view', () => {
     (el as CleanableElement).cleanup!();
     expect(clearSpy).toHaveBeenCalled();
     clearSpy.mockRestore();
+  });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    async function renderLoadedCategories() {
+      const el = Categories({ onNavigate: localThis.onNavigate });
+      await vi.waitFor(() => expect(el.querySelector('.category-card')).toBeTruthy());
+      vi.useFakeTimers();
+      const filter = el.querySelector('#category-filter') as HTMLInputElement;
+      const typeFilter = (value: string) => {
+        filter.value = value;
+        filter.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      return { el, typeFilter };
+    }
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      delete window.pendo;
+    });
+
+    it('reports a filter once typing settles, once per distinct query', async () => {
+      const { typeFilter } = await renderLoadedCategories();
+
+      typeFilter('comp');
+      vi.advanceTimersByTime(799);
+      typeFilter('Computer');
+      vi.advanceTimersByTime(799);
+      expect(track).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('categories_filtered', {
+        query_length: 8,
+        query_token_count: 1,
+        results_count: 1,
+        total_categories: 3,
+      });
+
+      typeFilter('computer ');
+      vi.advanceTimersByTime(800);
+      typeFilter('');
+      vi.advanceTimersByTime(800);
+      expect(track).toHaveBeenCalledTimes(1);
+
+      typeFilter('computer');
+      vi.advanceTimersByTime(800);
+      expect(track).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports filters that match nothing', async () => {
+      const { typeFilter } = await renderLoadedCategories();
+
+      typeFilter('zebra');
+      vi.advanceTimersByTime(800);
+
+      expect(track).toHaveBeenCalledWith('categories_filtered', expect.objectContaining({
+        query_length: 5, query_token_count: 1, results_count: 0
+      }));
+    });
+
+    it('reports a filter that is still settling when the view unmounts', async () => {
+      const { el, typeFilter } = await renderLoadedCategories();
+
+      typeFilter('love');
+      (el as CleanableElement).cleanup!();
+
+      expect(track).toHaveBeenCalledWith('categories_filtered', expect.objectContaining({
+        query_length: 4, query_token_count: 1, results_count: 1
+      }));
+      vi.advanceTimersByTime(800);
+      expect(track).toHaveBeenCalledTimes(1);
+    });
   });
 });

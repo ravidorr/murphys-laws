@@ -27,7 +27,7 @@ export interface NovusInitializeOptions {
 }
 
 export interface NovusAgent {
-  initialize: (options?: NovusInitializeOptions) => void;
+  initialize?: (options?: NovusInitializeOptions) => void;
 }
 
 /**
@@ -92,7 +92,7 @@ export function initializeNovusAgent(
   runtime: TelemetryRuntime = getTelemetryRuntime(),
   agent: NovusAgent | undefined = typeof window !== 'undefined' ? window.pendo : undefined,
 ): boolean {
-  if (!isCanonicalRuntime(runtime) || !agent) {
+  if (!isCanonicalRuntime(runtime) || typeof agent?.initialize !== 'function') {
     return false;
   }
   agent.initialize({ visitor: { id: '' }, location: { transforms: LOCATION_TRANSFORMS } });

@@ -8,7 +8,15 @@ import { updatePageMetadata } from '@utils/dom.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { renderInlineShareButtonsHTML, initInlineShareButtons } from '@components/social-share.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
-import { parseCalculatorState, serializeCalculatorState } from '@utils/calculator-state.ts';
+import { trackPendoEvent } from '@utils/pendo.ts';
+import { createDebouncedTask } from '@utils/debounce.ts';
+import {
+  parseCalculatorState,
+  serializeCalculatorState,
+  CALCULATOR_RISK_LEVELS,
+  CALCULATOR_RESULT_SETTLE_MS,
+  type CalculatorResultBand
+} from '@utils/calculator-state.ts';
 import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
@@ -69,6 +77,28 @@ export function ButteredToastCalculator(): HTMLDivElement {
   type FormulaVarKey = 'H' | 'g' | 'O' | 'B' | 'F' | 'T';
   const showValues: Record<FormulaVarKey, boolean> = { H: false, g: false, O: false, B: false, F: false, T: false };
   let resetTimeouts: Record<FormulaVarKey, ReturnType<typeof setTimeout> | null> = { H: null, g: null, O: null, B: null, F: null, T: null };
+
+  // Latest result and session details reported with calculator_used / calculator_result_shared
+  let probabilityPercent = 0;
+  let riskLevel = CALCULATOR_RISK_LEVELS['calc-ok'];
+  let adjustmentCount = 0;
+  let fromSharedLink = false;
+  const calculatorUsed = createDebouncedTask(() => {
+    trackPendoEvent('calculator_used', {
+      calculator: 'buttered-toast',
+      surface: 'calculator_page',
+      probability_percent: probabilityPercent,
+      risk_level: riskLevel,
+      height: Number(sliders.height.value),
+      gravity: Number(sliders.gravity.value),
+      overhang: Number(sliders.overhang.value),
+      butter: Number(sliders.butter.value),
+      friction: Number(sliders.friction.value),
+      inertia: Number(sliders.inertia.value),
+      from_shared_link: fromSharedLink,
+      adjustment_count: adjustmentCount,
+    });
+  }, CALCULATOR_RESULT_SETTLE_MS);
 
   function clearFormulaTimeouts() {
     new Set(Object.values(resetTimeouts)).forEach(timeout => {
@@ -143,6 +173,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
     const finalProbability = Math.max(0, probability);
 
     probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
+    probabilityPercent = Math.round(finalProbability);
     updateInterpretation(finalProbability);
 
     const interpretation = interpretationDisplay.textContent || '';
@@ -155,7 +186,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   function updateInterpretation(probability: number) {
     let interpretation: string;
-    let cls: string;
+    let cls: CalculatorResultBand;
 
     if (probability > 85) {
       cls = 'calc-dark';
@@ -174,6 +205,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
     interpretationDisplay.textContent = interpretation;
     resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
     resultDisplay.classList.add(cls);
+    riskLevel = CALCULATOR_RISK_LEVELS[cls];
   }
 
   (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
@@ -198,6 +230,9 @@ export function ButteredToastCalculator(): HTMLDivElement {
       flashAllVariables();
       calculateLanding();
       trackProductEvent('calculator.complete', { surface: 'calculator_page', calculator: 'buttered-toast' });
+      // calculator.complete fires on every drag step; calculator_used waits for the result to settle
+      adjustmentCount++;
+      calculatorUsed.schedule();
     });
   });
 
@@ -267,6 +302,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
       sliders[slider].value = String(value);
     }
   });
+  fromSharedLink = Object.keys(parsedState).length > 0;
 
   // Recalculate if URL params were loaded
   if (urlParams.has('h') || urlParams.has('g') || urlParams.has('o') || urlParams.has('b') || urlParams.has('f') || urlParams.has('t')) {
@@ -287,10 +323,14 @@ export function ButteredToastCalculator(): HTMLDivElement {
   const teardownShare = initInlineShareButtons(el, {
     getShareableUrl,
     getShareText,
-    emailSubject: 'Check out my Buttered Toast calculation'
+    emailSubject: 'Check out my Buttered Toast calculation',
+    calculator: 'buttered-toast',
+    getShareResult: () => ({ probability_percent: probabilityPercent, risk_level: riskLevel })
   });
 
   (el as CleanableElement).cleanup = () => {
+    // Report a result that was still settling when the visitor left
+    calculatorUsed.flush();
     clearFormulaTimeouts();
     clearExportContent();
     teardownShare();

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import type { OnNavigate } from '../src/types/app.d.ts';
 import { CategoryDetail } from '../src/views/category-detail.js';
 import * as api from '../src/utils/api.js';
@@ -999,6 +999,164 @@ describe('CategoryDetail view', () => {
 
       expect(writeTextMock).toHaveBeenCalled();
       expect(execCommandMock).toHaveBeenCalledWith('copy');
+    });
+  });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      // Earlier tests leave sort/page parameters in the URL
+      window.history.replaceState(null, '', '/category/1');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    async function renderWithSearch() {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      return mod.getLocalThis();
+    }
+
+    it('reports in-category searches when their results load', async () => {
+      const search = await renderWithSearch();
+      expect(track).not.toHaveBeenCalled();
+
+      search.onSearch!({ q: 'Computer', category_id: 2 });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('search_performed', {
+          query_length: 8,
+          query_token_count: 1,
+          category_id: '1',
+          sort: 'score',
+          search_surface: 'category_detail',
+          order: 'desc',
+          results_count: 2,
+        });
+      });
+      expect(track).not.toHaveBeenCalledWith('search_no_results', expect.anything());
+    });
+
+    it('reports in-category searches without results', async () => {
+      const search = await renderWithSearch();
+      vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
+
+      search.onSearch!({ attribution: 'Arthur Bloch' });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('search_no_results', {
+          query_length: 0,
+          query_token_count: 0,
+          category_id: '1',
+          attribution: 'Arthur Bloch',
+          sort: 'score',
+          search_surface: 'category_detail',
+        });
+      });
+    });
+
+    it('does not report clearing the form, which only reloads the category', async () => {
+      const search = await renderWithSearch();
+
+      search.onSearch!({});
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(track).not.toHaveBeenCalled();
+    });
+
+    it('does not report a failed search when the visitor later changes sorting', async () => {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('Network error'));
+
+      mod.getLocalThis().onSearch!({ q: 'computer' });
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(3));
+
+      expect(track).not.toHaveBeenCalledWith('search_performed', expect.anything());
+    });
+
+    it('reports an in-category search when the visitor retries its failed request', async () => {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('Network error'));
+
+      mod.getLocalThis().onSearch!({ q: 'computer' });
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
+
+      (el.querySelector('[data-action="retry"]') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 8,
+        query_token_count: 1,
+        search_surface: 'category_detail',
+      })));
+    });
+
+    it('ignores an earlier load that resolves after an in-category search', async () => {
+      const initialResponse = { data: [{ id: 101, title: 'Old Law', text: 'Old result' }], total: 1, limit: 10, offset: 0 };
+      const searchResponse = { data: [{ id: 102, title: 'New Law', text: 'New result' }], total: 1, limit: 10, offset: 0 };
+      let resolveInitial!: (value: typeof initialResponse) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<typeof initialResponse>((resolve) => { resolveInitial = resolve; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      vi.mocked(api.fetchLaws).mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      mod.getLocalThis().onSearch!({ q: 'latest' });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 6,
+        query_token_count: 1,
+        results_count: 1,
+      })));
+      resolveInitial(initialResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1);
+      expect(el.textContent).toContain('New Law');
+      expect(el.textContent).not.toContain('Old Law');
+    });
+
+    it('ignores an earlier load that rejects after an in-category search', async () => {
+      const searchResponse = { data: [{ id: 102, title: 'New Law', text: 'New result' }], total: 1, limit: 10, offset: 0 };
+      let rejectInitial!: (reason?: unknown) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<never>((_resolve, reject) => { rejectInitial = reject; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      vi.mocked(api.fetchLaws).mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      mod.getLocalThis().onSearch!({ q: 'latest' });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1));
+      rejectInitial(new Error('Old request failed'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(el.textContent).toContain('New Law');
+      expect(el.querySelector('.empty-state')).toBeNull();
+      expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1);
     });
   });
 });

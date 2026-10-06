@@ -295,7 +295,7 @@ describe('Favorites View Component', () => {
       );
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       el.querySelector('[data-action="favorite"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(removeFavorite).toHaveBeenCalledWith('123');
+      expect(removeFavorite).toHaveBeenCalledWith('123', 'law_card');
     });
 
     it('L253 B1: law card click with data-law-id navigates to law', () => {
@@ -417,6 +417,50 @@ describe('Favorites View Component', () => {
 
       expect(clearAllFavorites).not.toHaveBeenCalled();
     });
+
+    describe('Pendo tracking', () => {
+      type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+      let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+      beforeEach(() => {
+        track = vi.fn<PendoTrack>();
+        window.pendo = { track };
+      });
+
+      afterEach(() => {
+        delete window.pendo;
+      });
+
+      it('reports the cleared collection size and its age when confirmed', () => {
+        const now = Date.now();
+        vi.mocked(getFavorites).mockReturnValue([
+          { ...localThis.mockLaw1, savedAt: now - 10 * 24 * 60 * 60 * 1000 },
+          { ...localThis.mockLaw2, savedAt: now - 2 * 24 * 60 * 60 * 1000 },
+        ]);
+        const el = Favorites({ onNavigate: localThis.mockNavigate });
+
+        (el.querySelector('#clear-favorites-btn') as HTMLElement).click();
+
+        expect(track).toHaveBeenCalledWith('favorites_cleared', { cleared_count: 2, days_since_first_favorite: 10 });
+      });
+
+      it('leaves out the age when saved dates are unknown', () => {
+        const el = Favorites({ onNavigate: localThis.mockNavigate });
+
+        (el.querySelector('#clear-favorites-btn') as HTMLElement).click();
+
+        expect(track).toHaveBeenCalledWith('favorites_cleared', { cleared_count: 2 });
+      });
+
+      it('does not report a cancelled clear', () => {
+        vi.spyOn(window, 'confirm').mockReturnValue(false);
+        const el = Favorites({ onNavigate: localThis.mockNavigate });
+
+        (el.querySelector('#clear-favorites-btn') as HTMLElement).click();
+
+        expect(track).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('Feature Disabled State', () => {
@@ -480,7 +524,7 @@ describe('Favorites View Component', () => {
         path.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         // Should still call removeFavorite via event delegation
-        expect(removeFavorite).toHaveBeenCalledWith('123');
+        expect(removeFavorite).toHaveBeenCalledWith('123', 'law_card');
       } finally {
         document.body.removeChild(el);
       }
@@ -530,7 +574,7 @@ describe('Favorites View Component', () => {
 
       favoriteButton?.click();
 
-      expect(removeFavorite).toHaveBeenCalledWith('123');
+      expect(removeFavorite).toHaveBeenCalledWith('123', 'law_card');
     });
 
     it('shows empty state after unfavoriting the last law', async () => {

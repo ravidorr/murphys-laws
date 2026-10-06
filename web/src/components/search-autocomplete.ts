@@ -4,6 +4,7 @@ import { debounce } from '../utils/debounce.ts';
 import { fetchSuggestions } from '../utils/api.ts';
 import { SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY } from '../utils/constants.ts';
 import { escapeHtml } from '../utils/sanitize.ts';
+import { getQueryProperties, trackPendoEvent } from '../utils/pendo.ts';
 import type { Law } from '../types/app.d.ts';
 
 interface SearchAutocompleteOptions {
@@ -107,10 +108,19 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
   }
 
   // Select a suggestion by index (suggestions from API always have valid law per index)
-  function selectSuggestion(index: number) {
+  function selectSuggestion(index: number, selectionMethod: 'click' | 'keyboard') {
     if (index < 0 || index >= suggestions.length) return;
 
     const law = suggestions[index]!;
+    // Report before onSelect navigates away and closeDropdown() resets the suggestion state
+    const query = inputElement.value;
+    trackPendoEvent('search_suggestion_selected', {
+      ...getQueryProperties(query),
+      suggestion_position: index + 1,
+      suggestions_count: suggestions.length,
+      law_id: String(law.id),
+      selection_method: selectionMethod,
+    });
     onSelect(law);
     closeDropdown();
   }
@@ -193,7 +203,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       case 'Enter':
         if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
           event.preventDefault();
-          selectSuggestion(selectedIndex);
+          selectSuggestion(selectedIndex, 'keyboard');
         }
         // If no selection, let form submit normally
         break;
@@ -216,7 +226,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     if (item) {
       const index = parseInt(item.getAttribute('data-index') ?? '', 10);
       if (!isNaN(index)) {
-        selectSuggestion(index);
+        selectSuggestion(index, 'click');
       }
     }
   }

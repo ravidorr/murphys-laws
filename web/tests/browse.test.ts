@@ -1710,4 +1710,248 @@ describe('Browse view', () => {
 
     expect(writeTextMock).toHaveBeenCalledWith('Law text to copy');
   });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    const searchEvents = () => track.mock.calls.filter(([name]) => name === 'search_performed');
+
+    async function waitForResults(el: HTMLElement) {
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy();
+      }, { timeout: 1000 });
+    }
+
+    it('reports a header search once its results load and marks the history entry', async () => {
+      window.history.replaceState({ name: 'browse', searchSurface: 'header' }, '', '/browse?q=Murphy');
+
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+
+      expect(track).toHaveBeenCalledWith('search_performed', {
+        query_length: 6,
+        query_token_count: 1,
+        sort: 'relevance',
+        search_surface: 'header',
+        order: 'desc',
+        results_count: 2,
+      });
+      expect(track).not.toHaveBeenCalledWith('search_no_results', expect.anything());
+      expect(window.history.state).toMatchObject({ searchSurface: 'header', searchTracked: true });
+
+      // Back/forward and reloads render the same history entry again
+      await waitForResults(Browse({ onNavigate: () => { } }));
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('attributes a /browse link opened directly to direct_url', async () => {
+      window.history.replaceState(null, '', '/browse?q=toast&attribution=Arthur%20Bloch');
+
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 5,
+        query_token_count: 1,
+        attribution: 'Arthur Bloch',
+        search_surface: 'direct_url',
+      }));
+    });
+
+    it('reports searches without results as search_no_results', async () => {
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?q=zebra');
+
+      Browse({ onNavigate: () => { } });
+
+      await vi.waitFor(() => {
+        expect(track).toHaveBeenCalledWith('search_no_results', {
+          query_length: 5,
+          query_token_count: 1,
+          sort: 'relevance',
+          search_surface: 'home',
+        });
+      }, { timeout: 1000 });
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({ results_count: 0 }));
+    });
+
+    it('reports Advanced Search submissions but not sorting or clearing the form', async () => {
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      expect(searchEvents()).toHaveLength(0);
+
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(searchEvents()).toHaveLength(1), { timeout: 1000 });
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 7,
+        query_token_count: 1,
+        search_surface: 'browse_advanced',
+      }));
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      (el.querySelector('#clear-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(4), { timeout: 1000 });
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('does not report a failed search when the visitor later changes sorting', async () => {
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      fetchLawsSpy.mockRejectedValueOnce(new Error('Network error'));
+
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await waitForResults(el);
+
+      expect(searchEvents()).toHaveLength(0);
+    });
+
+    it('reports a search when the visitor retries its failed request', async () => {
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      fetchLawsSpy.mockRejectedValueOnce(new Error('Network error'));
+
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
+
+      (el.querySelector('[data-action="retry"]') as HTMLButtonElement).click();
+      await waitForResults(el);
+
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 7,
+        query_token_count: 1,
+        search_surface: 'browse_advanced',
+      }));
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('ignores an earlier load that resolves after an Advanced Search submission', async () => {
+      const initialResponse = { data: [{ id: 1, title: 'Old Law', text: 'Old result' }], total: 1, limit: 25, offset: 0 };
+      const searchResponse = { data: [{ id: 2, title: 'New Law', text: 'New result' }], total: 1, limit: 25, offset: 0 };
+      let resolveInitial!: (value: typeof initialResponse) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<typeof initialResponse>((resolve) => { resolveInitial = resolve; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      fetchLawsSpy.mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('#search-keyword')).toBeTruthy());
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'latest';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(searchEvents()).toHaveLength(1));
+      resolveInitial(initialResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 6,
+        query_token_count: 1,
+        results_count: 1,
+        search_surface: 'browse_advanced',
+      }));
+      expect(searchEvents()).toHaveLength(1);
+      expect(el.textContent).toContain('New Law');
+      expect(el.textContent).not.toContain('Old Law');
+    });
+
+    it('ignores an earlier load that rejects after an Advanced Search submission', async () => {
+      const searchResponse = { data: [{ id: 2, title: 'New Law', text: 'New result' }], total: 1, limit: 25, offset: 0 };
+      let rejectInitial!: (reason?: unknown) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<never>((_resolve, reject) => { rejectInitial = reject; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      fetchLawsSpy.mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('#search-keyword')).toBeTruthy());
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'latest';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(searchEvents()).toHaveLength(1));
+      rejectInitial(new Error('Old request failed'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(el.textContent).toContain('New Law');
+      expect(el.querySelector('.empty-state')).toBeNull();
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('reports results opened by card click, title link and keyboard with their rank', async () => {
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=law&page=2');
+      const onNavigate = vi.fn();
+      const el = Browse({ onNavigate });
+      await waitForResults(el);
+      const [firstCard, secondCard] = Array.from(el.querySelectorAll<HTMLElement>('#browse-laws-list .law-card-mini'));
+
+      secondCard!.click();
+      (firstCard!.querySelector('a[data-nav="law"]') as HTMLElement).click();
+      firstCard!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(track).toHaveBeenCalledWith('search_result_opened', {
+        query_length: 3,
+        query_token_count: 1,
+        sort: 'relevance',
+        law_id: '2',
+        result_position: 27,
+        page: 2,
+        results_count: 2,
+        has_filters: true,
+        open_method: 'card_click',
+      });
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '1', result_position: 26, open_method: 'title_link'
+      }));
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '1', result_position: 26, open_method: 'keyboard'
+      }));
+      expect(searchEvents()).toHaveLength(0);
+      expect(onNavigate).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not report laws opened from the sidebar widgets', async () => {
+      vi.mocked(api.fetchTopVoted).mockResolvedValue({
+        data: [{ id: 99, title: 'Widget Law', text: 'Shown in Top Voted', upvotes: 50, downvotes: 0 }],
+        total: 1,
+        limit: 3,
+        offset: 0
+      });
+      const onNavigate = vi.fn();
+      const el = Browse({ onNavigate });
+      let widgetCard: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        widgetCard = el.querySelector('[data-widgets] .law-card-mini[data-law-id="99"]');
+        expect(widgetCard).toBeTruthy();
+      }, { timeout: 1000 });
+
+      widgetCard!.click();
+
+      expect(onNavigate).toHaveBeenCalledWith('law', '99');
+      expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.anything());
+    });
+  });
 });

@@ -272,4 +272,81 @@ describe('Voting utilities', () => {
       expect(getUserVote(123)).toBe('down');
     });
   });
+
+  describe('toggleVote Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let fetchSpy: ReturnType<typeof vi.spyOn>;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      fetchSpy = vi.spyOn(window as unknown as { fetch: typeof fetch }, 'fetch');
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/browse');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      vi.restoreAllMocks();
+    });
+
+    function mockVoteResponse(upvotes: number, downvotes: number) {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ upvotes, downvotes })
+      } as unknown as Response);
+    }
+
+    it('reports an added vote with the updated counts', async () => {
+      mockVoteResponse(11, 2);
+
+      await toggleVote(123, 'up', 'law_card');
+
+      expect(track).toHaveBeenCalledWith('law_voted', {
+        law_id: '123',
+        vote_type: 'up',
+        vote_action: 'added',
+        surface: 'law_card',
+        page_path: '/browse',
+        previous_vote: 'none',
+        upvotes: 11,
+        downvotes: 2,
+      });
+    });
+
+    it('reports removed and switched votes with the previous vote', async () => {
+      localStorage.setItem('murphy_votes', JSON.stringify({ '123': 'up', '456': 'up' }));
+      mockVoteResponse(10, 2);
+
+      await toggleVote(123, 'up', 'law_detail');
+      await toggleVote(456, 'down', 'law_of_day');
+
+      expect(track).toHaveBeenCalledWith('law_voted', expect.objectContaining({
+        law_id: '123', vote_action: 'removed', previous_vote: 'up', surface: 'law_detail'
+      }));
+      expect(track).toHaveBeenCalledWith('law_voted', expect.objectContaining({
+        law_id: '456', vote_type: 'down', vote_action: 'switched', previous_vote: 'up', surface: 'law_of_day'
+      }));
+    });
+
+    it('reports a failed vote with its error type and rethrows', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: 'Rate limit exceeded. Please try again later.' })
+      } as unknown as Response);
+
+      await expect(toggleVote(123, 'up')).rejects.toThrow('Rate limit exceeded');
+
+      expect(track).toHaveBeenCalledWith('law_vote_failed', {
+        law_id: '123',
+        vote_type: 'up',
+        vote_action: 'added',
+        surface: 'unknown',
+        page_path: '/browse',
+        error_type: 'rate_limited',
+      });
+      expect(track).not.toHaveBeenCalledWith('law_voted', expect.anything());
+    });
+  });
 });
