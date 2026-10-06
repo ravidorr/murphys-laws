@@ -51,11 +51,12 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
   });
 }
 
-// Novus by Pendo: the snippet in index.html stubs window.pendo and loads the agent.
-// Initialize exactly once, as an anonymous visitor: an empty id lets Pendo reuse the
-// visitor id it stored on an earlier visit, or create a new one. The site has no
-// sign-in, so there is no pendo.identify() or pendo.clearSession() call.
-if (window.pendo) {
+// Novus by Pendo: on the canonical production host the snippet in index.html stubs
+// window.pendo and loads the agent; elsewhere it does nothing. Initialize under the
+// same guard as Sentry, exactly once, as an anonymous visitor: an empty id lets Pendo
+// reuse the visitor id it stored on an earlier visit, or create a new one. The site
+// has no sign-in, so there is no pendo.identify() or pendo.clearSession() call.
+if (isCanonicalTelemetryRuntime && window.pendo) {
   window.pendo.initialize({ visitor: { id: '' } });
 }
 
