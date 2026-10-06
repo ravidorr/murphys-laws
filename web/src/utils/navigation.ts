@@ -22,11 +22,14 @@ export function handleNavClick(target: Element, onNavigate: OnNavigate): boolean
   return true;
 }
 
+/** Called with the law card a keyboard user is about to open, before navigation. */
+export type OnLawCardOpen = (lawCard: HTMLElement) => void;
+
 /**
  * Handles keyboard activation (Enter/Space) on .law-card-mini elements.
  * Returns true if the event was handled.
  */
-export function handleLawCardKeydown(e: KeyboardEvent, onNavigate: OnNavigate): boolean {
+export function handleLawCardKeydown(e: KeyboardEvent, onNavigate: OnNavigate, onLawCardOpen?: OnLawCardOpen): boolean {
   if (e.key !== 'Enter' && e.key !== ' ') return false;
 
   const t = e.target;
@@ -37,6 +40,7 @@ export function handleLawCardKeydown(e: KeyboardEvent, onNavigate: OnNavigate): 
     // Don't navigate if focus is on a button inside the card
     if (t.closest('button')) return false;
     e.preventDefault();
+    onLawCardOpen?.(lawCard);
     onNavigate('law', lawCard.dataset.lawId);
     return true;
   }
@@ -47,8 +51,8 @@ export function handleLawCardKeydown(e: KeyboardEvent, onNavigate: OnNavigate): 
  * Adds standard navigation listeners to a container element.
  * Includes [data-nav] click handler and .law-card-mini keyboard handler.
  */
-export function addNavigationListener(el: HTMLElement, onNavigate: OnNavigate): void {
+export function addNavigationListener(el: HTMLElement, onNavigate: OnNavigate, onLawCardOpen?: OnLawCardOpen): void {
   el.addEventListener('keydown', (e) => {
-    handleLawCardKeydown(e, onNavigate);
+    handleLawCardKeydown(e, onNavigate, onLawCardOpen);
   });
 }

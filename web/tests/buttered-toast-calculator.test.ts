@@ -707,4 +707,86 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    });
+
+    function slide(el: HTMLElement, id: string, value: string) {
+      const slider = input(el, id);
+      slider.value = value;
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    it('reports one calculator_used with the inputs and result once the sliders settle', () => {
+      const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+      document.body.appendChild(el);
+
+      slide(el, 'toast-height', '120');
+      slide(el, 'toast-butter', '1.5');
+      vi.advanceTimersByTime(1000);
+
+      expect(track).toHaveBeenCalledTimes(1);
+      const [eventName, properties] = track.mock.calls[0]!;
+      expect(eventName).toBe('calculator_used');
+      expect(properties).toEqual({
+        calculator: 'buttered-toast',
+        surface: 'calculator_page',
+        probability_percent: parseInt(el.querySelector('#toast-probability-value')!.textContent!, 10),
+        risk_level: expect.stringMatching(/^(low|elevated|high|critical)$/),
+        height: 120,
+        gravity: 980,
+        overhang: 5,
+        butter: 1.5,
+        friction: 20,
+        inertia: 350,
+        from_shared_link: false,
+        adjustment_count: 2,
+      });
+      el.cleanup!();
+      document.body.removeChild(el);
+    });
+
+    it('flags shared-link sessions, reports a still-settling result on unmount and shares the current result', async () => {
+      vi.stubGlobal('location', {
+        ...window.location,
+        search: '?h=200&o=20&b=2',
+        href: 'http://localhost:3000/calculator/buttered-toast?h=200&o=20&b=2'
+      });
+      Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+      const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+      document.body.appendChild(el);
+
+      (el.querySelector('[data-action="copy-text"]') as HTMLElement).click();
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('calculator_result_shared', expect.objectContaining({
+        calculator: 'buttered-toast',
+        share_method: 'copy_text',
+        probability_percent: parseInt(el.querySelector('#toast-probability-value')!.textContent!, 10),
+      })));
+
+      slide(el, 'toast-friction', '0');
+      el.cleanup!();
+
+      expect(track).toHaveBeenCalledWith('calculator_used', expect.objectContaining({
+        height: 200,
+        overhang: 20,
+        butter: 2,
+        friction: 0,
+        from_shared_link: true,
+        adjustment_count: 1,
+      }));
+      document.body.removeChild(el);
+    });
+  });
 });

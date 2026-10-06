@@ -22,11 +22,23 @@ import { handleCopyAction } from '../utils/copy-actions.ts';
 import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
 import { updatePageMetadata } from '../utils/dom.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
-import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
+import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
+import type { CleanableElement, OnNavigate, SearchFilters, SearchSurface, Law } from '../types/app.ts';
 
 const BROWSE_TITLE = "Browse All Murphy's Laws | Murphy's Law Archive";
 const BROWSE_DESCRIPTION =
   "Search and filter the complete collection of Murphy's Laws. Find corollaries, technology laws, and everyday observations about the perversity of the universe.";
+
+/** Analytics markers kept on the browse history entry (set by main.ts search navigation). */
+interface BrowseHistoryState {
+  searchSurface?: SearchSurface;
+  searchTracked?: boolean;
+}
+
+function getBrowseHistoryState(): BrowseHistoryState {
+  const state: unknown = history.state;
+  return state && typeof state === 'object' ? state as BrowseHistoryState : {};
+}
 
 function parseBrowseParams(search: string): { filters: SearchFilters; sort: string; order: string; page: number } {
   const params = new URLSearchParams(search);
@@ -66,6 +78,46 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   let currentFilters: SearchFilters = searchQuery !== undefined && searchQuery !== '' ? { ...initial.filters, q: searchQuery } : initial.filters;
   let currentSort = searchQuery ? 'relevance' : initial.sort;
   let currentOrder = initial.order;
+  let loadGeneration = 0;
+
+  // A search that arrives through the URL (header/home search box or a shared link) is reported once its
+  // results load; the history entry is then marked so back/forward and reloads don't count it again.
+  const historyState = getBrowseHistoryState();
+  let pendingSearchSurface: SearchSurface | null = hasActiveFilters(currentFilters) && !historyState.searchTracked
+    ? historyState.searchSurface ?? 'direct_url'
+    : null;
+  let retrySearchSurface: SearchSurface | null = null;
+
+  function trackSearchPerformed(
+    surface: SearchSurface,
+    filters: SearchFilters,
+    sort: string,
+    order: string,
+    resultsCount: number
+  ) {
+    const searchProperties = { ...getSearchProperties(filters, sort), search_surface: surface };
+    trackPendoEvent('search_performed', { ...searchProperties, order, results_count: resultsCount });
+    if (resultsCount === 0) {
+      trackPendoEvent('search_no_results', searchProperties);
+    }
+    history.replaceState({ ...getBrowseHistoryState(), searchTracked: true }, '');
+  }
+
+  // Report a law opened from the results list (not the sidebar widgets) with its 1-based rank across pages
+  function trackResultOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'keyboard') {
+    const resultsList = lawCard.closest('#browse-laws-list');
+    if (!resultsList) return;
+    const pageIndex = Array.from(resultsList.querySelectorAll('.law-card-mini')).indexOf(lawCard);
+    trackPendoEvent('search_result_opened', {
+      ...getSearchProperties(currentFilters, currentSort),
+      law_id: lawCard.dataset.lawId,
+      result_position: (currentPage - 1) * LAWS_PER_PAGE + pageIndex + 1,
+      page: currentPage,
+      results_count: totalLaws,
+      has_filters: hasActiveFilters(currentFilters),
+      open_method: openMethod,
+    });
+  }
 
   // Render law cards
   function renderLaws(laws: Law[], query?: string) {
@@ -129,8 +181,17 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   }
 
   // Load laws for current page
-  async function loadPage(page: number) {
+  async function loadPage(page: number, isRetry = false) {
+    if (isRetry && retrySearchSurface) {
+      pendingSearchSurface = retrySearchSurface;
+    }
+    retrySearchSurface = null;
     currentPage = page;
+    const generation = ++loadGeneration;
+    const requestFilters = { ...currentFilters };
+    const requestSort = currentSort;
+    const requestOrder = currentOrder;
+    const requestSearchSurface = pendingSearchSurface;
 
     const cardText = el.querySelector('#browse-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
@@ -145,15 +206,23 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       const data = await fetchLaws({
         limit: LAWS_PER_PAGE,
         offset,
-        sort: currentSort,
-        order: currentOrder,
-        ...currentFilters
+        sort: requestSort,
+        order: requestOrder,
+        ...requestFilters
       });
+      if (generation !== loadGeneration) return;
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
-      if (laws.length === 0 && hasActiveFilters(currentFilters)) {
+      if (laws.length === 0 && hasActiveFilters(requestFilters)) {
         trackProductEvent('archive.no_results', { surface: 'browse' });
+      }
+      // Pagination and sort reloads leave this unset, so only new searches are reported
+      if (requestSearchSurface) {
+        trackSearchPerformed(requestSearchSurface, requestFilters, requestSort, requestOrder, totalLaws);
+        if (pendingSearchSurface === requestSearchSurface) {
+          pendingSearchSurface = null;
+        }
       }
       await updateDisplay();
 
@@ -176,6 +245,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
         history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
       }
     } catch {
+      if (generation !== loadGeneration) return;
+      if (pendingSearchSurface === requestSearchSurface) {
+        pendingSearchSurface = null;
+        retrySearchSurface = requestSearchSurface;
+      }
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">
@@ -203,7 +277,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     if (!(t instanceof Element)) return;
 
     if (t.closest('[data-action="retry"]')) {
-      loadPage(currentPage);
+      loadPage(currentPage, true);
       return;
     }
 
@@ -213,7 +287,9 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       return;
     }
 
-    // Handle navigation buttons and links (shared utility)
+    // Handle navigation buttons and links (shared utility); a result's title link opens the law here
+    const titleLinkCard = t.closest('[data-nav="law"]')?.closest<HTMLElement>('.law-card-mini');
+    if (titleLinkCard) trackResultOpened(titleLinkCard, 'title_link');
     if (handleNavClick(t, onNavigate)) {
       e.preventDefault();
       return;
@@ -239,13 +315,14 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
       if (t.closest('button')) return;
       trackProductEvent('archive.result_open', { surface: 'browse' });
+      trackResultOpened(lawCard, 'card_click');
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }
   });
 
   // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
-  addNavigationListener(el, onNavigate);
+  addNavigationListener(el, onNavigate, (lawCard) => trackResultOpened(lawCard, 'keyboard'));
 
   // Initial render and load (catch so rejections don't trigger global error banner)
   void render().catch((err) => {
@@ -274,6 +351,8 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       currentFilters = filters;
       currentSort = filters.q ? 'relevance' : 'score';
       currentOrder = 'desc';
+      // Clearing the form also calls onSearch({}), which isn't a search
+      pendingSearchSurface = hasActiveFilters(filters) ? 'browse_advanced' : null;
       updateWidgetsVisibility();
       currentPage = 1;
       loadPage(1);

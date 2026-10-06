@@ -167,7 +167,7 @@ describe('Home view', () => {
 
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
-    expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' });
+    expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' }, 'home');
   });
 
   it('applies the persisted homepage module-order variant', () => {
@@ -968,5 +968,17 @@ describe('Home view keyboard navigation for law cards', () => {
     (el as CleanableElement).cleanup!();
     expect(clearSpy).toHaveBeenCalled();
     clearSpy.mockRestore();
+  });
+
+  it('cleanup flushes the home calculator widget', () => {
+    const el = Home({ onNavigate: () => {} });
+    const toolsZone = el.querySelector('[data-home-zone="tools-submit"]')!;
+    const calculator = toolsZone.firstElementChild as CleanableElement;
+    const calculatorCleanup = vi.fn();
+    calculator.cleanup = calculatorCleanup;
+
+    (el as CleanableElement).cleanup!();
+
+    expect(calculatorCleanup).toHaveBeenCalledOnce();
   });
 });

@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Recorded URLs keep only the `category_id`, `sort`, `order` and `page` query
   parameters, so visitor-typed search text (`q`, `attribution`) is never sent.
   Web bumped to `3.4.11`; root to `2.6.13`.
+- Pendo Track Events for archive search, voting, sharing, favorites, calculator
+  results, law submissions, exports, PWA install prompts, and theme changes, so
+  product analytics can see the interactions that page views and clicks miss.
+  Events go through a guarded `pendo.track()` helper that does nothing until the
+  Pendo agent is loaded.
 - Hardened archive discovery and release quality with FTS relevance search,
   duplicate-similarity scoring, reviewed editorial metadata, richer static
   rendering and canonical routing, accessibility fixes, production-only

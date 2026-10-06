@@ -1258,4 +1258,130 @@ describe('SubmitLawSection component', () => {
     document.body.removeChild(el);
     vi.restoreAllMocks();
   });
+
+  describe('Pendo tracking', () => {
+    const LAW_TEXT = 'Valid law text with enough characters';
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    function fillForm(el: HTMLElement, { text = LAW_TEXT, terms = true } = {}) {
+      const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+      textarea.value = text;
+      textarea.dispatchEvent(new Event('input'));
+      const termsCheckbox = el.querySelector('#submit-terms') as HTMLInputElement;
+      termsCheckbox.checked = terms;
+      termsCheckbox.dispatchEvent(new Event('change'));
+    }
+
+    function submit(el: HTMLElement) {
+      (el.querySelector('.submit-form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+    }
+
+    const eventsNamed = (name: string) => track.mock.calls.filter(([eventName]) => eventName === name);
+
+    it('reports a successful submission without personal details', async () => {
+      vi.spyOn(request, 'apiPost').mockResolvedValue({ id: 321, status: 'in_review' });
+      const el = mountSection({ append: true });
+      await new Promise(resolve => setTimeout(resolve, 0));
+      const category = el.querySelector('#submit-category') as HTMLSelectElement;
+      category.innerHTML = '<option value="">None</option><option value="4" data-category-slug="murphys-office-laws">Office</option>';
+      category.value = '4';
+      (el.querySelector('#submit-title') as HTMLInputElement).value = 'Meeting Law';
+      (el.querySelector('#submit-author') as HTMLInputElement).value = 'Jane Doe';
+      (el.querySelector('#submit-email') as HTMLInputElement).value = 'jane@example.com';
+      fillForm(el);
+
+      submit(el);
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('law_submitted', {
+        submission_id: '321',
+        category_id: '4',
+        category_slug: 'murphys-office-laws',
+        has_title: true,
+        text_length: LAW_TEXT.length,
+        is_anonymous: false,
+        has_author: true,
+        has_email: true,
+        duplicate_warning_shown: false,
+      }));
+      expect(JSON.stringify(track.mock.calls)).not.toMatch(/Jane|jane@example|Valid law text/);
+    });
+
+    it('reports each distinct duplicate match once and flags the warning on submit', async () => {
+      const text = 'The exact duplicate law always fails';
+      vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+        data: [{ id: 8, title: 'Exact Law', text }],
+        total: 1,
+        limit: 5,
+        offset: 0
+      });
+      vi.spyOn(request, 'apiPost').mockResolvedValue(null);
+      const el = mountSection({ append: true });
+      const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+      textarea.value = text;
+      textarea.dispatchEvent(new Event('blur'));
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('law_duplicate_detected', {
+        exact_match_count: 1,
+        fuzzy_match_count: 0,
+        top_similarity: 100,
+        top_match_law_id: '8',
+        text_length: text.length,
+      }));
+      textarea.dispatchEvent(new Event('blur'));
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(eventsNamed('law_duplicate_detected')).toHaveLength(1);
+
+      fillForm(el, { text });
+      submit(el);
+
+      await vi.waitFor(() => expect(eventsNamed('law_submitted')).toHaveLength(1));
+      const [, submitted] = eventsNamed('law_submitted')[0]!;
+      expect(submitted).toMatchObject({ duplicate_warning_shown: true, has_title: false, has_author: false });
+      expect(submitted).not.toHaveProperty('submission_id');
+    });
+
+    it('reports submissions stopped in the browser', () => {
+      const el = mountSection({ append: true });
+
+      submit(el);
+      fillForm(el, { terms: false });
+      submit(el);
+      fillForm(el);
+      (el.querySelector('#submit-website') as HTMLInputElement).value = 'spam';
+      submit(el);
+
+      expect(track).toHaveBeenCalledWith('law_submission_failed', { text_length: 0, is_anonymous: false, failure_reason: 'missing_text' });
+      expect(track).toHaveBeenCalledWith('law_submission_failed', {
+        text_length: LAW_TEXT.length, is_anonymous: false, failure_reason: 'terms_not_accepted'
+      });
+      expect(track).toHaveBeenCalledWith('law_submission_failed', expect.objectContaining({ failure_reason: 'spam_trap' }));
+    });
+
+    it('reports submissions the API rejects, with the error type', async () => {
+      vi.spyOn(request, 'apiPost').mockRejectedValue(new Error('Rate limit exceeded. Please try again later.'));
+      const el = mountSection({ append: true });
+      (el.querySelector('#submit-anonymous') as HTMLInputElement).checked = true;
+      fillForm(el);
+
+      submit(el);
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('law_submission_failed', {
+        text_length: LAW_TEXT.length,
+        is_anonymous: true,
+        failure_reason: 'rate_limited',
+      }));
+      expect(eventsNamed('law_submitted')).toHaveLength(0);
+    });
+  });
 });

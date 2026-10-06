@@ -814,4 +814,65 @@ describe('Export Menu Component', () => {
       expect(unsubscribeMock).toHaveBeenCalled();
     });
   });
+
+  describe('Pendo tracking', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/favorites');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+    });
+
+    function openMenu() {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+      (menu.querySelector('#export-toggle') as HTMLButtonElement).click();
+      return menu;
+    }
+
+    it('reports a clicked export after the file is produced', async () => {
+      const menu = openMenu();
+
+      (menu.querySelector('[data-format="csv"]') as HTMLElement).click();
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('content_exported', {
+        format: 'csv',
+        content_type: 'laws',
+        export_title: 'Test Laws',
+        item_count: 1,
+        page_path: '/favorites',
+        trigger_method: 'click',
+      }));
+    });
+
+    it('reports keyboard exports and counts single items as one', async () => {
+      vi.mocked(getExportContent).mockReturnValue({ type: 'content', title: 'About', data: 'Markdown body' } as ExportContent);
+      const menu = openMenu();
+      (menu.querySelector('[data-format="pdf"]') as HTMLElement).focus();
+
+      menu.querySelector('#export-dropdown')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('content_exported', expect.objectContaining({
+        format: 'pdf',
+        content_type: 'content',
+        item_count: 1,
+        trigger_method: 'keyboard',
+      })));
+    });
+
+    it('does not report when there is nothing to export', () => {
+      const menu = openMenu();
+      vi.mocked(getExportContent).mockReturnValue(null);
+
+      (menu.querySelector('[data-format="txt"]') as HTMLElement).click();
+
+      expect(track).not.toHaveBeenCalled();
+    });
+  });
 });

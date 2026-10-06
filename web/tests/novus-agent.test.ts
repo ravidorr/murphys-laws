@@ -14,7 +14,7 @@ import {
 const production: TelemetryRuntime = { isProd: true, mode: 'production', hostname: CANONICAL_HOSTNAME };
 
 function createAgent() {
-  const initialize = vi.fn<NovusAgent['initialize']>();
+  const initialize = vi.fn<NonNullable<NovusAgent['initialize']>>();
   const agent: NovusAgent = { initialize };
   return { agent, initialize };
 }
@@ -73,6 +73,10 @@ describe('initializeNovusAgent', () => {
 
   it('skips safely when the agent stub is absent on the canonical host', () => {
     expect(initializeNovusAgent(production, undefined)).toBe(false);
+  });
+
+  it('skips safely when the agent has no initialize method', () => {
+    expect(initializeNovusAgent(production, {})).toBe(false);
   });
 });
 

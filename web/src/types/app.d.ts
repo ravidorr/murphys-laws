@@ -121,6 +121,9 @@ export interface SearchFilters {
   attribution?: string;
 }
 
+/** Where an archive search started (reported to analytics as search_surface) */
+export type SearchSurface = 'header' | 'home' | 'browse_advanced' | 'category_detail' | 'direct_url';
+
 /** Favorite law stored in localStorage */
 export interface FavoriteLaw {
   /** number | string because DOM getAttribute() returns strings, while API returns numbers */

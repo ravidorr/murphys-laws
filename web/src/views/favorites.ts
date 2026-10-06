@@ -8,7 +8,10 @@ import { isFavoritesEnabled } from '@utils/feature-flags.ts';
 import { addVotingListeners } from '@utils/voting.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { fetchLaw } from '@utils/api.ts';
+import { trackPendoEvent } from '@utils/pendo.ts';
 import type { CleanableElement, OnNavigate, FavoriteLaw, Law } from '../types/app.d.ts';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Favorites page view
@@ -221,7 +224,14 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
   function handleClearAll() {
     // Confirm before clearing
     if (confirm('Are you sure you want to remove all favorites?')) {
+      // Read the collection first: the click alone doesn't show whether the dialog was accepted or what was lost
+      const cleared = getFavorites();
+      const savedAts = cleared.map((favorite) => favorite.savedAt).filter((savedAt) => Number.isFinite(savedAt) && savedAt > 0);
       clearAllFavorites();
+      trackPendoEvent('favorites_cleared', {
+        cleared_count: cleared.length,
+        days_since_first_favorite: savedAts.length > 0 ? Math.floor((Date.now() - Math.min(...savedAts)) / DAY_MS) : undefined,
+      });
       render();
     }
   }
@@ -231,7 +241,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
    * @param {string} lawId - Law ID to unfavorite
    */
   function handleUnfavorite(lawId: string) {
-    removeFavorite(lawId);
+    removeFavorite(lawId, 'law_card');
 
     // Find the card element specifically (not the button which also has data-law-id)
     const card = el.querySelector(`.law-card-mini[data-law-id="${lawId}"]`);

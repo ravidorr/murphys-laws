@@ -23,6 +23,7 @@ import { Breadcrumb } from '../components/breadcrumb.ts';
 import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
 import { getCategoryHubLinks, renderInternalLinkList } from '@utils/internal-links.ts';
+import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
 function parseCategoryParams(search: string): { page: number; sort: string; order: string } {
@@ -58,6 +59,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   let currentSort = initialParams.sort;
   let currentOrder = initialParams.order;
   let categoryNumericId: number | null = null; // Will be set after fetching category details
+  // Set by the in-category search form; pagination and sort reloads leave it false
+  let pendingSearch = false;
+  let retryPendingSearch = false;
+  let loadGeneration = 0;
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
   // Always wraps only the first word (typically "Murphy's") in accent color
@@ -143,8 +148,18 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
   // Load laws for current page
-  async function loadPage(page: number) {
+  async function loadPage(page: number, isRetry = false) {
+    if (isRetry && retryPendingSearch) {
+      pendingSearch = true;
+    }
+    retryPendingSearch = false;
     currentPage = page;
+    const generation = ++loadGeneration;
+    const requestFilters = { ...currentFilters };
+    const requestSort = currentSort;
+    const requestOrder = currentOrder;
+    const shouldTrackSearch = pendingSearch;
+    const requestCategoryNumericId = categoryNumericId;
 
     const cardText = el.querySelector('#category-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
@@ -158,14 +173,14 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       const params: Record<string, string | number> = {
         limit: LAWS_PER_PAGE,
         offset,
-        sort: currentSort,
-        order: currentOrder,
-        ...currentFilters
+        sort: requestSort,
+        order: requestOrder,
+        ...requestFilters
       };
 
       // If we have the numeric ID, use it; otherwise use slug
-      if (categoryNumericId) {
-        params.category_id = categoryNumericId;
+      if (requestCategoryNumericId) {
+        params.category_id = requestCategoryNumericId;
       } else {
         const numericId = parseInt(categoryId, 10);
         if (!isNaN(numericId) && numericId > 0) {
@@ -176,9 +191,18 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       }
 
       const data = await fetchLaws(params);
+      if (generation !== loadGeneration) return;
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
+      if (shouldTrackSearch) {
+        if (pendingSearch) pendingSearch = false;
+        const searchProperties = { ...getSearchProperties(requestFilters, requestSort), search_surface: 'category_detail' };
+        trackPendoEvent('search_performed', { ...searchProperties, order: requestOrder, results_count: totalLaws });
+        if (totalLaws === 0) {
+          trackPendoEvent('search_no_results', searchProperties);
+        }
+      }
       await updateDisplay();
 
       // Register export content for this category
@@ -199,6 +223,11 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
       }
     } catch {
+      if (generation !== loadGeneration) return;
+      if (shouldTrackSearch) {
+        pendingSearch = false;
+        retryPendingSearch = true;
+      }
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">
@@ -263,6 +292,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
           initialFilters: { category_id: category.id },
           onSearch: (filters) => {
             currentFilters = { ...filters, category_id: category.id };
+            // The category itself is always applied; only a keyword or submitter makes this a search
+            pendingSearch = Boolean(filters.q || filters.attribution);
             loadPage(1);
           }
         });
@@ -327,7 +358,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     if (!(t instanceof HTMLElement)) return;
 
     if (t.closest('[data-action="retry"]')) {
-      loadPage(currentPage);
+      loadPage(currentPage, true);
       return;
     }
 

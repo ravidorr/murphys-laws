@@ -210,5 +210,30 @@ describe('navigation utils', () => {
       expect(ctx.calls).toHaveLength(1);
       expect(ctx.calls?.[0]?.param).toBe('7');
     });
+
+    it('passes the opened card to onLawCardOpen before navigating', () => {
+      const ctx = local();
+      ctx.calls = [];
+      const opened: string[] = [];
+      const el = document.createElement('div');
+      const card = document.createElement('div');
+      card.className = 'law-card-mini';
+      card.dataset.lawId = '7';
+      const button = document.createElement('button');
+      card.appendChild(button);
+      el.appendChild(card);
+
+      addNavigationListener(
+        el,
+        (name, param) => ctx.calls!.push({ name, param }),
+        (lawCard) => opened.push(`${lawCard.dataset.lawId}:${ctx.calls!.length}`)
+      );
+      button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      // Ignored on the button; reported once, before navigation, on the card
+      expect(opened).toEqual(['7:0']);
+      expect(ctx.calls).toHaveLength(1);
+    });
   });
 });

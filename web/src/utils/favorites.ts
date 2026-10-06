@@ -25,9 +25,21 @@
  */
 
 import { isFavoritesEnabled } from './feature-flags.ts';
+import { trackPendoEvent, getPagePath } from './pendo.ts';
 import type { FavoriteLaw } from '../types/app.d.ts';
 
 const FAVORITES_KEY = 'murphys_favorites';
+
+/** Report a favorite that was actually added or removed, with the collection size after the change. */
+function trackFavoriteToggled(lawId: number | string, action: 'add' | 'remove', surface: string, favoritesCount: number): void {
+  trackPendoEvent('law_favorite_toggled', {
+    law_id: String(lawId),
+    action,
+    surface,
+    favorites_count: favoritesCount,
+    page_path: getPagePath(),
+  });
+}
 
 /**
  * Get all favorites from localStorage
@@ -124,14 +136,16 @@ export function getFavoritesCount(): number {
  * @param {string} [law.attribution] - Law attribution
  * @param {number} [law.category_id] - Category ID
  * @param {string} [law.category_slug] - Category slug
+ * @param {string} [surface] - Where the visitor saved it (for analytics)
  */
-export function addFavorite(law: Partial<FavoriteLaw> & { id?: number | string }): void {
+export function addFavorite(law: Partial<FavoriteLaw> & { id?: number | string }, surface = 'unknown'): void {
   if (!isFavoritesEnabled() || !law?.id) {
     return;
   }
 
   const favorites = getFavoritesFromStorage();
   const lawId = String(law.id);
+  const isNewFavorite = !Object.prototype.hasOwnProperty.call(favorites, lawId);
 
   favorites[lawId] = {
     id: law.id,
@@ -144,28 +158,37 @@ export function addFavorite(law: Partial<FavoriteLaw> & { id?: number | string }
   };
 
   saveFavoritesToStorage(favorites);
+  if (isNewFavorite) {
+    trackFavoriteToggled(law.id, 'add', surface, Object.keys(favorites).length);
+  }
 }
 
 /**
  * Remove a law from favorites
  * @param {number|string} lawId - Law ID
+ * @param {string} [surface] - Where the visitor removed it (for analytics)
  */
-export function removeFavorite(lawId: number | string): void {
+export function removeFavorite(lawId: number | string, surface = 'unknown'): void {
   if (!isFavoritesEnabled()) {
     return;
   }
 
   const favorites = getFavoritesFromStorage();
+  const wasFavorite = Object.prototype.hasOwnProperty.call(favorites, String(lawId));
   delete favorites[String(lawId)];
   saveFavoritesToStorage(favorites);
+  if (wasFavorite) {
+    trackFavoriteToggled(lawId, 'remove', surface, Object.keys(favorites).length);
+  }
 }
 
 /**
  * Toggle favorite state for a law
  * @param {Object} law - Law object with at minimum { id }
+ * @param {string} [surface] - Where the visitor toggled it ('law_card', 'law_detail', 'law_of_day')
  * @returns {boolean} New favorite state (true if now favorited, false if removed)
  */
-export function toggleFavorite(law: Partial<FavoriteLaw> & { id?: number | string }): boolean {
+export function toggleFavorite(law: Partial<FavoriteLaw> & { id?: number | string }, surface = 'unknown'): boolean {
   if (!isFavoritesEnabled() || !law?.id) {
     return false;
   }
@@ -173,10 +196,10 @@ export function toggleFavorite(law: Partial<FavoriteLaw> & { id?: number | strin
   const lawId = String(law.id);
 
   if (isFavorite(lawId)) {
-    removeFavorite(lawId);
+    removeFavorite(lawId, surface);
     return false;
   } else {
-    addFavorite(law);
+    addFavorite(law, surface);
     return true;
   }
 }

@@ -13,6 +13,7 @@ import { isFavoritesEnabled } from '../src/utils/feature-flags.js';
 vi.mock('../src/utils/theme.js', () => ({
   getTheme: vi.fn(() => 'auto'),
   cycleTheme: vi.fn(() => 'light'),
+  getEffectiveTheme: vi.fn((theme) => (theme === 'dark' ? 'dark' : 'light')),
   getThemeIcon: vi.fn((theme) => {
     if (theme === 'light') return 'sun';
     if (theme === 'dark') return 'moon';
@@ -512,7 +513,7 @@ describe('Header component', () => {
     const form = el.querySelector('form[role="search"]');
     input.value = 'query';
     form!.dispatchEvent(new Event('submit'));
-    expect(onSearchMock).toHaveBeenCalledWith({ q: 'query' });
+    expect(onSearchMock).toHaveBeenCalledWith({ q: 'query' }, 'header');
   });
 
   it('submit uses input.value and calls onSearch (L155)', () => {
@@ -580,7 +581,7 @@ describe('Header component', () => {
     const form = el.querySelector('form[role="search"]');
     input.value = 'test query';
     form!.dispatchEvent(new Event('submit'));
-    expect(onSearchMock).toHaveBeenCalledWith({ q: 'test query' });
+    expect(onSearchMock).toHaveBeenCalledWith({ q: 'test query' }, 'header');
 
     (el as CleanableElement).cleanup!();
     expect(exportCleanup).toHaveBeenCalled();
@@ -651,6 +652,29 @@ describe('Header component', () => {
 
       if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
       document.body.removeChild(el);
+    });
+
+    it('reports which theme the toggle picked', () => {
+      const track = vi.fn<(eventName: string, properties?: Record<string, unknown>) => void>();
+      window.pendo = { track };
+      vi.mocked(getTheme).mockReturnValue('light');
+      vi.mocked(cycleTheme).mockReturnValue('dark');
+      const el = Header({ onSearch: () => {}, onNavigate: () => {}, currentPage: 'home' });
+
+      try {
+        (el.querySelector('#theme-toggle') as HTMLElement).click();
+
+        expect(track).toHaveBeenCalledWith('theme_changed', {
+          theme: 'dark',
+          previous_theme: 'light',
+          effective_theme: 'dark',
+        });
+      } finally {
+        delete window.pendo;
+        vi.mocked(getTheme).mockReturnValue('auto');
+        vi.mocked(cycleTheme).mockReturnValue('light');
+        if ((el as CleanableElement).cleanup) (el as CleanableElement).cleanup!();
+      }
     });
 
     it('updates aria-label after theme cycle', () => {

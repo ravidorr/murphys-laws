@@ -8,9 +8,14 @@ import { getRandomLoadingMessage, getCategoryDisplayName } from '../utils/consta
 import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { groupCategories } from '@utils/category-groups.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
+import { getQueryProperties, trackPendoEvent, normalizeQuery } from '@utils/pendo.ts';
+import { createDebouncedTask } from '@utils/debounce.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updatePageMetadata } from '@utils/dom.ts';
 import type { CleanableElement, OnNavigate, Category } from '../types/app.d.ts';
+
+// Filtering runs on every keystroke; report the query once typing settles
+const CATEGORY_FILTER_SETTLE_MS = 800;
 
 export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
@@ -19,6 +24,8 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
 
   let categories: Category[] = [];
   let categoryQuery = '';
+  let visibleCategoryCount = 0;
+  let lastTrackedFilterQuery = '';
   const featuredSlugs = new Set([
     'murphys-technology-laws',
     'murphys-office-laws',
@@ -92,6 +99,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     const visibleCategories = normalizedQuery
       ? categories.filter((category) => `${category.title} ${category.description || ''}`.toLowerCase().includes(normalizedQuery))
       : categories;
+    visibleCategoryCount = visibleCategories.length;
     const grid = el.querySelector('#categories-grid')!;
     grid.classList.remove('loading-placeholder');
     grid.removeAttribute('role');
@@ -186,11 +194,25 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     }
   });
 
+  // Report a settled, non-empty filter once; settling on the same query again isn't a new filter
+  const filterTracking = createDebouncedTask(() => {
+    const query = normalizeQuery(categoryQuery);
+    if (query === lastTrackedFilterQuery) return;
+    lastTrackedFilterQuery = query;
+    if (!query) return;
+    trackPendoEvent('categories_filtered', {
+      ...getQueryProperties(categoryQuery),
+      results_count: visibleCategoryCount,
+      total_categories: categories.length,
+    });
+  }, CATEGORY_FILTER_SETTLE_MS);
+
   el.addEventListener('input', (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement) || target.id !== 'category-filter') return;
     categoryQuery = target.value;
     updateDisplay();
+    filterTracking.schedule();
   });
 
   // Handle keyboard navigation for category cards
@@ -214,6 +236,8 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup =() => {
+    // Report a filter that was still settling when the visitor left (e.g. clicked a match)
+    filterTracking.flush();
     clearExportContent();
   };
 

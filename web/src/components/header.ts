@@ -1,13 +1,14 @@
 // Header component in plain JS
 import templateHtml from '@components/templates/header.html?raw';
 import { hydrateIcons, createIcon } from '../utils/icons.ts';
-import { getTheme, cycleTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.ts';
+import { getTheme, cycleTheme, getEffectiveTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.ts';
 import { SearchAutocomplete } from './search-autocomplete.ts';
 import { isFavoritesEnabled } from '../utils/feature-flags.ts';
 import { ExportMenu } from './export-menu.ts';
-import type { CleanableElement, OnNavigate, Theme } from '../types/app.d.ts';
+import { trackPendoEvent } from '../utils/pendo.ts';
+import type { CleanableElement, OnNavigate, SearchSurface, Theme } from '../types/app.d.ts';
 
-export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: string }) => void; onNavigate: OnNavigate; currentPage?: string }) {
+export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: string }, surface?: SearchSurface) => void; onNavigate: OnNavigate; currentPage?: string }) {
   const header = document.createElement('header');
   header.className = 'sticky';
   header.setAttribute('role', 'banner');
@@ -106,8 +107,15 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
   // Handle theme toggle click
   if (themeToggle) {
     themeToggle.addEventListener('click', () => {
+      const previousTheme = getTheme();
       const newTheme = cycleTheme();
       updateThemeToggle(newTheme);
+      // One button cycles three states, so the click alone doesn't say which theme was picked
+      trackPendoEvent('theme_changed', {
+        theme: newTheme,
+        previous_theme: previousTheme,
+        effective_theme: getEffectiveTheme(newTheme),
+      });
     });
   }
 
@@ -166,7 +174,7 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const q = input && 'value' in input ? (input as HTMLInputElement).value.trim() : '';
-      onSearch({ q: q });
+      onSearch({ q: q }, 'header');
     });
   }
 
