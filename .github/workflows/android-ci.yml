@@ -59,6 +59,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4.0.1
+        with:
+          # The action's legacy default requests the retired `tools` package.
+          packages: 'platform-tools emulator'
 
       - name: Enable KVM
         run: |
