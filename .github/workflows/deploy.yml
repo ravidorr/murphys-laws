@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets['SERVER_HOST'] }}
           username: ${{ secrets['SERVER_USER'] }}
           key: ${{ secrets['SSH_PRIVATE_KEY'] }}
-          source: "web/dist/,backend/src/,backend/scripts/,backend/db/,backend/config/,backend/package.json,backend/ecosystem.config.cjs,shared/modules/,nginx.conf,web/vite.config.js,.nvmrc"
+          source: "web/dist/,backend/src/,backend/scripts/,backend/db/,backend/config/,backend/package.json,backend/package-lock.json,backend/ecosystem.config.cjs,shared/modules/,nginx.conf,web/vite.config.js,.nvmrc"
           target: "/home/${{ secrets['SERVER_USER'] }}/deploy/murphys-laws/"
           overwrite: true
 
@@ -91,6 +91,7 @@ jobs:
             sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"
             sudo install -m 644 "$STAGING_DIR/.nvmrc" "$TARGET_DIR/.nvmrc"
             sudo install -m 644 "$STAGING_DIR/backend/package.json" "$TARGET_DIR/backend/package.json"
+            sudo install -m 644 "$STAGING_DIR/backend/package-lock.json" "$TARGET_DIR/backend/package-lock.json"
             sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"
 
             sudo chown -R root:root "$TARGET_DIR"
@@ -164,8 +165,8 @@ jobs:
               exit 1
             fi
 
-            echo "==> Running npm install in backend"
-            npm install
+            echo "==> Installing locked backend dependencies"
+            npm ci
 
             echo "==> Running migrations"
             npm run migrate
