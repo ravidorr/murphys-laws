@@ -35,10 +35,15 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
 
       - name: Install dependencies (root - npm workspaces)
         run: npm ci
+
+      - name: Install locked backend dependencies
+        run: npm ci --prefix backend
 
       - name: Install Rollup Linux native binary (npm optional deps bug)
         run: npm install @rollup/rollup-linux-x64-gnu@4.59.0 --no-save
