@@ -86,6 +86,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   let pendingSearchSurface: SearchSurface | null = hasActiveFilters(currentFilters) && !historyState.searchTracked
     ? historyState.searchSurface ?? 'direct_url'
     : null;
+  let retrySearchSurface: SearchSurface | null = null;
 
   function trackSearchPerformed(
     surface: SearchSurface,
@@ -180,7 +181,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   }
 
   // Load laws for current page
-  async function loadPage(page: number) {
+  async function loadPage(page: number, isRetry = false) {
+    if (isRetry && retrySearchSurface) {
+      pendingSearchSurface = retrySearchSurface;
+    }
+    retrySearchSurface = null;
     currentPage = page;
     const generation = ++loadGeneration;
     const requestFilters = { ...currentFilters };
@@ -243,6 +248,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       if (generation !== loadGeneration) return;
       if (pendingSearchSurface === requestSearchSurface) {
         pendingSearchSurface = null;
+        retrySearchSurface = requestSearchSurface;
       }
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
@@ -271,7 +277,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
     if (!(t instanceof Element)) return;
 
     if (t.closest('[data-action="retry"]')) {
-      loadPage(currentPage);
+      loadPage(currentPage, true);
       return;
     }
 

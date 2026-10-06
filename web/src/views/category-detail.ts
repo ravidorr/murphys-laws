@@ -61,6 +61,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   let categoryNumericId: number | null = null; // Will be set after fetching category details
   // Set by the in-category search form; pagination and sort reloads leave it false
   let pendingSearch = false;
+  let retryPendingSearch = false;
   let loadGeneration = 0;
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
@@ -147,7 +148,11 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
   // Load laws for current page
-  async function loadPage(page: number) {
+  async function loadPage(page: number, isRetry = false) {
+    if (isRetry && retryPendingSearch) {
+      pendingSearch = true;
+    }
+    retryPendingSearch = false;
     currentPage = page;
     const generation = ++loadGeneration;
     const requestFilters = { ...currentFilters };
@@ -219,7 +224,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       }
     } catch {
       if (generation !== loadGeneration) return;
-      if (shouldTrackSearch) pendingSearch = false;
+      if (shouldTrackSearch) {
+        pendingSearch = false;
+        retryPendingSearch = true;
+      }
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">
@@ -350,7 +358,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     if (!(t instanceof HTMLElement)) return;
 
     if (t.closest('[data-action="retry"]')) {
-      loadPage(currentPage);
+      loadPage(currentPage, true);
       return;
     }
 
