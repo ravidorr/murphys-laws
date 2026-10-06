@@ -61,6 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Production deployments now provision PM2 for a newly installed Node runtime.
+  Root bumped to `2.6.17`.
+- Production deployments now install the Node version pinned in `.nvmrc` when it
+  is absent from NVM. Root bumped to `2.6.16`.
 - Sorting browse or category results no longer reports the reload as a new search
   when it supersedes an in-flight search. Web bumped to `3.4.12`; root to
   `2.6.14`.
