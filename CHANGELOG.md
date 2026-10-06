@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Sorting browse or category results no longer reports the reload as a new search
+  when it supersedes an in-flight search. Web bumped to `3.4.12`; root to
+  `2.6.14`.
 - Buttered Toast calculator formulas now scale to the available card width without horizontal scrolling. Web
   bumped to `3.4.8`; root to `2.6.10`.
 - Legacy calculator URLs now permanently redirect to their canonical calculator pages
