@@ -2,7 +2,7 @@
 import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,7 +18,7 @@ const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 
-let emailTransporter: nodemailer.Transporter;
+let emailTransporter: Transporter;
 if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
   emailTransporter = nodemailer.createTransport({
     host: SMTP_HOST,

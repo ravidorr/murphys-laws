@@ -130,11 +130,6 @@ dependencies {
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
-    // Pendo SDK
-    implementation("sdk.pendo.io:pendoIO:3.9.+") {
-        isChanging = true
-    }
-
     // Testing - Unit Tests
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.14.9")
