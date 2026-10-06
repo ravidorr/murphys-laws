@@ -420,6 +420,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     const [sort, order] = value.split('-');
     currentSort = sort ?? '';
     currentOrder = order ?? '';
+    pendingSearch = false;
     currentPage = 1;
     loadPage(1);
   });
