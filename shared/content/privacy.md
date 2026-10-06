@@ -22,7 +22,9 @@ Our servers automatically receive technical basics like IP address, device and b
 
 ## Cookies & Analytics
 
-We use lightweight first-party cookies and privacy-focused analytics to understand traffic trends. They remember preferences like dark mode and help us learn which calculators or laws people return to most. You can clear or block cookies through your browser without breaking the site.
+We use lightweight first-party storage to remember preferences like dark mode. We also use analytics to understand traffic trends and learn which calculators or laws people return to most. You can clear or block cookies through your browser without breaking the site.
+
+**Pendo / Novus by Pendo analytics:** We use Pendo, installed through Novus by Pendo, to understand how anonymous visitors use the archive and to provide in-app guidance. Pendo assigns a persistent anonymous visitor identifier and receives technical information such as IP address, device and browser details, pages and URLs visited, and product-usage and interaction events. We do not use Pendo to identify visitors by name or email.
 
 **Third-party advertising cookies:** We use Google AdSense to display advertisements on our site. Google and its partners may use cookies and web beacons to collect information about your visits to this and other websites in order to provide relevant advertisements. You can learn more about how Google uses data when you use our partners' sites or apps by visiting [How Google uses data](https://policies.google.com/technologies/partner-sites). You can opt out of personalized advertising by visiting [Google's Ad Settings](https://www.google.com/settings/ads).
 
@@ -30,17 +32,19 @@ We use lightweight first-party cookies and privacy-focused analytics to understa
 
 When enabled, services such as email delivery providers or advertising networks may process limited information to send notifications or measure reach. We require these partners to honor strong privacy safeguards and only share the minimum necessary data.
 
+**Pendo / Novus by Pendo:** Pendo processes the anonymous analytics data described above to provide product analytics and in-app guidance. This data may be processed in the United States and other regions where Pendo and its service providers operate.
+
 **Google AdSense:** We use Google AdSense to serve advertisements. Google may use cookies, web beacons, and other storage technologies to collect or receive information from our website and elsewhere on the internet and use that information to provide measurement services and target ads. Third parties, including Google, may place and read cookies on your browser, or use web beacons or IP addresses to collect information as a result of ad serving on our website.
 
 ## Data Retention
 
-Submission content remains visible so the archive reflects collective wisdom. Supporting metadata is retained only as long as we have a reason - typically to provide the feature you requested or to comply with legal obligations. When data is no longer needed, we delete or anonymize it.
+Submission content remains visible so the archive reflects collective wisdom. Supporting metadata is retained only as long as we have a reason - typically to provide the feature you requested or to comply with legal obligations. Pendo analytics data is retained under Pendo's applicable data-retention terms and our account settings. When data is no longer needed, we delete or anonymize it.
 
 ## Your Choices
 
 - **Control submissions:** Request edits or removal of content you provided.
 - **Access information:** Ask what data we have collected about you.
-- **Opt out:** Disable cookies, unsubscribe from updates, or decline analytics participation.
+- **Opt out:** Disable cookies or request an opt-out from Pendo analytics by <a href="#" data-nav="contact">contacting us</a>.
 - **Reach out:** Contact us for clarification before sharing personal details.
 
 ## Security Practices

@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The web app now loads the Novus by Pendo agent and initializes it once per page
+  load with an anonymous visitor, enabling product analytics and in-app guides.
+  Both loading and initialization are limited to the canonical production host, so
+  local, preview, Playwright and Lighthouse runs never download or start it.
+  Recorded URLs keep only the `category_id`, `sort`, `order` and `page` query
+  parameters, so visitor-typed search text (`q`, `attribution`) is never sent.
+  Web bumped to `3.4.11`; root to `2.6.13`.
 - Hardened archive discovery and release quality with FTS relevance search,
   duplicate-similarity scoring, reviewed editorial metadata, richer static
   rendering and canonical routing, accessibility fixes, production-only
