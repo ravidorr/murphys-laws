@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  ALLOWED_QUERY_KEYS,
   CANONICAL_HOSTNAME,
+  LOCATION_TRANSFORMS,
+  stripHashRouteQuery,
   getTelemetryRuntime,
   initializeNovusAgent,
   isCanonicalRuntime,
@@ -49,7 +52,10 @@ describe('initializeNovusAgent', () => {
     expect(initializeNovusAgent(production, agent)).toBe(true);
 
     expect(initialize).toHaveBeenCalledTimes(1);
-    expect(initialize).toHaveBeenCalledWith({ visitor: { id: '' } });
+    expect(initialize).toHaveBeenCalledWith({
+      visitor: { id: '' },
+      location: { transforms: LOCATION_TRANSFORMS },
+    });
   });
 
   it.each([
@@ -67,6 +73,55 @@ describe('initializeNovusAgent', () => {
 
   it('skips safely when the agent stub is absent on the canonical host', () => {
     expect(initializeNovusAgent(production, undefined)).toBe(false);
+  });
+});
+
+describe('location transforms (URL privacy)', () => {
+  it('allowlists only app-controlled query keys, so free-text search never reaches analytics', () => {
+    const search = LOCATION_TRANSFORMS.find((transform) => transform.attr === 'search');
+
+    expect(search?.action).toBe('AllowOnlyKeys');
+    expect(search?.data).toEqual(['category_id', 'sort', 'order', 'page']);
+    expect(ALLOWED_QUERY_KEYS).not.toContain('q');
+    expect(ALLOWED_QUERY_KEYS).not.toContain('attribution');
+  });
+
+  it('never uses the deprecated URL options that would disable the Location API', () => {
+    const [firstCall] = (() => {
+      const { agent, initialize } = createAgent();
+      initializeNovusAgent(production, agent);
+      return initialize.mock.calls;
+    })();
+    const options = firstCall?.[0] as Record<string, unknown>;
+
+    ['annotateUrl', 'sanitizeUrl', 'ignoreHashRouting', 'queryStringWhitelist', 'xhrWhitelist'].forEach((key) => {
+      expect(options).not.toHaveProperty(key);
+    });
+  });
+
+  it('rewrites the hash instead of clearing it, keeping legacy hash routes distinct', () => {
+    const hash = LOCATION_TRANSFORMS.find((transform) => transform.attr === 'hash');
+
+    expect(hash?.action).toBe('Replace');
+    expect(typeof hash?.data).toBe('function');
+  });
+});
+
+describe('stripHashRouteQuery', () => {
+  it.each([
+    ['#/browse?q=my%20secret&attribution=jane', '#/browse'],
+    ['#/law/123?ref=x', '#/law/123'],
+    ['#/browse', '#/browse'],
+    ['#section-anchor', '#section-anchor'],
+    ['#tab?x=1', '#tab?x=1'],
+    ['', ''],
+  ])('%s -> %s', (input, expected) => {
+    expect(stripHashRouteQuery(input)).toBe(expected);
+  });
+
+  it('does not throw on unexpected input', () => {
+    expect(stripHashRouteQuery(undefined as unknown as string)).toBe('');
+    expect(stripHashRouteQuery(null as unknown as string)).toBe('');
   });
 });
 
