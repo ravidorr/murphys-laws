@@ -1721,7 +1721,7 @@ describe('Install Prompt Component', () => {
       expect(track.mock.calls[0]![1]!.time_on_site_seconds).toBeGreaterThanOrEqual(45);
     });
 
-    it('reports a declined browser dialog and credits a later install to the custom prompt', async () => {
+    it('reports a declined browser dialog and credits a later install to browser UI', async () => {
       setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36');
       initInstallPrompt();
       showPromptWithChoice('dismissed');
@@ -1731,6 +1731,19 @@ describe('Install Prompt Component', () => {
         response: 'declined',
         prompt_type: 'install_prompt',
         platform: 'desktop',
+      })));
+
+      window.dispatchEvent(new Event('appinstalled'));
+      expect(track).toHaveBeenCalledWith('pwa_installed', expect.objectContaining({ install_source: 'browser_ui' }));
+    });
+
+    it('credits an accepted browser dialog to the custom prompt', async () => {
+      initInstallPrompt();
+      showPromptWithChoice('accepted');
+
+      (document.querySelector('.install-prompt [data-action="install"]') as HTMLElement).click();
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('pwa_install_prompt_responded', expect.objectContaining({
+        response: 'accepted',
       })));
 
       window.dispatchEvent(new Event('appinstalled'));

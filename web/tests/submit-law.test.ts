@@ -1380,7 +1380,6 @@ describe('SubmitLawSection component', () => {
         text_length: LAW_TEXT.length,
         is_anonymous: true,
         failure_reason: 'rate_limited',
-        error_message: 'Rate limit exceeded. Please try again later.',
       }));
       expect(eventsNamed('law_submitted')).toHaveLength(0);
     });

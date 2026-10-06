@@ -8,7 +8,7 @@ import { getRandomLoadingMessage, getCategoryDisplayName } from '../utils/consta
 import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { groupCategories } from '@utils/category-groups.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
-import { trackPendoEvent, normalizeQuery } from '@utils/pendo.ts';
+import { getQueryProperties, trackPendoEvent, normalizeQuery } from '@utils/pendo.ts';
 import { createDebouncedTask } from '@utils/debounce.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updatePageMetadata } from '@utils/dom.ts';
@@ -201,8 +201,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     lastTrackedFilterQuery = query;
     if (!query) return;
     trackPendoEvent('categories_filtered', {
-      filter_query: query,
-      query_length: categoryQuery.trim().length,
+      ...getQueryProperties(categoryQuery),
       results_count: visibleCategoryCount,
       total_categories: categories.length,
     });

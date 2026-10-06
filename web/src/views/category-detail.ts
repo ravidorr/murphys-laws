@@ -61,6 +61,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   let categoryNumericId: number | null = null; // Will be set after fetching category details
   // Set by the in-category search form; pagination and sort reloads leave it false
   let pendingSearch = false;
+  let loadGeneration = 0;
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
   // Always wraps only the first word (typically "Murphy's") in accent color
@@ -148,6 +149,12 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   // Load laws for current page
   async function loadPage(page: number) {
     currentPage = page;
+    const generation = ++loadGeneration;
+    const requestFilters = { ...currentFilters };
+    const requestSort = currentSort;
+    const requestOrder = currentOrder;
+    const shouldTrackSearch = pendingSearch;
+    const requestCategoryNumericId = categoryNumericId;
 
     const cardText = el.querySelector('#category-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
@@ -161,14 +168,14 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       const params: Record<string, string | number> = {
         limit: LAWS_PER_PAGE,
         offset,
-        sort: currentSort,
-        order: currentOrder,
-        ...currentFilters
+        sort: requestSort,
+        order: requestOrder,
+        ...requestFilters
       };
 
       // If we have the numeric ID, use it; otherwise use slug
-      if (categoryNumericId) {
-        params.category_id = categoryNumericId;
+      if (requestCategoryNumericId) {
+        params.category_id = requestCategoryNumericId;
       } else {
         const numericId = parseInt(categoryId, 10);
         if (!isNaN(numericId) && numericId > 0) {
@@ -179,13 +186,14 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       }
 
       const data = await fetchLaws(params);
+      if (generation !== loadGeneration) return;
 
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
-      if (pendingSearch) {
-        pendingSearch = false;
-        const searchProperties = { ...getSearchProperties(currentFilters, currentSort), search_surface: 'category_detail' };
-        trackPendoEvent('search_performed', { ...searchProperties, order: currentOrder, results_count: totalLaws });
+      if (shouldTrackSearch) {
+        if (pendingSearch) pendingSearch = false;
+        const searchProperties = { ...getSearchProperties(requestFilters, requestSort), search_surface: 'category_detail' };
+        trackPendoEvent('search_performed', { ...searchProperties, order: requestOrder, results_count: totalLaws });
         if (totalLaws === 0) {
           trackPendoEvent('search_no_results', searchProperties);
         }
@@ -210,6 +218,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
       }
     } catch {
+      if (generation !== loadGeneration) return;
       cardText.setAttribute('aria-busy', 'false');
       cardText.innerHTML = `
         <div class="empty-state">

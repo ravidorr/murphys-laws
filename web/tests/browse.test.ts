@@ -1739,8 +1739,8 @@ describe('Browse view', () => {
       await waitForResults(el);
 
       expect(track).toHaveBeenCalledWith('search_performed', {
-        query: 'murphy',
         query_length: 6,
+        query_token_count: 1,
         sort: 'relevance',
         search_surface: 'header',
         order: 'desc',
@@ -1761,7 +1761,8 @@ describe('Browse view', () => {
       await waitForResults(el);
 
       expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
-        query: 'toast',
+        query_length: 5,
+        query_token_count: 1,
         attribution: 'Arthur Bloch',
         search_surface: 'direct_url',
       }));
@@ -1775,8 +1776,8 @@ describe('Browse view', () => {
 
       await vi.waitFor(() => {
         expect(track).toHaveBeenCalledWith('search_no_results', {
-          query: 'zebra',
           query_length: 5,
+          query_token_count: 1,
           sort: 'relevance',
           search_surface: 'home',
         });
@@ -1793,7 +1794,8 @@ describe('Browse view', () => {
       (el.querySelector('#search-btn') as HTMLButtonElement).click();
       await vi.waitFor(() => expect(searchEvents()).toHaveLength(1), { timeout: 1000 });
       expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
-        query: 'gravity',
+        query_length: 7,
+        query_token_count: 1,
         search_surface: 'browse_advanced',
       }));
 
@@ -1804,6 +1806,61 @@ describe('Browse view', () => {
       await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(4), { timeout: 1000 });
       await new Promise(r => setTimeout(r, 0));
 
+      expect(searchEvents()).toHaveLength(1);
+    });
+
+    it('ignores an earlier load that resolves after an Advanced Search submission', async () => {
+      const initialResponse = { data: [{ id: 1, title: 'Old Law', text: 'Old result' }], total: 1, limit: 25, offset: 0 };
+      const searchResponse = { data: [{ id: 2, title: 'New Law', text: 'New result' }], total: 1, limit: 25, offset: 0 };
+      let resolveInitial!: (value: typeof initialResponse) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<typeof initialResponse>((resolve) => { resolveInitial = resolve; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      fetchLawsSpy.mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('#search-keyword')).toBeTruthy());
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'latest';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(searchEvents()).toHaveLength(1));
+      resolveInitial(initialResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 6,
+        query_token_count: 1,
+        results_count: 1,
+        search_surface: 'browse_advanced',
+      }));
+      expect(searchEvents()).toHaveLength(1);
+      expect(el.textContent).toContain('New Law');
+      expect(el.textContent).not.toContain('Old Law');
+    });
+
+    it('ignores an earlier load that rejects after an Advanced Search submission', async () => {
+      const searchResponse = { data: [{ id: 2, title: 'New Law', text: 'New result' }], total: 1, limit: 25, offset: 0 };
+      let rejectInitial!: (reason?: unknown) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<never>((_resolve, reject) => { rejectInitial = reject; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      fetchLawsSpy.mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('#search-keyword')).toBeTruthy());
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'latest';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(searchEvents()).toHaveLength(1));
+      rejectInitial(new Error('Old request failed'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(el.textContent).toContain('New Law');
+      expect(el.querySelector('.empty-state')).toBeNull();
       expect(searchEvents()).toHaveLength(1);
     });
 
@@ -1819,8 +1876,8 @@ describe('Browse view', () => {
       firstCard!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(track).toHaveBeenCalledWith('search_result_opened', {
-        query: 'law',
         query_length: 3,
+        query_token_count: 1,
         sort: 'relevance',
         law_id: '2',
         result_position: 27,

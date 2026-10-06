@@ -1032,8 +1032,8 @@ describe('CategoryDetail view', () => {
 
       await vi.waitFor(() => {
         expect(track).toHaveBeenCalledWith('search_performed', {
-          query: 'computer',
           query_length: 8,
+          query_token_count: 1,
           category_id: '1',
           sort: 'score',
           search_surface: 'category_detail',
@@ -1053,6 +1053,7 @@ describe('CategoryDetail view', () => {
       await vi.waitFor(() => {
         expect(track).toHaveBeenCalledWith('search_no_results', {
           query_length: 0,
+          query_token_count: 0,
           category_id: '1',
           attribution: 'Arthur Bloch',
           sort: 'score',
@@ -1069,6 +1070,59 @@ describe('CategoryDetail view', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       expect(track).not.toHaveBeenCalled();
+    });
+
+    it('ignores an earlier load that resolves after an in-category search', async () => {
+      const initialResponse = { data: [{ id: 101, title: 'Old Law', text: 'Old result' }], total: 1, limit: 10, offset: 0 };
+      const searchResponse = { data: [{ id: 102, title: 'New Law', text: 'New result' }], total: 1, limit: 10, offset: 0 };
+      let resolveInitial!: (value: typeof initialResponse) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<typeof initialResponse>((resolve) => { resolveInitial = resolve; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      vi.mocked(api.fetchLaws).mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      mod.getLocalThis().onSearch!({ q: 'latest' });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        query_length: 6,
+        query_token_count: 1,
+        results_count: 1,
+      })));
+      resolveInitial(initialResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1);
+      expect(el.textContent).toContain('New Law');
+      expect(el.textContent).not.toContain('Old Law');
+    });
+
+    it('ignores an earlier load that rejects after an in-category search', async () => {
+      const searchResponse = { data: [{ id: 102, title: 'New Law', text: 'New result' }], total: 1, limit: 10, offset: 0 };
+      let rejectInitial!: (reason?: unknown) => void;
+      let resolveSearch!: (value: typeof searchResponse) => void;
+      const initialLoad = new Promise<never>((_resolve, reject) => { rejectInitial = reject; });
+      const searchLoad = new Promise<typeof searchResponse>((resolve) => { resolveSearch = resolve; });
+      vi.mocked(api.fetchLaws).mockImplementationOnce(() => initialLoad).mockImplementationOnce(() => searchLoad);
+
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      mod.getLocalThis().onSearch!({ q: 'latest' });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
+
+      resolveSearch(searchResponse);
+      await vi.waitFor(() => expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1));
+      rejectInitial(new Error('Old request failed'));
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(el.textContent).toContain('New Law');
+      expect(el.querySelector('.empty-state')).toBeNull();
+      expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1);
     });
   });
 });

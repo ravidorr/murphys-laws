@@ -8,7 +8,7 @@ import { apiPost } from '../utils/request.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
-import { trackPendoEvent, getRequestErrorType, getErrorMessage } from '@utils/pendo.ts';
+import { trackPendoEvent, getRequestErrorType } from '@utils/pendo.ts';
 import { rankDuplicateCandidates } from '@utils/discovery.ts';
 import {
   getCachedCategories,
@@ -293,8 +293,8 @@ export function SubmitLawSection() {
       category_id: categoryId || undefined,
       is_anonymous: Boolean(anonymous),
     };
-    const trackSubmissionFailed = (failureReason: string, errorMessage?: string) => {
-      trackPendoEvent('law_submission_failed', { ...failureContext, failure_reason: failureReason, error_message: errorMessage });
+    const trackSubmissionFailed = (failureReason: string) => {
+      trackPendoEvent('law_submission_failed', { ...failureContext, failure_reason: failureReason });
     };
 
     if (honeypot) {
@@ -369,7 +369,7 @@ export function SubmitLawSection() {
       }, 300);
 
     } catch (error) {
-      trackSubmissionFailed(getRequestErrorType(error), getErrorMessage(error));
+      trackSubmissionFailed(getRequestErrorType(error));
       showError(error instanceof Error ? error.message : 'Failed to submit law. Please try again.');
     } finally {
       setLoading(false);

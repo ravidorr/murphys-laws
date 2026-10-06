@@ -1008,7 +1008,7 @@ describe('SearchAutocomplete', () => {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
 
-    it('reports a clicked suggestion with the typed query and its rank', async () => {
+    it('reports a clicked suggestion with privacy-safe query metadata and its rank', async () => {
       const calls: string[] = [];
       track.mockImplementation(() => calls.push('track'));
       onSelect = vi.fn(() => calls.push('select'));
@@ -1019,8 +1019,8 @@ describe('SearchAutocomplete', () => {
       // Reported before onSelect navigates away
       expect(calls).toEqual(['track', 'select']);
       expect(track).toHaveBeenCalledWith('search_suggestion_selected', {
-        query: 'toast law',
         query_length: 9,
+        query_token_count: 2,
         suggestion_position: 2,
         suggestions_count: 3,
         law_id: '2',

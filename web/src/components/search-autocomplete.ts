@@ -4,7 +4,7 @@ import { debounce } from '../utils/debounce.ts';
 import { fetchSuggestions } from '../utils/api.ts';
 import { SEARCH_AUTOCOMPLETE_DEBOUNCE_DELAY } from '../utils/constants.ts';
 import { escapeHtml } from '../utils/sanitize.ts';
-import { trackPendoEvent, normalizeQuery } from '../utils/pendo.ts';
+import { getQueryProperties, trackPendoEvent } from '../utils/pendo.ts';
 import type { Law } from '../types/app.d.ts';
 
 interface SearchAutocompleteOptions {
@@ -115,8 +115,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
     // Report before onSelect navigates away and closeDropdown() resets the suggestion state
     const query = inputElement.value;
     trackPendoEvent('search_suggestion_selected', {
-      query: normalizeQuery(query),
-      query_length: query.trim().length,
+      ...getQueryProperties(query),
       suggestion_position: index + 1,
       suggestions_count: suggestions.length,
       law_id: String(law.id),

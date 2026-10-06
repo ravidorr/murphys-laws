@@ -38,7 +38,7 @@ export type PendoTrackEventName =
 export type PendoPropertyValue = string | number | boolean | null | undefined;
 export type PendoTrackProperties = Record<string, PendoPropertyValue>;
 
-// Pendo rejects property payloads over 512 bytes, so cap every string value.
+// Bound individual string values; this does not enforce a total serialized payload limit.
 const MAX_STRING_LENGTH = 100;
 
 function truncate(value: string): string {
@@ -47,7 +47,7 @@ function truncate(value: string): string {
 
 /**
  * Send a Track Event to Pendo. Empty (null/undefined) and non-finite values are
- * dropped and long strings are truncated to keep the payload within limits.
+ * dropped and long strings are truncated.
  */
 export function trackPendoEvent(name: PendoTrackEventName, properties: PendoTrackProperties = {}): void {
   /* v8 ignore start -- SSR guard: window is always defined in the browser/jsdom */
@@ -76,12 +76,18 @@ export function getPagePath(): string {
   /* v8 ignore stop */
 }
 
-/**
- * Free-text queries are lower-cased, whitespace-collapsed and truncated before
- * they leave the browser.
- */
+/** Normalizes free text for local comparisons; do not send its return value to Pendo. */
 export function normalizeQuery(query: string | null | undefined): string {
   return truncate((query ?? '').trim().replace(/\s+/g, ' ').toLowerCase());
+}
+
+/** Privacy-safe metadata for a free-text query. */
+export function getQueryProperties(query: string | null | undefined): Pick<PendoTrackProperties, 'query_length' | 'query_token_count'> {
+  const normalized = (query ?? '').trim().replace(/\s+/g, ' ');
+  return {
+    query_length: normalized.length,
+    query_token_count: normalized ? normalized.split(' ').length : 0,
+  };
 }
 
 /** Search context shared by the search_* events. */
@@ -89,8 +95,7 @@ export function getSearchProperties(filters: SearchFilters, sort: string): Pendo
   const query = filters.q ?? '';
   const categoryId = filters.category_id;
   return {
-    query: normalizeQuery(query) || undefined,
-    query_length: query.trim().length,
+    ...getQueryProperties(query),
     category_id: categoryId !== undefined && categoryId !== '' ? String(categoryId) : undefined,
     attribution: filters.attribution || undefined,
     sort,
