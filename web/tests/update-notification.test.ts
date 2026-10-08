@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { showUpdateNotification, showUpdateAvailable, showOfflineReady } from '../src/components/update-notification.js';
 
@@ -188,7 +190,7 @@ describe('Update Notification Component', () => {
       // Fast-forward 5 seconds
       vi.advanceTimersByTime(5000);
 
-      // Notification should start animating out (still in DOM but with reverse animation)
+      // Notification should start animating out (still in DOM, with the exit class applied)
       localThis.notification = document.querySelector('.pwa-notification') as HTMLElement | null;
       if (localThis.notification) {
         expect(localThis.notification.classList.contains('pwa-notification--exiting')).toBe(true);
@@ -210,6 +212,15 @@ describe('Update Notification Component', () => {
       expect(notification.classList.contains('pwa-notification--exiting')).toBe(false);
     });
 
+    it('does not schedule another removal when the notification is already exiting', () => {
+      const notification = showUpdateNotification({ type: 'offline' });
+      notification.classList.add('pwa-notification--exiting');
+
+      vi.advanceTimersByTime(5000);
+
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
     it('does not auto-dismiss update notification', () => {
       showUpdateNotification({ type: 'update' });
 
@@ -224,17 +235,41 @@ describe('Update Notification Component', () => {
       expect(localThis.notification).toBeTruthy();
     });
 
-    it('removes element after auto-dismiss animation completes for offline type', () => {
+    it('removes offline notification after auto-dismiss even when animationend never fires', () => {
+      showUpdateNotification({ type: 'offline' });
+
+      // Browsers can skip animationend (and jsdom never fires it), so the fallback timer must remove it
+      vi.advanceTimersByTime(5000 + 400);
+
+      expect(document.querySelector('.pwa-notification')).toBeNull();
+    });
+
+    it('removes offline notification when the exit animation ends, then ignores the fallback timer', () => {
       const localThis: UpdateNotificationTestContext = {};
       localThis.notification = showUpdateNotification({ type: 'offline' });
 
-      // Fast-forward to trigger auto-dismiss
       vi.advanceTimersByTime(5000);
+      expect(localThis.notification.classList.contains('pwa-notification--exiting')).toBe(true);
 
-      // Simulate animation end
-      localThis.notification!.dispatchEvent(new Event('animationend'));
+      localThis.notification.dispatchEvent(new Event('animationend'));
+      expect(document.querySelector('.pwa-notification')).toBeNull();
 
-      expect(document.querySelector('.pwa-notification')).toBeFalsy();
+      expect(() => vi.advanceTimersByTime(400)).not.toThrow();
+      expect(document.querySelector('.pwa-notification')).toBeNull();
+    });
+
+    it('dismisses when Got it is clicked through a translated label', () => {
+      const localThis: UpdateNotificationTestContext = {};
+      localThis.onDismiss = vi.fn<() => void>() as Mock<() => void>;
+      showUpdateNotification({ type: 'offline', onDismiss: localThis.onDismiss });
+
+      // Page translation wraps button text in <font> elements, so the click lands on the inner <font>
+      localThis.dismissBtn = document.querySelector('[data-action="dismiss"]');
+      localThis.dismissBtn!.innerHTML = '<font><font>Got it</font></font>';
+      localThis.dismissBtn!.querySelector<HTMLElement>('font font')!.click();
+
+      expect(document.querySelector('.pwa-notification')).toBeNull();
+      expect(localThis.onDismiss).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -302,6 +337,52 @@ describe('Update Notification Component', () => {
 
       // Notification should still be there
       expect(document.querySelector('.pwa-notification')).toBeTruthy();
+    });
+
+    it('keeps the notification when Refresh is clicked without an onUpdate callback', () => {
+      showUpdateNotification({ type: 'update' });
+
+      document.querySelector<HTMLElement>('[data-action="update"]')!.click();
+
+      expect(document.querySelector('.pwa-notification')).toBeTruthy();
+    });
+
+    it('ignores data-action on elements outside the notification', () => {
+      const localThis: UpdateNotificationTestContext = {};
+      localThis.onDismiss = vi.fn<() => void>() as Mock<() => void>;
+      showUpdateNotification({ type: 'update', onDismiss: localThis.onDismiss });
+      document.body.dataset.action = 'dismiss';
+
+      try {
+        document.querySelector<HTMLElement>('.pwa-notification-title')!.click();
+
+        expect(document.querySelector('.pwa-notification')).toBeTruthy();
+        expect(localThis.onDismiss).not.toHaveBeenCalled();
+      } finally {
+        delete document.body.dataset.action;
+      }
+    });
+  });
+
+  describe('exit animation CSS', () => {
+    const css = fs.readFileSync(path.resolve(__dirname, '../styles/partials/update-notification.css'), 'utf8');
+    const keyframeNames = [...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((match) => match[1]);
+
+    // Name of the @keyframes animation set by the top-level rule for `selector`
+    function animationNameFor(selector: string): string | undefined {
+      const rule = css.split(`\n${selector} {`)[1]?.split('}')[0] ?? '';
+      const values = /animation(?:-name)?\s*:([^;]+);/.exec(rule)?.[1]?.trim().split(/\s+/) ?? [];
+      return values.find((value) => keyframeNames.includes(value));
+    }
+
+    it('uses distinct keyframes for the exit animation', () => {
+      // This source-level contract keeps the entrance and exit animation names distinct.
+      const entrance = animationNameFor('.pwa-notification');
+      const exit = animationNameFor('.pwa-notification--exiting');
+
+      expect(entrance).toBeTruthy();
+      expect(exit).toBeTruthy();
+      expect(exit).not.toBe(entrance);
     });
   });
 });

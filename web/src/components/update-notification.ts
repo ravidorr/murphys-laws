@@ -6,6 +6,24 @@
  */
 import { hydrateIcons } from '@utils/icons.ts';
 
+// Matches the normal-motion .pwa-notification--exiting animation duration in update-notification.css.
+const EXIT_ANIMATION_MS = 300;
+
+/**
+ * Play the exit animation, then remove the notification.
+ * Like hideInstallPrompt(), a timer removes it even if animationend never fires.
+ * @param {HTMLElement} notification - The notification element to dismiss
+ */
+function dismissNotification(notification: HTMLElement) {
+  if (!notification.isConnected || notification.classList.contains('pwa-notification--exiting')) return;
+
+  notification.classList.add('pwa-notification--exiting');
+  const remove = () => notification.remove();
+  notification.addEventListener('animationend', remove, { once: true });
+  // Fallback removal if animationend doesn't fire
+  setTimeout(remove, EXIT_ANIMATION_MS + 100);
+}
+
 /**
  * Create and show the update notification
  * @param {Object} options
@@ -53,9 +71,13 @@ export function showUpdateNotification({ type, onUpdate, onDismiss }: { type: 'u
   // Event handlers
   notification.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
-    const action = target.getAttribute('data-action');
+    // Use closest() so clicks on wrapped labels (e.g. <font> added by page translation) still work
+    const actionEl = target.closest<HTMLElement>('[data-action]');
+    if (!actionEl || !notification.contains(actionEl)) return;
+
+    const action = actionEl.dataset.action;
     if (action === 'update' && onUpdate) {
       onUpdate();
       notification.remove();
@@ -69,12 +91,7 @@ export function showUpdateNotification({ type, onUpdate, onDismiss }: { type: 'u
 
   // Auto-dismiss offline notification after 5 seconds
   if (!isUpdate) {
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.classList.add('pwa-notification--exiting');
-        notification.addEventListener('animationend', () => notification.remove());
-      }
-    }, 5000);
+    setTimeout(() => dismissNotification(notification), 5000);
   }
 
   return notification;

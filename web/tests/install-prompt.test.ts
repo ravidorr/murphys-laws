@@ -414,6 +414,84 @@ describe('Install Prompt Component', () => {
     });
   });
 
+  describe('data-action click resolution', () => {
+    const promptVariants: [string, () => void][] = [
+      ['install prompt', () => {
+        _setDeferredPromptForTesting({
+          preventDefault: vi.fn(),
+          prompt: vi.fn(),
+          userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+        } as unknown as DeferredPrompt);
+        showInstallPrompt();
+      }],
+      ['iOS instructions', () => showIOSInstallInstructions()],
+    ];
+
+    // Page translation wraps button text in <font> elements, so the click lands on the inner <font>
+    it('dismisses the install prompt when Not now is clicked through a translated label', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.mockPromptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(localThis.mockPromptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+
+      localThis.dismissBtn = document.querySelector('.install-prompt [data-action="dismiss"]') as HTMLElement | null;
+      localThis.dismissBtn!.innerHTML = '<font><font>Not now</font></font>';
+      localThis.dismissBtn!.querySelector<HTMLElement>('font font')!.click();
+
+      expect(localStorage.getItem('pwa_install_dismissed')).toBeTruthy();
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('dismisses the iOS instructions when Got it is clicked through a translated label', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+      showIOSInstallInstructions();
+
+      const localThis: InstallPromptTestContext = {};
+      localThis.dismissBtn = document.querySelector('.install-prompt-ios [data-action="dismiss"]') as HTMLElement | null;
+      localThis.dismissBtn!.innerHTML = '<font><font>Got it</font></font>';
+      localThis.dismissBtn!.querySelector<HTMLElement>('font font')!.click();
+
+      expect(localStorage.getItem('pwa_install_dismissed')).toBeTruthy();
+      await new Promise(r => setTimeout(r, 350));
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it.each(promptVariants)('ignores data-action on elements outside the %s', (_label, showPrompt) => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      document.body.dataset.action = 'dismiss';
+
+      try {
+        showPrompt();
+        document.querySelector<HTMLElement>('.install-prompt-content')!.click();
+
+        expect(document.querySelector('.install-prompt')).toBeTruthy();
+        expect(localStorage.getItem('pwa_install_dismissed')).toBeNull();
+      } finally {
+        delete document.body.dataset.action;
+      }
+    });
+
+    it.each(promptVariants)('ignores unknown data-action values inside the %s', (_label, showPrompt) => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      showPrompt();
+
+      const content = document.querySelector<HTMLElement>('.install-prompt-content')!;
+      content.dataset.action = 'unknown';
+      content.click();
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+      expect(localStorage.getItem('pwa_install_dismissed')).toBeNull();
+    });
+  });
+
   describe('hideInstallPrompt', () => {
     it('removes the install prompt if present', () => {
       window.matchMedia = vi.fn().mockReturnValue({ matches: false });
