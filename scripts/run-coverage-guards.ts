@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -89,6 +89,24 @@ function commandAvailable(command: string): boolean {
   return spawnSync(command, ['--version'], { stdio: 'ignore' }).status === 0;
 }
 
+export function hasAndroidSdk(
+  androidDirectory: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const localProperties = path.join(androidDirectory, 'local.properties');
+  const localSdkDirectory = existsSync(localProperties)
+    ? readFileSync(localProperties, 'utf8')
+      .split('\n')
+      .find((line) => line.startsWith('sdk.dir='))
+      ?.slice('sdk.dir='.length)
+      .trim()
+    : undefined;
+
+  return [environment.ANDROID_HOME, environment.ANDROID_SDK_ROOT, localSdkDirectory]
+    .filter((sdkDirectory): sdkDirectory is string => Boolean(sdkDirectory))
+    .some((sdkDirectory) => existsSync(sdkDirectory));
+}
+
 function run(command: string, args: string[], cwd?: string): void {
   const result = spawnSync(command, args, { cwd, stdio: 'inherit' });
   if (result.status !== 0) {
@@ -107,11 +125,16 @@ function runTarget(target: CoverageTarget, rootDir: string): void {
   }
 
   if (target === 'android') {
-    if (!commandAvailable('java') || !existsSync(path.join(rootDir, 'android/gradlew'))) {
+    const androidDirectory = path.join(rootDir, 'android');
+    if (
+      !commandAvailable('java')
+      || !existsSync(path.join(androidDirectory, 'gradlew'))
+      || !hasAndroidSdk(androidDirectory)
+    ) {
       console.log('Skipping local Android coverage because the Android toolchain is unavailable. CI will enforce the merge gate.');
       return;
     }
-    run('./gradlew', ['jacocoTestCoverageVerification'], path.join(rootDir, 'android'));
+    run('./gradlew', ['jacocoTestCoverageVerification'], androidDirectory);
     return;
   }
 
