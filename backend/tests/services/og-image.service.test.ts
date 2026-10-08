@@ -435,6 +435,25 @@ describe('OgImageService', () => {
     });
   });
 
+  describe('truncateText', () => {
+    it('should truncate text when its measured width exceeds the limit', () => {
+      const localThis = {
+        context: {
+          measureText: vi.fn((value: string) => ({ width: value.length })),
+        },
+      };
+
+      const result = ogImageService.truncateText(
+        localThis.context as unknown as Parameters<OgImageService['truncateText']>[0],
+        'abcdef',
+        5,
+      );
+
+      expect(result).toBe('ab...');
+      expect(localThis.context.measureText).toHaveBeenCalledWith('abcdef');
+    });
+  });
+
   describe('getAttributionName', () => {
     it('should return null for undefined attributions', () => {
       const law: { attributions?: Array<{ name?: string }> } = {};
