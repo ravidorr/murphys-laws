@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Enforced coverage thresholds locally and in CI for the Node packages, iOS, and Android,
+  and require applicable CI checks before pull requests can merge. Root bumped to `2.6.30`;
+  SDK to `0.2.1`; CLI to `0.1.2`; MCP to `1.2.5`; iOS to `1.2.5` / build `21`; and Android
+  to `1.2.6` / versionCode `13`.
 - Documented the complete public API contract in OpenAPI, including vote
   creation and removal, submitter search, Open Graph images, current
   submission rate limits, and rate-limit error responses. The frontend API
