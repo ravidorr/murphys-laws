@@ -13,6 +13,7 @@ REST API for the Murphy's Laws Archive. All endpoints return JSON unless otherwi
 - [Client libraries](#client-libraries)
 - [Endpoints](#endpoints)
   - [Health](#health)
+  - [OpenAPI Document](#openapi-document)
   - [Laws](#laws)
   - [Voting](#voting)
   - [Categories](#categories)
@@ -42,9 +43,8 @@ incompatible ways.
 - Additive changes (new optional fields, new endpoints, new headers) may happen
   at any time within `/api/v1/` without a version bump.
 
-Routes outside `/api/v1/` (for example, `/api/health`, `/feed.*`, `/og-image/*`)
-are best-effort and are not part of the versioning promise, though we try hard
-not to break them either.
+The health check at `/api/health` is best-effort and is not part of the
+versioning promise, though we try hard not to break it either.
 
 ---
 
@@ -162,6 +162,15 @@ Health check endpoint for monitoring.
   "dbError": "Error message"
 }
 ```
+
+---
+
+### OpenAPI Document
+
+#### GET /api/v1/openapi.json
+
+Returns the generated OpenAPI 3.0 document for every public API operation.
+The same document is also available as a static file at `/openapi.json`.
 
 ---
 
@@ -668,6 +677,27 @@ List all unique attribution names (law contributors).
     "John Doe",
     "Jane Smith"
   ]
+}
+```
+
+---
+
+#### GET /api/v1/submitters
+
+Search display-safe submitter names for typeahead controls.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `q` | string | No | - | Case-insensitive partial name match |
+| `limit` | integer | No | 20 | Maximum results (1-100) |
+
+**Response:**
+
+```json
+{
+  "data": ["Alice", "Alicia", "Anonymous"]
 }
 ```
 
