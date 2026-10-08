@@ -198,7 +198,7 @@ export function LawOfTheDay({ law, onNavigate }: { law: Law | null; onNavigate: 
       if (!voteType) return;
 
       try {
-        const result = await toggleVote(law.id, voteType, 'law_of_day');
+        const result = await toggleVote(law.id, voteType);
 
         const upBtn = el.querySelector('[data-vote="up"]')!;
         const downBtn = el.querySelector('[data-vote="down"]')!;

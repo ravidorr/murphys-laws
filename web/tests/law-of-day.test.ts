@@ -145,7 +145,7 @@ describe('LawOfTheDay component', () => {
     expect(el.querySelector('[data-daily-law-distribution]')?.textContent).toContain('Daily Law');
   });
 
-  it('handles upvote button click', async () => {
+  it('handles upvote button click with the voting API arguments', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
@@ -153,11 +153,11 @@ describe('LawOfTheDay component', () => {
     upvoteBtn?.click();
 
     await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up', 'law_of_day');
+      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'up');
     });
   });
 
-  it('handles downvote button click', async () => {
+  it('handles downvote button click with the voting API arguments', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
@@ -165,7 +165,7 @@ describe('LawOfTheDay component', () => {
     downvoteBtn?.click();
 
     await vi.waitFor(() => {
-      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'down', 'law_of_day');
+      expect(toggleVoteSpy).toHaveBeenCalledWith('1', 'down');
     });
   });
 
