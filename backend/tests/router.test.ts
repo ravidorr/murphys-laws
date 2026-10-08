@@ -172,6 +172,17 @@ describe('Router', () => {
     )).not.toThrow();
   });
 
+  it('should reject a public route when its runtime and OpenAPI parameter names differ', () => {
+    const router = new Router();
+
+    expect(() => router.registerPublicRoute(
+      'GET',
+      '/api/v1/laws/:id',
+      '/api/v1/laws/{lawId}',
+      vi.fn(),
+    )).toThrow('Runtime path /api/v1/laws/:id does not match OpenAPI path /api/v1/laws/{lawId}');
+  });
+
   it('should reject a public route that was registered without an OpenAPI operation', () => {
     const router = new Router();
     router.get('/api/v1/missing', vi.fn());

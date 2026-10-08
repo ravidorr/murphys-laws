@@ -130,6 +130,38 @@ describe('api-server', () => {
       expect(body).toHaveProperty('dbQueryTime');
     });
 
+    it('should respond to GET /api/v1/openapi.json with the OpenAPI document', async () => {
+      const mockDb = {
+        prepare: vi.fn().mockReturnValue({ get: vi.fn() }),
+      };
+      const { createApiServer } = await import('../../src/server/api-server.ts');
+      const { server } = createApiServer({ db: mockDb as any });
+      const req = {
+        method: 'GET',
+        url: '/api/v1/openapi.json',
+        headers: {},
+        socket: { remoteAddress: '127.0.0.1' },
+      } as IncomingMessage;
+      const chunks: Buffer[] = [];
+      const res = {
+        writeHead: vi.fn(),
+        end: vi.fn((chunk: Buffer | string) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }),
+      } as unknown as ServerResponse;
+
+      server.emit('request', req, res);
+
+      await new Promise((r) => setImmediate(r));
+
+      expect(res.writeHead).toHaveBeenCalledWith(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, max-age=86400',
+      });
+      expect(JSON.parse(Buffer.concat(chunks).toString('utf8'))).toEqual(OPENAPI_SPEC);
+    });
+
     it('should use default host and port from env when not set', async () => {
       const mockDb = {
         prepare: vi.fn().mockReturnValue({ get: vi.fn() }),
