@@ -93,10 +93,11 @@ jobs:
     steps:
       - name: Verify applicable CI completed successfully
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           RELEVANT: ${{ needs.changes.outputs.relevant }}
           TEST_RESULT: ${{ needs.test.result }}
         run: |
-          if [ "$RELEVANT" != "true" ]; then
+          if [ "$CHANGES_RESULT" = "success" ] && [ "$RELEVANT" = "false" ]; then
             echo "No relevant changes; CI is not required."
             exit 0
           fi

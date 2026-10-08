@@ -123,10 +123,11 @@ jobs:
     steps:
       - name: Verify applicable CI completed successfully
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           RELEVANT: ${{ needs.changes.outputs.relevant }}
           BUILD_AND_TEST_RESULT: ${{ needs.build-and-test.result }}
         run: |
-          if [ "$RELEVANT" != "true" ]; then
+          if [ "$CHANGES_RESULT" = "success" ] && [ "$RELEVANT" = "false" ]; then
             echo "No relevant changes; mobile CI is not required."
             exit 0
           fi

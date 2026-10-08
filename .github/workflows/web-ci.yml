@@ -187,12 +187,13 @@ jobs:
     steps:
       - name: Verify applicable CI completed successfully
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
           RELEVANT: ${{ needs.changes.outputs.relevant }}
           TEST_AND_BUILD_RESULT: ${{ needs.test-and-build.result }}
           E2E_RESULT: ${{ needs.e2e-tests.result }}
           LIGHTHOUSE_RESULT: ${{ needs.lighthouse.result }}
         run: |
-          if [ "$RELEVANT" != "true" ]; then
+          if [ "$CHANGES_RESULT" = "success" ] && [ "$RELEVANT" = "false" ]; then
             echo "No relevant changes; web CI is not required."
             exit 0
           fi
