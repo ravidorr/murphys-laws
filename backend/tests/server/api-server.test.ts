@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
 import { Router } from '../../src/routes/router.ts';
+import { OPENAPI_SPEC } from '../../src/openapi.ts';
 
 const mockSentryInit = vi.fn();
 vi.mock('@sentry/node', () => ({
@@ -69,6 +70,31 @@ describe('api-server', () => {
       expect(typeof result.host).toBe('string');
       expect(typeof result.port).toBe('number');
       expect(typeof result.server).toBe('object');
+    });
+
+    it('should register exactly the public operations declared in OpenAPI', async () => {
+      const mockDb = {
+        prepare: vi.fn().mockReturnValue({ get: vi.fn() }),
+      };
+      const registerPublicRoute = vi.spyOn(Router.prototype, 'registerPublicRoute');
+      const { createApiServer } = await import('../../src/server/api-server.ts');
+
+      createApiServer({ db: mockDb as any });
+
+      const expected = Object.entries(OPENAPI_SPEC.paths)
+        .filter(([path]) => path.startsWith('/api'))
+        .flatMap(([path, pathItem]) => (
+          ['get', 'post', 'delete']
+            .filter((method) => method in pathItem)
+            .map((method) => `${method.toUpperCase()} ${path}`)
+        ))
+        .sort();
+      const registered = registerPublicRoute.mock.calls
+        .map(([method, _runtimePath, openApiPath]) => `${method} ${openApiPath}`)
+        .sort();
+
+      expect(registered).toEqual(expected);
+      registerPublicRoute.mockRestore();
     });
 
     it('should respond to GET /api/health with 200 when db is mocked', async () => {

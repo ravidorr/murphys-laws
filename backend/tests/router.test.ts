@@ -141,6 +141,46 @@ describe('Router', () => {
     expect(deleteHandler).toHaveBeenCalled();
   });
 
+  it('should reject a public route without a matching OpenAPI operation', () => {
+    const router = new Router();
+
+    expect(() => router.registerPublicRoute(
+      'GET',
+      '/api/v1/missing',
+      '/api/v1/missing',
+      vi.fn(),
+    )).toThrow('Missing OpenAPI operation: GET /api/v1/missing');
+  });
+
+  it('should reject an OpenAPI operation that has no registered public route', () => {
+    const router = new Router();
+    router.registerPublicRoute('GET', '/api/v1/laws', '/api/v1/laws', vi.fn());
+
+    expect(() => router.assertPublicApiContract()).toThrow(
+      'OpenAPI operation has no registered public route:',
+    );
+  });
+
+  it('should normalize route parameters when registering a documented public route', () => {
+    const router = new Router();
+
+    expect(() => router.registerPublicRoute(
+      'GET',
+      '/api/v1/laws/:id',
+      '/api/v1/laws/{id}',
+      vi.fn(),
+    )).not.toThrow();
+  });
+
+  it('should reject a public route that was registered without an OpenAPI operation', () => {
+    const router = new Router();
+    router.get('/api/v1/missing', vi.fn());
+
+    expect(() => router.assertPublicApiContract()).toThrow(
+      'Public route has no OpenAPI operation: GET /api/v1/missing',
+    );
+  });
+
   it('should handle OPTIONS with handleOptions and return 204 with CORS headers', async () => {
     const router = new Router();
     const handler = vi.fn();

@@ -109,9 +109,9 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.get(/^\/law\/(\d+)\/?$/, (req, res, lawId) => spaController.serveLaw(req, res, lawId));
   router.get(/^\/category\/([^/]+)\/?$/, (req, res, slug) => spaController.serveCategory(req, res, slug));
 
-  router.get('/api/health', (req, res) => healthController.check(req, res));
+  router.registerPublicRoute('GET', '/api/health', '/api/health', (req, res) => healthController.check(req, res));
 
-  router.get('/api/v1/openapi.json', (_req, res) => {
+  router.registerPublicRoute('GET', '/api/v1/openapi.json', '/api/v1/openapi.json', (_req, res) => {
     res.writeHead(200, {
       'Content-Type': 'application/json; charset=utf-8',
       'Access-Control-Allow-Origin': '*',
@@ -120,29 +120,31 @@ export function createApiServer(options?: CreateApiServerOptions) {
     res.end(JSON.stringify(OPENAPI_SPEC));
   });
 
-  router.get('/api/v1/laws', (req, res, parsed) => lawController.list(req, res, parsed));
-  router.get('/api/v1/laws/suggestions', (req, res, parsed) => lawController.suggestions(req, res, parsed));
-  router.get('/api/v1/laws/duplicates', (req, res, parsed) => lawController.duplicates(req, res, parsed));
-  router.get('/api/v1/laws/random', (req, res) => lawController.getRandom(req, res));
-  router.get('/api/v1/laws/:id', (req, res, id) => lawController.get(req, res, id));
-  router.get('/api/v1/laws/:id/related', (req, res, id) => lawController.getRelated(req, res, id));
-  router.post('/api/v1/laws', (req, res) => lawController.submit(req, res));
-  router.get('/api/v1/law-of-day', (req, res) => lawController.getLawOfTheDay(req, res));
+  router.registerPublicRoute('GET', '/api/v1/laws', '/api/v1/laws', (req, res, parsed) => lawController.list(req, res, parsed));
+  router.registerPublicRoute('GET', '/api/v1/laws/suggestions', '/api/v1/laws/suggestions', (req, res, parsed) => lawController.suggestions(req, res, parsed));
+  router.registerPublicRoute('GET', '/api/v1/laws/duplicates', '/api/v1/laws/duplicates', (req, res, parsed) => lawController.duplicates(req, res, parsed));
+  router.registerPublicRoute('GET', '/api/v1/laws/random', '/api/v1/laws/random', (req, res) => lawController.getRandom(req, res));
+  router.registerPublicRoute('GET', '/api/v1/laws/:id', '/api/v1/laws/{id}', (req, res, id) => lawController.get(req, res, id));
+  router.registerPublicRoute('GET', '/api/v1/laws/:id/related', '/api/v1/laws/{id}/related', (req, res, id) => lawController.getRelated(req, res, id));
+  router.registerPublicRoute('POST', '/api/v1/laws', '/api/v1/laws', (req, res) => lawController.submit(req, res));
+  router.registerPublicRoute('GET', '/api/v1/law-of-day', '/api/v1/law-of-day', (req, res) => lawController.getLawOfTheDay(req, res));
 
-  router.post('/api/v1/laws/:id/vote', (req, res, id) => voteController.vote(req, res, Number(id)));
-  router.delete('/api/v1/laws/:id/vote', (req, res, id) => voteController.removeVote(req, res, Number(id)));
+  router.registerPublicRoute('POST', '/api/v1/laws/:id/vote', '/api/v1/laws/{id}/vote', (req, res, id) => voteController.vote(req, res, Number(id)));
+  router.registerPublicRoute('DELETE', '/api/v1/laws/:id/vote', '/api/v1/laws/{id}/vote', (req, res, id) => voteController.removeVote(req, res, Number(id)));
 
-  router.get('/api/v1/categories', (req, res) => categoryController.list(req, res));
-  router.get('/api/v1/categories/:slug/related', (req, res, slug, parsed) => categoryController.related(req, res, slug, parsed));
-  router.get('/api/v1/categories/:id', (req, res, id) => categoryController.get(req, res, Number(id)));
+  router.registerPublicRoute('GET', '/api/v1/categories', '/api/v1/categories', (req, res) => categoryController.list(req, res));
+  router.registerPublicRoute('GET', '/api/v1/categories/:slug/related', '/api/v1/categories/{slug}/related', (req, res, slug, parsed) => categoryController.related(req, res, slug, parsed));
+  router.registerPublicRoute('GET', '/api/v1/categories/:id', '/api/v1/categories/{id}', (req, res, id) => categoryController.get(req, res, Number(id)));
 
-  router.get('/api/v1/attributions', (req, res) => attributionController.list(req, res));
-  router.get('/api/v1/submitters', (req, res) => attributionController.searchSubmitters(req, res));
+  router.registerPublicRoute('GET', '/api/v1/attributions', '/api/v1/attributions', (req, res) => attributionController.list(req, res));
+  router.registerPublicRoute('GET', '/api/v1/submitters', '/api/v1/submitters', (req, res) => attributionController.searchSubmitters(req, res));
 
-  router.get('/api/v1/feed.rss', (req, res) => feedController.getRssFeed(req, res));
-  router.get('/api/v1/feed.atom', (req, res) => feedController.getAtomFeed(req, res));
+  router.registerPublicRoute('GET', '/api/v1/feed.rss', '/api/v1/feed.rss', (req, res) => feedController.getRssFeed(req, res));
+  router.registerPublicRoute('GET', '/api/v1/feed.atom', '/api/v1/feed.atom', (req, res) => feedController.getAtomFeed(req, res));
 
-  router.get('/api/v1/og/law/:id.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
+  router.registerPublicRoute('GET', '/api/v1/og/law/:id.png', '/api/v1/og/law/{id}.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
+
+  router.assertPublicApiContract();
 
   const server = http.createServer(createRequestListener(router));
 

@@ -4,8 +4,9 @@ import url from 'node:url';
 import * as Sentry from '@sentry/node';
 import { notFound } from '../utils/http-helpers.ts';
 import { getCorsOrigin } from '../middleware/cors.ts';
+import { OPENAPI_SPEC } from '../openapi.ts';
 
-type RouteMethod = 'GET' | 'POST' | 'DELETE';
+export type RouteMethod = 'GET' | 'POST' | 'DELETE';
 type ParsedRequestUrl = url.UrlWithParsedQuery & { query: ParsedUrlQuery };
 type RouteHandler = (req: IncomingMessage, res: ServerResponse, ...args: any[]) => unknown | Promise<unknown>;
 
@@ -16,10 +17,57 @@ interface RouteDefinition {
   originalPath: string | RegExp;
 }
 
+interface PublicApiOperation {
+  method: RouteMethod;
+  path: string;
+}
+
+interface PublicApiContractExclusion extends PublicApiOperation {
+  reason: string;
+}
+
+type OpenApiPaths = Record<string, Partial<Record<Lowercase<RouteMethod>, unknown>>>;
+
+const PUBLIC_API_CONTRACT_EXCLUSIONS: readonly PublicApiContractExclusion[] = [];
+
 function compilePath(path: string): RegExp {
   const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = escaped.replace(/:[a-zA-Z0-9_]+/g, '([^/]+)');
   return new RegExp(`^${pattern}$`);
+}
+
+function normalizePublicApiPath(path: string): string {
+  return path.replace(/:([a-zA-Z0-9_]+)/g, '{$1}');
+}
+
+function operationKey(operation: PublicApiOperation): string {
+  return `${operation.method} ${operation.path}`;
+}
+
+function isExcluded(operation: PublicApiOperation): boolean {
+  return PUBLIC_API_CONTRACT_EXCLUSIONS.some((exclusion) => (
+    exclusion.method === operation.method && exclusion.path === operation.path
+  ));
+}
+
+function getDocumentedPublicApiOperations(): Set<string> {
+  const documented = new Set<string>();
+  const paths = OPENAPI_SPEC.paths as unknown as OpenApiPaths;
+  const methods: RouteMethod[] = ['GET', 'POST', 'DELETE'];
+
+  for (const [path, pathItem] of Object.entries(paths)) {
+    if (!path.startsWith('/api')) {
+      continue;
+    }
+
+    for (const method of methods) {
+      if (pathItem[method.toLowerCase() as Lowercase<RouteMethod>] !== undefined) {
+        documented.add(operationKey({ method, path }));
+      }
+    }
+  }
+
+  return documented;
 }
 
 export class Router {
@@ -41,6 +89,53 @@ export class Router {
   get(path: string | RegExp, handler: RouteHandler): void { this.add('GET', path, handler); }
   post(path: string | RegExp, handler: RouteHandler): void { this.add('POST', path, handler); }
   delete(path: string | RegExp, handler: RouteHandler): void { this.add('DELETE', path, handler); }
+
+  registerPublicRoute(
+    method: RouteMethod,
+    runtimePath: string,
+    openApiPath: string,
+    handler: RouteHandler,
+  ): void {
+    const normalizedRuntimePath = normalizePublicApiPath(runtimePath);
+    if (normalizedRuntimePath !== openApiPath) {
+      throw new Error(`Runtime path ${runtimePath} does not match OpenAPI path ${openApiPath}`);
+    }
+
+    const operation = { method, path: openApiPath };
+    if (!getDocumentedPublicApiOperations().has(operationKey(operation))) {
+      throw new Error(`Missing OpenAPI operation: ${operationKey(operation)}`);
+    }
+
+    this.add(method, runtimePath, handler);
+  }
+
+  assertPublicApiContract(): void {
+    const registered = new Set<string>();
+    for (const route of this.routes) {
+      if (typeof route.originalPath !== 'string' || !route.originalPath.startsWith('/api')) {
+        continue;
+      }
+
+      const operation = {
+        method: route.method,
+        path: normalizePublicApiPath(route.originalPath),
+      };
+      if (!isExcluded(operation)) {
+        registered.add(operationKey(operation));
+      }
+    }
+
+    const documented = getDocumentedPublicApiOperations();
+    const undocumentedRoutes = [...registered].filter((operation) => !documented.has(operation)).sort();
+    if (undocumentedRoutes.length > 0) {
+      throw new Error(`Public route has no OpenAPI operation: ${undocumentedRoutes[0]}`);
+    }
+
+    const unregisteredOperations = [...documented].filter((operation) => !registered.has(operation)).sort();
+    if (unregisteredOperations.length > 0) {
+      throw new Error(`OpenAPI operation has no registered public route: ${unregisteredOperations[0]}`);
+    }
+  }
 
   async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (req.method === 'OPTIONS') {

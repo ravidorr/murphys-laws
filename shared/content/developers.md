@@ -78,12 +78,13 @@ console.log(law.text);
 
 ## REST API
 
-The REST API is free, requires no authentication for read endpoints, and
-returns JSON. All versioned endpoints live under `/api/v1/` and are stable.
+The REST API is free and requires no authentication for read endpoints. JSON
+endpoints return JSON, while feeds and Open Graph images use their standard
+media types. All versioned endpoints live under `/api/v1/` and are stable.
 
 **Base URL:** `https://murphys-laws.com`
 
-| Method | Endpoint | Description |
+| Method | Selected endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/laws` | List and search laws. Params: `q`, `category_slug`, `limit`, `offset`, `sort`, `order` |
 | GET | `/api/v1/laws/:id` | Get a single law with attributions and category |
