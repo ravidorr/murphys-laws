@@ -186,8 +186,10 @@ describe('api-server', () => {
         listLaws: vi.fn().mockResolvedValue({ data: [], total: 0 }),
         getLaw: vi.fn().mockResolvedValue({ id: 1, title: 'L', text: 'T', upvotes: 0, downvotes: 0 }),
         getLawOfTheDay: vi.fn().mockResolvedValue({ law: { id: 1, title: 'L' }, featured_date: '2025-01-01' }),
+        getRandomLaw: vi.fn().mockResolvedValue({ id: 1, title: 'L', text: 'T' }),
         getRelatedLaws: vi.fn().mockResolvedValue([]),
         suggestions: vi.fn().mockResolvedValue([]),
+        findDuplicateCandidates: vi.fn().mockResolvedValue([]),
         submitLaw: vi.fn().mockResolvedValue(1),
       };
       const mockVoteService = {
@@ -197,9 +199,12 @@ describe('api-server', () => {
       const mockCategoryService = {
         listCategories: vi.fn().mockResolvedValue([]),
         getCategory: vi.fn().mockResolvedValue({ id: 1, name: 'C', slug: 'c' }),
+        getCategoryBySlug: vi.fn().mockResolvedValue(null),
+        getRelatedCategories: vi.fn().mockResolvedValue([]),
       };
       const mockAttributionService = {
         listAttributions: vi.fn().mockResolvedValue([]),
+        searchSubmitters: vi.fn().mockResolvedValue([]),
       };
       const mockFeedService = {
         generateRss: vi.fn().mockResolvedValue('<rss/>'),
@@ -260,26 +265,38 @@ describe('api-server', () => {
       };
 
       await emitRequest('GET', '/api/health');
+      await emitRequest('GET', '/api/v1/openapi.json');
       await emitRequest('GET', '/api/v1/laws');
       await emitRequest('GET', '/api/v1/laws/suggestions');
+      await emitRequest('GET', '/api/v1/laws/duplicates?text=An%20existing%20law');
+      const randomLawResponse = await emitRequest('GET', '/api/v1/laws/random');
       await emitRequest('GET', '/api/v1/laws/1');
       await emitRequest('GET', '/api/v1/laws/1/related');
       await emitRequest('GET', '/api/v1/law-of-day');
       await emitRequest('POST', '/api/v1/laws', { title: 'T', text: 't' });
       await emitRequest('GET', '/api/v1/categories');
       await emitRequest('GET', '/api/v1/categories/1');
+      await emitRequest('GET', '/api/v1/categories/c/related');
       await emitRequest('GET', '/api/v1/attributions');
+      await emitRequest('GET', '/api/v1/submitters?q=Alice');
       await emitRequest('GET', '/api/v1/feed.rss');
       await emitRequest('GET', '/api/v1/feed.atom');
       await emitRequest('GET', '/api/v1/og/law/1.png');
       await emitRequest('POST', '/api/v1/laws/1/vote', { vote_type: 'up' });
       await emitRequest('DELETE', '/api/v1/laws/1/vote');
+      await emitRequest('GET', '/law/1');
+      await emitRequest('GET', '/category/c');
 
       expect(mockLawService.listLaws).toHaveBeenCalled();
       expect(mockLawService.getLaw).toHaveBeenCalled();
       expect(mockFeedService.generateRss).toHaveBeenCalled();
       expect(mockFeedService.generateAtom).toHaveBeenCalled();
       expect(mockOgImageService.generateLawImage).toHaveBeenCalledWith(1);
+      expect(randomLawResponse.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
+      expect(mockLawService.getRandomLaw).toHaveBeenCalled();
+      expect(mockLawService.findDuplicateCandidates).toHaveBeenCalled();
+      expect(mockCategoryService.getRelatedCategories).toHaveBeenCalled();
+      expect(mockAttributionService.searchSubmitters).toHaveBeenCalledWith('Alice', 20);
     });
   });
 

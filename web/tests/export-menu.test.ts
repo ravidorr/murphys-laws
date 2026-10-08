@@ -815,6 +815,34 @@ describe('Export Menu Component', () => {
     });
   });
 
+  describe('Defensive interactions', () => {
+    it('keeps the menu closed when a disabled toggle receives a programmatic click event', () => {
+      vi.mocked(getExportContent).mockReturnValue(null);
+      vi.mocked(getAvailableFormats).mockReturnValue([]);
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+      const button = menu.querySelector('#export-toggle') as HTMLButtonElement;
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement;
+
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(dropdown.hidden).toBe(true);
+    });
+
+    it('ignores clicks on empty dropdown space', () => {
+      const menu = ExportMenu();
+      localThis.container!.appendChild(menu);
+      const dropdown = menu.querySelector('#export-dropdown') as HTMLElement;
+
+      dropdown.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(exportToPDF).not.toHaveBeenCalled();
+      expect(exportToCSV).not.toHaveBeenCalled();
+      expect(exportToMarkdown).not.toHaveBeenCalled();
+      expect(exportToText).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Pendo tracking', () => {
     type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
     let track: ReturnType<typeof vi.fn<PendoTrack>>;

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Router } from '../src/routes/router.ts';
+import { OPENAPI_SPEC } from '../src/openapi.ts';
 
 const mockCaptureException = vi.fn();
 vi.mock('@sentry/node', () => ({
@@ -159,6 +160,28 @@ describe('Router', () => {
     expect(() => router.assertPublicApiContract()).toThrow(
       'OpenAPI operation has no registered public route:',
     );
+  });
+
+  it('should ignore non-API OpenAPI paths when validating the public contract', () => {
+    const paths = OPENAPI_SPEC.paths as Record<string, unknown>;
+    const router = new Router();
+    const methods = ['GET', 'POST', 'DELETE'] as const;
+
+    for (const [path, pathItem] of Object.entries(OPENAPI_SPEC.paths)) {
+      for (const method of methods) {
+        if (method.toLowerCase() in pathItem) {
+          const runtimePath = path.replace(/\{([a-zA-Z0-9_]+)\}/g, ':$1');
+          router.registerPublicRoute(method, runtimePath, path, vi.fn());
+        }
+      }
+    }
+
+    expect(() => router.assertPublicApiContract()).not.toThrow();
+
+    paths['/internal-test-route'] = { get: {} };
+
+    expect(() => router.assertPublicApiContract()).not.toThrow();
+    delete paths['/internal-test-route'];
   });
 
   it('should normalize route parameters when registering a documented public route', () => {

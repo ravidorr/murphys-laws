@@ -218,6 +218,45 @@ describe('Favorites View Component', () => {
       expect(secondCall[0]).toMatchObject({ id: 999, text: 'Fetched law text', title: 'Fetched Title' });
     });
 
+    it('preserves legacy fields when an enrichment response is incomplete', async () => {
+      const legacyFavorite: FavoriteLaw = {
+        id: 999,
+        text: '   ',
+        title: 'Legacy title',
+        attribution: 'Legacy attribution',
+        savedAt: 1,
+      };
+      vi.mocked(getFavorites).mockReturnValue([legacyFavorite]);
+      vi.mocked(fetchLaw).mockResolvedValue({
+        id: 999,
+        text: '',
+        title: undefined,
+        attribution: undefined,
+      } as import('../src/types/app.d').Law);
+
+      Favorites({ onNavigate: localThis.mockNavigate });
+
+      await vi.waitFor(() => {
+        expect(renderLawCards).toHaveBeenCalledTimes(2);
+      });
+
+      expect(vi.mocked(renderLawCards).mock.calls[1]![0]).toEqual([legacyFavorite]);
+    });
+
+    it('keeps a favorite visible when enrichment fails', async () => {
+      const emptyTextFavorite: FavoriteLaw = { id: 999, text: '', title: '', savedAt: 1 };
+      vi.mocked(getFavorites).mockReturnValue([emptyTextFavorite]);
+      vi.mocked(fetchLaw).mockRejectedValue(new Error('API unavailable'));
+
+      Favorites({ onNavigate: localThis.mockNavigate });
+
+      await vi.waitFor(() => {
+        expect(renderLawCards).toHaveBeenCalledTimes(2);
+      });
+
+      expect(vi.mocked(renderLawCards).mock.calls[1]![0]).toEqual([emptyTextFavorite]);
+    });
+
     it('calls addVotingListeners exactly once during initialization', () => {
       Favorites({ onNavigate: localThis.mockNavigate });
       expect(addVotingListeners).toHaveBeenCalledTimes(1);
@@ -684,6 +723,35 @@ describe('Favorites View Component', () => {
       emptyNavLink.setAttribute('data-nav', '');
       el.appendChild(emptyNavLink);
       emptyNavLink.click();
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
+    });
+
+    it('ignores favorite cards and keyboard activation without a law id', () => {
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const card = document.createElement('article');
+      card.className = 'law-card-mini';
+      el.appendChild(card);
+
+      card.click();
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
+    });
+
+    it('ignores favorite buttons and navigation links without route parameters', () => {
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const favoriteButton = document.createElement('button');
+      favoriteButton.dataset.action = 'favorite';
+      const navLink = document.createElement('a');
+      navLink.dataset.nav = '';
+      const inertElement = document.createElement('span');
+      el.append(favoriteButton, navLink, inertElement);
+
+      favoriteButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      navLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      inertElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(removeFavorite).not.toHaveBeenCalled();
       expect(vi.mocked(localThis.mockNavigate)).not.toHaveBeenCalled();
     });
   });

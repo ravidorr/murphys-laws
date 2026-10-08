@@ -141,10 +141,8 @@ export function SubmitLawSection() {
       return;
     }
 
-    // Clear error if text is valid or empty
-    if (trimmedLength === 0 || trimmedLength >= 10) {
-      clearMessage();
-    }
+    // The short-text case returned above, so all remaining input clears inline errors.
+    clearMessage();
 
     // Enable button only if text is valid AND terms are checked (template always has submitBtn)
     const isValid = textValid && termsValid;
@@ -185,11 +183,10 @@ export function SubmitLawSection() {
   }
 
   function showNextActions(categorySlug?: string) {
-    if (!nextActions) return;
     const categoryLink = categorySlug
       ? `<a href="/category/${categorySlug}" class="btn outline">Browse your category</a>`
       : '<a href="/categories" class="btn outline">Browse categories</a>';
-    nextActions.innerHTML = `
+    nextActions!.innerHTML = `
       <div class="section card card--section section-card mt-4">
         <div class="section-header">
           <h3 class="section-title"><span class="accent-text">Keep</span> exploring</h3>
@@ -203,7 +200,7 @@ export function SubmitLawSection() {
           </div>
         </div>
       </div>`;
-    nextActions.removeAttribute('hidden');
+    nextActions!.removeAttribute('hidden');
   }
 
   // Add event listeners to check validity
@@ -218,9 +215,10 @@ export function SubmitLawSection() {
   });
 
   async function checkForDuplicates() {
-    const text = textArea?.value.trim() || '';
-    if (!duplicateCandidates || text.length < 10) {
-      if (duplicateCandidates) duplicateCandidates.innerHTML = '';
+    const text = textArea!.value.trim();
+    const candidateContainer = duplicateCandidates!;
+    if (text.length < 10) {
+      candidateContainer.innerHTML = '';
       return;
     }
     const requestId = ++duplicateRequestId;
@@ -230,7 +228,7 @@ export function SubmitLawSection() {
       const ranked = rankDuplicateCandidates(text, result.data).filter(isUsefulDuplicateMatch).slice(0, 3);
       const exact = ranked.filter((candidate) => candidate.match_type === 'exact');
       const fuzzy = ranked.filter((candidate) => candidate.match_type === 'fuzzy');
-      duplicateCandidates.innerHTML = ranked.length > 0
+      candidateContainer.innerHTML = ranked.length > 0
         ? `${exact.length > 0 ? '<p class="small"><strong>Already in the archive:</strong></p>' : '<p class="small"><strong>Possible duplicates:</strong></p>'}<ul>${[...exact, ...fuzzy].map((law) => `<li><a href="/law/${law.id}">${escapeHtml(law.title || law.text)}</a>${law.match_type === 'fuzzy' ? ` <span class="small text-muted-fg">${Math.round(law.similarity * 100)}% similar</span>` : ''}</li>`).join('')}</ul>`
         : '';
       const topMatch = ranked[0];
@@ -250,7 +248,7 @@ export function SubmitLawSection() {
         }
       }
     } catch {
-      if (requestId === duplicateRequestId) duplicateCandidates.innerHTML = '';
+      if (requestId === duplicateRequestId) candidateContainer.innerHTML = '';
     }
   }
 

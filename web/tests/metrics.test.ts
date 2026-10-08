@@ -110,4 +110,46 @@ describe('metrics', () => {
     Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
     window.gtag = undefined;
   });
+
+  it('enables Sentry metrics for a canonical production runtime', async () => {
+    const localThis: { originalLocation: Location } = { originalLocation: window.location };
+    import.meta.env.VITE_SENTRY_DSN = 'https://key@o1.ingest.sentry.io/1';
+    import.meta.env.PROD = true;
+    vi.stubEnv('MODE', 'production');
+    Object.defineProperty(window, 'location', {
+      value: { hostname: 'murphys-laws.com' },
+      writable: true,
+    });
+    vi.resetModules();
+
+    try {
+      const { count } = await import('../src/utils/metrics.ts');
+      count('canonical_event');
+
+      expect(mockCount).toHaveBeenCalledWith('canonical_event', 1);
+    } finally {
+      Object.defineProperty(window, 'location', { value: localThis.originalLocation, writable: true });
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('does not enable metrics when no browser window exists', async () => {
+    const localThis: { originalWindow: Window | undefined } = { originalWindow: globalThis.window };
+    import.meta.env.VITE_SENTRY_DSN = 'https://key@o1.ingest.sentry.io/1';
+    import.meta.env.PROD = true;
+    vi.stubEnv('MODE', 'production');
+    vi.stubGlobal('window', undefined);
+    vi.resetModules();
+
+    try {
+      const { count } = await import('../src/utils/metrics.ts');
+      count('server_event');
+
+      expect(mockCount).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      (globalThis as unknown as { window: Window | undefined }).window = localThis.originalWindow;
+      vi.unstubAllEnvs();
+    }
+  });
 });

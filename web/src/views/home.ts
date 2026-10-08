@@ -135,17 +135,15 @@ export function renderHome(
   const browseCta = browseWrap.firstElementChild!;
   hydrateIcons(browseCta as HTMLElement);
   el.appendChild(browseCta);
-  const searchForm = browseCta.querySelector('form[role="search"]');
-  if (searchForm instanceof HTMLFormElement) {
-    searchForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
-      const input = searchForm.querySelector('input[type="search"]');
-      const query = input instanceof HTMLInputElement ? input.value.trim() : '';
-      if (onSearch) onSearch({ q: query }, 'home');
-      else onNavigate('browse');
-    });
-  }
+  const searchForm = browseCta.querySelector<HTMLFormElement>('form[role="search"]')!;
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
+    const input = searchForm.querySelector<HTMLInputElement>('input[type="search"]')!;
+    const query = input.value.trim();
+    if (onSearch) onSearch({ q: query }, 'home');
+    else onNavigate('browse');
+  });
 
   const lawZone = document.createElement('div');
   lawZone.className = 'min-h-400';
@@ -201,10 +199,8 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
   renderHome(el, null, [], onNavigate, onSearch, { dailyLawState: 'loading' });
 
   function fetchAndRender() {
-    const lawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
-    if (lawZone) {
-      renderDailyLawZone(lawZone, null, onNavigate, 'loading');
-    }
+    const lawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
+    renderDailyLawZone(lawZone, null, onNavigate, 'loading');
 
     fetchLawOfTheDay()
       .then((lawJson): void => {

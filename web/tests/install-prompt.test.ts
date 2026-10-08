@@ -18,7 +18,7 @@ import {
   _getEngagementForTesting,
   _setEngagementForTesting,
   _setIsInstalledForTesting,
-  _setQualifyingUserActionForTesting
+  _setPromptShownThisSessionForTesting
 } from '../src/components/install-prompt.js';
 
 /** Test-only: cast mock to the deferred prompt type expected by _setDeferredPromptForTesting */
@@ -208,6 +208,42 @@ describe('Install Prompt Component', () => {
         (call: [string, EventListener]) => call[0] === 'beforeinstallprompt'
       );
       expect(beforeinstallpromptCalls.length).toBe(0);
+    });
+
+    it('stores a deferred browser prompt and prevents its default UI', () => {
+      const promptEvent = new Event('beforeinstallprompt', { cancelable: true });
+      const preventDefault = vi.spyOn(promptEvent, 'preventDefault');
+      initInstallPrompt();
+
+      window.dispatchEvent(promptEvent);
+
+      expect(preventDefault).toHaveBeenCalled();
+      expect(canShowInstallPrompt()).toBe(true);
+    });
+
+    it('updates time-on-site while initialized', () => {
+      vi.useFakeTimers();
+      _setEngagementForTesting({ startTime: Date.now() - 5000 });
+      initInstallPrompt();
+      vi.advanceTimersByTime(5000);
+
+      expect(_getEngagementForTesting().timeOnSite).toBeGreaterThanOrEqual(5000);
+      vi.useRealTimers();
+    });
+  });
+
+  describe('testing state helpers', () => {
+    it('sets the prompt-shown session flag', () => {
+      _setPromptShownThisSessionForTesting(true);
+      _setDeferredPromptForTesting({
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed', platform: 'web' })
+      } as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+
+      expect(document.querySelector('.install-prompt')).toBeNull();
     });
   });
 
@@ -412,6 +448,33 @@ describe('Install Prompt Component', () => {
       expect(document.querySelector('.install-prompt')).toBeTruthy();
       expect(localThis.mockPromptEvent!.prompt).not.toHaveBeenCalled();
     });
+
+    it('ignores standard prompt clicks whose target is not an Element', () => {
+      _setDeferredPromptForTesting({
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'dismissed' as const, platform: 'web' })
+      } as unknown as DeferredPrompt);
+      showInstallPrompt();
+      const prompt = document.querySelector('.install-prompt')!;
+      const event = new Event('click', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: document.createTextNode('translated') });
+
+      prompt.dispatchEvent(event);
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
+    it('ignores iOS prompt clicks whose target is not an Element', () => {
+      showIOSInstallInstructions();
+      const prompt = document.querySelector('.install-prompt')!;
+      const event = new Event('click', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: document.createTextNode('translated') });
+
+      prompt.dispatchEvent(event);
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
   });
 
   describe('data-action click resolution', () => {
@@ -509,6 +572,16 @@ describe('Install Prompt Component', () => {
 
     it('does not throw if no prompt exists', () => {
       expect(() => hideInstallPrompt()).not.toThrow();
+    });
+
+    it('removes the prompt when its hide transition ends', () => {
+      showIOSInstallInstructions();
+      const prompt = document.querySelector('.install-prompt')!;
+
+      hideInstallPrompt();
+      prompt.dispatchEvent(new Event('transitionend'));
+
+      expect(document.querySelector('.install-prompt')).toBeNull();
     });
   });
 
@@ -737,6 +810,23 @@ describe('Install Prompt Component', () => {
       expect(localThis.mockPromptEvent.prompt).toHaveBeenCalled();
     });
 
+    it('ignores an install click when its deferred prompt was cleared while displayed', async () => {
+      const promptEvent = {
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      };
+      _setDeferredPromptForTesting(promptEvent as unknown as DeferredPrompt);
+      showInstallPrompt();
+      _setDeferredPromptForTesting(null);
+
+      (document.querySelector('[data-action="install"]') as HTMLElement).click();
+      await Promise.resolve();
+
+      expect(promptEvent.prompt).not.toHaveBeenCalled();
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
     it('L281 B0: click on Install button does not enter dismiss branch', async () => {
       const mockPrompt = {
         preventDefault: vi.fn(),
@@ -928,6 +1018,19 @@ describe('Install Prompt Component', () => {
       });
 
       recordQualifyingUserAction();
+
+      expect(document.querySelector('.install-prompt')).toBeFalsy();
+    });
+
+    it('does not show a prompt after the visitor opted out permanently', () => {
+      _setDeferredPromptForTesting({
+        preventDefault: vi.fn(),
+        prompt: vi.fn(),
+        userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' })
+      } as unknown as DeferredPrompt);
+      localStorage.setItem('pwa_install_never_show', '1');
+
+      trackCalculatorUse();
 
       expect(document.querySelector('.install-prompt')).toBeFalsy();
     });
@@ -1714,6 +1817,65 @@ describe('Install Prompt Component', () => {
       document.dispatchEvent(escEvent);
 
       expect(escEvent.defaultPrevented).toBe(false);
+    });
+
+    it('does not move focus when the primary action is unavailable', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const originalQuerySelector = Element.prototype.querySelector;
+      vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+        if (this.classList.contains('install-prompt') && selector === '[data-action="install"]') return null;
+        return originalQuerySelector.call(this, selector);
+      });
+      _setDeferredPromptForTesting(newMockPromptEvent() as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+      vi.restoreAllMocks();
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
+    it('opens a prompt when the prior active node is not focusable HTML', () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      const originalActiveElement = document.activeElement;
+      Object.defineProperty(document, 'activeElement', {
+        value: document.createTextNode('outside'),
+        configurable: true
+      });
+      _setDeferredPromptForTesting(newMockPromptEvent() as unknown as DeferredPrompt);
+
+      showInstallPrompt();
+
+      Object.defineProperty(document, 'activeElement', {
+        value: originalActiveElement,
+        configurable: true
+      });
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
+    });
+
+    it('does not trap Tab when no focusable controls remain', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      _setDeferredPromptForTesting(newMockPromptEvent() as unknown as DeferredPrompt);
+      showInstallPrompt();
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      document.querySelectorAll('.install-prompt button').forEach((button) => button.remove());
+
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      document.dispatchEvent(tabEvent);
+
+      expect(tabEvent.defaultPrevented).toBe(false);
+    });
+
+    it('keeps the prompt open when Escape has no dismiss control to invoke', async () => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+      _setDeferredPromptForTesting(newMockPromptEvent() as unknown as DeferredPrompt);
+      showInstallPrompt();
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      document.querySelector('[data-action="dismiss"]')?.remove();
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+      expect(document.querySelector('.install-prompt')).toBeTruthy();
     });
   });
 

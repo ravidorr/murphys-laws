@@ -76,6 +76,13 @@ describe('Pendo track events helper', () => {
     expect(normalizeQuery(null)).toBe('');
   });
 
+  it('reports no query tokens for absent input', () => {
+    const localThis: { properties?: ReturnType<typeof getQueryProperties> } = {};
+    localThis.properties = getQueryProperties(null);
+
+    expect(localThis.properties).toEqual({ query_length: 0, query_token_count: 0 });
+  });
+
   describe('getSearchProperties', () => {
     it('describes active search filters without retaining free text', () => {
       const query = 'alice@example.com report';

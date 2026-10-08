@@ -78,7 +78,7 @@ export function parseSignedRequest(
 
     return payload;
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = String(error).replace(/^[A-Za-z]+Error:\s*/, '');
     console.error('Error parsing signed request:', message);
     return null;
   }

@@ -214,6 +214,31 @@ describe('SubmitLawSection component', () => {
     await vi.waitFor(() => expect(candidates.innerHTML).toBe(''));
   });
 
+  it('does not let a stale failed duplicate request clear newer results', async () => {
+    let rejectFirst: ((reason?: unknown) => void) | undefined;
+    vi.spyOn(api, 'fetchDuplicateCandidates')
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
+      .mockResolvedValueOnce({
+        data: [{ id: 12, text: 'The newer backup failure is visible' }],
+        total: 1,
+        limit: 5,
+        offset: 0
+      });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+    textarea.value = 'The first backup failure should become stale';
+    textarea.dispatchEvent(new Event('blur'));
+    textarea.value = 'The newer backup failure remains visible';
+    textarea.dispatchEvent(new Event('blur'));
+    await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('newer backup'));
+
+    rejectFirst?.(new Error('offline'));
+    await Promise.resolve();
+
+    expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('newer backup');
+  });
+
   it('does not run a delayed duplicate lookup after the section is detached', async () => {
     vi.useFakeTimers();
     const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates');
@@ -225,6 +250,44 @@ describe('SubmitLawSection component', () => {
     await vi.advanceTimersByTimeAsync(500);
 
     expect(duplicateSpy).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('clears a delayed duplicate lookup before the field loses focus', async () => {
+    vi.useFakeTimers();
+    const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+      data: [],
+      total: 0,
+      limit: 5,
+      offset: 0
+    });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+    textarea.value = 'A valid law that triggers a duplicate lookup';
+    textarea.dispatchEvent(new Event('input'));
+    textarea.dispatchEvent(new Event('blur'));
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(duplicateSpy).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('runs a scheduled duplicate lookup while the section remains connected', async () => {
+    vi.useFakeTimers();
+    const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+      data: [],
+      total: 0,
+      limit: 5,
+      offset: 0
+    });
+    const el = mountSection({ append: true });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+    textarea.value = 'A valid law that should check duplicates after input';
+
+    textarea.dispatchEvent(new Event('input'));
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(duplicateSpy).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
 

@@ -113,7 +113,7 @@ export class HtmlInjectionService {
     const titleWords = title.split(' ');
     const accentTitle =
       titleWords.length > 1
-        ? `<span class="accent-text">${escapeHtml(titleWords[0] ?? '')}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
+        ? `<span class="accent-text">${escapeHtml(titleWords[0])}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
         : `<span class="accent-text">${escapeHtml(title)}</span>`;
 
     const attributionName =
@@ -190,7 +190,7 @@ export class HtmlInjectionService {
     const titleWords = title.split(' ');
     const accentTitle =
       titleWords.length > 1
-        ? `<span class="accent-text">${escapeHtml(titleWords[0] ?? '')}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
+        ? `<span class="accent-text">${escapeHtml(titleWords[0])}</span> ${escapeHtml(titleWords.slice(1).join(' '))}`
         : `<span class="accent-text">${escapeHtml(title)}</span>`;
 
     const descriptionText =
