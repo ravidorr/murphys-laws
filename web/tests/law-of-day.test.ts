@@ -145,7 +145,7 @@ describe('LawOfTheDay component', () => {
     expect(el.querySelector('[data-daily-law-distribution]')?.textContent).toContain('Daily Law');
   });
 
-  it('handles upvote button click', async () => {
+  it('handles upvote button click with the Law of the Day voting surface', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
@@ -157,7 +157,7 @@ describe('LawOfTheDay component', () => {
     });
   });
 
-  it('handles downvote button click', async () => {
+  it('handles downvote button click with the Law of the Day voting surface', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     const el = mountLaw(law);
 
