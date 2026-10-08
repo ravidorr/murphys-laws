@@ -236,7 +236,9 @@ jobs:
             fi
 
             echo "==> Health check: testing API endpoints"
-            if ! curl -f http://127.0.0.1:8787/api/v1/law-of-day > /dev/null 2>&1; then
+            if ! npx tsx scripts/wait-for-health-check.ts \
+              "Law of the day endpoint" \
+              "http://127.0.0.1:8787/api/v1/law-of-day"; then
               echo "ERROR: API health check failed after deployment!"
               echo "PM2 Status:"
               pm2 list
@@ -246,7 +248,9 @@ jobs:
             fi
 
             # Test additional endpoints
-            if ! curl -f http://127.0.0.1:8787/api/v1/laws?limit=1 > /dev/null 2>&1; then
+            if ! npx tsx scripts/wait-for-health-check.ts \
+              "Laws endpoint" \
+              "http://127.0.0.1:8787/api/v1/laws?limit=1"; then
               echo "ERROR: Laws endpoint health check failed!"
               pm2 logs --lines 50 --nostream
               exit 1
