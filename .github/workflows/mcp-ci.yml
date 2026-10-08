@@ -101,6 +101,7 @@ jobs:
           "
 
   ci-gate:
+    name: mcp-ci-gate
     needs: [changes, test]
     if: always()
     runs-on: ubuntu-latest

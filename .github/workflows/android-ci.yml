@@ -141,6 +141,7 @@ jobs:
         run: echo "Android project not yet created. Skipping build."
 
   ci-gate:
+    name: android-ci-gate
     needs: [changes, build-and-test]
     if: always()
     runs-on: ubuntu-latest

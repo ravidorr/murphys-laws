@@ -67,6 +67,7 @@ jobs:
         working-directory: sdk
 
   ci-gate:
+    name: sdk-ci-gate
     needs: [changes, test]
     if: always()
     runs-on: ubuntu-latest

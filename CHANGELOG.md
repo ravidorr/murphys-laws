@@ -76,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Gave each required CI gate a unique status-check name so branch protection recognizes
+  successful workflows. Root bumped to `2.6.32`.
 - Kept design-system validation compatible with selective CI filters, made required
   CI gates fail closed when path detection fails, and skip local Android coverage only
   when no usable SDK is configured. Root bumped to `2.6.31`.

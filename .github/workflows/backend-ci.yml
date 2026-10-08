@@ -87,6 +87,7 @@ jobs:
         run: test -f backend/murphys.db
 
   ci-gate:
+    name: backend-ci-gate
     needs: [changes, test]
     if: always()
     runs-on: ubuntu-latest
