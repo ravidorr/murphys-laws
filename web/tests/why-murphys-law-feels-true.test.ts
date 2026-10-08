@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { WhyMurphysLawFeelsTrue } from '../src/views/why-murphys-law-feels-true.js';
 import * as structuredData from '../src/modules/structured-data.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 vi.mock('../src/modules/structured-data.js');
 vi.mock('../src/utils/constants.js', () => ({
@@ -67,6 +68,18 @@ describe('WhyMurphysLawFeelsTrue view', () => {
     expect(() => navBtn.click()).not.toThrow();
   });
 
+  it('does not navigate when the navigation target is empty', () => {
+    const onNavigate = vi.fn();
+    const el = WhyMurphysLawFeelsTrue({ onNavigate });
+    const navBtn = document.createElement('a');
+    navBtn.setAttribute('data-nav', '');
+    el.appendChild(navBtn);
+
+    navBtn.click();
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('ignores click on non-HTMLElement target', () => {
     const onNavigate = vi.fn();
     const el = WhyMurphysLawFeelsTrue({ onNavigate });
@@ -74,5 +87,14 @@ describe('WhyMurphysLawFeelsTrue view', () => {
     Object.defineProperty(event, 'target', { value: null });
     el.dispatchEvent(event);
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('clears registered export content during cleanup', () => {
+    const clearExportContent = vi.spyOn(exportContext, 'clearExportContent');
+    const el = WhyMurphysLawFeelsTrue() as HTMLDivElement & { cleanup: () => void };
+
+    el.cleanup();
+
+    expect(clearExportContent).toHaveBeenCalledOnce();
   });
 });

@@ -1063,4 +1063,81 @@ describe('Button component', () => {
       });
     });
   });
+
+  describe('remaining optional rendering paths', () => {
+    it('renders law ID and busy accessibility attributes in HTML', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderButtonHTML({
+        text: 'Save',
+        lawId: 42,
+        ariaBusy: true,
+        tooltip: 'Save changes',
+        action: 'save',
+      });
+
+      expect(localThis.html).toContain('data-law-id="42"');
+      expect(localThis.html).toContain('aria-busy="true"');
+      expect(localThis.html).toContain('data-tooltip="Save changes"');
+      expect(localThis.html).toContain('data-action="save"');
+    });
+
+    it('omits a DOM icon when its name is not registered', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ text: 'Unknown', icon: 'not-registered' });
+
+      expect(localThis.btn.querySelector('svg')).toBeNull();
+      expect(localThis.btn.querySelector('.btn-text')?.textContent).toBe('Unknown');
+    });
+
+    it('omits an unregistered icon from vote and icon-only buttons', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({
+        variant: 'vote',
+        direction: 'up',
+        icon: 'not-registered',
+        count: 1,
+      });
+      localThis.domBtn = createButton({
+        icon: 'not-registered',
+        iconOnly: true,
+        ariaLabel: 'Unknown',
+      });
+
+      expect(localThis.btn.querySelector('svg')).toBeNull();
+      expect(localThis.domBtn.querySelector('svg')).toBeNull();
+    });
+
+    it('renders an accessible icon-only button without an icon', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ iconOnly: true, ariaLabel: 'Placeholder action' });
+
+      expect(localThis.btn.children).toHaveLength(0);
+      expect(localThis.btn.getAttribute('aria-label')).toBe('Placeholder action');
+    });
+
+    it('applies runtime defaults when options are explicitly undefined', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.btn = createButton({ type: undefined, variant: undefined });
+      localThis.html = renderButtonHTML({ text: undefined });
+      localThis.container = document.createElement('div');
+      localThis.container.innerHTML = renderLinkButtonHTML({ href: '/', variant: null as never });
+
+      expect(localThis.btn.type).toBe('button');
+      expect(localThis.html).toContain('<button');
+      expect(localThis.container.querySelector('a')?.className).toBe('btn');
+    });
+
+    it('omits null targets from share links', () => {
+      const localThis: ButtonTestLocalThis = {};
+      localThis.html = renderShareLinkHTML({
+        href: 'https://example.com/share',
+        text: 'Share',
+        icon: 'share',
+        platform: 'generic',
+        target: null as never,
+      });
+
+      expect(localThis.html).not.toContain('target=');
+    });
+  });
 });

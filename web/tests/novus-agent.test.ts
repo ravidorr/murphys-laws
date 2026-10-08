@@ -142,4 +142,16 @@ describe('default runtime detection', () => {
     expect(initializeNovusAgent()).toBe(false);
     expect(initialize).not.toHaveBeenCalled();
   });
+
+  it('reports an undefined hostname and skips the implicit agent outside a browser', () => {
+    const localThis: { originalWindow: Window | undefined } = { originalWindow: globalThis.window };
+    (globalThis as unknown as { window: Window | undefined }).window = undefined;
+
+    try {
+      expect(getTelemetryRuntime().hostname).toBeUndefined();
+      expect(initializeNovusAgent(production)).toBe(false);
+    } finally {
+      (globalThis as unknown as { window: Window | undefined }).window = localThis.originalWindow;
+    }
+  });
 });

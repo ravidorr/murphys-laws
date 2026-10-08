@@ -94,10 +94,8 @@ function wrapPdfText(value: unknown): string[] {
       let current = '';
       for (const word of paragraph.split(/\s+/)) {
         if (word.length > PDF_MAX_LINE_LENGTH) {
-          if (current) {
-            lines.push(current);
-            current = '';
-          }
+          lines.push(...(current ? [current] : []));
+          current = '';
           for (let offset = 0; offset < word.length; offset += PDF_MAX_LINE_LENGTH) {
             lines.push(word.slice(offset, offset + PDF_MAX_LINE_LENGTH));
           }

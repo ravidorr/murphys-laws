@@ -327,6 +327,30 @@ describe('ButteredToastCalculator view', () => {
     vi.useRealTimers();
   });
 
+  it('does not update formula values after an unmounted calculator settles', () => {
+    vi.useFakeTimers();
+    const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+    document.body.appendChild(el);
+
+    try {
+      const formulaDisplay = el.querySelector('#toast-formula-display')!;
+      const height = input(el, 'toast-height');
+      height.value = '100';
+      height.dispatchEvent(new Event('input'));
+      const formulaBeforeDetach = formulaDisplay.innerHTML;
+
+      expect(formulaDisplay.textContent).toContain('100');
+      el.remove();
+      vi.advanceTimersByTime(2100);
+
+      expect(formulaDisplay.innerHTML).toBe(formulaBeforeDetach);
+    } finally {
+      el.cleanup?.();
+      el.remove();
+      vi.useRealTimers();
+    }
+  });
+
   it('updates native MathML values on slider input', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);

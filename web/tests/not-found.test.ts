@@ -133,6 +133,15 @@ describe('NotFound view', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
+  it('ignores clicks on ordinary elements', () => {
+    const onNavigate = vi.fn();
+    el = NotFound({ onNavigate });
+
+    el.querySelector('h1')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('stores search query in sessionStorage and navigates to browse on search', () => {
     const onNavigate = vi.fn();
     el = NotFound({ onNavigate });

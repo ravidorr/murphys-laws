@@ -67,15 +67,15 @@ function buildBrowseSearch(filters: SearchFilters, sort: string, order: string, 
   return qs ? `?${qs}` : '';
 }
 
-export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNavigate: OnNavigate }): HTMLDivElement {
+export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string; onNavigate: OnNavigate }): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page';
 
-  const initial = parseBrowseParams(typeof location !== 'undefined' ? location.search : '');
+  const initial = parseBrowseParams(location.search);
   let currentPage = initial.page;
   let totalLaws = 0;
   let laws: Law[] = [];
-  let currentFilters: SearchFilters = searchQuery !== undefined && searchQuery !== '' ? { ...initial.filters, q: searchQuery } : initial.filters;
+  let currentFilters: SearchFilters = searchQuery ? { ...initial.filters, q: searchQuery } : initial.filters;
   let currentSort = searchQuery ? 'relevance' : initial.sort;
   let currentOrder = initial.order;
   let loadGeneration = 0;
@@ -150,10 +150,10 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       items: [{ label: 'Browse All Murphy\'s Laws' }],
       onNavigate
     });
-    if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
+    breadcrumbContainer.replaceChildren(breadcrumb!);
 
-    const loadingPlaceholder = el.querySelector('.loading-placeholder p');
-    if (loadingPlaceholder) loadingPlaceholder.textContent = getRandomLoadingMessage();
+    const loadingPlaceholder = el.querySelector<HTMLElement>('.loading-placeholder p')!;
+    loadingPlaceholder.textContent = getRandomLoadingMessage();
   }
 
   async function updateDisplay() {
@@ -220,9 +220,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       // Pagination and sort reloads leave this unset, so only new searches are reported
       if (requestSearchSurface) {
         trackSearchPerformed(requestSearchSurface, requestFilters, requestSort, requestOrder, totalLaws);
-        if (pendingSearchSurface === requestSearchSurface) {
-          pendingSearchSurface = null;
-        }
+        pendingSearchSurface = null;
       }
       await updateDisplay();
 
@@ -241,11 +239,10 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
       if (laws.length > 0) triggerAdSense(cardText as HTMLElement);
 
       const search = buildBrowseSearch(currentFilters, currentSort, currentOrder, currentPage);
-      if (typeof history !== 'undefined' && history.replaceState) {
-        history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
-      }
+      history.replaceState(history.state ?? {}, '', `${location.pathname}${search}`);
     } catch {
       if (generation !== loadGeneration) return;
+      /* v8 ignore else -- @preserve; only a newer load mutates pendingSearchSurface, and it returns above */
       if (pendingSearchSurface === requestSearchSurface) {
         pendingSearchSurface = null;
         retrySearchSurface = requestSearchSurface;
@@ -334,13 +331,11 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
 
   // Function to update widgets visibility based on search state
   function updateWidgetsVisibility() {
-    const widgetsContainer = el.querySelector('[data-widgets]');
-    if (widgetsContainer) {
-      if (hasActiveFilters(currentFilters)) {
-        widgetsContainer.setAttribute('hidden', '');
-      } else {
-        widgetsContainer.removeAttribute('hidden');
-      }
+    const widgetsContainer = el.querySelector<HTMLElement>('[data-widgets]')!;
+    if (hasActiveFilters(currentFilters)) {
+      widgetsContainer.setAttribute('hidden', '');
+    } else {
+      widgetsContainer.removeAttribute('hidden');
     }
   }
 
@@ -360,7 +355,7 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
   });
   el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
 
-  const widgetsContainer = el.querySelector('[data-widgets]')!;
+  const widgetsContainer = el.querySelector<HTMLElement>('[data-widgets]')!;
   const seenWidgetLawIds = new Set<number>();
   widgetsContainer.appendChild(TopVoted({ seenIds: seenWidgetLawIds }));
   widgetsContainer.appendChild(Trending({ seenIds: seenWidgetLawIds }));
@@ -368,25 +363,20 @@ export function Browse({ searchQuery, onNavigate }: { searchQuery?: string; onNa
 
   updateWidgetsVisibility();
 
-  const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+  const sortSelect = el.querySelector<HTMLSelectElement>('#sort-select')!;
   const sortValue = `${currentSort}-${currentOrder}`;
-  if (sortSelect && sortValue) {
-    const option = sortSelect.querySelector(`option[value="${sortValue}"]`);
-    if (option) (option as HTMLOptionElement).selected = true;
-  }
-  sortSelect?.addEventListener('change', (e) => {
+  sortSelect.value = sortValue;
+  sortSelect.addEventListener('change', (e) => {
     const value = (e.target as HTMLSelectElement).value;
-    const [sort, order] = value.split('-');
-    currentSort = sort ?? '';
-    currentOrder = order ?? '';
+    const [sort, order] = value.split('-') as [string, string];
+    currentSort = sort;
+    currentOrder = order;
     pendingSearchSurface = null;
     currentPage = 1;
     loadPage(1);
   });
 
-  void loadPage(currentPage).catch((err) => {
-    console.error('Browse loadPage failed:', err);
-  });
+  void loadPage(currentPage);
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {

@@ -132,6 +132,45 @@ describe('Home view', () => {
     expect(el.querySelector('[data-home-zone="law-of-day"] [data-action="retry"]')).toBeTruthy();
   });
 
+  it('continues loading when the daily-law slot is removed before a response arrives', async () => {
+    const dailyLaw = createDeferred<{ law: { id: number; text: string; upvotes: number; downvotes: number } }>();
+    const setExportContent = vi.spyOn(exportContext, 'setExportContent');
+    globalThis.fetch = vi.fn().mockImplementation(() =>
+      dailyLaw.promise.then(data => ({ ok: true, json: async () => data }))
+    );
+
+    const el = Home({ onNavigate: vi.fn() });
+    el.querySelector('[data-home-zone="law-of-day"]')?.remove();
+    const law = { id: 99, text: 'A delayed law.', upvotes: 0, downvotes: 0 };
+    dailyLaw.resolve({ law });
+
+    try {
+      await vi.waitFor(() => {
+        expect(setExportContent).toHaveBeenCalledWith(expect.objectContaining({ data: law }));
+      });
+    } finally {
+      setExportContent.mockRestore();
+    }
+  });
+
+  it('clears export content when a removed daily-law slot fails to load', async () => {
+    const dailyLaw = createDeferred<Response>();
+    const clearExportContent = vi.spyOn(exportContext, 'clearExportContent');
+    globalThis.fetch = vi.fn().mockReturnValue(dailyLaw.promise);
+
+    const el = Home({ onNavigate: vi.fn() });
+    el.querySelector('[data-home-zone="law-of-day"]')?.remove();
+    dailyLaw.reject(new Error('Daily law unavailable'));
+
+    try {
+      await vi.waitFor(() => {
+        expect(clearExportContent).toHaveBeenCalled();
+      });
+    } finally {
+      clearExportContent.mockRestore();
+    }
+  });
+
   it('renders proof points as spaced token-friendly badges', () => {
     const el = document.createElement('div');
 
@@ -168,6 +207,55 @@ describe('Home view', () => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
     expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' }, 'home');
+  });
+
+  it('navigates to the category index from the homepage CTA', () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: null })
+    });
+    const onNavigate = vi.fn();
+    const el = Home({ onNavigate });
+    const categoriesCta = el.querySelector('[data-nav="categories"]') as HTMLElement;
+
+    categoriesCta.addEventListener('click', (event) => event.preventDefault());
+    categoriesCta.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('categories');
+  });
+
+  it('navigates to submission from the homepage CTA', () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: null })
+    });
+    const onNavigate = vi.fn();
+    const el = Home({ onNavigate });
+    const submitCta = el.querySelector('[data-nav="submit"]') as HTMLElement;
+
+    submitCta.addEventListener('click', (event) => event.preventDefault());
+    submitCta.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
+  it('ignores keyboard activation for law and navigation elements without targets', () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ law: null })
+    });
+    const onNavigate = vi.fn();
+    const el = Home({ onNavigate });
+    const lawCard = document.createElement('div');
+    lawCard.setAttribute('data-law-id', '');
+    const navButton = document.createElement('button');
+    navButton.setAttribute('data-nav', '');
+    el.append(lawCard, navButton);
+
+    lawCard.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    navButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
   it('applies the persisted homepage module-order variant', () => {

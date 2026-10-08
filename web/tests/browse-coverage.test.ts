@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Browse } from '../src/views/browse.js';
+import * as icons from '../src/utils/icons.ts';
 
 describe('Browse view - Coverage', () => {
   let container: HTMLDivElement;
@@ -86,4 +87,21 @@ describe('Browse view - Coverage', () => {
     expect(consoleSpy).toHaveBeenCalledWith('Browse initial render failed:', expect.any(Error));
     consoleSpy.mockRestore();
   });
+
+  it('retains the error state when its icon hydration fails', async () => {
+    vi.mocked(globalThis.fetch).mockRejectedValue(new Error('API Failure'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(icons, 'hydrateIcons').mockImplementation((target) => {
+      if ((target as HTMLElement).id === 'browse-laws-list') {
+        throw new Error('icon hydration failed');
+      }
+    });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(el.textContent).toContain('Of course something went wrong');
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to hydrate error state icons:', expect.any(Error));
+  });
+
 });

@@ -163,10 +163,10 @@ function enhanceMarkdownHtml(html: string): string {
   while ((match = h2Regex.exec(html)) !== null) {
     h2Matches.push({
       index: match.index,
-      fullMatch: match[0],
-      open: match[1] ?? '',
-      content: match[2] ?? '',
-      close: match[3] ?? ''
+      fullMatch: match[0]!,
+      open: match[1]!,
+      content: match[2]!,
+      close: match[3]!
     });
   }
 
@@ -180,22 +180,10 @@ function enhanceMarkdownHtml(html: string): string {
   // Close sections properly - find each section and close it before the next section or at the end
   const sections = html.split('<section class="content-section">');
   if (sections.length > 1) {
-    html = sections[0] ?? '';
+    html = sections[0]!;
     for (let i = 1; i < sections.length; i++) {
       const sectionContent = sections[i]!;
-      // Find where this section should end (before next section or at end)
-      const nextSectionIndex = sectionContent.indexOf('<section class="content-section">');
-
-      if (nextSectionIndex !== -1) {
-        // Next section starts within this content - close before it
-        html += '<section class="content-section">' +
-          sectionContent.substring(0, nextSectionIndex) +
-          '\n    </section>\n    ' +
-          sectionContent.substring(nextSectionIndex);
-      } else {
-        // This is the last section - close at the end
-        html += '<section class="content-section">' + sectionContent + '\n    </section>';
-      }
+      html += '<section class="content-section">' + sectionContent + '\n    </section>';
     }
   }
 
@@ -230,10 +218,10 @@ export function getPageContent(page: ContentPage): string {
   };
 
   const entry = contentMap[page];
-  const { markdown, meta } = entry;
-  if (!markdown) {
+  if (!entry?.markdown) {
     throw new Error(`Unknown page: ${page}`);
   }
+  const { markdown, meta } = entry;
 
   const displayMarkdown = markdown.replace('{{ARCHIVE_SIZE}}', '<span data-archive-size>the full archive</span>');
   let html = marked.parse(displayMarkdown, { async: false });

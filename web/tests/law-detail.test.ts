@@ -98,6 +98,29 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-law-editorial-reviewed]')?.getAttribute('datetime')).toBe('2026-07-21');
   });
 
+  it('does not link editorial sources that are not HTTPS URLs', async () => {
+    const law = {
+      id: '1',
+      title: 'A Law',
+      text: 'Text',
+      score: 1,
+      editorial: {
+        explanation: 'A reviewed explanation.',
+        practical_example: 'A practical example.',
+        source_label: 'Unverified source',
+        source_url: 'http://example.com/source',
+        reviewed_at: '2026-07-21'
+      }
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-editorial]')?.hasAttribute('hidden')).toBe(false), { timeout: 500 });
+    const source = el.querySelector('[data-law-editorial-source]');
+    expect(source?.getAttribute('href')).toBeNull();
+    expect(source?.textContent).toBe('');
+  });
+
   it('renders internal links for law category context', async () => {
     const law = {
       id: '1',

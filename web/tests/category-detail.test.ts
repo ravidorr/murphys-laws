@@ -5,6 +5,8 @@ import * as api from '../src/utils/api.js';
 import * as structuredData from '../src/modules/structured-data.js';
 import type { CleanableElement } from '../src/types/app.js';
 
+const breadcrumbMockState = vi.hoisted(() => ({ returnNull: false }));
+
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
   captureException: vi.fn(),
@@ -45,6 +47,14 @@ vi.mock('../src/utils/voting.js', () => ({
 vi.mock('../src/utils/search-info.js', () => ({
   updateSearchInfo: vi.fn()
 }));
+vi.mock('../src/components/breadcrumb.js', () => {
+  return {
+    Breadcrumb: vi.fn(() => {
+      if (breadcrumbMockState.returnNull) return null;
+      return document.createElement('nav');
+    }),
+  };
+});
 interface AdvancedSearchMockState {
   onSearch?: (filters: Record<string, unknown>) => void;
   initialFilters?: Record<string, unknown>;
@@ -76,6 +86,7 @@ describe('CategoryDetail view', () => {
   beforeEach(() => {
     onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
     vi.clearAllMocks();
+    breadcrumbMockState.returnNull = false;
     
     vi.mocked(api.fetchLaws).mockResolvedValue({
       data: [
@@ -119,11 +130,56 @@ describe('CategoryDetail view', () => {
     expect(el.querySelector('#category-laws-list')).toBeTruthy();
   });
 
+  it('uses default query parameters when location is unavailable during construction', async () => {
+    vi.stubGlobal('location', undefined);
+    const el = CategoryDetail({ categoryId, onNavigate });
+    vi.unstubAllGlobals();
+
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalled());
+    expect(el.querySelector('#sort-select')).toBeTruthy();
+  });
+
+  it('uses the default page when the URL has no page parameter', async () => {
+    vi.stubGlobal('location', { search: '?sort=score', pathname: '/category/1' });
+    CategoryDetail({ categoryId, onNavigate });
+    vi.unstubAllGlobals();
+
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 })));
+  });
+
+  it('falls back to the first page for an invalid URL page parameter', async () => {
+    vi.stubGlobal('location', { search: '?page=invalid', pathname: '/category/1' });
+    CategoryDetail({ categoryId, onNavigate });
+    vi.unstubAllGlobals();
+
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 })));
+  });
+
   it('L113 B1: loading placeholder text set when element exists', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     const loadingPlaceholder = el.querySelector('.loading-placeholder p');
     expect(loadingPlaceholder).toBeTruthy();
     expect(loadingPlaceholder!.textContent).toBe('Loading...');
+  });
+
+  it('continues when optional template elements are unavailable', async () => {
+    const querySelector = Element.prototype.querySelector;
+    const querySelectorMock = vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+      if (
+        selector === '.loading-placeholder p'
+        || selector === '[data-category-hub-links]'
+        || selector === '#sort-select'
+      ) {
+        return null;
+      }
+      return querySelector.call(this, selector);
+    });
+
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalled());
+
+    expect(el.querySelector('#category-detail-title')).toBeTruthy();
+    querySelectorMock.mockRestore();
   });
 
   it('L171 B1: loadPage uses categoryNumericId when set from fetchCategoryDetails', async () => {
@@ -155,6 +211,14 @@ describe('CategoryDetail view', () => {
     const breadcrumbContainer = el.querySelector('#category-breadcrumb');
     expect(breadcrumbContainer).toBeTruthy();
     expect(breadcrumbContainer!.children.length).toBeGreaterThan(0);
+  });
+
+  it('leaves the breadcrumb container unchanged when Breadcrumb returns nothing', async () => {
+    breadcrumbMockState.returnNull = true;
+    const el = CategoryDetail({ categoryId, onNavigate });
+
+    await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalled());
+    expect(el.querySelector('#category-breadcrumb')!.children).toHaveLength(0);
   });
 
   it('renders category hub links after category details load', async () => {
@@ -312,6 +376,31 @@ describe('CategoryDetail view', () => {
     }));
   });
 
+  it('disables existing pagination controls while the next page is loading', async () => {
+    const laws = Array.from({ length: 10 }, (_, index) => ({
+      id: index + 1,
+      title: `Law ${index + 1}`,
+      text: 'Text',
+      score: 1
+    }));
+    vi.mocked(api.fetchLaws).mockResolvedValueOnce({ data: laws, total: 20, limit: 10, offset: 0 });
+
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.pagination button[data-page="2"]')).toBeTruthy());
+
+    let resolvePage!: (value: { data: typeof laws; total: number; limit: number; offset: number }) => void;
+    vi.mocked(api.fetchLaws).mockImplementationOnce(() => new Promise(resolve => {
+      resolvePage = resolve;
+    }));
+
+    const nextPageButton = el.querySelector('.pagination button[data-page="2"]') as HTMLButtonElement;
+    nextPageButton.click();
+    expect(nextPageButton.hasAttribute('disabled')).toBe(true);
+    expect(Array.from(el.querySelectorAll('.pagination button')).every(button => button.hasAttribute('disabled'))).toBe(true);
+
+    resolvePage({ data: laws, total: 20, limit: 10, offset: 10 });
+  });
+
   it('pagination works when clicking button inner element (label or icon)', async () => {
     vi.mocked(api.fetchLaws).mockResolvedValue({
       data: [],
@@ -375,6 +464,18 @@ describe('CategoryDetail view', () => {
     button.click();
 
     // Navigation should NOT be triggered when clicking buttons
+    expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
+  });
+
+  it('does not navigate when a law card has no identifier', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const lawCard = document.createElement('div');
+    lawCard.className = 'law-card-mini';
+    el.appendChild(lawCard);
+
+    lawCard.click();
+
     expect(onNavigate).not.toHaveBeenCalledWith('law', expect.anything());
   });
 
@@ -457,6 +558,19 @@ describe('CategoryDetail view', () => {
     expect(api.fetchLaws).not.toHaveBeenCalled();
   });
 
+  it('ignores pagination buttons without a page value', async () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+    vi.mocked(api.fetchLaws).mockClear();
+
+    const pageBtn = document.createElement('button');
+    pageBtn.dataset.page = '';
+    el.appendChild(pageBtn);
+    pageBtn.click();
+
+    expect(api.fetchLaws).not.toHaveBeenCalled();
+  });
+
   it('handles non-Element click target', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -531,12 +645,28 @@ describe('CategoryDetail view', () => {
     expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
   });
 
+  it('loads laws when browser history is unavailable', async () => {
+    vi.stubGlobal('history', undefined);
+    const el = CategoryDetail({ categoryId, onNavigate });
+
+    await vi.waitFor(() => expect(el.textContent).toContain('Law 1'));
+    vi.unstubAllGlobals();
+  });
+
   it('handles null data in fetchLaws response', async () => {
     vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));
 
     expect(el.textContent).toContain('No laws found');
+  });
+
+  it('handles an API response without a result body', async () => {
+    vi.mocked(api.fetchLaws).mockResolvedValueOnce(null as never);
+    const el = CategoryDetail({ categoryId, onNavigate });
+
+    await vi.waitFor(() => expect(el.textContent).toContain('No laws found'));
+    expect((el.querySelector('#category-result-count') as HTMLElement).hidden).toBe(true);
   });
 
   it('handles category slug instead of numeric id', async () => {
@@ -644,6 +774,31 @@ describe('CategoryDetail view', () => {
       expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
         offset: 0 // Page 1
       }));
+    });
+
+    it('accepts a malformed sort option without sending an undefined order', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalled());
+      vi.mocked(api.fetchLaws).mockClear();
+
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.add(new Option('Created', 'created_at'));
+      sortSelect.value = 'created_at';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+        sort: 'created_at',
+        order: ''
+      }));
+    });
+
+    it('leaves the sort selection unset for an unsupported URL sort', async () => {
+      window.history.replaceState(null, '', '/category/1?sort=unsupported');
+      const el = CategoryDetail({ categoryId, onNavigate });
+
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalled());
+      expect((el.querySelector('#sort-select') as HTMLSelectElement).value).toBe('score-desc');
+      window.history.replaceState(null, '', '/category/1');
     });
   });
 

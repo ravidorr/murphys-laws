@@ -32,15 +32,12 @@ export function ButteredToastCalculator(): HTMLDivElement {
   // Hydrate icons
   hydrateIcons(el);
 
-  /* v8 ignore next -- SSR guard: document is always defined in browser/jsdom */
-  if (typeof document !== 'undefined') {
-    updatePageMetadata({
-      title: `Buttered Toast Landing Calculator | ${SITE_NAME}`,
-      description: 'Explore a playful toast-landing simulation using height, overhang, butter, friction, and inertia. For entertainment only.',
-      path: '/calculator/buttered-toast',
-      image: SOCIAL_IMAGE_TOAST
-    });
-  }
+  updatePageMetadata({
+    title: `Buttered Toast Landing Calculator | ${SITE_NAME}`,
+    description: 'Explore a playful toast-landing simulation using height, overhang, butter, friction, and inertia. For entertainment only.',
+    path: '/calculator/buttered-toast',
+    image: SOCIAL_IMAGE_TOAST
+  });
 
   // Wire up interactions
   const _sliders: Record<ToastSliderKey, HTMLInputElement | null> = {
@@ -52,11 +49,6 @@ export function ButteredToastCalculator(): HTMLDivElement {
     inertia: el.querySelector<HTMLInputElement>('#toast-inertia'),
   };
 
-  // Verify all sliders exist
-  for (const [name, slider] of Object.entries(_sliders)) {
-    /* v8 ignore next -- slider is always provided by the template HTML */
-    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
-  }
   const sliders = _sliders as Record<ToastSliderKey, HTMLInputElement>;
 
   const sliderValues = {
@@ -176,7 +168,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
     probabilityPercent = Math.round(finalProbability);
     updateInterpretation(finalProbability);
 
-    const interpretation = interpretationDisplay.textContent || '';
+    const interpretation = interpretationDisplay.textContent as string;
     setExportContent({
       type: ContentType.CONTENT,
       title: 'Buttered Toast Landing Calculator',
@@ -209,7 +201,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
   }
 
   (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
-    sliders[k]?.addEventListener('input', () => {
+    sliders[k].addEventListener('input', () => {
       if (!hasTrackedStart) {
         hasTrackedStart = true;
         trackProductEvent('calculator.start', { surface: 'calculator_page', calculator: 'buttered-toast' });
@@ -248,10 +240,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
     butter: parseFloat(sliders.butter.value),
     friction: parseFloat(sliders.friction.value),
     inertia: parseFloat(sliders.inertia.value),
-    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
-    probability: probabilityDisplay.textContent || '0%',
-    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
-    interpretation: interpretationDisplay.textContent || ''
+    probability: probabilityDisplay.textContent as string,
+    interpretation: interpretationDisplay.textContent as string
   };
 
   function updateState() {
@@ -261,10 +251,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
     state.butter = parseFloat(sliders.butter.value);
     state.friction = parseFloat(sliders.friction.value);
     state.inertia = parseFloat(sliders.inertia.value);
-    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
-    state.probability = probabilityDisplay.textContent || '0%';
-    /* v8 ignore next -- textContent is always set by calculateLanding() before this runs */
-    state.interpretation = interpretationDisplay.textContent || '';
+    state.probability = probabilityDisplay.textContent as string;
+    state.interpretation = interpretationDisplay.textContent as string;
   }
 
   // Generate shareable URL with parameters
@@ -297,23 +285,18 @@ export function ButteredToastCalculator(): HTMLDivElement {
   ));
 
   Object.entries(parsedState).forEach(([param, value]) => {
-    const slider = paramKeys[param];
-    if (slider) {
-      sliders[slider].value = String(value);
-    }
+    sliders[paramKeys[param]!].value = String(value);
   });
   fromSharedLink = Object.keys(parsedState).length > 0;
 
   // Recalculate if URL params were loaded
-  if (urlParams.has('h') || urlParams.has('g') || urlParams.has('o') || urlParams.has('b') || urlParams.has('f') || urlParams.has('t')) {
+  if (fromSharedLink) {
     calculateLanding();
     updateFormula();
   }
 
-  const scenarioLinks = el.querySelector('[data-calculator-scenario-links]');
-  if (scenarioLinks) {
-    scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'));
-  }
+  const scenarioLinks = el.querySelector<HTMLElement>('[data-calculator-scenario-links]')!;
+  scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'));
 
   const shareContainer = el.querySelector('#calculator-share-container')!;
   shareContainer.innerHTML = renderInlineShareButtonsHTML();

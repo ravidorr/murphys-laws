@@ -14,8 +14,8 @@ declare global {
 
 let isAdSenseInitialized: boolean = false;
 
-function initAdSense(): void {
-  if (!shouldLoadThirdParty()) return;
+function initAdSense(shouldLoad: () => boolean = shouldLoadThirdParty): void {
+  if (!shouldLoad()) return;
   // Prevent double loading
   if (isAdSenseInitialized || window.adsbygoogle || document.querySelector('script[src*="adsbygoogle"]')) {
     return;
@@ -39,14 +39,14 @@ function initAdSense(): void {
  * Sets up the listener for the content-ready event.
  * specific events will trigger the ad loading.
  */
-export function setupAdSense(): void {
-  if (!shouldLoadThirdParty()) return;
+export function setupAdSense(shouldLoad: () => boolean = shouldLoadThirdParty): void {
+  if (!shouldLoad()) return;
   document.addEventListener('murphys-laws-content-ready', () => {
     // specific events will trigger the ad loading.
     if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(() => initAdSense());
+      window.requestIdleCallback(() => initAdSense(shouldLoad));
     } else {
-      setTimeout(() => initAdSense(), 500);
+      setTimeout(() => initAdSense(shouldLoad), 500);
     }
   }, { once: true });
 }

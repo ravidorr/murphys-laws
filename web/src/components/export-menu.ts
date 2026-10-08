@@ -218,13 +218,15 @@ export function ExportMenu(): HTMLDivElement {
         break;
 
       case 'Enter':
-      case ' ':
+      case ' ': {
         e.preventDefault();
-        if (document.activeElement?.hasAttribute('data-format')) {
-          const format = document.activeElement.getAttribute('data-format') ?? '';
+        const activeItem = dropdown.querySelector<HTMLElement>(':focus[data-format]');
+        if (activeItem) {
+          const format = activeItem.getAttribute('data-format') as string;
           handleExport(format, 'keyboard');
         }
         break;
+      }
 
       case 'Escape':
         e.preventDefault();
@@ -250,7 +252,7 @@ export function ExportMenu(): HTMLDivElement {
   dropdown.addEventListener('click', (e) => {
     const item = (e.target as HTMLElement).closest('[data-format]');
     if (item) {
-      const format = item.getAttribute('data-format') ?? '';
+      const format = item.getAttribute('data-format') as string;
       handleExport(format, 'click');
     }
   });

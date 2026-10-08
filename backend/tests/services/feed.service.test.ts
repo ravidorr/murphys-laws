@@ -331,6 +331,25 @@ describe('FeedService', () => {
       expect(xml).toContain('<content type="text">Test Law Text</content>');
     });
 
+    it('should include recent laws after the law of the day in Atom', async () => {
+      const localThis = { db, feedService };
+      localThis.db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Older law', 'published', '2024-01-01T00:00:00Z')").run();
+      localThis.db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Newer law', 'published', '2024-01-02T00:00:00Z')").run();
+
+      const xml = await localThis.feedService.generateAtom();
+
+      const olderLawPosition = xml.indexOf('<content type="text">Older law</content>');
+      const newerLawPosition = xml.indexOf('<content type="text">Newer law</content>');
+
+      expect(olderLawPosition).toBeGreaterThan(-1);
+      expect(newerLawPosition).toBeGreaterThan(-1);
+      expect(xml).toContain('[Law of the Day]');
+      expect(xml.indexOf('[Law of the Day]')).toBeLessThan(Math.min(olderLawPosition, newerLawPosition));
+      expect(olderLawPosition).not.toBe(newerLawPosition);
+      expect(xml.match(/<content type="text">Older law<\/content>/g)).toHaveLength(1);
+      expect(xml.match(/<content type="text">Newer law<\/content>/g)).toHaveLength(1);
+    });
+
     it('should include author element when attribution exists', async () => {
       const localThis = { db, feedService };
       const lawInfo = localThis.db.prepare("INSERT INTO laws (text, status) VALUES ('Test Law', 'published')").run();

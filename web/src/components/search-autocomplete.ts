@@ -69,20 +69,15 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
 
   // Render suggestions dropdown
   function renderSuggestions() {
-    if (!dropdown) {
-      createDropdown();
-    }
-    if (!dropdown) return;
-
     if (suggestions.length === 0) {
-      dropdown.innerHTML = '';
-      dropdown.setAttribute('aria-hidden', 'true');
+      dropdown!.innerHTML = '';
+      dropdown!.setAttribute('aria-hidden', 'true');
       inputElement.setAttribute('aria-expanded', 'false');
       dropdownOpen = false;
       return;
     }
 
-    dropdown.innerHTML = suggestions.map((law, index) => {
+    dropdown!.innerHTML = suggestions.map((law, index) => {
       const isSelected = index === selectedIndex;
       const text = law.text || '';
       const title = law.title || '';
@@ -102,7 +97,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
       `;
     }).join('');
 
-    dropdown.setAttribute('aria-hidden', 'false');
+    dropdown!.setAttribute('aria-hidden', 'false');
     inputElement.setAttribute('aria-expanded', 'true');
     dropdownOpen = true;
   }
@@ -137,13 +132,7 @@ export function SearchAutocomplete({ inputElement, onSelect, debounceDelay = SEA
 
   // Update selected index and re-render
   function updateSelectedIndex(newIndex: number) {
-    if (newIndex < -1) {
-      selectedIndex = suggestions.length - 1;
-    } else if (newIndex >= suggestions.length) {
-      selectedIndex = -1;
-    } else {
-      selectedIndex = newIndex;
-    }
+    selectedIndex = newIndex < 0 || newIndex >= suggestions.length ? -1 : newIndex;
     renderSuggestions();
     
     // Scroll selected item into view (if scrollIntoView is available, e.g., not in jsdom)

@@ -200,5 +200,16 @@ describe('DOM utilities', () => {
       expect(document.title).toBe('Existing');
       expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('');
     });
+
+    it('skips page metadata updates during server rendering', () => {
+      const localThis: { originalDocument: Document | undefined } = { originalDocument: globalThis.document };
+      (globalThis as unknown as { document: Document | undefined }).document = undefined;
+
+      try {
+        expect(() => updatePageMetadata({ path: '/server' })).not.toThrow();
+      } finally {
+        (globalThis as unknown as { document: Document | undefined }).document = localThis.originalDocument;
+      }
+    });
   });
 });

@@ -134,4 +134,5 @@ describe('AttributionController', () => {
         expect(localThis.attributionService.searchSubmitters).toHaveBeenCalledWith('Bob', 20);
         expect(localThis.res.writeHead).toHaveBeenCalledWith(200, expect.any(Object));
     });
+
 });

@@ -26,8 +26,7 @@ export class AttributionController {
   }
 
   async searchSubmitters(req: any, res: any) {
-    /* v8 ignore next -- req.url and req.headers are always present in real HTTP requests */
-    const url = new URL(req.url ?? '', `http://${req.headers?.host ?? 'localhost'}`);
+    const url = new URL(req.url, `http://${req.headers.host}`);
     const q = (url.searchParams.get('q') ?? '').toString().trim();
     const limitParam = url.searchParams.get('limit');
     const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10) || 20)) : 20;

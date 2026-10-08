@@ -24,19 +24,16 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
     let observer: IntersectionObserver | undefined;
 
     const showShellAndLoadAd = () => {
-      if (!adHost || (adHost as HTMLElement).dataset.loaded === 'true') {
-        return;
-      }
       adHost.classList.remove('hidden');
       loadAd();
     };
 
     const loadAd = () => {
-      if (!adHost || (adHost as HTMLElement).dataset.loaded === 'true') {
+      if (adHost.dataset.loaded === 'true') {
         return;
       }
 
-      (adHost as HTMLElement).dataset.loaded = 'true';
+      adHost.dataset.loaded = 'true';
 
       if (observer) {
         observer.disconnect();
@@ -73,9 +70,6 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
     };
 
     const scheduleAd = () => {
-      if (!adHost) {
-        return;
-      }
       // Hide the "Advertisement" placeholder until we are about to load; show only when triggering.
       adHost.classList.add('hidden');
 
@@ -97,7 +91,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
     };
 
     const primeAd = () => {
-      if ((adHost as HTMLElement).dataset.loaded === 'true') {
+      if (adHost.dataset.loaded === 'true') {
         return;
       }
 

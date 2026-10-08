@@ -1119,5 +1119,64 @@ describe('AdvancedSearch component', () => {
       expect(items[0]?.getAttribute('aria-selected')).toBe('false');
       expect(items[1]?.getAttribute('aria-selected')).toBe('true');
     });
+
+    it('selects a keyboard-focused submitter option', async () => {
+      fetchAPISpy.mockImplementation((url: string) => {
+        if (url.includes('submitters')) return Promise.resolve({ data: ['Fallback author'] });
+        return Promise.resolve({ data: [] });
+      });
+      const el = mountSearch({ append: true });
+      const input = el.querySelector('#search-attribution-input') as HTMLInputElement;
+      const listbox = el.querySelector('#search-attribution-listbox') as HTMLElement;
+
+      input.focus();
+      await vi.waitFor(() => expect(listbox.getAttribute('aria-hidden')).toBe('false'));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(input.value).toBe('Fallback author');
+      expect((el.querySelector('#search-attribution') as HTMLInputElement).value).toBe('Fallback author');
+    });
+
+    it('does not select a submitter when Enter is pressed without a focused option', async () => {
+      fetchAPISpy.mockImplementation((url: string) => {
+        if (url.includes('submitters')) return Promise.resolve({ data: ['Author'] });
+        return Promise.resolve({ data: [] });
+      });
+      const el = mountSearch({ append: true });
+      const input = el.querySelector('#search-attribution-input') as HTMLInputElement;
+      input.focus();
+      await vi.waitFor(() => expect(el.querySelector('#search-attribution-listbox')?.getAttribute('aria-hidden')).toBe('false'));
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect((el.querySelector('#search-attribution') as HTMLInputElement).value).toBe('');
+    });
+
+    it('leaves a hidden submitter listbox closed for unrelated keys', () => {
+      fetchAPISpy.mockResolvedValue({ data: [] });
+      const el = mountSearch({ append: true });
+      const input = el.querySelector('#search-attribution-input') as HTMLInputElement;
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+
+      expect(el.querySelector('#search-attribution-listbox')?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('handles category-load failure when the category control is unavailable', async () => {
+      const originalQuerySelector = Element.prototype.querySelector;
+      vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+        if (this.tagName === 'SECTION' && selector === '#search-category') return null;
+        return originalQuerySelector.call(this, selector);
+      });
+      fetchAPISpy.mockRejectedValue(new Error('Network error'));
+
+      const el = mountSearch();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      vi.restoreAllMocks();
+      expect(el.querySelector('#search-category')).toBeTruthy();
+    });
   });
 });
