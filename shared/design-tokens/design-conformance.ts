@@ -413,6 +413,13 @@ export function scanDesignSystemWiring(
   if (workflowContract) {
     const pullRequestStart = text.indexOf('  pull_request:');
     const jobsStart = text.indexOf('\njobs:');
+    const changesStart = text.indexOf('\n  changes:');
+    const changesSectionStart = changesStart + '\n  changes:'.length;
+    const afterChanges =
+      changesStart >= 0 ? text.slice(changesSectionStart) : '';
+    const nextJob = afterChanges.search(/\n  [A-Za-z][\w-]*:\n/);
+    const changesSection =
+      nextJob >= 0 ? afterChanges.slice(0, nextJob) : afterChanges;
     const pushSection =
       pullRequestStart >= 0 ? text.slice(0, pullRequestStart) : '';
     const pullRequestSection =
@@ -427,7 +434,10 @@ export function scanDesignSystemWiring(
           `${workflowContract.label} push CI must watch ${designPath}.`,
         );
       }
-      if (!pullRequestSection.includes(quotedPath)) {
+      if (
+        !pullRequestSection.includes(quotedPath)
+        && !changesSection.includes(quotedPath)
+      ) {
         addMissing(
           `${workflowContract.label} pull-request CI must watch ${designPath}.`,
         );
