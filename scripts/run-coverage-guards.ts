@@ -89,6 +89,28 @@ function commandAvailable(command: string): boolean {
   return spawnSync(command, ['--version'], { stdio: 'ignore' }).status === 0;
 }
 
+export function decodeJavaPropertyValue(value: string): string {
+  return value.replace(
+    /\\u([0-9a-fA-F]{4})|\\(.)/g,
+    (_match, unicode: string | undefined, escaped: string | undefined) => {
+      if (unicode) return String.fromCharCode(Number.parseInt(unicode, 16));
+
+      switch (escaped) {
+        case 't':
+          return '\t';
+        case 'n':
+          return '\n';
+        case 'r':
+          return '\r';
+        case 'f':
+          return '\f';
+        default:
+          return escaped ?? '';
+      }
+    },
+  );
+}
+
 export function hasAndroidSdk(
   androidDirectory: string,
   environment: NodeJS.ProcessEnv = process.env,
@@ -102,7 +124,11 @@ export function hasAndroidSdk(
       .trim()
     : undefined;
 
-  return [environment.ANDROID_HOME, environment.ANDROID_SDK_ROOT, localSdkDirectory]
+  return [
+    environment.ANDROID_HOME,
+    environment.ANDROID_SDK_ROOT,
+    localSdkDirectory && decodeJavaPropertyValue(localSdkDirectory),
+  ]
     .filter((sdkDirectory): sdkDirectory is string => Boolean(sdkDirectory))
     .some((sdkDirectory) => existsSync(sdkDirectory));
 }

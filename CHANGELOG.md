@@ -76,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Decoded escaped Android SDK paths from `local.properties`, so Windows installations
+  run local Android coverage when the SDK is available. Root bumped to `2.6.33`.
 - Gave each required CI gate a unique status-check name so branch protection recognizes
   successful workflows. Root bumped to `2.6.32`.
 - Kept design-system validation compatible with selective CI filters, made required

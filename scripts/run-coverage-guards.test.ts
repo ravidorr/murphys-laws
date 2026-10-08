@@ -11,7 +11,11 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { coverageTargetsFor, hasAndroidSdk } from './run-coverage-guards.js';
+import {
+  coverageTargetsFor,
+  decodeJavaPropertyValue,
+  hasAndroidSdk,
+} from './run-coverage-guards.js';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -98,4 +102,11 @@ test('requires a usable Android SDK path', () => {
   } finally {
     rmSync(temporaryDirectory, { recursive: true, force: true });
   }
+});
+
+test('decodes Java properties path escapes', () => {
+  assert.equal(
+    decodeJavaPropertyValue('C\\:\\\\Users\\\\name\\\\AppData\\\\Local\\\\Android\\\\Sdk'),
+    'C:\\Users\\name\\AppData\\Local\\Android\\Sdk',
+  );
 });
