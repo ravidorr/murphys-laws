@@ -25,9 +25,9 @@ export const OPENAPI_SPEC = {
       post: {
         operationId: 'submitLaw',
         summary: 'Submit a new law',
-        description: 'Submit a new law for community review. Rate limited to 5 submissions per hour per IP.',
-        'x-ratelimit-limit': 5,
-        'x-ratelimit-window': '1h',
+        description: 'Submit a new law for community review. Rate limited to 3 submissions per minute per IP.',
+        'x-ratelimit-limit': 3,
+        'x-ratelimit-window': '1m',
         requestBody: {
           required: true,
           content: {
@@ -53,6 +53,7 @@ export const OPENAPI_SPEC = {
               'application/json': {
                 schema: {
                   type: 'object',
+                  required: ['id', 'title', 'text', 'status', 'message'],
                   properties: {
                     id: { type: 'integer' },
                     title: { type: 'string', nullable: true },
@@ -65,7 +66,7 @@ export const OPENAPI_SPEC = {
             },
           },
           '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
         },
       },
       get: {
@@ -141,6 +142,77 @@ export const OPENAPI_SPEC = {
               },
             },
           },
+        },
+      },
+    },
+    '/api/v1/laws/{id}/vote': {
+      post: {
+        operationId: 'voteOnLaw',
+        summary: 'Vote on a law',
+        description: 'Upvote or downvote a published law. Replaces the caller’s existing vote. Rate limited to 30 votes per minute per IP.',
+        'x-ratelimit-limit': 30,
+        'x-ratelimit-window': '1m',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['vote_type'],
+                properties: {
+                  vote_type: { type: 'string', enum: ['up', 'down'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Vote recorded successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/VoteCastResponse' },
+              },
+            },
+          },
+          '400': { description: 'Invalid JSON request body or vote type', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Law not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
+        },
+      },
+      delete: {
+        operationId: 'removeVote',
+        summary: 'Remove a vote from a law',
+        description: 'Remove the caller’s vote from a published law. Rate limited to 30 votes per minute per IP.',
+        'x-ratelimit-limit': 30,
+        'x-ratelimit-window': '1m',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Vote removed successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/VoteResponse' },
+              },
+            },
+          },
+          '404': { description: 'Law not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
         },
       },
     },
@@ -555,6 +627,33 @@ export const OPENAPI_SPEC = {
         type: 'object',
         properties: {
           error: { type: 'string' },
+        },
+      },
+      RateLimitErrorResponse: {
+        type: 'object',
+        required: ['error', 'retryAfter'],
+        properties: {
+          error: { type: 'string' },
+          retryAfter: { type: 'integer', minimum: 0 },
+        },
+      },
+      VoteResponse: {
+        type: 'object',
+        required: ['law_id', 'upvotes', 'downvotes'],
+        properties: {
+          law_id: { type: 'integer' },
+          upvotes: { type: 'integer' },
+          downvotes: { type: 'integer' },
+        },
+      },
+      VoteCastResponse: {
+        type: 'object',
+        required: ['law_id', 'vote_type', 'upvotes', 'downvotes'],
+        properties: {
+          law_id: { type: 'integer' },
+          vote_type: { type: 'string', enum: ['up', 'down'] },
+          upvotes: { type: 'integer' },
+          downvotes: { type: 'integer' },
         },
       },
     },
