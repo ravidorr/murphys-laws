@@ -203,8 +203,8 @@ function buildClassString(options: ButtonOptions): string {
   classes.push(VARIANT_CLASSES[variant ?? 'primary']!);
 
   // Vote direction class
-  if (variant === 'vote' && direction) {
-    classes.push(`count-${direction}`);
+  if (variant === 'vote') {
+    classes.push(`count-${direction!}`);
   }
 
   // Loading state class
@@ -309,9 +309,7 @@ export function createButton(options: ButtonOptions = {}): HTMLButtonElement {
 
     if (icon && iconPosition === 'right') {
       const iconEl = createIcon(icon);
-      if (iconEl) {
-        button.appendChild(iconEl);
-      }
+      button.appendChild(iconEl!);
     }
   }
 

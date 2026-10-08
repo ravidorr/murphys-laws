@@ -49,6 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Raised backend and web coverage gates to 100% for statements, branches,
+  functions, and lines, with tests covering all tracked runtime paths. Web CI now
+  runs the coverage command, and backend coverage includes both production and
+  development logo-path branches. Root bumped to `2.6.34`; backend to `2.3.8`;
+  web to `3.4.17`.
 - Enforced coverage thresholds locally and in CI for the Node packages, iOS, and Android,
   and require applicable CI checks before pull requests can merge. Root bumped to `2.6.30`;
   SDK to `0.2.1`; CLI to `0.1.2`; MCP to `1.2.5`; iOS to `1.2.5` / build `21`; and Android

@@ -146,4 +146,24 @@ describe('CategoryService', () => {
     it('returns an empty related category list for unknown slugs', async () => {
         expect(await categoryService.getRelatedCategories('missing')).toEqual([]);
     });
+
+    it('uses category title terms when a slug has no meaningful tokens', async () => {
+        db.prepare("INSERT INTO categories (title, slug) VALUES ('AI', 'ai')").run();
+        db.prepare("INSERT INTO categories (title, slug) VALUES ('AI Failures', 'ai-failures')").run();
+
+        const related = await categoryService.getRelatedCategories('ai', { limit: undefined });
+
+        expect(related).toHaveLength(1);
+        expect((related[0] as { slug: string }).slug).toBe('ai-failures');
+    });
+
+    it('uses unmatched slug tokens when no related-term expansion is available', async () => {
+        db.prepare("INSERT INTO categories (title, slug) VALUES ('Foo', 'murphys-foo-laws')").run();
+        db.prepare("INSERT INTO categories (title, slug) VALUES ('Foo Failures', 'foo-failures')").run();
+
+        const related = await categoryService.getRelatedCategories('murphys-foo-laws');
+
+        expect(related).toHaveLength(1);
+        expect((related[0] as { slug: string }).slug).toBe('foo-failures');
+    });
 });

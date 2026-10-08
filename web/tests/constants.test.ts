@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { getRandomLoadingMessage, getEnvVar, getCategoryDisplayName, CATEGORY_DISPLAY_NAME_OVERRIDES, SITE_URL, API_BASE_URL, LOADING_MESSAGES } from '../src/utils/constants.ts';
 
 
@@ -250,6 +250,21 @@ describe('Constants', () => {
       // Use a key that definitely doesn't exist
       const result = getEnvVar('VITE_NONEXISTENT_67890', 'NONEXISTENT_67890', 'default');
       expect(result).toBe('default');
+    });
+
+    it('falls back to Node settings when Vite environment support is absent', () => {
+      const localThis: { originalEnv: ImportMetaEnv } = {
+        originalEnv: import.meta.env,
+      };
+      Object.defineProperty(import.meta, 'env', { value: undefined, configurable: true });
+      vi.stubGlobal('process', { env: { NODE_FALLBACK_KEY: 'node-value' } });
+
+      try {
+        expect(getEnvVar('VITE_FALLBACK_KEY', 'NODE_FALLBACK_KEY', 'default')).toBe('node-value');
+      } finally {
+        Object.defineProperty(import.meta, 'env', { value: localThis.originalEnv, configurable: true });
+        vi.unstubAllGlobals();
+      }
     });
 
     it('handles when process is undefined', () => {

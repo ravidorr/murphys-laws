@@ -562,11 +562,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
   }
 
   async function handleCopyAction(e: Event) {
-    const button = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
-    /* v8 ignore start -- button is always present when handleCopyAction is triggered */
-    if (!button) return;
-    /* v8 ignore stop */
-
+    const button = (e.target as HTMLElement).closest('[data-action]') as HTMLElement;
     const action = button.dataset.action;
     let textToCopy: string;
 
@@ -583,7 +579,7 @@ export function initInlineShareButtons(container: HTMLElement, { getShareableUrl
     /* v8 ignore stop */
 
     recordQualifyingUserAction();
-    trackProductEvent('law.share', { surface: 'inline_share', action: action || 'copy' });
+    trackProductEvent('law.share', { surface: 'inline_share', action });
     if (action === 'copy-link') {
       await copyToClipboard(textToCopy, 'Link copied to clipboard!');
       trackResultShared('copy_link');

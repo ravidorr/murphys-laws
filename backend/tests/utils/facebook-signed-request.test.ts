@@ -102,8 +102,15 @@ describe('facebook-signed-request', () => {
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=/g, '');
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
       expect(parseSignedRequest(`${sig}.${encodedPayload}`, 'secret')).toBeNull();
+
+      expect(consoleSpy).toHaveBeenCalledWith('Error parsing signed request:', expect.any(String));
+      expect(consoleSpy.mock.calls[0]?.[1]).not.toMatch(/^SyntaxError:/);
+      consoleSpy.mockRestore();
     });
+
   });
 
   describe('generateConfirmationCode', () => {

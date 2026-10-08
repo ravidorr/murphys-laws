@@ -448,6 +448,17 @@ describe('Footer component', () => {
     expect(navigated).toBe('');
   });
 
+  it('ignores clicks whose target is not an HTMLElement', () => {
+    const onNavigate = vi.fn();
+    const el = Footer({ onNavigate });
+    const event = new Event('click', { bubbles: true });
+    Object.defineProperty(event, 'target', { value: document.createTextNode('footer') });
+
+    el.dispatchEvent(event);
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('does not prime ad if already loaded', () => {
     window.adsbygoogle = [];
 
@@ -626,6 +637,33 @@ describe('Footer component', () => {
     });
   });
 
+  it('ignores a repeated observer callback after the ad has loaded', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    let callback: IntersectionObserverCallback | undefined;
+    const observer = { observe: vi.fn(), disconnect: vi.fn() } as unknown as IntersectionObserver;
+    const originalIntersectionObserver = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = vi.fn(function (nextCallback: IntersectionObserverCallback) {
+      callback = nextCallback;
+      return observer;
+    }) as unknown as typeof IntersectionObserver;
+    try {
+      const el = Footer({ onNavigate: () => {} });
+      const entry = { isIntersecting: true } as IntersectionObserverEntry;
+
+      callback!([entry], observer);
+      const initialAdCount = window.adsbygoogle!.length;
+      callback!([entry], observer);
+
+      expect(window.adsbygoogle!.length).toBe(initialAdCount);
+    } finally {
+      globalThis.IntersectionObserver = originalIntersectionObserver;
+    }
+  });
+
   it('uses setTimeout fallback when requestIdleCallback is not available', () => {
     window.adsbygoogle = [];
     const originalReadyState = document.readyState;
@@ -772,6 +810,66 @@ describe('Footer component', () => {
       writable: true,
       configurable: true
     });
+  });
+
+  it('does not reload an ad when a later user interaction occurs', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = Footer({ onNavigate: () => {} });
+    el.dispatchEvent(new Event('adslot:init'));
+    const initialAdCount = window.adsbygoogle!.length;
+
+    window.dispatchEvent(new Event('pointerdown'));
+
+    expect(window.adsbygoogle!.length).toBe(initialAdCount);
+  });
+
+  it('loads an ad before an observer has been created', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'loading',
+      writable: true,
+      configurable: true
+    });
+    const global = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const originalIntersectionObserver = global.IntersectionObserver;
+    global.IntersectionObserver = undefined;
+    const el = Footer({ onNavigate: () => {} });
+
+    el.dispatchEvent(new Event('adslot:init'));
+
+    expect((el.querySelector('[data-ad-slot]') as HTMLElement).dataset.loaded).toBe('true');
+    global.IntersectionObserver = originalIntersectionObserver;
+  });
+
+  it('does not load again when a deferred fallback runs after the ad is loaded', () => {
+    vi.useFakeTimers();
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const global = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const windowWithIdle = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
+    const originalIntersectionObserver = global.IntersectionObserver;
+    const originalRequestIdleCallback = windowWithIdle.requestIdleCallback;
+    global.IntersectionObserver = undefined;
+    windowWithIdle.requestIdleCallback = undefined;
+    try {
+      const el = Footer({ onNavigate: () => {} });
+      el.dispatchEvent(new Event('adslot:init'));
+      const initialAdCount = window.adsbygoogle!.length;
+
+      vi.advanceTimersByTime(1500);
+
+      expect(window.adsbygoogle!.length).toBe(initialAdCount);
+    } finally {
+      vi.useRealTimers();
+      global.IntersectionObserver = originalIntersectionObserver;
+      if (originalRequestIdleCallback !== undefined) windowWithIdle.requestIdleCallback = originalRequestIdleCallback;
+    }
   });
 
   it('handles ensureAdsense rejection gracefully', async () => {

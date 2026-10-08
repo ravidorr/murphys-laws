@@ -163,10 +163,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
     const cardText = el.querySelector('#category-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
-    cardText.innerHTML = renderLoadingHTML();
     el.querySelectorAll('.pagination button').forEach(btn => {
       btn.setAttribute('disabled', 'true');
     });
+    cardText.innerHTML = renderLoadingHTML();
 
     try {
       const offset = (page - 1) * LAWS_PER_PAGE;
@@ -196,7 +196,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       laws = data && Array.isArray(data.data) ? data.data : [];
       totalLaws = data && Number.isFinite(data.total) ? data.total : laws.length;
       if (shouldTrackSearch) {
-        if (pendingSearch) pendingSearch = false;
+        pendingSearch = false;
         const searchProperties = { ...getSearchProperties(requestFilters, requestSort), search_surface: 'category_detail' };
         trackPendoEvent('search_performed', { ...searchProperties, order: requestOrder, results_count: totalLaws });
         if (totalLaws === 0) {
@@ -418,7 +418,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   sortSelect?.addEventListener('change', (e) => {
     const value = (e.target as HTMLSelectElement).value;
     const [sort, order] = value.split('-');
-    currentSort = sort ?? '';
+    currentSort = sort!;
     currentOrder = order ?? '';
     pendingSearch = false;
     currentPage = 1;

@@ -40,6 +40,14 @@ describe('API utilities', () => {
 
       expect(String(fetchSpy.mock.calls[0]![0])).toContain('/api/v1/categories/murphys-office-laws/related');
     });
+
+    it('skips the duplicate lookup for text shorter than ten characters', async () => {
+      const localThis: { result?: Awaited<ReturnType<typeof fetchDuplicateCandidates>> } = {};
+      localThis.result = await fetchDuplicateCandidates('too short');
+
+      expect(localThis.result).toEqual({ data: [], total: 0, limit: 0, offset: 0 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
   });
 
   afterEach(() => {
@@ -717,6 +725,16 @@ describe('API utilities', () => {
 
       expect(result).toEqual({ data: [], total: 0, limit: 0, offset: 0 });
       expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('reports non-Error rejections because they are not transport failures', async () => {
+      const localThis: { result?: Awaited<ReturnType<typeof fetchSuggestions>> } = {};
+      fetchSpy.mockRejectedValueOnce('unexpected failure');
+
+      localThis.result = await fetchSuggestions({ q: 'test' });
+
+      expect(localThis.result).toEqual({ data: [], total: 0, limit: 0, offset: 0 });
+      expect(Sentry.captureException).toHaveBeenCalledWith('unexpected failure');
     });
 
     it('returns empty array without reporting transient fetch transport failures', async () => {

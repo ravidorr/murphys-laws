@@ -43,11 +43,9 @@ export function isFeatureEnabled(featureName: string): boolean {
   }
 
   // 2. Check environment variable (build-time)
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const envValue = import.meta.env[flag.envKey];
-    if (envValue !== undefined) {
-      return envValue === 'true';
-    }
+  const envValue = import.meta.env[flag.envKey];
+  if (envValue !== undefined) {
+    return envValue === 'true';
   }
 
   // 3. Return default
@@ -94,11 +92,9 @@ export function getFeatureState(featureName: string): FeatureState {
   }
 
   // Check environment variable
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const envValue = import.meta.env[flag.envKey];
-    if (envValue !== undefined) {
-      return { enabled: envValue === 'true', source: 'environment' };
-    }
+  const envValue = import.meta.env[flag.envKey];
+  if (envValue !== undefined) {
+    return { enabled: envValue === 'true', source: 'environment' };
   }
 
   return { enabled: flag.default, source: 'default' };

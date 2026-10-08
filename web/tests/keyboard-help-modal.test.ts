@@ -306,6 +306,23 @@ describe('keyboard-help-modal', () => {
       expect(localThis.event.preventDefault).not.toHaveBeenCalled();
     });
 
+    it('allows Shift+Tab when focus is not on the first element', () => {
+      openKeyboardHelpModal();
+      const modal = document.getElementById('keyboard-help-modal')!;
+      const extraButton = document.createElement('button');
+      modal.querySelector('.modal-container')!.appendChild(extraButton);
+      const focusables = modal.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      focusables[focusables.length - 1]!.focus();
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true });
+      event.preventDefault = vi.fn();
+
+      modal.dispatchEvent(event);
+
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
     it('ignores non-Tab keys', () => {
       const localThis: TestLocals = {};
       openKeyboardHelpModal();

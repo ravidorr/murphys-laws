@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Contact } from '../src/views/contact.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 describe('Contact page', () => {
   it('renders contact page element', () => {
@@ -129,6 +130,15 @@ describe('Contact page', () => {
 
     navBtn.click();
     expect(navigated).toBe('');
+  });
+
+  it('clears registered export content during cleanup', () => {
+    const clearExportContent = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Contact({ onNavigate: () => {} }) as HTMLDivElement & { cleanup: () => void };
+
+    el.cleanup();
+
+    expect(clearExportContent).toHaveBeenCalledOnce();
   });
 
 });

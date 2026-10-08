@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ensureAdsense, initAnalyticsBootstrap, loadScript, shouldLoadThirdParty } from '../src/utils/third-party.ts';
+import { ensureAdsense, initAnalyticsBootstrap, loadScript, shouldLoadThirdParty, toAbsoluteUrl } from '../src/utils/third-party.ts';
 
 /** Window plus analytics globals; Vitest's globalThis.window type doesn't merge with src/types/global.d.ts */
 type WindowWithAnalytics = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
@@ -20,6 +20,35 @@ describe('third-party utilities', () => {
 
     Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
     vi.unstubAllEnvs();
+  });
+
+  it('does not load third parties without a browser window', () => {
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('PROD', true);
+    vi.stubGlobal('window', undefined);
+
+    try {
+      expect(shouldLoadThirdParty()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  describe('toAbsoluteUrl', () => {
+    it('returns relative paths unchanged without a document', () => {
+      vi.stubGlobal('document', undefined);
+
+      try {
+        expect(toAbsoluteUrl('/analytics.js')).toBe('/analytics.js');
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('returns malformed URLs unchanged', () => {
+      expect(toAbsoluteUrl('http://[invalid')).toBe('http://[invalid');
+    });
   });
 
   describe('ensureAdsense', () => {
@@ -396,6 +425,41 @@ describe('third-party utilities', () => {
       expect(dataLayer.length).toBeGreaterThan(initialLength);
     });
 
+    it('configures an existing gtag after its script finishes loading', async () => {
+      const localThis: { gtag: (...args: unknown[]) => void; script?: HTMLScriptElement } = {
+        gtag: vi.fn<(...args: unknown[]) => void>(),
+      };
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      vi.resetModules();
+      (window as WindowWithAnalytics).gtag = localThis.gtag as WindowWithAnalytics['gtag'];
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+
+      freshInit();
+      window.dispatchEvent(new Event('pointerdown'));
+      localThis.script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
+      localThis.script.dispatchEvent(new Event('load'));
+      await vi.waitFor(() => {
+        expect(localThis.gtag).toHaveBeenCalledWith('js', expect.any(Date));
+      });
+
+      expect(localThis.gtag).toHaveBeenCalledWith('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
+    });
+
+    it('tolerates gtag being removed before the analytics script loads', async () => {
+      const localThis: { script?: HTMLScriptElement } = {};
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+
+      freshInit();
+      window.dispatchEvent(new Event('keydown'));
+      localThis.script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
+      delete (window as WindowWithAnalytics).gtag;
+      localThis.script.dispatchEvent(new Event('load'));
+
+      await expect(Promise.resolve()).resolves.toBeUndefined();
+    });
+
     it('removes interaction listeners after first interaction', async () => {
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
@@ -454,6 +518,52 @@ describe('third-party utilities', () => {
   });
 
   describe('loadScript', () => {
+    it('resolves immediately without a document', async () => {
+      vi.stubGlobal('document', undefined);
+
+      try {
+        await expect(loadScript('https://example.com/server.js')).resolves.toBeUndefined();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('waits for a matching script that already exists in the document', async () => {
+      const localThis: { source: string; script?: HTMLScriptElement; promise?: Promise<void> } = {
+        source: 'https://example.com/existing.js',
+      };
+      localThis.script = document.createElement('script');
+      localThis.script.src = localThis.source;
+      document.head.appendChild(localThis.script);
+
+      localThis.promise = loadScript(localThis.source);
+      localThis.script.dispatchEvent(new Event('load'));
+
+      await expect(localThis.promise).resolves.toBeUndefined();
+      await expect(loadScript(localThis.source)).resolves.toBeUndefined();
+      localThis.script.remove();
+    });
+
+    it('copies custom attributes and ignores nullish script properties', async () => {
+      const localThis: { source: string; promise?: Promise<void>; script?: HTMLScriptElement } = {
+        source: 'https://example.com/custom-attributes.js',
+      };
+      localThis.promise = loadScript(localThis.source, {
+        crossOrigin: 'anonymous',
+        'data-purpose': 'analytics',
+        defer: undefined,
+        nullable: null,
+      } as unknown as Parameters<typeof loadScript>[1]);
+      localThis.script = document.querySelector(`script[src="${localThis.source}"]`) as HTMLScriptElement;
+
+      expect(localThis.script.crossOrigin).toBe('anonymous');
+      expect(localThis.script.getAttribute('data-purpose')).toBe('analytics');
+      expect(localThis.script.hasAttribute('nullable')).toBe(false);
+
+      localThis.script.dispatchEvent(new Event('load'));
+      await localThis.promise;
+    });
+
     it('sets script props when passed (covers L68 B0)', async () => {
       const promise = loadScript('https://example.com/coverage.js', { async: false, defer: true });
       const script = document.querySelector('script[src*="example.com/coverage"]') as HTMLScriptElement;

@@ -100,6 +100,19 @@ describe('HtmlInjectionService', () => {
       expect(html).toContain('When in doubt, it will go wrong.');
     });
 
+    it('uses the archive name when both the law title and text are missing', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 8,
+        title: null,
+        text: null,
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('8');
+
+      expect(html).toContain('Murphy&#39;s Law - Murphy\'s Law Archive');
+    });
+
     it('includes attribution when present', async () => {
       mockLawService.getLaw.mockResolvedValue({
         id: 2,
@@ -225,6 +238,35 @@ describe('HtmlInjectionService', () => {
       expect(schema!['author']).toBeUndefined();
     });
 
+    it('JSON-LD omits datePublished when the law has no created date', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 14,
+        title: 'Undated Law',
+        text: 'No publication date is available.',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('14');
+      const schema = extractJsonLd(html!);
+
+      expect(schema!['datePublished']).toBeUndefined();
+    });
+
+    it('JSON-LD includes datePublished when the law has a created date', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 15,
+        title: 'Dated Law',
+        text: 'A dated law.',
+        created_at: '2026-10-08T00:00:00.000Z',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('15');
+      const schema = extractJsonLd(html!);
+
+      expect(schema!['datePublished']).toBe('2026-10-08T00:00:00.000Z');
+    });
+
     it('escapes </script> in law text to prevent XSS via JSON-LD injection', async () => {
       mockLawService.getLaw.mockResolvedValue({
         id: 13,
@@ -309,6 +351,20 @@ describe('HtmlInjectionService', () => {
       expect(html).not.toBeNull();
       expect(html).toContain("Browse ");
       expect(html).toContain("Murphy's Law Archive");
+    });
+
+    it('uses description fallback when category description is null', async () => {
+      mockCategoryService.getCategoryBySlug.mockResolvedValue({
+        id: 9,
+        slug: 'missing-description',
+        title: 'Missing Description',
+        description: null,
+        law_count: 0,
+      });
+
+      const html = await service.getCategoryHtml('missing-description');
+
+      expect(html).toContain('Browse Missing Description at Murphy&#39;s Law Archive.');
     });
 
     it('uses single-word accent title when category title has one word', async () => {

@@ -463,5 +463,28 @@ describe('Lazy Loader Utilities', () => {
 
       g.IntersectionObserver = originalIO;
     });
+
+    it('runs each fallback callback when the observer API is globally unavailable', () => {
+      const localThis: { first: () => void; second: () => void } = {
+        first: vi.fn<() => void>(),
+        second: vi.fn<() => void>(),
+      };
+      const originalIntersectionObserver = window.IntersectionObserver;
+      vi.stubGlobal('IntersectionObserver', undefined);
+      (window as unknown as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver = undefined;
+
+      try {
+        const cleanup = batchLazyLoad([
+          { element: document.createElement('div'), onVisible: localThis.first },
+          { element: document.createElement('div'), onVisible: localThis.second },
+        ]);
+
+        expect(localThis.first).toHaveBeenCalledOnce();
+        expect(localThis.second).toHaveBeenCalledOnce();
+        cleanup();
+      } finally {
+        (window as unknown as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver = originalIntersectionObserver;
+      }
+    });
   });
 });

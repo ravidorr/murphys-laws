@@ -97,6 +97,12 @@ describe('LawController', () => {
 
             expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
         });
+
+        it('rejects duplicate checks when text is omitted', async () => {
+            await lawController.duplicates(req, res, { query: {} });
+
+            expect(res.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
+        });
     });
 
     describe('list', () => {

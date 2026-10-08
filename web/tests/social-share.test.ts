@@ -1457,6 +1457,47 @@ describe('initInlineShareButtons', () => {
     teardown();
   });
 
+  it('allows inline copy actions to no-op when share getters are omitted', async () => {
+    localThis.container.innerHTML = renderInlineShareButtonsHTML();
+    const writeText = vi.fn();
+    Object.assign(navigator, { clipboard: { writeText } });
+    const teardown = initInlineShareButtons(localThis.container);
+
+    (localThis.container.querySelector('[data-action="copy-text"]') as HTMLElement).click();
+    (localThis.container.querySelector('[data-action="copy-link"]') as HTMLElement).click();
+    await Promise.resolve();
+
+    expect(writeText).not.toHaveBeenCalled();
+    teardown();
+  });
+
+  it('skips missing social links while updating the remaining inline URLs', () => {
+    localThis.container.innerHTML = renderInlineShareButtonsHTML();
+    localThis.container.querySelector('[data-share="facebook"]')?.remove();
+
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/share',
+      getShareText: () => 'Share text'
+    });
+
+    expect(localThis.container.querySelector<HTMLAnchorElement>('[data-share="twitter"]')?.href).toContain('twitter.com');
+    teardown();
+  });
+
+  it('reports an empty social platform as the generic social action', () => {
+    localThis.container.innerHTML = renderInlineShareButtonsHTML();
+    const teardown = initInlineShareButtons(localThis.container, {
+      getShareableUrl: () => 'https://test.com/share',
+      getShareText: () => 'Share text'
+    });
+    const twitter = localThis.container.querySelector('[data-share="twitter"]') as HTMLElement;
+    twitter.setAttribute('data-share', '');
+
+    twitter.click();
+
+    teardown();
+  });
+
   it('updates share link URLs when clicked', () => {
     const html = renderInlineShareButtonsHTML();
     localThis.container.innerHTML = html;

@@ -22,13 +22,7 @@ interface PublicApiOperation {
   path: string;
 }
 
-interface PublicApiContractExclusion extends PublicApiOperation {
-  reason: string;
-}
-
 type OpenApiPaths = Record<string, Partial<Record<Lowercase<RouteMethod>, unknown>>>;
-
-const PUBLIC_API_CONTRACT_EXCLUSIONS: readonly PublicApiContractExclusion[] = [];
 
 function compilePath(path: string): RegExp {
   const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -42,12 +36,6 @@ function normalizePublicApiPath(path: string): string {
 
 function operationKey(operation: PublicApiOperation): string {
   return `${operation.method} ${operation.path}`;
-}
-
-function isExcluded(operation: PublicApiOperation): boolean {
-  return PUBLIC_API_CONTRACT_EXCLUSIONS.some((exclusion) => (
-    exclusion.method === operation.method && exclusion.path === operation.path
-  ));
 }
 
 function getDocumentedPublicApiOperations(): Set<string> {
@@ -120,9 +108,7 @@ export class Router {
         method: route.method,
         path: normalizePublicApiPath(route.originalPath),
       };
-      if (!isExcluded(operation)) {
-        registered.add(operationKey(operation));
-      }
+      registered.add(operationKey(operation));
     }
 
     const documented = getDocumentedPublicApiOperations();

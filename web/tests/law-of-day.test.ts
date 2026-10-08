@@ -295,6 +295,18 @@ describe('LawOfTheDay component', () => {
     expect(navigated).toBe(false);
   });
 
+  it('does not navigate when a navigation control has an empty target', () => {
+    const onNavigate = vi.fn();
+    const el = mountLaw({ id: '1', text: 'Test law', upvotes: 10, downvotes: 2 } as LawOfTheDayLaw, { onNavigate });
+    const button = document.createElement('button');
+    button.dataset.nav = '';
+    el.appendChild(button);
+
+    button.click();
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('navigates to browse when Browse All Laws button is clicked', async () => {
     const law = { id: '1', text: 'Test law', upvotes: 10, downvotes: 2 };
     let navigatedTo: string | null = null;
@@ -391,6 +403,16 @@ describe('LawOfTheDay component', () => {
 
     // Card click should not have fired due to stopPropagation
     expect(cardClicked).toBe(false);
+  });
+
+  it('does not attempt a vote when the vote control has no vote type', () => {
+    const el = mountLaw({ id: '1', text: 'Test law', upvotes: 10, downvotes: 2 } as LawOfTheDayLaw);
+    const upvoteBtn = el.querySelector('[data-vote="up"]') as HTMLElement;
+    upvoteBtn.setAttribute('data-vote', '');
+
+    upvoteBtn.click();
+
+    expect(toggleVoteSpy).not.toHaveBeenCalled();
   });
 
   it('handles vote error without message property', async () => {
@@ -886,6 +908,31 @@ describe('LawOfTheDay component', () => {
       await new Promise(r => setTimeout(r, 10));
 
       expect(toggleFavoriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('keeps the favorite state when the initial icon is unavailable', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      isFavoriteSpy.mockReturnValue(true);
+      const originalQuerySelector = Element.prototype.querySelector;
+      vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+        if (this.hasAttribute('data-favorite-btn') && selector === 'svg[data-icon-name]') return null;
+        return originalQuerySelector.call(this, selector);
+      });
+
+      const el = mountLawForFavorites({ id: '1', text: 'Test law', upvotes: 1, downvotes: 0 } as LawOfTheDayLaw);
+      vi.restoreAllMocks();
+
+      expect(el.querySelector('[data-favorite-btn]')?.classList.contains('favorited')).toBe(true);
+    });
+
+    it('passes empty law text to the favorite store when no text is supplied', () => {
+      isFavoritesEnabledSpy.mockReturnValue(true);
+      toggleFavoriteSpy.mockReturnValue(true);
+      const el = mountLawForFavorites({ id: '1', text: '', upvotes: 1, downvotes: 0 } as LawOfTheDayLaw);
+
+      (el.querySelector('[data-favorite-btn]') as HTMLElement).click();
+
+      expect(toggleFavoriteSpy).toHaveBeenCalledWith(expect.objectContaining({ text: '' }), 'law_of_day');
     });
   });
 

@@ -3,6 +3,7 @@ import { getPageContent, getPageMetadata, getRawMarkdownContent, markdownToHtml,
 import { marked } from 'marked';
 import { ContentPageView } from '../src/views/content-page.ts';
 import * as exportContext from '../src/utils/export-context.ts';
+import metadata from '../../shared/content/metadata.json';
 
 describe('markdown-content.js', () => {
   describe('markdownToHtml', () => {
@@ -91,6 +92,19 @@ describe('markdown-content.js', () => {
       expect(getPageContent('murphys-laws-about-work')).toContain('About Work');
       expect(getPageContent('murphys-laws-about-technology')).toContain('About Technology');
       expect(getPageContent('murphys-law-vs-sods-law')).toContain('Sod');
+    });
+
+    it('uses fallback metadata when an optional content entry is absent', () => {
+      const localThis: { originalDevelopers: typeof metadata.developers } = {
+        originalDevelopers: metadata.developers,
+      };
+      delete (metadata as { developers?: typeof metadata.developers }).developers;
+
+      try {
+        expect(getPageContent('developers')).toContain('Developers');
+      } finally {
+        metadata.developers = localThis.originalDevelopers;
+      }
     });
 
     it('uses concise technology hub intro copy to avoid visual clipping', () => {

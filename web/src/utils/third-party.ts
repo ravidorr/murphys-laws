@@ -2,7 +2,6 @@ const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E';
 
 let analyticsBootstrapStarted: boolean = false;
 let thirdPartyTriggered: boolean = false;
-let gtagPromise: Promise<void> | undefined;
 let adsensePromise: Promise<void> | undefined;
 
 // Track loaded scripts without polluting DOM attributes
@@ -109,19 +108,17 @@ function triggerThirdPartyLoads(): void {
 
   // Load Google Analytics script (deferred until user interaction)
   // Catch errors silently - users with ad blockers will block this
-  if (!gtagPromise) {
-    gtagPromise = loadScript(GTAG_SRC)
-      .then(() => {
-        if (window.gtag) {
-          window.gtag('js', new Date());
-          window.gtag('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
-        }
-      })
-      .catch(() => {
-        // Silently ignore - script blocked by ad blocker, privacy extension, or network issue
-        // This is expected behavior and not an error in our application
-      });
-  }
+  void loadScript(GTAG_SRC)
+    .then(() => {
+      if (window.gtag) {
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-XG7G6KRP0E', { transport_type: 'beacon' });
+      }
+    })
+    .catch(() => {
+      // Silently ignore - script blocked by ad blocker, privacy extension, or network issue
+      // This is expected behavior and not an error in our application
+    });
 }
 
 function cleanupInteractionListeners(listener: EventListener): void {

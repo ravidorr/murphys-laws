@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Privacy } from '../src/views/privacy.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 describe('Privacy page', () => {
   it('renders privacy page element', () => {
@@ -223,6 +224,15 @@ describe('Privacy page', () => {
 
     navBtn.click();
     expect(navigated).toBe('');
+  });
+
+  it('clears registered export content during cleanup', () => {
+    const clearExportContent = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Privacy({ onNavigate: () => {} }) as HTMLDivElement & { cleanup: () => void };
+
+    el.cleanup();
+
+    expect(clearExportContent).toHaveBeenCalledOnce();
   });
 
 });

@@ -120,6 +120,14 @@ describe('Error Handler Utilities', () => {
       expect(isServiceWorkerTransientError(null)).toBe(false);
       expect(isServiceWorkerTransientError(undefined)).toBe(false);
     });
+
+    it('handles Error values without a name property', () => {
+      const localThis: { error?: Error } = {};
+      localThis.error = new Error('ordinary failure');
+      Object.defineProperty(localThis.error, 'name', { value: undefined });
+
+      expect(isServiceWorkerTransientError(localThis.error)).toBe(false);
+    });
   });
 
   describe('calculateBackoff', () => {
@@ -241,6 +249,13 @@ describe('Error Handler Utilities', () => {
 
       expect(result).toBe('success');
       expect(vi.mocked(localThis.mockFn)).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects an invalid retry configuration without invoking the operation', async () => {
+      await expect(withRetry(localThis.mockFn, { maxRetries: Number.NaN }))
+        .rejects.toThrow('withRetry: unexpected loop exit');
+
+      expect(vi.mocked(localThis.mockFn)).not.toHaveBeenCalled();
     });
   });
 

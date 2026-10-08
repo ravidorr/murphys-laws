@@ -88,13 +88,13 @@ export function lazyLoad(componentFactory: () => HTMLElement, options: LazyLoadO
     // Start observing once the placeholder is in the DOM
     // Use requestAnimationFrame to ensure element is attached
     requestAnimationFrame(() => {
-      if (placeholder.isConnected && observer) {
-        observer.observe(placeholder);
-      } else if (!placeholder.isConnected) {
+      if (placeholder.isConnected) {
+        observer!.observe(placeholder);
+      } else {
         // If not connected, try again after a short delay
         setTimeout(() => {
-          if (placeholder.isConnected && observer) {
-            observer.observe(placeholder);
+          if (placeholder.isConnected) {
+            observer!.observe(placeholder);
           }
         }, 0);
       }
@@ -167,13 +167,13 @@ export function batchLazyLoad(items: Array<{ element: HTMLElement; onVisible: ()
   // Check if IntersectionObserver is supported
   if (typeof window.IntersectionObserver !== 'function') {
     // Fallback: load all immediately
-    items.forEach(({ onVisible }) => {
+    for (const { onVisible } of items) {
       try {
         onVisible();
       } catch {
         // Silently handle errors
       }
-    });
+    }
     return () => {};
   }
 
