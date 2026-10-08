@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-mcp",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "MCP server for Murphy's Laws - exposes thousands of laws to AI agents via Model Context Protocol",
   "type": "module",
   "main": "dist/index.js",

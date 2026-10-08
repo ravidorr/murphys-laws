@@ -7,8 +7,8 @@ options:
   xcodeVersion: "14.0"
 
 settings:
-  MARKETING_VERSION: "1.2.4"
-  CURRENT_PROJECT_VERSION: "20"
+  MARKETING_VERSION: "1.2.5"
+  CURRENT_PROJECT_VERSION: "21"
 
 targets:
   MurphysLaws:
@@ -82,6 +82,9 @@ schemes:
       config: Debug
     test:
       config: Debug
+      gatherCoverageData: true
+      coverageTargets:
+        - MurphysLaws
       targets:
         - MurphysLawsTests
         - MurphysLawsUITests

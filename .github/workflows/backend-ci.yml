@@ -13,16 +13,29 @@ on:
       - '.nvmrc'
       - '.github/workflows/backend-ci.yml'
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'shared/data/**'
-      - 'shared/modules/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.nvmrc'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'backend/**'
+              - 'shared/data/**'
+              - 'shared/modules/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.nvmrc'
+              - '.github/workflows/backend-ci.yml'
   test:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -72,3 +85,24 @@ jobs:
 
       - name: Check database exists
         run: test -f backend/murphys.db
+
+  ci-gate:
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify applicable CI completed successfully
+        env:
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$RELEVANT" != "true" ]; then
+            echo "No relevant changes; CI is not required."
+            exit 0
+          fi
+          if [ "$TEST_RESULT" = "success" ]; then
+            echo "Applicable CI completed successfully."
+            exit 0
+          fi
+          echo "Applicable CI finished with result: $TEST_RESULT"
+          exit 1

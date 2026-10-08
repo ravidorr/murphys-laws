@@ -1,3 +1,5 @@
+import java.math.BigDecimal
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -16,8 +18,8 @@ android {
         applicationId = "com.murphyslaws"
         minSdk = 26
         targetSdk = 37
-        versionCode = 12
-        versionName = "1.2.5"
+        versionCode = 13
+        versionName = "1.2.6"
 
         testInstrumentationRunner = "com.murphyslaws.CustomTestRunner"
         vectorDrawables {
@@ -166,16 +168,7 @@ tasks.withType<Test> {
     }
 }
 
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest")
-    
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
-        csv.required.set(false)
-    }
-    
-    val fileFilter = listOf(
+val jacocoFileFilter = listOf(
         "**/R.class",
         "**/R$*.class",
         "**/BuildConfig.*",
@@ -199,16 +192,46 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         $$"**/util/SocialShareHelper$shareToSocial*",
         $$"**/util/SocialShareHelper$openUrl*"
     )
+
+val jacocoDebugTree = fileTree(project.layout.buildDirectory.asFile.get().resolve(
+    "intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes"
+)) {
+    exclude(jacocoFileFilter)
+}
+
+val jacocoMainSrc = "${project.projectDir}/src/main/java"
+val jacocoExecutionData = fileTree(project.layout.buildDirectory) {
+    include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
     
-    val debugTree = fileTree(project.layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
-        exclude(fileFilter)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
     }
     
-    val mainSrc = "${project.projectDir}/src/main/java"
-    
-    sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree(project.layout.buildDirectory) {
-        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-    })
+    sourceDirectories.setFrom(files(jacocoMainSrc))
+    classDirectories.setFrom(files(jacocoDebugTree))
+    executionData.setFrom(jacocoExecutionData)
+}
+
+tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    dependsOn("testDebugUnitTest")
+
+    sourceDirectories.setFrom(files(jacocoMainSrc))
+    classDirectories.setFrom(files(jacocoDebugTree))
+    executionData.setFrom(jacocoExecutionData)
+
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = BigDecimal("0.30")
+            }
+        }
+    }
 }

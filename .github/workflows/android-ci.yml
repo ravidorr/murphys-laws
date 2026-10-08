@@ -12,20 +12,32 @@ on:
       - 'web/styles/partials/variables.css'
       - '.github/workflows/android-ci.yml'
   pull_request:
-    paths:
-      - 'android/**'
-      - 'shared/DESIGN.md'
-      - 'shared/design-tokens/**'
-      - 'web/DESIGN.md'
-      - 'web/styles/partials/variables.css'
-      - '.github/workflows/android-ci.yml'
 
 concurrency:
   group: android-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'android/**'
+              - 'shared/DESIGN.md'
+              - 'shared/design-tokens/**'
+              - 'web/DESIGN.md'
+              - 'web/styles/partials/variables.css'
+              - '.github/workflows/android-ci.yml'
   build-and-test:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -83,15 +95,24 @@ jobs:
         if: steps.check_gradle.outputs.exists == 'true'
         run: chmod +x android/gradlew
 
-      - name: Build, lint, and unit tests (if project exists)
+      - name: Build, lint, unit tests, and coverage report (if project exists)
         if: steps.check_gradle.outputs.exists == 'true'
         run: |
           cd android
-          ./gradlew assembleDebug assembleDebugAndroidTest lintDebug testDebugUnitTest \
+          ./gradlew assembleDebug assembleDebugAndroidTest lintDebug testDebugUnitTest jacocoTestReport jacocoTestCoverageVerification \
             --no-daemon \
             --build-cache \
             -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=768m" \
             --max-workers=4
+
+      - name: Upload unit test coverage report
+        if: steps.check_gradle.outputs.exists == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-unit-test-coverage
+          path: android/app/build/reports/jacoco/jacocoTestReport/
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Run instrumentation tests (if project exists)
         if: steps.check_gradle.outputs.exists == 'true'
@@ -118,3 +139,24 @@ jobs:
       - name: Skip (project not yet created)
         if: steps.check_gradle.outputs.exists == 'false'
         run: echo "Android project not yet created. Skipping build."
+
+  ci-gate:
+    needs: [changes, build-and-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify applicable CI completed successfully
+        env:
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          BUILD_AND_TEST_RESULT: ${{ needs.build-and-test.result }}
+        run: |
+          if [ "$RELEVANT" != "true" ]; then
+            echo "No relevant changes; mobile CI is not required."
+            exit 0
+          fi
+          if [ "$BUILD_AND_TEST_RESULT" = "success" ]; then
+            echo "Applicable mobile CI completed successfully."
+            exit 0
+          fi
+          echo "Applicable mobile CI finished with result: $BUILD_AND_TEST_RESULT"
+          exit 1

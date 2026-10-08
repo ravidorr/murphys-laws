@@ -11,14 +11,27 @@ on:
       - '.nvmrc'
       - '.github/workflows/sdk-ci.yml'
   pull_request:
-    paths:
-      - 'sdk/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.nvmrc'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'sdk/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.nvmrc'
+              - '.github/workflows/sdk-ci.yml'
   test:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -52,3 +65,24 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: sdk
+
+  ci-gate:
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify applicable CI completed successfully
+        env:
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$RELEVANT" != "true" ]; then
+            echo "No relevant changes; CI is not required."
+            exit 0
+          fi
+          if [ "$TEST_RESULT" = "success" ]; then
+            echo "Applicable CI completed successfully."
+            exit 0
+          fi
+          echo "Applicable CI finished with result: $TEST_RESULT"
+          exit 1
