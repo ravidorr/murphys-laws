@@ -6,7 +6,7 @@
  */
 import { hydrateIcons } from '@utils/icons.ts';
 
-// Must match the .pwa-notification--exiting animation duration in update-notification.css
+// Matches the normal-motion .pwa-notification--exiting animation duration in update-notification.css.
 const EXIT_ANIMATION_MS = 300;
 
 /**

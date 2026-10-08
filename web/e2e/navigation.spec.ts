@@ -1,6 +1,8 @@
 import { createRequire } from 'node:module';
+import type * as Playwright from '@playwright/test';
+
 const require = createRequire(import.meta.url);
-const { test, expect } = require('@playwright/test');
+const { expect, test }: typeof Playwright = require('@playwright/test');
 
 test('home -> browse via header', async ({ page }) => {
   await page.goto('/');

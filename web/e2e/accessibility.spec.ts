@@ -1,8 +1,11 @@
 import { createRequire } from 'node:module';
+import type AxeBuilderType from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
+import type * as Playwright from '@playwright/test';
+
 const require = createRequire(import.meta.url);
-const { test, expect } = require('@playwright/test');
-const AxeBuilder = require('@axe-core/playwright').default;
+const { expect, test }: typeof Playwright = require('@playwright/test');
+const AxeBuilder: typeof AxeBuilderType = require('@axe-core/playwright').default;
 
 // WCAG AA accessibility tests using axe-core
 // These tests verify automated accessibility compliance across key pages

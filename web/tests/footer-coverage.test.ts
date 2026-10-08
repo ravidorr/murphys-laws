@@ -217,6 +217,7 @@ describe('Footer component - Coverage', () => {
       disconnect: vi.fn(),
       root: null as Element | Document | null,
       rootMargin: '',
+      scrollMargin: '',
       thresholds: [] as readonly number[],
       takeRecords: vi.fn(() => []),
       unobserve: vi.fn()

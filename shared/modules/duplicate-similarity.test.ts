@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isUsefulDuplicateMatch, normalizeDuplicateText, scoreDuplicateSimilarity } from './duplicate-similarity.ts';
+import { isUsefulDuplicateMatch, normalizeDuplicateText, scoreDuplicateSimilarity } from './duplicate-similarity';
 
 describe('duplicate similarity', () => {
   it('normalizes case, punctuation, and whitespace for exact matches', () => {
