@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Deployment health checks now use bounded retries for local API endpoints and
   report the final HTTP status and response body if an endpoint is still
-  unavailable. Root bumped to `2.6.35`; backend to `2.3.9`.
+  unavailable. Root bumped to `2.6.36`; backend to `2.3.10`.
 - Raised backend and web coverage gates to 100% for statements, branches,
   functions, and lines, with tests covering all tracked runtime paths. Web CI now
   runs the coverage command, and backend coverage includes both production and
