@@ -145,9 +145,8 @@ Submit a new law for review.
 {
  "text": "Law text (required, min 10 chars)",
  "title": "Law title (optional)",
- "author": "Author name (optional, required if not anonymous)",
- "email": "author@example.com (optional, required if not anonymous)",
- "anonymous": false,
+ "author": "Author name (optional)",
+ "email": "author@example.com (optional)",
  "category_id": 1
 }
 ```
@@ -156,7 +155,10 @@ Submit a new law for review.
 ```json
 {
  "id": 123,
- "message": "Law submitted successfully"
+ "title": "Law title",
+ "text": "Law text",
+ "status": "in_review",
+ "message": "Law submitted successfully and is pending review"
 }
 ```
 
@@ -183,6 +185,8 @@ Vote on a law (upvote or downvote).
 **Response:**
 ```json
 {
+ "law_id": 123,
+ "vote_type": "up",
  "upvotes": 10,
  "downvotes": 2
 }
@@ -204,6 +208,7 @@ Remove vote from a law.
 **Response:**
 ```json
 {
+ "law_id": 123,
  "upvotes": 9,
  "downvotes": 2
 }
@@ -335,60 +340,17 @@ Search submitters for the "Submitted By" filter (typeahead).
 
 ---
 
-### 6. Share Calculation Endpoint
-
-#### POST `/api/v1/share-calculation`
-Share SOD (Sod's Law) calculation via email.
-
-**Request Body:**
-```json
-{
- "email": "recipient@example.com",
- "taskDescription": "Task description",
- "senderName": "Sender Name",
- "senderEmail": "sender@example.com",
- "recipientName": "Recipient Name",
- "urgency": 5,
- "complexity": 5,
- "importance": 5,
- "skill": 5,
- "frequency": 5,
- "probability": "0.50",
- "interpretation": "Interpretation text"
-}
-```
-
-**Response:**
-```json
-{
- "success": true,
- "message": "Email sent successfully"
-}
-```
-
-**Used in:**
-- Backend API endpoint available for programmatic email sharing
-- Note: Web frontend calculators use inline share buttons via `web/src/components/social-share.ts` (same component as law sharing)
-
----
-
 ## Summary
 
-Total API endpoints: **13** (all use `/api/v1/...` prefix)
+The generated [OpenAPI document](/openapi.json) is authoritative for the
+endpoints it defines, but does not yet cover every public route. This guide
+supplements it with frontend call sites and integration context.
 
-1. `GET /api/v1/laws` - List laws with filters
-2. `GET /api/v1/laws/suggestions` - Get search suggestions for autocomplete
-3. `GET /api/v1/laws/{id}` - Get single law
-4. `GET /api/v1/laws/{id}/related` - Get related laws
-5. `POST /api/v1/laws` - Submit new law
-6. `POST /api/v1/laws/{id}/vote` - Vote on law
-7. `DELETE /api/v1/laws/{id}/vote` - Remove vote
-8. `GET /api/v1/law-of-day` - Get law of the day
-9. `GET /api/v1/categories` - List all categories
-10. `GET /api/v1/categories/{id}` - Get single category
-11. `GET /api/v1/attributions` - List all attributions
-12. `GET /api/v1/submitters` - Search submitters (typeahead)
-13. `POST /api/v1/share-calculation` - Share calculation via email
+### Write endpoints
+
+1. `POST /api/v1/laws` - Submit a law for review
+2. `POST /api/v1/laws/{id}/vote` - Add or replace a vote
+3. `DELETE /api/v1/laws/{id}/vote` - Remove a vote
 
 ## Implementation Details
 
