@@ -64,7 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The first-visit "Ready for Offline" notice now slides away and is removed about
   5 seconds after it appears, instead of staying on screen and covering page content
   until dismissed. Its Got it button, and the install prompt's buttons, also work
-  when browser translation wraps their labels.
+  when browser translation wraps their labels. Web bumped to `3.4.13`; root to
+  `2.6.20`.
+- Updated the MCP TypeScript SDK to resolve a high-severity OAuth credential
+  forwarding vulnerability. MCP bumped to `1.2.4`.
 - Production deployments now synchronize a stale PM2 daemon with the installed
   CLI before querying its process metadata. Root bumped to `2.6.19`.
 - Production deployments now install dependencies from a committed backend lockfile,

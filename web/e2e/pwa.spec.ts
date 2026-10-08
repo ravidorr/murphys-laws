@@ -124,7 +124,7 @@ test.describe('PWA Install Prompt', () => {
 
 test.describe('PWA Ready for Offline notification', () => {
   // Unit tests run in jsdom, which never plays CSS animations, so only a real browser
-  // shows whether the exit animation fires animationend and the toast removes itself.
+  // can verify that the real CSS removes the toast after its exit transition.
   for (const reducedMotion of ['no-preference', 'reduce']) {
     test(`removes itself about 5 seconds after appearing (reduced motion: ${reducedMotion})`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion });
@@ -135,7 +135,7 @@ test.describe('PWA Ready for Offline notification', () => {
 
       const notification = page.locator('.pwa-notification');
       await expect(notification).toBeVisible();
-      await expect(notification).toHaveCount(0, { timeout: 7000 });
+      await expect(notification).toHaveCount(0, { timeout: 5500 });
     });
   }
 });
