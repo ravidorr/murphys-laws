@@ -21,6 +21,31 @@ export const OPENAPI_SPEC = {
     },
   ],
   paths: {
+    '/api/v1/openapi.json': {
+      get: {
+        operationId: 'getOpenApiSpec',
+        summary: 'Get the OpenAPI document',
+        description: 'Returns the generated OpenAPI 3.0 document for this public API.',
+        responses: {
+          '200': {
+            description: 'OpenAPI document',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['openapi', 'info', 'paths'],
+                  properties: {
+                    openapi: { type: 'string' },
+                    info: { type: 'object' },
+                    paths: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/v1/laws': {
       post: {
         operationId: 'submitLaw',
@@ -509,6 +534,36 @@ export const OPENAPI_SPEC = {
         },
       },
     },
+    '/api/v1/submitters': {
+      get: {
+        operationId: 'searchSubmitters',
+        summary: 'Search submitter display names',
+        parameters: [
+          {
+            name: 'q',
+            in: 'query',
+            description: 'Optional case-insensitive partial name match',
+            schema: { type: 'string' },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of matching names to return',
+            schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Matching submitter display names',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/SubmitterList' },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/v1/feed.rss': {
       get: {
         operationId: 'getRssFeed',
@@ -533,6 +588,33 @@ export const OPENAPI_SPEC = {
         },
       },
     },
+    '/api/v1/og/law/{id}.png': {
+      get: {
+        operationId: 'getLawOpenGraphImage',
+        summary: 'Generate a law Open Graph image',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer', minimum: 1 },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'PNG image for the requested law',
+            content: {
+              'image/png': {
+                schema: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+          '400': { description: 'Invalid law ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Law not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Image generation failed', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
     '/api/health': {
       get: {
         operationId: 'healthCheck',
@@ -544,9 +626,26 @@ export const OPENAPI_SPEC = {
               'application/json': {
                 schema: {
                   type: 'object',
+                  required: ['ok', 'dbQueryTime'],
                   properties: {
-                    status: { type: 'string', enum: ['ok'] },
-                    db_query_ms: { type: 'number' },
+                    ok: { type: 'boolean', enum: [true] },
+                    dbQueryTime: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
+          '503': {
+            description: 'Database unavailable',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['ok', 'error', 'dbError'],
+                  properties: {
+                    ok: { type: 'boolean', enum: [false] },
+                    error: { type: 'string' },
+                    dbError: { type: 'string' },
                   },
                 },
               },
@@ -563,6 +662,13 @@ export const OPENAPI_SPEC = {
         properties: {
           name: { type: 'string' },
           note: { type: 'string', nullable: true },
+        },
+      },
+      SubmitterList: {
+        type: 'object',
+        required: ['data'],
+        properties: {
+          data: { type: 'array', items: { type: 'string' } },
         },
       },
       Law: {

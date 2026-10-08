@@ -342,9 +342,9 @@ Search submitters for the "Submitted By" filter (typeahead).
 
 ## Summary
 
-The generated [OpenAPI document](/openapi.json) is authoritative for the
-endpoints it defines, but does not yet cover every public route. This guide
-supplements it with frontend call sites and integration context.
+The generated [OpenAPI document](/openapi.json) is authoritative for every
+public API route. This guide supplements it with frontend call sites and
+integration context.
 
 ### Write endpoints
 
@@ -368,7 +368,7 @@ supplements it with frontend call sites and integration context.
 - Some endpoints use query parameters for filtering (GET `/api/v1/laws`)
 - Some endpoints use path parameters (GET `/api/v1/laws/{id}`)
 - POST endpoints require JSON request bodies
-- All responses are JSON format
+- JSON API endpoints return JSON responses
+- RSS, Atom, and Open Graph image endpoints use their respective media types
 - Error responses include `error` field in JSON body
 - Health check endpoint (`/api/health`) does not use versioning
-- Facebook data deletion endpoint (`/api/facebook/data-deletion`) does not use versioning

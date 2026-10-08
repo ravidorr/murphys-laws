@@ -49,10 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
-- Documented the complete public write contract in OpenAPI, including vote
-  creation and removal, current submission rate limits, and rate-limit error
-  responses. The frontend API reference now matches those write responses.
-  Backend bumped to `2.3.4`; root to `2.6.24`.
+- Documented the complete public API contract in OpenAPI, including vote
+  creation and removal, submitter search, Open Graph images, current
+  submission rate limits, and rate-limit error responses. The frontend API
+  reference now matches the published contract.
+  Backend bumped to `2.3.5`; root to `2.6.25`.
 - Added a dedicated TypeScript project for Playwright E2E tests, so Node and
   Playwright types are checked alongside the web application. Web bumped to
   `3.4.14`; root to `2.6.22`.
