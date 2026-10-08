@@ -21,13 +21,38 @@ export const OPENAPI_SPEC = {
     },
   ],
   paths: {
+    '/api/v1/openapi.json': {
+      get: {
+        operationId: 'getOpenApiSpec',
+        summary: 'Get the OpenAPI document',
+        description: 'Returns the generated OpenAPI 3.0 document for this public API.',
+        responses: {
+          '200': {
+            description: 'OpenAPI document',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['openapi', 'info', 'paths'],
+                  properties: {
+                    openapi: { type: 'string' },
+                    info: { type: 'object' },
+                    paths: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/v1/laws': {
       post: {
         operationId: 'submitLaw',
         summary: 'Submit a new law',
-        description: 'Submit a new law for community review. Rate limited to 5 submissions per hour per IP.',
-        'x-ratelimit-limit': 5,
-        'x-ratelimit-window': '1h',
+        description: 'Submit a new law for community review. Rate limited to 3 submissions per minute per IP.',
+        'x-ratelimit-limit': 3,
+        'x-ratelimit-window': '1m',
         requestBody: {
           required: true,
           content: {
@@ -53,6 +78,7 @@ export const OPENAPI_SPEC = {
               'application/json': {
                 schema: {
                   type: 'object',
+                  required: ['id', 'title', 'text', 'status', 'message'],
                   properties: {
                     id: { type: 'integer' },
                     title: { type: 'string', nullable: true },
@@ -65,7 +91,7 @@ export const OPENAPI_SPEC = {
             },
           },
           '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
-          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
         },
       },
       get: {
@@ -141,6 +167,77 @@ export const OPENAPI_SPEC = {
               },
             },
           },
+        },
+      },
+    },
+    '/api/v1/laws/{id}/vote': {
+      post: {
+        operationId: 'voteOnLaw',
+        summary: 'Vote on a law',
+        description: 'Upvote or downvote a published law. Replaces the caller’s existing vote. Rate limited to 30 votes per minute per IP.',
+        'x-ratelimit-limit': 30,
+        'x-ratelimit-window': '1m',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['vote_type'],
+                properties: {
+                  vote_type: { type: 'string', enum: ['up', 'down'] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Vote recorded successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/VoteCastResponse' },
+              },
+            },
+          },
+          '400': { description: 'Invalid JSON request body or vote type', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Law not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
+        },
+      },
+      delete: {
+        operationId: 'removeVote',
+        summary: 'Remove a vote from a law',
+        description: 'Remove the caller’s vote from a published law. Rate limited to 30 votes per minute per IP.',
+        'x-ratelimit-limit': 30,
+        'x-ratelimit-window': '1m',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Vote removed successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/VoteResponse' },
+              },
+            },
+          },
+          '404': { description: 'Law not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
         },
       },
     },
@@ -437,6 +534,36 @@ export const OPENAPI_SPEC = {
         },
       },
     },
+    '/api/v1/submitters': {
+      get: {
+        operationId: 'searchSubmitters',
+        summary: 'Search submitter display names',
+        parameters: [
+          {
+            name: 'q',
+            in: 'query',
+            description: 'Optional case-insensitive partial name match',
+            schema: { type: 'string' },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of matching names to return',
+            schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Matching submitter display names',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/SubmitterList' },
+              },
+            },
+          },
+        },
+      },
+    },
     '/api/v1/feed.rss': {
       get: {
         operationId: 'getRssFeed',
@@ -461,6 +588,33 @@ export const OPENAPI_SPEC = {
         },
       },
     },
+    '/api/v1/og/law/{id}.png': {
+      get: {
+        operationId: 'getLawOpenGraphImage',
+        summary: 'Generate a law Open Graph image',
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer', minimum: 1 },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'PNG image for the requested law',
+            content: {
+              'image/png': {
+                schema: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+          '400': { description: 'Invalid law ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '404': { description: 'Law not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '500': { description: 'Image generation failed', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+        },
+      },
+    },
     '/api/health': {
       get: {
         operationId: 'healthCheck',
@@ -472,9 +626,26 @@ export const OPENAPI_SPEC = {
               'application/json': {
                 schema: {
                   type: 'object',
+                  required: ['ok', 'dbQueryTime'],
                   properties: {
-                    status: { type: 'string', enum: ['ok'] },
-                    db_query_ms: { type: 'number' },
+                    ok: { type: 'boolean', enum: [true] },
+                    dbQueryTime: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
+          '503': {
+            description: 'Database unavailable',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['ok', 'error', 'dbError'],
+                  properties: {
+                    ok: { type: 'boolean', enum: [false] },
+                    error: { type: 'string' },
+                    dbError: { type: 'string' },
                   },
                 },
               },
@@ -491,6 +662,13 @@ export const OPENAPI_SPEC = {
         properties: {
           name: { type: 'string' },
           note: { type: 'string', nullable: true },
+        },
+      },
+      SubmitterList: {
+        type: 'object',
+        required: ['data'],
+        properties: {
+          data: { type: 'array', items: { type: 'string' } },
         },
       },
       Law: {
@@ -555,6 +733,33 @@ export const OPENAPI_SPEC = {
         type: 'object',
         properties: {
           error: { type: 'string' },
+        },
+      },
+      RateLimitErrorResponse: {
+        type: 'object',
+        required: ['error', 'retryAfter'],
+        properties: {
+          error: { type: 'string' },
+          retryAfter: { type: 'integer', minimum: 0 },
+        },
+      },
+      VoteResponse: {
+        type: 'object',
+        required: ['law_id', 'upvotes', 'downvotes'],
+        properties: {
+          law_id: { type: 'integer' },
+          upvotes: { type: 'integer' },
+          downvotes: { type: 'integer' },
+        },
+      },
+      VoteCastResponse: {
+        type: 'object',
+        required: ['law_id', 'vote_type', 'upvotes', 'downvotes'],
+        properties: {
+          law_id: { type: 'integer' },
+          vote_type: { type: 'string', enum: ['up', 'down'] },
+          upvotes: { type: 'integer' },
+          downvotes: { type: 'integer' },
         },
       },
     },
