@@ -117,6 +117,7 @@ jobs:
           retention-days: 7
 
   ci-gate:
+    name: ios-ci-gate
     needs: [changes, build-and-test]
     if: always()
     runs-on: ubuntu-latest

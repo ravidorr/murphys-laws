@@ -181,6 +181,7 @@ jobs:
           uploadArtifacts: true
 
   ci-gate:
+    name: web-ci-gate
     needs: [changes, test-and-build, e2e-tests, lighthouse]
     if: always()
     runs-on: ubuntu-latest
