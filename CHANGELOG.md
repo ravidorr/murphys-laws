@@ -49,6 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Added a dedicated TypeScript project for Playwright E2E tests, so Node and
+  Playwright types are checked alongside the web application. Web bumped to
+  `3.4.14`; root to `2.6.22`.
+- Re-enabled the repository's pre-commit and commit-message safeguards. Root bumped
+  to `2.6.21`.
 - Refreshed the project checklist to reflect shipped submission, category, calculator FAQ,
   comparison, and examples content. Root bumped to `2.6.15`.
 - Android CI now enables KVM acceleration, caches Gradle state, builds only

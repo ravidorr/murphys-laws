@@ -1,7 +1,8 @@
 import { createRequire } from 'node:module';
+import type * as Playwright from '@playwright/test';
 
 const require = createRequire(import.meta.url);
-const { test, expect } = require('@playwright/test');
+const { expect, test }: typeof Playwright = require('@playwright/test');
 
 const viewports = [
   { name: 'mobile', width: 390, height: 844 },
@@ -23,8 +24,9 @@ test.describe('QA regressions', () => {
       const before = await menu.boundingBox();
       await page.waitForTimeout(700);
       const after = await menu.boundingBox();
-      expect(before).not.toBeNull();
-      expect(after).not.toBeNull();
+      if (before === null || after === null) {
+        throw new Error('The visible menu button did not produce a bounding box.');
+      }
       expect(Math.abs(after.x - before.x)).toBeLessThan(1);
       expect(Math.abs(after.y - before.y)).toBeLessThan(1);
       expect(Math.abs(after.width - before.width)).toBeLessThan(1);
@@ -36,8 +38,9 @@ test.describe('QA regressions', () => {
 
       const searchBox = await search.boundingBox();
       const brandBox = await brand.boundingBox();
-      expect(searchBox).not.toBeNull();
-      expect(brandBox).not.toBeNull();
+      if (searchBox === null || brandBox === null) {
+        throw new Error('The visible header elements did not produce bounding boxes.');
+      }
       if (viewport.width <= 640) {
         expect(searchBox.y).toBeGreaterThanOrEqual(brandBox.y + brandBox.height - 1);
       } else {

@@ -1,7 +1,9 @@
-// Workaround for ESM resolution with "type": "module" - load @playwright/test via CJS so named exports resolve.
+// Playwright's local runner loads this package through CommonJS despite this package being ESM.
 import { createRequire } from 'node:module';
+import type * as Playwright from '@playwright/test';
+
 const require = createRequire(import.meta.url);
-const { test, expect } = require('@playwright/test');
+const { expect, test }: typeof Playwright = require('@playwright/test');
 
 /**
  * PWA/Offline E2E Tests
@@ -124,18 +126,58 @@ test.describe('PWA Install Prompt', () => {
 
 test.describe('PWA Ready for Offline notification', () => {
   // Unit tests run in jsdom, which never plays CSS animations, so only a real browser
-  // can verify that the real CSS removes the toast after its exit transition.
-  for (const reducedMotion of ['no-preference', 'reduce']) {
+  // can verify the notification is removed after the normal exit lifecycle.
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     test(`removes itself about 5 seconds after appearing (reduced motion: ${reducedMotion})`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion });
       await page.goto('/');
-      await page.evaluate(() =>
-        import('/src/components/update-notification.ts').then((m) => m.showOfflineReady()),
-      );
+      await page.evaluate(async () => {
+        const componentPath = '/src/components/update-notification.ts';
+        const { showOfflineReady } = await import(componentPath) as Pick<
+          typeof import('../src/components/update-notification.ts'),
+          'showOfflineReady'
+        >;
+        const exitStart = performance.now();
+        const observer = new MutationObserver(() => {
+          const notification = document.querySelector<HTMLElement>('.pwa-notification--exiting');
+          if (!notification) return;
+
+          document.body.dataset.offlineReadyExitDelay = String(performance.now() - exitStart);
+          const recordExitAnimation = (event: AnimationEvent) => {
+            if (event.target !== notification) return;
+
+            document.body.dataset.offlineReadyExitAnimation = event.animationName;
+            notification.removeEventListener('animationend', recordExitAnimation);
+          };
+          notification.addEventListener('animationend', recordExitAnimation);
+          observer.disconnect();
+        });
+        observer.observe(document.body, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class'],
+        });
+        showOfflineReady();
+      });
 
       const notification = page.locator('.pwa-notification');
       await expect(notification).toBeVisible();
-      await expect(notification).toHaveCount(0, { timeout: 5500 });
+      await page.waitForFunction(
+        () => document.body.dataset.offlineReadyExitDelay !== undefined,
+        undefined,
+        { timeout: 6500 },
+      );
+      const exitDelay = await page.evaluate(() => Number(document.body.dataset.offlineReadyExitDelay));
+      expect(exitDelay).toBeGreaterThanOrEqual(4900);
+      expect(exitDelay).toBeLessThan(6500);
+      await page.waitForFunction(
+        () => document.body.dataset.offlineReadyExitAnimation !== undefined,
+        undefined,
+        { timeout: 1000 },
+      );
+      const exitAnimation = await page.evaluate(() => document.body.dataset.offlineReadyExitAnimation);
+      expect(exitAnimation).toBe('pwa-slide-down');
+      await expect(notification).toHaveCount(0, { timeout: 1500 });
     });
   }
 });

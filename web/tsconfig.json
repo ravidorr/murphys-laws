@@ -22,16 +22,15 @@
     "esModuleInterop": true,
     "allowJs": false,
 
-    /* Path Aliases (must match vite.config.ts) */
-    "baseUrl": ".",
+    /* Path Aliases (must match vite.config.ts; relative to this config file) */
     "paths": {
-      "@src/*": ["src/*"],
-      "@views/*": ["src/views/*"],
-      "@components/*": ["src/components/*"],
-      "@modules/*": ["src/modules/*"],
-      "@utils/*": ["src/utils/*"],
+      "@src/*": ["./src/*"],
+      "@views/*": ["./src/views/*"],
+      "@components/*": ["./src/components/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@utils/*": ["./src/utils/*"],
       "@shared/*": ["../shared/*"],
-      "@scripts/ssg": ["src/types/ssg.d.ts"],
+      "@scripts/ssg": ["./src/types/ssg.d.ts"],
       "@playwright/test": ["../node_modules/@playwright/test"]
     }
   },
