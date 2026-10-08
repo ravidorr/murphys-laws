@@ -506,4 +506,19 @@ describe('OgImageService', () => {
     expect((service as unknown as { logoPath: string }).logoPath).toContain('/web/public/android-chrome-192x192.png');
     vi.doUnmock('node:fs');
   });
+
+  it('uses the production logo path when the production asset is present', async () => {
+    vi.resetModules();
+    vi.doMock('node:fs', () => ({
+      existsSync: vi.fn().mockReturnValue(true),
+    }));
+
+    const localThis = {
+      module: await import('../../src/services/og-image.service.ts'),
+    };
+    const service = new localThis.module.OgImageService(mockLawService as unknown as IOgImageLawService);
+
+    expect((service as unknown as { logoPath: string }).logoPath).toContain('/web/dist/android-chrome-192x192.png');
+    vi.doUnmock('node:fs');
+  });
 });
