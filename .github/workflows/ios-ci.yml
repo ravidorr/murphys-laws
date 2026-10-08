@@ -12,16 +12,28 @@ on:
       - 'web/styles/partials/variables.css'
       - '.github/workflows/ios-ci.yml'
   pull_request:
-    paths:
-      - 'ios/**'
-      - 'shared/DESIGN.md'
-      - 'shared/design-tokens/**'
-      - 'web/DESIGN.md'
-      - 'web/styles/partials/variables.css'
-      - '.github/workflows/ios-ci.yml'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'ios/**'
+              - 'shared/DESIGN.md'
+              - 'shared/design-tokens/**'
+              - 'web/DESIGN.md'
+              - 'web/styles/partials/variables.css'
+              - '.github/workflows/ios-ci.yml'
   build-and-test:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: macos-15
 
     steps:
@@ -88,10 +100,39 @@ jobs:
             -scheme MurphysLaws \
             -destination 'generic/platform=iOS Simulator'
 
-      - name: Test
+      - name: Test and enforce coverage
         run: |
           cd ios
-          xcodebuild test \
-            -project MurphysLaws.xcodeproj \
-            -scheme MurphysLaws \
-            -destination "$IOS_SIMULATOR_DESTINATION"
+          ./scripts/test-coverage.sh "$IOS_SIMULATOR_DESTINATION"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-coverage
+          path: |
+            ios/coverage.json
+            ios/TestResults.xcresult
+          if-no-files-found: error
+          retention-days: 7
+
+  ci-gate:
+    needs: [changes, build-and-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify applicable CI completed successfully
+        env:
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          BUILD_AND_TEST_RESULT: ${{ needs.build-and-test.result }}
+        run: |
+          if [ "$RELEVANT" != "true" ]; then
+            echo "No relevant changes; mobile CI is not required."
+            exit 0
+          fi
+          if [ "$BUILD_AND_TEST_RESULT" = "success" ]; then
+            echo "Applicable mobile CI completed successfully."
+            exit 0
+          fi
+          echo "Applicable mobile CI finished with result: $BUILD_AND_TEST_RESULT"
+          exit 1

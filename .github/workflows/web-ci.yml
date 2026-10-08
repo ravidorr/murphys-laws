@@ -17,21 +17,33 @@ on:
       - '.nvmrc'
       - '.github/workflows/web-ci.yml'
   pull_request:
-    paths:
-      - 'web/**'
-      - 'backend/db/migrations/**'
-      - 'backend/scripts/build-sqlite.ts'
-      - 'backend/src/**'
-      - 'shared/modules/**'
-      - 'shared/DESIGN.md'
-      - 'shared/design-tokens/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.nvmrc'
-      - '.github/workflows/web-ci.yml'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'web/**'
+              - 'backend/db/migrations/**'
+              - 'backend/scripts/build-sqlite.ts'
+              - 'backend/src/**'
+              - 'shared/modules/**'
+              - 'shared/DESIGN.md'
+              - 'shared/design-tokens/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.nvmrc'
+              - '.github/workflows/web-ci.yml'
   test-and-build:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -96,6 +108,8 @@ jobs:
           retention-days: 7
 
   e2e-tests:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -136,6 +150,8 @@ jobs:
           retention-days: 7
 
   lighthouse:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -163,3 +179,28 @@ jobs:
         with:
           configPath: './lighthouserc.json'
           uploadArtifacts: true
+
+  ci-gate:
+    needs: [changes, test-and-build, e2e-tests, lighthouse]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify applicable CI completed successfully
+        env:
+          RELEVANT: ${{ needs.changes.outputs.relevant }}
+          TEST_AND_BUILD_RESULT: ${{ needs.test-and-build.result }}
+          E2E_RESULT: ${{ needs.e2e-tests.result }}
+          LIGHTHOUSE_RESULT: ${{ needs.lighthouse.result }}
+        run: |
+          if [ "$RELEVANT" != "true" ]; then
+            echo "No relevant changes; web CI is not required."
+            exit 0
+          fi
+          if [ "$TEST_AND_BUILD_RESULT" = "success" ] \
+            && [ "$E2E_RESULT" = "success" ] \
+            && [ "$LIGHTHOUSE_RESULT" = "success" ]; then
+            echo "Applicable web CI completed successfully."
+            exit 0
+          fi
+          echo "Web CI results: build=$TEST_AND_BUILD_RESULT e2e=$E2E_RESULT lighthouse=$LIGHTHOUSE_RESULT"
+          exit 1

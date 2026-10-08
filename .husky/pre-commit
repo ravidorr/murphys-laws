@@ -70,30 +70,14 @@ if [ "$SKIP_CI_CHECK" != "1" ]; then
 
   echo ""
 fi
-# Run tests before allowing commit (same as CI: backend and web with coverage)
-echo "Running backend tests with coverage..."
-cd backend && npm run test:coverage
-if [ $? -ne 0 ]; then
-  echo ""
-  echo "Backend tests or coverage failed! Commit blocked."
-  echo ""
-  echo "Please fix the failing tests or add tests to meet coverage (95%)."
-  exit 1
-fi
-cd ..
 
-# Run web tests with coverage
-echo ""
-echo "Running web tests with coverage..."
-cd web && npm run test:coverage
+echo "Running coverage checks for staged packages..."
+npm run check:staged-coverage
 if [ $? -ne 0 ]; then
   echo ""
-  echo "Web tests failed! Commit blocked."
-  echo ""
-  echo "Please fix the failing tests before committing."
+  echo "Coverage checks failed! Commit blocked."
   exit 1
 fi
-cd ..
 
 # Run E2E tests (Playwright starts backend + web dev server)
 # Bypass with SKIP_E2E_CHECK=1 for emergency commits
@@ -112,20 +96,6 @@ fi
 
 echo ""
 echo "All tests passed!"
-
-# Check coverage thresholds (90% for all metrics)
-# Can be bypassed with SKIP_COVERAGE_CHECK=1 for emergency commits
-echo ""
-echo "Checking coverage thresholds..."
-npx tsx web/scripts/check-coverage.ts --skip-test-run
-if [ $? -ne 0 ]; then
-  echo ""
-  echo "Coverage check failed! Commit blocked."
-  echo ""
-  echo "For emergency commits, use:"
-  echo "  SKIP_COVERAGE_CHECK=1 git commit -m \"your message\""
-  exit 1
-fi
 
 npx tsx web/scripts/sanitize-husky-hooks.ts
 npx lint-staged
