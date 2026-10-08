@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Enforced coverage thresholds locally and in CI for the Node packages, iOS, and Android,
+  and require applicable CI checks before pull requests can merge. Root bumped to `2.6.30`;
+  SDK to `0.2.1`; CLI to `0.1.2`; MCP to `1.2.5`; iOS to `1.2.5` / build `21`; and Android
+  to `1.2.6` / versionCode `13`.
 - Documented the complete public API contract in OpenAPI, including vote
   creation and removal, submitter search, Open Graph images, current
   submission rate limits, and rate-limit error responses. The frontend API
@@ -72,6 +76,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- Decoded escaped Android SDK paths from `local.properties`, so Windows installations
+  run local Android coverage when the SDK is available. Root bumped to `2.6.33`.
+- Gave each required CI gate a unique status-check name so branch protection recognizes
+  successful workflows. Root bumped to `2.6.32`.
+- Kept design-system validation compatible with selective CI filters, made required
+  CI gates fail closed when path detection fails, and skip local Android coverage only
+  when no usable SDK is configured. Root bumped to `2.6.31`.
 - The first-visit "Ready for Offline" notice now slides away and is removed about
   5 seconds after it appears, instead of staying on screen and covering page content
   until dismissed. Its Got it button, and the install prompt's buttons, also work

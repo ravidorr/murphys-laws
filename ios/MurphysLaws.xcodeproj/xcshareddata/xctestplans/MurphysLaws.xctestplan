@@ -9,6 +9,7 @@
     }
   ],
   "defaultOptions" : {
+    "codeCoverage" : true,
     "targetForVariableExpansion" : {
       "containerPath" : "container:MurphysLaws.xcodeproj",
       "identifier" : "1E8E90165E23502BED88EE9E",

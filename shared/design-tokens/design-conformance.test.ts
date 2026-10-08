@@ -146,6 +146,41 @@ jobs:
     ).toEqual([]);
   });
 
+  it('accepts design paths in a selective pull-request filter', () => {
+    const iosCi = `on:
+  push:
+    paths:
+      - 'ios/**'
+      - 'shared/DESIGN.md'
+      - 'shared/design-tokens/**'
+      - 'web/DESIGN.md'
+      - 'web/styles/partials/variables.css'
+      - '.github/workflows/ios-ci.yml'
+  pull_request:
+jobs:
+  changes:
+    steps:
+      - uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relevant:
+              - 'ios/**'
+              - 'shared/DESIGN.md'
+              - 'shared/design-tokens/**'
+              - 'web/DESIGN.md'
+              - 'web/styles/partials/variables.css'
+              - '.github/workflows/ios-ci.yml'
+  build:
+    steps:
+      - run: npm run design:conformance
+      - run: npm run design:export:ios
+`;
+
+    expect(
+      scanDesignSystemWiring('.github/workflows/ios-ci.yml', iosCi),
+    ).toEqual([]);
+  });
+
   it('rejects stale iOS exporter and CI wiring', () => {
     const staleGenerator = 'npm --prefix ../web run design:export:ios\n';
     const staleCi = `on:
