@@ -122,6 +122,24 @@ test.describe('PWA Install Prompt', () => {
   });
 });
 
+test.describe('PWA Ready for Offline notification', () => {
+  // Unit tests run in jsdom, which never plays CSS animations, so only a real browser
+  // shows whether the exit animation fires animationend and the toast removes itself.
+  for (const reducedMotion of ['no-preference', 'reduce']) {
+    test(`removes itself about 5 seconds after appearing (reduced motion: ${reducedMotion})`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion });
+      await page.goto('/');
+      await page.evaluate(() =>
+        import('/src/components/update-notification.ts').then((m) => m.showOfflineReady()),
+      );
+
+      const notification = page.locator('.pwa-notification');
+      await expect(notification).toBeVisible();
+      await expect(notification).toHaveCount(0, { timeout: 7000 });
+    });
+  }
+});
+
 test.describe('SPA navigation fallback', () => {
   test('direct navigation to /favorites shows app shell not offline page', async ({ page }) => {
     // Regression: navigateFallback must be index.html so non-precached routes get the app;

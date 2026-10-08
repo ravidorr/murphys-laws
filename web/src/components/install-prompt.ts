@@ -438,9 +438,13 @@ export function showInstallPrompt() {
   // Event handlers
   prompt.addEventListener('click', async (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
-    const action = target.getAttribute('data-action');
+    // Use closest() so clicks on wrapped labels (e.g. <font> added by page translation) still work
+    const actionEl = target.closest<HTMLElement>('[data-action]');
+    if (!actionEl || !prompt.contains(actionEl)) return;
+
+    const action = actionEl.dataset.action;
 
     if (action === 'install') {
       await triggerInstall();
@@ -524,9 +528,13 @@ export function showIOSInstallInstructions() {
 
   prompt.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
-    const action = target.getAttribute('data-action');
+    // Use closest() so clicks on wrapped labels (e.g. <font> added by page translation) still work
+    const actionEl = target.closest<HTMLElement>('[data-action]');
+    if (!actionEl || !prompt.contains(actionEl)) return;
+
+    const action = actionEl.dataset.action;
     if (action === 'dismiss') {
       dismissPrompt();
       trackPromptResponse('got_it', 'ios_instructions');

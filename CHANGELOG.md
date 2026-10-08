@@ -61,6 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `1.2.3` / build `19`; Android to `1.2.4` / versionCode `11`; root to `2.6.3`.
 
 ### Fixed
+- The first-visit "Ready for Offline" notice now slides away and is removed about
+  5 seconds after it appears, instead of staying on screen and covering page content
+  until dismissed. Its Got it button, and the install prompt's buttons, also work
+  when browser translation wraps their labels.
 - Production deployments now synchronize a stale PM2 daemon with the installed
   CLI before querying its process metadata. Root bumped to `2.6.19`.
 - Production deployments now install dependencies from a committed backend lockfile,

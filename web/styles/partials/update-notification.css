@@ -19,8 +19,14 @@
   animation: pwa-slide-up 0.3s ease-out;
 }
 
+/*
+ * The exit needs its own keyframes: replaying pwa-slide-up in reverse keeps the
+ * same animation-name, so browsers update the finished entrance animation in
+ * place instead of starting a new one, and animationend never fires.
+ */
 .pwa-notification--exiting {
-  animation: pwa-slide-up 300ms ease-out reverse;
+  animation: pwa-slide-down 300ms ease-in forwards;
+  pointer-events: none;
 }
 
 @keyframes pwa-slide-up {
@@ -32,6 +38,18 @@
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes pwa-slide-down {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(1rem);
   }
 }
 
