@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   submission rate limits, and rate-limit error responses. The frontend API
   reference now matches the published contract.
   Backend bumped to `2.3.6`; web to `3.4.15`; iOS to `1.2.4` / build `20`;
-  root to `2.6.27`.
+  Android to `1.2.5` / versionCode `12`; root to `2.6.27`.
 - Added a dedicated TypeScript project for Playwright E2E tests, so Node and
   Playwright types are checked alongside the web application. Web bumped to
   `3.4.14`; root to `2.6.22`.
