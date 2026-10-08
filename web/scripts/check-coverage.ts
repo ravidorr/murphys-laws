@@ -2,7 +2,7 @@
 /**
  * Coverage check script for pre-commit hook
  *
- * Checks if test coverage meets thresholds (96% functions, 95.5% branches min, 95% lines/statements)
+ * Checks if test coverage meets 100% thresholds.
  * Can be bypassed with SKIP_COVERAGE_CHECK=1 environment variable
  *
  * Usage:
@@ -21,10 +21,10 @@ const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
 const THRESHOLDS = {
-  lines: 95,
-  functions: 95,
-  branches: 92,
-  statements: 95
+  lines: 100,
+  functions: 100,
+  branches: 100,
+  statements: 100
 };
 
 interface CoveragePct { pct: number }

@@ -220,6 +220,33 @@ describe('Sod\'s Law Calculator - Coverage', () => {
     vi.useRealTimers();
   });
 
+  it('does not update formula values after an unmounted calculator settles', () => {
+    vi.useFakeTimers();
+    const el = Calculator() as HTMLElement & { cleanup?: () => void };
+    container.appendChild(el);
+
+    try {
+      const formulaDisplay = el.querySelector('#formula-display')!;
+      const scoreDisplay = el.querySelector('#score-value')!;
+      const slider = el.querySelector('#urgency') as HTMLInputElement;
+      slider.value = '7';
+      slider.dispatchEvent(new Event('input'));
+      const formulaBeforeDetach = formulaDisplay.innerHTML;
+      const scoreBeforeDetach = scoreDisplay.textContent;
+
+      expect(formulaDisplay.textContent).toContain('7');
+      el.remove();
+      vi.advanceTimersByTime(2100);
+
+      expect(formulaDisplay.innerHTML).toBe(formulaBeforeDetach);
+      expect(scoreDisplay.textContent).toBe(scoreBeforeDetach);
+    } finally {
+      el.cleanup?.();
+      el.remove();
+      vi.useRealTimers();
+    }
+  });
+
   it('covers all interpretation score boundaries', () => {
     const el = Calculator();
     // Helper to set values and get interpretation

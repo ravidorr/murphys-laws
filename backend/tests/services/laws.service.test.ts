@@ -148,6 +148,72 @@ describe('LawService', () => {
     expect(result.data[0].title).toBe('Technology failure');
   });
 
+  it('treats unavailable optional SQLite tables as absent', () => {
+    const localThis = {
+      unavailableDb: {
+        prepare: () => {
+          throw new Error('SQLite metadata unavailable');
+        },
+      },
+    };
+    const service = new LawService(localThis.unavailableDb as unknown as InstanceType<typeof Database>);
+    const privateService = service as unknown as {
+      hasFtsIndex: () => boolean;
+      hasAnnotationsTable: () => boolean;
+    };
+
+    expect(privateService.hasFtsIndex()).toBe(false);
+    expect(privateService.hasAnnotationsTable()).toBe(false);
+  });
+
+  it('disables a failing FTS index and retries the search with LIKE', async () => {
+    enableFts(db);
+    db.prepare("INSERT INTO laws (title, text) VALUES ('Technology failure', 'A deployment stopped')").run();
+    const originalPrepare = db.prepare.bind(db);
+    let failedFtsQuery = false;
+    vi.spyOn(db, 'prepare').mockImplementation(((sql: string) => {
+      if (!failedFtsQuery && sql.includes('laws_fts MATCH ?')) {
+        failedFtsQuery = true;
+        throw new Error('FTS query failed');
+      }
+      return originalPrepare(sql);
+    }) as InstanceType<typeof Database>['prepare']);
+
+    const result = await lawService.listLaws({
+      q: 'technology failure',
+      sort: 'relevance',
+      limit: 10,
+      offset: 0,
+    });
+
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].title).toBe('Technology failure');
+  });
+
+  it('propagates database failures when a non-FTS query fails', async () => {
+    vi.spyOn(db, 'prepare').mockImplementation((() => {
+      throw new Error('Database unavailable');
+    }) as InstanceType<typeof Database>['prepare']);
+
+    await expect(lawService.listLaws({ limit: 10, offset: 0 })).rejects.toThrow('Database unavailable');
+  });
+
+  it('uses zero as the total when the count query returns no row', async () => {
+    db.prepare("INSERT INTO laws (text, status) VALUES ('Published law', 'published')").run();
+    const originalPrepare = db.prepare.bind(db);
+    vi.spyOn(db, 'prepare').mockImplementation(((sql: string) => {
+      if (sql.startsWith('SELECT COUNT(1) AS total')) {
+        return { get: () => undefined } as ReturnType<InstanceType<typeof Database>['prepare']>;
+      }
+      return originalPrepare(sql);
+    }) as InstanceType<typeof Database>['prepare']);
+
+    const result = await lawService.listLaws({ limit: 10, offset: 0 });
+
+    expect(result.data).toHaveLength(1);
+    expect(result.total).toBe(0);
+  });
+
   it('should get a single law by id', async () => {
     const info = db.prepare("INSERT INTO laws (text, status) VALUES ('Law 1', 'published')").run();
     const id = Number(info.lastInsertRowid);
@@ -299,6 +365,20 @@ describe('LawService', () => {
     expect(attribution.contact_value).toBeNull();
   });
 
+  it('uses Anonymous as the attribution name when only an email is submitted', async () => {
+    const lawId = await lawService.submitLaw({
+      title: 'Email only',
+      text: 'An email-only submission preserves contact details privately.',
+      email: 'submitter@example.com',
+    });
+
+    expect(db.prepare('SELECT name, contact_type, contact_value FROM attributions WHERE law_id = ?').get(lawId)).toEqual({
+      name: 'Anonymous',
+      contact_type: 'email',
+      contact_value: 'submitter@example.com',
+    });
+  });
+
   it('finds duplicate candidates by shared terms', async () => {
     db.prepare("INSERT INTO laws (title, text, status) VALUES ('Backup Law', 'The backup you need is the one you forgot to test', 'published')").run();
     db.prepare("INSERT INTO laws (title, text, status) VALUES ('Line Law', 'The line you choose is always slowest', 'published')").run();
@@ -347,6 +427,10 @@ describe('LawService', () => {
     expect(duplicates[0]!.title).toBe('Tiny Law');
   });
 
+  it('uses the normalized input as a fallback duplicate search term when no words qualify', async () => {
+    await expect(lawService.findDuplicateCandidates({ text: '---', limit: 5 })).resolves.toEqual([]);
+  });
+
   it('should submit law without author and without categoryId', async () => {
     const lawId = await lawService.submitLaw({
       title: '',
@@ -382,6 +466,13 @@ describe('LawService', () => {
   it('should return null if no published laws at all', async () => {
     const result = await lawService.getLawOfTheDay();
     expect(result).toBeNull();
+  });
+
+  it('returns null when the selected law can no longer be read', async () => {
+    db.prepare("INSERT INTO laws (text, status) VALUES ('Transient law', 'published')").run();
+    vi.spyOn(lawService, 'getLaw').mockResolvedValue(undefined);
+
+    await expect(lawService.getLawOfTheDay()).resolves.toBeNull();
   });
 
   it('should return null for getLaw when law not found', async () => {
@@ -675,6 +766,17 @@ describe('LawService', () => {
       expect(law).toBeDefined();
       expect(law!.category_slug).toBe('tech');
       expect(law!.category_context).toBeUndefined();
+    });
+
+    it('returns category ids even when the primary category has been deleted', async () => {
+      const lawInfo = db.prepare("INSERT INTO laws (text, status) VALUES ('Orphaned Category Law', 'published')").run();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(lawInfo.lastInsertRowid, 999);
+
+      const law = await lawService.getLaw(Number(lawInfo.lastInsertRowid));
+
+      expect(law!.category_ids).toEqual([999]);
+      expect(law!.category_slug).toBeUndefined();
+      expect(law!.category_name).toBeUndefined();
     });
   });
 

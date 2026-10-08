@@ -330,6 +330,31 @@ describe('LawDetail view - Coverage', () => {
     expect(favoriteBtn?.classList.contains('favorited')).toBe(true);
   });
 
+  it('updates favorite controls when a favorite is removed', async () => {
+    isFavoriteSpy.mockReturnValue(true);
+    toggleFavoriteSpy.mockReturnValue(false);
+    const el = LawDetail({ lawId: '1', onNavigate: () => {} });
+    container.appendChild(el);
+    await vi.waitFor(() => expect(el.querySelector('[data-favorite-btn] svg[data-icon-name]')).toBeTruthy(), { timeout: 500 });
+
+    const mainFavoriteBtn = el.querySelector('[data-favorite-btn]') as HTMLElement;
+    expect(mainFavoriteBtn.classList.contains('favorited')).toBe(true);
+    mainFavoriteBtn.click();
+    expect(mainFavoriteBtn.classList.contains('favorited')).toBe(false);
+    expect(mainFavoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
+
+    const relatedCard = document.createElement('article');
+    relatedCard.className = 'law-card-mini';
+    relatedCard.innerHTML = '<button type="button" class="favorited" data-action="favorite" data-law-id="2"><svg data-icon-name="bookmarkFilled"></svg></button>';
+    el.appendChild(relatedCard);
+
+    const relatedFavoriteBtn = relatedCard.querySelector('button') as HTMLElement;
+    relatedFavoriteBtn.click();
+    expect(relatedFavoriteBtn.classList.contains('favorited')).toBe(false);
+    expect(relatedFavoriteBtn.getAttribute('aria-label')).toBe('Add to favorites');
+    expect(toggleFavoriteSpy).toHaveBeenCalledTimes(2);
+  });
+
   it('L416 L424 L432 L440 L442: related law favorite button and related card click', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 1, title: 'Main', text: 'T', attributions: [] }) })

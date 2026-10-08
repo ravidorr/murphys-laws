@@ -438,6 +438,23 @@ describe('Header component', () => {
     expect(onSearchMock).not.toHaveBeenCalled();
   });
 
+  it('submits an empty query and skips autocomplete when the search form has no input', () => {
+    const originalQuerySelector = Element.prototype.querySelector;
+    vi.spyOn(Element.prototype, 'querySelector').mockImplementation(function (this: Element, selector: string) {
+      if (this.tagName === 'FORM' && selector.startsWith('input')) return null;
+      return originalQuerySelector.call(this, selector);
+    });
+    const onSearch = vi.fn();
+    const el = Header({ onSearch, onNavigate: () => {} });
+    vi.restoreAllMocks();
+
+    (el.querySelector('form[role="search"]') as HTMLFormElement).dispatchEvent(new Event('submit'));
+
+    expect(SearchAutocomplete).not.toHaveBeenCalled();
+    expect(onSearch).toHaveBeenCalledWith({ q: '' }, 'header');
+    (el as CleanableElement).cleanup?.();
+  });
+
   it('cleanup calls originalCleanup, autocompleteCleanup, and exportMenuCleanup when all present (L163 L166 L169)', () => {
     const exportCleanup = vi.fn();
     vi.mocked(ExportMenu).mockReturnValue({ cleanup: exportCleanup } as unknown as ReturnType<typeof ExportMenu>);

@@ -37,9 +37,6 @@ let promptDismissedThisSession = false;
 // Show at most once per session
 let promptShownThisSession = false;
 
-// Only show after a qualifying user action (download, calculator, share/copy link)
-let qualifyingUserActionHappened = false;
-
 const PWA_NEVER_SHOW_KEY = 'pwa_install_never_show';
 
 /** Safe localStorage get (SecurityError in Safari insecure contexts, private mode, etc.) */
@@ -90,7 +87,6 @@ export function _resetForTesting() {
   installTriggeredFromPrompt = false;
   promptDismissedThisSession = false;
   promptShownThisSession = false;
-  qualifyingUserActionHappened = false;
   isInstalled = false;
   engagement.pageViews = 0;
   engagement.lawsViewed = 0;
@@ -175,10 +171,6 @@ function deactivateFocusTrap() {
 
 export function _setPromptShownThisSessionForTesting(value: boolean) {
   promptShownThisSession = value;
-}
-
-export function _setQualifyingUserActionForTesting(value: boolean) {
-  qualifyingUserActionHappened = value;
 }
 
 /**
@@ -345,7 +337,6 @@ export function trackCalculatorUse() {
  * Allows the install prompt to be shown at most once per session if thresholds are met.
  */
 export function recordQualifyingUserAction() {
-  qualifyingUserActionHappened = true;
   checkAndShowPrompt();
 }
 
@@ -355,9 +346,6 @@ export function recordQualifyingUserAction() {
  */
 function checkAndShowPrompt() {
   if (isInstalled || promptDismissedThisSession || promptShownThisSession || isRunningStandalone()) {
-    return;
-  }
-  if (!qualifyingUserActionHappened) {
     return;
   }
 

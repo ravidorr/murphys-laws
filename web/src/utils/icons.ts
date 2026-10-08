@@ -5,12 +5,15 @@
  * https://fontawesome.com
  */
 
-interface IconDef {
-  path?: string;
-  content?: string;
+type IconDef = {
+  path: string;
   viewBox: string;
-  stroke?: boolean;
-}
+  stroke?: false;
+} | {
+  content: string;
+  viewBox: string;
+  stroke: true;
+};
 
 interface CreateIconOptions {
   classNames?: string[];
@@ -193,10 +196,10 @@ export function createIcon(name: string, { classNames = [], labelled = false }: 
     svg.setAttribute('stroke-width', '2');
     svg.setAttribute('stroke-linecap', 'round');
     svg.setAttribute('stroke-linejoin', 'round');
-    svg.innerHTML = iconData.content ?? '';
+    svg.innerHTML = iconData.content;
   } else {
     svg.setAttribute('fill', 'currentColor');
-    svg.innerHTML = iconData.path ?? '';
+    svg.innerHTML = iconData.path;
   }
 
   if (!labelled) {
@@ -238,14 +241,14 @@ export function hydrateIcons(
     if (!svg) return;
 
     if (placeholder.hasAttribute('aria-label')) {
-      svg.setAttribute('aria-label', placeholder.getAttribute('aria-label') ?? '');
+      svg.setAttribute('aria-label', placeholder.getAttribute('aria-label')!);
       svg.removeAttribute('aria-hidden');
     }
     if (placeholder.hasAttribute('role')) {
-      svg.setAttribute('role', placeholder.getAttribute('role') ?? '');
+      svg.setAttribute('role', placeholder.getAttribute('role')!);
     }
     if (placeholder.hasAttribute('title')) {
-      svg.setAttribute('title', placeholder.getAttribute('title') ?? '');
+      svg.setAttribute('title', placeholder.getAttribute('title')!);
     }
     placeholder.replaceWith(svg);
   });

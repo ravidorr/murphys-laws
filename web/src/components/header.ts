@@ -181,9 +181,7 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
   // Store cleanup function on the element
   const originalCleanup = (header as CleanableElement).cleanup;
   (header as CleanableElement).cleanup = () => {
-    if (originalCleanup) {
-      originalCleanup();
-    }
+    originalCleanup!();
     if (autocompleteCleanup) {
       autocompleteCleanup();
     }

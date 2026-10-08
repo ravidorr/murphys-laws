@@ -19,7 +19,7 @@ export class LawController {
   }
 
   async list(req: any, res: any, parsed: any) {
-    const query = parsed?.query ?? ({} as any);
+    const query = parsed.query;
     const limit = parseBoundedInt(query.limit, { min: 1, max: 25, fallback: 25 });
     const offset = parseBoundedInt(query.offset, { min: 0, max: Number.MAX_SAFE_INTEGER, fallback: 0 });
     const q = (query.q || '').toString().trim();

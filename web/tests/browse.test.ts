@@ -1678,6 +1678,24 @@ describe('Browse view', () => {
     }, { timeout: 1000 });
   });
 
+  it('normalizes invalid URL pages and ignores malformed pagination controls', async () => {
+    window.history.replaceState(null, '', '/browse?page=not-a-number');
+    const el = Browse({ searchQuery: '', onNavigate: () => {} });
+    await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalled());
+    expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+
+    fetchLawsSpy.mockClear();
+    for (const page of ['', '0', 'not-a-number']) {
+      const button = document.createElement('button');
+      button.dataset.page = page;
+      el.appendChild(button);
+      button.click();
+      button.remove();
+    }
+
+    expect(fetchLawsSpy).not.toHaveBeenCalled();
+  });
+
   it('calls clearExportContent when cleanup is invoked', async () => {
     const clearSpy = vi.spyOn(exportContext, 'clearExportContent');
     const el = Browse({ searchQuery: '', onNavigate: () => { } });

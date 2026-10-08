@@ -74,7 +74,7 @@ export class OgImageService {
     this.lawService = lawService;
     this.cache = new Map();
     this.cacheMaxAge = options.cacheMaxAge ?? 24 * 60 * 60 * 1000; // 24 hours default
-    this.cacheMaxSize = options.cacheMaxSize ?? 500; // Max 500 cached images (~500MB at ~1MB each)
+    this.cacheMaxSize = Math.max(1, options.cacheMaxSize ?? 500); // Max 500 cached images (~500MB at ~1MB each)
 
     this.logo = null;
     this.logoLoaded = false;
@@ -140,11 +140,9 @@ export class OgImageService {
 
     // Evict oldest entries if at capacity
     while (this.cache.size >= this.cacheMaxSize) {
-      const oldestKey = this.cache.keys().next().value as number | undefined;
-      if (oldestKey !== undefined) {
-        this.cache.delete(oldestKey);
-        this.stats.evictions++;
-      }
+      const oldestKey = this.cache.keys().next().value as number;
+      this.cache.delete(oldestKey);
+      this.stats.evictions++;
     }
 
     // Cache the result

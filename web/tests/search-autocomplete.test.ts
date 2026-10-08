@@ -909,6 +909,21 @@ describe('SearchAutocomplete', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it('ignores a suggestion-like element that has no index', async () => {
+    vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
+    autocomplete = SearchAutocomplete({ inputElement, onSelect });
+    inputElement.value = 'test';
+    inputElement.dispatchEvent(new Event('input'));
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const item = document.createElement('div');
+    item.className = 'search-suggestion-item';
+    document.querySelector('.search-autocomplete')!.appendChild(item);
+    item.click();
+
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('should close dropdown for empty query after debounce', async () => {
     vi.mocked(api.fetchSuggestions).mockResolvedValue(suggestionsResponse([{ id: 1, text: 'Test law', title: undefined }]));
 

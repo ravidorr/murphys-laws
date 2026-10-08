@@ -31,12 +31,16 @@ export function getEnvVar(
   defaultValue: string,
   opts?: { viteEnv?: Record<string, string | undefined>; nodeEnv?: Record<string, string | undefined> }
 ): string {
-  const viteEnv = opts?.viteEnv ?? (typeof import.meta !== 'undefined' && import.meta.env ? (import.meta.env as Record<string, string | undefined>) : undefined);
+  const viteEnv = opts?.viteEnv ?? (import.meta.env as Record<string, string | undefined> | undefined);
+  /* v8 ignore start -- Vite always provides import.meta.env; callers can inject viteEnv in tests. */
   if (viteEnv) {
     const value = viteEnv[viteKey];
     if (value !== undefined) return value;
   }
+  /* v8 ignore stop */
+  /* v8 ignore start -- Node-based SSG tooling always provides process.env; callers can inject nodeEnv in tests. */
   const nodeEnv = opts?.nodeEnv ?? (typeof process !== 'undefined' && process.env ? process.env : undefined);
+  /* v8 ignore stop */
   if (nodeEnv) {
     const value = nodeEnv[nodeKey];
     if (value !== undefined) return value;

@@ -241,6 +241,14 @@ describe('OgImageService', () => {
   });
 
   describe('cache eviction', () => {
+    it('uses a minimum cache size of one for non-positive configuration', () => {
+      const localThis = {
+        service: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxSize: 0 }),
+      };
+
+      expect(localThis.service.getCacheStats().maxSize).toBe(1);
+    });
+
     it('should evict oldest entries when at capacity', async () => {
       // Create service with small cache size
       const localThis = {
@@ -305,25 +313,39 @@ describe('OgImageService', () => {
 
   describe('cleanCache', () => {
     it('should remove expired entries', async () => {
-      // Create service with very short cache max age
       const localThis = {
-        shortTTLService: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxAge: 1 }), // 1ms TTL
+        shortTTLService: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxAge: 1 }),
       };
 
       mockLawService.getLaw.mockResolvedValue({ id: 1, text: 'Test law' });
 
-      // Generate and cache
       await localThis.shortTTLService.generateLawImage(1);
       expect(localThis.shortTTLService.getCacheStats().size).toBe(1);
-
-      // Wait for TTL to expire
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      // Clean cache
+      const cache = (localThis.shortTTLService as unknown as {
+        cache: Map<number, { buffer: Buffer; timestamp: number }>;
+      }).cache;
+      cache.get(1)!.timestamp = Date.now() - 2;
       localThis.shortTTLService.cleanCache();
 
-      // Cache should be empty
       expect(localThis.shortTTLService.getCacheStats().size).toBe(0);
+    });
+
+    it('should retain fresh cache entries while removing expired ones', async () => {
+      const localThis = {
+        shortTTLService: new OgImageService(mockLawService as unknown as IOgImageLawService, { cacheMaxAge: 1 }),
+      };
+      mockLawService.getLaw.mockResolvedValue({ id: 1, text: 'Test law' });
+
+      await localThis.shortTTLService.generateLawImage(1);
+      const cache = (localThis.shortTTLService as unknown as {
+        cache: Map<number, { buffer: Buffer; timestamp: number }>;
+      }).cache;
+      cache.get(1)!.timestamp = Date.now() - 2;
+      cache.set(2, { buffer: Buffer.from('fresh'), timestamp: Date.now() });
+
+      localThis.shortTTLService.cleanCache();
+
+      expect(localThis.shortTTLService.getCacheStats().size).toBe(1);
     });
   });
 
@@ -349,6 +371,24 @@ describe('OgImageService', () => {
 
       expect(logo).toBeNull();
       expect((localThis.serviceWithBadPath as unknown as { logoLoaded: boolean }).logoLoaded).toBe(true);
+    });
+
+    it('should handle non-Error logo load failures gracefully', async () => {
+      vi.resetModules();
+      vi.doMock('canvas', () => ({
+        createCanvas: vi.fn(),
+        loadImage: vi.fn().mockRejectedValue('Unreadable image'),
+      }));
+      const localThis = {
+        module: await import('../../src/services/og-image.service.ts'),
+      };
+      const serviceWithBadPath = new localThis.module.OgImageService(mockLawService as unknown as IOgImageLawService, {
+          logoPath: '/nonexistent/path/logo.png',
+      });
+
+      await expect(serviceWithBadPath.loadLogo()).resolves.toBeNull();
+
+      vi.doUnmock('canvas');
     });
 
     it('should generate image without logo when logo fails to load', async () => {
@@ -431,5 +471,20 @@ describe('OgImageService', () => {
       const result = ogImageService.getAttributionName(localThis.law);
       expect(result).toBeNull();
     });
+  });
+
+  it('uses the development logo path when the production asset is absent', async () => {
+    vi.resetModules();
+    vi.doMock('node:fs', () => ({
+      existsSync: vi.fn().mockReturnValue(false),
+    }));
+
+    const localThis = {
+      module: await import('../../src/services/og-image.service.ts'),
+    };
+    const service = new localThis.module.OgImageService(mockLawService as unknown as IOgImageLawService);
+
+    expect((service as unknown as { logoPath: string }).logoPath).toContain('/web/public/android-chrome-192x192.png');
+    vi.doUnmock('node:fs');
   });
 });

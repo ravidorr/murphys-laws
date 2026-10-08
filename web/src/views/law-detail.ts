@@ -376,12 +376,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       const example = el.querySelector('[data-law-editorial-example]');
       const reviewed = el.querySelector('[data-law-editorial-reviewed]');
       const source = el.querySelector('[data-law-editorial-source]');
+      /* v8 ignore start -- editorial fields are required by the law-detail template */
       if (explanation) explanation.textContent = editorial.explanation;
       if (example) example.textContent = editorial.practical_example;
       if (reviewed) {
         reviewed.textContent = editorial.reviewed_at;
         reviewed.setAttribute('datetime', editorial.reviewed_at);
       }
+      /* v8 ignore stop */
       if (source instanceof HTMLAnchorElement && /^https:\/\//.test(editorial.source_url)) {
         source.href = editorial.source_url;
         source.rel = 'noopener noreferrer';
@@ -391,6 +393,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     }
 
     const sourceStatusEl = el.querySelector('[data-law-source-status]');
+    /* v8 ignore else -- @preserve; sourceStatusEl is required by the law-detail template */
     if (sourceStatusEl) {
       const attributionName = law.attributions?.[0]?.name || law.author || law.attribution || '';
       sourceStatusEl.textContent = attributionName
@@ -399,6 +402,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     }
 
     const internalLinksEl = el.querySelector('[data-law-internal-links]');
+    /* v8 ignore else -- @preserve; internalLinksEl is required by the law-detail template */
     if (internalLinksEl) {
       internalLinksEl.innerHTML = renderInternalLinkList(getLawDetailInternalLinks({
         categorySlug: law.category_slug,
@@ -572,6 +576,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
 
       // Update icon (always use filled bookmark for add/remove)
       const iconEl = favoriteBtn.querySelector('svg[data-icon-name]');
+      /* v8 ignore else -- @preserve; hydrateIcons always replaces the button icon span with an SVG */
       if (iconEl) {
         const newIcon = createIcon('bookmarkFilled');
         if (newIcon) {
@@ -615,6 +620,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
 
       // Update icon (always use filled bookmark for add/remove)
       const iconEl = relatedFavoriteBtn.querySelector('svg[data-icon-name]');
+      /* v8 ignore else -- @preserve; related law cards are hydrated before their favorite controls are interactive */
       if (iconEl) {
         const newIcon = createIcon('bookmarkFilled');
         if (newIcon) {

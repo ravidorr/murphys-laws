@@ -84,6 +84,15 @@ describe('AttributionService', () => {
         expect(result.map(a => a.name)).toContain('Anonymous');
     });
 
+    it('searchSubmitters deduplicates email-like results after sanitizing them', async () => {
+        db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'published')").run();
+        db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'first@example.com'), (2, 'second@example.com')").run();
+
+        const result = await attributionService.searchSubmitters('.com', 20);
+
+        expect(result).toEqual([{ name: 'Anonymous' }]);
+    });
+
     it('excludes attributions belonging to unreviewed laws', async () => {
         db.prepare("INSERT INTO laws (id, status) VALUES (1, 'published'), (2, 'in_review')").run();
         db.prepare("INSERT INTO attributions (law_id, name) VALUES (1, 'Published Author'), (2, 'Pending Submitter')").run();
@@ -115,11 +124,31 @@ describe('sanitizeDisplayName', () => {
     it('returns Anonymous for email-like input', () => {
         expect(sanitizeDisplayName('a@b.com')).toBe('Anonymous');
     });
+    it('returns Anonymous for a non-string value at an untrusted boundary', () => {
+        expect(sanitizeDisplayName(null as unknown as string)).toBe('Anonymous');
+    });
     it('returns trimmed name for display name', () => {
         expect(sanitizeDisplayName('  Jane Doe  ')).toBe('Jane Doe');
     });
     it('returns Anonymous for undefined/null string', () => {
         expect(sanitizeDisplayName('undefined')).toBe('Anonymous');
         expect(sanitizeDisplayName('null')).toBe('Anonymous');
+    });
+});
+
+describe('searchSubmitters input bounds', () => {
+    it('falls back to the default query and limit for invalid boundary values', async () => {
+        const localThis = {
+            db: new Database(':memory:'),
+        };
+        localThis.db.exec(`
+          CREATE TABLE laws (id INTEGER PRIMARY KEY, status TEXT NOT NULL);
+          CREATE TABLE attributions (id INTEGER PRIMARY KEY, law_id INTEGER, name TEXT);
+          INSERT INTO laws (id, status) VALUES (1, 'published');
+          INSERT INTO attributions (law_id, name) VALUES (1, 'Alice');
+        `);
+        const service = new AttributionService(localThis.db);
+
+        await expect(service.searchSubmitters(null as unknown as string, 0)).resolves.toEqual([{ name: 'Alice' }]);
     });
 });

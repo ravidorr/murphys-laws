@@ -116,6 +116,38 @@ describe('AdSense Integration', () => {
       window.requestIdleCallback = originalRequestIdleCallback;
     }
   });
+
+  it('does not register an event listener outside a browser', () => {
+    vi.stubGlobal('window', undefined);
+
+    try {
+      expect(() => setupAdSense()).not.toThrow();
+      expect(document.head.querySelector('script')).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('does not set up AdSense when third-party loading is disabled', () => {
+    const localThis: { shouldLoad: () => boolean } = { shouldLoad: vi.fn<() => boolean>(() => false) };
+    setupAdSense(localThis.shouldLoad);
+    triggerAdSense();
+
+    expect(localThis.shouldLoad).toHaveBeenCalledOnce();
+    expect(document.head.querySelector('script')).toBeNull();
+  });
+
+  it('does not initialize AdSense if loading becomes disabled after setup', () => {
+    const localThis: { shouldLoad: () => boolean } = {
+      shouldLoad: vi.fn<() => boolean>().mockReturnValueOnce(true).mockReturnValue(false),
+    };
+    setupAdSense(localThis.shouldLoad);
+    triggerAdSense();
+    vi.runAllTimers();
+
+    expect(localThis.shouldLoad).toHaveBeenCalledTimes(2);
+    expect(document.head.querySelector('script')).toBeNull();
+  });
 });
 
 describe('hasMinimumContent', () => {

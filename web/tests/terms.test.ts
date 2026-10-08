@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Terms } from '../src/views/terms.js';
+import * as exportContext from '../src/utils/export-context.js';
 
 describe('Terms page', () => {
   it('renders terms page element', () => {
@@ -264,6 +265,15 @@ describe('Terms page', () => {
 
     navBtn.click();
     expect(navigated).toBe('');
+  });
+
+  it('clears registered export content during cleanup', () => {
+    const clearExportContent = vi.spyOn(exportContext, 'clearExportContent');
+    const el = Terms({ onNavigate: () => {} }) as HTMLDivElement & { cleanup: () => void };
+
+    el.cleanup();
+
+    expect(clearExportContent).toHaveBeenCalledOnce();
   });
 
 });

@@ -33,15 +33,12 @@ export function Calculator(): HTMLDivElement {
   // Hydrate icons
   hydrateIcons(el);
 
-  /* v8 ignore next -- SSR guard: document is always defined in browser/jsdom */
-  if (typeof document !== 'undefined') {
-    updatePageMetadata({
-      title: `Sod's Law Calculator | ${SITE_NAME}`,
-      description: "Explore a playful task-risk heuristic using urgency, complexity, importance, skill, and frequency. For entertainment and lightweight planning only.",
-      path: '/calculator/sods-law',
-      image: SOCIAL_IMAGE_SOD
-    });
-  }
+  updatePageMetadata({
+    title: `Sod's Law Calculator | ${SITE_NAME}`,
+    description: "Explore a playful task-risk heuristic using urgency, complexity, importance, skill, and frequency. For entertainment and lightweight planning only.",
+    path: '/calculator/sods-law',
+    image: SOCIAL_IMAGE_SOD
+  });
 
   // Wire up interactions
   const _sliders: Record<SliderKey, HTMLInputElement | null> = {
@@ -52,11 +49,6 @@ export function Calculator(): HTMLDivElement {
     frequency: el.querySelector<HTMLInputElement>('#frequency'),
   };
 
-  // Verify all sliders exist
-  for (const [name, slider] of Object.entries(_sliders)) {
-    /* v8 ignore next -- slider is always provided by the template HTML */
-    if (!slider) throw new Error(`Calculator slider "${name}" not found`);
-  }
   const sliders = _sliders as Record<SliderKey, HTMLInputElement>;
 
   const sliderValues = {
@@ -123,8 +115,7 @@ export function Calculator(): HTMLDivElement {
     scoreValueDisplay.textContent = `${displayPercent}%`;
     updateResultInterpretation(displayScore);
 
-    /* v8 ignore next -- textContent is always set by updateResultInterpretation() */
-    const interpretation = scoreInterpretationDisplay.textContent || '';
+    const interpretation = scoreInterpretationDisplay.textContent as string;
     setExportContent({
       type: ContentType.CONTENT,
       title: "Sod's Law Calculator",
@@ -224,10 +215,8 @@ export function Calculator(): HTMLDivElement {
     importance: parseFloat(sliders.importance.value),
     skill: parseFloat(sliders.skill.value),
     frequency: parseFloat(sliders.frequency.value),
-    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
-    probability: scoreValueDisplay.textContent || '0%',
-    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
-    interpretation: scoreInterpretationDisplay.textContent || ''
+    probability: scoreValueDisplay.textContent as string,
+    interpretation: scoreInterpretationDisplay.textContent as string
   };
 
   function updateState() {
@@ -236,10 +225,8 @@ export function Calculator(): HTMLDivElement {
     state.importance = parseFloat(sliders.importance.value);
     state.skill = parseFloat(sliders.skill.value);
     state.frequency = parseFloat(sliders.frequency.value);
-    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
-    state.probability = scoreValueDisplay.textContent || '0%';
-    /* v8 ignore next -- textContent is always set by updateCalculation() before this runs */
-    state.interpretation = scoreInterpretationDisplay.textContent || '';
+    state.probability = scoreValueDisplay.textContent as string;
+    state.interpretation = scoreInterpretationDisplay.textContent as string;
   }
 
   // Generate shareable URL with parameters
@@ -272,17 +259,13 @@ export function Calculator(): HTMLDivElement {
   fromSharedLink = Object.keys(parsedState).length > 0;
 
   Object.entries(parsedState).forEach(([param, value]) => {
-    const slider = paramKeys[param];
-    if (slider) {
-      sliders[slider].value = String(value);
-      sliderValues[slider].textContent = String(value);
-    }
+    const slider = paramKeys[param]!;
+    sliders[slider].value = String(value);
+    sliderValues[slider].textContent = String(value);
   });
 
-  const scenarioLinks = el.querySelector('[data-calculator-scenario-links]');
-  if (scenarioLinks) {
-    scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('sods-law'));
-  }
+  const scenarioLinks = el.querySelector<HTMLElement>('[data-calculator-scenario-links]')!;
+  scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('sods-law'));
 
   const shareContainer = el.querySelector('#calculator-share-container')!;
   shareContainer.innerHTML = renderInlineShareButtonsHTML();

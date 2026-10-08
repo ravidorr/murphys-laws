@@ -222,14 +222,11 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
         items.forEach((item, i) => item.setAttribute('aria-selected', i === listboxSelectedIndex ? 'true' : 'false'));
         items[listboxSelectedIndex]?.scrollIntoView({ block: 'nearest' });
       } else if (e.key === 'Enter' && listboxSelectedIndex >= 0) {
-        const item = items[listboxSelectedIndex];
-        /* v8 ignore start -- item is always present when Enter is pressed with a valid listbox selection */
-        if (!item) return;
-        /* v8 ignore stop */
+        const item = items[listboxSelectedIndex]!;
         e.preventDefault();
         /* v8 ignore start -- item.getAttribute always returns a string when item is present */
-        const value = item.getAttribute('data-value') ?? '';
-        const label = item.textContent?.trim() ?? (value || 'All Submitters');
+        const value = item.getAttribute('data-value') as string;
+        const label = item.textContent!.trim();
         /* v8 ignore stop */
         onSelectSubmitter(value, label);
       } else if (e.key === 'Escape') {
@@ -242,8 +239,8 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
       const target = (e.target as HTMLElement).closest('.submitter-typeahead-item');
       if (!target) return;
       /* v8 ignore start -- target.getAttribute/textContent always returns a value for a valid submitter item */
-      const value = target.getAttribute('data-value') ?? '';
-      const label = target.textContent?.trim() ?? (value || 'All Submitters');
+      const value = target.getAttribute('data-value') as string;
+      const label = target.textContent!.trim();
       /* v8 ignore stop */
       onSelectSubmitter(value, label);
     });

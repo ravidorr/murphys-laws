@@ -1027,6 +1027,31 @@ describe('Export Utilities', () => {
       expect(getBlobText()).toContain('y'.repeat(50));
     });
 
+    it('wraps a long PDF word after pending text', async () => {
+      const localThis: { longWord: string } = { longWord: 'x'.repeat(100) };
+
+      await exportToPDF({
+        type: ContentType.CONTENT,
+        title: 'Wrapped content',
+        data: `short ${localThis.longWord}`,
+      });
+
+      expect(getBlobText()).toContain('short');
+      expect(getBlobText()).toContain(localThis.longWord.slice(0, 88));
+    });
+
+    it('splits an initial PDF word that exceeds the line length', async () => {
+      const localThis: { longWord: string } = { longWord: 'z'.repeat(100) };
+
+      await exportToPDF({
+        type: ContentType.CONTENT,
+        title: 'Initial long word',
+        data: localThis.longWord,
+      });
+
+      expect(getBlobText()).toContain(localThis.longWord.slice(0, 88));
+    });
+
     it('handles empty content and incomplete category data', async () => {
       await exportToPDF({
         type: ContentType.CONTENT,

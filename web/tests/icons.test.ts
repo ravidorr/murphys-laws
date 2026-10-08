@@ -160,6 +160,16 @@ describe('Icons utility', () => {
       expect(icon!.getAttribute('data-icon-name')).toBe('home');
     });
 
+    it('hydrates an unlabelled placeholder without optional accessibility attributes', () => {
+      container.innerHTML = '<span data-icon="home"></span>';
+      hydrateIcons(container);
+
+      const icon = container.querySelector('svg');
+      expect(icon?.getAttribute('aria-hidden')).toBe('true');
+      expect(icon?.hasAttribute('role')).toBe(false);
+      expect(icon?.hasAttribute('title')).toBe(false);
+    });
+
     it('replaces multiple icons in one pass', () => {
       container.innerHTML = `
         <span data-icon="home"></span>
