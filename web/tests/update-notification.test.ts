@@ -375,9 +375,8 @@ describe('Update Notification Component', () => {
       return values.find((value) => keyframeNames.includes(value));
     }
 
-    it('gives the exit its own keyframes so browsers start a new animation and fire animationend', () => {
-      // Reusing the entrance keyframes (e.g. in reverse) updates the finished entrance animation in place,
-      // so animationend never fires in real browsers
+    it('uses distinct keyframes for the exit animation', () => {
+      // This source-level contract keeps the entrance and exit animation names distinct.
       const entrance = animationNameFor('.pwa-notification');
       const exit = animationNameFor('.pwa-notification--exiting');
 
