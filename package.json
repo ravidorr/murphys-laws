@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.6.36",
+  "version": "2.6.39",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -27,8 +27,9 @@
     "test:sdk": "cd sdk && npm test",
     "test:cli": "cd cli && npm test",
     "test:mcp": "cd mcp && npm test",
+    "test:scripts": "node --import tsx --test scripts/*.test.ts",
     "test:ios:coverage-parser": "node --import tsx --test ios/scripts/check-coverage.test.ts",
-    "test": "npm run test:backend && npm run test:web && npm run test:web:e2e && npm run test:sdk && npm run test:cli && npm run test:mcp",
+    "test": "npm run test:scripts && npm run test:backend && npm run test:web && npm run test:web:e2e && npm run test:sdk && npm run test:cli && npm run test:mcp",
     "lint:web": "cd web && npm run lint && npm run lint:css",
     "lint:sdk": "cd sdk && npm run lint",
     "lint:cli": "cd cli && npm run lint",
@@ -48,6 +49,7 @@
     "validate-ports": "npx tsx backend/scripts/validate-ports.ts",
     "cleanup-ports": "npx tsx backend/scripts/cleanup-ports.ts",
     "check:versions": "tsx scripts/check-version-bumps.ts",
+    "audit:full": "tsx scripts/check-audit-exceptions.ts",
     "check:staged-coverage": "tsx scripts/run-coverage-guards.ts",
     "smoke:production": "node scripts/smoke-production.mjs",
     "check:web-budgets": "node scripts/check-web-budgets.mjs",

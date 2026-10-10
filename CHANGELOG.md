@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added the canonical agent guide, policy and support documents, an LLM index,
+  and a design-system showcase that references the authoritative web tokens.
+  Root bumped to `2.6.37`.
 - The web app now loads the Novus by Pendo agent and initializes it once per page
   load with an anonymous visitor, enabling product analytics and in-app guides.
   Both loading and initialization are limited to the canonical production host, so
@@ -49,6 +52,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
+- Added an expiring, reviewed allowlist for high and critical full-audit
+  advisories, enforced before push and in CI. The shared privacy policy is now
+  the sole canonical source, and project guidance reflects actual validation
+  behavior. Root bumped to `2.6.38`.
+- Renamed the canonical agent guide to `AGENTS.md` so supported coding agents
+  discover it automatically. Root bumped to `2.6.39`.
 - Deployment health checks now use bounded retries for local API endpoints and
   report the final HTTP status and response body if an endpoint is still
   unavailable. Root bumped to `2.6.36`; backend to `2.3.10`.

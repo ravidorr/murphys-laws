@@ -1,14 +1,18 @@
 #!/bin/sh
 
-# Block push if high/critical vulnerabilities exist (bypass with SKIP_AUDIT=1)
-if [ "$SKIP_AUDIT" != "1" ]; then
-  echo "Running npm audit (high/critical)..."
-  npm audit --audit-level=high
-  if [ $? -ne 0 ]; then
-    echo ""
-    echo "Audit failed. Fix vulnerabilities or use: SKIP_AUDIT=1 git push ..."
-    exit 1
-  fi
+# Block push if high/critical production vulnerabilities exist.
+echo "Running production dependency audit (high/critical)..."
+if ! npm audit --omit=dev --audit-level=high; then
+  echo ""
+  echo "Production dependency audit failed. Fix the reported vulnerabilities before pushing."
+  exit 1
+fi
+
+echo "Validating full dependency audit exceptions..."
+if ! npm run audit:full; then
+  echo ""
+  echo "Full dependency audit contains unreviewed or expired high/critical advisories."
+  exit 1
 fi
 
 # Deployment reminder

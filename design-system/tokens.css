@@ -1,0 +1,5 @@
+/*
+ * Showcase-only entry point.
+ * The authoritative web token values are defined in ../web/styles/partials/variables.css.
+ */
+@import url("../web/styles/partials/variables.css");

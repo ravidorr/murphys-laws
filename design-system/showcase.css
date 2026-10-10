@@ -1,0 +1,70 @@
+body {
+  margin: 0;
+  padding: var(--space-6);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  line-height: var(--leading-normal);
+}
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+section {
+  margin-top: var(--space-8);
+}
+
+.swatches,
+.component-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 0;
+}
+
+.swatches {
+  list-style: none;
+}
+
+.swatch {
+  min-width: 8rem;
+  padding: var(--space-4);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--rounded-lg);
+}
+
+.swatch--primary {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.swatch--surface {
+  background: var(--surface);
+}
+
+.swatch--success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.swatch--error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+button {
+  min-height: var(--component-control-min-size);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--btn-primary-bg);
+  border-radius: var(--rounded-lg);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  font: inherit;
+}
+
+.button--secondary {
+  background: var(--surface);
+  color: var(--link);
+}
