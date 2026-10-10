@@ -250,7 +250,7 @@ Press `?` anywhere on the site to see all available shortcuts:
 - [Security](SECURITY.md): Private vulnerability reporting and supported versions.
 - [Privacy](PRIVACY.md): Data-handling policy.
 - [Support](SUPPORT.md): Help and troubleshooting.
-- [Agent Guide](AGENT.md): Canonical instructions for AI coding agents.
+- [Agent Guide](AGENTS.md): Canonical instructions for AI coding agents.
 - [Design System](design-system/README.md): Token and component-contract guidance.
 
 ## License

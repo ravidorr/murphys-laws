@@ -1,3 +1,3 @@
 # GEMINI.md
 
-Follow all instructions in [AGENT.md](./AGENT.md). That file is the single source of truth for this repository.
+Follow all instructions in [AGENTS.md](./AGENTS.md). That file is the single source of truth for this repository.
