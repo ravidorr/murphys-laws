@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added the build-time root-package version to the web footer. Web bumped to
+  `3.4.18`; root to `2.6.40`.
 - Added the canonical agent guide, policy and support documents, an LLM index,
   and a design-system showcase that references the authoritative web tokens.
   Root bumped to `2.6.37`.

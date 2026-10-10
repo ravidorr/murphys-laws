@@ -1,4 +1,5 @@
 import templateHtml from '@components/templates/footer.html?raw';
+import { APP_VERSION } from '@utils/app-version.ts';
 import { ensureAdsense } from '@utils/third-party.ts';
 import { hasMinimumContent } from '@utils/ads.ts';
 import { hydrateIcons } from '@utils/icons.ts';
@@ -9,6 +10,9 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
   footer.className = 'footer';
 
   footer.innerHTML = templateHtml;
+
+  const versionElement = footer.querySelector<HTMLElement>('[data-app-version]')!;
+  versionElement.textContent = `Version: ${APP_VERSION}`;
 
   // Hydrate icons (for RSS icon)
   hydrateIcons(footer);

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import rootPackage from '../../package.json';
 import { Footer } from '../src/components/footer.js';
 
 interface FooterLocalThis {
@@ -405,6 +406,14 @@ describe('Footer component', () => {
     });
 
     expect(el.textContent).toMatch(/CC0 1.0 Universal/);
+  });
+
+  it('shows the root application version after the CC0 license sentence', () => {
+    const el = Footer({ onNavigate: () => {} });
+
+    expect(el.textContent).toContain(
+      `and is free for all uses. Version: ${rootPackage.version}`,
+    );
   });
 
   it('has external link to Creative Commons', () => {
