@@ -8,8 +8,12 @@ if ! npm audit --omit=dev --audit-level=high; then
   exit 1
 fi
 
-echo "Running full dependency audit (informational)..."
-npm audit || echo "Full audit reports known development-tooling advisories."
+echo "Validating full dependency audit exceptions..."
+if ! npm run audit:full; then
+  echo ""
+  echo "Full dependency audit contains unreviewed or expired high/critical advisories."
+  exit 1
+fi
 
 # Deployment reminder
 echo ""

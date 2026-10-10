@@ -1,0 +1,19 @@
+{
+  "exceptions": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "expiresOn": "2026-11-09",
+      "reason": "Used only by development-time lint tooling; no compatible patched dependency range is available."
+    },
+    {
+      "id": "GHSA-238p-pmpm-9mq7",
+      "expiresOn": "2026-11-09",
+      "reason": "Used only by Markdown linting; the patched KaTeX release is outside the dependency range."
+    },
+    {
+      "id": "GHSA-r4xh-jqrq-34v2",
+      "expiresOn": "2026-11-09",
+      "reason": "Used only by Markdown linting; the patched smol-toml release is outside the required dependency range."
+    }
+  ]
+}
