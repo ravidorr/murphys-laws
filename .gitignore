@@ -29,7 +29,6 @@ murphys.db-wal
 .claude/worktrees/
 .claude/settings.local.json
 .claude/memory/
-CLAUDE.md
 
 # Local-only credentials (MCP Registry signing keys, etc.) - never commit
 .config/

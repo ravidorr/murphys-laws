@@ -2,7 +2,7 @@
 
 A comprehensive collection of Murphy's Laws - humorous observations about life's tendency for things to go wrong.
 
-Available on **Web**, **iOS**, and **Android**.
+Available on the **Web**, with iOS and Android releases forthcoming.
 
 ## Platforms
 
@@ -135,7 +135,7 @@ cd android
 ## Testing
 
 ```bash
-# Run all tests (backend unit, web unit, web E2E)
+# Run all tests (backend, web, SDK, CLI, and MCP)
 npm test
 
 # Test a subset only
@@ -155,7 +155,7 @@ npm run test:web:e2e   # Web E2E (Playwright) only
 ### Install Dependencies
 
 ```bash
-# Install all dependencies (root + workspaces)
+# Install all dependencies (root and workspaces)
 npm run install:all
 
 # Or install individually
@@ -185,7 +185,7 @@ If you encounter `EADDRINUSE` errors (port already in use):
 npm run cleanup-ports
 
 # Automatically kill processes using development ports
-npm run cleanup-ports --kill
+npm run cleanup-ports -- --kill
 
 # Or manually check and kill
 lsof -i :8787  # Check API port
@@ -196,7 +196,7 @@ kill <PID>     # Kill the process
 ## Building
 
 ```bash
-# Build everything
+# Generate OpenAPI and build the web app
 npm run build
 
 # Build specific platform
@@ -244,6 +244,14 @@ Press `?` anywhere on the site to see all available shortcuts:
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## Policies and Support
+
+- [Security](SECURITY.md): Private vulnerability reporting and supported versions.
+- [Privacy](PRIVACY.md): Data-handling policy.
+- [Support](SUPPORT.md): Help and troubleshooting.
+- [Agent Guide](AGENT.md): Canonical instructions for AI coding agents.
+- [Design System](design-system/README.md): Token and component-contract guidance.
 
 ## License
 
