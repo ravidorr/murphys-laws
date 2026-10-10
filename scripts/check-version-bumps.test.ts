@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 
 import { findMissingVersionBumps, parseStagedFiles } from './check-version-bumps';
 
@@ -47,6 +48,18 @@ function missingFor(
 }
 
 describe('check-version-bumps', () => {
+  it('does not require a root version bump for documentation-only changes', () => {
+    const missing = missingFor(
+      [
+        'A\tAGENTS.md',
+        'M\tREADME.md',
+        'A\tllms.txt',
+      ].join('\n'),
+    );
+
+    assert.deepEqual(missing, []);
+  });
+
   it('requires CLI, MCP, and SDK package bumps when their package files change', () => {
     const missing = missingFor(
       [
@@ -60,7 +73,7 @@ describe('check-version-bumps', () => {
       },
     );
 
-    expect(missing).toEqual([
+    assert.deepEqual(missing, [
       'cli package: cli/package.json version',
       'mcp package: mcp/package.json version',
       'sdk package: sdk/package.json version',
@@ -86,7 +99,7 @@ describe('check-version-bumps', () => {
       },
     );
 
-    expect(missing).toEqual([]);
+    assert.deepEqual(missing, []);
   });
 
   it('requires both iOS version files when iOS app source changes', () => {
@@ -100,7 +113,7 @@ describe('check-version-bumps', () => {
       },
     );
 
-    expect(missing).toEqual([
+    assert.deepEqual(missing, [
       'iOS app: ios/project.yml marketing and build versions',
       'iOS app: ios/MurphysLaws/Info.plist marketing and build versions',
     ]);
@@ -121,6 +134,6 @@ describe('check-version-bumps', () => {
       },
     );
 
-    expect(missing).toEqual([]);
+    assert.deepEqual(missing, []);
   });
 });

@@ -43,7 +43,9 @@ function isDocumentationOnly(filePath: string): boolean {
 }
 
 function isRootReleaseBearing(filePath: string): boolean {
-  return !ignoredRootFiles.has(filePath) && !versionFilePaths.has(filePath);
+  return !ignoredRootFiles.has(filePath) &&
+    !versionFilePaths.has(filePath) &&
+    !isDocumentationOnly(filePath);
 }
 
 function isPackageReleaseBearing(prefix: string, filePath: string): boolean {

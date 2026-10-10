@@ -1,0 +1,21 @@
+# Murphy's Laws
+
+> A multi-platform archive of humorous observations about life's tendency for things to go wrong.
+
+## Project
+
+- [Overview and quickstart](README.md): Purpose, requirements, quickstart, and usage.
+- [Changelog](CHANGELOG.md): Released changes.
+- [Public API](shared/docs/API.md): REST API reference.
+
+## Policies and support
+
+- [Security](SECURITY.md): Vulnerability reporting and supported versions.
+- [Privacy](PRIVACY.md): Data-handling policy.
+- [Support](SUPPORT.md): Support and troubleshooting information.
+
+## Development
+
+- [Agent guide](AGENTS.md): Canonical instructions for AI coding agents.
+- [Design system](design-system/README.md): Canonical design-token and component-contract guidance.
+- [License](LICENSE): License terms.
