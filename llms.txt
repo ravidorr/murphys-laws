@@ -16,6 +16,6 @@
 
 ## Development
 
-- [Agent guide](AGENT.md): Canonical instructions for AI coding agents.
+- [Agent guide](AGENTS.md): Canonical instructions for AI coding agents.
 - [Design system](design-system/README.md): Canonical design-token and component-contract guidance.
 - [License](LICENSE): License terms.

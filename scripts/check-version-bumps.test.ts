@@ -51,7 +51,7 @@ describe('check-version-bumps', () => {
   it('does not require a root version bump for documentation-only changes', () => {
     const missing = missingFor(
       [
-        'A\tAGENT.md',
+        'A\tAGENTS.md',
         'M\tREADME.md',
         'A\tllms.txt',
       ].join('\n'),
