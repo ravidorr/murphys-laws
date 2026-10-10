@@ -52,8 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   root to `2.6.0`.
 
 ### Changed
-- Updated the pre-push audit to block high and critical production advisories
-  while reporting the full dependency audit as informational.
+- Added an expiring, reviewed allowlist for high and critical full-audit
+  advisories, enforced before push and in CI. The shared privacy policy is now
+  the sole canonical source, and project guidance reflects actual validation
+  behavior. Root bumped to `2.6.38`.
 - Deployment health checks now use bounded retries for local API endpoints and
   report the final HTTP status and response body if an endpoint is still
   unavailable. Root bumped to `2.6.36`; backend to `2.3.10`.

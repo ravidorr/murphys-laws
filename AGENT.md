@@ -11,9 +11,10 @@ Murphy's Laws is a monorepo for a web PWA, Node.js API, iOS and Android apps, a 
 - Install: `npm run install:all`
 - Lint: `npm run lint`
 - Test: `npm test`
-- Coverage: run each affected package's coverage command; 100% lines, functions, branches, and statements are mandatory on push and in CI.
+- Coverage: Node packages run 100% coverage checks for relevant staged changes before commit and in CI. Mobile platform checks enforce their configured thresholds in CI and may be deferred locally when the required toolchain is unavailable.
 - Build: `npm run build`
-- Full CI: `npm run ci`
+- Node/workspace CI: `npm run ci`
+- Mobile CI: use the iOS and Android GitHub Actions workflows for platform-specific validation.
 
 ## Rules
 
@@ -24,7 +25,7 @@ Murphy's Laws is a monorepo for a web PWA, Node.js API, iOS and Android apps, a 
 - Add or update tests for code changes. Use `/* v8 ignore */` only for genuinely untestable code paths.
 - UI work uses `web/DESIGN.md` as the authoritative design contract and `web/styles/partials/variables.css` as the authoritative token values. `shared/DESIGN.md` is a generated cross-platform mirror. `design-system/` is a documentation wrapper and showcase. Do not add a competing token source or use inline styles.
 - Pin Node with `.nvmrc`; the package manager is npm. Keep `package-lock.json` committed.
-- Update `CHANGELOG.md` and apply the appropriate version bump when a release-bearing package changes. Documentation-only, test-only, and tooling-only changes do not require a release bump.
+- Update `CHANGELOG.md` and run `npm run check:versions` before committing. Root-level source, configuration, and documentation changes may require a root version bump; package documentation-only changes do not.
 - Track open work in `TODO.md`.
 
 ## Structure
