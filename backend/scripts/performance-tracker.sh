@@ -13,10 +13,12 @@ fi
 
 METRICS_ROLE="${METRICS_ROLE:-main-app}"
 METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
-FRONTEND_URL="${FRONTEND_URL:-https://murphys-laws.com}"
-API_URL="${API_URL:-https://murphys-laws.com/api/health}"
-DB_PATH="${DB_PATH:-/root/murphys-laws/backend/murphys.db}"
-PM2_API_NAME="${PM2_API_NAME:-murphys-api}"
+if [ "$METRICS_ROLE" = "main-app" ]; then
+    FRONTEND_URL="${FRONTEND_URL:-https://murphys-laws.com}"
+    API_URL="${API_URL:-https://murphys-laws.com/api/health}"
+    DB_PATH="${DB_PATH:-/root/murphys-laws/backend/murphys.db}"
+    PM2_API_NAME="${PM2_API_NAME:-murphys-api}"
+fi
 PM2_API_MEMORY_LIMIT_MB="${PM2_API_MEMORY_LIMIT_MB:-}"
 
 LOG_FILE="/var/log/performance-tracker.log"
@@ -107,7 +109,7 @@ MEMORY_TOTAL=$(echo "$MEMORY_STATS" | awk '{print $2}')
 MEMORY_AVAILABLE=$(echo "$MEMORY_STATS" | awk '{print $7}')
 MEMORY_USED=$((MEMORY_TOTAL - MEMORY_AVAILABLE))
 if [ "$MEMORY_TOTAL" -gt 0 ]; then
-    MEMORY_PRESSURE_PERCENT=$(echo "scale=1; (1 - $MEMORY_AVAILABLE / $MEMORY_TOTAL) * 100" | bc)
+    MEMORY_PRESSURE_PERCENT=$(echo "scale=4; (1 - $MEMORY_AVAILABLE / $MEMORY_TOTAL) * 100" | bc | awk '{printf "%.1f", $0}')
 else
     MEMORY_PRESSURE_PERCENT=""
     append_error "memory_unavailable"
@@ -122,7 +124,7 @@ LOAD_LINE=$(uptime | awk -F'load average:' '{print $2}')
 CPU_LOAD_1M=$(echo "$LOAD_LINE" | awk -F',' '{print $1}' | xargs)
 CPU_LOAD_5M=$(echo "$LOAD_LINE" | awk -F',' '{print $2}' | xargs)
 CPU_LOAD_15M=$(echo "$LOAD_LINE" | awk -F',' '{print $3}' | xargs)
-CPU_NORMALIZED_PERCENT=$(echo "scale=1; ($CPU_LOAD_1M / $CPU_CORES) * 100" | bc)
+CPU_NORMALIZED_PERCENT=$(echo "scale=4; ($CPU_LOAD_1M / $CPU_CORES) * 100" | bc | awk '{printf "%.1f", $0}')
 
 DISK_STATS=$(df -BG /root 2>/dev/null | tail -1)
 if [ -z "$DISK_STATS" ]; then

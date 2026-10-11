@@ -116,12 +116,22 @@ append ""
 run_capacity_analysis() {
     local role="$1"
     append "Capacity role: $role"
-    if ! command -v npx &> /dev/null || [ ! -f "$CAPACITY_ANALYZER" ]; then
+    TSX_BIN="$REPO_ROOT/node_modules/.bin/tsx"
+    if [ ! -f "$CAPACITY_ANALYZER" ]; then
         append "Capacity analysis script not available on this host"
         append ""
         return
     fi
-    CAPACITY_SECTION=$(METRICS_DIR="$METRICS_DIR" METRICS_ROLE="$role" npx --yes tsx "$CAPACITY_ANALYZER" 2>/dev/null || true)
+    if [ ! -x "$TSX_BIN" ] && ! command -v npx &> /dev/null; then
+        append "Capacity analysis unavailable (tsx not installed in $REPO_ROOT)"
+        append ""
+        return
+    fi
+    if [ -x "$TSX_BIN" ]; then
+        CAPACITY_SECTION=$(cd "$REPO_ROOT" && METRICS_DIR="$METRICS_DIR" METRICS_ROLE="$role" "$TSX_BIN" "$CAPACITY_ANALYZER" 2>/dev/null || true)
+    else
+        CAPACITY_SECTION=$(cd "$REPO_ROOT" && METRICS_DIR="$METRICS_DIR" METRICS_ROLE="$role" npx --yes tsx "$CAPACITY_ANALYZER" 2>/dev/null || true)
+    fi
     if [ -n "$CAPACITY_SECTION" ]; then
         append "$CAPACITY_SECTION"
     else
