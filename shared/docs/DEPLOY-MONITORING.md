@@ -50,7 +50,7 @@ This consolidated approach reduces email noise while providing comprehensive dai
 
 ## Prerequisites
 
-- SSH access to both droplets
+- SSH access to the main application droplet
 - Sudo/root privileges
 - Existing backup of current configuration
 

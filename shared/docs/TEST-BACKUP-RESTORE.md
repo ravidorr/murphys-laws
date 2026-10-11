@@ -1,6 +1,6 @@
 # Backup Restore Testing Guide
 
-Complete guide for testing backup and restore procedures on both droplets.
+Complete guide for testing backup and restore procedures on the main application droplet.
 
 ## Testing Approaches
 
