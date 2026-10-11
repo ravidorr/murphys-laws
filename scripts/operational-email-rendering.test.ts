@@ -100,6 +100,8 @@ test('renderHtmlReport escapes dynamic values and avoids terminal separators', (
   assert.match(html, /&lt;\/script&gt; &amp; \/laws/);
   assert.match(html, /max-width:640px/);
   assert.match(html, /Daily Status Report/);
+  assert.match(html, /width:1%;white-space:nowrap/);
+  assert.doesNotMatch(html, /width:38%/);
   assert.doesNotMatch(html, /━━━━━━━━|====|<pre>/);
 });
 
