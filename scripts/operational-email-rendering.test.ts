@@ -255,6 +255,7 @@ test('renderHtmlReport allows long label cells to wrap on narrow screens', () =>
   const html = renderHtmlReport(report);
   assert.match(html, /MAIN DROPLET \(murphys-laws\.com\)/);
   assert.match(html, /width:38%;white-space:normal;overflow-wrap:break-word;word-break:normal;/);
+  assert.match(html, /MAIN DROPLET \(murphys-laws\.com\)[\s\S]*width:62%;[\s\S]*ssh murphys-main/);
   assert.doesNotMatch(html, /max-width:42%;white-space:normal;word-break:break-word;/);
 });
 

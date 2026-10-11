@@ -68,11 +68,11 @@ Suffix span only when the title has a parenthetical (e.g. "Last 30 Days").
 <tr><td width="1%" style="width:1%;white-space:nowrap;padding:8px 12px 8px 0;border-top:1px solid #e5e7eb;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;">${label}</td>
 <td style="width:99%;padding:8px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;">${value}</td></tr>
 ```
-Labels longer than 28 characters use `width="38%"` and `overflow-wrap:break-word;word-break:normal;` instead of shrink-to-fit `width:1%`. Timestamp suffix: `<span style="font-size:12px;color:#4b5563;">(${ts})</span>`. Flagged value: `color:#a16207;font-weight:bold;` with `!` prefix. Bold value (no color change) only for cost, capacity decision, next review.
+Labels longer than 28 characters use `width="38%"` and `overflow-wrap:break-word;word-break:normal;` with a paired `width:62%` value cell instead of shrink-to-fit `width:1%` / `width:99%`. Timestamp suffix: `<span style="font-size:12px;color:#4b5563;">(${ts})</span>`. Flagged value: `color:#a16207;font-weight:bold;` with `!` prefix. Bold value (no color change) only for cost, capacity decision, next review.
 
 ### G. Bullet row
 ```html
-<tr><td colspan="2" style="padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;"><span style="color:#4b5563;padding-right:6px;">&bull;</span>${text}</td></tr>
+<tr><td colspan="2" style="padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;overflow-wrap:break-word;"><span style="color:#4b5563;padding-right:6px;">&bull;</span>${text}</td></tr>
 ```
 Full-width list lines avoid inheriting a wide label column from earlier rows in the same section table. Passing results: marker `&#10003;` with `color:#15803d;font-weight:bold;`.
 
