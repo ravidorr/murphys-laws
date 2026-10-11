@@ -59,6 +59,8 @@ test('cost report does not recommend automatic consolidation or downsizing', () 
   assert.match(costReport, /run_capacity_analysis main-app/);
   assert.match(costReport, /run_capacity_analysis n8n/);
   assert.match(costReport, /metrics-n8n-/);
+  assert.match(costReport, /node_modules\/\.bin\/tsx/);
+  assert.match(costReport, /cd "\$REPO_ROOT"/);
 });
 
 test('performance tracker uses role-aware metrics file and header', () => {
@@ -75,6 +77,9 @@ test('performance tracker uses role-aware metrics file and header', () => {
     performanceTracker,
     /if \[ "\$METRICS_ROLE" = "main-app" \] && \[ -n "\$API_URL" \]/,
   );
+  assert.match(performanceTracker, /scale=4; \(1 - \$MEMORY_AVAILABLE/);
+  assert.match(performanceTracker, /METRICS_ROLE" = "main-app" \]; then/);
+  assert.doesNotMatch(performanceTracker, /^API_URL="\$\{API_URL:-/m);
 });
 
 test('daily report passes one combined awk program for metrics aggregates', () => {
