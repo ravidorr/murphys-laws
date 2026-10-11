@@ -70,6 +70,10 @@ async function deploy(): Promise<void> {
     'Syncing backend db'
   );
   exec(
+    `ssh ${DROPLET_HOST} "sudo install -d -m 755 /etc/murphys-laws && if [ -f ${DROPLET_PATH}/backend/config/infrastructure-inventory.json ] && [ ! -f /etc/murphys-laws/infrastructure-inventory.json ]; then sudo cp ${DROPLET_PATH}/backend/config/infrastructure-inventory.json /etc/murphys-laws/infrastructure-inventory.json && sudo chmod 644 /etc/murphys-laws/infrastructure-inventory.json; fi"`,
+    'Migrating infrastructure inventory out of synced backend/config'
+  );
+  exec(
     `rsync -avz --delete backend/config/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/config/`,
     'Syncing backend config'
   );
@@ -128,8 +132,8 @@ async function deploy(): Promise<void> {
     'Updating resource peaks analyzer'
   );
   exec(
-    `ssh ${DROPLET_HOST} "sudo mkdir -p /etc/murphys-laws && sudo cp ${DROPLET_PATH}/backend/config/operational-metrics-main-app.env.example /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true"`,
-    'Publishing operational metrics env example'
+    `ssh ${DROPLET_HOST} "sudo mkdir -p /etc/murphys-laws && sudo cp ${DROPLET_PATH}/backend/config/operational-metrics-main-app.env.example /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true && sudo cp ${DROPLET_PATH}/backend/config/infrastructure-inventory.json.example /etc/murphys-laws/infrastructure-inventory.json.example 2>/dev/null || true"`,
+    'Publishing operational metrics and inventory examples under /etc/murphys-laws'
   );
 
   log('\nValidating Node.js version on server...', 'blue');

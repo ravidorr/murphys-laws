@@ -15,7 +15,10 @@ REPORT_FILE="/tmp/cost-optimization-report-$(date +%Y-%m).txt"
 ALERT_EMAIL="ravidor@gmail.com"
 SEND_EMAIL=true
 METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
-INVENTORY_FILE="${INVENTORY_FILE:-$REPO_ROOT/backend/config/infrastructure-inventory.json}"
+INVENTORY_FILE="${INVENTORY_FILE:-/etc/murphys-laws/infrastructure-inventory.json}"
+if [ ! -f "$INVENTORY_FILE" ] && [ -f "$REPO_ROOT/backend/config/infrastructure-inventory.json" ]; then
+    INVENTORY_FILE="$REPO_ROOT/backend/config/infrastructure-inventory.json"
+fi
 
 if [ "${1:-}" = "--no-email" ]; then
     SEND_EMAIL=false
@@ -44,12 +47,12 @@ if [ -f "$INVENTORY_FILE" ]; then
     if [ -n "$VERIFIED" ]; then
         append "Inventory file: $INVENTORY_FILE (marked verified)"
     else
-        append "Inventory file: $INVENTORY_FILE (UNVERIFIED — confirm against DigitalOcean billing)"
+        append "Inventory file: $INVENTORY_FILE (UNVERIFIED — confirm costs against each provider listed in the inventory)"
     fi
     append "$(sed 's/^/  /' "$INVENTORY_FILE" | head -40)"
 else
-    append "No infrastructure-inventory.json on this host."
-    append "Copy backend/config/infrastructure-inventory.json.example and fill in verified costs."
+    append "No infrastructure inventory file on this host."
+    append "Copy infrastructure-inventory.json.example to /etc/murphys-laws/infrastructure-inventory.json and fill in verified costs per provider."
 fi
 append ""
 
