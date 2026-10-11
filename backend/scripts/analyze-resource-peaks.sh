@@ -72,27 +72,43 @@ awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE"
         printf "% -24s % -15s % -25s\n", "------------------------", "---------------", "-------------------------"
     }
 
-    $1 == "timestamp" { next }
+    function col(name) { return cols[name] + 0 }
+
+    FNR == 1 {
+        delete cols
+        for (i = 1; i <= NF; i++) cols[$i] = i
+        legacy = (col("role") == 0)
+        next
+    }
 
     {
         timestamp = $1
         if (timestamp < cutoff_date) next
 
-        row_role = $2
-        if (row_role == "" && role_filter == "main-app") {
-            row_role = "main-app"
+        if (!legacy) {
+            row_role = $col("role")
+            if (row_role != role_filter) next
         }
-        if (row_role != "" && row_role != role_filter) next
 
-        mem_avail = ($7 == "" ? -1 : $7 + 0)
-        mem_pressure = ($8 == "" ? -1 : $8 + 0)
-        if (mem_pressure < 0 && $7 != "" && $6 != "") {
-            mem_pressure = $7 + 0
+        mem_avail_idx = col("memory_available_mb")
+        mem_pressure_idx = col("memory_pressure_percent")
+        if (mem_pressure_idx == 0) mem_pressure_idx = col("memory_percent")
+        swap_idx = col("swap_used_mb")
+        cpu_norm_idx = col("cpu_normalized_percent")
+        disk_pct_idx = col("disk_percent")
+        api_rss_idx = col("pm2_api_rss_mb")
+
+        mem_avail = (mem_avail_idx > 0 && $(mem_avail_idx) != "" ? $(mem_avail_idx) + 0 : -1)
+        mem_pressure = (mem_pressure_idx > 0 && $(mem_pressure_idx) != "" ? $(mem_pressure_idx) + 0 : -1)
+        swap_used = (swap_idx > 0 && $(swap_idx) != "" ? $(swap_idx) + 0 : -1)
+        cpu_norm = (cpu_norm_idx > 0 && $(cpu_norm_idx) != "" ? $(cpu_norm_idx) + 0 : -1)
+        if (cpu_norm < 0 && col("cpu_load_1m") > 0 && col("cpu_cores") > 0) {
+            load = $(col("cpu_load_1m")) + 0
+            cores = $(col("cpu_cores")) + 0
+            if (cores > 0) cpu_norm = (load / cores) * 100
         }
-        swap_used = ($9 == "" ? -1 : $9 + 0)
-        cpu_norm = ($16 == "" ? -1 : $16 + 0)
-        disk_pct = ($19 == "" ? -1 : $19 + 0)
-        api_rss = ($23 == "" ? -1 : $23 + 0)
+        disk_pct = (disk_pct_idx > 0 && $(disk_pct_idx) != "" ? $(disk_pct_idx) + 0 : -1)
+        api_rss = (api_rss_idx > 0 && $(api_rss_idx) != "" ? $(api_rss_idx) + 0 : -1)
 
         if (mem_avail >= 0 && mem_avail < min_mem_avail) { min_mem_avail = mem_avail; t_min_mem = $1 }
         if (mem_pressure >= 0 && mem_pressure > max_mem_pressure) { max_mem_pressure = mem_pressure; t_mem_p = $1 }

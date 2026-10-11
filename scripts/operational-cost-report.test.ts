@@ -44,7 +44,7 @@ test('cost report does not recommend automatic consolidation or downsizing', () 
   assert.doesNotMatch(costReport, /Suggested: 512MB RAM droplets/);
   assert.match(costReport, /NOT RECOMMENDED \(isolated n8n host policy\)/);
   assert.match(costReport, /512MB plans remain blocked/);
-  assert.match(costReport, /analyze-capacity-metrics\.ts/);
+  assert.match(costReport, /CAPACITY_ANALYZER=\$\{CAPACITY_ANALYZER:-\$REPO_ROOT\/backend\/scripts\/analyze-capacity-metrics\.ts\}/);
 });
 
 test('performance tracker uses role-aware metrics file and header', () => {

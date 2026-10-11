@@ -190,6 +190,30 @@ export function analyzeCapacity(
 
   let manualReviewEligible = true;
 
+  const hasCompleteGateMetrics =
+    role === 'main-app'
+      ? inWindow.every(
+          (r) =>
+            r.memoryPressurePercent !== null &&
+            r.memoryAvailableMb !== null &&
+            r.cpuNormalizedPercent !== null &&
+            r.swapUsedMb !== null &&
+            r.pm2ApiRssMb !== null &&
+            r.pm2ApiMemoryLimitMb !== null,
+        )
+      : inWindow.every(
+          (r) =>
+            r.memoryPressurePercent !== null &&
+            r.memoryAvailableMb !== null &&
+            r.cpuNormalizedPercent !== null &&
+            r.swapUsedMb !== null,
+        );
+
+  if (!hasCompleteGateMetrics) {
+    manualReviewEligible = false;
+    reasons.push('Incomplete gate metrics in window; manual capacity review requires full samples.');
+  }
+
   if (peakMemoryPressure !== null && peakMemoryPressure > thresholds.maxMemoryPressurePercent) {
     manualReviewEligible = false;
     reasons.push(

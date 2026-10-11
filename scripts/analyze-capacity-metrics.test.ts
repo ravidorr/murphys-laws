@@ -65,6 +65,16 @@ test('analyzeCapacity blocks manual review when swap is used', () => {
   assert.ok(analysis.reasons.some((r) => r.includes('Swap')));
 });
 
+test('analyzeCapacity rejects manual review when gate metrics are incomplete', () => {
+  const now = new Date('2026-02-01T12:00:00Z');
+  const rows = hourlyRows(30, now).map((row) =>
+    buildRow({ ...row, swapUsedMb: null, pm2ApiRssMb: null }),
+  );
+  const analysis = analyzeCapacity(rows, 'main-app', DEFAULT_THRESHOLDS, now);
+  assert.notEqual(analysis.decision, 'Manual review candidate');
+  assert.ok(analysis.reasons.some((r) => r.includes('Incomplete gate metrics')));
+});
+
 test('analyzeCapacity can reach Manual review candidate when gates pass', () => {
   const now = new Date('2026-02-01T12:00:00Z');
   const rows = hourlyRows(30, now);
