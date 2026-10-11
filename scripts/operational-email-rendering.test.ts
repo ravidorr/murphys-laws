@@ -7,10 +7,12 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   buildMultipartMessage,
+  buildSubject,
   captureCommandStdout,
   collectDailyReport,
   escapeHtml,
   renderHtmlReport,
+  mapVulnerabilitySection,
   renderPlainTextReport,
   runCli,
   type DailyReport,
@@ -46,6 +48,8 @@ test('renderHtmlReport escapes dynamic values and avoids terminal separators', (
 
   const html = renderHtmlReport(model);
   assert.match(html, /&lt;\/script&gt; &amp; \/laws/);
+  assert.match(html, /max-width:640px/);
+  assert.match(html, /Daily Status Report/);
   assert.doesNotMatch(html, /━━━━━━━━|====|<pre>/);
 });
 
@@ -66,6 +70,42 @@ test('renderHtmlReport applies tone colors in section rows', () => {
   const html = renderHtmlReport(model);
   assert.match(html, /color:#a16207/);
   assert.match(html, /WARNING: Backup is 72 hours old/);
+});
+
+test('mapVulnerabilitySection uses passing markers only when scan is clean', () => {
+  const clean = mapVulnerabilitySection({
+    summary: { totalIssues: 0, securityUpdates: 0, lines: ['No npm issues'] },
+    findings: ['All clear'],
+  });
+  const plainClean = renderPlainTextReport({
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: '',
+    summary: [],
+    sections: [clean],
+  });
+  assert.match(plainClean, /\[OK\] No npm issues/);
+  assert.match(plainClean, /\[OK\] All clear/);
+
+  const failing = mapVulnerabilitySection({
+    summary: {
+      totalIssues: 3,
+      securityUpdates: 2,
+      lines: ['2 security updates available'],
+    },
+    findings: ['High: lodash dependency'],
+  });
+  const plainFail = renderPlainTextReport({
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: '',
+    summary: [],
+    sections: [failing],
+  });
+  assert.match(plainFail, /\[!\] 2 security updates available/);
+  assert.match(plainFail, /\[!\] High: lodash dependency/);
+  assert.doesNotMatch(plainFail, /\[OK\]/);
+  assert.match(plainFail, /Total issues: \[!\] 3/);
 });
 
 test('buildTestEmailReport vulnerability fixture has consistent issue count', () => {
@@ -91,7 +131,55 @@ test('renderPlainTextReport mirrors section content', () => {
     ],
   };
 
-  assert.match(renderPlainTextReport(model), /Top URL: <\/script> & \/laws/);
+  const plain = renderPlainTextReport(model);
+  assert.match(plain, /Daily Status Report/);
+  assert.match(plain, /Top URL: <\/script> & \/laws/);
+});
+
+test('renderPlainTextReport tags glance rows from tone', () => {
+  const model: DailyReport = {
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: 'Preview',
+    summary: [
+      { label: 'API', value: 'Healthy', tone: 'success' },
+      { label: 'Security', value: '2 attempts', tone: 'warning' },
+    ],
+    sections: [],
+  };
+  const plain = renderPlainTextReport(model);
+  assert.match(plain, /API: \[OK\] Healthy/);
+  assert.match(plain, /Security: \[!\] 2 attempts/);
+});
+
+test('renderHtmlReport uses exclamation for attention glyphs', () => {
+  const model: DailyReport = {
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: 'Preview',
+    summary: [{ label: 'Security', value: '2 attempts', tone: 'warning' }],
+    sections: [
+      {
+        title: 'PEAK',
+        items: [
+          {
+            label: 'CPU',
+            value: '88 %',
+            tone: 'warning',
+            timestamp: '2026-10-09T08:00:00Z',
+          },
+        ],
+      },
+      {
+        title: 'CALLOUT',
+        items: [{ value: 'Stale backup', tone: 'warning' }],
+      },
+    ],
+  };
+  const html = renderHtmlReport(model);
+  assert.match(html, />!<\/span>/);
+  assert.match(html, /font-weight:bold;">! /);
+  assert.doesNotMatch(html, /&#9650;/);
 });
 
 test('buildMultipartMessage uses multipart alternative', () => {
@@ -121,6 +209,11 @@ test('runCli --test-email requires DAILY_REPORT_TEST_RECIPIENT', () => {
     () => runCli(['--test-email'], { env, sendmailPath: '/bin/false' }),
     /DAILY_REPORT_TEST_RECIPIENT/,
   );
+});
+
+test('test-email subject includes UTC timestamp tag', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:08:10.123Z') });
+  assert.match(buildSubject(report), /\[test 2026-10-11T12:08:10Z\]/);
 });
 
 test('collectDailyReport test fixture includes all optional sections', () => {
@@ -248,4 +341,14 @@ cat > "${path.join(tempDir, 'message.eml')}"
   assert.match(message, /PEAK RESOURCE USAGE/);
   assert.match(message, /WEEKLY VULNERABILITY SCAN/);
   assert.doesNotMatch(message, /====/);
+});
+
+test('deploy workflow sends template smoke email when renderer changes', () => {
+  const deployWorkflow = readFileSync(
+    path.join(rootDirectory, '.github/workflows/deploy.yml'),
+    'utf8',
+  );
+  assert.match(deployWorkflow, /render-daily-report\.ts/);
+  assert.match(deployWorkflow, /DAILY_REPORT_TEST_RECIPIENT/);
+  assert.match(deployWorkflow, /daily-report\.sh --test-email/);
 });
