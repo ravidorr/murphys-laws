@@ -2,115 +2,121 @@
 
 #############################################################################
 # Peak Resource Usage Analyzer
-# Analyzes performance metrics CSVs to find peak resource usage.
-# Usage: ./analyze-resource-peaks.sh [days]
-# Default days: 30
+# Analyzes performance metrics CSVs (see shared/docs/OPERATIONAL-METRICS.md)
+# Usage: ./analyze-resource-peaks.sh [--no-header] [days] [--role main-app|n8n]
 #############################################################################
 
-# Configuration
-METRICS_DIR="/var/log/performance-metrics"
+METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
 DEFAULT_DAYS=30
 DAYS=$DEFAULT_DAYS
 SHOW_HEADER=true
+METRICS_ROLE="${METRICS_ROLE:-main-app}"
 
-# Parse arguments
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --no-header)
             SHOW_HEADER=false
             shift
             ;;
+        --role)
+            METRICS_ROLE="${2:-main-app}"
+            shift 2
+            ;;
         *)
-            if [[ "$arg" =~ ^[0-9]+$ ]]; then
-                DAYS=$arg
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                DAYS=$1
             fi
+            shift
             ;;
     esac
 done
 
-# Check if metrics directory exists
 if [ ! -d "$METRICS_DIR" ]; then
     echo "Error: Metrics directory $METRICS_DIR not found."
-    echo "Make sure performance-tracker.sh is running via cron."
     exit 1
 fi
 
 if [ "$SHOW_HEADER" = true ]; then
     echo "================================================================"
-    echo "Peak Resource Usage Analysis (Last $DAYS days)"
+    echo "Peak Resource Usage Analysis (Last $DAYS days, role=$METRICS_ROLE)"
     echo "Source: $METRICS_DIR"
     echo "================================================================"
 fi
 
-# Identify relevant log files (Current and Previous Month to cover 30 days)
-# Note: This is a simplified selection. For strict day filtering, we rely on awk.
 CURRENT_MONTH=$(date +%Y-%m)
 PREV_MONTH=$(date -d "1 month ago" +%Y-%m 2>/dev/null || date -v-1m +%Y-%m 2>/dev/null)
 
 FILES=""
-[ -f "$METRICS_DIR/metrics-$CURRENT_MONTH.csv" ] && FILES="$FILES $METRICS_DIR/metrics-$CURRENT_MONTH.csv"
-[ -f "$METRICS_DIR/metrics-$PREV_MONTH.csv" ] && FILES="$FILES $METRICS_DIR/metrics-$PREV_MONTH.csv"
+for pattern in "metrics-${METRICS_ROLE}-${CURRENT_MONTH}.csv" "metrics-${METRICS_ROLE}-${PREV_MONTH}.csv" "metrics-${CURRENT_MONTH}.csv" "metrics-${PREV_MONTH}.csv"; do
+    if [ -f "$METRICS_DIR/$pattern" ]; then
+        FILES="$FILES $METRICS_DIR/$pattern"
+    fi
+done
 
 if [ -z "$FILES" ]; then
-    echo "No metrics files found for $CURRENT_MONTH or $PREV_MONTH."
+    echo "No metrics files found for role $METRICS_ROLE."
     exit 1
 fi
 
-# AWK script to find max values
-awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -F, '
+awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE" -F, '
     BEGIN {
-        # Calculate cutoff timestamp (approximate)
+        min_mem_avail = 999999
         cmd = "date -d \"-" days " days\" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-" days "d +%Y-%m-%dT%H:%M:%SZ"
         cmd | getline cutoff_date
         close(cmd)
-        
+
         if (show_header == "true") {
             printf "Analyzing data since: %s\n\n", cutoff_date
-            printf "% -20s % -15s % -25s\n", "METRIC", "PEAK VALUE", "TIMESTAMP"
-            printf "% -20s % -15s % -25s\n", "--------------------", "---------------    ", "-------------------------"
-        } else {
-             printf "% -20s % -15s % -25s\n", "METRIC", "PEAK VALUE", "TIMESTAMP"
-             printf "% -20s % -15s % -25s\n", "--------------------", "---------------    ", "-------------------------"
         }
+        printf "% -24s % -15s % -25s\n", "METRIC", "PEAK VALUE", "TIMESTAMP"
+        printf "% -24s % -15s % -25s\n", "------------------------", "---------------", "-------------------------"
     }
 
-    # Skip headers
     $1 == "timestamp" { next }
 
-    # Process lines
     {
         timestamp = $1
         if (timestamp < cutoff_date) next
 
-        # Memory Used MB ($5), Memory % ($7)
-        if ($5 + 0 > max_mem_mb) { max_mem_mb = $5; t_mem_mb = $1; }
-        if ($7 + 0 > max_mem_pct) { max_mem_pct = $7; t_mem_pct = $1; }
-        
-        # CPU 1m ($8), 5m ($9), 15m ($10)
-        if ($8 + 0 > max_cpu_1) { max_cpu_1 = $8; t_cpu_1 = $1; }
-        if ($9 + 0 > max_cpu_5) { max_cpu_5 = $9; t_cpu_5 = $1; }
-        if ($10 + 0 > max_cpu_15) { max_cpu_15 = $10; t_cpu_15 = $1; }
-        
-        # Disk Used GB ($11), Disk % ($13)
-        if ($11 + 0 > max_disk_gb) { max_disk_gb = $11; t_disk_gb = $1; }
-        if ($13 + 0 > max_disk_pct) { max_disk_pct = $13; t_disk_pct = $1; }
+        row_role = $2
+        if (row_role == "" && role_filter == "main-app") {
+            row_role = "main-app"
+        }
+        if (row_role != "" && row_role != role_filter) next
+
+        mem_avail = ($7 == "" ? -1 : $7 + 0)
+        mem_pressure = ($8 == "" ? -1 : $8 + 0)
+        if (mem_pressure < 0 && $7 != "" && $6 != "") {
+            mem_pressure = $7 + 0
+        }
+        swap_used = ($9 == "" ? -1 : $9 + 0)
+        cpu_norm = ($16 == "" ? -1 : $16 + 0)
+        disk_pct = ($19 == "" ? -1 : $19 + 0)
+        api_rss = ($23 == "" ? -1 : $23 + 0)
+
+        if (mem_avail >= 0 && mem_avail < min_mem_avail) { min_mem_avail = mem_avail; t_min_mem = $1 }
+        if (mem_pressure >= 0 && mem_pressure > max_mem_pressure) { max_mem_pressure = mem_pressure; t_mem_p = $1 }
+        if (swap_used >= 0 && swap_used > max_swap) { max_swap = swap_used; t_swap = $1 }
+        if (cpu_norm >= 0 && cpu_norm > max_cpu) { max_cpu = cpu_norm; t_cpu = $1 }
+        if (disk_pct >= 0 && disk_pct > max_disk) { max_disk = disk_pct; t_disk = $1 }
+        if (api_rss >= 0 && api_rss > max_rss) { max_rss = api_rss; t_rss = $1 }
 
         count++
     }
-    
+
     END {
         if (count == 0) {
             print "No data records found within the specified date range."
             exit
         }
 
-        printf "% -20s % -15s % -25s\n", "Memory Usage", max_mem_mb " MB", t_mem_mb
-        printf "% -20s % -15s % -25s\n", "Memory %", max_mem_pct " %", t_mem_pct
-        printf "% -20s % -15s % -25s\n", "CPU Load (1m)", max_cpu_1, t_cpu_1
-        printf "% -20s % -15s % -25s\n", "CPU Load (5m)", max_cpu_5, t_cpu_5
-        printf "% -20s % -15s % -25s\n", "Disk Usage", max_disk_gb " GB", t_disk_gb
-        printf "% -20s % -15s % -25s\n", "Disk %", max_disk_pct " %", t_disk_pct
-        
+        if (max_mem_pressure >= 0) printf "% -24s % -15s % -25s\n", "Memory pressure %", max_mem_pressure " %", t_mem_p
+        if (min_mem_avail < 999999) printf "% -24s % -15s % -25s\n", "Min MemAvailable MB", min_mem_avail " MB", t_min_mem
+        if (max_swap >= 0) printf "% -24s % -15s % -25s\n", "Swap used MB", max_swap " MB", t_swap
+        if (max_cpu >= 0) printf "% -24s % -15s % -25s\n", "CPU normalized %", max_cpu " %", t_cpu
+        if (max_disk >= 0) printf "% -24s % -15s % -25s\n", "Disk %", max_disk " %", t_disk
+        if (max_rss >= 0) printf "% -24s % -15s % -25s\n", "API RSS MB", max_rss " MB", t_rss
+
         print "\nTotal records analyzed: " count
     }
 ' $FILES

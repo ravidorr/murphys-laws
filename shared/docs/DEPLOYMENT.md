@@ -20,7 +20,7 @@ This guide explains how to safely deploy Murphy's Laws to the production droplet
 
 These steps have been completed but are documented for reference:
 
-### On Droplet (45.55.124.212)
+### On Droplet (167.99.53.90)
 
 1. **Add swap space** (critical for 1GB droplet):
 ```bash
@@ -127,13 +127,13 @@ This script:
 npm run build
 
 # 2. Sync to droplet
-rsync -avz --delete dist/ root@45.55.124.212:/root/murphys-laws/dist/
+rsync -avz --delete web/dist/ ravidor@167.99.53.90:/root/murphys-laws/web/dist/
 
 # 3. Restart services
-ssh root@45.55.124.212 "cd /root/murphys-laws && pm2 restart ecosystem.config.cjs"
+ssh ravidor@167.99.53.90 "cd /root/murphys-laws/backend && pm2 restart ecosystem.config.cjs"
 
 # 4. Check status
-ssh root@45.55.124.212 "pm2 list"
+ssh ravidor@167.99.53.90 "pm2 list"
 ```
 
 ---
@@ -143,7 +143,7 @@ ssh root@45.55.124.212 "pm2 list"
 ### Check Service Status
 
 ```bash
-ssh root@45.55.124.212 "pm2 list"
+ssh ravidor@167.99.53.90 "pm2 list"
 ```
 
 ### View Logs
@@ -165,7 +165,7 @@ ssh root@167.99.53.90 "tail -f /var/log/nginx/error.log"
 ### Check System Resources
 
 ```bash
-ssh root@45.55.124.212 "free -h && top -b -n 1 | head -15"
+ssh ravidor@167.99.53.90 "free -h && top -b -n 1 | head -15"
 ```
 
 ---

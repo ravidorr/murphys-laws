@@ -44,3 +44,14 @@ test('deployment installs the backup restore checker', () => {
     /sudo cp .*test-backup-restore\.sh \/usr\/local\/bin\/test-backup-restore\.sh/,
   );
 });
+
+test('deployment installs operational monitoring scripts', () => {
+  assert.match(
+    deployScript,
+    /performance-tracker\.sh \/usr\/local\/bin\/performance-tracker\.sh/,
+  );
+  assert.match(
+    deployScript,
+    /cost-optimization-report\.sh \/usr\/local\/bin\/cost-optimization-report\.sh/,
+  );
+});

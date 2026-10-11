@@ -71,7 +71,7 @@ if command -v pm2 &> /dev/null; then
         # Create formatted table with headers
         printf "  %-20s %-10s %-10s\n" "Name" "Status" "Restarts" > "$TEMP_DIR/pm2.txt"
         printf "  %-20s %-10s %-10s\n" "--------------------" "----------" "----------" >> "$TEMP_DIR/pm2.txt"
-        echo "$PM2_STATUS" | jq -r '.[] | select(.name | IN("murphys-api", "murphys-frontend")) | "  \(.name | @text | .[0:20])    \(.pm2_env.status | @text | .[0:10])   \(.pm2_env.restart_time)"' | while IFS= read -r line; do
+        echo "$PM2_STATUS" | jq -r '.[] | select(.name == "murphys-api") | "  \(.name | @text | .[0:20])    \(.pm2_env.status | @text | .[0:10])   \(.pm2_env.restart_time)"' | while IFS= read -r line; do
             name=$(echo "$line" | awk '{print $2}')
             status=$(echo "$line" | awk '{print $3}')
             restarts=$(echo "$line" | awk '{print $4}')
@@ -155,7 +155,10 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="PERFORMANCE METRICS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
+METRICS_FILE="/var/log/performance-metrics/metrics-main-app-$(date +%Y-%m).csv"
+if [ ! -f "$METRICS_FILE" ]; then
+    METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
+fi
 if [ -f "$METRICS_FILE" ]; then
     tail -24 "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
 
@@ -196,7 +199,7 @@ if [ "$DAY_OF_MONTH" = "15" ]; then
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run peak analyzer (suppress headers)
-    PEAK_REPORT=$(/root/murphys-laws/backend/scripts/analyze-resource-peaks.sh --no-header 2>/dev/null)
+    PEAK_REPORT=$(/root/murphys-laws/backend/scripts/analyze-resource-peaks.sh --no-header --role main-app 2>/dev/null)
     if [ -n "$PEAK_REPORT" ]; then
         REPORT+="$PEAK_REPORT\n\n"
     else
@@ -372,6 +375,7 @@ if [ -d /root/backups ]; then
 
     TOTAL_BACKUP_SIZE=$(du -sh /root/backups 2>/dev/null | cut -f1)
     REPORT+="Total Backup Size: $TOTAL_BACKUP_SIZE\n"
+    REPORT+="Off-site copy: not configured (local integrity only)\n"
     REPORT+="\n"
 else
     REPORT+="Backup directory not found\n\n"

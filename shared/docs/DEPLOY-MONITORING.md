@@ -44,7 +44,7 @@ The `daily-report.sh` script (runs at 5 AM UTC) consolidates multiple monitoring
 - **SSL certificate monitoring** (expiration check, validation)
 - **Log analysis & attack detection** (suspicious patterns, security issues)
 - **Vulnerability scanning** (Sundays only - CVEs, outdated packages)
-- **Cost optimization report** (1st of month only - resource usage recommendations)
+- **Cost optimization report** (1st of month only - evidence-based capacity summary; see [OPERATIONAL-METRICS.md](./OPERATIONAL-METRICS.md))
 
 This consolidated approach reduces email noise while providing comprehensive daily insights.
 
@@ -64,7 +64,9 @@ This consolidated approach reduces email noise while providing comprehensive dai
 # From your local machine in the project directory
 scp backend/scripts/health-check.mjs ravidor@167.99.53.90:/tmp/
 scp scripts/health-monitor.sh ravidor@167.99.53.90:/tmp/
-scp scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/analyze-resource-peaks.sh ravidor@167.99.53.90:/tmp/
+scp backend/config/operational-metrics-main-app.env.example ravidor@167.99.53.90:/tmp/
 scp scripts/ssl-monitor.sh ravidor@167.99.53.90:/tmp/
 scp scripts/vulnerability-scanner.sh ravidor@167.99.53.90:/tmp/
 scp scripts/log-analyzer.sh ravidor@167.99.53.90:/tmp/
@@ -270,7 +272,13 @@ sudo chmod +x /usr/local/bin/daily-report.sh
 
 # The daily report should already be in cron from previous setup
 # Verify:
-sudo crontab -l | grep daily-status-report
+sudo crontab -l | grep daily-report
+
+# Optional: hourly metrics for n8n (see shared/docs/OPERATIONAL-METRICS.md)
+sudo mkdir -p /etc/murphys-laws
+sudo cp /root/murphys-laws/backend/config/operational-metrics-n8n.env.example /etc/murphys-laws/operational-metrics.env
+# Add to crontab:
+# 0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
 ```
 
 ---
