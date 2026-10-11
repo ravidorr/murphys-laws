@@ -80,6 +80,12 @@ jobs:
             sudo install -d -m 755 "$TARGET_DIR/shared"
             sudo install -d -m 755 "$TARGET_DIR/shared/modules"
 
+            sudo install -d -m 755 /etc/murphys-laws
+            if [ -f "$TARGET_DIR/backend/config/infrastructure-inventory.json" ] && [ ! -f /etc/murphys-laws/infrastructure-inventory.json ]; then
+              sudo cp "$TARGET_DIR/backend/config/infrastructure-inventory.json" /etc/murphys-laws/infrastructure-inventory.json
+              sudo chmod 644 /etc/murphys-laws/infrastructure-inventory.json
+            fi
+
             sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
             sudo rsync -a --delete "$STAGING_DIR/backend/src/" "$TARGET_DIR/backend/src/"
             sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
@@ -183,6 +189,7 @@ jobs:
             sudo cp "$TARGET_DIR/backend/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh 2>/dev/null || true
             sudo mkdir -p /etc/murphys-laws
             sudo cp "$TARGET_DIR/backend/config/operational-metrics-main-app.env.example" /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/config/infrastructure-inventory.json.example" /etc/murphys-laws/infrastructure-inventory.json.example 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
             sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
 

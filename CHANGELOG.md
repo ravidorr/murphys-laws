@@ -31,7 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Require per-provider billing verification before marking infrastructure
   inventory verified; align cost report UNVERIFIED copy with mixed providers.
-  Backend bumped to `2.3.22`; root to `2.6.52`.
+- Store verified infrastructure inventory under `/etc/murphys-laws/` (default
+  `INVENTORY_FILE`) so deploy rsync does not delete it; migrate legacy path on
+  deploy.
+  Backend bumped to `2.3.23`; root to `2.6.53`.
 - Documented Network Solutions as the murphys-laws.com registrar in the
   infrastructure inventory example, including amortized multi-year domain costs.
   Backend bumped to `2.3.21`; root to `2.6.51`.
