@@ -288,6 +288,14 @@ EOF
 
  **Note:** SSL monitoring, log analysis, vulnerability scanning (Sundays), and cost optimization (1st of month) are all integrated into the daily-report.sh script and run as part of the daily status report at 5 AM UTC.
 
+The daily report uses `backend/scripts/render-daily-report.ts` for multipart HTML and
+plain-text delivery. After deploy, validate formatting with:
+
+```bash
+sudo DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+  /usr/local/bin/daily-report.sh --test-email
+```
+
 1. **Update DNS**:
 - Update A record for murphys-laws.com to <NEW_IP>
 - Update A record for <www.murphys-laws.com> to <NEW_IP>

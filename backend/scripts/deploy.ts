@@ -132,6 +132,14 @@ async function deploy(): Promise<void> {
     'Updating resource peaks analyzer'
   );
   exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/log-analyzer.sh /usr/local/bin/log-analyzer.sh 2>/dev/null && sudo chmod +x /usr/local/bin/log-analyzer.sh || true"`,
+    'Updating log analyzer script'
+  );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh 2>/dev/null && sudo chmod +x /usr/local/bin/vulnerability-scanner.sh || true"`,
+    'Updating vulnerability scanner script'
+  );
+  exec(
     `ssh ${DROPLET_HOST} "sudo mkdir -p /etc/murphys-laws && sudo cp ${DROPLET_PATH}/backend/config/operational-metrics-main-app.env.example /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true && sudo cp ${DROPLET_PATH}/backend/config/infrastructure-inventory.json.example /etc/murphys-laws/infrastructure-inventory.json.example 2>/dev/null || true"`,
     'Publishing operational metrics and inventory examples under /etc/murphys-laws'
   );

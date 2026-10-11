@@ -55,6 +55,8 @@ const INLINE_SOURCE_ROOTS = [
 const CSS_ROOTS = ['web/styles', 'web/public/styles'];
 const CSS_TOKEN_DEFINITION = 'web/styles/partials/variables.css';
 const CSS_PRINT_ALLOWLIST = 'web/styles/partials/print.css';
+/** Gmail-safe operational email HTML requires inline style attributes on table cells. */
+const INLINE_CSS_ALLOWLIST = new Set(['backend/scripts/render-daily-report.ts']);
 const IOS_EXPORT_COMMAND = 'tsx shared/design-tokens/export-ios-tokens.ts';
 const IOS_PROJECT_EXPORT_COMMAND =
   'npm --prefix .. run design:export:ios';
@@ -520,7 +522,9 @@ export function runConformance(root: string): ConformanceViolation[] {
       const file = relative(root, absolute);
       if (isTestFile(file) || !SOURCE_EXTENSIONS.has(path.extname(file))) continue;
       const text = fs.readFileSync(absolute, 'utf8');
-      violations.push(...scanInlineCss(file, text));
+      if (!INLINE_CSS_ALLOWLIST.has(file)) {
+        violations.push(...scanInlineCss(file, text));
+      }
       violations.push(...scanReactSource(file, text));
     }
   }
