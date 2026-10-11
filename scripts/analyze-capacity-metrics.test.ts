@@ -92,3 +92,17 @@ test('analyzeCapacity can reach Manual review candidate when gates pass', () => 
   assert.match(report, /512MB droplets remain blocked/);
   assert.doesNotMatch(report, /Consolidate Droplets/i);
 });
+
+test('analyzeCapacity enforces PM2 headroom per sample limit', () => {
+  const now = new Date('2026-02-01T12:00:00Z');
+  const rows = hourlyRows(30, now).map((row, index) =>
+    buildRow({
+      ...row,
+      pm2ApiRssMb: 325,
+      pm2ApiMemoryLimitMb: index < 15 * 24 ? 500 : 400,
+    }),
+  );
+  const analysis = analyzeCapacity(rows, 'main-app', DEFAULT_THRESHOLDS, now);
+  assert.notEqual(analysis.decision, 'Manual review candidate');
+  assert.ok(analysis.reasons.some((r) => r.includes('headroom')));
+});

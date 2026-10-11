@@ -254,11 +254,16 @@ export function analyzeCapacity(
         `Peak API RSS ${peakRss}MB exceeds ${thresholds.maxPm2ApiRssMb}MB comfort threshold.`,
       );
     }
-    const limit = inWindow.find((r) => r.pm2ApiMemoryLimitMb !== null)?.pm2ApiMemoryLimitMb ?? 500;
-    if (peakRss > limit - thresholds.minPm2MemoryHeadroomMb) {
+    const headroomViolation = inWindow.some(
+      (r) =>
+        r.pm2ApiRssMb !== null &&
+        r.pm2ApiMemoryLimitMb !== null &&
+        r.pm2ApiRssMb > r.pm2ApiMemoryLimitMb - thresholds.minPm2MemoryHeadroomMb,
+    );
+    if (headroomViolation) {
       manualReviewEligible = false;
       reasons.push(
-        `API RSS too close to PM2 limit (${limit}MB); need ${thresholds.minPm2MemoryHeadroomMb}MB headroom.`,
+        `API RSS too close to PM2 limit for at least one sample; need ${thresholds.minPm2MemoryHeadroomMb}MB headroom.`,
       );
     }
   }

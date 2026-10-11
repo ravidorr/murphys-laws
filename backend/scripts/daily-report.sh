@@ -181,15 +181,15 @@ if [ -f "$METRICS_FILE" ]; then
     '
 
     # Calculate averages (header-aware for legacy and role-aware CSV)
-    AVG_FRONTEND=$(awk -F',' "$METRICS_AWK" 'NR>1 && fe>0 && $fe != "" {sum+=$fe; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_API=$(awk -F',' "$METRICS_AWK" 'NR>1 && ae>0 && $ae != "" {sum+=$ae; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_DB=$(awk -F',' "$METRICS_AWK" 'NR>1 && de>0 && $de != "" {sum+=$de; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_MEMORY=$(awk -F',' "$METRICS_AWK" 'NR>1 && mp>0 && $mp != "" {sum+=$mp; count++} END {if (count>0) printf "%.1f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_FRONTEND=$(awk -F',' "${METRICS_AWK} NR>1 && fe>0 && \$fe != \"\" {sum+=\$fe; count++} END {if (count>0) printf \"%.0f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    AVG_API=$(awk -F',' "${METRICS_AWK} NR>1 && ae>0 && \$ae != \"\" {sum+=\$ae; count++} END {if (count>0) printf \"%.0f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    AVG_DB=$(awk -F',' "${METRICS_AWK} NR>1 && de>0 && \$de != \"\" {sum+=\$de; count++} END {if (count>0) printf \"%.0f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    AVG_MEMORY=$(awk -F',' "${METRICS_AWK} NR>1 && mp>0 && \$mp != \"\" {sum+=\$mp; count++} END {if (count>0) printf \"%.1f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
 
     # Get max values
-    MAX_FRONTEND=$(awk -F',' "$METRICS_AWK" 'NR>1 && fe>0 && $fe != "" {if ($fe+0>max) max=$fe+0} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_API=$(awk -F',' "$METRICS_AWK" 'NR>1 && ae>0 && $ae != "" {if ($ae+0>max) max=$ae+0} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_DB=$(awk -F',' "$METRICS_AWK" 'NR>1 && de>0 && $de != "" {if ($de+0>max) max=$de+0} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_FRONTEND=$(awk -F',' "${METRICS_AWK} NR>1 && fe>0 && \$fe != \"\" {if (\$fe+0>max) max=\$fe+0} END {if (max>0) printf \"%.0f\", max; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    MAX_API=$(awk -F',' "${METRICS_AWK} NR>1 && ae>0 && \$ae != \"\" {if (\$ae+0>max) max=\$ae+0} END {if (max>0) printf \"%.0f\", max; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    MAX_DB=$(awk -F',' "${METRICS_AWK} NR>1 && de>0 && \$de != \"\" {if (\$de+0>max) max=\$de+0} END {if (max>0) printf \"%.0f\", max; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
 
     REPORT+="Response Times:\n"
     REPORT+="  • Frontend: avg ${AVG_FRONTEND}ms, max ${MAX_FRONTEND}ms\n"

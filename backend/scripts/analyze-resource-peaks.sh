@@ -47,7 +47,14 @@ CURRENT_MONTH=$(date +%Y-%m)
 PREV_MONTH=$(date -d "1 month ago" +%Y-%m 2>/dev/null || date -v-1m +%Y-%m 2>/dev/null)
 
 FILES=""
-for pattern in "metrics-${METRICS_ROLE}-${CURRENT_MONTH}.csv" "metrics-${METRICS_ROLE}-${PREV_MONTH}.csv" "metrics-${CURRENT_MONTH}.csv" "metrics-${PREV_MONTH}.csv"; do
+PATTERNS=(
+    "metrics-${METRICS_ROLE}-${CURRENT_MONTH}.csv"
+    "metrics-${METRICS_ROLE}-${PREV_MONTH}.csv"
+)
+if [ "$METRICS_ROLE" = "main-app" ]; then
+    PATTERNS+=("metrics-${CURRENT_MONTH}.csv" "metrics-${PREV_MONTH}.csv")
+fi
+for pattern in "${PATTERNS[@]}"; do
     if [ -f "$METRICS_DIR/$pattern" ]; then
         FILES="$FILES $METRICS_DIR/$pattern"
     fi

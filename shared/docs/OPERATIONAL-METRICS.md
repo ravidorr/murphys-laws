@@ -20,8 +20,8 @@ Hourly collectors write CSV files under `/var/log/performance-metrics/` (configu
 | `memory_available_mb` | `MemAvailable` from `free -m` |
 | `memory_pressure_percent` | `100 * (1 - MemAvailable/MemTotal)` |
 | `swap_used_mb` | Swap used |
-| `swap_in` | `/proc/vmstat` pgpgin since boot (cumulative) |
-| `swap_out` | `/proc/vmstat` pgpgout since boot (cumulative) |
+| `swap_in` | `/proc/vmstat` pswpin since boot (cumulative swap pages in) |
+| `swap_out` | `/proc/vmstat` pswpout since boot (cumulative swap pages out) |
 | `cpu_cores` | `nproc` |
 | `cpu_load_1m` | Load average 1m |
 | `cpu_load_5m` | Load average 5m |
