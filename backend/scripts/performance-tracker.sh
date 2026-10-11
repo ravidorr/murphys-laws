@@ -17,7 +17,7 @@ FRONTEND_URL="${FRONTEND_URL:-https://murphys-laws.com}"
 API_URL="${API_URL:-https://murphys-laws.com/api/health}"
 DB_PATH="${DB_PATH:-/root/murphys-laws/backend/murphys.db}"
 PM2_API_NAME="${PM2_API_NAME:-murphys-api}"
-PM2_API_MEMORY_LIMIT_MB="${PM2_API_MEMORY_LIMIT_MB:-500}"
+PM2_API_MEMORY_LIMIT_MB="${PM2_API_MEMORY_LIMIT_MB:-}"
 
 LOG_FILE="/var/log/performance-tracker.log"
 METRICS_FILE="$METRICS_DIR/metrics-${METRICS_ROLE}-$(date +%Y-%m).csv"
@@ -36,6 +36,26 @@ append_error() {
     else
         COLLECTOR_ERRORS="$1"
     fi
+}
+
+parse_pm2_memory_limit_mb() {
+    local raw="$1"
+    if [ -z "$raw" ] || [ "$raw" = "null" ]; then
+        return 1
+    fi
+    if [[ "$raw" =~ ^[0-9]+$ ]]; then
+        echo "scale=0; $raw / 1048576" | bc
+        return 0
+    fi
+    if [[ "$raw" =~ ^([0-9]+)[Mm]$ ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    if [[ "$raw" =~ ^([0-9]+)[Gg]$ ]]; then
+        echo $((${BASH_REMATCH[1]} * 1024))
+        return 0
+    fi
+    return 1
 }
 
 if [ ! -f "$METRICS_FILE" ]; then
@@ -126,9 +146,19 @@ if [ "$METRICS_ROLE" = "main-app" ] && [ -n "$PM2_API_NAME" ] && command -v pm2 
         if [ -n "$PM2_MONIT_MEMORY" ] && [ "$PM2_MONIT_MEMORY" != "null" ]; then
             PM2_API_RSS_MB=$(echo "scale=1; $PM2_MONIT_MEMORY / 1024 / 1024" | bc)
         fi
+        PM2_MAX_RESTART=$(echo "$PM2_JSON" | jq -r --arg name "$PM2_API_NAME" '.[] | select(.name==$name) | .pm2_env.max_memory_restart // empty' 2>/dev/null)
+        if PARSED_LIMIT=$(parse_pm2_memory_limit_mb "$PM2_MAX_RESTART"); then
+            PM2_API_MEMORY_LIMIT_MB="$PARSED_LIMIT"
+        elif [ -z "$PM2_API_MEMORY_LIMIT_MB" ]; then
+            append_error "pm2_memory_limit_unavailable"
+        fi
     else
         append_error "pm2_unavailable"
     fi
+fi
+
+if [ "$METRICS_ROLE" = "main-app" ] && [ -z "$PM2_API_MEMORY_LIMIT_MB" ]; then
+    PM2_API_MEMORY_LIMIT_MB="500"
 fi
 
 echo "$TIMESTAMP,$METRICS_ROLE,$FRONTEND_RESPONSE_MS,$API_RESPONSE_MS,$DB_QUERY_MS,$MEMORY_USED,$MEMORY_AVAILABLE,$MEMORY_PRESSURE_PERCENT,$SWAP_USED,$SWAP_IN,$SWAP_OUT,$CPU_CORES,$CPU_LOAD_1M,$CPU_LOAD_5M,$CPU_LOAD_15M,$CPU_NORMALIZED_PERCENT,$DISK_USED,$DISK_AVAILABLE,$DISK_PERCENT,$DB_SIZE_MB,$PM2_API_RESTARTS,$PM2_API_UPTIME_HOURS,$PM2_API_RSS_MB,$PM2_API_MEMORY_LIMIT_MB,$COLLECTOR_ERRORS" >> "$METRICS_FILE"

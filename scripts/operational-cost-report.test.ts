@@ -56,6 +56,9 @@ test('cost report does not recommend automatic consolidation or downsizing', () 
     costReport,
     /CAPACITY_ANALYZER="\$\{CAPACITY_ANALYZER:-\$REPO_ROOT\/backend\/scripts\/analyze-capacity-metrics\.ts\}"/,
   );
+  assert.match(costReport, /run_capacity_analysis main-app/);
+  assert.match(costReport, /run_capacity_analysis n8n/);
+  assert.match(costReport, /metrics-n8n-/);
 });
 
 test('performance tracker uses role-aware metrics file and header', () => {
@@ -65,6 +68,8 @@ test('performance tracker uses role-aware metrics file and header', () => {
   assert.doesNotMatch(performanceTracker, /murphys-frontend/);
   assert.match(performanceTracker, /\/\^pswpin /);
   assert.doesNotMatch(performanceTracker, /pgpgin/);
+  assert.match(performanceTracker, /max_memory_restart/);
+  assert.match(performanceTracker, /parse_pm2_memory_limit_mb/);
 });
 
 test('daily report passes one combined awk program for metrics aggregates', () => {

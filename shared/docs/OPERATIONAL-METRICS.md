@@ -34,7 +34,7 @@ Hourly collectors write CSV files under `/var/log/performance-metrics/` (configu
 | `pm2_api_restarts` | PM2 restart counter for API process |
 | `pm2_api_uptime_hours` | Hours since PM2 process start |
 | `pm2_api_rss_mb` | PM2 API RSS |
-| `pm2_api_memory_limit_mb` | From ecosystem `max_memory_restart` |
+| `pm2_api_memory_limit_mb` | PM2 `max_memory_restart` at collection time (env override if PM2 unavailable) |
 | `collector_errors` | Semicolon-separated error tokens, or empty |
 
 ## Roles
