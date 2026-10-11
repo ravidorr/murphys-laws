@@ -9,9 +9,8 @@ This document provides step-by-step procedures for recovering from various disas
 3. [Recovery Scenarios](#recovery-scenarios)
    - [Database Corruption](#scenario-1-database-corruption)
    - [Main Droplet Complete Failure](#scenario-2-main-droplet-complete-failure)
-   - [n8n Droplet Failure](#scenario-3-n8n-droplet-failure)
-   - [SSL Certificate Expiration](#scenario-4-ssl-certificate-expiration)
-   - [Application Not Responding](#scenario-5-application-not-responding)
+   - [SSL Certificate Expiration](#scenario-3-ssl-certificate-expiration)
+   - [Application Not Responding](#scenario-4-application-not-responding)
 4. [Service Restoration Checklist](#service-restoration-checklist)
 
 ---
@@ -22,7 +21,6 @@ This document provides step-by-step procedures for recovering from various disas
 - **Domain Registrar**: (Add registrar info)
 - **Hosting Provider**: DigitalOcean
 - Main Droplet IP: 167.99.53.90
-- n8n Droplet IP: 45.55.74.28
 - **DNS Provider**: DigitalOcean
 - **Email Services**:
 - Forwarding: ImprovMX (improvmx.com)
@@ -43,21 +41,7 @@ This document provides step-by-step procedures for recovering from various disas
 
 **Backup Script**: `/usr/local/bin/backup-murphys.sh`
 
-### n8n Automation Droplet (45.55.74.28)
-
-**Local Backups**: `/root/backups/`
-- Database: `n8n-YYYY-MM-DD-HHMMSS.db`
-- Configuration: `n8n-config-YYYY-MM-DD-HHMMSS.tar.gz`
-- Retention: 30 days
-- Schedule: Daily at 2:00 AM UTC
-
-**GitHub Backup**: <https://github.com/ravidorr/n8n-workflows> (Private)
-- Individual workflow JSON files
-- Version controlled
-- Unlimited retention
-- Automated push: Daily at 2:00 AM UTC
-
-**Backup Script**: `/usr/local/bin/backup-n8n.sh`
+n8n automation was retired; recovery procedures cover the main application droplet only.
 
 ### Testing Backups
 
@@ -329,89 +313,7 @@ EOF
 
 ---
 
-### Scenario 3: n8n Droplet Failure
-
-**Recovery Steps**:
-
-1. **Create new droplet** (same as main droplet steps 1-3)
-
-2. **Install Docker**:
- ```bash
- curl -fsSL https://get.docker.com | sh
- systemctl enable docker
- systemctl start docker
- ```
-
-1. **Create n8n directory**:
- ```bash
- mkdir -p /var/lib/docker/volumes/n8n_data/_data
- ```
-
-1. **Restore workflows from GitHub**:
- ```bash
- cd /home/deploy
- git clone https://github.com/ravidorr/n8n-workflows.git
- ```
-
-1. **Start n8n**:
- ```bash
- docker run -d \
- --name n8n \
- --restart unless-stopped \
- -p 127.0.0.1:5678:5678 \
- -v n8n_data:/home/node/.n8n \
- -e N8N_HOST=n8n.murphys-laws.com \
- -e N8N_PROTOCOL=https \
- n8nio/n8n
- ```
-
-1. **Configure nginx for n8n**:
- ```bash
- # Create nginx config
- cat > /etc/nginx/sites-available/n8n << 'EOF'
-server {
- server_name n8n.murphys-laws.com;
-
- location / {
- proxy_pass http://127.0.0.1:5678;
- proxy_http_version 1.1;
- proxy_set_header Upgrade $http_upgrade;
- proxy_set_header Connection 'upgrade';
- proxy_set_header Host $host;
- proxy_cache_bypass $http_upgrade;
- }
-
- listen 80;
-}
-EOF
-
- ln -s /etc/nginx/sites-available/n8n /etc/nginx/sites-enabled/
- nginx -t
- systemctl restart nginx
- ```
-
-1. **Configure SSL**:
- ```bash
- certbot --nginx -d n8n.murphys-laws.com \
- --non-interactive --agree-tos --email ravidor@gmail.com
- ```
-
-1. **Import workflows**:
-- Access n8n UI: <https://n8n.murphys-laws.com>
-- Import each workflow JSON from GitHub
-
-1. **Install monitoring scripts**:
- (Same as main droplet, but use n8n-specific scripts)
-
-2. **Update DNS**:
-- Update A record for n8n.murphys-laws.com to <NEW_IP>
-
-**Expected Recovery Time**: 1-2 hours
-**Data Loss**: Minimal (workflows backed up to GitHub)
-
----
-
-### Scenario 4: SSL Certificate Expiration
+### Scenario 3: SSL Certificate Expiration
 
 **Symptoms**:
 - Browser shows "Your connection is not private"
@@ -450,7 +352,7 @@ EOF
 
 ---
 
-### Scenario 5: Application Not Responding
+### Scenario 4: Application Not Responding
 
 **Symptoms**:
 - 502 Bad Gateway
@@ -519,7 +421,6 @@ After any recovery, verify these services:
 - [ ] Backups running
 - [ ] Monitoring scripts operational
 - [ ] DNS resolving correctly
-- [ ] n8n workflows active (if applicable)
 
 ---
 
