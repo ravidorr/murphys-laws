@@ -100,6 +100,8 @@ test('renderHtmlReport escapes dynamic values and avoids terminal separators', (
   assert.match(html, /&lt;\/script&gt; &amp; \/laws/);
   assert.match(html, /max-width:640px/);
   assert.match(html, /Daily Status Report/);
+  assert.match(html, /width:1%;white-space:nowrap/);
+  assert.doesNotMatch(html, /width:38%/);
   assert.doesNotMatch(html, /━━━━━━━━|====|<pre>/);
 });
 
@@ -247,6 +249,13 @@ test('wrapHtmlForMimeTransport keeps HTML lines SMTP-safe', () => {
   assert.doesNotMatch(folded, /< tr\b/);
   assert.match(folded, /MAIN DROPLET \(murphys-laws\.com\)/);
   assert.match(folded, /ssh murphys-main/);
+});
+
+test('renderHtmlReport allows long label cells to wrap on narrow screens', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
+  const html = renderHtmlReport(report);
+  assert.match(html, /MAIN DROPLET \(murphys-laws\.com\)/);
+  assert.match(html, /max-width:42%;white-space:normal;word-break:break-word;/);
 });
 
 test('wrapHtmlForMimeTransport folds multibyte text on safe boundaries', () => {
