@@ -35,6 +35,8 @@ const shellScripts = [
   'backend/scripts/performance-tracker.sh',
   'backend/scripts/cost-optimization-report.sh',
   'backend/scripts/analyze-resource-peaks.sh',
+  'backend/scripts/log-analyzer.sh',
+  'backend/scripts/vulnerability-scanner.sh',
   'backend/scripts/backup-murphys.sh',
   'backend/scripts/daily-report.sh',
 ];
@@ -57,6 +59,8 @@ test('cost report does not recommend automatic consolidation or downsizing', () 
     /CAPACITY_ANALYZER="\$\{CAPACITY_ANALYZER:-\$REPO_ROOT\/backend\/scripts\/analyze-capacity-metrics\.ts\}"/,
   );
   assert.match(costReport, /run_capacity_analysis main-app/);
+  assert.match(costReport, /--format/);
+  assert.match(costReport, /emit_cost_json/);
   assert.doesNotMatch(costReport, /run_capacity_analysis n8n/);
   assert.match(costReport, /node_modules\/\.bin\/tsx/);
   assert.match(costReport, /cd "\$REPO_ROOT"/);
@@ -89,12 +93,9 @@ test('performance tracker uses role-aware metrics file and header', () => {
   assert.doesNotMatch(performanceTracker, /^API_URL="\$\{API_URL:-/m);
 });
 
-test('daily report passes one combined awk program for metrics aggregates', () => {
-  assert.match(dailyReport, /\$\{METRICS_AWK\} NR>1/);
-  assert.doesNotMatch(
-    dailyReport,
-    /awk -F',' "\$METRICS_AWK" 'NR>1/,
-  );
+test('daily report launcher delegates to the TypeScript renderer', () => {
+  assert.match(dailyReport, /render-daily-report\.ts/);
+  assert.match(dailyReport, /set -euo pipefail/);
 });
 
 test('peak analyzer includes legacy metrics files only for main-app role', () => {

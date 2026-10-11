@@ -163,6 +163,20 @@ sudo crontab -e
 
 **Note:** SSL monitoring, log analysis, vulnerability scanning (Sundays), and cost optimization (1st of month) are all integrated into the daily-report.sh script and run as part of the daily status report at 5 AM UTC.
 
+The daily report launcher delegates to `backend/scripts/render-daily-report.ts`, which
+builds a Gmail-safe HTML summary with fully expanded detail sections and a matching
+plain-text MIME alternative. Standalone report scripts keep their text output and also
+expose `--format json` for the renderer.
+
+After deploy, send an all-sections smoke test only to an explicit recipient:
+
+```bash
+DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+  sudo /usr/local/bin/daily-report.sh --test-email
+```
+
+The command exits without sending when `DAILY_REPORT_TEST_RECIPIENT` is unset.
+
 #### 6. Update Nginx Configuration (Rate Limiting & Security Headers)
 
 **IMPORTANT**: Test nginx configuration before applying!
