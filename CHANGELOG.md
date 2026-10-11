@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add a blank line between README badges and the introduction.
+
+### Changed
+
+- Add verified Shields.io badge rows to the root README.
+
 ### Fixed
 
 - Wrap daily report HTML at MIME tag boundaries so Postfix line folding does not
