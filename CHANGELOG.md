@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Wrap daily report HTML at MIME tag boundaries so Postfix line folding does not
+  break tags (for example `<td`) in Gmail. Backend bumped to `2.3.27`; root to
+  `2.6.57`.
+
 ### Changed
 
 - Restyle the daily operational email HTML and plain-text parts to match the

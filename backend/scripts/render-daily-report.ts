@@ -389,13 +389,44 @@ export function buildSubject(report: DailyReport): string {
   return base;
 }
 
+/** RFC 5321 limit; Postfix folds longer lines with a leading space that breaks HTML tags. */
+const MIME_HTML_MAX_LINE_LENGTH = 900;
+
+/**
+ * Inserts newlines between tags and folds any remaining long lines at `>` so MTA
+ * transport does not split inside tokens like `<td`.
+ */
+export function wrapHtmlForMimeTransport(html: string): string {
+  const withTagBreaks = html.replace(/></g, '>\n<');
+  const lines: string[] = [];
+  for (const segment of withTagBreaks.split('\n')) {
+    if (segment.length <= MIME_HTML_MAX_LINE_LENGTH) {
+      lines.push(segment);
+      continue;
+    }
+    let start = 0;
+    while (start < segment.length) {
+      let end = Math.min(start + MIME_HTML_MAX_LINE_LENGTH, segment.length);
+      if (end < segment.length) {
+        const foldAt = segment.lastIndexOf('>', end);
+        if (foldAt > start) {
+          end = foldAt + 1;
+        }
+      }
+      lines.push(segment.slice(start, end));
+      start = end;
+    }
+  }
+  return lines.join('\n');
+}
+
 export function buildMultipartMessage(
   report: DailyReport,
   options: MessageOptions,
 ): { subject: string; message: string } {
   const boundary = `murphys-daily-${Date.now().toString(16)}`;
   const plain = renderPlainTextReport(report);
-  const html = renderHtmlReport(report);
+  const html = wrapHtmlForMimeTransport(renderHtmlReport(report));
   const subject = buildSubject(report);
 
   const message = [
