@@ -251,6 +251,13 @@ test('wrapHtmlForMimeTransport keeps HTML lines SMTP-safe', () => {
   assert.match(folded, /ssh murphys-main/);
 });
 
+test('renderHtmlReport allows long label cells to wrap on narrow screens', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
+  const html = renderHtmlReport(report);
+  assert.match(html, /MAIN DROPLET \(murphys-laws\.com\)/);
+  assert.match(html, /max-width:42%;white-space:normal;word-break:break-word;/);
+});
+
 test('wrapHtmlForMimeTransport folds multibyte text on safe boundaries', () => {
   const emoji = '😀'.repeat(400);
   const wrapped = wrapHtmlForMimeTransport(
