@@ -389,13 +389,101 @@ export function buildSubject(report: DailyReport): string {
   return base;
 }
 
+/** RFC 5321 limit; Postfix folds longer lines with a leading space that breaks HTML tags. */
+const MIME_HTML_MAX_LINE_BYTES = 900;
+
+function utf8ByteLength(value: string): number {
+  return Buffer.byteLength(value, 'utf8');
+}
+
+function findHtmlMimeFoldEnd(segment: string, start: number, maxBytes: number): number {
+  let bytes = 0;
+  let lastGtEnd = start;
+  let lastSpaceEnd = start;
+  let index = start;
+
+  while (index < segment.length) {
+    const codePoint = segment.codePointAt(index)!;
+    const unitLength = codePoint > 0xffff ? 2 : 1;
+    const units = segment.slice(index, index + unitLength);
+    const unitBytes = utf8ByteLength(units);
+
+    if (bytes + unitBytes > maxBytes) {
+      if (lastGtEnd > start) {
+        return lastGtEnd;
+      }
+      if (lastSpaceEnd > start) {
+        return lastSpaceEnd;
+      }
+      if (index > start) {
+        return index;
+      }
+      return index + unitLength;
+    }
+
+    bytes += unitBytes;
+    if (units === '>') {
+      lastGtEnd = index + unitLength;
+    } else if (/\s/u.test(units)) {
+      lastSpaceEnd = index + unitLength;
+    }
+    index += unitLength;
+  }
+
+  return segment.length;
+}
+
+function foldEndAvoidingEntitySplit(segment: string, start: number, foldEnd: number): number {
+  if (foldEnd <= start) {
+    return foldEnd;
+  }
+  const probe = foldEnd - 1;
+  const amp = segment.lastIndexOf('&', probe);
+  if (amp < start) {
+    return foldEnd;
+  }
+  const semi = segment.indexOf(';', amp);
+  if (semi === -1 || semi < probe) {
+    return foldEnd;
+  }
+  return amp > start ? amp : foldEnd;
+}
+
+/**
+ * Inserts newlines between tags and folds any remaining long lines at `>` or
+ * whitespace (UTF-8 byte length) so MTA transport does not split HTML tags or
+ * entities.
+ */
+export function wrapHtmlForMimeTransport(html: string): string {
+  const withTagBreaks = html.replace(/></g, '>\n<');
+  const lines: string[] = [];
+  for (const segment of withTagBreaks.split('\n')) {
+    let start = 0;
+    while (start < segment.length) {
+      const rest = segment.slice(start);
+      if (utf8ByteLength(rest) <= MIME_HTML_MAX_LINE_BYTES) {
+        lines.push(rest);
+        break;
+      }
+      let foldEnd = findHtmlMimeFoldEnd(segment, start, MIME_HTML_MAX_LINE_BYTES);
+      foldEnd = foldEndAvoidingEntitySplit(segment, start, foldEnd);
+      if (foldEnd <= start) {
+        foldEnd = findHtmlMimeFoldEnd(segment, start, MIME_HTML_MAX_LINE_BYTES);
+      }
+      lines.push(segment.slice(start, foldEnd));
+      start = foldEnd;
+    }
+  }
+  return lines.join('\n');
+}
+
 export function buildMultipartMessage(
   report: DailyReport,
   options: MessageOptions,
 ): { subject: string; message: string } {
   const boundary = `murphys-daily-${Date.now().toString(16)}`;
   const plain = renderPlainTextReport(report);
-  const html = renderHtmlReport(report);
+  const html = wrapHtmlForMimeTransport(renderHtmlReport(report));
   const subject = buildSubject(report);
 
   const message = [

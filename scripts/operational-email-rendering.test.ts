@@ -15,8 +15,58 @@ import {
   mapVulnerabilitySection,
   renderPlainTextReport,
   runCli,
+  wrapHtmlForMimeTransport,
   type DailyReport,
 } from '../backend/scripts/render-daily-report.ts';
+
+const SMTP_MAX_LINE_BYTES = 998;
+
+function utf8ByteLength(value: string): number {
+  return Buffer.byteLength(value, 'utf8');
+}
+
+function htmlPartFromMultipart(message: string): string {
+  const marker = 'Content-Type: text/html; charset=utf-8';
+  const start = message.indexOf(marker);
+  assert.ok(start >= 0);
+  const bodyStart = message.indexOf('\n\n', start) + 2;
+  const boundaryEnd = message.indexOf('\n--murphys-daily-', bodyStart);
+  return message.slice(bodyStart, boundaryEnd === -1 ? undefined : boundaryEnd).trimEnd();
+}
+
+function simulateSmtpLineFolding(body: string): string {
+  const out: string[] = [];
+  for (const line of body.split('\n')) {
+    if (utf8ByteLength(line) <= SMTP_MAX_LINE_BYTES) {
+      out.push(line);
+      continue;
+    }
+    let rest = line;
+    while (utf8ByteLength(rest) > SMTP_MAX_LINE_BYTES) {
+      let cut = 0;
+      let bytes = 0;
+      while (cut < rest.length) {
+        const codePoint = rest.codePointAt(cut)!;
+        const unitLength = codePoint > 0xffff ? 2 : 1;
+        const unitBytes = utf8ByteLength(rest.slice(cut, cut + unitLength));
+        if (bytes + unitBytes > SMTP_MAX_LINE_BYTES) {
+          break;
+        }
+        bytes += unitBytes;
+        cut += unitLength;
+      }
+      if (cut === 0) {
+        cut = 1;
+      }
+      out.push(rest.slice(0, cut));
+      rest = ` ${rest.slice(cut)}`;
+    }
+    if (rest.length > 0) {
+      out.push(rest);
+    }
+  }
+  return out.join('\n');
+}
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -180,6 +230,35 @@ test('renderHtmlReport uses exclamation for attention glyphs', () => {
   assert.match(html, />!<\/span>/);
   assert.match(html, /font-weight:bold;">! /);
   assert.doesNotMatch(html, /&#9650;/);
+});
+
+test('wrapHtmlForMimeTransport keeps HTML lines SMTP-safe', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
+  const wrapped = wrapHtmlForMimeTransport(renderHtmlReport(report));
+  for (const line of wrapped.split('\n')) {
+    const bytes = utf8ByteLength(line);
+    assert.ok(
+      bytes <= SMTP_MAX_LINE_BYTES,
+      `line utf8 length ${bytes} exceeds ${SMTP_MAX_LINE_BYTES}`,
+    );
+  }
+  const folded = simulateSmtpLineFolding(wrapped);
+  assert.doesNotMatch(folded, /< td\b/);
+  assert.doesNotMatch(folded, /< tr\b/);
+  assert.match(folded, /MAIN DROPLET \(murphys-laws\.com\)/);
+  assert.match(folded, /ssh murphys-main/);
+});
+
+test('wrapHtmlForMimeTransport folds multibyte text on safe boundaries', () => {
+  const emoji = '😀'.repeat(400);
+  const wrapped = wrapHtmlForMimeTransport(
+    `<table><tr><td>${escapeHtml(emoji)}</td></tr></table>`,
+  );
+  for (const line of wrapped.split('\n')) {
+    assert.ok(utf8ByteLength(line) <= SMTP_MAX_LINE_BYTES);
+  }
+  assert.match(wrapped, /😀/);
+  assert.doesNotMatch(wrapped, /&#[0-9]+;\n/);
 });
 
 test('buildMultipartMessage uses multipart alternative', () => {
