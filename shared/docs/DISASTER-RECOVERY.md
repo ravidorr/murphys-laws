@@ -292,8 +292,8 @@ The daily report uses `backend/scripts/render-daily-report.ts` for multipart HTM
 plain-text delivery. After deploy, validate formatting with:
 
 ```bash
-DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
-  sudo /usr/local/bin/daily-report.sh --test-email
+sudo DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+  /usr/local/bin/daily-report.sh --test-email
 ```
 
 1. **Update DNS**:

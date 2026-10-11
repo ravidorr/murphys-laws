@@ -7,6 +7,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   buildMultipartMessage,
+  captureCommandStdout,
   collectDailyReport,
   escapeHtml,
   renderHtmlReport,
@@ -22,6 +23,11 @@ const rootDirectory = path.resolve(
 
 test('escapeHtml escapes metacharacters', () => {
   assert.equal(escapeHtml(`<script>"'&</script>`), '&lt;script&gt;&quot;&#39;&amp;&lt;/script&gt;');
+});
+
+test('captureCommandStdout preserves stdout on nonzero exit', () => {
+  const output = captureCommandStdout('bash', ['-lc', 'echo inactive; exit 3']);
+  assert.equal(output, 'inactive');
 });
 
 test('renderHtmlReport escapes dynamic values and avoids terminal separators', () => {

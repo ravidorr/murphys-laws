@@ -3,7 +3,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -221,10 +221,83 @@ function runShellCapture(script: string, args: string[], env: NodeJS.ProcessEnv)
 }
 
 function tryCommand(command: string, args: string[]): string {
+  return captureCommandStdout(command, args);
+}
+
+/** Returns stdout even when the process exits nonzero (e.g. systemctl is-active). */
+export function captureCommandStdout(command: string, args: string[]): string {
   try {
-    return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-  } catch {
+    return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  } catch (error) {
+    if (error && typeof error === 'object' && 'stdout' in error) {
+      const stdout = String((error as { stdout?: Buffer | string }).stdout ?? '').trim();
+      if (stdout.length > 0) {
+        return stdout;
+      }
+    }
     return '';
+  }
+}
+
+interface Pm2Process {
+  name?: string;
+  pm2_env?: {
+    status?: string;
+    restart_time?: number;
+  };
+}
+
+function resolvePm2Executable(): string | null {
+  if (process.env.PM2_PATH && existsSync(process.env.PM2_PATH)) {
+    return process.env.PM2_PATH;
+  }
+  const fromPath = captureCommandStdout('bash', ['-lc', 'command -v pm2']);
+  if (fromPath) {
+    return fromPath;
+  }
+  const defaultPath = '/root/.nvm/versions/node/v22.20.0/bin/pm2';
+  return existsSync(defaultPath) ? defaultPath : null;
+}
+
+function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: ReportItem } {
+  const pm2Executable = resolvePm2Executable();
+  if (!pm2Executable) {
+    return {
+      section: section('PM2 APPLICATIONS', [{ value: 'PM2 not available' }]),
+      summaryItem: { label: 'API', value: 'PM2 unavailable', tone: 'warning' },
+    };
+  }
+
+  try {
+    const stdout = execFileSync(pm2Executable, ['jlist'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const processes = JSON.parse(stdout) as Pm2Process[];
+    const api = processes.find((process) => process.name === 'murphys-api');
+    if (!api?.pm2_env?.status) {
+      return {
+        section: section('PM2 APPLICATIONS', [{ value: 'murphys-api not found in PM2' }]),
+        summaryItem: { label: 'API', value: 'Not running', tone: 'critical' },
+      };
+    }
+
+    const status = api.pm2_env.status;
+    const restarts = String(api.pm2_env.restart_time ?? 0);
+    const tone: ReportItem['tone'] = status === 'online' ? 'success' : 'critical';
+    return {
+      section: section('PM2 APPLICATIONS', [
+        { label: 'Name', value: 'murphys-api' },
+        { label: 'Status', value: status },
+        { label: 'Restarts', value: restarts },
+      ]),
+      summaryItem: { label: 'API', value: `${status} (${restarts} restarts)`, tone },
+    };
+  } catch {
+    return {
+      section: section('PM2 APPLICATIONS', [{ value: 'Unable to retrieve PM2 status' }]),
+      summaryItem: { label: 'API', value: 'Unknown', tone: 'warning' },
+    };
   }
 }
 
@@ -558,12 +631,24 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       { label: 'Load Average', value: load || 'Unknown' },
       { label: 'Memory', value: memory || 'Unknown' },
       { label: 'Disk', value: disk || 'Unknown' },
-      { label: 'nginx', value: tryCommand('systemctl', ['is-active', 'nginx']) || 'unknown' },
-      { label: 'fail2ban', value: tryCommand('systemctl', ['is-active', 'fail2ban']) || 'unknown' },
-      { label: 'SSH', value: tryCommand('systemctl', ['is-active', 'ssh']) || 'unknown' },
-      { label: 'Postfix', value: tryCommand('systemctl', ['is-active', 'postfix']) || 'unknown' },
+      { label: 'nginx', value: captureCommandStdout('systemctl', ['is-active', 'nginx']) || 'unknown' },
+      {
+        label: 'fail2ban',
+        value: captureCommandStdout('systemctl', ['is-active', 'fail2ban']) || 'unknown',
+      },
+      { label: 'SSH', value: captureCommandStdout('systemctl', ['is-active', 'ssh']) || 'unknown' },
+      {
+        label: 'Postfix',
+        value: captureCommandStdout('systemctl', ['is-active', 'postfix']) || 'unknown',
+      },
     ]),
   );
+
+  const pm2Status = collectMurphysApiPm2Status();
+  sections.push(pm2Status.section);
+  if (pm2Status.summaryItem) {
+    summary.push(pm2Status.summaryItem);
+  }
 
   const dbPath = path.join(repoRoot, 'backend/murphys.db');
   if (existsSync(dbPath)) {
@@ -696,6 +781,23 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         label: 'Backup size',
         value: tryCommand('du', ['-h', latestBackup]).split('\t')[0] ?? 'Unknown',
       });
+      try {
+        const backupStat = statSync(latestBackup);
+        const hoursOld = Math.floor((Date.now() - backupStat.mtimeMs) / (1000 * 60 * 60));
+        backupItems.push({
+          label: 'Backup date',
+          value: backupStat.mtime.toISOString().replace('T', ' ').slice(0, 19),
+        });
+        if (hoursOld > 48) {
+          backupItems.push({
+            value: `WARNING: Backup is ${hoursOld} hours old`,
+            tone: 'warning',
+          });
+          summary.push({ label: 'Backups', value: `${hoursOld} hours old`, tone: 'warning' });
+        }
+      } catch {
+        backupItems.push({ label: 'Backup date', value: 'Unknown' });
+      }
     } else {
       backupItems.push({ value: 'No database backups found' });
     }
