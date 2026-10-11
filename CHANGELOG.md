@@ -37,6 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Daily report HTML: long label cells use a fixed 38% column with normal word
+  breaks (avoids Gmail letter-stacking on `MAIN DROPLET`); section bullets render
+  as full-width list lines so they do not inherit wide label columns. Backend
+  bumped to `2.3.31`; root to `2.6.61`.
+
 - Wrap daily report HTML at MIME tag boundaries so Postfix line folding does not
   break tags (for example `<td`) in Gmail; fold by UTF-8 byte length at `>` or
   whitespace without splitting entities. Backend bumped to `2.3.28`; root to
