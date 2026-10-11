@@ -70,6 +70,11 @@ test('performance tracker uses role-aware metrics file and header', () => {
   assert.doesNotMatch(performanceTracker, /pgpgin/);
   assert.match(performanceTracker, /max_memory_restart/);
   assert.match(performanceTracker, /parse_pm2_memory_limit_mb/);
+  assert.match(performanceTracker, /if \[ -n "\$API_URL" \]/);
+  assert.doesNotMatch(
+    performanceTracker,
+    /if \[ "\$METRICS_ROLE" = "main-app" \] && \[ -n "\$API_URL" \]/,
+  );
 });
 
 test('daily report passes one combined awk program for metrics aggregates', () => {
