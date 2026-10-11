@@ -7,6 +7,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   buildMultipartMessage,
+  buildSubject,
   captureCommandStdout,
   collectDailyReport,
   escapeHtml,
@@ -121,6 +122,11 @@ test('runCli --test-email requires DAILY_REPORT_TEST_RECIPIENT', () => {
     () => runCli(['--test-email'], { env, sendmailPath: '/bin/false' }),
     /DAILY_REPORT_TEST_RECIPIENT/,
   );
+});
+
+test('test-email subject includes UTC timestamp tag', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:08:10.123Z') });
+  assert.match(buildSubject(report), /\[test 2026-10-11T12:08:10Z\]/);
 });
 
 test('collectDailyReport test fixture includes all optional sections', () => {
@@ -248,4 +254,14 @@ cat > "${path.join(tempDir, 'message.eml')}"
   assert.match(message, /PEAK RESOURCE USAGE/);
   assert.match(message, /WEEKLY VULNERABILITY SCAN/);
   assert.doesNotMatch(message, /====/);
+});
+
+test('deploy workflow sends template smoke email when renderer changes', () => {
+  const deployWorkflow = readFileSync(
+    path.join(rootDirectory, '.github/workflows/deploy.yml'),
+    'utf8',
+  );
+  assert.match(deployWorkflow, /render-daily-report\.ts/);
+  assert.match(deployWorkflow, /DAILY_REPORT_TEST_RECIPIENT/);
+  assert.match(deployWorkflow, /daily-report\.sh --test-email/);
 });

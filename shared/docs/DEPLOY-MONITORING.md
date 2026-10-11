@@ -176,6 +176,12 @@ sudo DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
 ```
 
 The command exits without sending when `DAILY_REPORT_TEST_RECIPIENT` is unset.
+Test messages include a UTC timestamp in the subject (`[test 2026-10-11T12:08:10Z]`) so
+repeat runs do not collapse into one Gmail thread.
+
+When `backend/scripts/render-daily-report.ts` changes on a push to `main`, the deploy
+workflow sends one template smoke email if the repository secret
+`DAILY_REPORT_TEST_RECIPIENT` is configured (same explicit recipient as manual runs).
 
 #### 6. Update Nginx Configuration (Rate Limiting & Security Headers)
 

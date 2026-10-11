@@ -21,6 +21,8 @@ export interface ReportSection {
 export interface DailyReport {
   date: string;
   subjectSuffix: string;
+  /** When set, appended to the subject as `[test <timestamp>]` for smoke-test mail. */
+  testEmailSentAtUtc?: string;
   preview: string;
   summary: ReportItem[];
   sections: ReportSection[];
@@ -147,7 +149,11 @@ export function renderHtmlReport(report: DailyReport): string {
 }
 
 export function buildSubject(report: DailyReport): string {
-  return `Daily Status Report - ${report.date}${report.subjectSuffix}`;
+  const base = `Daily Status Report - ${report.date}${report.subjectSuffix}`;
+  if (report.testEmailSentAtUtc) {
+    return `${base} [test ${report.testEmailSentAtUtc}]`;
+  }
+  return base;
 }
 
 export function buildMultipartMessage(
@@ -567,6 +573,7 @@ function buildTestEmailReport(now: Date): DailyReport {
   return {
     date,
     subjectSuffix: subjectSuffixForDate(now, true),
+    testEmailSentAtUtc: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
     preview: 'System Status | Database Metrics | Website Activity | Performance | Security | SSL Status | Backups',
     summary: [
       apiSummary,
