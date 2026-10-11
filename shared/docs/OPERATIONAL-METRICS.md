@@ -59,7 +59,9 @@ Automatic droplet resize or consolidation is never performed from report output.
 
 ## Infrastructure inventory
 
-Monthly cost reports read `$REPO_ROOT/backend/config/infrastructure-inventory.json` (not committed; copy from `infrastructure-inventory.json.example` on the droplet).
+Monthly cost reports read `/etc/murphys-laws/infrastructure-inventory.json` by default (`INVENTORY_FILE` override). Keep the verified file outside the deployed checkout: `backend/config/` is synchronized with `rsync --delete` on deploy, so an inventory file stored there is removed on the next release.
+
+Copy `backend/config/infrastructure-inventory.json.example` to `/etc/murphys-laws/infrastructure-inventory.json` on the droplet (deploy publishes the example under `/etc/murphys-laws/infrastructure-inventory.json.example`). Deploy migrates a legacy file from `backend/config/` to `/etc/murphys-laws/` once if present.
 
 Set `"verified": true` only after confirming `monthly_usd_estimate` for **every** `provider` in the file (for example DigitalOcean for the application droplet and droplet backups, Network Solutions for domain registration). The report treats the file-wide flag as verification of the entire inventory, not individual line items.
 

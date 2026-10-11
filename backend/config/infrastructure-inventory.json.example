@@ -1,6 +1,6 @@
 {
   "verified": false,
-  "note": "Copy to infrastructure-inventory.json on the host. Set verified true only after confirming monthly_usd_estimate for each listed provider (DigitalOcean for hosts and DO backups; Network Solutions for murphys-laws.com domain registration).",
+  "note": "Copy to /etc/murphys-laws/infrastructure-inventory.json on the droplet (not under the git checkout; deploy rsync deletes extraneous backend/config files). Set verified true only after confirming monthly_usd_estimate for each listed provider (DigitalOcean for hosts and DO backups; Network Solutions for murphys-laws.com domain registration).",
   "monthly_usd_estimate": null,
   "hosts": [
     {

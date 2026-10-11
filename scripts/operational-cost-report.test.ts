@@ -64,6 +64,10 @@ test('cost report does not recommend automatic consolidation or downsizing', () 
     costReport,
     /UNVERIFIED — confirm costs against each provider listed in the inventory/,
   );
+  assert.match(
+    costReport,
+    /INVENTORY_FILE="\$\{INVENTORY_FILE:-\/etc\/murphys-laws\/infrastructure-inventory\.json\}"/,
+  );
 });
 
 test('performance tracker uses role-aware metrics file and header', () => {
