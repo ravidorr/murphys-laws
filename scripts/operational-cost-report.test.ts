@@ -22,6 +22,14 @@ const backupScript = readFileSync(
   path.join(rootDirectory, 'backend/scripts/backup-murphys.sh'),
   'utf8',
 );
+const dailyReport = readFileSync(
+  path.join(rootDirectory, 'backend/scripts/daily-report.sh'),
+  'utf8',
+);
+const peakAnalyzer = readFileSync(
+  path.join(rootDirectory, 'backend/scripts/analyze-resource-peaks.sh'),
+  'utf8',
+);
 
 const shellScripts = [
   'backend/scripts/performance-tracker.sh',
@@ -55,6 +63,21 @@ test('performance tracker uses role-aware metrics file and header', () => {
   assert.match(performanceTracker, /memory_pressure_percent/);
   assert.match(performanceTracker, /pm2_api_rss_mb/);
   assert.doesNotMatch(performanceTracker, /murphys-frontend/);
+  assert.match(performanceTracker, /\/\^pswpin /);
+  assert.doesNotMatch(performanceTracker, /pgpgin/);
+});
+
+test('daily report passes one combined awk program for metrics aggregates', () => {
+  assert.match(dailyReport, /\$\{METRICS_AWK\} NR>1/);
+  assert.doesNotMatch(
+    dailyReport,
+    /awk -F',' "\$METRICS_AWK" 'NR>1/,
+  );
+});
+
+test('peak analyzer includes legacy metrics files only for main-app role', () => {
+  assert.match(peakAnalyzer, /METRICS_ROLE" = "main-app"/);
+  assert.match(peakAnalyzer, /PATTERNS\+=\("metrics-\$\{CURRENT_MONTH\}\.csv"/);
 });
 
 test('backup script verifies integrity before success', () => {

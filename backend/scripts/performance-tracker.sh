@@ -84,8 +84,8 @@ else
 fi
 
 SWAP_USED=$(free -m | awk '/Swap:/ {print $3}')
-SWAP_IN=$(awk '/^pgpgin / {print $2}' /proc/vmstat 2>/dev/null)
-SWAP_OUT=$(awk '/^pgpgout / {print $2}' /proc/vmstat 2>/dev/null)
+SWAP_IN=$(awk '/^pswpin / {print $2}' /proc/vmstat 2>/dev/null)
+SWAP_OUT=$(awk '/^pswpout / {print $2}' /proc/vmstat 2>/dev/null)
 
 CPU_CORES=$(nproc)
 LOAD_LINE=$(uptime | awk -F'load average:' '{print $2}')
