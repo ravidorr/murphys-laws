@@ -113,17 +113,33 @@ append "4. CAPACITY DECISION (30-DAY METRICS)"
 append "======================================="
 append ""
 
-if command -v npx &> /dev/null && [ -f "$CAPACITY_ANALYZER" ]; then
-    CAPACITY_SECTION=$(METRICS_DIR="$METRICS_DIR" METRICS_ROLE=main-app npx --yes tsx "$CAPACITY_ANALYZER" 2>/dev/null || true)
+run_capacity_analysis() {
+    local role="$1"
+    append "Capacity role: $role"
+    if ! command -v npx &> /dev/null || [ ! -f "$CAPACITY_ANALYZER" ]; then
+        append "Capacity analysis script not available on this host"
+        append ""
+        return
+    fi
+    CAPACITY_SECTION=$(METRICS_DIR="$METRICS_DIR" METRICS_ROLE="$role" npx --yes tsx "$CAPACITY_ANALYZER" 2>/dev/null || true)
     if [ -n "$CAPACITY_SECTION" ]; then
         append "$CAPACITY_SECTION"
     else
         append "Capacity analysis unavailable (tsx or metrics missing)"
     fi
+    append ""
+}
+
+run_capacity_analysis main-app
+if compgen -G "$METRICS_DIR/metrics-n8n-"*.csv >/dev/null 2>&1; then
+    run_capacity_analysis n8n
 else
-    append "Capacity analysis script not available on this host"
+    append "Capacity role: n8n"
+    append "No metrics-n8n-*.csv on this host."
+    append "Hourly collection runs on the n8n droplet; rsync monthly CSVs here for a"
+    append "consolidated report, or run cost-optimization-report.sh on the n8n host."
+    append ""
 fi
-append ""
 
 append "5. RECOMMENDATIONS"
 append "=================="

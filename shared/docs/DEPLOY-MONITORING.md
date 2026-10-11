@@ -260,25 +260,32 @@ for i in {1..30}; do curl -I https://murphys-laws.com; done
 The n8n droplet uses similar monitoring but doesn't need all the application-specific scripts.
 
 ```bash
-# From local machine
-scp scripts/daily-report.sh ravidor@45.55.74.28:/tmp/
+# From local machine (project root)
+scp backend/scripts/daily-report.sh ravidor@45.55.74.28:/tmp/
+scp backend/scripts/performance-tracker.sh ravidor@45.55.74.28:/tmp/
+scp backend/scripts/cost-optimization-report.sh ravidor@45.55.74.28:/tmp/
+scp backend/config/operational-metrics-n8n.env.example ravidor@45.55.74.28:/tmp/
 
 # SSH into n8n server
 ssh ravidor@45.55.74.28
 
-# Install script
+# Install scripts
 sudo cp /tmp/daily-report.sh /usr/local/bin/daily-report.sh
-sudo chmod +x /usr/local/bin/daily-report.sh
+sudo cp /tmp/performance-tracker.sh /usr/local/bin/performance-tracker.sh
+sudo cp /tmp/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh
+sudo chmod +x /usr/local/bin/daily-report.sh /usr/local/bin/performance-tracker.sh /usr/local/bin/cost-optimization-report.sh
 
 # The daily report should already be in cron from previous setup
 # Verify:
 sudo crontab -l | grep daily-report
 
-# Optional: hourly metrics for n8n (see shared/docs/OPERATIONAL-METRICS.md)
-sudo mkdir -p /etc/murphys-laws
-sudo cp /root/murphys-laws/backend/config/operational-metrics-n8n.env.example /etc/murphys-laws/operational-metrics.env
-# Add to crontab:
+# Hourly metrics for n8n (see shared/docs/OPERATIONAL-METRICS.md)
+sudo mkdir -p /etc/murphys-laws /var/log/performance-metrics
+sudo cp /tmp/operational-metrics-n8n.env.example /etc/murphys-laws/operational-metrics.env
+# Add to root crontab:
 # 0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
+# Optional: monthly n8n-only capacity section (1st of month, or via daily-report integration):
+# 0 6 1 * * /usr/local/bin/cost-optimization-report.sh >> /var/log/cost-optimization.log 2>&1
 ```
 
 ---
