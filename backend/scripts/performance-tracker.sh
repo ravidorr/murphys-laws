@@ -80,15 +80,25 @@ if [ "$METRICS_ROLE" = "main-app" ] && [ -n "$FRONTEND_URL" ]; then
     fi
 fi
 
-if [ "$METRICS_ROLE" = "main-app" ] && [ -n "$API_URL" ]; then
+if [ -n "$API_URL" ]; then
     API_START=$(date +%s%N)
-    API_RESPONSE=$(curl -s --max-time 30 "$API_URL" 2>/dev/null)
-    API_END=$(date +%s%N)
-    API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
-    DB_QUERY_MS=$(echo "$API_RESPONSE" | grep -o '"dbQueryTime":[0-9]*' | cut -d: -f2)
-    if [ -z "$DB_QUERY_MS" ]; then
-        append_error "api_health_unavailable"
-        API_RESPONSE_MS=""
+    if [ "$METRICS_ROLE" = "main-app" ]; then
+        API_RESPONSE=$(curl -s --max-time 30 "$API_URL" 2>/dev/null)
+        API_END=$(date +%s%N)
+        API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
+        DB_QUERY_MS=$(echo "$API_RESPONSE" | grep -o '"dbQueryTime":[0-9]*' | cut -d: -f2)
+        if [ -z "$DB_QUERY_MS" ]; then
+            append_error "api_health_unavailable"
+            API_RESPONSE_MS=""
+        fi
+    else
+        API_HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" --max-time 30 "$API_URL" 2>/dev/null)
+        API_END=$(date +%s%N)
+        API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
+        if [ "$API_HTTP_CODE" != "200" ]; then
+            API_RESPONSE_MS=""
+            append_error "api_http_${API_HTTP_CODE}"
+        fi
     fi
 fi
 

@@ -279,6 +279,12 @@ sudo chmod +x /usr/local/bin/daily-report.sh /usr/local/bin/performance-tracker.
 # Verify:
 sudo crontab -l | grep daily-report
 
+# Repository checkout (cost report runs analyze-capacity-metrics.ts via npx tsx)
+if [ ! -d /root/murphys-laws/.git ]; then
+  sudo git clone https://github.com/ravidorr/murphys-laws.git /root/murphys-laws
+fi
+cd /root/murphys-laws && git pull && npm ci
+
 # Hourly metrics for n8n (see shared/docs/OPERATIONAL-METRICS.md)
 sudo mkdir -p /etc/murphys-laws /var/log/performance-metrics
 sudo cp /tmp/operational-metrics-n8n.env.example /etc/murphys-laws/operational-metrics.env
