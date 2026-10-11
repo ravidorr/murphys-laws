@@ -160,7 +160,12 @@ if [ ! -f "$METRICS_FILE" ]; then
     METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
 fi
 if [ -f "$METRICS_FILE" ]; then
-    tail -24 "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
+    awk 'NR==1 { header=$0; next } { rows[NR-1]=$0; total=NR-1 } END {
+        print header
+        start=total-23
+        if (start < 1) start=1
+        for (i=start; i<=total; i++) print rows[i]
+    }' "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
 
     METRICS_AWK='
       function idx(name,    i) { return cols[name] }
