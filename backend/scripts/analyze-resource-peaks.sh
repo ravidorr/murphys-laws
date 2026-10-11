@@ -10,6 +10,7 @@ METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
 DEFAULT_DAYS=30
 DAYS=$DEFAULT_DAYS
 SHOW_HEADER=true
+OUTPUT_FORMAT="text"
 METRICS_ROLE="${METRICS_ROLE:-main-app}"
 
 while [[ $# -gt 0 ]]; do
@@ -17,6 +18,10 @@ while [[ $# -gt 0 ]]; do
         --no-header)
             SHOW_HEADER=false
             shift
+            ;;
+        --format)
+            OUTPUT_FORMAT="${2:-text}"
+            shift 2
             ;;
         --role)
             METRICS_ROLE="${2:-main-app}"
@@ -30,6 +35,10 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [ "$OUTPUT_FORMAT" = "json" ]; then
+    SHOW_HEADER=false
+fi
 
 if [ ! -d "$METRICS_DIR" ]; then
     echo "Error: Metrics directory $METRICS_DIR not found."
@@ -65,7 +74,7 @@ if [ -z "$FILES" ]; then
     exit 1
 fi
 
-awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE" -F, '
+awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE" -v output_format="$OUTPUT_FORMAT" -F, '
     BEGIN {
         min_mem_avail = 999999
         cmd = "date -d \"-" days " days\" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-" days "d +%Y-%m-%dT%H:%M:%SZ"
@@ -75,8 +84,10 @@ awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE"
         if (show_header == "true") {
             printf "Analyzing data since: %s\n\n", cutoff_date
         }
-        printf "% -24s % -15s % -25s\n", "METRIC", "PEAK VALUE", "TIMESTAMP"
-        printf "% -24s % -15s % -25s\n", "------------------------", "---------------", "-------------------------"
+        if (output_format != "json") {
+            printf "% -24s % -15s % -25s\n", "METRIC", "PEAK VALUE", "TIMESTAMP"
+            printf "% -24s % -15s % -25s\n", "------------------------", "---------------", "-------------------------"
+        }
     }
 
     function col(name) { return cols[name] + 0 }
@@ -129,7 +140,41 @@ awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE"
 
     END {
         if (count == 0) {
-            print "No data records found within the specified date range."
+            if (output_format == "json") {
+                print "{\"sampleCount\":0,\"metrics\":[]}"
+            } else {
+                print "No data records found within the specified date range."
+            }
+            exit
+        }
+
+        if (output_format == "json") {
+            printf("{\"sampleCount\":%d,\"metrics\":[", count)
+            sep = ""
+            if (max_mem_pressure >= 0) {
+                printf("%s{\"label\":\"Memory pressure percent\",\"value\":\"%s %%\",\"timestamp\":\"%s\"}", sep, max_mem_pressure, t_mem_p)
+                sep = ","
+            }
+            if (min_mem_avail < 999999) {
+                printf("%s{\"label\":\"Min MemAvailable MB\",\"value\":\"%s MB\",\"timestamp\":\"%s\"}", sep, min_mem_avail, t_min_mem)
+                sep = ","
+            }
+            if (max_swap >= 0) {
+                printf("%s{\"label\":\"Swap used MB\",\"value\":\"%s MB\",\"timestamp\":\"%s\"}", sep, max_swap, t_swap)
+                sep = ","
+            }
+            if (max_cpu >= 0) {
+                printf("%s{\"label\":\"CPU normalized percent\",\"value\":\"%s %%\",\"timestamp\":\"%s\"}", sep, max_cpu, t_cpu)
+                sep = ","
+            }
+            if (max_disk >= 0) {
+                printf("%s{\"label\":\"Disk percent\",\"value\":\"%s %%\",\"timestamp\":\"%s\"}", sep, max_disk, t_disk)
+                sep = ","
+            }
+            if (max_rss >= 0) {
+                printf("%s{\"label\":\"API RSS MB\",\"value\":\"%s MB\",\"timestamp\":\"%s\"}", sep, max_rss, t_rss)
+            }
+            print "]}"
             exit
         }
 

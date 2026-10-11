@@ -29,6 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Render the consolidated daily operational email through a TypeScript MIME
+  renderer with matching HTML and plain-text parts, structured JSON report
+  producers, restored log detail rows, and a `--test-email` mode that sends only
+  when `DAILY_REPORT_TEST_RECIPIENT` is set. Backend bumped to `2.3.24`; root to
+  `2.6.54`.
+- Harden the daily email renderer with PM2 API status in the summary, stale
+  backup warnings, preserved `systemctl` output, richer vulnerability JSON, and
+  sudo-safe `--test-email` documentation.
+- Allowlist operational email inline CSS in the design conformance gate.
+- Apply summary tone colors to section rows in daily email HTML, align the
+  vulnerability test fixture, and use live PM2 status in `--test-email` when
+  available.
 - Require per-provider billing verification before marking infrastructure
   inventory verified; align cost report UNVERIFIED copy with mixed providers.
 - Store verified infrastructure inventory under `/etc/murphys-laws/` (default
