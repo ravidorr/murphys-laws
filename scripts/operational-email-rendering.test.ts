@@ -49,6 +49,34 @@ test('renderHtmlReport escapes dynamic values and avoids terminal separators', (
   assert.doesNotMatch(html, /━━━━━━━━|====|<pre>/);
 });
 
+test('renderHtmlReport applies tone colors in section rows', () => {
+  const model: DailyReport = {
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: 'Preview',
+    summary: [],
+    sections: [
+      {
+        title: 'BACKUP STATUS',
+        items: [{ value: 'WARNING: Backup is 72 hours old', tone: 'warning' }],
+      },
+    ],
+  };
+
+  const html = renderHtmlReport(model);
+  assert.match(html, /color:#a16207/);
+  assert.match(html, /WARNING: Backup is 72 hours old/);
+});
+
+test('buildTestEmailReport vulnerability fixture has consistent issue count', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
+  const vuln = report.sections.find((entry) => entry.title === 'WEEKLY VULNERABILITY SCAN');
+  assert.ok(vuln);
+  const plain = renderPlainTextReport(report);
+  assert.doesNotMatch(plain, /Total issues: [1-9]/);
+  assert.match(plain, /No critical vulnerabilities or security updates found/);
+});
+
 test('renderPlainTextReport mirrors section content', () => {
   const model: DailyReport = {
     date: '2026-10-11',
