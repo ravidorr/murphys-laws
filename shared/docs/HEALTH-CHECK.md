@@ -42,48 +42,11 @@ npm run health-check
 - `0` - All health checks passed
 - `1` - One or more health checks failed (email alert sent)
 
-## Setting Up on n8n.io
+## Production scheduling
 
-1. **Create a Cron Workflow** in n8n
-- Trigger: Cron node (e.g., every 5 minutes: `*/5 * * * *`)
-
-1. **Add Execute Command Node**
-- Command: `cd /path/to/murphys-laws && npm run health-check`
-- Or use the direct script: `node /path/to/murphys-laws/backend/scripts/health-check.mjs`
-
-1. **Environment Variables**
-- Make sure your n8n environment has access to the `.env` file
-- Or set environment variables directly in n8n
-
-### Example n8n Workflow
-
-```json
-{
- "nodes": [
- {
- "name": "Schedule Trigger",
- "type": "n8n-nodes-base.cron",
- "parameters": {
- "rule": {
- "interval": [
- {
- "field": "minutes",
- "minutesInterval": 5
- }
- ]
- }
- }
- },
- {
- "name": "Run Health Check",
- "type": "n8n-nodes-base.executeCommand",
- "parameters": {
- "command": "cd /path/to/murphys-laws && npm run health-check"
- }
- }
- ]
-}
-```
+On the main application server, run the health check from cron or
+`/usr/local/bin/health-monitor.sh` (see `shared/docs/DEPLOY-MONITORING.md`).
+n8n is not used for monitoring.
 
 ## Monitoring Recommendations
 
@@ -134,7 +97,7 @@ The script has a 10-second timeout per check. If checks consistently timeout:
 - Check spam folder
 - Verify SMTP credentials
 - Test SMTP connection manually
-- Check n8n logs for errors
+- Check server mail logs for delivery errors
 
 ## Script Details
 

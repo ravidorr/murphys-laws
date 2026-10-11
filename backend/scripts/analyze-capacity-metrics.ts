@@ -276,11 +276,11 @@ export function analyzeCapacity(
     );
   } else if (reasons.length === 0 || (reasons.length === 1 && reasons[0].includes('collector'))) {
     decision = 'No change justified';
-    reasons.push('Current sizing matches observed load; keep isolated droplets.');
+    reasons.push('Current sizing matches observed load; keep current droplet size.');
   } else {
     decision = 'No change justified';
-    if (!reasons.some((r) => r.includes('keep isolated'))) {
-      reasons.push('Keep current droplet size and isolated n8n host.');
+    if (!reasons.some((r) => r.includes('keep current droplet'))) {
+      reasons.push('Keep current application droplet size.');
     }
   }
 
