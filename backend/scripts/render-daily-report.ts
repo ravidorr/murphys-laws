@@ -145,17 +145,37 @@ function renderHtmlHeader(date: string): string {
 }
 
 const LONG_LABEL_CHARACTER_THRESHOLD = 28;
+const LONG_LABEL_COLUMN_WIDTH = '38%';
+const LONG_LABEL_VALUE_COLUMN_WIDTH = '62%';
+
+function labelColumnPresentation(label?: string): {
+  widthAttr: string;
+  widthStyle: string;
+  valueWidthStyle: string;
+} {
+  const longLabel = (label?.length ?? 0) > LONG_LABEL_CHARACTER_THRESHOLD;
+  if (longLabel) {
+    return {
+      widthAttr: `width="${LONG_LABEL_COLUMN_WIDTH}"`,
+      widthStyle: `width:${LONG_LABEL_COLUMN_WIDTH};white-space:normal;overflow-wrap:break-word;word-break:normal;`,
+      valueWidthStyle: `width:${LONG_LABEL_VALUE_COLUMN_WIDTH};`,
+    };
+  }
+  return {
+    widthAttr: 'width="1%"',
+    widthStyle: 'width:1%;white-space:nowrap;',
+    valueWidthStyle: 'width:99%;',
+  };
+}
 
 function narrowLabelTdStyle(extra: string, label?: string): string {
-  const longLabel = (label?.length ?? 0) > LONG_LABEL_CHARACTER_THRESHOLD;
-  const widthStyle = longLabel
-    ? 'max-width:42%;white-space:normal;word-break:break-word;'
-    : 'width:1%;white-space:nowrap;';
+  const { widthStyle } = labelColumnPresentation(label);
   return `${widthStyle}padding:8px 12px 8px 0;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;${extra}`;
 }
 
-function valueTdStyle(extra: string): string {
-  return `width:99%;padding:8px 0;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;${extra}`;
+function valueTdStyle(extra: string, label?: string): string {
+  const { valueWidthStyle } = labelColumnPresentation(label);
+  return `${valueWidthStyle}padding:8px 0;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;${extra}`;
 }
 
 function renderHtmlAtAGlance(items: ReportItem[]): string {
@@ -195,9 +215,10 @@ function renderHtmlLabelValueRow(item: ReportItem, strongTop: boolean): string {
     item.boldValue && item.label
       ? `<span style="font-weight:bold;color:#111827;">${escapeHtml(item.label)}</span>`
       : escapeHtml(item.label ?? '');
+  const { widthAttr } = labelColumnPresentation(item.label);
   return [
-    `<tr><td width="1%" style="${narrowLabelTdStyle(`border-top:${topRule};`, item.label)}">${labelHtml}</td>`,
-    `<td style="${valueTdStyle(`border-top:${topRule};`)}">${monoValue}</td></tr>`,
+    `<tr><td ${widthAttr} style="${narrowLabelTdStyle(`border-top:${topRule};`, item.label)}">${labelHtml}</td>`,
+    `<td style="${valueTdStyle(`border-top:${topRule};`, item.label)}">${monoValue}</td></tr>`,
   ].join('');
 }
 
@@ -211,8 +232,10 @@ function renderHtmlBulletRow(item: ReportItem): string {
       ? `<span style="color:#111827;">${escapeHtml(item.value)}</span>`
       : escapeHtml(item.value);
   return [
-    `<tr><td width="1%" style="width:1%;white-space:nowrap;padding:6px 8px 6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#4b5563;vertical-align:top;">${marker}</td>`,
-    `<td style="${valueTdStyle('padding:6px 0;border-top:1px solid #e5e7eb;')}">${text}</td></tr>`,
+    '<tr>',
+    `<td colspan="2" style="padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;overflow-wrap:break-word;">`,
+    `<span style="color:#4b5563;padding-right:6px;">${marker}</span>${text}`,
+    '</td></tr>',
   ].join('');
 }
 
