@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Add a blank line between README badges and the introduction.
+
+### Changed
+
 - Add verified Shields.io badge rows to the root README.
 
 ### Fixed
