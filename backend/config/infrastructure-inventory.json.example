@@ -9,13 +9,6 @@
       "provider": "digitalocean",
       "plan_description": "unverified",
       "monthly_usd_estimate": null
-    },
-    {
-      "role": "n8n",
-      "label": "n8n automation",
-      "provider": "digitalocean",
-      "plan_description": "unverified",
-      "monthly_usd_estimate": null
     }
   ],
   "other_costs": [

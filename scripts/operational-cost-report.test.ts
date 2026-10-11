@@ -50,15 +50,14 @@ for (const relativePath of shellScripts) {
 test('cost report does not recommend automatic consolidation or downsizing', () => {
   assert.doesNotMatch(costReport, /RECOMMENDATION #2: Consolidate Droplets/);
   assert.doesNotMatch(costReport, /Suggested: 512MB RAM droplets/);
-  assert.match(costReport, /NOT RECOMMENDED \(isolated n8n host policy\)/);
+  assert.match(costReport, /n8n automation retired/);
   assert.match(costReport, /512MB plans remain blocked/);
   assert.match(
     costReport,
     /CAPACITY_ANALYZER="\$\{CAPACITY_ANALYZER:-\$REPO_ROOT\/backend\/scripts\/analyze-capacity-metrics\.ts\}"/,
   );
   assert.match(costReport, /run_capacity_analysis main-app/);
-  assert.match(costReport, /run_capacity_analysis n8n/);
-  assert.match(costReport, /metrics-n8n-/);
+  assert.doesNotMatch(costReport, /run_capacity_analysis n8n/);
   assert.match(costReport, /node_modules\/\.bin\/tsx/);
   assert.match(costReport, /cd "\$REPO_ROOT"/);
 });

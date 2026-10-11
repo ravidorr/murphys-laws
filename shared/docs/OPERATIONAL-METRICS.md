@@ -4,7 +4,7 @@ Hourly collectors write CSV files under `/var/log/performance-metrics/` (configu
 
 ## File naming
 
-- `metrics-<role>-<YYYY-MM>.csv` where `role` is `main-app` or `n8n`.
+- `metrics-<role>-<YYYY-MM>.csv` where `role` is `main-app` (legacy `n8n` files may remain from retired hosts).
 - Legacy files named `metrics-<YYYY-MM>.csv` (no role) are treated as `main-app`.
 
 ## CSV header (row 1)
@@ -12,7 +12,7 @@ Hourly collectors write CSV files under `/var/log/performance-metrics/` (configu
 | Column | Description |
 |--------|-------------|
 | `timestamp` | UTC ISO-8601 (`YYYY-MM-DDTHH:MM:SSZ`) |
-| `role` | `main-app` or `n8n` |
+| `role` | `main-app` (legacy collectors may have written `n8n`) |
 | `frontend_response_ms` | HTTPS GET homepage; empty if skipped or failed |
 | `api_response_ms` | HTTPS GET health/API; empty if skipped or failed |
 | `db_query_ms` | From API health JSON `dbQueryTime`; empty if unavailable |
@@ -47,13 +47,6 @@ Set via `backend/config/operational-metrics-main-app.env` (see `.example`).
 - Reads `DB_PATH`.
 - Records PM2 process `murphys-api` only (frontend is served by Nginx).
 
-### n8n
-
-Set via `backend/config/operational-metrics-n8n.env` (see `.example`).
-
-- No application SQLite or PM2 API metrics.
-- Optional `API_URL` for n8n health if configured.
-
 ## Capacity decisions
 
 Monthly cost reports call `analyze-capacity-metrics.ts`, which requires ~30 days of hourly samples before sizing recommendations. Decisions are one of:
@@ -69,6 +62,5 @@ Automatic droplet resize or consolidation is never performed from report output.
 1. Deploy updated scripts via `npm run deploy` or the GitHub deploy workflow.
 2. On the main droplet, copy `backend/config/operational-metrics-main-app.env.example` to `/etc/murphys-laws/operational-metrics.env` if not already present.
 3. Confirm hourly cron: `0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1`
-4. On the n8n droplet, install the same `performance-tracker.sh`, copy `operational-metrics-n8n.env.example` to `/etc/murphys-laws/operational-metrics.env`, and enable the same hourly cron.
-5. Leave droplet size and topology unchanged for 30 days.
-6. Review the monthly cost section in the daily email on the 1st; expect `Collecting baseline` until coverage thresholds are met.
+4. Leave droplet size unchanged for 30 days.
+5. Review the monthly cost section in the daily email on the 1st; expect `Collecting baseline` until coverage thresholds are met.

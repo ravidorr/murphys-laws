@@ -141,20 +141,11 @@ run_capacity_analysis() {
 }
 
 run_capacity_analysis main-app
-if compgen -G "$METRICS_DIR/metrics-n8n-"*.csv >/dev/null 2>&1; then
-    run_capacity_analysis n8n
-else
-    append "Capacity role: n8n"
-    append "No metrics-n8n-*.csv on this host."
-    append "Hourly collection runs on the n8n droplet; rsync monthly CSVs here for a"
-    append "consolidated report, or run cost-optimization-report.sh on the n8n host."
-    append ""
-fi
 
 append "5. RECOMMENDATIONS"
 append "=================="
 append ""
-append "Droplet consolidation: NOT RECOMMENDED (isolated n8n host policy)."
+append "Infrastructure: single application droplet (n8n automation retired)."
 append "Droplet downsizing: Only via manual review after capacity decision above;"
 append " 512MB plans remain blocked due to prior OOM on 1GB with swap."
 append ""
@@ -176,7 +167,7 @@ append "6. ACTION ITEMS"
 append "==============="
 append ""
 append "Immediate:"
-append "  [ ] Ensure hourly performance-tracker cron is active on main-app and n8n"
+append "  [ ] Ensure hourly performance-tracker cron is active on the main application host"
 append "  [ ] Keep droplet topology unchanged during baseline collection"
 append "  [ ] Run monthly test-backup-restore.sh (local integrity)"
 append ""

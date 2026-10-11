@@ -106,87 +106,6 @@ rm -rf "$TEST_DIR"
 
 ---
 
-### n8n Droplet (45.55.74.28)
-
-#### Step 1: Test n8n Database Backup
-
-```bash
-# SSH into n8n server
-ssh ravidor@45.55.74.28
-
-# Check latest n8n backup
-LATEST_N8N_BACKUP=$(ls -t /root/backups/n8n-*.db 2>/dev/null | head -1)
-
-if [ -n "$LATEST_N8N_BACKUP" ]; then
- echo "n8n backup found: $(basename $LATEST_N8N_BACKUP)"
-
- # Test integrity
- sqlite3 "$LATEST_N8N_BACKUP" "PRAGMA integrity_check;"
- # Should output: ok
-
- # Check workflow count
- echo "Workflows in backup:"
- sqlite3 "$LATEST_N8N_BACKUP" "SELECT COUNT(*) FROM workflow_entity;"
-
- # Compare with production
- echo "Workflows in production:"
- docker exec n8n sqlite3 /home/node/.n8n/database.sqlite "SELECT COUNT(*) FROM workflow_entity;"
-else
- echo "No n8n backup found"
-fi
-```
-
-#### Step 2: Test GitHub Workflow Backup
-
-```bash
-# Check GitHub backup
-cd /home/deploy/n8n-workflows
-
-# Update from GitHub
-git pull
-
-# Count workflow files
-WORKFLOW_COUNT=$(ls -1 workflows/*.json 2>/dev/null | wc -l)
-echo "GitHub has $WORKFLOW_COUNT workflow files"
-
-# Verify files are valid JSON
-for file in workflows/*.json; do
- if jq empty "$file" 2>/dev/null; then
- echo "Valid JSON: $(basename $file)"
- else
- echo "Invalid JSON: $(basename $file)"
- fi
-done
-
-# Check git history
-echo "Recent backups:"
-git log --oneline -5
-```
-
-#### Step 3: Test Restore to Temp Location
-
-```bash
-# Create test directory
-TEST_DIR="/tmp/n8n-restore-test"
-mkdir -p "$TEST_DIR"
-
-# Copy latest backup
-LATEST_BACKUP=$(ls -t /root/backups/n8n-*.db | head -1)
-cp "$LATEST_BACKUP" "$TEST_DIR/test-n8n.db"
-
-# Test database integrity
-sqlite3 "$TEST_DIR/test-n8n.db" "PRAGMA integrity_check;"
-
-# List workflows
-echo "Workflows in backup:"
-sqlite3 "$TEST_DIR/test-n8n.db" "SELECT id, name, active FROM workflow_entity;" | head -10
-
-# Cleanup
-rm -rf "$TEST_DIR"
-```
-
----
-
 ## Option 2: Full Disaster Recovery Drill
 
 **WARNING**: This simulates a real disaster recovery. Schedule during maintenance window.
@@ -318,56 +237,6 @@ cat /tmp/recovery-drill-report.txt | mail -s "[Murphy's Laws] Disaster Recovery 
 
 ---
 
-### Drill Procedure - n8n Droplet
-
-#### Simulate n8n Container Failure
-
-```bash
-# SSH into n8n droplet
-ssh ravidor@45.55.74.28
-
-# Stop n8n
-docker stop n8n
-
-# Remove container (keeps data)
-docker rm n8n
-
-# Simulate data corruption
-sudo mv /var/lib/docker/volumes/n8n_data/_data/database.sqlite \
- /var/lib/docker/volumes/n8n_data/_data/database.sqlite.FAILED
-```
-
-#### Execute Recovery
-
-```bash
-# 1. Restore from local backup
-LATEST_BACKUP=$(ls -t /root/backups/n8n-*.db | head -1)
-sudo cp "$LATEST_BACKUP" \
- /var/lib/docker/volumes/n8n_data/_data/database.sqlite
-
-# 2. Start n8n container
-docker run -d \
- --name n8n \
- --restart unless-stopped \
- -p 127.0.0.1:5678:5678 \
- -v n8n_data:/home/node/.n8n \
- -e N8N_HOST=n8n.murphys-laws.com \
- -e N8N_PROTOCOL=https \
- n8nio/n8n
-
-# 3. Wait for startup
-sleep 30
-
-# 4. Verify
-docker ps | grep n8n
-curl -I https://n8n.murphys-laws.com
-
-# 5. Check workflows (login to UI)
-# Access https://n8n.murphys-laws.com and verify workflows exist
-```
-
----
-
 ## Testing Schedule
 
 ### Recommended Testing Frequency
@@ -463,7 +332,7 @@ pm2 start ecosystem.config.cjs
 - [ ] Recent backups exist (< 24 hours)
 - [ ] Sufficient disk space (> 5GB free)
 - [ ] Services are running normally
-- [ ] Have SSH access to both droplets
+- [ ] Have SSH access to the main droplet
 - [ ] Email alerts are working
 
 ### Main Droplet Testing
@@ -472,12 +341,6 @@ pm2 start ecosystem.config.cjs
 - [ ] All tests passing
 - [ ] Backup files verified
 - [ ] Database integrity confirmed
-
-### n8n Droplet Testing
-- [ ] n8n database backup verified
-- [ ] GitHub workflow backup current
-- [ ] Workflow JSON files valid
-- [ ] Can restore from both sources
 
 ### After Testing
 - [ ] Document results
@@ -497,7 +360,7 @@ BACKUP RESTORE TEST REPORT
 
 Date: YYYY-MM-DD
 Tester: [NAME]
-Server: Main Droplet / n8n Droplet
+Server: Main Droplet
 Test Type: Non-Disruptive / Full Drill
 
 RESULTS:
