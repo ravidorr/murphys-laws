@@ -748,11 +748,13 @@ function mapPeakSection(peaks: PeakJson): ReportSection {
   return section('PEAK RESOURCE USAGE (Last 30 Days)', items);
 }
 
-function mapVulnerabilitySection(vuln: VulnerabilityJson): ReportSection {
-  const items: ReportItem[] = vuln.summary.lines.map((line) => ({
-    value: line,
-    kind: 'bullet-pass' as const,
-  }));
+export function mapVulnerabilitySection(vuln: VulnerabilityJson): ReportSection {
+  const passing = vuln.summary.totalIssues === 0;
+  const issueItem = (value: string): ReportItem =>
+    passing
+      ? { value, kind: 'bullet-pass' }
+      : { value, kind: 'callout', tone: 'warning' };
+  const items: ReportItem[] = vuln.summary.lines.map(issueItem);
   if (vuln.summary.totalIssues > 0) {
     items.push({
       label: 'Total issues',
@@ -762,7 +764,7 @@ function mapVulnerabilitySection(vuln: VulnerabilityJson): ReportSection {
     });
   }
   for (const finding of vuln.findings) {
-    items.push({ value: finding, kind: 'bullet-pass' });
+    items.push(issueItem(finding));
   }
   return section('WEEKLY VULNERABILITY SCAN', items);
 }

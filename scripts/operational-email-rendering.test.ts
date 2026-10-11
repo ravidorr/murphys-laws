@@ -12,6 +12,7 @@ import {
   collectDailyReport,
   escapeHtml,
   renderHtmlReport,
+  mapVulnerabilitySection,
   renderPlainTextReport,
   runCli,
   type DailyReport,
@@ -69,6 +70,42 @@ test('renderHtmlReport applies tone colors in section rows', () => {
   const html = renderHtmlReport(model);
   assert.match(html, /color:#a16207/);
   assert.match(html, /WARNING: Backup is 72 hours old/);
+});
+
+test('mapVulnerabilitySection uses passing markers only when scan is clean', () => {
+  const clean = mapVulnerabilitySection({
+    summary: { totalIssues: 0, securityUpdates: 0, lines: ['No npm issues'] },
+    findings: ['All clear'],
+  });
+  const plainClean = renderPlainTextReport({
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: '',
+    summary: [],
+    sections: [clean],
+  });
+  assert.match(plainClean, /\[OK\] No npm issues/);
+  assert.match(plainClean, /\[OK\] All clear/);
+
+  const failing = mapVulnerabilitySection({
+    summary: {
+      totalIssues: 3,
+      securityUpdates: 2,
+      lines: ['2 security updates available'],
+    },
+    findings: ['High: lodash dependency'],
+  });
+  const plainFail = renderPlainTextReport({
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: '',
+    summary: [],
+    sections: [failing],
+  });
+  assert.match(plainFail, /\[!\] 2 security updates available/);
+  assert.match(plainFail, /\[!\] High: lodash dependency/);
+  assert.doesNotMatch(plainFail, /\[OK\]/);
+  assert.match(plainFail, /Total issues: \[!\] 3/);
 });
 
 test('buildTestEmailReport vulnerability fixture has consistent issue count', () => {

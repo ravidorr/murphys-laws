@@ -33,7 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   table-based design spec (640px card, glance glyphs, callouts, cost sub-headings),
   and use `!` for attention in HTML to match plain-text `[!]`. See
   `docs/superpowers/specs/2026-10-11-daily-report-email-design.md`. Backend bumped
-  to `2.3.25`; root to `2.6.55`.
+  to `2.3.26`; root to `2.6.56`.
+- Reserve vulnerability scan checkmarks for clean scans; show warning callouts when
+  `totalIssues` is non-zero.
 
 - Tag `--test-email` subjects with a UTC timestamp and send an automatic template
   smoke email after deploy when `render-daily-report.ts` changes and
