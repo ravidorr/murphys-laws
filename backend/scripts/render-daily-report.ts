@@ -144,8 +144,14 @@ function renderHtmlHeader(date: string): string {
   ].join('');
 }
 
-function narrowLabelTdStyle(extra: string): string {
-  return `width:1%;white-space:nowrap;padding:8px 12px 8px 0;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;${extra}`;
+const LONG_LABEL_CHARACTER_THRESHOLD = 28;
+
+function narrowLabelTdStyle(extra: string, label?: string): string {
+  const longLabel = (label?.length ?? 0) > LONG_LABEL_CHARACTER_THRESHOLD;
+  const widthStyle = longLabel
+    ? 'max-width:42%;white-space:normal;word-break:break-word;'
+    : 'width:1%;white-space:nowrap;';
+  return `${widthStyle}padding:8px 12px 8px 0;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;${extra}`;
 }
 
 function valueTdStyle(extra: string): string {
@@ -190,7 +196,7 @@ function renderHtmlLabelValueRow(item: ReportItem, strongTop: boolean): string {
       ? `<span style="font-weight:bold;color:#111827;">${escapeHtml(item.label)}</span>`
       : escapeHtml(item.label ?? '');
   return [
-    `<tr><td width="1%" style="${narrowLabelTdStyle(`border-top:${topRule};`)}">${labelHtml}</td>`,
+    `<tr><td width="1%" style="${narrowLabelTdStyle(`border-top:${topRule};`, item.label)}">${labelHtml}</td>`,
     `<td style="${valueTdStyle(`border-top:${topRule};`)}">${monoValue}</td></tr>`,
   ].join('');
 }
