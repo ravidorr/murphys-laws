@@ -144,6 +144,14 @@ function renderHtmlHeader(date: string): string {
   ].join('');
 }
 
+function narrowLabelTdStyle(extra: string): string {
+  return `width:1%;white-space:nowrap;padding:8px 12px 8px 0;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;${extra}`;
+}
+
+function valueTdStyle(extra: string): string {
+  return `width:99%;padding:8px 0;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;${extra}`;
+}
+
 function renderHtmlAtAGlance(items: ReportItem[]): string {
   const rows: string[] = [
     '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0 0 0;">',
@@ -153,9 +161,9 @@ function renderHtmlAtAGlance(items: ReportItem[]): string {
     const state = glanceStateFromItem(item);
     const toneColor = itemToneColor(item.tone);
     rows.push(
-      `<tr><td width="96" style="width:96px;padding:10px 8px 10px 0;border-top:1px solid #e5e7eb;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#4b5563;vertical-align:middle;">${escapeHtml(item.label ?? 'Status')}</td>`,
-      `<td width="36" style="width:36px;padding:10px 0;border-top:1px solid #e5e7eb;vertical-align:middle;">${renderGlyphSpan(state)}</td>`,
-      `<td style="padding:10px 0;border-top:1px solid #e5e7eb;font-size:15px;line-height:20px;font-weight:bold;color:${toneColor};vertical-align:middle;">${escapeHtml(item.value)}</td></tr>`,
+      `<tr><td width="1%" style="${narrowLabelTdStyle('border-top:1px solid #e5e7eb;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;vertical-align:middle;')}">${escapeHtml(item.label ?? 'Status')}</td>`,
+      `<td width="1%" style="width:1%;white-space:nowrap;padding:10px 8px 10px 0;border-top:1px solid #e5e7eb;vertical-align:middle;">${renderGlyphSpan(state)}</td>`,
+      `<td style="width:99%;padding:10px 0;border-top:1px solid #e5e7eb;font-size:15px;line-height:20px;font-weight:bold;color:${toneColor};vertical-align:middle;">${escapeHtml(item.value)}</td></tr>`,
     );
   }
   rows.push('</table>');
@@ -182,8 +190,8 @@ function renderHtmlLabelValueRow(item: ReportItem, strongTop: boolean): string {
       ? `<span style="font-weight:bold;color:#111827;">${escapeHtml(item.label)}</span>`
       : escapeHtml(item.label ?? '');
   return [
-    `<tr><td width="38%" style="width:38%;padding:8px 12px 8px 0;border-top:${topRule};font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;">${labelHtml}</td>`,
-    `<td style="padding:8px 0;border-top:${topRule};font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;">${monoValue}</td></tr>`,
+    `<tr><td width="1%" style="${narrowLabelTdStyle(`border-top:${topRule};`)}">${labelHtml}</td>`,
+    `<td style="${valueTdStyle(`border-top:${topRule};`)}">${monoValue}</td></tr>`,
   ].join('');
 }
 
@@ -197,8 +205,8 @@ function renderHtmlBulletRow(item: ReportItem): string {
       ? `<span style="color:#111827;">${escapeHtml(item.value)}</span>`
       : escapeHtml(item.value);
   return [
-    `<tr><td width="22" style="width:22px;padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#4b5563;vertical-align:top;">${marker}</td>`,
-    `<td style="padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;">${text}</td></tr>`,
+    `<tr><td width="1%" style="width:1%;white-space:nowrap;padding:6px 8px 6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#4b5563;vertical-align:top;">${marker}</td>`,
+    `<td style="${valueTdStyle('padding:6px 0;border-top:1px solid #e5e7eb;')}">${text}</td></tr>`,
   ].join('');
 }
 
@@ -209,8 +217,8 @@ function renderHtmlTrafficCodeRow(value: string): string {
   }
   return [
     '<tr>',
-    `<td width="38%" style="width:38%;padding:8px 12px 8px 0;border-top:1px solid #e5e7eb;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;"><span style="color:#4b5563;">&bull;</span> ${escapeHtml(match[1])}</td>`,
-    `<td style="padding:8px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;">${escapeHtml(match[2])}</td>`,
+    `<td width="1%" style="${narrowLabelTdStyle('border-top:1px solid #e5e7eb;')}"><span style="color:#4b5563;">&bull;</span> ${escapeHtml(match[1])}</td>`,
+    `<td style="${valueTdStyle('border-top:1px solid #e5e7eb;')}">${escapeHtml(match[2])}</td>`,
     '</tr>',
   ].join('');
 }
