@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Shrink-to-fit daily report table label columns (`width:1%`, `nowrap`) so value
+  cells use remaining width; long labels wrap below 360px. Backend bumped to
+  `2.3.30`; root to `2.6.60`.
+
 - Restyle the daily operational email HTML and plain-text parts to match the
   table-based design spec (640px card, glance glyphs, callouts, cost sub-headings),
   and use `!` for attention in HTML to match plain-text `[!]`. See

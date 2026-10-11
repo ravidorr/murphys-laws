@@ -52,8 +52,8 @@ Attention: `border:1px solid #a16207`, glyph `!`, 14px. Healthy: green values, `
 ### D. At a glance (one row per existing item, same order)
 ```html
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0 0 0;"><tr><td colspan="3" style="padding:10px 0 6px 0;border-top:2px solid #111827;font-size:12px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#111827;">At a glance</td></tr>
-<tr><td width="96" style="width:96px;padding:10px 8px 10px 0;border-top:1px solid #e5e7eb;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#4b5563;vertical-align:middle;">${label}</td>
-<td width="36" style="width:36px;padding:10px 0;border-top:1px solid #e5e7eb;vertical-align:middle;">${glyphSpan}</td>
+<tr><td width="1%" style="width:1%;white-space:nowrap;padding:10px 8px 10px 0;border-top:1px solid #e5e7eb;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#4b5563;vertical-align:middle;">${label}</td>
+<td width="1%" style="width:1%;white-space:nowrap;padding:10px 8px 10px 0;border-top:1px solid #e5e7eb;vertical-align:middle;">${glyphSpan}</td>
 <td style="padding:10px 0;border-top:1px solid #e5e7eb;font-size:15px;line-height:20px;font-weight:bold;color:${toneColor};vertical-align:middle;">${value}</td></tr></table>
 ```
 
@@ -65,15 +65,15 @@ Suffix span only when the title has a parenthetical (e.g. "Last 30 Days").
 
 ### F. Label / value row
 ```html
-<tr><td width="38%" style="width:38%;padding:8px 12px 8px 0;border-top:1px solid #e5e7eb;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;">${label}</td>
-<td style="padding:8px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;">${value}</td></tr>
+<tr><td width="1%" style="width:1%;white-space:nowrap;padding:8px 12px 8px 0;border-top:1px solid #e5e7eb;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;">${label}</td>
+<td style="width:99%;padding:8px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;">${value}</td></tr>
 ```
 Timestamp suffix: `<span style="font-size:12px;color:#4b5563;">(${ts})</span>`. Flagged value: `color:#a16207;font-weight:bold;` with `!` prefix. Bold value (no color change) only for cost, capacity decision, next review.
 
 ### G. Bullet row
 ```html
-<tr><td width="22" style="width:22px;padding:6px 0;font-size:14px;line-height:20px;color:#4b5563;vertical-align:top;">&bull;</td>
-<td style="padding:6px 0;font-size:14px;line-height:20px;color:#111827;vertical-align:top;">${text}</td></tr>
+<tr><td width="1%" style="width:1%;white-space:nowrap;padding:6px 8px 6px 0;font-size:14px;line-height:20px;color:#4b5563;vertical-align:top;">&bull;</td>
+<td style="width:99%;padding:6px 0;font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;">${text}</td></tr>
 ```
 Passing results: marker `&#10003;` with `color:#15803d;font-weight:bold;`.
 
