@@ -71,7 +71,7 @@ if command -v pm2 &> /dev/null; then
         # Create formatted table with headers
         printf "  %-20s %-10s %-10s\n" "Name" "Status" "Restarts" > "$TEMP_DIR/pm2.txt"
         printf "  %-20s %-10s %-10s\n" "--------------------" "----------" "----------" >> "$TEMP_DIR/pm2.txt"
-        echo "$PM2_STATUS" | jq -r '.[] | select(.name | IN("murphys-api", "murphys-frontend")) | "  \(.name | @text | .[0:20])    \(.pm2_env.status | @text | .[0:10])   \(.pm2_env.restart_time)"' | while IFS= read -r line; do
+        echo "$PM2_STATUS" | jq -r '.[] | select(.name == "murphys-api") | "  \(.name | @text | .[0:20])    \(.pm2_env.status | @text | .[0:10])   \(.pm2_env.restart_time)"' | while IFS= read -r line; do
             name=$(echo "$line" | awk '{print $2}')
             status=$(echo "$line" | awk '{print $3}')
             restarts=$(echo "$line" | awk '{print $4}')
@@ -155,20 +155,41 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="PERFORMANCE METRICS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
+METRICS_FILE="/var/log/performance-metrics/metrics-main-app-$(date +%Y-%m).csv"
+if [ ! -f "$METRICS_FILE" ]; then
+    METRICS_FILE="/var/log/performance-metrics/metrics-$(date +%Y-%m).csv"
+fi
 if [ -f "$METRICS_FILE" ]; then
-    tail -24 "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
+    awk 'NR==1 { header=$0; next } { rows[NR-1]=$0; total=NR-1 } END {
+        print header
+        start=total-23
+        if (start < 1) start=1
+        for (i=start; i<=total; i++) print rows[i]
+    }' "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
 
-    # Calculate averages
-    AVG_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {sum+=$2; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_API=$(awk -F',' 'NR>1 && $3 != "" {sum+=$3; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_DB=$(awk -F',' 'NR>1 && $4 != "" {sum+=$4; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_MEMORY=$(awk -F',' 'NR>1 && $7 != "" {sum+=$7; count++} END {if (count>0) printf "%.1f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    METRICS_AWK='
+      function idx(name,    i) { return cols[name] }
+      NR == 1 {
+        for (i = 1; i <= NF; i++) cols[$i] = i
+        fe = idx("frontend_response_ms")
+        ae = idx("api_response_ms")
+        de = idx("db_query_ms")
+        mp = idx("memory_pressure_percent")
+        if (mp == 0) mp = idx("memory_percent")
+        next
+      }
+    '
+
+    # Calculate averages (header-aware for legacy and role-aware CSV)
+    AVG_FRONTEND=$(awk -F',' "${METRICS_AWK} NR>1 && fe>0 && \$fe != \"\" {sum+=\$fe; count++} END {if (count>0) printf \"%.0f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    AVG_API=$(awk -F',' "${METRICS_AWK} NR>1 && ae>0 && \$ae != \"\" {sum+=\$ae; count++} END {if (count>0) printf \"%.0f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    AVG_DB=$(awk -F',' "${METRICS_AWK} NR>1 && de>0 && \$de != \"\" {sum+=\$de; count++} END {if (count>0) printf \"%.0f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    AVG_MEMORY=$(awk -F',' "${METRICS_AWK} NR>1 && mp>0 && \$mp != \"\" {sum+=\$mp; count++} END {if (count>0) printf \"%.1f\", sum/count; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
 
     # Get max values
-    MAX_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {if ($2>max) max=$2} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_API=$(awk -F',' 'NR>1 && $3 != "" {if ($3>max) max=$3} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_DB=$(awk -F',' 'NR>1 && $4 != "" {if ($4>max) max=$4} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_FRONTEND=$(awk -F',' "${METRICS_AWK} NR>1 && fe>0 && \$fe != \"\" {if (\$fe+0>max) max=\$fe+0} END {if (max>0) printf \"%.0f\", max; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    MAX_API=$(awk -F',' "${METRICS_AWK} NR>1 && ae>0 && \$ae != \"\" {if (\$ae+0>max) max=\$ae+0} END {if (max>0) printf \"%.0f\", max; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
+    MAX_DB=$(awk -F',' "${METRICS_AWK} NR>1 && de>0 && \$de != \"\" {if (\$de+0>max) max=\$de+0} END {if (max>0) printf \"%.0f\", max; else print \"N/A\"}" "$TEMP_DIR/metrics-24h.csv")
 
     REPORT+="Response Times:\n"
     REPORT+="  • Frontend: avg ${AVG_FRONTEND}ms, max ${MAX_FRONTEND}ms\n"
@@ -196,7 +217,7 @@ if [ "$DAY_OF_MONTH" = "15" ]; then
     REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
     # Run peak analyzer (suppress headers)
-    PEAK_REPORT=$(/root/murphys-laws/backend/scripts/analyze-resource-peaks.sh --no-header 2>/dev/null)
+    PEAK_REPORT=$(/root/murphys-laws/backend/scripts/analyze-resource-peaks.sh --no-header --role main-app 2>/dev/null)
     if [ -n "$PEAK_REPORT" ]; then
         REPORT+="$PEAK_REPORT\n\n"
     else
@@ -372,6 +393,7 @@ if [ -d /root/backups ]; then
 
     TOTAL_BACKUP_SIZE=$(du -sh /root/backups 2>/dev/null | cut -f1)
     REPORT+="Total Backup Size: $TOTAL_BACKUP_SIZE\n"
+    REPORT+="Off-site copy: not configured (local integrity only)\n"
     REPORT+="\n"
 else
     REPORT+="Backup directory not found\n\n"

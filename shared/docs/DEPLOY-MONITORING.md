@@ -44,7 +44,7 @@ The `daily-report.sh` script (runs at 5 AM UTC) consolidates multiple monitoring
 - **SSL certificate monitoring** (expiration check, validation)
 - **Log analysis & attack detection** (suspicious patterns, security issues)
 - **Vulnerability scanning** (Sundays only - CVEs, outdated packages)
-- **Cost optimization report** (1st of month only - resource usage recommendations)
+- **Cost optimization report** (1st of month only - evidence-based capacity summary; see [OPERATIONAL-METRICS.md](./OPERATIONAL-METRICS.md))
 
 This consolidated approach reduces email noise while providing comprehensive daily insights.
 
@@ -64,7 +64,9 @@ This consolidated approach reduces email noise while providing comprehensive dai
 # From your local machine in the project directory
 scp backend/scripts/health-check.mjs ravidor@167.99.53.90:/tmp/
 scp scripts/health-monitor.sh ravidor@167.99.53.90:/tmp/
-scp scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/analyze-resource-peaks.sh ravidor@167.99.53.90:/tmp/
+scp backend/config/operational-metrics-main-app.env.example ravidor@167.99.53.90:/tmp/
 scp scripts/ssl-monitor.sh ravidor@167.99.53.90:/tmp/
 scp scripts/vulnerability-scanner.sh ravidor@167.99.53.90:/tmp/
 scp scripts/log-analyzer.sh ravidor@167.99.53.90:/tmp/
@@ -258,19 +260,38 @@ for i in {1..30}; do curl -I https://murphys-laws.com; done
 The n8n droplet uses similar monitoring but doesn't need all the application-specific scripts.
 
 ```bash
-# From local machine
-scp scripts/daily-report.sh ravidor@45.55.74.28:/tmp/
+# From local machine (project root)
+scp backend/scripts/daily-report.sh ravidor@45.55.74.28:/tmp/
+scp backend/scripts/performance-tracker.sh ravidor@45.55.74.28:/tmp/
+scp backend/scripts/cost-optimization-report.sh ravidor@45.55.74.28:/tmp/
+scp backend/config/operational-metrics-n8n.env.example ravidor@45.55.74.28:/tmp/
 
 # SSH into n8n server
 ssh ravidor@45.55.74.28
 
-# Install script
+# Install scripts
 sudo cp /tmp/daily-report.sh /usr/local/bin/daily-report.sh
-sudo chmod +x /usr/local/bin/daily-report.sh
+sudo cp /tmp/performance-tracker.sh /usr/local/bin/performance-tracker.sh
+sudo cp /tmp/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh
+sudo chmod +x /usr/local/bin/daily-report.sh /usr/local/bin/performance-tracker.sh /usr/local/bin/cost-optimization-report.sh
 
 # The daily report should already be in cron from previous setup
 # Verify:
-sudo crontab -l | grep daily-status-report
+sudo crontab -l | grep daily-report
+
+# Repository checkout (cost report runs analyze-capacity-metrics.ts via npx tsx)
+if [ ! -d /root/murphys-laws/.git ]; then
+  sudo git clone https://github.com/ravidorr/murphys-laws.git /root/murphys-laws
+fi
+cd /root/murphys-laws && git pull && npm ci
+
+# Hourly metrics for n8n (see shared/docs/OPERATIONAL-METRICS.md)
+sudo mkdir -p /etc/murphys-laws /var/log/performance-metrics
+sudo cp /tmp/operational-metrics-n8n.env.example /etc/murphys-laws/operational-metrics.env
+# Add to root crontab:
+# 0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
+# Optional: monthly n8n-only capacity section (1st of month, or via daily-report integration):
+# 0 6 1 * * /usr/local/bin/cost-optimization-report.sh >> /var/log/cost-optimization.log 2>&1
 ```
 
 ---

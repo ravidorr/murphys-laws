@@ -35,8 +35,8 @@ This document provides step-by-step procedures for recovering from various disas
 ### Main Application Droplet (167.99.53.90)
 
 **Local Backups**: `/root/backups/`
-- Database: `murphys-YYYY-MM-DD-HHMMSS.db`
-- Environment: `.env-YYYY-MM-DD-HHMMSS`
+- Database: `murphys_db_YYYYMMDD_HHMMSS.db`
+- Environment: `env_YYYYMMDD_HHMMSS.bak`
 - Application: `murphys-laws-YYYY-MM-DD-HHMMSS.tar.gz`
 - Retention: 30 days
 - Schedule: Daily at 2:00 AM UTC
