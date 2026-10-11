@@ -14,15 +14,29 @@ CAPACITY_ANALYZER="${CAPACITY_ANALYZER:-$REPO_ROOT/backend/scripts/analyze-capac
 REPORT_FILE="/tmp/cost-optimization-report-$(date +%Y-%m).txt"
 ALERT_EMAIL="ravidor@gmail.com"
 SEND_EMAIL=true
+OUTPUT_FORMAT="text"
 METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
 INVENTORY_FILE="${INVENTORY_FILE:-/etc/murphys-laws/infrastructure-inventory.json}"
 if [ ! -f "$INVENTORY_FILE" ] && [ -f "$REPO_ROOT/backend/config/infrastructure-inventory.json" ]; then
     INVENTORY_FILE="$REPO_ROOT/backend/config/infrastructure-inventory.json"
 fi
+CAPACITY_SECTION=""
 
-if [ "${1:-}" = "--no-email" ]; then
-    SEND_EMAIL=false
-fi
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --no-email)
+            SEND_EMAIL=false
+            shift
+            ;;
+        --format)
+            OUTPUT_FORMAT="${2:-text}"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
 
 REPORT=""
 append() {
@@ -60,20 +74,28 @@ append "2. RESOURCE UTILIZATION (CURRENT SNAPSHOT)"
 append "==========================================="
 append ""
 
-MEMORY_STATS=$(free -m | grep "Mem:")
-MEMORY_TOTAL=$(echo "$MEMORY_STATS" | awk '{print $2}')
-MEMORY_AVAILABLE=$(echo "$MEMORY_STATS" | awk '{print $7}')
-MEMORY_USED=$((MEMORY_TOTAL - MEMORY_AVAILABLE))
-MEMORY_PRESSURE=$(echo "scale=1; (1 - $MEMORY_AVAILABLE / $MEMORY_TOTAL) * 100" | bc)
-SWAP_USED=$(free -m | awk '/Swap:/ {print $3}')
+if command -v free >/dev/null 2>&1; then
+    MEMORY_STATS=$(free -m | grep "Mem:")
+    MEMORY_TOTAL=$(echo "$MEMORY_STATS" | awk '{print $2}')
+    MEMORY_AVAILABLE=$(echo "$MEMORY_STATS" | awk '{print $7}')
+    MEMORY_USED=$((MEMORY_TOTAL - MEMORY_AVAILABLE))
+    MEMORY_PRESSURE=$(echo "scale=1; (1 - $MEMORY_AVAILABLE / $MEMORY_TOTAL) * 100" | bc)
+    SWAP_USED=$(free -m | awk '/Swap:/ {print $3}')
+else
+    MEMORY_USED=0
+    MEMORY_AVAILABLE=0
+    MEMORY_PRESSURE=0
+    SWAP_USED=0
+fi
 
 append "Memory: ${MEMORY_USED}MB used, ${MEMORY_AVAILABLE}MB available (${MEMORY_PRESSURE}% pressure)"
 append "Swap used: ${SWAP_USED}MB"
 append ""
 
-CPU_CORES=$(nproc)
+CPU_CORES=$(nproc 2>/dev/null || echo 1)
 LOAD_1M=$(uptime | awk -F'load average:' '{print $2}' | awk -F',' '{print $1}' | xargs)
-CPU_NORM=$(echo "scale=1; ($LOAD_1M / $CPU_CORES) * 100" | bc)
+LOAD_1M=${LOAD_1M:-0}
+CPU_NORM=$(echo "scale=1; ($LOAD_1M / $CPU_CORES) * 100" | bc 2>/dev/null || echo 0)
 append "CPU: ${CPU_CORES} cores, load ${LOAD_1M}, normalized ${CPU_NORM}%"
 append ""
 
@@ -108,6 +130,7 @@ if [ "$TRAFFIC_FILES" -gt 0 ]; then
         append "Coverage: INCOMPLETE if logrotate removed older logs (not a guaranteed 30-day window)"
     fi
 else
+    TOTAL_GB="0"
     append "No nginx access logs available for traffic analysis"
 fi
 append ""
@@ -141,6 +164,67 @@ run_capacity_analysis() {
         append "Capacity analysis unavailable (tsx or metrics missing)"
     fi
     append ""
+}
+
+emit_cost_json() {
+    local inventory_note="No infrastructure inventory file on this host."
+    local monthly_estimate="null"
+    if [ -f "$INVENTORY_FILE" ]; then
+        if grep -q '"verified"[[:space:]]*:[[:space:]]*true' "$INVENTORY_FILE"; then
+            inventory_note="Inventory verified on this host."
+        else
+            inventory_note="Inventory present but unverified."
+        fi
+        monthly_estimate=$(jq -r '.monthly_usd_estimate // empty' "$INVENTORY_FILE")
+        if [ -z "$monthly_estimate" ] || [ "$monthly_estimate" = "null" ]; then
+            monthly_estimate=""
+        fi
+    fi
+
+    local capacity_decision
+    capacity_decision=$(echo "$CAPACITY_SECTION" | awk -F': ' '/^Decision:/{print $2; exit}')
+    if [ -z "$capacity_decision" ]; then
+        capacity_decision="Unavailable"
+    fi
+
+    local capacity_reasons capacity_details
+    capacity_reasons=$(echo "$CAPACITY_SECTION" | awk '/^  - /{print substr($0,5)}' | jq -R -s 'split("\n") | map(select(length>0))' 2>/dev/null || echo '[]')
+    capacity_details=$(echo "$CAPACITY_SECTION" | awk '/^Peak |^P95 |^Minimum |^Samples:/{print $0}' | jq -R -s 'split("\n") | map(select(length>0))' 2>/dev/null || echo '[]')
+
+    jq -n \
+        --arg generatedAt "$(date '+%Y-%m-%d %H:%M:%S')" \
+        --arg inventoryNote "$inventory_note" \
+        --arg monthlyUsdEstimate "${monthly_estimate}" \
+        --arg memory "${MEMORY_USED}MB used, ${MEMORY_AVAILABLE}MB available (${MEMORY_PRESSURE}% pressure)" \
+        --arg swap "${SWAP_USED}MB" \
+        --arg cpu "${CPU_CORES} cores, load ${LOAD_1M}, normalized ${CPU_NORM}%" \
+        --argjson trafficFiles "${TRAFFIC_FILES:-0}" \
+        --argjson trafficRequests "${TOTAL_REQUESTS:-0}" \
+        --arg trafficBandwidth "${TOTAL_GB:-0}" \
+        --arg capacityDecision "$capacity_decision" \
+        --argjson capacityReasons "$capacity_reasons" \
+        --argjson capacityDetails "$capacity_details" \
+        --arg nextReview "$(date -d '+1 month' +%Y-%m-%d 2>/dev/null || date -v+1m +%Y-%m-%d 2>/dev/null)" \
+        '{
+            generatedAt: $generatedAt,
+            inventoryNote: $inventoryNote,
+            monthlyUsdEstimate: (if $monthlyUsdEstimate == "" then null else ($monthlyUsdEstimate|tonumber) end),
+            snapshot: { memory: $memory, swap: $swap, cpu: $cpu },
+            traffic: { files: $trafficFiles, requests: $trafficRequests, bandwidthGb: $trafficBandwidth },
+            capacity: { decision: $capacityDecision, reasons: $capacityReasons, details: $capacityDetails },
+            recommendations: [
+                "Infrastructure: single application droplet (n8n automation retired).",
+                "Droplet downsizing: Only via manual review after capacity decision above.",
+                "512MB plans remain blocked due to prior OOM on 1GB with swap.",
+                "Backup storage: Local retention 30 days; off-site copy not configured."
+            ],
+            actionItems: [
+                "Ensure hourly performance-tracker cron is active on the main application host",
+                "Keep droplet topology unchanged during baseline collection",
+                "Run monthly test-backup-restore.sh (local integrity)"
+            ],
+            nextReview: $nextReview
+        }'
 }
 
 run_capacity_analysis main-app
@@ -183,6 +267,12 @@ append "Next review: $(date -d '+1 month' +%Y-%m-%d 2>/dev/null || date -v+1m +%
 append ""
 
 echo -e "$REPORT" > "$REPORT_FILE"
+
+if [ "$OUTPUT_FORMAT" = "json" ]; then
+    emit_cost_json
+    exit 0
+fi
+
 echo -e "$REPORT"
 
 if [ "$SEND_EMAIL" = true ]; then
