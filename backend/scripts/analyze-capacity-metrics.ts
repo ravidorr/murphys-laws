@@ -137,7 +137,18 @@ export function analyzeCapacity(
 
   const expectedSamples = thresholds.windowDays * 24;
   const sampleCount = inWindow.length;
-  const coverageRatio = expectedSamples > 0 ? sampleCount / expectedSamples : 0;
+  const hourBuckets = new Set<string>();
+  for (const row of inWindow) {
+    const parsed = Date.parse(row.timestamp);
+    if (!Number.isFinite(parsed)) {
+      continue;
+    }
+    const date = new Date(parsed);
+    const bucket = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}T${String(date.getUTCHours()).padStart(2, '0')}`;
+    hourBuckets.add(bucket);
+  }
+  const distinctHourCount = hourBuckets.size;
+  const coverageRatio = expectedSamples > 0 ? distinctHourCount / expectedSamples : 0;
 
   const memoryPressure = inWindow
     .map((r) => r.memoryPressurePercent)
@@ -157,14 +168,14 @@ export function analyzeCapacity(
   const downsizingBlockedNote =
     '512MB droplets remain blocked: this host previously OOMed on 1GB with 2GB swap. Downsizing requires sustained headroom, zero swap pressure, and explicit manual approval.';
 
-  if (sampleCount === 0 || coverageRatio < thresholds.minCoverageRatio) {
+  if (distinctHourCount === 0 || coverageRatio < thresholds.minCoverageRatio) {
     reasons.push(
-      `Insufficient metrics coverage (${sampleCount}/${expectedSamples} hourly samples in last ${thresholds.windowDays} days).`,
+      `Insufficient metrics coverage (${distinctHourCount}/${expectedSamples} distinct hourly buckets in last ${thresholds.windowDays} days; ${sampleCount} raw samples).`,
     );
     return {
       decision: 'Collecting baseline',
       role,
-      sampleCount,
+      sampleCount: distinctHourCount,
       expectedSamples,
       coverageRatio,
       peakMemoryPressurePercent: memoryPressure.length ? Math.max(...memoryPressure) : null,
@@ -271,7 +282,7 @@ export function analyzeCapacity(
   return {
     decision,
     role: role,
-    sampleCount,
+    sampleCount: distinctHourCount,
     expectedSamples,
     coverageRatio,
     peakMemoryPressurePercent: peakMemoryPressure,

@@ -75,6 +75,14 @@ test('analyzeCapacity rejects manual review when gate metrics are incomplete', (
   assert.ok(analysis.reasons.some((r) => r.includes('Incomplete gate metrics')));
 });
 
+test('analyzeCapacity uses distinct hourly buckets for coverage', () => {
+  const now = new Date('2026-02-01T12:00:00Z');
+  const base = hourlyRows(15, now);
+  const duplicated = [...base, ...base];
+  const analysis = analyzeCapacity(duplicated, 'main-app', DEFAULT_THRESHOLDS, now);
+  assert.equal(analysis.decision, 'Collecting baseline');
+});
+
 test('analyzeCapacity can reach Manual review candidate when gates pass', () => {
   const now = new Date('2026-02-01T12:00:00Z');
   const rows = hourlyRows(30, now);
