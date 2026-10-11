@@ -65,6 +65,14 @@ function itemToneColor(tone: ReportItem['tone']): string {
   }
 }
 
+function formatHtmlItemValue(item: ReportItem): string {
+  const escaped = escapeHtml(item.value);
+  if (item.tone && item.tone !== 'neutral') {
+    return `<span style="color:${itemToneColor(item.tone)};">${escaped}</span>`;
+  }
+  return escaped;
+}
+
 function appendPlainSection(lines: string[], section: ReportSection): void {
   lines.push(SECTION_RULE);
   lines.push(section.title);
@@ -108,10 +116,9 @@ export function renderHtmlReport(report: DailyReport): string {
     rows.push('<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">');
     rows.push('<tr><td style="font-size:16px;font-weight:bold;padding:8px 0;">At a glance</td></tr>');
     for (const item of report.summary) {
-      const color = itemToneColor(item.tone);
       rows.push('<tr><td style="padding:4px 0;font-size:14px;">');
       rows.push(
-        `<strong>${escapeHtml(item.label ?? 'Status')}:</strong> <span style="color:${color};">${escapeHtml(item.value)}</span>`,
+        `<strong>${escapeHtml(item.label ?? 'Status')}:</strong> ${formatHtmlItemValue(item)}`,
       );
       rows.push('</td></tr>');
     }
@@ -126,11 +133,9 @@ export function renderHtmlReport(report: DailyReport): string {
     for (const item of section.items) {
       rows.push('<tr><td style="padding:2px 0;font-size:14px;line-height:1.45;">');
       if (item.label) {
-        rows.push(
-          `<strong>${escapeHtml(item.label)}:</strong> ${escapeHtml(item.value)}`,
-        );
+        rows.push(`<strong>${escapeHtml(item.label)}:</strong> ${formatHtmlItemValue(item)}`);
       } else {
-        rows.push(`• ${escapeHtml(item.value)}`);
+        rows.push(`• ${formatHtmlItemValue(item)}`);
       }
       rows.push('</td></tr>');
     }
@@ -555,12 +560,16 @@ function backupReminderSection(): ReportSection {
 
 function buildTestEmailReport(now: Date): DailyReport {
   const date = now.toISOString().slice(0, 10);
+  const pm2Status = collectMurphysApiPm2Status();
+  const apiSummary: ReportItem =
+    pm2Status.summaryItem ?? { label: 'API', value: 'Healthy', tone: 'success' };
+
   return {
     date,
     subjectSuffix: subjectSuffixForDate(now, true),
     preview: 'System Status | Database Metrics | Website Activity | Performance | Security | SSL Status | Backups',
     summary: [
-      { label: 'API', value: 'Healthy', tone: 'success' },
+      apiSummary,
       { label: 'Security', value: '2 path traversal attempts detected', tone: 'warning' },
     ],
     sections: [
@@ -568,6 +577,7 @@ function buildTestEmailReport(now: Date): DailyReport {
         { label: 'Uptime', value: 'up 2 days' },
         { label: 'Memory', value: '512Mi of 961Mi used (53.2%)' },
       ]),
+      pm2Status.section,
       section('TRAFFIC & BANDWIDTH', [
         { label: 'Total Requests', value: '120' },
         { value: '404: 2 requests' },
@@ -581,7 +591,7 @@ function buildTestEmailReport(now: Date): DailyReport {
         ],
       }),
       mapVulnerabilitySection({
-        summary: { totalIssues: 1, securityUpdates: 0, lines: ['No critical npm vulnerabilities'] },
+        summary: { totalIssues: 0, securityUpdates: 0, lines: ['No critical npm vulnerabilities'] },
         findings: ['No critical vulnerabilities or security updates found'],
       }),
       mapCostSection({
