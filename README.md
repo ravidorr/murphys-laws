@@ -1,5 +1,14 @@
 # Murphy's Laws
 
+[![Web CI](https://github.com/ravidorr/murphys-laws/actions/workflows/web-ci.yml/badge.svg)](https://github.com/ravidorr/murphys-laws/actions/workflows/web-ci.yml)
+[![Dependency Audit](https://github.com/ravidorr/murphys-laws/actions/workflows/dependency-audit.yml/badge.svg)](https://github.com/ravidorr/murphys-laws/actions/workflows/dependency-audit.yml)
+
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ravidorr/murphys-laws/pulls)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/ravidorr/murphys-laws/graphs/commit-activity)
+[![License: CC0-1.0](https://img.shields.io/badge/License-CC0--1.0-lightgrey.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![iOS](https://img.shields.io/badge/iOS-Swift-FA7343?logo=apple&logoColor=white)](https://developer.apple.com/ios/)
+[![Android](https://img.shields.io/badge/Android-Kotlin-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
 A comprehensive collection of Murphy's Laws - humorous observations about life's tendency for things to go wrong.
 
 Available on the **Web**, with iOS and Android releases forthcoming.
