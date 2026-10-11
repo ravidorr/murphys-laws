@@ -162,16 +162,29 @@ fi
 if [ -f "$METRICS_FILE" ]; then
     tail -24 "$METRICS_FILE" > "$TEMP_DIR/metrics-24h.csv"
 
-    # Calculate averages
-    AVG_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {sum+=$2; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_API=$(awk -F',' 'NR>1 && $3 != "" {sum+=$3; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_DB=$(awk -F',' 'NR>1 && $4 != "" {sum+=$4; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    AVG_MEMORY=$(awk -F',' 'NR>1 && $7 != "" {sum+=$7; count++} END {if (count>0) printf "%.1f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    METRICS_AWK='
+      function idx(name,    i) { return cols[name] }
+      NR == 1 {
+        for (i = 1; i <= NF; i++) cols[$i] = i
+        fe = idx("frontend_response_ms")
+        ae = idx("api_response_ms")
+        de = idx("db_query_ms")
+        mp = idx("memory_pressure_percent")
+        if (mp == 0) mp = idx("memory_percent")
+        next
+      }
+    '
+
+    # Calculate averages (header-aware for legacy and role-aware CSV)
+    AVG_FRONTEND=$(awk -F',' "$METRICS_AWK" 'NR>1 && fe>0 && $fe != "" {sum+=$fe; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_API=$(awk -F',' "$METRICS_AWK" 'NR>1 && ae>0 && $ae != "" {sum+=$ae; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_DB=$(awk -F',' "$METRICS_AWK" 'NR>1 && de>0 && $de != "" {sum+=$de; count++} END {if (count>0) printf "%.0f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    AVG_MEMORY=$(awk -F',' "$METRICS_AWK" 'NR>1 && mp>0 && $mp != "" {sum+=$mp; count++} END {if (count>0) printf "%.1f", sum/count; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
 
     # Get max values
-    MAX_FRONTEND=$(awk -F',' 'NR>1 && $2 != "" {if ($2>max) max=$2} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_API=$(awk -F',' 'NR>1 && $3 != "" {if ($3>max) max=$3} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
-    MAX_DB=$(awk -F',' 'NR>1 && $4 != "" {if ($4>max) max=$4} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_FRONTEND=$(awk -F',' "$METRICS_AWK" 'NR>1 && fe>0 && $fe != "" {if ($fe+0>max) max=$fe+0} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_API=$(awk -F',' "$METRICS_AWK" 'NR>1 && ae>0 && $ae != "" {if ($ae+0>max) max=$ae+0} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
+    MAX_DB=$(awk -F',' "$METRICS_AWK" 'NR>1 && de>0 && $de != "" {if ($de+0>max) max=$de+0} END {if (max>0) printf "%.0f", max; else print "N/A"}' "$TEMP_DIR/metrics-24h.csv")
 
     REPORT+="Response Times:\n"
     REPORT+="  • Frontend: avg ${AVG_FRONTEND}ms, max ${MAX_FRONTEND}ms\n"

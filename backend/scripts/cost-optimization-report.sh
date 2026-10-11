@@ -9,7 +9,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-/root/murphys-laws}"
+CAPACITY_ANALYZER="${CAPACITY_ANALYZER:-$REPO_ROOT/backend/scripts/analyze-capacity-metrics.ts}"
 REPORT_FILE="/tmp/cost-optimization-report-$(date +%Y-%m).txt"
 ALERT_EMAIL="ravidor@gmail.com"
 SEND_EMAIL=true
@@ -77,18 +78,20 @@ append "3. TRAFFIC & BANDWIDTH"
 append "======================"
 append ""
 
-NGINX_LOGS=(/var/log/nginx/access.log)
-shopt -s nullglob
-NGINX_LOGS+=(/var/log/nginx/access.log.*)
-shopt -u nullglob
-
 TRAFFIC_FILES=0
 TOTAL_REQUESTS=0
 TOTAL_BYTES=0
-for logfile in "${NGINX_LOGS[@]}"; do
-    if [ -f "$logfile" ]; then
+for logfile in /var/log/nginx/access.log /var/log/nginx/access.log.[0-9]*; do
+    if [ ! -f "$logfile" ]; then
+        continue
+    fi
+    if [[ "$logfile" == *.gz ]]; then
         TRAFFIC_FILES=$((TRAFFIC_FILES + 1))
-        TOTAL_REQUESTS=$((TOTAL_REQUESTS + $(wc -l < "$logfile")))
+        TOTAL_REQUESTS=$((TOTAL_REQUESTS + $(zcat "$logfile" | wc -l | tr -d ' ')))
+        TOTAL_BYTES=$((TOTAL_BYTES + $(zcat "$logfile" | awk '{sum += $10} END {print sum+0}')))
+    else
+        TRAFFIC_FILES=$((TRAFFIC_FILES + 1))
+        TOTAL_REQUESTS=$((TOTAL_REQUESTS + $(wc -l < "$logfile" | tr -d ' ')))
         TOTAL_BYTES=$((TOTAL_BYTES + $(awk '{sum += $10} END {print sum+0}' "$logfile")))
     fi
 done
@@ -110,8 +113,8 @@ append "4. CAPACITY DECISION (30-DAY METRICS)"
 append "======================================="
 append ""
 
-if command -v npx &> /dev/null && [ -f "$SCRIPT_DIR/analyze-capacity-metrics.ts" ]; then
-    CAPACITY_SECTION=$(METRICS_DIR="$METRICS_DIR" METRICS_ROLE=main-app npx --yes tsx "$SCRIPT_DIR/analyze-capacity-metrics.ts" 2>/dev/null || true)
+if command -v npx &> /dev/null && [ -f "$CAPACITY_ANALYZER" ]; then
+    CAPACITY_SECTION=$(METRICS_DIR="$METRICS_DIR" METRICS_ROLE=main-app npx --yes tsx "$CAPACITY_ANALYZER" 2>/dev/null || true)
     if [ -n "$CAPACITY_SECTION" ]; then
         append "$CAPACITY_SECTION"
     else

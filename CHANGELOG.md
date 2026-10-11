@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked monthly cost optimization reporting to use 30-day operational metrics,
   explicit capacity decisions, and no automatic consolidation or downsizing
   recommendations. Extended performance tracking, hardened backup integrity checks,
-  and aligned deployment monitoring docs. Backend bumped to `2.3.13`; root to `2.6.43`.
+  and aligned deployment monitoring docs. Backend bumped to `2.3.14`; root to `2.6.43`.
 
 ### Added
 - Added the build-time root-package version to the web footer. Web bumped to
