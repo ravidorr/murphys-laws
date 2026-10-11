@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retired n8n automation entirely: removed the second droplet from cost reports,
   inventory, backup/DR runbooks, server maintenance, and health-check docs.
   Backend bumped to `2.3.20`; root to `2.6.50`.
+- Corrected remaining single-host wording in deploy monitoring and backup-test docs.
 - Reworked monthly cost optimization reporting to use 30-day operational metrics,
   explicit capacity decisions, and no automatic consolidation or downsizing
   recommendations. Extended performance tracking, hardened backup integrity checks,
