@@ -1,0 +1,27 @@
+{
+  "verified": false,
+  "note": "Copy to infrastructure-inventory.json and set verified true after confirming against DigitalOcean billing.",
+  "monthly_usd_estimate": null,
+  "hosts": [
+    {
+      "role": "main-app",
+      "label": "Murphy's Laws application",
+      "provider": "digitalocean",
+      "plan_description": "unverified",
+      "monthly_usd_estimate": null
+    },
+    {
+      "role": "n8n",
+      "label": "n8n automation",
+      "provider": "digitalocean",
+      "plan_description": "unverified",
+      "monthly_usd_estimate": null
+    }
+  ],
+  "other_costs": [
+    {
+      "label": "Domain murphys-laws.com",
+      "monthly_usd_estimate": null
+    }
+  ]
+}

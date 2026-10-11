@@ -115,6 +115,22 @@ async function deploy(): Promise<void> {
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/test-backup-restore.sh /usr/local/bin/test-backup-restore.sh 2>/dev/null && sudo chmod +x /usr/local/bin/test-backup-restore.sh || true"`,
     'Updating backup restore test script'
   );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh 2>/dev/null && sudo chmod +x /usr/local/bin/performance-tracker.sh || true"`,
+    'Updating performance tracker script'
+  );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/cost-optimization-report.sh || true"`,
+    'Updating cost optimization report script'
+  );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/analyze-resource-peaks.sh /usr/local/bin/analyze-resource-peaks.sh 2>/dev/null && sudo chmod +x /usr/local/bin/analyze-resource-peaks.sh || true"`,
+    'Updating resource peaks analyzer'
+  );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo mkdir -p /etc/murphys-laws && sudo cp ${DROPLET_PATH}/backend/config/operational-metrics-main-app.env.example /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true"`,
+    'Publishing operational metrics env example'
+  );
 
   log('\nValidating Node.js version on server...', 'blue');
   execSync(`tsx backend/scripts/validate-node-version.ts --server`, {

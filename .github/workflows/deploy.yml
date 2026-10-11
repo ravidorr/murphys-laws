@@ -179,7 +179,10 @@ jobs:
             sudo cp "$TARGET_DIR/backend/scripts/test-backup-restore.sh" /usr/local/bin/test-backup-restore.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/health-monitor.sh" /usr/local/bin/health-monitor.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh 2>/dev/null || true
+            sudo cp "$TARGET_DIR/backend/scripts/analyze-resource-peaks.sh" /usr/local/bin/analyze-resource-peaks.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh 2>/dev/null || true
+            sudo mkdir -p /etc/murphys-laws
+            sudo cp "$TARGET_DIR/backend/config/operational-metrics-main-app.env.example" /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
             sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
 
