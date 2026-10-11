@@ -255,44 +255,12 @@ for i in {1..30}; do curl -I https://murphys-laws.com; done
 
 ---
 
-### Part 2: Deploy to n8n Droplet (45.55.74.28)
+### Retired n8n automation
 
-The n8n droplet uses similar monitoring but doesn't need all the application-specific scripts.
-
-```bash
-# From local machine (project root)
-scp backend/scripts/daily-report.sh ravidor@45.55.74.28:/tmp/
-scp backend/scripts/performance-tracker.sh ravidor@45.55.74.28:/tmp/
-scp backend/scripts/cost-optimization-report.sh ravidor@45.55.74.28:/tmp/
-scp backend/config/operational-metrics-n8n.env.example ravidor@45.55.74.28:/tmp/
-
-# SSH into n8n server
-ssh ravidor@45.55.74.28
-
-# Install scripts
-sudo cp /tmp/daily-report.sh /usr/local/bin/daily-report.sh
-sudo cp /tmp/performance-tracker.sh /usr/local/bin/performance-tracker.sh
-sudo cp /tmp/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh
-sudo chmod +x /usr/local/bin/daily-report.sh /usr/local/bin/performance-tracker.sh /usr/local/bin/cost-optimization-report.sh
-
-# The daily report should already be in cron from previous setup
-# Verify:
-sudo crontab -l | grep daily-report
-
-# Repository checkout (cost report runs analyze-capacity-metrics.ts via npx tsx)
-if [ ! -d /root/murphys-laws/.git ]; then
-  sudo git clone https://github.com/ravidorr/murphys-laws.git /root/murphys-laws
-fi
-cd /root/murphys-laws && git pull && npm ci
-
-# Hourly metrics for n8n (see shared/docs/OPERATIONAL-METRICS.md)
-sudo mkdir -p /etc/murphys-laws /var/log/performance-metrics
-sudo cp /tmp/operational-metrics-n8n.env.example /etc/murphys-laws/operational-metrics.env
-# Add to root crontab:
-# 0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
-# Optional: monthly n8n-only capacity section (1st of month, or via daily-report integration):
-# 0 6 1 * * /usr/local/bin/cost-optimization-report.sh >> /var/log/cost-optimization.log 2>&1
-```
+n8n is no longer used. The former n8n droplet and workflow backups are retired.
+Monitoring and capacity reports cover the main application host only. Historical
+`metrics-n8n-*.csv` files may remain under `/var/log/performance-metrics/` but are
+not included in monthly reports.
 
 ---
 
@@ -315,22 +283,10 @@ After deployment, verify:
 - [ ] All PM2 processes running
 - [ ] Email alerts working
 
-### n8n Droplet
-
-- [ ] Enhanced daily report sent
-- [ ] All monitoring scripts active
-- [ ] n8n running in Docker
-- [ ] Workflows backed up to GitHub
-
 ### Testing Email Alerts
 
 ```bash
-# Send a test email from each droplet
 echo "Test from main droplet" | mail -s "Test Alert" ravidor@gmail.com
-
-ssh ravidor@45.55.74.28 "echo 'Test from n8n droplet' | mail -s 'Test Alert' ravidor@gmail.com"
-
-# Check your email for both messages
 ```
 
 ---

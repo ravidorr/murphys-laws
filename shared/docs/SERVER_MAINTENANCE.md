@@ -13,23 +13,17 @@
 - **Live DB path:** `/root/murphys-laws/backend/murphys.db`
 - **DB backups:** `/root/backups/murphys_db_YYYYMMDD_HHMMSS.db` (daily 04:00 cron via `/usr/local/bin/backup-murphys.sh`)
 
-### 2. n8n Automation Server
-- **Host Alias:** `murphys-n8n`
-- **Hostname:** 45.55.74.28
-- **OS:** Ubuntu 24.04.3 LTS
-- **Services:** n8n (Docker container)
-- **User:** ravidor
+### Retired: n8n automation
+
+n8n workflow automation and the former `murphys-n8n` host (45.55.74.28) were
+retired. Remove stale `Host murphys-n8n` entries from `~/.ssh/config` if present.
 
 ## SSH Access
 
-All servers use the SSH config file at `~/.ssh/config`. To connect:
+Connect via `~/.ssh/config`:
 
 ```bash
-# Main server
 ssh murphys-main
-
-# n8n server
-ssh murphys-n8n
 ```
 
 ## Murphy's Main Server - Update Procedure
@@ -120,67 +114,6 @@ ssh murphys-main 'curl -sI -o /dev/null -w "Public  /        : %{http_code} %{ti
 # Check disk and memory
 ssh murphys-main 'df -h / && echo "---" && free -h'
 ```
-
-## n8n Server - Update Procedure
-
-### 1. Check Current Version
-
-```bash
-# Check if n8n container is running
-ssh murphys-n8n 'sudo docker ps | grep n8n'
-
-# Check current n8n version
-ssh murphys-n8n 'sudo docker exec n8n-n8n-1 n8n --version'
-
-# Check Docker image creation date
-ssh murphys-n8n 'sudo docker image inspect n8nio/n8n:latest --format="{{.Created}}"'
-```
-
-### 2. Update n8n
-
-```bash
-# Navigate to docker-compose directory and update
-ssh murphys-n8n 'cd /opt/n8n && sudo docker compose pull && sudo docker compose up -d'
-
-# Alternative: Pull and recreate in one command
-ssh murphys-n8n 'cd /opt/n8n && sudo docker compose up -d --pull always'
-```
-
-### 3. Verify Update
-
-```bash
-# Wait for n8n to start
-sleep 10
-
-# Check container status
-ssh murphys-n8n 'sudo docker ps --filter name=n8n-n8n-1 --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-
-# Check new version
-ssh murphys-n8n 'sudo docker exec n8n-n8n-1 n8n --version'
-
-# Test web interface
-ssh murphys-n8n 'curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://localhost:5678'
-```
-
-### 4. View n8n Logs (if needed)
-
-```bash
-# View recent logs
-ssh murphys-n8n 'sudo docker logs n8n-n8n-1 --tail 50'
-
-# Follow logs in real-time
-ssh murphys-n8n 'sudo docker logs n8n-n8n-1 -f'
-```
-
-## n8n Configuration
-
-The n8n service is configured via Docker Compose:
-
-- **Config file:** `/opt/n8n/docker-compose.yml`
-- **Environment file:** `/opt/n8n/.env`
-- **Data volume:** `n8n_data` (mapped to `/home/node/.n8n` in container)
-- **Database:** SQLite with vacuum on startup
-- **Port:** 127.0.0.1:5678 (localhost only)
 
 ## Automated Security Updates (unattended-upgrades)
 
@@ -300,25 +233,6 @@ ssh <host> 'free -h'
 ssh <host> 'ps aux | grep <service>'
 ```
 
-### Docker Commands (for n8n)
-
-```bash
-# List all containers
-ssh murphys-n8n 'sudo docker ps -a'
-
-# Stop n8n container
-ssh murphys-n8n 'cd /opt/n8n && sudo docker compose stop'
-
-# Start n8n container
-ssh murphys-n8n 'cd /opt/n8n && sudo docker compose start'
-
-# Restart n8n container
-ssh murphys-n8n 'cd /opt/n8n && sudo docker compose restart'
-
-# View Docker Compose config
-ssh murphys-n8n 'sudo cat /opt/n8n/docker-compose.yml'
-```
-
 ## Troubleshooting
 
 ## Daily Law Distribution
@@ -354,43 +268,19 @@ ssh murphys-main 'pm2 restart all'
 ssh murphys-main 'pm2 logs'
 ```
 
-### n8n Issues
-
-**Container not starting:**
-```bash
-# Check Docker logs
-ssh murphys-n8n 'sudo docker logs n8n-n8n-1'
-
-# Check if port is in use
-ssh murphys-n8n 'sudo netstat -tulpn | grep 5678'
-
-# Restart Docker service
-ssh murphys-n8n 'sudo systemctl restart docker'
-```
-
-**Database issues:**
-```bash
-# The database is in the n8n_data volume
-# To inspect the volume
-ssh murphys-n8n 'sudo docker volume inspect n8n_data'
-
-# To back up the data volume
-ssh murphys-n8n 'sudo docker run --rm -v n8n_data:/data -v $(pwd):/backup ubuntu tar czf /backup/n8n-backup-$(date +%Y%m%d).tar.gz /data'
-```
-
 ## Update History
 
 | Date | Server | Action | Old Version | New Version |
 |------|--------|--------|-------------|-------------|
 | 2025-12-19 | murphys-main | System updates + reboot | 6.8.0-88 kernel | 6.8.0-90 kernel |
-| 2025-12-19 | murphys-n8n | n8n major version upgrade | 1.121.3 | 2.0.3 |
+| 2025-12-19 | murphys-n8n (retired) | n8n major version upgrade | 1.121.3 | 2.0.3 |
 | 2026-04-26 | murphys-main | Reboot only (kernel package already installed; 0 security updates pending; 17 routine updates deferred) | 6.8.0-107 kernel | 6.8.0-110 kernel |
 
 ## Best Practices
 
 1. **Always check current status before updates** - Know what version you're running and what services are active
-2. **Read update notes** - For major version upgrades (like n8n 1.x → 2.x), check release notes for breaking changes
-3. **Backup before major updates** - Especially for n8n data volume before major version upgrades
+2. **Read update notes** - For major application or OS upgrades, check release notes for breaking changes
+3. **Backup before major updates** - Run `/usr/local/bin/backup-murphys.sh` before disruptive changes
 4. **Verify after updates** - Don't assume success, always verify services are running correctly
 5. **Monitor logs** - Check logs for any errors or warnings after updates
 6. **Update during low-traffic periods** - Schedule updates when user impact is minimal
@@ -404,5 +294,3 @@ ssh murphys-n8n 'sudo docker run --rm -v n8n_data:/data -v $(pwd):/backup ubuntu
 ## Notes
 
 - Ubuntu uses phased updates, so not all available updates may install immediately
-- The n8n container uses SQLite for storage, which is vacuumed on startup
-- n8n is only accessible on localhost (127.0.0.1:5678) - likely proxied through Nginx on main server

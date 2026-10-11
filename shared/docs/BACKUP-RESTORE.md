@@ -22,10 +22,7 @@ Complete guide for backing up and restoring the Murphy's Laws application and in
 - Environment configuration (`.env`) - SMTP credentials, API keys
 - Application code (excluding `node_modules`, logs, `.git`)
 
-**n8n Automation (45.55.74.28)**:
-- n8n database - Workflow configurations and execution history
-- n8n configuration files
-- Workflow JSON files (also backed up to GitHub)
+n8n workflow automation was retired; no separate automation host is backed up.
 
 ### Backup Schedule
 
@@ -34,13 +31,10 @@ Complete guide for backing up and restoring the Murphy's Laws application and in
 | Database (`murphys_db_*.db`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
 | Environment (`env_*.bak`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
 | Application code | Git (not tarred on server) | N/A | GitHub |
-| n8n Workflows | Daily 2 AM UTC | Unlimited | GitHub (private) |
 
 ### Backup Scripts
 
 - **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy). The script exits non-zero if SQLite backup or `PRAGMA integrity_check` fails. Success logs distinguish local integrity from off-site copies (off-site not configured by default).
-- **n8n**: `/usr/local/bin/backup-n8n.sh`
-- **n8n to GitHub**: `/usr/local/bin/backup-workflows-to-github.sh`
 
 ---
 
@@ -98,24 +92,6 @@ scp ravidor@167.99.53.90:/root/backups/murphys-laws-2025-01-26-020000.tar.gz \
 
 # Verify download
 sqlite3 ~/local-backups/murphys-2025-01-26-020000.db "SELECT COUNT(*) FROM laws;"
-```
-
-### 4. Manual n8n Backup
-
-```bash
-# SSH into n8n server
-ssh ravidor@45.55.74.28
-
-# Run backup script
-/usr/local/bin/backup-n8n.sh
-
-# Or manually backup n8n database
-TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
-docker exec n8n sqlite3 /home/node/.n8n/database.sqlite ".backup /tmp/n8n-backup.db"
-docker cp n8n:/tmp/n8n-backup.db /root/backups/n8n-manual-$TIMESTAMP.db
-
-# Backup workflows to GitHub
-/usr/local/bin/backup-workflows-to-github.sh
 ```
 
 ---
@@ -238,48 +214,6 @@ sudo cp /tmp/.env-2025-01-26-020000 /root/murphys-laws/.env
 
 # 5. Continue with application setup (see [DISASTER-RECOVERY.md](./DISASTER-RECOVERY.md))
 ```
-
----
-
-### Scenario 4: Restore n8n Workflows
-
-**Use Case**: n8n workflows deleted or corrupted
-
-```bash
-# Option A: Restore from GitHub (recommended)
-
-# 1. SSH into n8n server
-ssh ravidor@45.55.74.28
-
-# 2. Clone/update workflows from GitHub
-cd /home/deploy
-git clone https://github.com/ravidorr/n8n-workflows.git
-# Or if already cloned:
-cd n8n-workflows && git pull
-
-# 3. Import workflows through n8n UI
-# - Access https://n8n.murphys-laws.com
-# - Click "Import from File"
-# - Import each workflow JSON from /home/deploy/n8n-workflows/workflows/
-
-# Option B: Restore from database backup
-
-# 1. Stop n8n
-docker stop n8n
-
-# 2. Restore database
-cp /root/backups/n8n-2025-01-26-020000.db \
- /var/lib/docker/volumes/n8n_data/_data/database.sqlite
-
-# 3. Start n8n
-docker start n8n
-
-# 4. Verify workflows are present
-# Access https://n8n.murphys-laws.com
-```
-
-**Recovery Time**: 10-20 minutes
-**Data Loss**: Minimal (GitHub has all workflow versions)
 
 ---
 
@@ -444,14 +378,10 @@ Add to local crontab:
 0 4 * * * ~/scripts/download-murphys-backups.sh
 ```
 
-#### Option 3: rsync to Second Droplet
+#### Option 3: rsync to another host
 
-```bash
-# On main droplet, add to backup script
-rsync -avz /root/backups/ ravidor@45.55.74.28:/root/murphys-backups/
-```
-
-**Cost**: Uses existing n8n droplet, no additional cost
+Copy `/root/backups/` to a second machine or object storage you control. The retired
+n8n droplet is not used for off-site copies.
 
 ---
 
