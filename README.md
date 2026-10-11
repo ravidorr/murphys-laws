@@ -9,6 +9,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![iOS](https://img.shields.io/badge/iOS-Swift-FA7343?logo=apple&logoColor=white)](https://developer.apple.com/ios/)
 [![Android](https://img.shields.io/badge/Android-Kotlin-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
+
 A comprehensive collection of Murphy's Laws - humorous observations about life's tendency for things to go wrong.
 
 Available on the **Web**, with iOS and Android releases forthcoming.
