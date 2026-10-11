@@ -16,6 +16,10 @@ const backupRestoreTest = readFileSync(
   path.join(rootDirectory, 'backend/scripts/test-backup-restore.sh'),
   'utf8',
 );
+const deployScript = readFileSync(
+  path.join(rootDirectory, 'backend/scripts/deploy.ts'),
+  'utf8',
+);
 
 test('monthly backup reminder targets the main droplet only', () => {
   const reminder = dailyReport.slice(
@@ -32,4 +36,11 @@ test('monthly backup reminder targets the main droplet only', () => {
 test('backup restore test does not require an application archive', () => {
   assert.doesNotMatch(backupRestoreTest, /murphys_app_\*\.tar\.gz/);
   assert.doesNotMatch(backupRestoreTest, /Testing application archive extraction/);
+});
+
+test('deployment installs the backup restore checker', () => {
+  assert.match(
+    deployScript,
+    /sudo cp .*test-backup-restore\.sh \/usr\/local\/bin\/test-backup-restore\.sh/,
+  );
 });

@@ -111,6 +111,10 @@ async function deploy(): Promise<void> {
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-murphys.sh /usr/local/bin/backup-murphys.sh 2>/dev/null && sudo chmod +x /usr/local/bin/backup-murphys.sh || true"`,
     'Updating backup script'
   );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/test-backup-restore.sh /usr/local/bin/test-backup-restore.sh 2>/dev/null && sudo chmod +x /usr/local/bin/test-backup-restore.sh || true"`,
+    'Updating backup restore test script'
+  );
 
   log('\nValidating Node.js version on server...', 'blue');
   execSync(`tsx backend/scripts/validate-node-version.ts --server`, {
