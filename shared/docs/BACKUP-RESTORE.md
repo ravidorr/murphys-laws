@@ -31,14 +31,14 @@ Complete guide for backing up and restoring the Murphy's Laws application and in
 
 | Backup Type | Frequency | Retention | Location |
 |-------------|-----------|-----------|----------|
-| Database | Daily 2 AM UTC | 30 days | `/root/backups/` |
-| Environment | Daily 2 AM UTC | 30 days | `/root/backups/` |
-| Application Code | Daily 2 AM UTC | 30 days | `/root/backups/` |
+| Database (`murphys_db_*.db`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
+| Environment (`env_*.bak`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
+| Application code | Git (not tarred on server) | N/A | GitHub |
 | n8n Workflows | Daily 2 AM UTC | Unlimited | GitHub (private) |
 
 ### Backup Scripts
 
-- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy)
+- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy). The script exits non-zero if SQLite backup or `PRAGMA integrity_check` fails. Success logs distinguish local integrity from off-site copies (off-site not configured by default).
 - **n8n**: `/usr/local/bin/backup-n8n.sh`
 - **n8n to GitHub**: `/usr/local/bin/backup-workflows-to-github.sh`
 

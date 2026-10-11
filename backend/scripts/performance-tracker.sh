@@ -2,203 +2,180 @@
 
 #############################################################################
 # Performance Tracking Script
-# Collects and logs performance metrics over time
-# Tracks: response times, memory usage, PM2 restarts, database size
-# Should be run via cron every hour
+# Collects hourly operational metrics (see shared/docs/OPERATIONAL-METRICS.md)
 #############################################################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-LOG_FILE="/var/log/performance-tracker.log"
-METRICS_DIR="/var/log/performance-metrics"
-METRICS_FILE="$METRICS_DIR/metrics-$(date +%Y-%m).csv"
-
-# Create metrics directory if it doesn't exist
-mkdir -p "$METRICS_DIR"
-
-# Initialize CSV file with headers if it doesn't exist
-if [ ! -f "$METRICS_FILE" ]; then
-    echo "timestamp,frontend_response_ms,api_response_ms,db_query_ms,memory_used_mb,memory_available_mb,memory_percent,cpu_load_1m,cpu_load_5m,cpu_load_15m,disk_used_gb,disk_available_gb,disk_percent,db_size_mb,pm2_api_restarts,pm2_frontend_restarts,pm2_api_uptime_hours,pm2_frontend_uptime_hours" > "$METRICS_FILE"
+if [ -f /etc/murphys-laws/operational-metrics.env ]; then
+    # shellcheck source=/dev/null
+    source /etc/murphys-laws/operational-metrics.env
 fi
 
-# Logging
+METRICS_ROLE="${METRICS_ROLE:-main-app}"
+METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
+if [ "$METRICS_ROLE" = "main-app" ]; then
+    FRONTEND_URL="${FRONTEND_URL:-https://murphys-laws.com}"
+    API_URL="${API_URL:-https://murphys-laws.com/api/health}"
+    DB_PATH="${DB_PATH:-/root/murphys-laws/backend/murphys.db}"
+    PM2_API_NAME="${PM2_API_NAME:-murphys-api}"
+fi
+PM2_API_MEMORY_LIMIT_MB="${PM2_API_MEMORY_LIMIT_MB:-}"
+
+LOG_FILE="/var/log/performance-tracker.log"
+METRICS_FILE="$METRICS_DIR/metrics-${METRICS_ROLE}-$(date +%Y-%m).csv"
+HEADER="timestamp,role,frontend_response_ms,api_response_ms,db_query_ms,memory_used_mb,memory_available_mb,memory_pressure_percent,swap_used_mb,swap_in,swap_out,cpu_cores,cpu_load_1m,cpu_load_5m,cpu_load_15m,cpu_normalized_percent,disk_used_gb,disk_available_gb,disk_percent,db_size_mb,pm2_api_restarts,pm2_api_uptime_hours,pm2_api_rss_mb,pm2_api_memory_limit_mb,collector_errors"
+
+mkdir -p "$METRICS_DIR"
+COLLECTOR_ERRORS=""
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-log "=========================================="
-log "Collecting Performance Metrics"
-log "=========================================="
+append_error() {
+    if [ -n "$COLLECTOR_ERRORS" ]; then
+        COLLECTOR_ERRORS="${COLLECTOR_ERRORS};$1"
+    else
+        COLLECTOR_ERRORS="$1"
+    fi
+}
 
-# Get timestamp
+parse_pm2_memory_limit_mb() {
+    local raw="$1"
+    if [ -z "$raw" ] || [ "$raw" = "null" ]; then
+        return 1
+    fi
+    if [[ "$raw" =~ ^[0-9]+$ ]]; then
+        echo "scale=0; $raw / 1048576" | bc
+        return 0
+    fi
+    if [[ "$raw" =~ ^([0-9]+)[Mm]$ ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    if [[ "$raw" =~ ^([0-9]+)[Gg]$ ]]; then
+        echo $((${BASH_REMATCH[1]} * 1024))
+        return 0
+    fi
+    return 1
+}
+
+if [ ! -f "$METRICS_FILE" ]; then
+    echo "$HEADER" > "$METRICS_FILE"
+fi
+
+log "Collecting metrics for role=$METRICS_ROLE"
+
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+FRONTEND_RESPONSE_MS=""
+API_RESPONSE_MS=""
+DB_QUERY_MS=""
 
-# 1. Check HTTP response times
-log "Measuring HTTP response times..."
-
-FRONTEND_URL="https://murphys-laws.com"
-API_URL="https://murphys-laws.com/api/health"
-
-# Frontend response time
-FRONTEND_START=$(date +%s%N)
-FRONTEND_HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" --max-time 30 "$FRONTEND_URL" 2>/dev/null)
-FRONTEND_END=$(date +%s%N)
-FRONTEND_RESPONSE_MS=$(( (FRONTEND_END - FRONTEND_START) / 1000000 ))
-
-if [ "$FRONTEND_HTTP_CODE" != "200" ]; then
-    log "Frontend returned HTTP $FRONTEND_HTTP_CODE"
-    FRONTEND_RESPONSE_MS=""
-else
-    log "Frontend: ${FRONTEND_RESPONSE_MS}ms"
+if [ "$METRICS_ROLE" = "main-app" ] && [ -n "$FRONTEND_URL" ]; then
+    FRONTEND_START=$(date +%s%N)
+    FRONTEND_HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" --max-time 30 "$FRONTEND_URL" 2>/dev/null)
+    FRONTEND_END=$(date +%s%N)
+    FRONTEND_RESPONSE_MS=$(( (FRONTEND_END - FRONTEND_START) / 1000000 ))
+    if [ "$FRONTEND_HTTP_CODE" != "200" ]; then
+        FRONTEND_RESPONSE_MS=""
+        append_error "frontend_http_${FRONTEND_HTTP_CODE}"
+    fi
 fi
 
-# API response time and DB query time
-API_START=$(date +%s%N)
-API_RESPONSE=$(curl -s --max-time 30 "$API_URL" 2>/dev/null)
-API_END=$(date +%s%N)
-API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
-
-# Extract DB query time from API response
-DB_QUERY_MS=$(echo "$API_RESPONSE" | grep -o '"dbQueryTime":[0-9]*' | cut -d: -f2)
-
-if [ -z "$DB_QUERY_MS" ]; then
-    log "Failed to get DB query time from API"
-    DB_QUERY_MS=""
-else
-    log "API: ${API_RESPONSE_MS}ms (DB: ${DB_QUERY_MS}ms)"
+if [ -n "$API_URL" ]; then
+    API_START=$(date +%s%N)
+    if [ "$METRICS_ROLE" = "main-app" ]; then
+        API_RESPONSE=$(curl -s --max-time 30 "$API_URL" 2>/dev/null)
+        API_END=$(date +%s%N)
+        API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
+        DB_QUERY_MS=$(echo "$API_RESPONSE" | grep -o '"dbQueryTime":[0-9]*' | cut -d: -f2)
+        if [ -z "$DB_QUERY_MS" ]; then
+            append_error "api_health_unavailable"
+            API_RESPONSE_MS=""
+        fi
+    else
+        API_HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" --max-time 30 "$API_URL" 2>/dev/null)
+        API_END=$(date +%s%N)
+        API_RESPONSE_MS=$(( (API_END - API_START) / 1000000 ))
+        if [ "$API_HTTP_CODE" != "200" ]; then
+            API_RESPONSE_MS=""
+            append_error "api_http_${API_HTTP_CODE}"
+        fi
+    fi
 fi
 
-# 2. Memory usage
-log "Checking memory usage..."
 MEMORY_STATS=$(free -m | grep "Mem:")
-MEMORY_USED=$(echo "$MEMORY_STATS" | awk '{print $3}')
-MEMORY_AVAILABLE=$(echo "$MEMORY_STATS" | awk '{print $7}')
 MEMORY_TOTAL=$(echo "$MEMORY_STATS" | awk '{print $2}')
-MEMORY_PERCENT=$(echo "scale=1; ($MEMORY_USED / $MEMORY_TOTAL) * 100" | bc)
+MEMORY_AVAILABLE=$(echo "$MEMORY_STATS" | awk '{print $7}')
+MEMORY_USED=$((MEMORY_TOTAL - MEMORY_AVAILABLE))
+if [ "$MEMORY_TOTAL" -gt 0 ]; then
+    MEMORY_PRESSURE_PERCENT=$(echo "scale=4; (1 - $MEMORY_AVAILABLE / $MEMORY_TOTAL) * 100" | bc | awk '{printf "%.1f", $0}')
+else
+    MEMORY_PRESSURE_PERCENT=""
+    append_error "memory_unavailable"
+fi
 
-log "Memory: ${MEMORY_USED}MB used / ${MEMORY_AVAILABLE}MB available (${MEMORY_PERCENT}%)"
+SWAP_USED=$(free -m | awk '/Swap:/ {print $3}')
+SWAP_IN=$(awk '/^pswpin / {print $2}' /proc/vmstat 2>/dev/null)
+SWAP_OUT=$(awk '/^pswpout / {print $2}' /proc/vmstat 2>/dev/null)
 
-# 3. CPU load
-log "Checking CPU load..."
-CPU_LOAD=$(uptime | awk -F'load average:' '{print $2}')
-CPU_LOAD_1M=$(echo "$CPU_LOAD" | awk -F',' '{print $1}' | xargs)
-CPU_LOAD_5M=$(echo "$CPU_LOAD" | awk -F',' '{print $2}' | xargs)
-CPU_LOAD_15M=$(echo "$CPU_LOAD" | awk -F',' '{print $3}' | xargs)
+CPU_CORES=$(nproc)
+LOAD_LINE=$(uptime | awk -F'load average:' '{print $2}')
+CPU_LOAD_1M=$(echo "$LOAD_LINE" | awk -F',' '{print $1}' | xargs)
+CPU_LOAD_5M=$(echo "$LOAD_LINE" | awk -F',' '{print $2}' | xargs)
+CPU_LOAD_15M=$(echo "$LOAD_LINE" | awk -F',' '{print $3}' | xargs)
+CPU_NORMALIZED_PERCENT=$(echo "scale=4; ($CPU_LOAD_1M / $CPU_CORES) * 100" | bc | awk '{printf "%.1f", $0}')
 
-log "CPU Load: ${CPU_LOAD_1M} (1m), ${CPU_LOAD_5M} (5m), ${CPU_LOAD_15M} (15m)"
-
-# 4. Disk usage
-log "Checking disk usage..."
-DISK_STATS=$(df -BG /root | tail -1)
+DISK_STATS=$(df -BG /root 2>/dev/null | tail -1)
+if [ -z "$DISK_STATS" ]; then
+    DISK_STATS=$(df -BG / | tail -1)
+fi
 DISK_USED=$(echo "$DISK_STATS" | awk '{print $3}' | tr -d 'G')
 DISK_AVAILABLE=$(echo "$DISK_STATS" | awk '{print $4}' | tr -d 'G')
 DISK_PERCENT=$(echo "$DISK_STATS" | awk '{print $5}' | tr -d '%')
 
-log "Disk: ${DISK_USED}GB used / ${DISK_AVAILABLE}GB available (${DISK_PERCENT}%)"
-
-# 5. Database size
-log "Checking database size..."
-DB_PATH="/root/murphys-laws/backend/murphys.db"
-if [ -f "$DB_PATH" ]; then
-    DB_SIZE_BYTES=$(stat -f%z "$DB_PATH" 2>/dev/null || stat -c%s "$DB_PATH" 2>/dev/null)
+DB_SIZE_MB=""
+if [ "$METRICS_ROLE" = "main-app" ] && [ -f "$DB_PATH" ]; then
+    DB_SIZE_BYTES=$(stat -c%s "$DB_PATH" 2>/dev/null || stat -f%z "$DB_PATH" 2>/dev/null)
     DB_SIZE_MB=$(echo "scale=2; $DB_SIZE_BYTES / 1024 / 1024" | bc)
-    log "Database: ${DB_SIZE_MB}MB"
-else
-    DB_SIZE_MB=""
-    log "Database file not found"
 fi
 
-# 6. PM2 process metrics
-log "Checking PM2 processes..."
-if command -v pm2 &> /dev/null; then
+PM2_API_RESTARTS=""
+PM2_API_UPTIME_HOURS=""
+PM2_API_RSS_MB=""
+
+if [ "$METRICS_ROLE" = "main-app" ] && [ -n "$PM2_API_NAME" ] && command -v pm2 &> /dev/null; then
     PM2_JSON=$(pm2 jlist 2>/dev/null)
-
     if [ $? -eq 0 ]; then
-        # API process
-        PM2_API_RESTARTS=$(echo "$PM2_JSON" | jq -r '.[] | select(.name=="murphys-api") | .pm2_env.restart_time' 2>/dev/null || echo "0")
-        PM2_API_UPTIME_MS=$(echo "$PM2_JSON" | jq -r '.[] | select(.name=="murphys-api") | .pm2_env.pm_uptime' 2>/dev/null || echo "0")
-        PM2_API_UPTIME_HOURS=$(echo "scale=2; ($PM2_API_UPTIME_MS) / 1000 / 3600" | bc 2>/dev/null || echo "0")
-
-        # Frontend process
-        PM2_FRONTEND_RESTARTS=$(echo "$PM2_JSON" | jq -r '.[] | select(.name=="murphys-frontend") | .pm2_env.restart_time' 2>/dev/null || echo "0")
-        PM2_FRONTEND_UPTIME_MS=$(echo "$PM2_JSON" | jq -r '.[] | select(.name=="murphys-frontend") | .pm2_env.pm_uptime' 2>/dev/null || echo "0")
-        PM2_FRONTEND_UPTIME_HOURS=$(echo "scale=2; ($PM2_FRONTEND_UPTIME_MS) / 1000 / 3600" | bc 2>/dev/null || echo "0")
-
-        log "PM2 API: ${PM2_API_RESTARTS} restarts, ${PM2_API_UPTIME_HOURS}h uptime"
-        log "PM2 Frontend: ${PM2_FRONTEND_RESTARTS} restarts, ${PM2_FRONTEND_UPTIME_HOURS}h uptime"
+        PM2_API_RESTARTS=$(echo "$PM2_JSON" | jq -r --arg name "$PM2_API_NAME" '.[] | select(.name==$name) | .pm2_env.restart_time' 2>/dev/null)
+        PM2_START_MS=$(echo "$PM2_JSON" | jq -r --arg name "$PM2_API_NAME" '.[] | select(.name==$name) | .pm2_env.pm_uptime' 2>/dev/null)
+        PM2_MONIT_MEMORY=$(echo "$PM2_JSON" | jq -r --arg name "$PM2_API_NAME" '.[] | select(.name==$name) | .monit.memory' 2>/dev/null)
+        if [ -n "$PM2_START_MS" ] && [ "$PM2_START_MS" != "null" ]; then
+            NOW_MS=$(date +%s%3N 2>/dev/null || echo $(($(date +%s) * 1000)))
+            UPTIME_MS=$((NOW_MS - PM2_START_MS))
+            PM2_API_UPTIME_HOURS=$(echo "scale=2; $UPTIME_MS / 1000 / 3600" | bc)
+        fi
+        if [ -n "$PM2_MONIT_MEMORY" ] && [ "$PM2_MONIT_MEMORY" != "null" ]; then
+            PM2_API_RSS_MB=$(echo "scale=1; $PM2_MONIT_MEMORY / 1024 / 1024" | bc)
+        fi
+        PM2_MAX_RESTART=$(echo "$PM2_JSON" | jq -r --arg name "$PM2_API_NAME" '.[] | select(.name==$name) | .pm2_env.max_memory_restart // empty' 2>/dev/null)
+        if PARSED_LIMIT=$(parse_pm2_memory_limit_mb "$PM2_MAX_RESTART"); then
+            PM2_API_MEMORY_LIMIT_MB="$PARSED_LIMIT"
+        elif [ -z "$PM2_API_MEMORY_LIMIT_MB" ]; then
+            append_error "pm2_memory_limit_unavailable"
+        fi
     else
-        PM2_API_RESTARTS=""
-        PM2_FRONTEND_RESTARTS=""
-        PM2_API_UPTIME_HOURS=""
-        PM2_FRONTEND_UPTIME_HOURS=""
-        log "Failed to get PM2 status"
-    fi
-else
-    PM2_API_RESTARTS=""
-    PM2_FRONTEND_RESTARTS=""
-    PM2_API_UPTIME_HOURS=""
-    PM2_FRONTEND_UPTIME_HOURS=""
-    log "PM2 not available"
-fi
-
-# 7. Write metrics to CSV
-log "Writing metrics to CSV..."
-echo "$TIMESTAMP,$FRONTEND_RESPONSE_MS,$API_RESPONSE_MS,$DB_QUERY_MS,$MEMORY_USED,$MEMORY_AVAILABLE,$MEMORY_PERCENT,$CPU_LOAD_1M,$CPU_LOAD_5M,$CPU_LOAD_15M,$DISK_USED,$DISK_AVAILABLE,$DISK_PERCENT,$DB_SIZE_MB,$PM2_API_RESTARTS,$PM2_FRONTEND_RESTARTS,$PM2_API_UPTIME_HOURS,$PM2_FRONTEND_UPTIME_HOURS" >> "$METRICS_FILE"
-
-log "Metrics saved to $METRICS_FILE"
-
-# 8. Check for performance issues and send alerts if needed
-ALERT_EMAIL="ravidor@gmail.com"
-ALERTS=""
-
-# Check for high memory usage
-if [ -n "$MEMORY_PERCENT" ]; then
-    MEMORY_PERCENT_INT=${MEMORY_PERCENT%.*}
-    if [ "$MEMORY_PERCENT_INT" -gt 80 ]; then
-        ALERTS="$ALERTS\n• High memory usage: ${MEMORY_PERCENT}%"
+        append_error "pm2_unavailable"
     fi
 fi
 
-# Check for high disk usage
-if [ -n "$DISK_PERCENT" ] && [ "$DISK_PERCENT" -gt 80 ]; then
-    ALERTS="$ALERTS\n• High disk usage: ${DISK_PERCENT}%"
+if [ "$METRICS_ROLE" = "main-app" ] && [ -z "$PM2_API_MEMORY_LIMIT_MB" ]; then
+    PM2_API_MEMORY_LIMIT_MB="500"
 fi
 
-# Check for slow response times
-if [ -n "$FRONTEND_RESPONSE_MS" ] && [ "$FRONTEND_RESPONSE_MS" -gt 5000 ]; then
-    ALERTS="$ALERTS\n• Slow frontend response: ${FRONTEND_RESPONSE_MS}ms"
-fi
+echo "$TIMESTAMP,$METRICS_ROLE,$FRONTEND_RESPONSE_MS,$API_RESPONSE_MS,$DB_QUERY_MS,$MEMORY_USED,$MEMORY_AVAILABLE,$MEMORY_PRESSURE_PERCENT,$SWAP_USED,$SWAP_IN,$SWAP_OUT,$CPU_CORES,$CPU_LOAD_1M,$CPU_LOAD_5M,$CPU_LOAD_15M,$CPU_NORMALIZED_PERCENT,$DISK_USED,$DISK_AVAILABLE,$DISK_PERCENT,$DB_SIZE_MB,$PM2_API_RESTARTS,$PM2_API_UPTIME_HOURS,$PM2_API_RSS_MB,$PM2_API_MEMORY_LIMIT_MB,$COLLECTOR_ERRORS" >> "$METRICS_FILE"
 
-if [ -n "$API_RESPONSE_MS" ] && [ "$API_RESPONSE_MS" -gt 5000 ]; then
-    ALERTS="$ALERTS\n• Slow API response: ${API_RESPONSE_MS}ms"
-fi
+log "Metrics appended to $METRICS_FILE"
 
-if [ -n "$DB_QUERY_MS" ] && [ "$DB_QUERY_MS" -gt 1000 ]; then
-    ALERTS="$ALERTS\n• Slow database queries: ${DB_QUERY_MS}ms"
-fi
-
-# Check for frequent restarts (more than 5 in the last tracking period)
-if [ -n "$PM2_API_RESTARTS" ] && [ "$PM2_API_RESTARTS" -gt 5 ]; then
-    ALERTS="$ALERTS\n• API has restarted ${PM2_API_RESTARTS} times"
-fi
-
-if [ -n "$PM2_FRONTEND_RESTARTS" ] && [ "$PM2_FRONTEND_RESTARTS" -gt 5 ]; then
-    ALERTS="$ALERTS\n• Frontend has restarted ${PM2_FRONTEND_RESTARTS} times"
-fi
-
-# Send alert if issues detected
-if [ -n "$ALERTS" ]; then
-    log "Performance issues detected, sending alert..."
-
-    echo -e "Performance issues detected during monitoring:$ALERTS\n\nMetrics:\n- Frontend Response: ${FRONTEND_RESPONSE_MS}ms\n- API Response: ${API_RESPONSE_MS}ms\n- DB Query: ${DB_QUERY_MS}ms\n- Memory: ${MEMORY_PERCENT}%\n- Disk: ${DISK_PERCENT}%\n- CPU Load: ${CPU_LOAD_1M}, ${CPU_LOAD_5M}, ${CPU_LOAD_15M}\n\nTime: $(date)" | \
-        mail -s "[Murphy's Laws] Performance Issues Detected" "$ALERT_EMAIL"
-
-    log "Alert sent"
-fi
-
-log "=========================================="
-log "Performance tracking completed"
-log "=========================================="
-
-# Cleanup old metrics files (keep last 6 months)
-find "$METRICS_DIR" -name "metrics-*.csv" -mtime +180 -delete
+find "$METRICS_DIR" -name "metrics-*-*.csv" -mtime +180 -delete 2>/dev/null
+find "$METRICS_DIR" -name "metrics-[0-9][0-9][0-9][0-9]-[0-9][0-9].csv" -mtime +180 -delete 2>/dev/null
