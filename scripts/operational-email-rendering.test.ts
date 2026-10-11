@@ -47,6 +47,8 @@ test('renderHtmlReport escapes dynamic values and avoids terminal separators', (
 
   const html = renderHtmlReport(model);
   assert.match(html, /&lt;\/script&gt; &amp; \/laws/);
+  assert.match(html, /max-width:640px/);
+  assert.match(html, /Daily Status Report/);
   assert.doesNotMatch(html, /━━━━━━━━|====|<pre>/);
 });
 
@@ -92,7 +94,55 @@ test('renderPlainTextReport mirrors section content', () => {
     ],
   };
 
-  assert.match(renderPlainTextReport(model), /Top URL: <\/script> & \/laws/);
+  const plain = renderPlainTextReport(model);
+  assert.match(plain, /Daily Status Report/);
+  assert.match(plain, /Top URL: <\/script> & \/laws/);
+});
+
+test('renderPlainTextReport tags glance rows from tone', () => {
+  const model: DailyReport = {
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: 'Preview',
+    summary: [
+      { label: 'API', value: 'Healthy', tone: 'success' },
+      { label: 'Security', value: '2 attempts', tone: 'warning' },
+    ],
+    sections: [],
+  };
+  const plain = renderPlainTextReport(model);
+  assert.match(plain, /API: \[OK\] Healthy/);
+  assert.match(plain, /Security: \[!\] 2 attempts/);
+});
+
+test('renderHtmlReport uses exclamation for attention glyphs', () => {
+  const model: DailyReport = {
+    date: '2026-10-11',
+    subjectSuffix: '',
+    preview: 'Preview',
+    summary: [{ label: 'Security', value: '2 attempts', tone: 'warning' }],
+    sections: [
+      {
+        title: 'PEAK',
+        items: [
+          {
+            label: 'CPU',
+            value: '88 %',
+            tone: 'warning',
+            timestamp: '2026-10-09T08:00:00Z',
+          },
+        ],
+      },
+      {
+        title: 'CALLOUT',
+        items: [{ value: 'Stale backup', tone: 'warning' }],
+      },
+    ],
+  };
+  const html = renderHtmlReport(model);
+  assert.match(html, />!<\/span>/);
+  assert.match(html, /font-weight:bold;">! /);
+  assert.doesNotMatch(html, /&#9650;/);
 });
 
 test('buildMultipartMessage uses multipart alternative', () => {
