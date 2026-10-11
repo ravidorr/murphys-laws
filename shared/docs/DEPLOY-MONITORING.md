@@ -171,8 +171,8 @@ expose `--format json` for the renderer.
 After deploy, send an all-sections smoke test only to an explicit recipient:
 
 ```bash
-DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
-  sudo /usr/local/bin/daily-report.sh --test-email
+sudo DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+  /usr/local/bin/daily-report.sh --test-email
 ```
 
 The command exits without sending when `DAILY_REPORT_TEST_RECIPIENT` is unset.
