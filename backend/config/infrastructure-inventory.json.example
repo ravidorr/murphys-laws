@@ -1,6 +1,6 @@
 {
   "verified": false,
-  "note": "Copy to infrastructure-inventory.json and set verified true after confirming against DigitalOcean billing.",
+  "note": "Copy to infrastructure-inventory.json and set verified true after confirming against DigitalOcean billing. Domain murphys-laws.com is at Network Solutions, not DO.",
   "monthly_usd_estimate": null,
   "hosts": [
     {
@@ -13,8 +13,10 @@
   ],
   "other_costs": [
     {
-      "label": "Domain murphys-laws.com",
-      "monthly_usd_estimate": null
+      "label": "murphys-laws.com domain registration",
+      "provider": "networksolutions",
+      "monthly_usd_estimate": null,
+      "note": "Set to annual or multi-year renewal divided by term months when verified (e.g. five-year ÷ 60)."
     }
   ]
 }
