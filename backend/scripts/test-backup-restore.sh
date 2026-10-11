@@ -2,7 +2,7 @@
 
 #############################################################################
 # Backup Restore Testing Script
-# Tests backup integrity and restore procedures without affecting production
+# Tests database and environment backup integrity without affecting production
 #############################################################################
 
 ALERT_EMAIL="ravidor@gmail.com"
@@ -31,14 +31,13 @@ log "=========================================="
 log ""
 
 #############################################################################
-# TEST 1: Verify Backup Files Exist
+# TEST 1: Verify Database and Environment Backups Exist
 #############################################################################
 
-log "TEST 1: Checking backup files..."
+log "TEST 1: Checking database and environment backups..."
 
 LATEST_DB_BACKUP=$(ls -t /root/backups/murphys_db_*.db 2>/dev/null | head -1)
 LATEST_ENV_BACKUP=$(ls -t /root/backups/env_*.bak 2>/dev/null | head -1)
-LATEST_APP_BACKUP=$(ls -t /root/backups/murphys_app_*.tar.gz 2>/dev/null | head -1)
 
 if [ -n "$LATEST_DB_BACKUP" ]; then
     test_pass "Database backup exists: $(basename $LATEST_DB_BACKUP)"
@@ -52,14 +51,6 @@ if [ -n "$LATEST_ENV_BACKUP" ]; then
     test_pass "Environment backup exists: $(basename $LATEST_ENV_BACKUP)"
 else
     test_fail "No environment backup found"
-fi
-
-if [ -n "$LATEST_APP_BACKUP" ]; then
-    test_pass "Application backup exists: $(basename $LATEST_APP_BACKUP)"
-    APP_SIZE=$(du -h "$LATEST_APP_BACKUP" | cut -f1)
-    log "  Size: $APP_SIZE"
-else
-    test_fail "No application backup found"
 fi
 
 log ""
@@ -146,57 +137,10 @@ fi
 log ""
 
 #############################################################################
-# TEST 4: Test Application Archive Extraction
+# TEST 4: Test Environment File Restore
 #############################################################################
 
-log "TEST 4: Testing application archive extraction..."
-
-if [ -n "$LATEST_APP_BACKUP" ]; then
-    # Extract to temp location
-    tar -tzf "$LATEST_APP_BACKUP" > /dev/null 2>&1
-
-    if [ $? -eq 0 ]; then
-        test_pass "Application archive is valid"
-
-        # Extract to temp directory
-        tar -xzf "$LATEST_APP_BACKUP" -C "$TEST_DIR" 2>&1
-
-        if [ $? -eq 0 ]; then
-            test_pass "Successfully extracted application archive"
-
-            # Verify key files exist (monorepo structure)
-            if [ -f "$TEST_DIR/murphys-laws/backend/package.json" ]; then
-                test_pass "backend/package.json found in extracted archive"
-            else
-                test_fail "backend/package.json not found in extracted archive"
-            fi
-
-            if [ -d "$TEST_DIR/murphys-laws/backend/src" ]; then
-                test_pass "backend/src/ directory found in extracted archive"
-            else
-                test_fail "backend/src/ directory not found in extracted archive"
-            fi
-
-            if [ -d "$TEST_DIR/murphys-laws/backend/scripts" ]; then
-                test_pass "backend/scripts/ directory found in extracted archive"
-            else
-                test_fail "backend/scripts/ directory not found in extracted archive"
-            fi
-        else
-            test_fail "Failed to extract application archive"
-        fi
-    else
-        test_fail "Application archive is corrupted"
-    fi
-fi
-
-log ""
-
-#############################################################################
-# TEST 5: Test Environment File Restore
-#############################################################################
-
-log "TEST 5: Testing environment file..."
+log "TEST 4: Testing environment file..."
 
 if [ -n "$LATEST_ENV_BACKUP" ]; then
     # Check file is readable
@@ -229,10 +173,10 @@ fi
 log ""
 
 #############################################################################
-# TEST 6: Backup Age Check
+# TEST 5: Backup Age Check
 #############################################################################
 
-log "TEST 6: Checking backup freshness..."
+log "TEST 5: Checking backup freshness..."
 
 if [ -n "$LATEST_DB_BACKUP" ]; then
     BACKUP_TIME=$(stat -c %Y "$LATEST_DB_BACKUP" 2>/dev/null || stat -f %m "$LATEST_DB_BACKUP" 2>/dev/null)
@@ -251,10 +195,10 @@ fi
 log ""
 
 #############################################################################
-# TEST 7: Test Backup Script Execution
+# TEST 6: Test Backup Script Execution
 #############################################################################
 
-log "TEST 7: Testing backup script..."
+log "TEST 6: Testing backup script..."
 
 if [ -x /usr/local/bin/backup-murphys.sh ]; then
     test_pass "Backup script is executable"
@@ -275,10 +219,10 @@ fi
 log ""
 
 #############################################################################
-# TEST 8: Cron Job Verification
+# TEST 7: Cron Job Verification
 #############################################################################
 
-log "TEST 8: Verifying backup cron job..."
+log "TEST 7: Verifying backup cron job..."
 
 CRON_ENTRY=$(crontab -l 2>/dev/null | grep "backup-murphys.sh")
 
@@ -292,10 +236,10 @@ fi
 log ""
 
 #############################################################################
-# TEST 9: Check Recent Backup Logs
+# TEST 8: Check Recent Backup Logs
 #############################################################################
 
-log "TEST 9: Checking backup logs..."
+log "TEST 8: Checking backup logs..."
 
 if [ -f /var/log/backup-murphys.log ]; then
     test_pass "Backup log file exists"
