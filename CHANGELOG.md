@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document the approved advanced CodeQL workflow design for complete
+  interpreted and native language coverage.
+
 - Add a blank line between README badges and the introduction.
 
 ### Changed
