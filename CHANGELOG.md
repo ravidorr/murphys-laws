@@ -30,8 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Wrap daily report HTML at MIME tag boundaries so Postfix line folding does not
-  break tags (for example `<td`) in Gmail. Backend bumped to `2.3.27`; root to
-  `2.6.57`.
+  break tags (for example `<td`) in Gmail; fold by UTF-8 byte length at `>` or
+  whitespace without splitting entities. Backend bumped to `2.3.28`; root to
+  `2.6.58`.
 
 ### Changed
 
