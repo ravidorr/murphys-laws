@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Require per-provider billing verification before marking infrastructure
+  inventory verified; align cost report UNVERIFIED copy with mixed providers.
+  Backend bumped to `2.3.22`; root to `2.6.52`.
 - Documented Network Solutions as the murphys-laws.com registrar in the
   infrastructure inventory example, including amortized multi-year domain costs.
   Backend bumped to `2.3.21`; root to `2.6.51`.

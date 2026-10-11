@@ -57,6 +57,12 @@ Monthly cost reports call `analyze-capacity-metrics.ts`, which requires ~30 days
 
 Automatic droplet resize or consolidation is never performed from report output.
 
+## Infrastructure inventory
+
+Monthly cost reports read `$REPO_ROOT/backend/config/infrastructure-inventory.json` (not committed; copy from `infrastructure-inventory.json.example` on the droplet).
+
+Set `"verified": true` only after confirming `monthly_usd_estimate` for **every** `provider` in the file (for example DigitalOcean for the application droplet and droplet backups, Network Solutions for domain registration). The report treats the file-wide flag as verification of the entire inventory, not individual line items.
+
 ## Baseline rollout (30 days)
 
 1. Deploy updated scripts via `npm run deploy` or the GitHub deploy workflow.

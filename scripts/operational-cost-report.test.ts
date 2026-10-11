@@ -60,6 +60,10 @@ test('cost report does not recommend automatic consolidation or downsizing', () 
   assert.doesNotMatch(costReport, /run_capacity_analysis n8n/);
   assert.match(costReport, /node_modules\/\.bin\/tsx/);
   assert.match(costReport, /cd "\$REPO_ROOT"/);
+  assert.match(
+    costReport,
+    /UNVERIFIED — confirm costs against each provider listed in the inventory/,
+  );
 });
 
 test('performance tracker uses role-aware metrics file and header', () => {
