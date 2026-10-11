@@ -101,7 +101,6 @@ test('renderHtmlReport escapes dynamic values and avoids terminal separators', (
   assert.match(html, /max-width:640px/);
   assert.match(html, /Daily Status Report/);
   assert.match(html, /width:1%;white-space:nowrap/);
-  assert.doesNotMatch(html, /width:38%/);
   assert.doesNotMatch(html, /━━━━━━━━|====|<pre>/);
 });
 
@@ -255,7 +254,22 @@ test('renderHtmlReport allows long label cells to wrap on narrow screens', () =>
   const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
   const html = renderHtmlReport(report);
   assert.match(html, /MAIN DROPLET \(murphys-laws\.com\)/);
-  assert.match(html, /max-width:42%;white-space:normal;word-break:break-word;/);
+  assert.match(html, /width:38%;white-space:normal;overflow-wrap:break-word;word-break:normal;/);
+  assert.match(html, /MAIN DROPLET \(murphys-laws\.com\)[\s\S]*width:62%;[\s\S]*ssh murphys-main/);
+  assert.doesNotMatch(html, /max-width:42%;white-space:normal;word-break:break-word;/);
+});
+
+test('renderHtmlReport renders section bullets as full-width list lines', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
+  const html = renderHtmlReport(report);
+  assert.match(
+    html,
+    /colspan="2"[^>]*>[\s\S]*&bull;[\s\S]*Keep current application droplet size/,
+  );
+  assert.match(
+    html,
+    /colspan="2"[^>]*>[\s\S]*&bull;[\s\S]*All tests should pass \(20\/20 for the main droplet\)/,
+  );
 });
 
 test('wrapHtmlForMimeTransport folds multibyte text on safe boundaries', () => {
