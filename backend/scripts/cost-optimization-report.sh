@@ -44,12 +44,12 @@ if [ -f "$INVENTORY_FILE" ]; then
     if [ -n "$VERIFIED" ]; then
         append "Inventory file: $INVENTORY_FILE (marked verified)"
     else
-        append "Inventory file: $INVENTORY_FILE (UNVERIFIED — confirm against DigitalOcean billing)"
+        append "Inventory file: $INVENTORY_FILE (UNVERIFIED — confirm costs against each provider listed in the inventory)"
     fi
     append "$(sed 's/^/  /' "$INVENTORY_FILE" | head -40)"
 else
     append "No infrastructure-inventory.json on this host."
-    append "Copy backend/config/infrastructure-inventory.json.example and fill in verified costs."
+    append "Copy backend/config/infrastructure-inventory.json.example and fill in verified costs per provider."
 fi
 append ""
 
