@@ -270,5 +270,41 @@ jobs:
             echo "✅ All health checks passed"
             INNER
 
+      - name: Detect daily email renderer changes
+        id: daily_email_template
+        run: |
+          set -euo pipefail
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "No prior SHA on push; will attempt template smoke email if configured."
+            exit 0
+          fi
+          if git diff --name-only "$BEFORE" "$AFTER" | grep -qx 'backend/scripts/render-daily-report.ts'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send daily email template smoke test
+        if: steps.daily_email_template.outputs.changed == 'true'
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          DAILY_REPORT_TEST_RECIPIENT: ${{ secrets['DAILY_REPORT_TEST_RECIPIENT'] }}
+        with:
+          host: ${{ secrets['SERVER_HOST'] }}
+          username: ${{ secrets['SERVER_USER'] }}
+          key: ${{ secrets['SSH_PRIVATE_KEY'] }}
+          envs: DAILY_REPORT_TEST_RECIPIENT
+          script: |
+            if [ -z "${DAILY_REPORT_TEST_RECIPIENT:-}" ]; then
+              echo "DAILY_REPORT_TEST_RECIPIENT secret not set; skipping template smoke email."
+              exit 0
+            fi
+            sudo DAILY_REPORT_TEST_RECIPIENT="$DAILY_REPORT_TEST_RECIPIENT" \
+              REPO_ROOT=/root/murphys-laws \
+              /usr/local/bin/daily-report.sh --test-email
+
       - name: Smoke test production routes
         run: npm run smoke:production

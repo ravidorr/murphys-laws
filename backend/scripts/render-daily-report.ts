@@ -7,10 +7,25 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+export type ReportItemKind =
+  | 'row'
+  | 'bullet'
+  | 'bullet-pass'
+  | 'callout'
+  | 'callout-check-failed'
+  | 'subheading'
+  | 'command'
+  | 'closing';
+
 export interface ReportItem {
   label?: string;
   value: string;
   tone?: 'neutral' | 'success' | 'warning' | 'critical';
+  kind?: ReportItemKind;
+  /** ISO timestamp shown in muted parentheses (peak metrics). */
+  timestamp?: string;
+  boldValue?: boolean;
+  valueSecondary?: string;
 }
 
 export interface ReportSection {
@@ -21,6 +36,8 @@ export interface ReportSection {
 export interface DailyReport {
   date: string;
   subjectSuffix: string;
+  /** When set, appended to the subject as `[test <timestamp>]` for smoke-test mail. */
+  testEmailSentAtUtc?: string;
   preview: string;
   summary: ReportItem[];
   sections: ReportSection[];
@@ -52,6 +69,8 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+type GlanceState = 'healthy' | 'attention' | 'check-failed' | 'down';
+
 function itemToneColor(tone: ReportItem['tone']): string {
   switch (tone) {
     case 'success':
@@ -65,89 +84,309 @@ function itemToneColor(tone: ReportItem['tone']): string {
   }
 }
 
-function formatHtmlItemValue(item: ReportItem): string {
-  const escaped = escapeHtml(item.value);
-  if (item.tone && item.tone !== 'neutral') {
-    return `<span style="color:${itemToneColor(item.tone)};">${escaped}</span>`;
+function glanceStateFromItem(item: ReportItem): GlanceState {
+  if (item.tone === 'success') {
+    return 'healthy';
   }
-  return escaped;
+  if (item.tone === 'critical') {
+    return 'down';
+  }
+  if (item.tone === 'warning' && /unknown|unavailable/i.test(item.value)) {
+    return 'check-failed';
+  }
+  if (item.tone === 'warning') {
+    return 'attention';
+  }
+  return 'attention';
 }
 
-function appendPlainSection(lines: string[], section: ReportSection): void {
+function plainGlanceTag(state: GlanceState): string {
+  switch (state) {
+    case 'healthy':
+      return '[OK]';
+    case 'attention':
+      return '[!]';
+    case 'check-failed':
+      return '[?]';
+    case 'down':
+      return '[X]';
+  }
+}
+
+function splitSectionTitle(title: string): { main: string; suffix?: string } {
+  const match = title.match(/^(.+?)\s+\(([^)]+)\)$/);
+  if (!match) {
+    return { main: title };
+  }
+  return { main: match[1], suffix: match[2] };
+}
+
+function renderGlyphSpan(state: GlanceState): string {
+  switch (state) {
+    case 'healthy':
+      return '<span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border:1px solid #15803d;background:#f0fdf4;color:#15803d;font-size:14px;font-weight:bold;">&#10003;</span>';
+    case 'attention':
+      return '<span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border:1px solid #a16207;background:#fefce8;color:#a16207;font-size:14px;font-weight:bold;">!</span>';
+    case 'check-failed':
+      return '<span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border:1px dashed #a16207;background:#fefce8;color:#a16207;font-size:14px;font-weight:bold;">?</span>';
+    case 'down':
+      return '<span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border:1px solid #b91c1c;background:#b91c1c;color:#ffffff;font-size:14px;font-weight:bold;">&#10005;</span>';
+  }
+}
+
+function renderHtmlHeader(date: string): string {
+  return [
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%">',
+    '<tr><td style="font-size:12px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#4b5563;padding:0 0 4px 0;">Murphy&#39;s Laws Server</td></tr>',
+    '<tr><td style="font-size:22px;line-height:28px;font-weight:bold;color:#111827;">Daily Status Report</td></tr>',
+    `<tr><td style="font-size:14px;color:#4b5563;padding:2px 0 0 0;">${escapeHtml(date)}</td></tr>`,
+    '</table>',
+  ].join('');
+}
+
+function renderHtmlAtAGlance(items: ReportItem[]): string {
+  const rows: string[] = [
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0 0 0;">',
+    '<tr><td colspan="3" style="padding:10px 0 6px 0;border-top:2px solid #111827;font-size:12px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#111827;">At a glance</td></tr>',
+  ];
+  for (const item of items) {
+    const state = glanceStateFromItem(item);
+    const toneColor = itemToneColor(item.tone);
+    rows.push(
+      `<tr><td width="96" style="width:96px;padding:10px 8px 10px 0;border-top:1px solid #e5e7eb;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#4b5563;vertical-align:middle;">${escapeHtml(item.label ?? 'Status')}</td>`,
+      `<td width="36" style="width:36px;padding:10px 0;border-top:1px solid #e5e7eb;vertical-align:middle;">${renderGlyphSpan(state)}</td>`,
+      `<td style="padding:10px 0;border-top:1px solid #e5e7eb;font-size:15px;line-height:20px;font-weight:bold;color:${toneColor};vertical-align:middle;">${escapeHtml(item.value)}</td></tr>`,
+    );
+  }
+  rows.push('</table>');
+  return rows.join('');
+}
+
+function renderHtmlLabelValueRow(item: ReportItem, strongTop: boolean): string {
+  const topRule = strongTop ? '2px solid #111827' : '1px solid #e5e7eb';
+  let valueHtml = escapeHtml(item.value);
+  if (item.timestamp) {
+    valueHtml += `<span style="font-size:12px;color:#4b5563;"> (${escapeHtml(item.timestamp)})</span>`;
+  }
+  if (item.tone === 'warning') {
+    valueHtml = `<span style="color:#a16207;font-weight:bold;">! </span>${valueHtml}`;
+  } else if (item.boldValue && !item.label?.includes('MAIN DROPLET')) {
+    valueHtml = `<span style="font-weight:bold;">${valueHtml}</span>`;
+  }
+  const monoValue =
+    item.label === 'MAIN DROPLET (murphys-laws.com)'
+      ? `<span style="font-family:&#39;Courier New&#39;,Courier,monospace;">${escapeHtml(item.value)}</span>`
+      : valueHtml;
+  const labelHtml =
+    item.boldValue && item.label
+      ? `<span style="font-weight:bold;color:#111827;">${escapeHtml(item.label)}</span>`
+      : escapeHtml(item.label ?? '');
+  return [
+    `<tr><td width="38%" style="width:38%;padding:8px 12px 8px 0;border-top:${topRule};font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;">${labelHtml}</td>`,
+    `<td style="padding:8px 0;border-top:${topRule};font-size:14px;line-height:20px;color:#111827;vertical-align:top;word-break:break-word;">${monoValue}</td></tr>`,
+  ].join('');
+}
+
+function renderHtmlBulletRow(item: ReportItem): string {
+  const marker =
+    item.kind === 'bullet-pass'
+      ? '<span style="color:#15803d;font-weight:bold;">&#10003;</span>'
+      : '&bull;';
+  const text =
+    item.kind === 'bullet-pass'
+      ? `<span style="color:#111827;">${escapeHtml(item.value)}</span>`
+      : escapeHtml(item.value);
+  return [
+    `<tr><td width="22" style="width:22px;padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#4b5563;vertical-align:top;">${marker}</td>`,
+    `<td style="padding:6px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;">${text}</td></tr>`,
+  ].join('');
+}
+
+function renderHtmlTrafficCodeRow(value: string): string {
+  const match = value.match(/^(\d{3}):\s*(.+)$/);
+  if (!match) {
+    return renderHtmlBulletRow({ value, kind: 'bullet' });
+  }
+  return [
+    '<tr>',
+    `<td width="38%" style="width:38%;padding:8px 12px 8px 0;border-top:1px solid #e5e7eb;font-size:13px;line-height:20px;color:#4b5563;vertical-align:top;"><span style="color:#4b5563;">&bull;</span> ${escapeHtml(match[1])}</td>`,
+    `<td style="padding:8px 0;border-top:1px solid #e5e7eb;font-size:14px;line-height:20px;color:#111827;vertical-align:top;">${escapeHtml(match[2])}</td>`,
+    '</tr>',
+  ].join('');
+}
+
+function renderHtmlCallout(item: ReportItem): string {
+  const checkFailed = item.kind === 'callout-check-failed';
+  const critical = item.tone === 'critical';
+  const background = checkFailed ? '#f3f4f6' : critical ? '#fef2f2' : '#fefce8';
+  const border = checkFailed
+    ? '1px dashed #a16207'
+    : critical
+      ? '1px solid #fecaca'
+      : '1px solid #fde68a';
+  const prefix = checkFailed
+    ? '? '
+    : critical
+      ? '<span style="color:#b91c1c;font-weight:bold;">&#10005; </span>'
+      : '<span style="color:#a16207;font-weight:bold;">! </span>';
+  const primary = item.boldValue !== false ? `<strong>${escapeHtml(item.value)}</strong>` : escapeHtml(item.value);
+  const secondary = item.valueSecondary
+    ? ` ${escapeHtml(item.valueSecondary)}`
+    : '';
+  return [
+    '<tr><td colspan="2" style="padding:8px 0 4px 0;">',
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>',
+    `<td style="padding:10px 12px;background:${background};border:${border};font-size:14px;line-height:20px;color:#111827;">${prefix}${primary}${secondary}</td>`,
+    '</tr></table></td></tr>',
+  ].join('');
+}
+
+function renderHtmlSubheading(label: string): string {
+  return `<tr><td colspan="2" style="padding:16px 0 4px 0;font-size:11px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#4b5563;">${escapeHtml(label)}</td></tr>`;
+}
+
+function renderHtmlCommand(value: string): string {
+  return [
+    '<tr><td colspan="2" style="padding:4px 0;">',
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>',
+    `<td style="padding:10px 12px;background:#f3f4f6;border:1px solid #e5e7eb;font-family:&#39;Courier New&#39;,Courier,monospace;font-size:13px;line-height:18px;color:#111827;word-break:break-all;">${escapeHtml(value)}</td>`,
+    '</tr></table></td></tr>',
+  ].join('');
+}
+
+function defaultItemKind(item: ReportItem): ReportItemKind {
+  if (item.kind) {
+    return item.kind;
+  }
+  if (item.label) {
+    return 'row';
+  }
+  if (item.tone === 'warning' || item.tone === 'critical') {
+    return 'callout';
+  }
+  return 'bullet';
+}
+
+function renderHtmlSection(sectionBlock: ReportSection): string {
+  const { main, suffix } = splitSectionTitle(sectionBlock.title);
+  const suffixHtml = suffix
+    ? `<span style="font-weight:normal;color:#4b5563;"> (${escapeHtml(suffix)})</span>`
+    : '';
+  const rows: string[] = [
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:28px 0 0 0;">',
+    `<tr><td colspan="2" style="padding:10px 0 6px 0;border-top:2px solid #111827;font-size:12px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#111827;">${escapeHtml(main)}${suffixHtml}</td></tr>`,
+  ];
+
+  for (const item of sectionBlock.items) {
+    const kind = defaultItemKind(item);
+    if (kind === 'subheading') {
+      rows.push(renderHtmlSubheading(item.value));
+      continue;
+    }
+    if (kind === 'callout' || kind === 'callout-check-failed') {
+      rows.push(renderHtmlCallout(item));
+      continue;
+    }
+    if (kind === 'command') {
+      rows.push(renderHtmlCommand(item.value));
+      continue;
+    }
+    if (kind === 'closing') {
+      rows.push(renderHtmlLabelValueRow(item, true));
+      continue;
+    }
+    if (kind === 'row' && item.label) {
+      rows.push(renderHtmlLabelValueRow(item, false));
+      continue;
+    }
+    if (!item.label && /^\d{3}:\s/.test(item.value)) {
+      rows.push(renderHtmlTrafficCodeRow(item.value));
+      continue;
+    }
+    rows.push(renderHtmlBulletRow(item));
+  }
+
+  rows.push('</table>');
+  return rows.join('');
+}
+
+function appendPlainSection(lines: string[], sectionBlock: ReportSection): void {
   lines.push(SECTION_RULE);
-  lines.push(section.title);
+  lines.push(sectionBlock.title);
   lines.push(SECTION_RULE);
   lines.push('');
-  for (const item of section.items) {
-    if (item.label) {
-      lines.push(`${item.label}: ${item.value}`);
-    } else {
-      lines.push(`  • ${item.value}`);
+  for (const item of sectionBlock.items) {
+    const kind = defaultItemKind(item);
+    if (kind === 'subheading') {
+      lines.push('');
+      continue;
     }
+    if (kind === 'callout' || kind === 'callout-check-failed') {
+      const tag = kind === 'callout-check-failed' ? '[?]' : '[!]';
+      lines.push(`  • ${tag} ${item.value}${item.valueSecondary ? ` ${item.valueSecondary}` : ''}`);
+      continue;
+    }
+    if (kind === 'command') {
+      lines.push(`  • ${item.value}`);
+      continue;
+    }
+    if (kind === 'closing' || (kind === 'row' && item.label)) {
+      const ts = item.timestamp ? ` (${item.timestamp})` : '';
+      const flagged = item.tone === 'warning' ? '[!] ' : '';
+      lines.push(`${item.label}: ${flagged}${item.value}${ts}`);
+      continue;
+    }
+    if (kind === 'bullet-pass') {
+      lines.push(`  • [OK] ${item.value}`);
+      continue;
+    }
+    lines.push(`  • ${item.value}`);
   }
   lines.push('');
 }
 
 export function renderPlainTextReport(report: DailyReport): string {
-  const lines: string[] = [];
+  const lines: string[] = ['Daily Status Report', report.date, ''];
   if (report.summary.length > 0) {
     lines.push('At a glance');
     lines.push('');
     for (const item of report.summary) {
-      lines.push(`${item.label ?? 'Status'}: ${item.value}`);
+      const tag = plainGlanceTag(glanceStateFromItem(item));
+      lines.push(`${item.label ?? 'Status'}: ${tag} ${item.value}`);
     }
     lines.push('');
   }
-  for (const section of report.sections) {
-    appendPlainSection(lines, section);
+  for (const sectionBlock of report.sections) {
+    appendPlainSection(lines, sectionBlock);
   }
   return lines.join('\n').trimEnd();
 }
 
 export function renderHtmlReport(report: DailyReport): string {
-  const rows: string[] = [];
-  rows.push('<!DOCTYPE html>');
-  rows.push('<html><head><meta charset="utf-8"></head><body style="font-family:Arial,Helvetica,sans-serif;color:#111827;">');
-  rows.push(
+  const inner: string[] = [
+    renderHtmlHeader(report.date),
+    report.summary.length > 0 ? renderHtmlAtAGlance(report.summary) : '',
+    ...report.sections.map((sectionBlock) => renderHtmlSection(sectionBlock)),
+  ].filter(Boolean);
+
+  return [
+    '<!DOCTYPE html>',
+    '<html><head><meta charset="utf-8"></head>',
+    '<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#111827;background:#f3f4f6;">',
     `<div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(report.preview)}</div>`,
-  );
-
-  if (report.summary.length > 0) {
-    rows.push('<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">');
-    rows.push('<tr><td style="font-size:16px;font-weight:bold;padding:8px 0;">At a glance</td></tr>');
-    for (const item of report.summary) {
-      rows.push('<tr><td style="padding:4px 0;font-size:14px;">');
-      rows.push(
-        `<strong>${escapeHtml(item.label ?? 'Status')}:</strong> ${formatHtmlItemValue(item)}`,
-      );
-      rows.push('</td></tr>');
-    }
-    rows.push('</table>');
-  }
-
-  for (const section of report.sections) {
-    rows.push('<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0;border-top:1px solid #e5e7eb;">');
-    rows.push(
-      `<tr><td style="padding:12px 0 8px 0;font-size:15px;font-weight:bold;letter-spacing:0.02em;">${escapeHtml(section.title)}</td></tr>`,
-    );
-    for (const item of section.items) {
-      rows.push('<tr><td style="padding:2px 0;font-size:14px;line-height:1.45;">');
-      if (item.label) {
-        rows.push(`<strong>${escapeHtml(item.label)}:</strong> ${formatHtmlItemValue(item)}`);
-      } else {
-        rows.push(`• ${formatHtmlItemValue(item)}`);
-      }
-      rows.push('</td></tr>');
-    }
-    rows.push('</table>');
-  }
-
-  rows.push('</body></html>');
-  return rows.join('');
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f3f4f6"><tr><td align="center" style="padding:12px;">',
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="max-width:640px;background:#ffffff;border-top:4px solid #111827;"><tr><td style="padding:20px;">',
+    inner.join(''),
+    '</td></tr></table></td></tr></table></body></html>',
+  ].join('');
 }
 
 export function buildSubject(report: DailyReport): string {
-  return `Daily Status Report - ${report.date}${report.subjectSuffix}`;
+  const base = `Daily Status Report - ${report.date}${report.subjectSuffix}`;
+  if (report.testEmailSentAtUtc) {
+    return `${base} [test ${report.testEmailSentAtUtc}]`;
+  }
+  return base;
 }
 
 export function buildMultipartMessage(
@@ -268,7 +507,9 @@ function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: R
   const pm2Executable = resolvePm2Executable();
   if (!pm2Executable) {
     return {
-      section: section('PM2 APPLICATIONS', [{ value: 'PM2 not available' }]),
+      section: section('PM2 APPLICATIONS', [
+        { value: 'PM2 not available', kind: 'callout-check-failed' },
+      ]),
       summaryItem: { label: 'API', value: 'PM2 unavailable', tone: 'warning' },
     };
   }
@@ -282,7 +523,9 @@ function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: R
     const api = processes.find((process) => process.name === 'murphys-api');
     if (!api?.pm2_env?.status) {
       return {
-        section: section('PM2 APPLICATIONS', [{ value: 'murphys-api not found in PM2' }]),
+        section: section('PM2 APPLICATIONS', [
+          { value: 'murphys-api not found in PM2', kind: 'callout', tone: 'critical' },
+        ]),
         summaryItem: { label: 'API', value: 'Not running', tone: 'critical' },
       };
     }
@@ -300,7 +543,9 @@ function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: R
     };
   } catch {
     return {
-      section: section('PM2 APPLICATIONS', [{ value: 'Unable to retrieve PM2 status' }]),
+      section: section('PM2 APPLICATIONS', [
+        { value: 'Unable to retrieve PM2 status', kind: 'callout-check-failed' },
+      ]),
       summaryItem: { label: 'API', value: 'Unknown', tone: 'warning' },
     };
   }
@@ -488,73 +733,106 @@ function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
 }
 
 function mapPeakSection(peaks: PeakJson): ReportSection {
-  const items = peaks.metrics.map((metric) => ({
-    label: metric.label,
-    value: `${metric.value} (${metric.timestamp})`,
-  }));
-  items.push({ label: 'Total records analyzed', value: String(peaks.sampleCount) });
+  const items: ReportItem[] = peaks.metrics.map((metric) => {
+    const cpuMetric = metric.label.toLowerCase().includes('cpu normalized');
+    const numeric = Number.parseFloat(metric.value.replace('%', '').trim());
+    return {
+      label: metric.label,
+      value: metric.value,
+      timestamp: metric.timestamp,
+      tone: cpuMetric && Number.isFinite(numeric) && numeric > 50 ? 'warning' : undefined,
+      kind: 'row',
+    };
+  });
+  items.push({ label: 'Total records analyzed', value: String(peaks.sampleCount), kind: 'row' });
   return section('PEAK RESOURCE USAGE (Last 30 Days)', items);
 }
 
-function mapVulnerabilitySection(vuln: VulnerabilityJson): ReportSection {
-  const items: ReportItem[] = vuln.summary.lines.map((line) => ({ value: line }));
+export function mapVulnerabilitySection(vuln: VulnerabilityJson): ReportSection {
+  const passing = vuln.summary.totalIssues === 0;
+  const issueItem = (value: string): ReportItem =>
+    passing
+      ? { value, kind: 'bullet-pass' }
+      : { value, kind: 'callout', tone: 'warning' };
+  const items: ReportItem[] = vuln.summary.lines.map(issueItem);
   if (vuln.summary.totalIssues > 0) {
     items.push({
       label: 'Total issues',
       value: String(vuln.summary.totalIssues),
       tone: 'warning',
+      kind: 'row',
     });
   }
   for (const finding of vuln.findings) {
-    items.push({ value: finding });
+    items.push(issueItem(finding));
   }
   return section('WEEKLY VULNERABILITY SCAN', items);
 }
 
 function mapCostSection(cost: CostJson): ReportSection {
   const items: ReportItem[] = [
-    { label: 'Generated', value: cost.generatedAt },
-    { label: 'Inventory', value: cost.inventoryNote },
+    { label: 'Generated', value: cost.generatedAt, kind: 'row' },
+    { label: 'Inventory', value: cost.inventoryNote, kind: 'row' },
   ];
   if (cost.monthlyUsdEstimate !== null) {
-    items.push({ label: 'Estimated monthly cost', value: `$${cost.monthlyUsdEstimate}` });
+    items.push({
+      label: 'Estimated monthly cost',
+      value: `$${cost.monthlyUsdEstimate}`,
+      boldValue: true,
+      kind: 'row',
+    });
   }
-  items.push({ label: 'Memory', value: cost.snapshot.memory });
-  items.push({ label: 'Swap', value: cost.snapshot.swap });
-  items.push({ label: 'CPU', value: cost.snapshot.cpu });
+  items.push({ kind: 'subheading', value: 'Resources' });
+  items.push({ label: 'Memory', value: cost.snapshot.memory, kind: 'row' });
+  items.push({ label: 'Swap', value: cost.snapshot.swap, kind: 'row' });
+  items.push({ label: 'CPU', value: cost.snapshot.cpu, kind: 'row' });
   items.push({
     label: 'Traffic',
     value: `${cost.traffic.requests} requests across ${cost.traffic.files} log file(s), ${cost.traffic.bandwidthGb}GB`,
+    kind: 'row',
   });
-  items.push({ label: 'Capacity decision', value: cost.capacity.decision, tone: 'neutral' });
+  items.push({ kind: 'subheading', value: 'Decision' });
+  items.push({
+    label: 'Capacity decision',
+    value: cost.capacity.decision,
+    boldValue: true,
+    kind: 'row',
+  });
   for (const detail of cost.capacity.details) {
-    items.push({ value: detail });
+    items.push({ kind: 'callout', tone: 'warning', value: detail });
   }
   for (const reason of cost.capacity.reasons) {
-    items.push({ value: reason });
+    items.push({ value: reason, kind: 'bullet' });
   }
   for (const recommendation of cost.recommendations) {
-    items.push({ value: recommendation });
+    items.push({ value: recommendation, kind: 'bullet' });
   }
   for (const action of cost.actionItems) {
-    items.push({ value: action });
+    items.push({ value: action, kind: 'bullet' });
   }
-  items.push({ label: 'Next review', value: cost.nextReview });
+  items.push({ label: 'Next review', value: cost.nextReview, kind: 'closing' });
   return section('MONTHLY COST OPTIMIZATION REPORT', items);
 }
 
 function backupReminderSection(): ReportSection {
   return section('MONTHLY BACKUP TEST REMINDER', [
-    { value: 'Monthly Action Required: Test Backup Restore Process' },
     {
-      value:
+      kind: 'callout',
+      tone: 'warning',
+      value: 'Monthly Action Required: Test Backup Restore Process',
+      valueSecondary:
         "It's time to run the monthly non-disruptive backup test on the main application droplet.",
     },
-    { label: 'MAIN DROPLET (murphys-laws.com)', value: 'ssh murphys-main' },
-    { value: 'sudo /usr/local/bin/test-backup-restore.sh' },
-    { value: 'All tests should pass (20/20 for the main droplet)' },
-    { value: 'Backup age < 30 hours' },
-    { value: 'Database integrity checks pass' },
+    {
+      label: 'MAIN DROPLET (murphys-laws.com)',
+      value: 'ssh murphys-main',
+      boldValue: true,
+      kind: 'row',
+    },
+    { kind: 'command', value: 'sudo /usr/local/bin/test-backup-restore.sh' },
+    { value: 'All tests should pass (20/20 for the main droplet)', kind: 'bullet' },
+    { value: 'Backup age < 30 hours', kind: 'bullet' },
+    { value: 'Database integrity checks pass', kind: 'bullet' },
   ]);
 }
 
@@ -567,6 +845,7 @@ function buildTestEmailReport(now: Date): DailyReport {
   return {
     date,
     subjectSuffix: subjectSuffixForDate(now, true),
+    testEmailSentAtUtc: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
     preview: 'System Status | Database Metrics | Website Activity | Performance | Security | SSL Status | Backups',
     summary: [
       apiSummary,
