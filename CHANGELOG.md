@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Harden the daily email renderer with PM2 API status in the summary, stale
   backup warnings, preserved `systemctl` output, richer vulnerability JSON, and
   sudo-safe `--test-email` documentation.
+- Allowlist operational email inline CSS in the design conformance gate.
 - Require per-provider billing verification before marking infrastructure
   inventory verified; align cost report UNVERIFIED copy with mixed providers.
 - Store verified infrastructure inventory under `/etc/murphys-laws/` (default
