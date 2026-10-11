@@ -13,6 +13,8 @@ The conformance gate intentionally excludes only these narrow sources:
 - Native safe-area, system-navigation, and vector/asset geometry.
 - Browser-generated PDF document geometry and pagination.
 - `Constants.Performance` and equivalent non-visual timing or cache limits.
+- `backend/scripts/render-daily-report.ts`: multipart operational email HTML
+  (inline `style` on table cells only; no external stylesheets).
 
 No application source is allowlisted for React, JSX/TSX, inline CSS, stylesheet
 injection, raw component sizing, or UI emoji.
