@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tag `--test-email` subjects with a UTC timestamp and send an automatic template
+  smoke email after deploy when `render-daily-report.ts` changes and
+  `DAILY_REPORT_TEST_RECIPIENT` is configured in GitHub Actions.
+
 - Render the consolidated daily operational email through a TypeScript MIME
   renderer with matching HTML and plain-text parts, structured JSON report
   producers, restored log detail rows, and a `--test-email` mode that sends only
