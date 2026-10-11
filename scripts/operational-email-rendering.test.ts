@@ -15,8 +15,39 @@ import {
   mapVulnerabilitySection,
   renderPlainTextReport,
   runCli,
+  wrapHtmlForMimeTransport,
   type DailyReport,
 } from '../backend/scripts/render-daily-report.ts';
+
+const SMTP_MAX_LINE_LENGTH = 998;
+
+function htmlPartFromMultipart(message: string): string {
+  const marker = 'Content-Type: text/html; charset=utf-8';
+  const start = message.indexOf(marker);
+  assert.ok(start >= 0);
+  const bodyStart = message.indexOf('\n\n', start) + 2;
+  const boundaryEnd = message.indexOf('\n--murphys-daily-', bodyStart);
+  return message.slice(bodyStart, boundaryEnd === -1 ? undefined : boundaryEnd).trimEnd();
+}
+
+function simulateSmtpLineFolding(body: string): string {
+  const out: string[] = [];
+  for (const line of body.split('\n')) {
+    if (line.length <= SMTP_MAX_LINE_LENGTH) {
+      out.push(line);
+      continue;
+    }
+    let rest = line;
+    while (rest.length > SMTP_MAX_LINE_LENGTH) {
+      out.push(rest.slice(0, SMTP_MAX_LINE_LENGTH));
+      rest = ` ${rest.slice(SMTP_MAX_LINE_LENGTH)}`;
+    }
+    if (rest.length > 0) {
+      out.push(rest);
+    }
+  }
+  return out.join('\n');
+}
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -180,6 +211,22 @@ test('renderHtmlReport uses exclamation for attention glyphs', () => {
   assert.match(html, />!<\/span>/);
   assert.match(html, /font-weight:bold;">! /);
   assert.doesNotMatch(html, /&#9650;/);
+});
+
+test('wrapHtmlForMimeTransport keeps HTML lines SMTP-safe', () => {
+  const report = collectDailyReport({ mode: 'test-email', now: new Date('2026-10-11T12:00:00Z') });
+  const wrapped = wrapHtmlForMimeTransport(renderHtmlReport(report));
+  for (const line of wrapped.split('\n')) {
+    assert.ok(
+      line.length <= SMTP_MAX_LINE_LENGTH,
+      `line length ${line.length} exceeds ${SMTP_MAX_LINE_LENGTH}`,
+    );
+  }
+  const folded = simulateSmtpLineFolding(wrapped);
+  assert.doesNotMatch(folded, /< td\b/);
+  assert.doesNotMatch(folded, /< tr\b/);
+  assert.match(folded, /MAIN DROPLET \(murphys-laws\.com\)/);
+  assert.match(folded, /ssh murphys-main/);
 });
 
 test('buildMultipartMessage uses multipart alternative', () => {
