@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document the planned automated MCP npm and registry release sequence.
+
 - Pin patched `smol-toml` and `katex` versions under the Markdownlint CLI
   toolchain via npm overrides because upstream still declares vulnerable exact
   ranges, and remove the corresponding dependency audit exceptions. Root bumped
