@@ -46,4 +46,17 @@ describe('category slug documentation', () => {
       expect(llmsFull).toContain(slug);
     }
   });
+
+  it('links shared article content only to canonical category slugs', () => {
+    const contentDirectory = path.join(repositoryRoot, 'shared/content');
+    const articles = fs.readdirSync(contentDirectory).filter((file) => file.endsWith('.md'));
+    expect(articles.length).toBeGreaterThan(0);
+
+    for (const article of articles) {
+      const markdown = fs.readFileSync(path.join(contentDirectory, article), 'utf8');
+      for (const slug of legacyCategorySlugs) {
+        expect(markdown, `${article} links to legacy slug ${slug}`).not.toContain(slug);
+      }
+    }
+  });
 });

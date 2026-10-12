@@ -4,9 +4,23 @@ import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
 import { groupCategories } from '../src/utils/category-groups.ts';
-import { getCalculatorScenarioLinks, getCategoryHubLinks, getLawDetailInternalLinks, renderInternalLinkList } from '../src/utils/internal-links.ts';
-import { SITE_URL } from '../src/utils/constants.ts';
+import {
+  getArticleArchiveLinks,
+  getCalculatorScenarioLinks,
+  getCategoryHubLinks,
+  getLawDetailInternalLinks,
+  renderArticleFeaturedLawsActions,
+  renderArticleNextSteps,
+  renderInternalLinkList
+} from '../src/utils/internal-links.ts';
+import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
+import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
+import type { ContentPage } from '../src/utils/markdown-content.ts';
+
+// External citations open in a new tab, matching the client renderer
+marked.use(externalLinkRenderer);
+
 interface LawAttribution { name?: string; contact_type?: string; contact_value?: string; note?: string }
 interface Law {
   id: number;
@@ -350,6 +364,40 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function lawScore(law: Law): number {
+  return (law.upvotes ?? 0) - (law.downvotes ?? 0);
+}
+
+/**
+ * Static archive blocks for an article page, matching the client view: the
+ * button row into the archive (placed above the article card, which holds the
+ * h1 in static markup) and up to three top-scoring laws from the article's
+ * featured category. Pages without an archive mapping get empty strings.
+ */
+function buildStaticArticleArchive(slug: string, laws: Law[]): { nextSteps: string; featuredLaws: string } {
+  const archive = getArticleArchiveLinks(slug as ContentPage);
+  if (!archive) return { nextSteps: '', featuredLaws: '' };
+
+  // Same order as the API's score sort: score, then upvotes, then newest id
+  const featured = laws
+    .filter((law) => law.category_slug === archive.featuredCategory.slug)
+    .sort((a, b) => lawScore(b) - lawScore(a) || (b.upvotes ?? 0) - (a.upvotes ?? 0) || b.id - a.id)
+    .slice(0, WIDGET_CARD_COUNT);
+
+  const featuredLaws = featured.length === 0 ? '' : `
+        <div class="card card--law-list law-list-card law-list-card--reserved article-featured-laws mt-8">
+          <header class="card-header">
+            <h2 class="card-title"><span class="accent-text">Laws</span> behind this story</h2>
+          </header>
+          <div class="card-body card-body--flush">
+            <div class="card-text">${renderStaticLawCards(featured, '')}</div>
+          </div>
+          <div class="card-footer">${renderArticleFeaturedLawsActions(archive.featuredCategory)}</div>
+        </div>`;
+
+  return { nextSteps: renderArticleNextSteps(archive), featuredLaws };
 }
 
 function getLawAttributionName(law: Law): string | null {
@@ -1173,9 +1221,13 @@ ${categoryCardsHtml.trim()}
 
       // Build the static content wrapper using card-header/card-body structure
       const cardHtml = wrapInCardStructure(htmlContent, { lastUpdated });
+      // Article pages also get the archive button row and featured laws
+      const articleArchive = buildStaticArticleArchive(page.slug, laws);
       const staticContent = `
       <div class="container page content-page">
+${articleArchive.nextSteps}
 ${cardHtml.trim()}
+${articleArchive.featuredLaws}
       </div>
 `;
       
@@ -1519,6 +1571,7 @@ export {
   buildStaticHomeContent,
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
+  buildStaticArticleArchive,
   applyPageMetadata,
   validateGeneratedPage,
   fetchAllCategories,
