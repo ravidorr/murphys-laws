@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Pin patched `smol-toml` and `katex` versions under the Markdownlint CLI
+  toolchain via npm overrides because upstream still declares vulnerable exact
+  ranges, and remove the corresponding dependency audit exceptions. Root bumped
+  to `2.6.65`.
+
+- Harden Lighthouse CI: warm up preview routes before collection, assert LCP and
+  CLS on the **median** of three runs, and use a **3000 ms** CI LCP ceiling while
+  documenting **2500 ms** as the product target in `web/DESIGN.md`. Root bumped
+  to `2.6.66`.
+
 - Replace GitHub automatic CodeQL setup with a repository-owned advanced
   workflow that scans Actions, JavaScript/TypeScript, Python, Ruby, Android
   Kotlin, and iOS Swift using explicit native builds where required, and disable
