@@ -69,6 +69,48 @@ function parseJsonVersion(content: string | null): string | null {
   }
 }
 
+type McpServerManifest = {
+  version?: unknown;
+  packages?: Array<{
+    version?: unknown;
+  }>;
+};
+
+export function isMcpManifestSynchronizationRepair(
+  changedPaths: string[],
+  readBefore: (filePath: string) => string | null,
+  readAfter: (filePath: string) => string | null,
+): boolean {
+  const mcpChanges = changedPaths.filter(
+    (filePath) => filePath.startsWith('mcp/') && !isDocumentationOnly(filePath),
+  );
+
+  if (mcpChanges.length !== 1 || mcpChanges[0] !== 'mcp/server.json') {
+    return false;
+  }
+
+  const packageVersion = parseJsonVersion(readAfter('mcp/package.json'));
+  const previousPackageVersion = parseJsonVersion(readBefore('mcp/package.json'));
+  let serverBefore: McpServerManifest;
+  let serverAfter: McpServerManifest;
+
+  try {
+    serverBefore = JSON.parse(readBefore('mcp/server.json') ?? '{}') as McpServerManifest;
+    serverAfter = JSON.parse(readAfter('mcp/server.json') ?? '{}') as McpServerManifest;
+  } catch {
+    return false;
+  }
+
+  return Boolean(
+    packageVersion &&
+    previousPackageVersion === packageVersion &&
+    serverBefore.version !== packageVersion &&
+    serverBefore.packages?.[0]?.version !== packageVersion &&
+    serverAfter.version === packageVersion &&
+    serverAfter.packages?.[0]?.version === packageVersion,
+  );
+}
+
 function parseRegexValue(content: string | null, regex: RegExp): string | null {
   if (content === null) {
     return null;
@@ -217,6 +259,10 @@ export function findMissingVersionBumps(
         missing.push(`${rule.name}: ${versionFile.label}`);
       }
     }
+  }
+
+  if (isMcpManifestSynchronizationRepair(changedPaths, readBefore, readAfter)) {
+    return missing.filter((item) => item !== 'mcp package: mcp/package.json version');
   }
 
   return missing;
