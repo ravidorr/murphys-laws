@@ -1,6 +1,11 @@
-import { escapeHtml, stripMarkdownFootnotes } from './sanitize.ts';
+import { stripMarkdownFootnotes } from './sanitize.ts';
 import { fetchAPI } from './api.ts';
 import type { SearchFilters } from '../types/app.d.ts';
+
+interface SearchFilterPart {
+  prefix: string;
+  value: string;
+}
 
 /**
  * Updates the search info display with current filter information
@@ -17,14 +22,14 @@ export async function updateSearchInfo(infoElement: HTMLElement | null, filters:
   const hasFilters = filters.q || filters.category_id || filters.attribution;
 
   if (!hasFilters) {
-    infoElement.innerHTML = '';
+    infoElement.replaceChildren();
     return;
   }
 
-  const filterParts: string[] = [];
+  const filterParts: SearchFilterPart[] = [];
 
   if (filters.q) {
-    filterParts.push(`<strong>${escapeHtml(filters.q)}</strong>`);
+    filterParts.push({ prefix: '', value: filters.q });
   }
 
   if (filters.category_id) {
@@ -33,24 +38,38 @@ export async function updateSearchInfo(infoElement: HTMLElement | null, filters:
       try {
         const category = await fetchAPI(`/api/v1/categories/${filters.category_id}`) as { title?: string };
         if (category && category.title) {
-          filterParts.push(`in category <strong>${escapeHtml(stripMarkdownFootnotes(category.title))}</strong>`);
+          filterParts.push({ prefix: 'in category ', value: stripMarkdownFootnotes(category.title) });
         } else {
-          filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
+          filterParts.push({ prefix: 'in category ', value: `#${filters.category_id}` });
         }
       } catch {
-        filterParts.push(`in category <strong>#${filters.category_id}</strong>`);
+        filterParts.push({ prefix: 'in category ', value: `#${filters.category_id}` });
       }
     } else {
       const categoryLabel = String(filters.category_id).replace(/^murphys-/, '').replace(/-laws$/, '').replace(/-/g, ' ');
-      filterParts.push(`in category <strong>${escapeHtml(categoryLabel)}</strong>`);
+      filterParts.push({ prefix: 'in category ', value: categoryLabel });
     }
   }
 
   if (filters.attribution) {
-    filterParts.push(`by <strong>${escapeHtml(filters.attribution)}</strong>`);
+    filterParts.push({ prefix: 'by ', value: filters.attribution });
   }
 
-  infoElement.innerHTML = `<p class="search-info">Search results for: ${filterParts.join(' ')}</p>`;
+  const searchInfo = document.createElement('p');
+  searchInfo.className = 'search-info';
+  searchInfo.append('Search results for: ');
+
+  filterParts.forEach((filterPart, index) => {
+    if (index > 0) {
+      searchInfo.append(' ');
+    }
+    searchInfo.append(filterPart.prefix);
+    const filterValue = document.createElement('strong');
+    filterValue.textContent = filterPart.value;
+    searchInfo.append(filterValue);
+  });
+
+  infoElement.replaceChildren(searchInfo);
 }
 
 /**

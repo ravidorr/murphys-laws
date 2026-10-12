@@ -56,6 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Resolve CodeQL findings by limiting workflow tokens, removing shell-command
+  interpolation, and constructing user-visible HTML with DOM APIs. Web bumped
+  to `3.4.19`; root to `2.6.67`.
+
 - Daily report HTML: long label cells use a fixed 38% column with normal word
   breaks (avoids Gmail letter-stacking on `MAIN DROPLET`); section bullets render
   as full-width list lines so they do not inherit wide label columns. Backend
