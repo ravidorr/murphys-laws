@@ -503,6 +503,21 @@ Use a variant class with `card` so the surface intent is explicit:
 - Dark mode, high-contrast mode, and print styles should target the canonical
   variants first, with legacy aliases only for compatibility.
 
+## Performance targets
+
+Product-facing Web Vitals goals for the public PWA (home and browse):
+
+- **Largest Contentful Paint (LCP):** at or below **2500 ms** (Lighthouse "good"
+  threshold). Treat regressions above this as user-visible performance debt even
+  when CI passes.
+- **Cumulative Layout Shift (CLS):** at or below **0.1**.
+
+Continuous integration runs Lighthouse against production-like preview servers on
+GitHub-hosted runners. CI uses the median of three runs per URL and allows up to
+**3000 ms LCP** to absorb runner variance; see `lighthouserc.json` at the
+repository root. The stricter **2500 ms** target above remains the design
+contract for the shipped experience.
+
 ## Do's and Don'ts
 
 - Do keep type doing the heavy lifting. Chrome should be quiet.
