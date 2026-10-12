@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Replace GitHub automatic CodeQL setup with a repository-owned advanced
   workflow that scans Actions, JavaScript/TypeScript, Python, Ruby, Android
-  Kotlin, and iOS Swift using explicit native builds where required. Root bumped
-  to `2.6.63`.
+  Kotlin, and iOS Swift using explicit native builds where required, and disable
+  GitHub default CodeQL setup so advanced SARIF uploads are accepted. Root bumped
+  to `2.6.64`.
 
 - Document the approved advanced CodeQL workflow design for complete
   interpreted and native language coverage.
