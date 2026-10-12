@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getPageContent, getPageMetadata, getRawMarkdownContent, markdownToHtml, type ContentPage } from '../src/utils/markdown-content.ts';
+import { isExternalLink } from '../src/utils/markdown-links.ts';
 import { marked } from 'marked';
 import { ContentPageView } from '../src/views/content-page.ts';
 import * as exportContext from '../src/utils/export-context.ts';
+import * as api from '../src/utils/api.ts';
 import metadata from '../../shared/content/metadata.json';
 
 describe('markdown-content.js', () => {
@@ -183,6 +185,57 @@ describe('markdown-content.js', () => {
     });
   });
 
+  describe('article links', () => {
+    it('opens external citations in a new tab with a screen-reader notice', () => {
+      const html = getPageContent('origin-story');
+
+      expect(html).toContain(
+        '<a href="https://en.wikipedia.org/wiki/Edward_A._Murphy_Jr." target="_blank" rel="noopener noreferrer">Edward A. Murphy Jr.<span class="visually-hidden"> (opens in a new tab)</span></a>'
+      );
+    });
+
+    it('keeps site links in the same tab', () => {
+      const html = getPageContent('origin-story');
+
+      expect(html).toContain('<a href="/category/murphys-laws">Read the original Murphy&#39;s Laws</a>');
+      expect(html).not.toMatch(/<a href="\/[^"]*"[^>]*target=/);
+    });
+
+    it('puts Origin Story archive links ahead of its outside citations', () => {
+      const html = getPageContent('origin-story');
+      const firstArchiveLink = html.indexOf('href="/category/murphys-laws"');
+
+      expect(firstArchiveLink).toBeGreaterThan(-1);
+      expect(firstArchiveLink).toBeLessThan(html.indexOf('href="https://'));
+      expect(html.indexOf('Start</span> Exploring')).toBeLessThan(html.indexOf('Edward</span> A. Murphy Jr.'));
+    });
+
+    it('links the Sod\'s Law explainer straight to the archive', () => {
+      const html = getPageContent('murphys-law-vs-sods-law');
+
+      expect(html.indexOf('href="/category/murphys-laws"')).toBeLessThan(html.indexOf('href="/origin-story"'));
+      expect(html).toContain('href="/category/murphys-office-laws"');
+    });
+
+    it('treats only absolute http(s) links to other hosts as external', () => {
+      expect(isExternalLink('https://en.wikipedia.org/wiki/John_Stapp')).toBe(true);
+      expect(isExternalLink('http://example.com/page')).toBe(true);
+      expect(isExternalLink('/category/murphys-laws')).toBe(false);
+      expect(isExternalLink('#top')).toBe(false);
+      expect(isExternalLink('mailto:contact@murphys-laws.com')).toBe(false);
+      expect(isExternalLink('https://murphys-laws.com/browse')).toBe(false);
+      expect(isExternalLink('https://www.murphys-laws.com/browse')).toBe(false);
+    });
+
+    it('escapes external link URLs and titles', () => {
+      const html = marked.parse('[A & B](https://example.com/?a=1&b=2 "Say \\"hi\\" <now>")', { async: false });
+
+      expect(html).toContain(
+        '<a href="https://example.com/?a=1&amp;b=2" title="Say &quot;hi&quot; &lt;now&gt;" target="_blank" rel="noopener noreferrer">A &amp; B'
+      );
+    });
+  });
+
 
   describe('ContentPageView', () => {
     it('renders a content page view with export cleanup', () => {
@@ -218,6 +271,66 @@ describe('markdown-content.js', () => {
       link.click();
 
       expect(onNavigate).toHaveBeenCalledWith('browse');
+    });
+
+    it('adds the archive block to mapped article pages and opens featured laws by id', async () => {
+      const fetchLaws = vi.spyOn(api, 'fetchLaws').mockResolvedValue({
+        data: [{ id: 5, text: 'If something can go wrong for an unlucky person, it will.', upvotes: 2, downvotes: 0 }],
+        total: 1,
+        limit: 3,
+        offset: 0
+      });
+      const onNavigate = vi.fn();
+      const el = ContentPageView({
+        page: 'murphys-law-vs-sods-law',
+        title: "Murphy's Law vs Sod's Law",
+        description: 'Comparison page',
+        onNavigate
+      });
+
+      try {
+        expect(el.querySelector('h1.page-title')!.nextElementSibling!.classList.contains('article-next-steps')).toBe(true);
+        expect(el.querySelector('.article-next-steps a.btn.primary')?.getAttribute('href')).toBe('/category/murphys-laws');
+        expect(fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ category_slug: 'murphys-laws' }));
+        await vi.waitFor(() => {
+          expect(el.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();
+        });
+
+        el.querySelector<HTMLAnchorElement>('.article-featured-laws a.law-card-link')!.click();
+        el.querySelector('.article-featured-laws .law-card-mini')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+        expect(onNavigate).toHaveBeenNthCalledWith(1, 'law', '5');
+        expect(onNavigate).toHaveBeenNthCalledWith(2, 'law', '5');
+      } finally {
+        fetchLaws.mockRestore();
+      }
+    });
+
+    it('leaves unmapped content pages without the archive block', () => {
+      const el = ContentPageView({
+        page: 'best-murphys-laws',
+        title: "Best Murphy's Laws",
+        description: 'Best laws page'
+      });
+
+      expect(el.querySelector('.article-next-steps')).toBeNull();
+      expect(el.querySelector('.article-featured-laws')).toBeNull();
+    });
+
+    it('lets data-nav links fall through without a navigation callback', () => {
+      const el = ContentPageView({
+        page: 'best-murphys-laws',
+        title: "Best Murphy's Laws",
+        description: 'Best laws page'
+      });
+      const link = document.createElement('a');
+      link.setAttribute('data-nav', 'browse');
+      el.appendChild(link);
+      const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+      link.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
     });
 
     it('ignores content page clicks without actionable navigation', () => {

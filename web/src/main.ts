@@ -320,7 +320,7 @@ const routesMap = {
   'origin-story': () => {
     trackPageView();
     clearPageStructuredData();
-    return layout(OriginStory());
+    return layout(OriginStory({ onNavigate }));
   },
   about: () => {
     trackPageView();

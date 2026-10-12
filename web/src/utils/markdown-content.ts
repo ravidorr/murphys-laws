@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import { externalLinkRenderer } from './markdown-links.ts';
 
 // Import markdown files from shared content
 import aboutMd from '../../../shared/content/about.md?raw';
@@ -58,6 +59,8 @@ const typedMetadata = metadata as ContentMetadata;
 
 // Configure marked for consistent synchronous rendering
 marked.use({ async: false, gfm: true, breaks: false });
+// External citations open in a new tab; site links are unchanged
+marked.use(externalLinkRenderer);
 
 /**
  * Convert markdown content to HTML with proper styling

@@ -6,6 +6,8 @@ import { SITE_URL, SITE_NAME } from '@utils/constants.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
+import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
+import { addArticleArchiveBlock } from '@components/article-featured-laws.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
 export function Examples({ onNavigate }: { onNavigate?: OnNavigate } = {}): HTMLDivElement {
@@ -17,6 +19,7 @@ export function Examples({ onNavigate }: { onNavigate?: OnNavigate } = {}): HTML
   updateMetaDescription("Discover real-life Murphy's Law examples from technology, work, travel, and everyday life. See how 'anything that can go wrong, will go wrong' applies to daily situations.");
 
   el.innerHTML = getPageContent('examples');
+  addArticleArchiveBlock(el, 'examples', onNavigate);
   // Only trigger ads if content meets minimum requirements
   triggerAdSense(el);
 
@@ -54,20 +57,18 @@ export function Examples({ onNavigate }: { onNavigate?: OnNavigate } = {}): HTML
     }
   });
 
-  // Handle navigation clicks
+  // Handle navigation clicks (shared utility keeps data-param for law and category links)
   el.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement) || !onNavigate) return;
 
-    const navBtn = target.closest('[data-nav]');
-    if (navBtn && onNavigate) {
+    if (handleNavClick(target, onNavigate)) {
       e.preventDefault();
-      const navTarget = navBtn.getAttribute('data-nav');
-      if (navTarget) {
-        onNavigate(navTarget);
-      }
     }
   });
+
+  // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
+  if (onNavigate) addNavigationListener(el, onNavigate);
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup =() => {

@@ -6,6 +6,8 @@ import { SITE_URL, SITE_NAME } from '@utils/constants.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
+import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
+import { addArticleArchiveBlock } from '@components/article-featured-laws.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
 const PAGE_TITLE = "Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)";
@@ -19,6 +21,7 @@ export function WhyMurphysLawFeelsTrue({ onNavigate }: { onNavigate?: OnNavigate
   updateMetaDescription(META_DESCRIPTION);
 
   el.innerHTML = getPageContent('why-murphys-law-feels-true');
+  addArticleArchiveBlock(el, 'why-murphys-law-feels-true', onNavigate);
   triggerAdSense(el);
 
   setExportContent({
@@ -46,14 +49,10 @@ export function WhyMurphysLawFeelsTrue({ onNavigate }: { onNavigate?: OnNavigate
 
   el.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    const navBtn = target.closest('[data-nav]');
-    if (navBtn && onNavigate) {
-      e.preventDefault();
-      const navTarget = navBtn.getAttribute('data-nav');
-      if (navTarget) onNavigate(navTarget);
-    }
+    if (!(target instanceof HTMLElement) || !onNavigate) return;
+    if (handleNavClick(target, onNavigate)) e.preventDefault();
   });
+  if (onNavigate) addNavigationListener(el, onNavigate);
 
   (el as CleanableElement).cleanup = () => {
     clearExportContent();

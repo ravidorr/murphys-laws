@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { marked } from 'marked';
 import {
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
@@ -8,6 +9,7 @@ import {
   buildStaticSubmitContent,
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
+  buildStaticArticleArchive,
   buildStaticHomeContent,
   applyPageMetadata,
   validateGeneratedPage,
@@ -329,5 +331,48 @@ describe('SSG Static Route Content', () => {
     expect(html).toContain('/submit');
     expect(html).toContain('Trending</span> Now');
     expect(html).not.toMatch(/Loading/i);
+  });
+
+  it('renders the article archive row and the top three laws from the featured category', () => {
+    const laws = [
+      { id: 1, text: 'Low scorer', upvotes: 1, downvotes: 1, category_slug: 'murphys-laws' },
+      { id: 2, text: 'If anything can go wrong, it will.', upvotes: 9, downvotes: 0, category_slug: 'murphys-laws' },
+      { id: 3, text: 'Office law', upvotes: 50, downvotes: 0, category_slug: 'murphys-office-laws' },
+      { id: 4, text: 'Tied on score, more upvotes', upvotes: 6, downvotes: 2, category_slug: 'murphys-laws' },
+      { id: 5, text: 'Tied on score, fewer upvotes', upvotes: 4, downvotes: 0, category_slug: 'murphys-laws' },
+      { id: 6, text: 'No votes yet', category_slug: 'murphys-laws' }
+    ];
+
+    const { nextSteps, featuredLaws } = buildStaticArticleArchive('origin-story', laws);
+
+    expect(nextSteps).toContain('class="section card card--section section-card article-next-steps" aria-label="Explore the archive"');
+    expect(nextSteps).toContain('<a href="/category/murphys-laws" class="btn primary article-cta article-cta--category" data-nav="category/murphys-laws">');
+    expect(featuredLaws).toContain('card card--law-list law-list-card law-list-card--reserved article-featured-laws');
+    expect(featuredLaws).toContain('<span class="accent-text">Laws</span> behind this story');
+    expect(featuredLaws.match(/law-card-mini/g)).toHaveLength(3);
+    expect(featuredLaws).not.toContain('Office law');
+    expect(featuredLaws).not.toContain('Low scorer');
+    expect(featuredLaws.indexOf('If anything can go wrong')).toBeLessThan(featuredLaws.indexOf('more upvotes'));
+    expect(featuredLaws.indexOf('more upvotes')).toBeLessThan(featuredLaws.indexOf('fewer upvotes'));
+    expect(featuredLaws).toContain('href="/law/2"');
+    expect(featuredLaws).toContain("See all Murphy's Laws");
+    expect(featuredLaws).toContain('href="/submit"');
+  });
+
+  it('keeps the archive row when the featured category has no laws and skips unmapped pages', () => {
+    const laws = [{ id: 9, text: 'Office law', upvotes: 1, downvotes: 0, category_slug: 'murphys-office-laws' }];
+
+    expect(buildStaticArticleArchive('examples/travel', laws)).toEqual({
+      nextSteps: expect.stringContaining('/category/murphys-travel-laws'),
+      featuredLaws: ''
+    });
+    expect(buildStaticArticleArchive('about', laws)).toEqual({ nextSteps: '', featuredLaws: '' });
+  });
+
+  it('opens external Markdown links in a new tab and keeps site links in place', () => {
+    const html = marked.parse('[Wikipedia](https://en.wikipedia.org/wiki/Murphy%27s_law) and [the archive](/browse)', { async: false });
+
+    expect(html).toContain('<a href="https://en.wikipedia.org/wiki/Murphy%27s_law" target="_blank" rel="noopener noreferrer">Wikipedia<span class="visually-hidden"> (opens in a new tab)</span></a>');
+    expect(html).toContain('<a href="/browse">the archive</a>');
   });
 });

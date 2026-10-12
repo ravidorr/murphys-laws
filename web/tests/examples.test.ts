@@ -5,6 +5,7 @@ import * as structuredData from '../src/modules/structured-data.js';
 import * as ads from '../src/utils/ads.js';
 import * as exportContext from '../src/utils/export-context.js';
 import * as dom from '../src/utils/dom.js';
+import * as api from '../src/utils/api.js';
 
 vi.mock('../src/utils/markdown-content.js', () => ({
   getPageContent: vi.fn().mockReturnValue('<article><h1>Examples</h1><p>Content</p></article>'),
@@ -49,6 +50,7 @@ describe('Examples view', () => {
     }
     localThis.el = null;
     document.title = localThis.originalTitle;
+    vi.restoreAllMocks();
   });
 
   it('renders the examples page', () => {
@@ -129,6 +131,37 @@ describe('Examples view', () => {
     navLink.click();
 
     expect(onNavigateMock).toHaveBeenCalledWith('home');
+  });
+
+  it('adds the archive block and opens featured laws by their data-param id', async () => {
+    vi.mocked(markdownContent.getPageContent).mockReturnValueOnce(
+      '<h1 class="page-title mb-4">Examples</h1><article class="card card--content content-card"><p>Content</p></article>'
+    );
+    vi.spyOn(api, 'fetchLaws').mockResolvedValue({
+      data: [{ id: 12, text: 'The printer jams before the meeting.', upvotes: 2, downvotes: 0 }],
+      total: 1,
+      limit: 3,
+      offset: 0
+    });
+    const onNavigateMock = vi.fn();
+    localThis.el = Examples({ onNavigate: onNavigateMock });
+    document.body.appendChild(localThis.el!);
+
+    const buttons = localThis.el!.querySelectorAll('.article-next-steps a.article-cta');
+    expect(Array.from(buttons, (button) => button.getAttribute('href'))).toEqual([
+      '/category/murphys-technology-laws',
+      '/category/murphys-office-laws',
+      '/category/murphys-travel-laws',
+      '/categories'
+    ]);
+    await vi.waitFor(() => {
+      expect(localThis.el!.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();
+    });
+
+    localThis.el!.querySelector<HTMLAnchorElement>('.article-featured-laws a.law-card-link')!.click();
+
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ category_slug: 'murphys-laws' }));
+    expect(onNavigateMock).toHaveBeenCalledWith('law', '12');
   });
 
   it('does not navigate when onNavigate is not provided', () => {
