@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Pin patched `smol-toml` and `katex` versions under the Markdownlint CLI
+  toolchain via npm overrides because upstream still declares vulnerable exact
+  ranges, and remove the corresponding dependency audit exceptions. Root bumped
+  to `2.6.65`.
+
 - Replace GitHub automatic CodeQL setup with a repository-owned advanced
   workflow that scans Actions, JavaScript/TypeScript, Python, Ruby, Android
   Kotlin, and iOS Swift using explicit native builds where required, and disable
