@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Retry bounded MCP Registry reads after transient failures. Root bumped to
+  `2.6.71`.
+
 - Use npm 11.5.1 for OIDC trusted publishing and avoid coalescing pending MCP
   releases. Root bumped to `2.6.70`.
 

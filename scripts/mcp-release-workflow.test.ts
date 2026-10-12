@@ -46,3 +46,11 @@ test('MCP release workflow uses a trusted-publishing-capable npm version', () =>
 test('MCP release workflow does not coalesce pending release versions', () => {
   assert.doesNotMatch(workflow, /^concurrency:/m);
 });
+
+test('MCP release workflow retries bounded registry reads', () => {
+  assert.equal((workflow.match(/--retry 5/g) ?? []).length, 2);
+  assert.equal((workflow.match(/--retry-all-errors/g) ?? []).length, 2);
+  assert.equal((workflow.match(/--retry-max-time 120/g) ?? []).length, 2);
+  assert.equal((workflow.match(/--connect-timeout 15/g) ?? []).length, 2);
+  assert.equal((workflow.match(/--max-time 30/g) ?? []).length, 2);
+});

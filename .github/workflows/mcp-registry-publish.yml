@@ -114,7 +114,14 @@ jobs:
         run: |
           set -euo pipefail
           LIVE_VERSION=$(
-            curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
+            curl --fail --show-error --silent --location \
+              --retry 5 \
+              --retry-all-errors \
+              --retry-delay 15 \
+              --retry-max-time 120 \
+              --connect-timeout 15 \
+              --max-time 30 \
+              "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
               | jq -r --arg name "$EXPECTED_NAME" \
                   'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""'
           )
@@ -171,7 +178,14 @@ jobs:
           # non-guaranteed ordering, so filter by exact server.name match
           # rather than trusting .servers[0].
           LIVE_VERSION=$(
-            curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
+            curl --fail --show-error --silent --location \
+              --retry 5 \
+              --retry-all-errors \
+              --retry-delay 15 \
+              --retry-max-time 120 \
+              --connect-timeout 15 \
+              --max-time 30 \
+              "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
               | jq -r --arg name "$EXPECTED_NAME" \
                   'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""'
           )
