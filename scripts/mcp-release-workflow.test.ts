@@ -34,3 +34,15 @@ test('MCP release workflow is idempotent and waits for npm visibility', () => {
   assert.match(workflow, /Registry already has/);
   assert.match(workflow, /Verify entry is live at expected version/);
 });
+
+test('MCP release workflow uses a trusted-publishing-capable npm version', () => {
+  assert.match(workflow, /npm install --global npm@11\.5\.1/);
+  assert.ok(
+    workflow.indexOf('Install npm for trusted publishing') < workflow.indexOf('Publish npm package'),
+    'npm must be upgraded before publishing',
+  );
+});
+
+test('MCP release workflow does not coalesce pending release versions', () => {
+  assert.doesNotMatch(workflow, /^concurrency:/m);
+});

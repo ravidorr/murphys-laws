@@ -63,7 +63,7 @@ test('workflows use only the GITHUB_TOKEN permissions they need', () => {
     const workflow = readFileSync(path.join(rootDirectory, '.github/workflows', workflowName), 'utf8');
     assert.match(
       workflow,
-      /^permissions:\n  contents: read\n  id-token: write\n\nconcurrency:/m,
+      /^permissions:\n  contents: read\n  id-token: write\n\njobs:/m,
     );
   }
 });
