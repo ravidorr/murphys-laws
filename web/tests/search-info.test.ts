@@ -1,10 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { updateSearchInfo, hasActiveFilters } from '../src/utils/search-info.ts';
 import * as apiModule from '../src/utils/api.ts';
+import * as sanitizeModule from '../src/utils/sanitize.ts';
 
 describe('Search Info utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('updateSearchInfo', () => {
@@ -113,6 +118,38 @@ describe('Search Info utilities', () => {
 
       expect(infoElement.innerHTML).not.toContain('<img');
       expect(infoElement.innerHTML).toContain('&lt;img');
+    });
+
+    it('renders category titles from the API as text', async () => {
+      const infoElement = document.createElement('div');
+      const maliciousTitle = '<img src=x onerror=alert(1)>';
+      vi.spyOn(apiModule, 'fetchAPI').mockResolvedValue({ title: maliciousTitle });
+
+      await updateSearchInfo(infoElement, { category_id: 5 });
+
+      expect(infoElement.querySelector('img')).toBeNull();
+      expect(infoElement.querySelector('strong')?.textContent).toBe(maliciousTitle);
+    });
+
+    it('renders non-numeric category IDs as text', async () => {
+      const infoElement = document.createElement('div');
+      const maliciousCategoryId = '<img src=x onerror=alert(1)>';
+
+      await updateSearchInfo(infoElement, { category_id: maliciousCategoryId });
+
+      expect(infoElement.querySelector('img')).toBeNull();
+      expect(infoElement.querySelector('strong')?.textContent).toBe(maliciousCategoryId);
+    });
+
+    it('renders search query as text even if the escaping utility regresses', async () => {
+      const infoElement = document.createElement('div');
+      const maliciousQuery = '<img src=x onerror=alert(1)>';
+      vi.spyOn(sanitizeModule, 'escapeHtml').mockImplementation((value) => String(value));
+
+      await updateSearchInfo(infoElement, { q: maliciousQuery });
+
+      expect(infoElement.querySelector('img')).toBeNull();
+      expect(infoElement.querySelector('strong')?.textContent).toBe(maliciousQuery);
     });
   });
 

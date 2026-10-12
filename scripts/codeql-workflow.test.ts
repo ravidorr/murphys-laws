@@ -10,6 +10,20 @@ const rootDirectory = path.resolve(
 );
 
 const workflowPath = path.join(rootDirectory, '.github/workflows/codeql.yml');
+const workflowsUsingPathsFilter = [
+  'android-ci.yml',
+  'backend-ci.yml',
+  'cli-ci.yml',
+  'ios-ci.yml',
+  'mcp-ci.yml',
+  'sdk-ci.yml',
+  'web-ci.yml',
+];
+const readOnlyWorkflows = [
+  'dependency-audit.yml',
+  'deploy.yml',
+  'mcp-registry-publish.yml',
+];
 
 test('CodeQL workflow contract', () => {
   const workflow = readFileSync(workflowPath, 'utf8');
@@ -30,4 +44,16 @@ test('CodeQL workflow contract', () => {
   assert.match(workflow, /design:export:android/);
   assert.match(workflow, /\.\/gradlew clean assembleDebug/);
   assert.match(workflow, /xcodebuild build/);
+});
+
+test('workflows use only the GITHUB_TOKEN permissions they need', () => {
+  for (const workflowName of workflowsUsingPathsFilter) {
+    const workflow = readFileSync(path.join(rootDirectory, '.github/workflows', workflowName), 'utf8');
+    assert.match(workflow, /^permissions:\n  contents: read\n  pull-requests: read\n\n/m);
+  }
+
+  for (const workflowName of readOnlyWorkflows) {
+    const workflow = readFileSync(path.join(rootDirectory, '.github/workflows', workflowName), 'utf8');
+    assert.match(workflow, /^permissions:\n  contents: read\n\njobs:/m);
+  }
 });

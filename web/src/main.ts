@@ -508,10 +508,14 @@ function showErrorBanner(): void {
   banner.className = 'error-boundary-banner';
   banner.setAttribute('role', 'alert');
   banner.setAttribute('aria-live', 'assertive');
-  banner.innerHTML = `
-    <p class="error-boundary-text">Something went wrong. Try refreshing the page.</p>
-    <a href="${location.pathname}${location.search}" class="btn outline btn-sm">Refresh</a>
-  `;
+  const message = document.createElement('p');
+  message.className = 'error-boundary-text';
+  message.textContent = 'Something went wrong. Try refreshing the page.';
+  const refreshLink = document.createElement('a');
+  refreshLink.href = `${location.pathname}${location.search}`;
+  refreshLink.className = 'btn outline btn-sm';
+  refreshLink.textContent = 'Refresh';
+  banner.append(message, refreshLink);
   document.body.appendChild(banner);
 }
 
