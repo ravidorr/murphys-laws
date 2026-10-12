@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Use npm 11.5.1 for OIDC trusted publishing and avoid coalescing pending MCP
+  releases. Root bumped to `2.6.70`.
+
 - Resolve CodeQL findings by limiting workflow tokens, removing shell-command
   interpolation, and constructing user-visible HTML with DOM APIs. Web bumped
   to `3.4.19`; root to `2.6.67`.

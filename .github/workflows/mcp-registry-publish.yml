@@ -17,10 +17,6 @@ permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: mcp-release-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   publish:
     if: github.ref == 'refs/heads/main'
@@ -33,6 +29,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+
+      - name: Install npm for trusted publishing
+        run: npm install --global npm@11.5.1
 
       - name: Install dependencies
         run: npm ci
