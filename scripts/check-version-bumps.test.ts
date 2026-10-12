@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { findMissingVersionBumps, parseStagedFiles } from './check-version-bumps';
+import {
+  findMissingVersionBumps,
+  isMcpManifestSynchronizationRepair,
+  parseStagedFiles,
+} from './check-version-bumps';
 
 const versions = {
   rootBefore: '{ "version": "1.0.0" }',
@@ -12,6 +16,14 @@ const versions = {
   mcpAfter: '{ "version": "1.2.2" }',
   sdkBefore: '{ "version": "0.1.0" }',
   sdkAfter: '{ "version": "0.1.1" }',
+  mcpManifestBefore: JSON.stringify({
+    version: '1.2.2',
+    packages: [{ version: '1.2.2' }],
+  }),
+  mcpManifestAfter: JSON.stringify({
+    version: '1.2.5',
+    packages: [{ version: '1.2.5' }],
+  }),
   iosProjectBefore: 'MARKETING_VERSION: "1.1.3"\nCURRENT_PROJECT_VERSION: "7"\n',
   iosProjectAfter: 'MARKETING_VERSION: "1.1.4"\nCURRENT_PROJECT_VERSION: "8"\n',
   iosPlistBefore: '<key>CFBundleShortVersionString</key><string>1.1.3</string><key>CFBundleVersion</key><string>7</string>',
@@ -21,6 +33,7 @@ const versions = {
 function missingFor(
   stagedOutput: string,
   afterOverrides: Record<string, string | null> = {},
+  beforeOverrides: Record<string, string | null> = {},
 ): string[] {
   const beforeByPath: Record<string, string | null> = {
     'package.json': versions.rootBefore,
@@ -29,6 +42,7 @@ function missingFor(
     'sdk/package.json': versions.sdkBefore,
     'ios/project.yml': versions.iosProjectBefore,
     'ios/MurphysLaws/Info.plist': versions.iosPlistBefore,
+    ...beforeOverrides,
   };
   const afterByPath: Record<string, string | null> = {
     'package.json': versions.rootBefore,
@@ -135,5 +149,70 @@ describe('check-version-bumps', () => {
     );
 
     assert.deepEqual(missing, []);
+  });
+
+  it('allows a manifest-only repair to the existing MCP package version', () => {
+    const missing = missingFor(
+      [
+        'M\tpackage.json',
+        'M\tmcp/README.md',
+        'M\tmcp/server.json',
+      ].join('\n'),
+      {
+        'package.json': versions.rootAfter,
+        'mcp/package.json': '{ "version": "1.2.5" }',
+        'mcp/server.json': versions.mcpManifestAfter,
+      },
+      {
+        'mcp/package.json': '{ "version": "1.2.5" }',
+        'mcp/server.json': versions.mcpManifestBefore,
+      },
+    );
+
+    assert.deepEqual(missing, []);
+  });
+
+  it('requires an MCP version bump when source and manifest change together', () => {
+    const missing = missingFor(
+      [
+        'M\tpackage.json',
+        'M\tmcp/server.json',
+        'M\tmcp/src/server.ts',
+      ].join('\n'),
+      {
+        'package.json': versions.rootAfter,
+        'mcp/package.json': '{ "version": "1.2.5" }',
+        'mcp/server.json': versions.mcpManifestAfter,
+      },
+      {
+        'mcp/package.json': '{ "version": "1.2.5" }',
+        'mcp/server.json': versions.mcpManifestBefore,
+      },
+    );
+
+    assert.deepEqual(missing, ['mcp package: mcp/package.json version']);
+  });
+
+  it('does not treat invalid MCP manifest JSON as a synchronization repair', () => {
+    assert.equal(
+      isMcpManifestSynchronizationRepair(
+        ['mcp/server.json'],
+        (filePath) => {
+          if (filePath === 'mcp/package.json') {
+            return '{ "version": "1.2.5" }';
+          }
+
+          return '{ invalid json';
+        },
+        (filePath) => {
+          if (filePath === 'mcp/package.json') {
+            return '{ "version": "1.2.5" }';
+          }
+
+          return versions.mcpManifestAfter;
+        },
+      ),
+      false,
+    );
   });
 });

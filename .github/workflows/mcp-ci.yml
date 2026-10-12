@@ -56,6 +56,9 @@ jobs:
       - name: Audit dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Validate MCP release version contract
+        run: node --import tsx scripts/mcp-release-contract.ts
+
       - name: Build SDK (MCP imports from murphys-laws-sdk/dist)
         run: npm run build
         working-directory: sdk
