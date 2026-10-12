@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -43,7 +43,7 @@ const shellScripts = [
 
 for (const relativePath of shellScripts) {
   test(`shell syntax valid: ${relativePath}`, () => {
-    execSync(`bash -n ${JSON.stringify(path.join(rootDirectory, relativePath))}`, {
+    execFileSync('bash', ['-n', path.join(rootDirectory, relativePath)], {
       stdio: 'pipe',
     });
   });
