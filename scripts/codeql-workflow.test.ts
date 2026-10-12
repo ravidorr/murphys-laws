@@ -27,6 +27,7 @@ test('CodeQL workflow contract', () => {
   assert.match(workflow, /languages: swift/);
   assert.match(workflow, /build-mode: manual/);
   assert.match(workflow, /npm ci/);
-  assert.match(workflow, /\.\/gradlew assembleDebug/);
+  assert.match(workflow, /design:export:android/);
+  assert.match(workflow, /\.\/gradlew clean assembleDebug/);
   assert.match(workflow, /xcodebuild build/);
 });
