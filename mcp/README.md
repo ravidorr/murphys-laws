@@ -79,12 +79,20 @@ This MCP server uses the public [Murphy's Laws REST API](https://murphys-laws.co
 
 ## MCP Registry publishing
 
-This server is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `com.murphys-laws/murphys-laws`. Registry metadata is re-published automatically by [.github/workflows/mcp-registry-publish.yml](../.github/workflows/mcp-registry-publish.yml) whenever `mcp/server.json` changes on `main` (or via `workflow_dispatch`).
+This server is listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `com.murphys-laws/murphys-laws`. The [MCP Release workflow](../.github/workflows/mcp-registry-publish.yml) runs after MCP changes merge to `main` or when it is manually dispatched from `main`.
+
+`mcp/package.json` is the canonical release version. Before publishing, the workflow requires it to match both `mcp/server.json` version fields, then runs MCP tests and builds. It publishes the npm package when that exact version is absent, waits for it to become publicly available, and then publishes the matching registry manifest. Existing npm and registry versions are verified and skipped, making manual dispatch safe for retries.
 
 Prerequisites for the automation:
 
-1. A DNS TXT record on `murphys-laws.com` containing `v=MCPv1; k=ed25519; p=<PUBLIC_KEY>` (already set; the public key is in the [authentication docs](https://modelcontextprotocol.io/registry/authentication)).
-2. A repo secret `MCP_PUBLISHER_PRIVATE_KEY` holding the matching Ed25519 private key as hex (no separators).
+1. Configure npm Trusted Publishing for `murphys-laws-mcp`:
+   - Provider: GitHub Actions
+   - Repository owner: `ravidorr`
+   - Repository name: `murphys-laws`
+   - Workflow filename: `mcp-registry-publish.yml`
+   - Environment: leave blank
+2. A DNS TXT record on `murphys-laws.com` containing `v=MCPv1; k=ed25519; p=<PUBLIC_KEY>` (already set; the public key is in the [authentication docs](https://modelcontextprotocol.io/registry/authentication)).
+3. A repo secret `MCP_PUBLISHER_PRIVATE_KEY` holding the matching Ed25519 private key as hex (no separators). This is used only for MCP Registry DNS authentication.
 
 ### Key rotation (when needed)
 
