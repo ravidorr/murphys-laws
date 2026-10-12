@@ -113,18 +113,20 @@ jobs:
           EXPECTED_VERSION: ${{ steps.server.outputs.package_version }}
         run: |
           set -euo pipefail
-          LIVE_VERSION=$(
-            curl --fail --show-error --silent --location \
-              --retry 5 \
-              --retry-all-errors \
-              --retry-delay 15 \
-              --retry-max-time 120 \
-              --connect-timeout 15 \
-              --max-time 30 \
-              "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
-              | jq -r --arg name "$EXPECTED_NAME" \
-                  'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""'
-          )
+          RESPONSE_FILE=$(mktemp)
+          trap 'rm -f "$RESPONSE_FILE"' EXIT
+          curl --fail --show-error --silent --location \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 15 \
+            --retry-max-time 120 \
+            --connect-timeout 15 \
+            --max-time 30 \
+            --output "$RESPONSE_FILE" \
+            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}"
+          LIVE_VERSION=$(jq -r --arg name "$EXPECTED_NAME" \
+            'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""' \
+            "$RESPONSE_FILE")
           echo "live_version=$LIVE_VERSION" >> "$GITHUB_OUTPUT"
           if [ "$LIVE_VERSION" = "$EXPECTED_VERSION" ]; then
             echo "Registry already has $EXPECTED_NAME@$EXPECTED_VERSION - skipping publish"
@@ -177,18 +179,20 @@ jobs:
           # The search endpoint may return multiple partial matches with
           # non-guaranteed ordering, so filter by exact server.name match
           # rather than trusting .servers[0].
-          LIVE_VERSION=$(
-            curl --fail --show-error --silent --location \
-              --retry 5 \
-              --retry-all-errors \
-              --retry-delay 15 \
-              --retry-max-time 120 \
-              --connect-timeout 15 \
-              --max-time 30 \
-              "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}" \
-              | jq -r --arg name "$EXPECTED_NAME" \
-                  'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""'
-          )
+          RESPONSE_FILE=$(mktemp)
+          trap 'rm -f "$RESPONSE_FILE"' EXIT
+          curl --fail --show-error --silent --location \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 15 \
+            --retry-max-time 120 \
+            --connect-timeout 15 \
+            --max-time 30 \
+            --output "$RESPONSE_FILE" \
+            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}"
+          LIVE_VERSION=$(jq -r --arg name "$EXPECTED_NAME" \
+            'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""' \
+            "$RESPONSE_FILE")
           if [ -z "$LIVE_VERSION" ]; then
             echo "::error::No registry entry found for '$EXPECTED_NAME'"
             exit 1

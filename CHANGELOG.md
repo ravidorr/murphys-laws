@@ -59,6 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Buffer retried MCP Registry responses before parsing them. Root bumped to
+  `2.6.72`.
+
 - Retry bounded MCP Registry reads after transient failures. Root bumped to
   `2.6.71`.
 
