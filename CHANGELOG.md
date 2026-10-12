@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Automate MCP npm and registry releases with version-contract checks and
+  idempotent post-merge publication. Root bumped to `2.6.69`.
+
 - Pin patched `smol-toml` and `katex` versions under the Markdownlint CLI
   toolchain via npm overrides because upstream still declares vulnerable exact
   ranges, and remove the corresponding dependency audit exceptions. Root bumped
@@ -55,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add verified Shields.io badge rows to the root README.
 
 ### Fixed
+
+- Use npm 11.5.1 for OIDC trusted publishing and avoid coalescing pending MCP
+  releases. Root bumped to `2.6.70`.
 
 - Resolve CodeQL findings by limiting workflow tokens, removing shell-command
   interpolation, and constructing user-visible HTML with DOM APIs. Web bumped

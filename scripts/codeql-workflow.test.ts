@@ -22,6 +22,8 @@ const workflowsUsingPathsFilter = [
 const readOnlyWorkflows = [
   'dependency-audit.yml',
   'deploy.yml',
+];
+const oidcPublishingWorkflows = [
   'mcp-registry-publish.yml',
 ];
 
@@ -55,5 +57,13 @@ test('workflows use only the GITHUB_TOKEN permissions they need', () => {
   for (const workflowName of readOnlyWorkflows) {
     const workflow = readFileSync(path.join(rootDirectory, '.github/workflows', workflowName), 'utf8');
     assert.match(workflow, /^permissions:\n  contents: read\n\njobs:/m);
+  }
+
+  for (const workflowName of oidcPublishingWorkflows) {
+    const workflow = readFileSync(path.join(rootDirectory, '.github/workflows', workflowName), 'utf8');
+    assert.match(
+      workflow,
+      /^permissions:\n  contents: read\n  id-token: write\n\njobs:/m,
+    );
   }
 });

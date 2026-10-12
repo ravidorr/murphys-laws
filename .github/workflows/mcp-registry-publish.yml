@@ -1,30 +1,25 @@
-name: MCP Registry Publish
+name: MCP Release
 
-# Re-publishes mcp/server.json to registry.modelcontextprotocol.io
-# whenever the pinned version changes, or on manual dispatch.
+# Releases the MCP npm package and matching registry manifest after MCP changes
+# merge to main, or retries the process when manually dispatched from main.
 #
-# Idempotent: if the registry already has the target version, the publish
-# step is skipped (the registry rejects duplicate-version publishes with
-# 400). The verify step always runs so successful completion always means
-# "registry matches server.json".
-#
-# Requires repo secret: MCP_PUBLISHER_PRIVATE_KEY
-#   The Ed25519 private key (hex) matching the DNS TXT record on
-#   murphys-laws.com. See mcp/README.md for setup / rotation steps.
+# Requires repo secret: MCP_PUBLISHER_PRIVATE_KEY for MCP Registry DNS
+# authentication. npm publishing uses GitHub Actions OIDC trusted publishing.
 
 on:
   push:
     branches: [main]
     paths:
-      - 'mcp/server.json'
-      - '.github/workflows/mcp-registry-publish.yml'
+      - 'mcp/**'
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -35,24 +30,87 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      - name: Read server.json
+      - name: Install npm for trusted publishing
+        run: npm install --global npm@11.5.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate MCP release version contract
+        run: node --import tsx scripts/mcp-release-contract.ts
+
+      - name: Build SDK
+        run: npm run build
+        working-directory: sdk
+
+      - name: Validate MCP package
+        run: npm run typecheck && npm run lint && npm run test:coverage && npm run build
+        working-directory: mcp
+
+      - name: Read MCP release metadata
         id: server
         run: |
-          VERSION=$(jq -r '.version' mcp/server.json)
+          PACKAGE_NAME=$(jq -r '.name' mcp/package.json)
+          PACKAGE_VERSION=$(jq -r '.version' mcp/package.json)
           NAME=$(jq -r '.name' mcp/server.json)
-          PACKAGE_IDENTIFIER=$(jq -r '.packages[0].identifier' mcp/server.json)
-          PACKAGE_VERSION=$(jq -r '.packages[0].version' mcp/server.json)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "package_identifier=$PACKAGE_IDENTIFIER" >> "$GITHUB_OUTPUT"
+          echo "package_name=$PACKAGE_NAME" >> "$GITHUB_OUTPUT"
           echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Target: $NAME@$VERSION -> npm:$PACKAGE_IDENTIFIER@$PACKAGE_VERSION"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Target: $NAME@$PACKAGE_VERSION -> npm:$PACKAGE_NAME@$PACKAGE_VERSION"
+
+      - name: Check npm package state
+        id: npm
+        env:
+          PACKAGE_NAME: ${{ steps.server.outputs.package_name }}
+          PACKAGE_VERSION: ${{ steps.server.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          ERROR_FILE=$(mktemp)
+          if PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --registry=https://registry.npmjs.org/ 2>"$ERROR_FILE"); then
+            if [ "$PUBLISHED_VERSION" != "$PACKAGE_VERSION" ]; then
+              echo "::error::npm returned '$PUBLISHED_VERSION' for $PACKAGE_NAME@$PACKAGE_VERSION"
+              exit 1
+            fi
+            echo "npm already has $PACKAGE_NAME@$PACKAGE_VERSION - skipping publish"
+            echo "needs_publish=false" >> "$GITHUB_OUTPUT"
+          elif grep -qE 'E404|404 Not Found' "$ERROR_FILE"; then
+            echo "npm does not have $PACKAGE_NAME@$PACKAGE_VERSION - publish needed"
+            echo "needs_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            cat "$ERROR_FILE" >&2
+            echo "::error::Could not determine npm state for $PACKAGE_NAME@$PACKAGE_VERSION"
+            exit 1
+          fi
+
+      - name: Publish npm package
+        if: steps.npm.outputs.needs_publish == 'true'
+        run: npm publish --workspace=murphys-laws-mcp --provenance --access public
+
+      - name: Wait for npm package availability
+        env:
+          PACKAGE_NAME: ${{ steps.server.outputs.package_name }}
+          PACKAGE_VERSION: ${{ steps.server.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            if PUBLISHED_VERSION=$(npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version --registry=https://registry.npmjs.org/ 2>/dev/null) &&
+              [ "$PUBLISHED_VERSION" = "$PACKAGE_VERSION" ]; then
+              echo "npm package is publicly available: $PACKAGE_NAME@$PACKAGE_VERSION"
+              exit 0
+            fi
+            if [ "$attempt" -lt 20 ]; then
+              echo "Waiting for npm package availability ($attempt/20)"
+              sleep 15
+            fi
+          done
+          echo "::error::npm package $PACKAGE_NAME@$PACKAGE_VERSION did not become publicly available"
+          exit 1
 
       - name: Check current registry state
-        id: check
+        id: registry
         env:
           EXPECTED_NAME: ${{ steps.server.outputs.name }}
-          EXPECTED_VERSION: ${{ steps.server.outputs.version }}
+          EXPECTED_VERSION: ${{ steps.server.outputs.package_version }}
         run: |
           set -euo pipefail
           LIVE_VERSION=$(
@@ -69,16 +127,8 @@ jobs:
             echo "needs_publish=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Verify npm artifact exists (guardrail)
-        if: steps.check.outputs.needs_publish == 'true'
-        run: |
-          # If server.json points at a version that never made it to npm,
-          # a successful registry publish would reference a dangling package.
-          # npm view exits non-zero on 404.
-          npm view "${{ steps.server.outputs.package_identifier }}@${{ steps.server.outputs.package_version }}" version
-
       - name: Install mcp-publisher
-        if: steps.check.outputs.needs_publish == 'true'
+        if: steps.registry.outputs.needs_publish == 'true'
         run: |
           set -euo pipefail
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -90,7 +140,7 @@ jobs:
           echo "mcp-publisher installed"
 
       - name: Authenticate with registry (DNS auth)
-        if: steps.check.outputs.needs_publish == 'true'
+        if: steps.registry.outputs.needs_publish == 'true'
         env:
           PRIVATE_KEY: ${{ secrets.MCP_PUBLISHER_PRIVATE_KEY }}
         run: |
@@ -101,15 +151,15 @@ jobs:
           mcp-publisher login dns --domain murphys-laws.com --private-key "$PRIVATE_KEY"
 
       - name: Publish to MCP Registry
-        if: steps.check.outputs.needs_publish == 'true'
+        if: steps.registry.outputs.needs_publish == 'true'
         working-directory: mcp
         run: mcp-publisher publish
 
       - name: Verify entry is live at expected version
         env:
           EXPECTED_NAME: ${{ steps.server.outputs.name }}
-          EXPECTED_VERSION: ${{ steps.server.outputs.version }}
-          NEEDS_PUBLISH: ${{ steps.check.outputs.needs_publish }}
+          EXPECTED_VERSION: ${{ steps.server.outputs.package_version }}
+          NEEDS_PUBLISH: ${{ steps.registry.outputs.needs_publish }}
         run: |
           set -euo pipefail
           # After a fresh publish, allow a beat for the registry to index.
