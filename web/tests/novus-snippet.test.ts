@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 const root = path.resolve(__dirname, '..');
 
 function extractNovusSnippet(html: string): string {
-  const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1] ?? '');
+  const parsedDocument = new DOMParser().parseFromString(html, 'text/html');
+  const scripts = [...parsedDocument.querySelectorAll('script')].map((script) => script.textContent ?? '');
   const snippet = scripts.find((script) => script.includes('cdn.pendo.io/agent/static/'));
   if (!snippet) {
     throw new Error('Novus agent snippet not found in index.html');
@@ -56,9 +57,9 @@ describe('Novus agent snippet in index.html', () => {
     });
   });
 
-  it('finds the agent snippet in mixed-case script tags with attributes', () => {
+  it('finds the agent snippet in mixed-case script tags with attributes and closing-tag whitespace', () => {
     const snippet = extractNovusSnippet(
-      '<SCRIPT nonce="test" type="application/javascript">window.pendoSrc = "https://cdn.pendo.io/agent/static/key/pendo.js";</SCRIPT>',
+      '<SCRIPT nonce="test" type="application/javascript">window.pendoSrc = "https://cdn.pendo.io/agent/static/key/pendo.js";</SCRIPT >',
     );
 
     expect(snippet).toContain('cdn.pendo.io/agent/static/');
