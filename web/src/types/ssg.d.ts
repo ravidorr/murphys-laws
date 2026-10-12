@@ -57,6 +57,7 @@ declare module '@scripts/ssg' {
     requireCategoryLink?: boolean;
   }): string[];
   export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
+  export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string };
   export function buildStaticHomeContent(): string;
   export function fetchAllCategories(fetchRequest?: (url: string) => Promise<{
     ok: boolean;

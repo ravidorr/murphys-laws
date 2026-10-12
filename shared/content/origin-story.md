@@ -4,6 +4,12 @@ The ubiquity of Murphy's Law - "Anything that can go wrong, will go wrong" - sug
 
 **TL;DR** Captain Edward A. Murphy Jr. coined the phrase in 1949 during U.S. Air Force rocket-sled tests at Edwards AFB, after 16 accelerometers were installed the wrong way. Dr. John Stapp popularized it at press conferences. The law spread from engineering into popular culture.
 
+## Start Exploring
+
+- [Read the original Murphy's Laws](/category/murphys-laws)
+- Browse [technology laws](/category/murphys-technology-laws) for modern versions of the same design lesson.
+- Read [real-life Murphy's Law examples](/examples) to see how the pattern shows up at work, in travel, and in everyday life.
+
 ## Edward A. Murphy Jr.: The Man Behind the Maxim
 
 The law is famously attributed to Captain [Edward A. Murphy Jr.](https://en.wikipedia.org/wiki/Edward_A._Murphy_Jr.), an American aerospace engineer. In 1949, Murphy was working on [Project MX981](https://en.wikipedia.org/wiki/John_Stapp#Project_MX981), a U.S. Air Force experiment designed to test human tolerance to rapid deceleration. The project, conducted at Muroc Army Air Field (now [Edwards Air Force Base](https://www.edwards.af.mil/)), involved strapping a human subject (often [Dr. John Stapp](https://en.wikipedia.org/wiki/John_Stapp), a pioneer in aerospace medicine) onto a rocket sled and subjecting them to extreme G-forces.
@@ -38,12 +44,6 @@ Dr. John Stapp, recognizing the profound truth and practical application of Murp
 Over the decades, Murphy's Law evolved, spawning countless corollaries and variations that apply to nearly every facet of life - from computing ("The one you need is the one you haven't backed up") to queuing ("The other line always moves faster"). It became a shorthand for acknowledging life's inherent unpredictability and the perverse tendency of things to go awry at the most inconvenient times.
 
 While often invoked with a chuckle or a sigh, at its core, Murphy's Law serves as a constant, if darkly humorous, reminder to anticipate failure, plan for contingencies, and design with robustness in mind. It's a testament to the lasting impact of a frustrated engineer's observation, highlighting the human capacity to find meaning and even humor in the face of inevitable mishaps.
-
-## Start Exploring
-
-- Browse [technology laws](/category/murphys-technology-laws) for modern versions of the same design lesson.
-- Read [real-life Murphy's Law examples](/examples) to see how the pattern shows up at work, in travel, and in everyday life.
-- Try the [Sod's Law Calculator](/calculator/sods-law) when you want to model why pressure, complexity, and timing make failures feel inevitable.
 
 ## Source notes
 

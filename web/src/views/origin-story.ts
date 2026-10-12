@@ -6,6 +6,8 @@ import { SITE_URL, SITE_NAME } from '@utils/constants.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
+import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
+import { addArticleArchiveBlock } from '@components/article-featured-laws.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
 export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}): HTMLDivElement {
@@ -17,6 +19,7 @@ export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}): H
   updateMetaDescription("Discover the true origin of Murphy's Law - Captain Edward A. Murphy Jr. and the 1949 Air Force rocket sled experiment that gave birth to the famous maxim.");
 
   el.innerHTML = getPageContent('origin-story');
+  addArticleArchiveBlock(el, 'origin-story', onNavigate);
   // Only trigger ads if content meets minimum requirements
   triggerAdSense(el);
 
@@ -54,20 +57,18 @@ export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}): H
     }
   });
 
-  // Handle navigation clicks
+  // Handle navigation clicks (shared utility keeps data-param for law and category links)
   el.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement) || !onNavigate) return;
 
-    const navBtn = target.closest('[data-nav]');
-    if (navBtn && onNavigate) {
+    if (handleNavClick(target, onNavigate)) {
       e.preventDefault();
-      const navTarget = navBtn.getAttribute('data-nav');
-      if (navTarget) {
-        onNavigate(navTarget);
-      }
     }
   });
+
+  // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
+  if (onNavigate) addNavigationListener(el, onNavigate);
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup =() => {

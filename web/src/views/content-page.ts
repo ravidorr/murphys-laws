@@ -3,6 +3,8 @@ import { SITE_NAME } from '@utils/constants.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { updateMetaDescription } from '@utils/dom.ts';
+import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
+import { addArticleArchiveBlock } from '@components/article-featured-laws.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
 interface ContentPageViewProps {
@@ -19,6 +21,7 @@ export function ContentPageView({ page, title, description, onNavigate }: Conten
   document.title = `${title} | ${SITE_NAME}`;
   updateMetaDescription(description);
   el.innerHTML = getPageContent(page);
+  addArticleArchiveBlock(el, page, onNavigate);
   triggerAdSense(el);
 
   setExportContent({
@@ -27,16 +30,13 @@ export function ContentPageView({ page, title, description, onNavigate }: Conten
     data: getRawMarkdownContent(page)
   });
 
+  // Shared utility keeps data-param for law and category links
   el.addEventListener('click', (e) => {
     const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    const navBtn = target.closest('[data-nav]');
-    if (!navBtn || !onNavigate) return;
-    const navTarget = navBtn.getAttribute('data-nav');
-    if (!navTarget) return;
-    e.preventDefault();
-    onNavigate(navTarget);
+    if (!(target instanceof HTMLElement) || !onNavigate) return;
+    if (handleNavClick(target, onNavigate)) e.preventDefault();
   });
+  if (onNavigate) addNavigationListener(el, onNavigate);
 
   (el as CleanableElement).cleanup = () => { clearExportContent(); };
 
