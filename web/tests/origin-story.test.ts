@@ -1,11 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OriginStory } from '../src/views/origin-story.js';
 import * as structuredData from '../src/modules/structured-data.js';
 import * as exportContext from '../src/utils/export-context.js';
+import * as api from '../src/utils/api.js';
 
 // Mock dependencies
 vi.mock('../src/modules/structured-data.js');
-vi.mock('../src/utils/constants.js', () => ({
+vi.mock('../src/utils/constants.js', async (importOriginal) => ({
+  ...(await importOriginal() as Record<string, unknown>),
   SITE_URL: 'https://murphys-laws.com',
   SITE_NAME: "Murphy's Law Archive"
 }));
@@ -14,11 +16,57 @@ vi.mock('../src/utils/ads.js', () => ({
 }));
 
 describe('OriginStory view', () => {
+  beforeEach(() => {
+    vi.spyOn(api, 'fetchLaws').mockResolvedValue({
+      data: [{ id: 7, text: 'If anything can go wrong, it will.', upvotes: 3, downvotes: 0 }],
+      total: 1,
+      limit: 3,
+      offset: 0
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders the origin story content', () => {
     const el = OriginStory({ onNavigate: vi.fn() });
     // Content is now rendered via markdown with accent styling on first word
     expect(el.innerHTML).toContain('True Origin of Murphy');
     expect(el.innerHTML).toContain('Edward A. Murphy Jr.');
+  });
+
+  it('adds archive buttons under the title and featured laws after the article', () => {
+    const el = OriginStory({ onNavigate: vi.fn() });
+
+    const row = el.querySelector('h1.page-title')!.nextElementSibling!;
+    expect(row.classList.contains('article-next-steps')).toBe(true);
+    expect(row.querySelector('a.btn.primary')?.getAttribute('href')).toBe('/category/murphys-laws');
+    expect(el.querySelector('article.content-card')!.nextElementSibling!.classList.contains('article-featured-laws')).toBe(true);
+    expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ category_slug: 'murphys-laws' }));
+  });
+
+  it('routes archive buttons through compound category navigation', () => {
+    const onNavigate = vi.fn();
+    const el = OriginStory({ onNavigate });
+
+    el.querySelector<HTMLAnchorElement>('.article-next-steps a.btn.primary')!.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('category/murphys-laws');
+  });
+
+  it('opens featured laws with their data-param id by click and keyboard', async () => {
+    const onNavigate = vi.fn();
+    const el = OriginStory({ onNavigate });
+    await vi.waitFor(() => {
+      expect(el.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();
+    });
+
+    el.querySelector<HTMLAnchorElement>('.article-featured-laws a.law-card-link')!.click();
+    el.querySelector('.article-featured-laws .law-card-mini')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(onNavigate).toHaveBeenNthCalledWith(1, 'law', '7');
+    expect(onNavigate).toHaveBeenNthCalledWith(2, 'law', '7');
   });
 
   it('sets structured data for the article', () => {

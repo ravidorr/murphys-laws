@@ -33,7 +33,8 @@ export type PendoTrackEventName =
   | 'content_exported'
   | 'pwa_install_prompt_responded'
   | 'pwa_installed'
-  | 'theme_changed';
+  | 'theme_changed'
+  | 'article_cta_clicked';
 
 export type PendoPropertyValue = string | number | boolean | null | undefined;
 export type PendoTrackProperties = Record<string, PendoPropertyValue>;

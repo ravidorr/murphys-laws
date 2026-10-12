@@ -16,6 +16,8 @@ Use Murphy's Law when you are designing systems. Use Sod's Law when you are expl
 
 ## Keep exploring
 
+- [Murphy's original laws](/category/murphys-laws)
+- [Office laws, where Sod's timing bites](/category/murphys-office-laws)
 - [The Origin of Murphy's Law](/origin-story)
 - [Sod's Law Calculator](/calculator/sods-law)
 - [Real-life examples](/examples)

@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { WhyMurphysLawFeelsTrue } from '../src/views/why-murphys-law-feels-true.js';
 import * as structuredData from '../src/modules/structured-data.js';
 import * as exportContext from '../src/utils/export-context.js';
+import * as api from '../src/utils/api.js';
 
 vi.mock('../src/modules/structured-data.js');
-vi.mock('../src/utils/constants.js', () => ({
+vi.mock('../src/utils/constants.js', async (importOriginal) => ({
+  ...(await importOriginal() as Record<string, unknown>),
   SITE_URL: 'https://murphys-laws.com',
   SITE_NAME: "Murphy's Law Archive"
 }));
@@ -13,9 +15,35 @@ vi.mock('../src/utils/ads.js', () => ({
 }));
 
 describe('WhyMurphysLawFeelsTrue view', () => {
+  beforeEach(() => {
+    vi.spyOn(api, 'fetchLaws').mockResolvedValue({
+      data: [{ id: 21, text: 'Paper is always strongest at the perforations.', upvotes: 1, downvotes: 0 }],
+      total: 1,
+      limit: 3,
+      offset: 0
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders the article content', () => {
     const el = WhyMurphysLawFeelsTrue({ onNavigate: vi.fn() });
     expect(el.innerHTML).toContain('Universe');
+  });
+
+  it('adds office-law archive links and opens featured laws by their data-param id', async () => {
+    const onNavigate = vi.fn();
+    const el = WhyMurphysLawFeelsTrue({ onNavigate });
+
+    expect(el.querySelector('.article-next-steps a.btn.primary')?.getAttribute('href')).toBe('/category/murphys-office-laws');
+    await vi.waitFor(() => {
+      expect(el.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();
+    });
+    el.querySelector<HTMLAnchorElement>('.article-featured-laws a.law-card-link')!.click();
+
+    expect(onNavigate).toHaveBeenCalledWith('law', '21');
   });
 
   it('sets structured data for the article', () => {

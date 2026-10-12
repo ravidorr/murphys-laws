@@ -143,6 +143,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   analysis with the repo-pinned tsx binary. Backend bumped to `2.3.19`; root to `2.6.49`.
 
 ### Added
+- Article pages (Origin Story, Real-Life Examples, Murphy's Law vs Sod's Law, the
+  work and project-management articles, and the themed examples pages) now show a
+  row of archive buttons under the title and three vote-able laws from the matching
+  category after the article, so readers who land on an article have a next step
+  into the archive. Clicks are reported to Pendo as `article_cta_clicked`. Origin
+  Story lists its archive links before its outside citations, external links in
+  site content open in a new tab, the Sod's Law explainer links straight to the
+  original and office laws, and article links use the canonical
+  `murphys-computer-laws` category slug.
 - Added the build-time root-package version to the web footer. Web bumped to
   `3.4.18`; root to `2.6.40`.
 - Added the canonical agent guide, policy and support documents, an LLM index,
