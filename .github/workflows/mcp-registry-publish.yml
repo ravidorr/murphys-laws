@@ -20,6 +20,9 @@ on:
       - '.github/workflows/mcp-registry-publish.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest

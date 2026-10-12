@@ -4,14 +4,18 @@ import { describe, expect, it, vi } from 'vitest';
 
 const root = path.resolve(__dirname, '..');
 
-function readNovusSnippet(): string {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1] ?? '');
+function extractNovusSnippet(html: string): string {
+  const parsedDocument = new DOMParser().parseFromString(html, 'text/html');
+  const scripts = [...parsedDocument.querySelectorAll('script')].map((script) => script.textContent ?? '');
   const snippet = scripts.find((script) => script.includes('cdn.pendo.io/agent/static/'));
   if (!snippet) {
     throw new Error('Novus agent snippet not found in index.html');
   }
   return snippet;
+}
+
+function readNovusSnippet(): string {
+  return extractNovusSnippet(fs.readFileSync(path.join(root, 'index.html'), 'utf8'));
 }
 
 function readPendoAgentType(): string {
@@ -51,6 +55,14 @@ describe('Novus agent snippet in index.html', () => {
       expect(snippet).toContain(`'${method}'`);
       expect(agentType).toMatch(new RegExp(`\\b${method}\\??:`));
     });
+  });
+
+  it('finds the agent snippet in mixed-case script tags with attributes and closing-tag whitespace', () => {
+    const snippet = extractNovusSnippet(
+      '<SCRIPT nonce="test" type="application/javascript">window.pendoSrc = "https://cdn.pendo.io/agent/static/key/pendo.js";</SCRIPT >',
+    );
+
+    expect(snippet).toContain('cdn.pendo.io/agent/static/');
   });
 
   it.each([
