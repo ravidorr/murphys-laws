@@ -59,9 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Apply category picks immediately, preserve the current category on Clear,
-  route cross-category searches to the selected category or Browse, and keep
-  mobile filter actions side by side. Web bumped to `3.4.21`; root to `2.6.74`.
+- Apply pointer category picks immediately while keyboard navigation applies on
+  Enter, preserve the current category on Clear even before category options
+  load, route cross-category searches to the selected category or Browse, and
+  keep mobile filter actions side by side. Web bumped to `3.4.21`; root to
+  `2.6.74`.
 
 - Correct the README footer's incomplete acknowledgement sentence. Root bumped to `2.6.73`.
 

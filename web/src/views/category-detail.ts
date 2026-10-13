@@ -292,7 +292,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         const searchComponent = AdvancedSearch({
           initialFilters: { category_id: category.id },
           defaultCategoryId: category.id,
-          categoryHint: 'Choosing another category opens it',
+          categoryHint: 'Choose a category alone to open it. Add search terms to search Browse.',
           onSearch: (filters) => {
             const isCurrentCategory = String(filters.category_id) === String(category.id);
             const hasTextFilter = Boolean(filters.q || filters.attribution);

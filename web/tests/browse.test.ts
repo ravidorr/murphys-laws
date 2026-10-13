@@ -1861,6 +1861,38 @@ describe('Browse view', () => {
       });
     });
 
+    it('waits for Enter before applying a keyboard category selection', async () => {
+      vi.spyOn(api, 'fetchAPI').mockImplementation((url: string) => {
+        if (url === '/api/v1/categories') {
+          return Promise.resolve({ data: [{ id: 1, title: 'Technology', slug: 'technology' }] });
+        }
+        return Promise.resolve({ data: [] });
+      });
+      const el = Browse({ onNavigate: () => { } });
+      await waitForResults(el);
+      await vi.waitFor(() => {
+        expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(1);
+      });
+
+      fetchLawsSpy.mockClear();
+      const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+      categorySelect.value = '1';
+      categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+      expect(fetchLawsSpy).not.toHaveBeenCalled();
+      expect(searchEvents()).toHaveLength(0);
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+      categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      await vi.waitFor(() => {
+        expect(fetchLawsSpy).toHaveBeenCalledTimes(1);
+        expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ category_id: 1, offset: 0 }));
+        expect(location.search).toBe('?category_id=1');
+        expect(searchEvents()).toHaveLength(1);
+      });
+    });
+
     it('does not report a failed search when the visitor later changes sorting', async () => {
       const el = Browse({ onNavigate: () => { } });
       await waitForResults(el);

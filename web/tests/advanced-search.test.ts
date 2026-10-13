@@ -16,7 +16,7 @@ interface MountSearchOptions {
   append?: boolean;
   onSearch?: (filters: SearchFilters) => void;
   initialFilters?: { q?: string; category_id?: string; attribution?: string };
-  defaultCategoryId?: string | number;
+  defaultCategoryId?: number;
   categoryHint?: string;
   _testLoadFiltersRef?: (loadFilters: (force?: boolean) => Promise<void>) => void;
 }
@@ -346,6 +346,30 @@ describe('AdvancedSearch component', () => {
     expect(onSearch).toHaveBeenCalledWith({ category_id: 1 });
   });
 
+  it('keeps a keyboard-selected category when the category list refreshes', async () => {
+    const categories: Category[] = [
+      { id: 1, title: 'General', slug: 'general' },
+      { id: 2, title: 'Technology', slug: 'technology' }
+    ];
+    fetchAPISpy.mockResolvedValue({ data: categories });
+    let loadFiltersRef: ((force?: boolean) => Promise<void>) | null = null;
+    const el = mountSearch({
+      _testLoadFiltersRef: (loadFilters) => { loadFiltersRef = loadFilters; }
+    });
+
+    await vi.waitFor(() => {
+      expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(2);
+    });
+
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.value = '2';
+    categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    await loadFiltersRef!(true);
+
+    expect(categorySelect.value).toBe('2');
+  });
+
   it('ignores non-submitting category keys', async () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
     const onSearch = vi.fn();
@@ -394,13 +418,24 @@ describe('AdvancedSearch component', () => {
     expect(searchFilters).toEqual({ category_id: 1 });
   });
 
+  it('reports the default category when Clear is clicked before categories load', () => {
+    let searchFilters: SearchFilters | null = null;
+    fetchAPISpy.mockImplementation(() => new Promise(() => {}));
+    const el = mountSearch({ defaultCategoryId: 1, onSearch: (filters) => { searchFilters = filters; } });
+
+    (el.querySelector('#clear-btn') as HTMLButtonElement).click();
+
+    expect(searchFilters).toEqual({ category_id: 1 });
+  });
+
   it('renders a category hint and describes the category select', () => {
+    const hint = 'Choose a category alone to open it. Add search terms to search Browse.';
     fetchAPISpy.mockResolvedValue({ data: [] });
-    const el = mountSearch({ categoryHint: 'Choosing another category opens it' });
+    const el = mountSearch({ categoryHint: hint });
 
     const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     const categoryHint = el.querySelector('#search-category-hint') as HTMLElement;
-    expect(categoryHint.textContent).toBe('Choosing another category opens it');
+    expect(categoryHint.textContent).toBe(hint);
     expect(categoryHint.hidden).toBe(false);
     expect(categorySelect.getAttribute('aria-describedby')).toBe('search-category-hint');
   });
