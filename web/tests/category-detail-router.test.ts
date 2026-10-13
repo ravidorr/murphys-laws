@@ -91,6 +91,20 @@ describe('Category Detail router integration', () => {
   });
 
   it('renders Browse and tracks a filtered cross-category search', async () => {
+    const response = {
+      data: [{ id: 1, title: 'Result law', text: 'A result.' }],
+      total: 1,
+      limit: 25,
+      offset: 0
+    };
+    let resolveCategoryLoad!: (value: typeof response) => void;
+    const categoryLoad = new Promise<typeof response>(resolve => {
+      resolveCategoryLoad = resolve;
+    });
+    vi.mocked(api.fetchLaws)
+      .mockImplementationOnce(() => categoryLoad)
+      .mockResolvedValueOnce(response);
+
     const root = document.createElement('div');
     document.body.appendChild(root);
     const onNavigate = (page: string, param?: string) => navigate(page, param);
@@ -127,6 +141,15 @@ describe('Category Detail router integration', () => {
       });
     });
 
+    expect(track.mock.calls.filter(([eventName]) => eventName === 'search_performed')).toHaveLength(1);
+    resolveCategoryLoad(response);
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    const searchParams = new URLSearchParams(location.search);
+    expect(location.pathname).toBe('/browse');
+    expect(searchParams.get('category_id')).toBe('2');
+    expect(searchParams.get('q')).toBe('Computer');
+    expect(searchParams.get('attribution')).toBe('Ada');
     expect(track.mock.calls.filter(([eventName]) => eventName === 'search_performed')).toHaveLength(1);
     root.remove();
   });

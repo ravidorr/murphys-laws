@@ -148,6 +148,12 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     updateStructuredData();
   }
 
+  function invalidatePendingLoad() {
+    loadGeneration++;
+    pendingSearch = false;
+    retryPendingSearch = false;
+  }
+
   // Load laws for current page
   async function loadPage(page: number, isRetry = false) {
     if (isRetry && retryPendingSearch) {
@@ -305,6 +311,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
             }
 
             if (filters.category_id && !hasTextFilter) {
+              invalidatePendingLoad();
               const pickedCategory = data.data.find(candidate => String(candidate.id) === String(filters.category_id));
               const pickedCategoryId = pickedCategory?.id ?? filters.category_id;
               trackPendoEvent('search_performed', {
@@ -319,6 +326,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
             if (filters.category_id) params.set('category_id', String(filters.category_id));
             if (filters.q) params.set('q', filters.q);
             if (filters.attribution) params.set('attribution', filters.attribution);
+            invalidatePendingLoad();
             history.pushState(
               { name: 'browse', searchSurface: 'category_detail' },
               '',
@@ -457,6 +465,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {
+    invalidatePendingLoad();
     clearExportContent();
   };
 
