@@ -22,21 +22,31 @@ interface AdvancedSearchFilters {
 export interface AdvancedSearchOptions {
   onSearch: (filters: AdvancedSearchFilters) => void;
   initialFilters?: AdvancedSearchFilters;
+  defaultCategoryId?: string | number;
+  categoryHint?: string;
   /** Test hook: called with loadFilters so tests can trigger loadFilters(forceReload). */
   _testLoadFiltersRef?: (loadFilters: (forceReload?: boolean) => Promise<void>) => void;
 }
 
-export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearchFilters, _testLoadFiltersRef }: AdvancedSearchOptions): HTMLElement {
+export function AdvancedSearch({
+  onSearch,
+  initialFilters = {} as AdvancedSearchFilters,
+  defaultCategoryId,
+  categoryHint,
+  _testLoadFiltersRef
+}: AdvancedSearchOptions): HTMLElement {
   const el = document.createElement('section');
   el.className = 'section card card--section section-card mb-12';
 
   let categories: Array<{ id: number; title: string; slug: string }> = [];
-  let selectedCategory = initialFilters.category_id || '';
+  const defaultCategoryValue = defaultCategoryId === undefined ? '' : String(defaultCategoryId);
+  let selectedCategory = initialFilters.category_id ?? defaultCategoryValue;
   let selectedAttribution = initialFilters.attribution || '';
   let searchQuery = initialFilters.q || '';
   let filtersLoaded = false;
   let submittersDebounceId: ReturnType<typeof setTimeout> | null = null;
   let listboxSelectedIndex = -1;
+  let ignoreCategoryChange = false;
 
   el.innerHTML = templateHtml;
   hydrateIcons(el);
@@ -48,6 +58,13 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
   const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
   const searchBtn = el.querySelector('#search-btn') as HTMLButtonElement;
   const clearBtn = el.querySelector('#clear-btn') as HTMLButtonElement;
+  const categoryHintEl = el.querySelector('#search-category-hint') as HTMLElement;
+
+  if (categoryHint && categoryHintEl) {
+    categoryHintEl.textContent = categoryHint;
+    categoryHintEl.hidden = false;
+    categorySelect.setAttribute('aria-describedby', categoryHintEl.id);
+  }
 
   /* v8 ignore start -- keywordInput is always provided by the component template */
   if (keywordInput) keywordInput.value = searchQuery;
@@ -262,7 +279,7 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     }
   }
 
-  searchBtn?.addEventListener('click', () => {
+  function submitFilters() {
     /* v8 ignore start -- attributionHidden/keywordInput are always in the component template */
     const attributionValue = (attributionHidden?.value ?? selectedAttribution) || undefined;
     /* v8 ignore stop */
@@ -278,6 +295,26 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     if (filters.category_id !== undefined) cleanFilters.category_id = filters.category_id;
     if (filters.attribution) cleanFilters.attribution = filters.attribution;
     onSearch(cleanFilters);
+  }
+
+  searchBtn?.addEventListener('click', submitFilters);
+
+  categorySelect?.addEventListener('change', () => {
+    if (ignoreCategoryChange) return;
+    selectedCategory = categorySelect.value;
+    submitFilters();
+  });
+
+  categorySelect?.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+      ignoreCategoryChange = true;
+      setTimeout(() => {
+        ignoreCategoryChange = false;
+      }, 0);
+      return;
+    }
+
+    if (e.key === 'Enter') submitFilters();
   });
 
   clearBtn?.addEventListener('click', () => {
@@ -285,8 +322,9 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     if (keywordInput) keywordInput.value = '';
     /* v8 ignore stop */
     /* v8 ignore start -- element is always provided by the component template */
-    if (categorySelect) categorySelect.value = '';
+    if (categorySelect) categorySelect.value = defaultCategoryValue;
     /* v8 ignore stop */
+    selectedCategory = defaultCategoryValue;
     selectedAttribution = '';
     /* v8 ignore start -- element is always provided by the component template */
     if (attributionInput) attributionInput.value = '';
@@ -295,11 +333,11 @@ export function AdvancedSearch({ onSearch, initialFilters = {} as AdvancedSearch
     if (attributionHidden) attributionHidden.value = '';
     /* v8 ignore stop */
     hideListbox();
-    onSearch({});
+    submitFilters();
   });
 
   keywordInput?.addEventListener('keypress', (e: KeyboardEvent) => {
-    if (e.key === 'Enter') searchBtn?.click();
+    if (e.key === 'Enter') submitFilters();
   });
 
   populateDropdowns();
