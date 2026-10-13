@@ -24,6 +24,7 @@ import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
 import { getCategoryHubLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
+import { forceRender } from '../router.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
 function parseCategoryParams(search: string): { page: number; sort: string; order: string } {
@@ -145,6 +146,12 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
     // Update breadcrumbs and structured data after category title is loaded
     updateStructuredData();
+  }
+
+  function invalidatePendingLoad() {
+    loadGeneration++;
+    pendingSearch = false;
+    retryPendingSearch = false;
   }
 
   // Load laws for current page
@@ -290,11 +297,42 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
         const searchComponent = AdvancedSearch({
           initialFilters: { category_id: category.id },
+          defaultCategoryId: category.id,
+          categoryHint: 'Choose a category alone to open it. Add search terms to search Browse.',
           onSearch: (filters) => {
-            currentFilters = { ...filters, category_id: category.id };
-            // The category itself is always applied; only a keyword or submitter makes this a search
-            pendingSearch = Boolean(filters.q || filters.attribution);
-            loadPage(1);
+            const isCurrentCategory = String(filters.category_id) === String(category.id);
+            const hasTextFilter = Boolean(filters.q || filters.attribution);
+
+            if (isCurrentCategory) {
+              currentFilters = { ...filters, category_id: category.id };
+              pendingSearch = hasTextFilter;
+              loadPage(1);
+              return;
+            }
+
+            if (filters.category_id && !hasTextFilter) {
+              invalidatePendingLoad();
+              const pickedCategory = data.data.find(candidate => String(candidate.id) === String(filters.category_id));
+              const pickedCategoryId = pickedCategory?.id ?? filters.category_id;
+              trackPendoEvent('search_performed', {
+                ...getSearchProperties({ category_id: pickedCategoryId }, currentSort),
+                search_surface: 'category_detail'
+              });
+              onNavigate('category', pickedCategory?.slug ?? String(filters.category_id));
+              return;
+            }
+
+            const params = new URLSearchParams();
+            if (filters.category_id) params.set('category_id', String(filters.category_id));
+            if (filters.q) params.set('q', filters.q);
+            if (filters.attribution) params.set('attribution', filters.attribution);
+            invalidatePendingLoad();
+            history.pushState(
+              { name: 'browse', searchSurface: 'category_detail' },
+              '',
+              `/browse${params.size > 0 ? `?${params.toString()}` : ''}`
+            );
+            forceRender();
           }
         });
         el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
@@ -427,6 +465,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {
+    invalidatePendingLoad();
     clearExportContent();
   };
 

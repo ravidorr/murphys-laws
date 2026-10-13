@@ -16,6 +16,8 @@ interface MountSearchOptions {
   append?: boolean;
   onSearch?: (filters: SearchFilters) => void;
   initialFilters?: { q?: string; category_id?: string; attribution?: string };
+  defaultCategoryId?: number;
+  categoryHint?: string;
   _testLoadFiltersRef?: (loadFilters: (force?: boolean) => Promise<void>) => void;
 }
 
@@ -302,6 +304,140 @@ describe('AdvancedSearch component', () => {
     searchBtn.click();
 
     expect(searchFilters).toEqual({ category_id: 1 });
+  });
+
+  it('applies a category change with the current keyword and submitter', async () => {
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
+    fetchAPISpy.mockResolvedValueOnce({ data: categories });
+    let searchFilters: SearchFilters | null = null;
+    const el = mountSearch({ onSearch: (filters) => { searchFilters = filters; } });
+
+    await vi.waitFor(() => {
+      expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(1);
+    });
+
+    (el.querySelector('#search-keyword') as HTMLInputElement).value = 'alarm clock';
+    (el.querySelector('#search-attribution') as HTMLInputElement).value = 'Alice';
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.value = '1';
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(searchFilters).toEqual({ q: 'alarm clock', category_id: 1, attribution: 'Alice' });
+  });
+
+  it('waits for Enter after category keyboard navigation before submitting', async () => {
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
+    fetchAPISpy.mockResolvedValueOnce({ data: categories });
+    const onSearch = vi.fn();
+    const el = mountSearch({ onSearch });
+
+    await vi.waitFor(() => {
+      expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(1);
+    });
+
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.value = '1';
+    categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onSearch).not.toHaveBeenCalled();
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+    categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(onSearch).toHaveBeenCalledWith({ category_id: 1 });
+  });
+
+  it('keeps a keyboard-selected category when the category list refreshes', async () => {
+    const categories: Category[] = [
+      { id: 1, title: 'General', slug: 'general' },
+      { id: 2, title: 'Technology', slug: 'technology' }
+    ];
+    fetchAPISpy.mockResolvedValue({ data: categories });
+    let loadFiltersRef: ((force?: boolean) => Promise<void>) | null = null;
+    const el = mountSearch({
+      _testLoadFiltersRef: (loadFilters) => { loadFiltersRef = loadFilters; }
+    });
+
+    await vi.waitFor(() => {
+      expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(2);
+    });
+
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.value = '2';
+    categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    await loadFiltersRef!(true);
+
+    expect(categorySelect.value).toBe('2');
+  });
+
+  it('ignores non-submitting category keys', async () => {
+    fetchAPISpy.mockResolvedValue({ data: [] });
+    const onSearch = vi.fn();
+    const el = mountSearch({ onSearch });
+
+    (el.querySelector('#search-category') as HTMLSelectElement)
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(onSearch).not.toHaveBeenCalled();
+  });
+
+  it('omits category_id when All Categories is selected', async () => {
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
+    fetchAPISpy.mockResolvedValueOnce({ data: categories });
+    let searchFilters: SearchFilters | null = null;
+    const el = mountSearch({ onSearch: (filters) => { searchFilters = filters; } });
+
+    await vi.waitFor(() => {
+      expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(1);
+    });
+
+    (el.querySelector('#search-keyword') as HTMLInputElement).value = 'alarm clock';
+    (el.querySelector('#search-attribution') as HTMLInputElement).value = 'Alice';
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.value = '';
+    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(searchFilters).toEqual({ q: 'alarm clock', attribution: 'Alice' });
+  });
+
+  it('resets Clear to the default category and reports it', async () => {
+    const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
+    fetchAPISpy.mockResolvedValueOnce({ data: categories });
+    let searchFilters: SearchFilters | null = null;
+    const el = mountSearch({ defaultCategoryId: 1, onSearch: (filters) => { searchFilters = filters; } });
+
+    await vi.waitFor(() => {
+      expect((el.querySelector('#search-category') as HTMLSelectElement).value).toBe('1');
+    });
+
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    categorySelect.value = '';
+    (el.querySelector('#clear-btn') as HTMLButtonElement).click();
+
+    expect(categorySelect.value).toBe('1');
+    expect(searchFilters).toEqual({ category_id: 1 });
+  });
+
+  it('reports the default category when Clear is clicked before categories load', () => {
+    let searchFilters: SearchFilters | null = null;
+    fetchAPISpy.mockImplementation(() => new Promise(() => {}));
+    const el = mountSearch({ defaultCategoryId: 1, onSearch: (filters) => { searchFilters = filters; } });
+
+    (el.querySelector('#clear-btn') as HTMLButtonElement).click();
+
+    expect(searchFilters).toEqual({ category_id: 1 });
+  });
+
+  it('renders a category hint and describes the category select', () => {
+    const hint = 'Choose a category alone to open it. Add search terms to search Browse.';
+    fetchAPISpy.mockResolvedValue({ data: [] });
+    const el = mountSearch({ categoryHint: hint });
+
+    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
+    const categoryHint = el.querySelector('#search-category-hint') as HTMLElement;
+    expect(categoryHint.textContent).toBe(hint);
+    expect(categoryHint.hidden).toBe(false);
+    expect(categorySelect.getAttribute('aria-describedby')).toBe('search-category-hint');
   });
 
   it('calls onSearch with attribution filter', async () => {
