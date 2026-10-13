@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Discover `npm` dynamically for Android `exportDesignTokens` (NVM, version
+  managers, and system paths) and extend `PATH` so Gradle preBuild succeeds in
+  Android Studio when the IDE shell omits Node. Bump Android Gradle Plugin, KSP,
+  and Gradle wrapper for current toolchain compatibility. Android bumped to
+  `1.2.7`; root to `2.6.75`.
+
 - Apply pointer category picks immediately while keyboard navigation applies on
   Enter, preserve the current category on Clear even before category options
   load, discard stale category responses after navigation, route cross-category
