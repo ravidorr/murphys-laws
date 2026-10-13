@@ -18,8 +18,8 @@ android {
         applicationId = "com.murphyslaws"
         minSdk = 26
         targetSdk = 37
-        versionCode = 13
-        versionName = "1.2.6"
+        versionCode = 14
+        versionName = "1.2.7"
 
         testInstrumentationRunner = "com.murphyslaws.CustomTestRunner"
         vectorDrawables {
@@ -70,28 +70,74 @@ tasks.register<Copy>("copySharedContent") {
 // Regenerate Android design tokens from shared/DESIGN.md.
 // Outputs (Tokens.kt, colors.xml, values-night/colors.xml, dimens.xml) are
 // gitignore: this task ensures they exist and are up to date on every build.
-// Skipped automatically if Node/npm aren't on PATH (the build will then fail
-// at the Kotlin compile step with a clear "missing Tokens.kt" error, which
-// points at this task).
+val resolvedNpmExecutable: String? by lazy {
+    val candidatePaths = mutableListOf(
+        "/usr/local/bin/npm",
+        "/opt/homebrew/bin/npm",
+        "${System.getProperty("user.home")}/.proto/bin/npm",
+        "${System.getProperty("user.home")}/.fnm/current/bin/npm",
+        "${System.getProperty("user.home")}/.volta/bin/npm",
+        "${System.getProperty("user.home")}/.asdf/shims/npm"
+    )
+
+    // Dynamically discover NVM-managed Node versions (latest semver first)
+    val nvmVersionsDir = file("${System.getProperty("user.home")}/.nvm/versions/node")
+    if (nvmVersionsDir.isDirectory) {
+        fun nvmVersionKey(dirName: String): List<Int> =
+            dirName.removePrefix("v").split('.').mapNotNull { segment -> segment.toIntOrNull() }
+
+        fun compareNvmVersionsDescending(a: List<Int>, b: List<Int>): Int {
+            val maxLen = maxOf(a.size, b.size)
+            for (index in 0 until maxLen) {
+                val diff = b.getOrElse(index) { 0 } - a.getOrElse(index) { 0 }
+                if (diff != 0) {
+                    return diff
+                }
+            }
+            return 0
+        }
+
+        nvmVersionsDir.listFiles()
+            ?.filter { it.isDirectory && it.name.startsWith("v") }
+            ?.sortedWith { left, right ->
+                compareNvmVersionsDescending(nvmVersionKey(left.name), nvmVersionKey(right.name))
+            }
+            ?.forEach { versionDir ->
+                candidatePaths.add("${versionDir.absolutePath}/bin/npm")
+            }
+    }
+
+    candidatePaths.firstOrNull { file(it).exists() } ?: try {
+        val proc = ProcessBuilder("which", "npm").start()
+        if (proc.waitFor() == 0) proc.inputStream.bufferedReader().readText().trim().ifEmpty { null } else null
+    } catch (_: Exception) {
+        null
+    }
+}
+
 tasks.register<Exec>("exportDesignTokens") {
     workingDir = file("${project.rootDir}/..")
-    commandLine("npm", "run", "design:export:android")
+    val npmPath = resolvedNpmExecutable
+    if (npmPath != null) {
+        val npmDir = file(npmPath).parent
+        executable = npmPath
+        args("run", "design:export:android")
+        val currentPath = System.getenv("PATH") ?: ""
+        environment("PATH", "$npmDir:/usr/local/bin:/opt/homebrew/bin:$currentPath")
+    } else {
+        // Fallback command so Exec task initialization doesn't throw if npm is missing
+        commandLine("echo", "npm not found on PATH; skipping exportDesignTokens")
+    }
     isIgnoreExitValue = false
     onlyIf {
-        // Best-effort: skip silently if npm is unavailable. CI and local
-        // dev machines that ran `nvm use && npm install` will always pass
-        // this gate.
-        try {
-            ProcessBuilder("npm", "--version")
-                .redirectErrorStream(true)
-                .start()
-                .waitFor() == 0
-        } catch (_: Exception) {
+        if (npmPath == null) {
             logger.warn(
                 "npm not found on PATH; skipping exportDesignTokens. " +
                     "Tokens.kt and the ds_* resources may be missing or stale."
             )
             false
+        } else {
+            true
         }
     }
 }
