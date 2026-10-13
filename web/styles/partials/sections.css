@@ -1300,6 +1300,13 @@
   gap: 0.5rem;
 }
 
+.search-field-hint {
+  margin: 0;
+  color: var(--muted-fg);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+}
+
 .search-field label {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
@@ -1348,12 +1355,11 @@
   }
 
   .search-actions {
-    flex-direction: column;
     width: 100%;
   }
 
   .search-actions .btn {
-    width: 100%;
+    flex: 1;
     justify-content: center;
   }
 }
