@@ -59,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Correct the README footer's incomplete acknowledgement sentence. Root bumped to `2.6.73`.
+
 - Buffer retried MCP Registry responses before parsing them. Root bumped to
   `2.6.72`.
 
