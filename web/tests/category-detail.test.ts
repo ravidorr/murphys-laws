@@ -868,7 +868,7 @@ describe('CategoryDetail view', () => {
           category_id: 1
         }),
         defaultCategoryId: 1,
-        categoryHint: 'Choosing another category opens it'
+        categoryHint: 'Choose a category alone to open it. Add search terms to search Browse.'
       }));
     });
 

@@ -22,7 +22,7 @@ interface AdvancedSearchFilters {
 export interface AdvancedSearchOptions {
   onSearch: (filters: AdvancedSearchFilters) => void;
   initialFilters?: AdvancedSearchFilters;
-  defaultCategoryId?: string | number;
+  defaultCategoryId?: number;
   categoryHint?: string;
   /** Test hook: called with loadFilters so tests can trigger loadFilters(forceReload). */
   _testLoadFiltersRef?: (loadFilters: (forceReload?: boolean) => Promise<void>) => void;
@@ -279,7 +279,7 @@ export function AdvancedSearch({
     }
   }
 
-  function submitFilters() {
+  function submitFilters(categoryValue = categorySelect.value) {
     /* v8 ignore start -- attributionHidden/keywordInput are always in the component template */
     const attributionValue = (attributionHidden?.value ?? selectedAttribution) || undefined;
     /* v8 ignore stop */
@@ -287,7 +287,7 @@ export function AdvancedSearch({
       /* v8 ignore start -- keywordInput is always in the component template */
       q: keywordInput?.value?.trim() ?? '',
       /* v8 ignore stop */
-      category_id: categorySelect?.value ? Number(categorySelect.value) : undefined,
+      category_id: categoryValue ? Number(categoryValue) : undefined,
       attribution: attributionValue
     };
     const cleanFilters: AdvancedSearchFilters = {};
@@ -297,15 +297,17 @@ export function AdvancedSearch({
     onSearch(cleanFilters);
   }
 
-  searchBtn?.addEventListener('click', submitFilters);
+  searchBtn?.addEventListener('click', () => submitFilters());
 
   categorySelect?.addEventListener('change', () => {
-    if (ignoreCategoryChange) return;
     selectedCategory = categorySelect.value;
+    if (ignoreCategoryChange) return;
     submitFilters();
   });
 
   categorySelect?.addEventListener('keydown', (e: KeyboardEvent) => {
+    // Chromium can emit change for each navigation key on a closed select.
+    // Keep its selection in sync, but wait for Enter before applying filters.
     if (['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
       ignoreCategoryChange = true;
       setTimeout(() => {
@@ -333,7 +335,7 @@ export function AdvancedSearch({
     if (attributionHidden) attributionHidden.value = '';
     /* v8 ignore stop */
     hideListbox();
-    submitFilters();
+    submitFilters(defaultCategoryValue);
   });
 
   keywordInput?.addEventListener('keypress', (e: KeyboardEvent) => {
