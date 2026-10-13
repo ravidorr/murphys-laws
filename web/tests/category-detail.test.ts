@@ -58,13 +58,27 @@ vi.mock('../src/components/breadcrumb.js', () => {
 interface AdvancedSearchMockState {
   onSearch?: (filters: Record<string, unknown>) => void;
   initialFilters?: Record<string, unknown>;
+  defaultCategoryId?: string | number;
+  categoryHint?: string;
 }
 vi.mock('../src/components/advanced-search.js', () => {
   const localThis: AdvancedSearchMockState = {};
   return {
-    AdvancedSearch: vi.fn(({ initialFilters, onSearch }: { initialFilters: Record<string, unknown>; onSearch: (filters: Record<string, unknown>) => void }) => {
+    AdvancedSearch: vi.fn(({
+      initialFilters,
+      defaultCategoryId,
+      categoryHint,
+      onSearch
+    }: {
+      initialFilters: Record<string, unknown>;
+      defaultCategoryId?: string | number;
+      categoryHint?: string;
+      onSearch: (filters: Record<string, unknown>) => void;
+    }) => {
       localThis.onSearch = onSearch;
       localThis.initialFilters = initialFilters;
+      localThis.defaultCategoryId = defaultCategoryId;
+      localThis.categoryHint = categoryHint;
       const el = document.createElement('section');
       el.className = 'section section-card mb-12';
       el.innerHTML = '<div class="test-advanced-search">Advanced Search Mock</div>';
@@ -852,7 +866,9 @@ describe('CategoryDetail view', () => {
       expect(AdvancedSearch).toHaveBeenCalledWith(expect.objectContaining({
         initialFilters: expect.objectContaining({
           category_id: 1
-        })
+        }),
+        defaultCategoryId: 1,
+        categoryHint: 'Choosing another category opens it'
       }));
     });
 
@@ -875,7 +891,7 @@ describe('CategoryDetail view', () => {
       }));
     });
 
-    it('keeps category_id when search is cleared', async () => {
+    it('keeps category_id when Clear resets to the current category', async () => {
       const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
       const { getLocalThis } = mod;
       
@@ -886,7 +902,7 @@ describe('CategoryDetail view', () => {
 
       // Simulate clearing search
       const localThis = getLocalThis();
-      localThis.onSearch!({});
+      localThis.onSearch!({ category_id: 1 });
 
       // Should still include the category_id
       expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
@@ -1179,31 +1195,83 @@ describe('CategoryDetail view', () => {
       return mod.getLocalThis();
     }
 
-    it('reports in-category searches when their results load', async () => {
+    it('routes a different category with a keyword to Browse instead of reloading the current category', async () => {
       const search = await renderWithSearch();
       expect(track).not.toHaveBeenCalled();
+      vi.mocked(api.fetchLaws).mockClear();
 
       search.onSearch!({ q: 'Computer', category_id: 2 });
 
-      await vi.waitFor(() => {
-        expect(track).toHaveBeenCalledWith('search_performed', {
-          query_length: 8,
-          query_token_count: 1,
-          category_id: '1',
-          sort: 'score',
-          search_surface: 'category_detail',
-          order: 'desc',
-          results_count: 2,
-        });
+      expect(`${location.pathname}${location.search}`).toBe('/browse?category_id=2&q=Computer');
+      expect(api.fetchLaws).not.toHaveBeenCalled();
+      expect(track).not.toHaveBeenCalled();
+    });
+
+    it('opens and tracks a different category without a text filter', async () => {
+      const search = await renderWithSearch();
+      onNavigate.mockClear();
+
+      search.onSearch!({ category_id: 2 });
+
+      expect(onNavigate).toHaveBeenCalledWith('category', 'work');
+      expect(track).toHaveBeenCalledWith('search_performed', {
+        query_length: 0,
+        query_token_count: 0,
+        category_id: '2',
+        sort: 'score',
+        search_surface: 'category_detail',
       });
-      expect(track).not.toHaveBeenCalledWith('search_no_results', expect.anything());
+    });
+
+    it('falls back to the selected numeric category ID when it is not in the category list', async () => {
+      const search = await renderWithSearch();
+      onNavigate.mockClear();
+
+      search.onSearch!({ category_id: 99 });
+
+      expect(onNavigate).toHaveBeenCalledWith('category', '99');
+      expect(track).toHaveBeenCalledWith('search_performed', expect.objectContaining({
+        category_id: '99',
+        search_surface: 'category_detail',
+      }));
+    });
+
+    it('routes All Categories to Browse', async () => {
+      const search = await renderWithSearch();
+      vi.mocked(api.fetchLaws).mockClear();
+
+      search.onSearch!({});
+
+      expect(`${location.pathname}${location.search}`).toBe('/browse');
+      expect(api.fetchLaws).not.toHaveBeenCalled();
+    });
+
+    it('carries All Categories text filters to Browse', async () => {
+      const search = await renderWithSearch();
+
+      search.onSearch!({ q: 'Computer', attribution: 'Ada Lovelace' });
+
+      expect(`${location.pathname}${location.search}`)
+        .toBe('/browse?q=Computer&attribution=Ada+Lovelace');
+    });
+
+    it('keeps an explicit current category search in the current list', async () => {
+      const search = await renderWithSearch();
+      vi.mocked(api.fetchLaws).mockClear();
+
+      search.onSearch!({ q: 'Computer', category_id: 1 });
+
+      expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({
+        q: 'Computer',
+        category_id: 1
+      }));
     });
 
     it('reports in-category searches without results', async () => {
       const search = await renderWithSearch();
       vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
 
-      search.onSearch!({ attribution: 'Arthur Bloch' });
+      search.onSearch!({ attribution: 'Arthur Bloch', category_id: 1 });
 
       await vi.waitFor(() => {
         expect(track).toHaveBeenCalledWith('search_no_results', {
@@ -1220,7 +1288,7 @@ describe('CategoryDetail view', () => {
     it('does not report clearing the form, which only reloads the category', async () => {
       const search = await renderWithSearch();
 
-      search.onSearch!({});
+      search.onSearch!({ category_id: 1 });
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
       await new Promise(resolve => setTimeout(resolve, 10));
 
@@ -1233,7 +1301,7 @@ describe('CategoryDetail view', () => {
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
       vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('Network error'));
 
-      mod.getLocalThis().onSearch!({ q: 'computer' });
+      mod.getLocalThis().onSearch!({ q: 'computer', category_id: 1 });
       await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
 
       const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
@@ -1254,7 +1322,7 @@ describe('CategoryDetail view', () => {
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
       vi.mocked(api.fetchLaws).mockImplementationOnce(() => searchLoad).mockResolvedValueOnce(sortResponse);
 
-      mod.getLocalThis().onSearch!({ q: 'computer' });
+      mod.getLocalThis().onSearch!({ q: 'computer', category_id: 1 });
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
 
       const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
@@ -1274,7 +1342,7 @@ describe('CategoryDetail view', () => {
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
       vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('Network error'));
 
-      mod.getLocalThis().onSearch!({ q: 'computer' });
+      mod.getLocalThis().onSearch!({ q: 'computer', category_id: 1 });
       await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy());
 
       (el.querySelector('[data-action="retry"]') as HTMLButtonElement).click();
@@ -1297,7 +1365,7 @@ describe('CategoryDetail view', () => {
       const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
       const el = CategoryDetail({ categoryId, onNavigate });
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
-      mod.getLocalThis().onSearch!({ q: 'latest' });
+      mod.getLocalThis().onSearch!({ q: 'latest', category_id: 1 });
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
 
       resolveSearch(searchResponse);
@@ -1325,7 +1393,7 @@ describe('CategoryDetail view', () => {
       const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
       const el = CategoryDetail({ categoryId, onNavigate });
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
-      mod.getLocalThis().onSearch!({ q: 'latest' });
+      mod.getLocalThis().onSearch!({ q: 'latest', category_id: 1 });
       await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(2));
 
       resolveSearch(searchResponse);
