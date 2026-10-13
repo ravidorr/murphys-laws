@@ -273,4 +273,4 @@ Thanks to all contributors who have submitted Murphy's Laws over the years!
 
 ---
 
-**Made with for anyone who's ever experienced Murphy's Law in action**
+**Made with love for anyone who's ever experienced Murphy's Law in action**
