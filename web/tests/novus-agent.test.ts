@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ALLOWED_QUERY_KEYS,
+  VISITOR_ID_STORAGE_KEY,
+  getOrCreateVisitorId,
   CANONICAL_HOSTNAME,
   LOCATION_TRANSFORMS,
   stripHashRouteQuery,
@@ -49,11 +51,11 @@ describe('initializeNovusAgent', () => {
   it('initializes once as an anonymous visitor on the canonical production host', () => {
     const { agent, initialize } = createAgent();
 
-    expect(initializeNovusAgent(production, agent)).toBe(true);
+    expect(initializeNovusAgent(production, agent, 'murphy-test-id')).toBe(true);
 
     expect(initialize).toHaveBeenCalledTimes(1);
     expect(initialize).toHaveBeenCalledWith({
-      visitor: { id: '' },
+      visitor: { id: 'murphy-test-id' },
       location: { transforms: LOCATION_TRANSFORMS },
     });
   });
@@ -153,5 +155,157 @@ describe('default runtime detection', () => {
     } finally {
       (globalThis as unknown as { window: Window | undefined }).window = localThis.originalWindow;
     }
+  });
+});
+
+
+const UUID_ID = /^murphy-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function createStorage(initial: Record<string, string> = {}) {
+  const data = new Map(Object.entries(initial));
+  return {
+    data,
+    getItem: vi.fn((key: string) => data.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      data.set(key, value);
+    }),
+  };
+}
+
+describe('getOrCreateVisitorId', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.localStorage.clear();
+  });
+
+  it('creates a random id on first use and saves it', () => {
+    const storage = createStorage();
+
+    const id = getOrCreateVisitorId(storage);
+
+    expect(id).toMatch(UUID_ID);
+    expect(storage.setItem).toHaveBeenCalledWith(VISITOR_ID_STORAGE_KEY, id);
+  });
+
+  it('never uses the agent-generated anonymous id prefix', () => {
+    expect(getOrCreateVisitorId(createStorage())).not.toMatch(/^_PENDO_T_/);
+  });
+
+  it('returns the same id on later calls instead of creating a new one', () => {
+    const storage = createStorage();
+
+    const first = getOrCreateVisitorId(storage);
+    const second = getOrCreateVisitorId(storage);
+
+    expect(second).toBe(first);
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates different ids for different browsers', () => {
+    expect(getOrCreateVisitorId(createStorage())).not.toBe(getOrCreateVisitorId(createStorage()));
+  });
+
+  it.each([
+    ['an unexpected value', 'someone@example.com'],
+    ['an id missing its prefix', '123e4567-e89b-42d3-a456-426614174000'],
+    ['an empty string', ''],
+  ])('replaces %s found in storage', (_label, stored) => {
+    const storage = createStorage({ [VISITOR_ID_STORAGE_KEY]: stored });
+
+    const id = getOrCreateVisitorId(storage);
+
+    expect(id).toMatch(UUID_ID);
+    expect(id).not.toBe(stored);
+    expect(storage.data.get(VISITOR_ID_STORAGE_KEY)).toBe(id);
+  });
+
+  it('falls back to the agent anonymous id when the id cannot be saved', () => {
+    const storage = createStorage();
+    storage.setItem.mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    expect(getOrCreateVisitorId(storage)).toBe('');
+  });
+
+  it('falls back to the agent anonymous id when storage cannot be read', () => {
+    const storage = createStorage();
+    storage.getItem.mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    expect(getOrCreateVisitorId(storage)).toBe('');
+  });
+
+  it('falls back to the agent anonymous id when there is no storage', () => {
+    expect(getOrCreateVisitorId(null)).toBe('');
+  });
+
+  it('builds a valid id from getRandomValues when randomUUID is missing', () => {
+    vi.stubGlobal('crypto', { getRandomValues: (array: Uint8Array) => array.fill(0xab) });
+
+    expect(getOrCreateVisitorId(createStorage())).toMatch(UUID_ID);
+  });
+
+  it('falls back to the agent anonymous id when no randomness is available', () => {
+    vi.stubGlobal('crypto', {});
+
+    expect(getOrCreateVisitorId(createStorage())).toBe('');
+  });
+
+  it('falls back to the agent anonymous id when crypto is missing entirely', () => {
+    vi.stubGlobal('crypto', undefined);
+
+    expect(getOrCreateVisitorId(createStorage())).toBe('');
+  });
+
+  it('uses window.localStorage by default', () => {
+    const id = getOrCreateVisitorId();
+
+    expect(id).toMatch(UUID_ID);
+    expect(window.localStorage.getItem(VISITOR_ID_STORAGE_KEY)).toBe(id);
+  });
+
+  it('falls back when window.localStorage itself throws', () => {
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    expect(getOrCreateVisitorId()).toBe('');
+    vi.restoreAllMocks();
+  });
+});
+
+describe('initializeNovusAgent visitor id', () => {
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('identifies the visitor with the stored random id on the canonical host', () => {
+    const { agent, initialize } = createAgent();
+
+    initializeNovusAgent(production, agent);
+
+    const options = initialize.mock.calls[0]?.[0];
+    expect(options?.visitor?.id).toMatch(UUID_ID);
+    expect(window.localStorage.getItem(VISITOR_ID_STORAGE_KEY)).toBe(options?.visitor?.id);
+  });
+
+  it('reuses the same id across page loads', () => {
+    const first = createAgent();
+    const second = createAgent();
+
+    initializeNovusAgent(production, first.agent);
+    initializeNovusAgent(production, second.agent);
+
+    expect(second.initialize.mock.calls[0]?.[0]?.visitor?.id).toBe(first.initialize.mock.calls[0]?.[0]?.visitor?.id);
+  });
+
+  it('does not create or read an id on hosts where the agent is skipped', () => {
+    const { agent } = createAgent();
+
+    initializeNovusAgent({ isProd: true, mode: 'production', hostname: 'localhost' }, agent);
+
+    expect(window.localStorage.getItem(VISITOR_ID_STORAGE_KEY)).toBeNull();
   });
 });
