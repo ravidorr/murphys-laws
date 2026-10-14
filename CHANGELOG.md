@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Identify each browser to Novus analytics with a random, stable visitor id kept
+  in localStorage instead of the agent's own anonymous id, so funnels, retention
+  and usage totals count this sign-in-free site's visitors. The id is generated
+  in the browser, never derived from anything, and is read only on the canonical
+  production host. If storage or randomness is unavailable the agent falls back
+  to its anonymous id. Existing visitors restart under new ids. Root bumped to
+  `2.6.76`; web to `3.4.22`.
+
 - Automate MCP npm and registry releases with version-contract checks and
   idempotent post-merge publication. Root bumped to `2.6.69`.
 
