@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Restore the Daily Status Report's API status, PM2 status, and log analysis:
+  tolerate the banner `pm2 jlist` prints before its JSON, and ignore non-numeric
+  nginx status fields (`"-"` from malformed requests) in `log-analyzer.sh`.
+  Backend bumped to `2.3.33`; root to `2.6.76`.
+
 ### Changed
 
 - Automate MCP npm and registry releases with version-contract checks and

@@ -608,12 +608,22 @@ export function captureCommandStdout(command: string, args: string[]): string {
   }
 }
 
-interface Pm2Process {
+export interface Pm2Process {
   name?: string;
   pm2_env?: {
     status?: string;
     restart_time?: number;
   };
+}
+
+/** `pm2 jlist` can print banners (e.g. "In-memory PM2 is out-of-date") on stdout before the JSON array. */
+export function parsePm2Jlist(stdout: string): Pm2Process[] {
+  const lines = stdout.split('\n');
+  const start = lines.findIndex((line) => line.trimStart().startsWith('['));
+  if (start < 0) {
+    throw new Error('pm2 jlist output contained no JSON');
+  }
+  return JSON.parse(lines.slice(start).join('\n')) as Pm2Process[];
 }
 
 function resolvePm2Executable(): string | null {
@@ -644,7 +654,7 @@ function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: R
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    const processes = JSON.parse(stdout) as Pm2Process[];
+    const processes = parsePm2Jlist(stdout);
     const api = processes.find((process) => process.name === 'murphys-api');
     if (!api?.pm2_env?.status) {
       return {
