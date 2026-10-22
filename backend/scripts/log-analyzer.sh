@@ -399,7 +399,7 @@ emit_json_report() {
 
     if [ -f "$NGINX_ACCESS_LOG" ]; then
         status_codes=$(
-            grep "$today" "$NGINX_ACCESS_LOG" | awk '{print $9}' | sort | uniq -c | sort -rn | head -10 |
+            grep "$today" "$NGINX_ACCESS_LOG" | awk '$9 ~ /^[0-9]+$/ {print $9}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{print $1"\t"$2}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), code:(.[1]|tonumber)})'
         )
