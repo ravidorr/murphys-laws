@@ -32,7 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restore the Daily Status Report's API status, PM2 status, and log analysis:
   tolerate the banner `pm2 jlist` prints before its JSON, and ignore non-numeric
   nginx status fields (`"-"` from malformed requests) in `log-analyzer.sh`.
-  Backend bumped to `2.3.33`; root to `2.6.76`.
+  Backend bumped to `2.3.33`; root to `2.6.77`.
+
+- Resolve the high-severity dependency audit findings: update `vite` to `7.3.7`
+  (launch-editor and dev-server advisories) and `markdownlint-cli2` to `0.24.0`
+  (pulls in `markdown-it` `15.0.3` and a patched `braces`). Web bumped to
+  `3.4.22`; root to `2.6.76`.
 
 ### Changed
 
