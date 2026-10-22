@@ -342,7 +342,8 @@ test('log-analyzer --format json includes detail arrays', () => {
   writeFileSync(
     logPath,
     `1.2.3.4 - - [${today}:12:00:00 +0000] "GET /missing HTTP/1.1" 404 123 "-" "sqlmap"\n` +
-      `1.2.3.4 - - [${today}:12:01:00 +0000] "GET /api HTTP/1.1" 200 123 "-" "Mozilla"\n`,
+      `1.2.3.4 - - [${today}:12:01:00 +0000] "GET /api HTTP/1.1" 200 123 "-" "Mozilla"\n` +
+      `5.6.7.8 - - [${today}:12:02:00 +0000] "GET / HTTP/1.1" "-" 0 "-" "Mozilla"\n`,
   );
 
   const script = path.join(rootDirectory, 'backend/scripts/log-analyzer.sh');
@@ -357,6 +358,11 @@ test('log-analyzer --format json includes detail arrays', () => {
   };
 
   assert.deepEqual(parsed.statusCodes.find((row) => row.code === 404), { code: 404, count: 1 });
+  assert.deepEqual(
+    parsed.statusCodes.map((row) => row.code).sort(),
+    [200, 404],
+    'a non-numeric status field ("-") must be excluded, not break JSON generation',
+  );
   assert.deepEqual(parsed.topUrls.find((row) => row.url === '/missing'), { url: '/missing', count: 1 });
 });
 
