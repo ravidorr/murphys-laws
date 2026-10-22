@@ -608,12 +608,35 @@ export function captureCommandStdout(command: string, args: string[]): string {
   }
 }
 
-interface Pm2Process {
+export interface Pm2Process {
   name?: string;
   pm2_env?: {
     status?: string;
     restart_time?: number;
   };
+}
+
+/**
+ * `pm2 jlist` can print diagnostics on stdout before the JSON array (the
+ * "In-memory PM2 is out-of-date" banner, or "[PM2] Spawning PM2 daemon..."
+ * when no daemon is running), so find the line where the array actually parses.
+ */
+export function parsePm2Jlist(stdout: string): Pm2Process[] {
+  const lines = stdout.split('\n');
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!lines[index].trimStart().startsWith('[')) {
+      continue;
+    }
+    try {
+      const parsed: unknown = JSON.parse(lines.slice(index).join('\n'));
+      if (Array.isArray(parsed)) {
+        return parsed as Pm2Process[];
+      }
+    } catch {
+      // Not the JSON start (e.g. a "[PM2] ..." diagnostic line); keep scanning.
+    }
+  }
+  throw new Error('pm2 jlist output contained no JSON array');
 }
 
 function resolvePm2Executable(): string | null {
@@ -644,7 +667,7 @@ function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: R
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    const processes = JSON.parse(stdout) as Pm2Process[];
+    const processes = parsePm2Jlist(stdout);
     const api = processes.find((process) => process.name === 'murphys-api');
     if (!api?.pm2_env?.status) {
       return {
