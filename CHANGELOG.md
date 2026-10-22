@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve the high-severity dependency audit findings: update `vite` to `7.3.7`
+  (launch-editor and dev-server advisories) and `markdownlint-cli2` to `0.24.0`
+  (pulls in `markdown-it` `15.0.3` and a patched `braces`). Web bumped to
+  `3.4.22`; root to `2.6.76`.
+
 ### Changed
 
 - Identify each browser to Novus analytics with a random, stable visitor id kept
