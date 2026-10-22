@@ -616,14 +616,27 @@ export interface Pm2Process {
   };
 }
 
-/** `pm2 jlist` can print banners (e.g. "In-memory PM2 is out-of-date") on stdout before the JSON array. */
+/**
+ * `pm2 jlist` can print diagnostics on stdout before the JSON array (the
+ * "In-memory PM2 is out-of-date" banner, or "[PM2] Spawning PM2 daemon..."
+ * when no daemon is running), so find the line where the array actually parses.
+ */
 export function parsePm2Jlist(stdout: string): Pm2Process[] {
   const lines = stdout.split('\n');
-  const start = lines.findIndex((line) => line.trimStart().startsWith('['));
-  if (start < 0) {
-    throw new Error('pm2 jlist output contained no JSON');
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!lines[index].trimStart().startsWith('[')) {
+      continue;
+    }
+    try {
+      const parsed: unknown = JSON.parse(lines.slice(index).join('\n'));
+      if (Array.isArray(parsed)) {
+        return parsed as Pm2Process[];
+      }
+    } catch {
+      // Not the JSON start (e.g. a "[PM2] ..." diagnostic line); keep scanning.
+    }
   }
-  return JSON.parse(lines.slice(start).join('\n')) as Pm2Process[];
+  throw new Error('pm2 jlist output contained no JSON array');
 }
 
 function resolvePm2Executable(): string | null {
