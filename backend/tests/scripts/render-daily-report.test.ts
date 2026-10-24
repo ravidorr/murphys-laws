@@ -1,9 +1,19 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { collectDailyReport, logCollectorError, parsePm2Jlist } from '../../scripts/render-daily-report.ts';
+import {
+  ADMIN_UI_PATH,
+  buildAdminUrl,
+  buildPendingApprovalsSection,
+  collectDailyReport,
+  countPendingApprovals,
+  logCollectorError,
+  parsePm2Jlist,
+  renderHtmlReport,
+  renderPlainTextReport,
+} from '../../scripts/render-daily-report.ts';
 
 vi.mock('node:child_process', async (importOriginal) => ({
   ...(await importOriginal<typeof import('node:child_process')>()),
@@ -67,5 +77,134 @@ describe('collectDailyReport collector failures', () => {
     for (const collector of ['log analysis', 'vulnerability scan', 'cost optimization report']) {
       expect(logged).toContain(`[daily-report] ${collector} failed: command unavailable\n`);
     }
+  });
+});
+
+describe('buildAdminUrl', () => {
+  it('uses the configured base URL and trims trailing slashes', () => {
+    expect(buildAdminUrl({ BASE_URL: 'https://staging.example.com//' })).toBe(
+      `https://staging.example.com${ADMIN_UI_PATH}`,
+    );
+  });
+
+  it('falls back to the site URL when BASE_URL is unset or blank', () => {
+    expect(buildAdminUrl({})).toBe(`https://murphys-laws.com${ADMIN_UI_PATH}`);
+    expect(buildAdminUrl({ BASE_URL: '  ' })).toBe(`https://murphys-laws.com${ADMIN_UI_PATH}`);
+  });
+
+  it('defaults to process.env', () => {
+    vi.stubEnv('BASE_URL', 'https://env.example.com');
+    expect(buildAdminUrl()).toBe(`https://env.example.com${ADMIN_UI_PATH}`);
+    vi.unstubAllEnvs();
+  });
+});
+
+describe('countPendingApprovals', () => {
+  it('returns the count reported by sqlite3', () => {
+    vi.mocked(execFileSync).mockReturnValue('7\n');
+    expect(countPendingApprovals('/db')).toBe(7);
+    expect(vi.mocked(execFileSync).mock.calls.at(-1)?.[1]).toEqual([
+      '/db',
+      "SELECT COUNT(*) FROM laws WHERE status='in_review';",
+    ]);
+    vi.mocked(execFileSync).mockReset();
+  });
+
+  it('logs and returns null when sqlite3 fails', () => {
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw new Error('database is locked');
+    });
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    expect(countPendingApprovals('/db')).toBeNull();
+    expect(write).toHaveBeenCalledWith('[daily-report] pending approvals count failed: database is locked\n');
+    write.mockRestore();
+    vi.mocked(execFileSync).mockReset();
+  });
+
+  it('logs and returns null when sqlite3 prints something that is not a count', () => {
+    vi.mocked(execFileSync).mockReturnValue('');
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    expect(countPendingApprovals('/db')).toBeNull();
+    expect(String(write.mock.calls[0]?.[0])).toContain('unexpected sqlite3 output');
+    write.mockRestore();
+    vi.mocked(execFileSync).mockReset();
+  });
+});
+
+describe('buildPendingApprovalsSection', () => {
+  const env = { BASE_URL: 'https://example.com' };
+
+  it('shows the count and an admin link when laws are pending', () => {
+    const section = buildPendingApprovalsSection(3, env);
+    expect(section.title).toBe('PENDING APPROVALS');
+    expect(section.items).toEqual([
+      { label: 'Awaiting Approval', value: '3', tone: 'warning' },
+      {
+        label: 'Review Queue',
+        value: `https://example.com${ADMIN_UI_PATH}`,
+        href: `https://example.com${ADMIN_UI_PATH}`,
+      },
+    ]);
+  });
+
+  it('says nothing is pending and omits the link when the count is zero', () => {
+    const section = buildPendingApprovalsSection(0, env);
+    expect(section.items).toHaveLength(1);
+    expect(section.items[0]?.value).toContain('0');
+    expect(JSON.stringify(section)).not.toContain(ADMIN_UI_PATH);
+  });
+
+  it('flags an unavailable count without a link', () => {
+    const section = buildPendingApprovalsSection(null, env);
+    expect(section.items).toEqual([
+      { label: 'Awaiting Approval', value: 'Count unavailable (check failed)', tone: 'warning' },
+    ]);
+  });
+});
+
+describe('daily report pending approvals', () => {
+  function liveReport(sqliteResult: string | Error) {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), 'daily-report-pending-'));
+    mkdirSync(path.join(repoRoot, 'backend'));
+    writeFileSync(path.join(repoRoot, 'backend/murphys.db'), '');
+    vi.mocked(execFileSync).mockImplementation((command, args) => {
+      if (command === 'sqlite3' && String(args?.[1]).includes("status='in_review'")) {
+        if (sqliteResult instanceof Error) {
+          throw sqliteResult;
+        }
+        return sqliteResult;
+      }
+      return '';
+    });
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    vi.stubEnv('BASE_URL', 'https://example.com');
+    const report = collectDailyReport({ repoRoot, now: new Date(Date.UTC(2026, 1, 4)) });
+    const logged = write.mock.calls.map(([chunk]) => String(chunk));
+    write.mockRestore();
+    vi.unstubAllEnvs();
+    vi.mocked(execFileSync).mockReset();
+    return { report, logged };
+  }
+
+  it('includes the count and a working admin link in text and HTML when non-zero', () => {
+    const { report } = liveReport('4');
+    const url = `https://example.com${ADMIN_UI_PATH}`;
+    expect(renderPlainTextReport(report)).toContain(url);
+    expect(renderPlainTextReport(report)).toContain('PENDING APPROVALS');
+    expect(renderHtmlReport(report)).toContain(`<a href="${url}"`);
+  });
+
+  it('reports zero without a link', () => {
+    const { report } = liveReport('0');
+    const text = renderPlainTextReport(report);
+    expect(text).toContain('PENDING APPROVALS');
+    expect(text).not.toContain(ADMIN_UI_PATH);
+  });
+
+  it('still produces the report and logs when the count fails', () => {
+    const { report, logged } = liveReport(new Error('no such table: laws'));
+    expect(renderPlainTextReport(report)).toContain('Count unavailable');
+    expect(report.sections.some((entry) => entry.title === 'WEBSITE ACTIVITY')).toBe(true);
+    expect(logged).toContain('[daily-report] pending approvals count failed: no such table: laws\n');
   });
 });

@@ -6,6 +6,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_URL } from '../src/utils/constants.ts';
 
 export type ReportItemKind =
   | 'row'
@@ -27,6 +28,8 @@ export interface ReportItem {
   timestamp?: string;
   boldValue?: boolean;
   valueSecondary?: string;
+  /** When set, the value is rendered as a link to this URL in the HTML report. */
+  href?: string;
 }
 
 export interface ReportSection {
@@ -58,6 +61,9 @@ export interface MessageOptions {
 const DEFAULT_FROM = "Murphy's Laws Server <alerts@murphys-laws.com>";
 const DEFAULT_ALERT_EMAIL = 'ravidor@gmail.com';
 const SECTION_RULE = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
+/** Path of the admin moderation page, appended to the configured base URL. */
+export const ADMIN_UI_PATH = '/api/v1/admin/ui';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -202,6 +208,9 @@ function renderHtmlLabelValueRow(item: ReportItem, strongTop: boolean): string {
   let valueHtml = escapeHtml(item.value);
   if (item.timestamp) {
     valueHtml += `<span style="font-size:12px;color:#4b5563;"> (${escapeHtml(item.timestamp)})</span>`;
+  }
+  if (item.href) {
+    valueHtml = `<a href="${escapeHtml(item.href)}" style="color:#1d4ed8;">${valueHtml}</a>`;
   }
   if (item.tone === 'warning') {
     valueHtml = `<span style="color:#a16207;font-weight:bold;">! </span>${valueHtml}`;
@@ -1114,6 +1123,54 @@ function buildTestEmailReport(now: Date): DailyReport {
   };
 }
 
+/** Builds the admin moderation page URL from the configured base URL (`BASE_URL`, else the site URL). */
+export function buildAdminUrl(env: NodeJS.ProcessEnv = process.env): string {
+  const base = (env.BASE_URL?.trim() || SITE_URL).replace(/\/+$/, '');
+  return `${base}${ADMIN_UI_PATH}`;
+}
+
+/**
+ * Counts laws waiting for approval. Returns null (after logging) when the count
+ * cannot be retrieved, so the report can still be sent.
+ */
+export function countPendingApprovals(dbPath: string): number | null {
+  try {
+    const stdout = execFileSync(
+      'sqlite3',
+      [dbPath, "SELECT COUNT(*) FROM laws WHERE status='in_review';"],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ).trim();
+    if (!/^\d+$/.test(stdout)) {
+      throw new Error(`unexpected sqlite3 output: ${JSON.stringify(stdout)}`);
+    }
+    return Number(stdout);
+  } catch (error) {
+    logCollectorError('pending approvals count', error);
+    return null;
+  }
+}
+
+export function buildPendingApprovalsSection(
+  pending: number | null,
+  env: NodeJS.ProcessEnv = process.env,
+): ReportSection {
+  if (pending === null) {
+    return section('PENDING APPROVALS', [
+      { label: 'Awaiting Approval', value: 'Count unavailable (check failed)', tone: 'warning' },
+    ]);
+  }
+  if (pending === 0) {
+    return section('PENDING APPROVALS', [
+      { label: 'Awaiting Approval', value: '0 (nothing to review)', tone: 'success' },
+    ]);
+  }
+  const adminUrl = buildAdminUrl(env);
+  return section('PENDING APPROVALS', [
+    { label: 'Awaiting Approval', value: String(pending), tone: 'warning' },
+    { label: 'Review Queue', value: adminUrl, href: adminUrl },
+  ]);
+}
+
 function collectLiveReport(now: Date, repoRoot: string): DailyReport {
   const date = now.toISOString().slice(0, 10);
   const dayOfWeek = now.getUTCDay();
@@ -1185,6 +1242,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         { label: 'Total Published Laws', value: published || 'N/A' },
       ]),
     );
+
+    sections.push(buildPendingApprovalsSection(countPendingApprovals(dbPath), env));
 
     const lawOfDay = tryCommand('sqlite3', [
       dbPath,
