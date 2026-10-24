@@ -54,6 +54,14 @@ export default [
     },
   },
   {
+    files: ['**/src/admin-ui/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: ['tests/**/*.test.ts', 'tests/**/*.spec.ts', 'tests/**/*.test.js', 'tests/**/*.spec.js'],
     languageOptions: {
       globals: {

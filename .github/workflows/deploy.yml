@@ -164,6 +164,7 @@ jobs:
             EMAIL_TO=${{ secrets['EMAIL_TO'] }}
             ALLOWED_ORIGINS=${{ secrets['ALLOWED_ORIGINS'] }}
             SENTRY_DSN=${{ secrets['SENTRY_DSN'] }}
+            ADMIN_API_TOKEN=${{ secrets['ADMIN_API_TOKEN'] }}
             __ENV_END__
 
             echo "==> Contents of $TARGET_DIR/backend:"

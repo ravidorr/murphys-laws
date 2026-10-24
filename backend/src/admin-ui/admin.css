@@ -1,0 +1,239 @@
+/* Standalone moderation page. Token names and values mirror web/styles/partials/variables.css. */
+:root {
+  --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bg: #fff;
+  --fg: #111827;
+  --muted-fg: #4b5563;
+  --surface: #fff;
+  --surface-border: #d1d5db;
+  --btn-primary-bg: #0d5ea1;
+  --btn-primary-fg: #fff;
+  --success-bg: #dcfce7;
+  --success-text: #166534;
+  --error: #b91c1c;
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --warning-bg: #fff8e1;
+  --warning-text: #5a4300;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 624.9375rem;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0b0f14;
+    --fg: #f3f4f6;
+    --muted-fg: #9ca3af;
+    --surface: #111827;
+    --surface-border: #374151;
+    --btn-primary-bg: #3b82f6;
+    --btn-primary-fg: #08111f;
+    --success-bg: #0b3d22;
+    --success-text: #86efac;
+    --error: #fca5a5;
+    --error-bg: #5e0010;
+    --error-text: #fecaca;
+    --warning-bg: #3a2c00;
+    --warning-text: #fde68a;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.bar,
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.connect,
+.search,
+.toolbar,
+.tabs,
+.actions,
+.law-head,
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.toolbar {
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+input,
+textarea,
+.btn,
+.tab {
+  min-height: 2.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--rounded-lg);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+}
+
+.connect input,
+.search input {
+  width: 14rem;
+  max-width: 100%;
+}
+
+.btn,
+.tab {
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-primary {
+  border-color: transparent;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+.btn-danger {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.tab[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+:focus-visible {
+  outline: 3px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
+.message {
+  min-height: 1.5rem;
+  margin: 0 0 var(--space-3);
+  color: var(--muted-fg);
+}
+
+.message.is-error {
+  color: var(--error-text);
+  font-weight: 600;
+}
+
+.laws {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.law {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--rounded-xl);
+  background: var(--surface);
+}
+
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field label {
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+}
+
+.meta {
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.pill {
+  padding: 0.125rem var(--space-3);
+  border-radius: var(--rounded-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pill-in_review {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.pill-published {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.pill-rejected {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.pager {
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[hidden] {
+  display: none !important;
+}

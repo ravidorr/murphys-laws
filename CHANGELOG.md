@@ -27,6 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Moderation tooling for submitted laws: token-protected `GET /api/v1/admin/laws`
+  and `POST /api/v1/admin/laws/:id` endpoints (list by status with search, approve,
+  reject, edit text/title, admin notes) and a standalone page at
+  `/api/v1/admin/ui`. Both are disabled (404) unless `ADMIN_API_TOKEN` is set;
+  the deploy workflow now writes it to the server `.env` from the GitHub secret of
+  the same name. Admin routes are intentionally absent from the public OpenAPI
+  spec, and CORS now allows the `Authorization` header.
+  Backend bumped to `2.3.35`; root to `2.6.79`.
+
 ### Changed
 
 - Daily Status Report: drop bullets from the law of the day, performance,
