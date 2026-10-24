@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The admin moderation page is now served at `https://murphys-laws.com/admin`
-  (and `/admin` locally and through the Vite dev server). The backend serves it at
+  (and `/admin` locally and through the Vite dev and preview servers). The backend serves it at
   `/admin` with the same token rules and security headers as `/api/v1/admin/ui`
   (still available), nginx proxies `/admin` to the API, the service worker lets it
   pass through uncached (including `/admin/`), nginx shows the normal 404 page when
