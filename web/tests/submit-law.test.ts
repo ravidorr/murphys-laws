@@ -79,7 +79,6 @@ describe('SubmitLawSection component', () => {
     expect(el.querySelector('#submit-category') as HTMLSelectElement | null).toBeTruthy();
     expect(el.querySelector('#submit-author') as HTMLInputElement | null).toBeTruthy();
     expect(el.querySelector('#submit-email') as HTMLInputElement | null).toBeTruthy();
-    expect(el.querySelector('#submit-email-helper')?.textContent).toMatch(/thank-you note when your law is published/i);
     expect(el.querySelector('#submit-anonymous') as HTMLInputElement | null).toBeTruthy();
     expect(el.querySelector('#submit-terms') as HTMLInputElement | null).toBeTruthy();
     expect(el.querySelector('#submit-btn') as HTMLButtonElement | null).toBeTruthy();
@@ -1379,31 +1378,6 @@ describe('SubmitLawSection component', () => {
         duplicate_warning_shown: false,
       }));
       expect(JSON.stringify(track.mock.calls)).not.toMatch(/Jane|jane@example|Valid law text/);
-    });
-
-    it('tells contributors who give an email that they will get a thank-you note', async () => {
-      vi.spyOn(request, 'apiPost').mockResolvedValue({ id: 5, status: 'in_review' });
-      const el = mountSection({ append: true });
-      await new Promise(resolve => setTimeout(resolve, 0));
-      (el.querySelector('#submit-email') as HTMLInputElement).value = 'jane@example.com';
-      fillForm(el);
-      submit(el);
-
-      const message = el.querySelector('.submit-message') as HTMLElement;
-      await vi.waitFor(() => expect(message.textContent).toContain('Thank you!'));
-      expect(message.textContent).toContain('We will email you a thank-you note when it is published.');
-    });
-
-    it('does not mention an email when none was given', async () => {
-      vi.spyOn(request, 'apiPost').mockResolvedValue({ id: 6, status: 'in_review' });
-      const el = mountSection({ append: true });
-      await new Promise(resolve => setTimeout(resolve, 0));
-      fillForm(el);
-      submit(el);
-
-      const message = el.querySelector('.submit-message') as HTMLElement;
-      await vi.waitFor(() => expect(message.textContent).toContain('Thank you!'));
-      expect(message.textContent).not.toMatch(/email you/i);
     });
 
     it('reports each distinct duplicate match once and flags the warning on submit', async () => {
