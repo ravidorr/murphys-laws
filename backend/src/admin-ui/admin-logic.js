@@ -77,13 +77,30 @@ export function errorMessage(status, fallback) {
   return fallback || `Request failed (${status}).`;
 }
 
-/** Counts, list total and whether the card leaves the current view after a status change. */
+/**
+ * Counts, list total and whether the card leaves the current view after a status change.
+ * Pass `to = null` when the law no longer exists.
+ */
 export function applyStatusChange({ counts, total, filter }, from, to) {
   const next = { ...counts };
   if (from !== to) {
     next[from] = Math.max(0, (next[from] ?? 0) - 1);
-    next[to] = (next[to] ?? 0) + 1;
+    if (to !== null) {
+      next[to] = (next[to] ?? 0) + 1;
+    }
   }
-  const removed = filter !== 'all' && to !== filter;
+  const removed = filter !== 'all' ? to !== filter : to === null;
   return { counts: next, total: removed ? Math.max(0, total - 1) : total, removed };
+}
+
+export function isListReply(data) {
+  return Boolean(data)
+    && Array.isArray(data.data)
+    && Number.isFinite(data.total)
+    && Boolean(data.counts)
+    && typeof data.counts === 'object';
+}
+
+export function isLawReply(data) {
+  return Boolean(data) && Boolean(data.data) && typeof data.data === 'object' && typeof data.data.status === 'string';
 }

@@ -51,9 +51,9 @@ admin API and a small page let you approve, reject, and edit them on a running s
 intentionally not in the public OpenAPI spec.
 
 - Page: `/api/v1/admin/ui` (paste the token; it is kept in memory only).
-- `GET /api/v1/admin/laws` - query `status` (`in_review` default, `published`, `rejected`, `all`), `q`, `limit` (1-100, default 50), `offset`. Returns `data`, `total`, and per-status `counts`.
-- `POST /api/v1/admin/laws/{id}` - JSON body with any of `status`, `text` (10-1000 characters), `title` (max 200), `admin_notes` (max 2000, `null` clears). Send the law's `updated_at` to get a `409` if someone else changed it first.
-- Auth: `Authorization: Bearer <ADMIN_API_TOKEN>`. Without a token of at least 32 characters, every admin route and the page return `404`. Failed logins are limited to 10 per minute per IP, and status changes are logged.
+- `GET /api/v1/admin/laws` - query `status` (`in_review` default, `published`, `rejected`, `all`), `q` (max 200 characters), `limit` (1-100, default 50), `offset`. Returns `data`, `total`, and per-status `counts`.
+- `POST /api/v1/admin/laws/{id}` - JSON body (max 16 KB, else `413`) with any of `status`, `text` (10-1000 characters), `title` (max 200), `admin_notes` (max 2000, `null` clears). Send the law's `updated_at` to get a `409` if someone else changed it first; omit it (or send `null`) for last write wins.
+- Auth: `Authorization: Bearer <ADMIN_API_TOKEN>`. Without a token of at least 32 characters, every admin route and the page return `404` (an unset and a too-short token look the same to clients; the startup log tells them apart). Failed logins are limited to 10 per minute per IP (valid requests are not limited). Each change is logged as one JSON line with the law id, caller IP, changed fields and status before/after, never the text or notes.
 
 **Production setup:** create the GitHub Actions secret `ADMIN_API_TOKEN` (for example `openssl rand -hex 32`) before the
 deploy; the workflow writes it to the server `.env` and warns when it is empty. The server logs `Admin API enabled` or

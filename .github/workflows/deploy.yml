@@ -53,6 +53,14 @@ jobs:
           target: "/home/${{ secrets['SERVER_USER'] }}/deploy/murphys-laws/"
           overwrite: true
 
+      - name: Check ADMIN_API_TOKEN secret
+        env:
+          ADMIN_API_TOKEN: ${{ secrets.ADMIN_API_TOKEN }}
+        run: |
+          if [ "${#ADMIN_API_TOKEN}" -lt 32 ]; then
+            echo "::warning::ADMIN_API_TOKEN secret is empty or shorter than 32 characters; the admin moderation API will be disabled"
+          fi
+
       - name: Deploy and restart services
         uses: appleboy/ssh-action@v1.0.0
         env:
@@ -150,10 +158,6 @@ jobs:
 
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
-
-            if [ -z "${{ secrets['ADMIN_API_TOKEN'] }}" ]; then
-              echo "::warning::ADMIN_API_TOKEN secret is empty; the admin moderation API will be disabled"
-            fi
 
             # Create .env file with secrets (delimiter chosen to avoid secrets breaking heredoc)
             cat > .env << '__ENV_END__'

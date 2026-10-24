@@ -63,4 +63,26 @@ describe('admin-logic', () => {
       removed: false,
     });
   });
+
+  it('treats a deleted law (to = null) as leaving the view in every filter', () => {
+    const base = { counts: { in_review: 3, published: 5, rejected: 1 }, total: 9 };
+    expect(logic.applyStatusChange({ ...base, filter: 'in_review' }, 'in_review', null)).toEqual({
+      counts: { in_review: 2, published: 5, rejected: 1 },
+      total: 8,
+      removed: true,
+    });
+    expect(logic.applyStatusChange({ ...base, filter: 'all' }, 'published', null)).toMatchObject({ total: 8, removed: true });
+    expect(logic.applyStatusChange({ counts: { in_review: 0 }, total: 0, filter: 'all' }, 'in_review', null).counts.in_review).toBe(0);
+  });
+
+  it('validates server replies before they are rendered', () => {
+    expect(logic.isListReply({ data: [], total: 0, counts: {} })).toBe(true);
+    for (const bad of [null, {}, { data: {}, total: 0, counts: {} }, { data: [], total: 'x', counts: {} }, { data: [], total: 0 }, { data: [], total: 0, counts: 5 }]) {
+      expect(logic.isListReply(bad)).toBe(false);
+    }
+    expect(logic.isLawReply({ data: { status: 'published' } })).toBe(true);
+    for (const bad of [null, {}, { data: null }, { data: 5 }, { data: {} }, { data: { status: 3 } }]) {
+      expect(logic.isLawReply(bad)).toBe(false);
+    }
+  });
 });

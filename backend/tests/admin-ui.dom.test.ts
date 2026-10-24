@@ -29,7 +29,11 @@ const listReply = (laws: unknown[], over: Record<string, unknown> = {}) => ({
   ...over,
 });
 const jsonResponse = (data: unknown, status = 200) => ({ ok: status < 400, status, json: async () => data });
-const flush = () => new Promise((r) => setTimeout(r, 0));
+const flush = async () => {
+  for (let i = 0; i < 6; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+};
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const click = (node: Element | null) => (node as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
 const submit = (id: string) => $(id).dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
@@ -105,7 +109,8 @@ describe('admin page', () => {
   });
 
   it('explains network failures and unreadable responses', async () => {
-    await boot(Promise.reject(new TypeError('Failed to fetch')));
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await boot();
     await connect();
     expect($('message').textContent).toContain('Cannot reach the server');
 
@@ -137,7 +142,7 @@ describe('admin page', () => {
     expect(button('In review (1)')).not.toBeNull();
   });
 
-  it('keeps editing state in other cards and re-enables buttons when a save fails', async () => {
+  it('keeps edits in other cards and re-enables buttons when a save fails', async () => {
     await boot(jsonResponse(listReply([law(), law({ id: 2, text: 'Second law of enough length' })])));
     await connect();
     const notes = document.getElementById('notes-1') as HTMLInputElement;
@@ -145,22 +150,88 @@ describe('admin page', () => {
     const second = document.getElementById('text-2') as HTMLTextAreaElement;
     second.value = 'unsaved edit in another card';
 
-    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'This law changed since you loaded it.' }, 409));
-    click(document.querySelector('.law .actions button:last-child'));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Internal Server Error' }, 500));
+    click(action('Save edits'));
     await flush();
 
-    expect($('message').textContent).toContain('changed since you loaded it');
-    expect([...document.querySelectorAll('.law:first-child button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    expect($('message').textContent).toBe('Internal Server Error');
+    expect([...document.querySelectorAll('.law:first-child .actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
     expect((document.getElementById('text-2') as HTMLTextAreaElement).value).toBe('unsaved edit in another card');
   });
 
-  it('shows a distinct message for a law that no longer exists', async () => {
-    await boot(jsonResponse(listReply([law()])));
+  it('removes the card and fixes counts when the law no longer exists', async () => {
+    await boot(jsonResponse(listReply([law(), law({ id: 2, text: 'Second law of enough length' })])));
     await connect();
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Law not found' }, 404));
-    click(button('Approve'));
+    click(action('Approve'));
     await flush();
-    expect($('message').textContent).toBe('Law not found');
+
+    expect($('message').textContent).toBe('Law #1 no longer exists.');
+    expect(document.querySelectorAll('.law').length).toBe(1);
+    expect(document.getElementById('text-1')).toBeNull();
+    expect(button('In review (1)')).not.toBeNull();
+  });
+
+  it('reloads the list after a conflict and tells the admin to apply the edit again', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    (document.getElementById('notes-1') as HTMLInputElement).value = 'mine';
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'This law changed since you loaded it.' }, 409));
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law({ updated_at: 'v2', admin_notes: 'theirs' })])));
+    click(action('Save edits'));
+    await flush();
+
+    expect($('message').textContent).toContain('apply your edit again');
+    expect((document.getElementById('notes-1') as HTMLInputElement).value).toBe('theirs');
+    expect(fetchMock.mock.calls[2][0]).toContain('/api/v1/admin/laws?');
+  });
+
+  it('shows the server message on a conflict when the reload also fails', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    (document.getElementById('notes-1') as HTMLInputElement).value = 'mine';
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'This law changed since you loaded it.' }, 409));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    click(action('Save edits'));
+    await flush();
+    expect($('message').textContent).toContain('changed since you loaded it');
+    expect(document.querySelectorAll('.law').length).toBe(1);
+  });
+
+  it('disconnects when the token is rejected during a save', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unauthorized' }, 401));
+    click(action('Approve'));
+    await flush();
+
+    expect($('message').textContent).toContain('Token rejected');
+    expect($('toolbar').hidden).toBe(true);
+    expect(document.querySelectorAll('.law').length).toBe(0);
+    expect(($('search') as HTMLInputElement).value).toBe('');
+  });
+
+  it('sends the bearer token and only the changed fields when saving', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    (document.getElementById('notes-1') as HTMLInputElement).value = 'checked twice';
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ admin_notes: 'checked twice', updated_at: 'v2' }) }));
+    click(action('Save edits'));
+    await flush();
+
+    const [, options] = fetchMock.mock.calls[1];
+    expect(options.headers.Authorization).toBe('Bearer secret');
+    expect(JSON.parse(options.body)).toEqual({ admin_notes: 'checked twice', updated_at: 'v1' });
+  });
+
+  it('omits updated_at for a law that has none', async () => {
+    await boot(jsonResponse(listReply([law({ updated_at: null })])));
+    await connect();
+    (document.getElementById('notes-1') as HTMLInputElement).value = 'note';
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ admin_notes: 'note', updated_at: 'v2' }) }));
+    click(action('Save edits'));
+    await flush();
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ admin_notes: 'note' });
   });
 
   it('does not send a request when nothing changed', async () => {
@@ -183,7 +254,7 @@ describe('admin page', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('steps back a page when a save empties the last page', async () => {
+  it('reloads the same offset when a save empties a page, falling back a page if nothing is left', async () => {
     const page2 = law({ id: 30, text: 'Only law on the second page' });
     await boot(jsonResponse(listReply(Array.from({ length: 25 }, (_, i) => law({ id: i + 100, text: `Law number ${i} long enough` })), { total: 26 })));
     await connect();
@@ -193,12 +264,155 @@ describe('admin page', () => {
     expect(fetchMock.mock.calls[1][0]).toContain('offset=25');
 
     fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ id: 30, status: 'published' }) }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([], { total: 25 })));
     fetchMock.mockResolvedValueOnce(jsonResponse(listReply(Array.from({ length: 25 }, (_, i) => law({ id: i + 100 })), { total: 25 })));
-    click(button('Approve'));
+    click(action('Approve'));
     await flush();
-    await flush();
-    expect(fetchMock.mock.calls[3][0]).toContain('offset=0');
+    expect(fetchMock.mock.calls[3][0]).toContain('offset=25');
+    expect(fetchMock.mock.calls[4][0]).toContain('offset=0');
     expect(document.querySelectorAll('.law').length).toBe(25);
+  });
+
+  it('pulls in the next laws when a save empties a page that has later pages', async () => {
+    await boot(jsonResponse(listReply([law()], { total: 40 })));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ status: 'published' }) }));
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law({ id: 50, text: 'Next law that moved up' })], { total: 39 })));
+    click(action('Approve'));
+    await flush();
+    expect(fetchMock.mock.calls[2][0]).toContain('offset=0');
+    expect(document.getElementById('text-50')).not.toBeNull();
+  });
+
+  it('continues after the cards still on screen so removed cards do not skip laws', async () => {
+    const page = Array.from({ length: 25 }, (_, i) => law({ id: i + 1, text: `Law number ${i} long enough` }));
+    await boot(jsonResponse(listReply(page, { total: 40 })));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ id: 1, status: 'published' }) }));
+    click(action('Approve'));
+    await flush();
+    expect(document.querySelectorAll('.law').length).toBe(24);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law({ id: 99, text: 'Law that moved up one slot' })], { total: 39 })));
+    click($('next'));
+    await flush();
+    expect(fetchMock.mock.calls[2][0]).toContain('offset=24');
+  });
+
+  it('reloads instead of patching when a list refresh happened during the save', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    let finishSave!: (value: unknown) => void;
+    fetchMock.mockReturnValueOnce(new Promise((resolve) => { finishSave = resolve; }));
+    click(action('Approve'));
+    await flush();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law()])));
+    click(button('Published'));
+    await flush();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law({ id: 7, status: 'published', text: 'Published law shown after reload' })], { counts: { in_review: 0, published: 5, rejected: 0 } })));
+    finishSave(jsonResponse({ data: law({ status: 'published' }) }));
+    await flush();
+
+    expect($('message').textContent).toBe('Law #1 updated.');
+    expect(button('Published (5)')).not.toBeNull();
+    expect(button('In review (0)')).not.toBeNull();
+  });
+
+  it('says the list could not refresh when the reload after a concurrent save fails', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    let finishSave!: (value: unknown) => void;
+    fetchMock.mockReturnValueOnce(new Promise((resolve) => { finishSave = resolve; }));
+    click(action('Approve'));
+    await flush();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    click(button('Published'));
+    await flush();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    finishSave(jsonResponse({ data: law({ status: 'published' }) }));
+    await flush();
+    expect($('message').textContent).toContain('saved, but the list could not refresh');
+  });
+
+  it('keeps the success state when refilling an emptied page fails', async () => {
+    await boot(jsonResponse(listReply([law()], { total: 40 })));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ status: 'published' }) }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    click(action('Approve'));
+    await flush();
+    expect($('message').textContent).toContain('saved, but the list could not refresh');
+  });
+
+  it('survives malformed server replies without leaving the page stuck', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await boot(jsonResponse({ nothing: true }));
+    await connect();
+    expect($('message').textContent).toContain('could not be read');
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law()])));
+    submit('connect-form');
+    await flush();
+    expect(document.querySelectorAll('.law').length).toBe(1);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true }));
+    click(action('Approve'));
+    await flush();
+    expect($('message').textContent).toContain('could not be read');
+    expect([...document.querySelectorAll('.actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+  });
+
+  it('keeps the old view when rendering a reply throws', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse(listReply([null as never])));
+    click(button('Published'));
+    await flush();
+    expect($('message').textContent).toContain('could not be displayed');
+    expect(document.querySelectorAll('.law').length).toBe(1);
+    expect(button('In review')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('reports a failure after a successful save when the page cannot refresh', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { status: 'in_review', categories: [null] } }));
+    click(action('Approve'));
+    await flush();
+    expect($('message').textContent).toContain('page could not refresh');
+  });
+
+  it('reverts the search box when a search fails and clears the token after connecting', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    expect(($('token') as HTMLInputElement).value).toBe('');
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    ($('search') as HTMLInputElement).value = 'typo';
+    submit('search-form');
+    await flush();
+    expect(($('search') as HTMLInputElement).value).toBe('');
+  });
+
+  it('renders every law field as text, never as HTML', async () => {
+    const evil = '"><svg onload="window.pwned=1">';
+    await boot(jsonResponse(listReply([law({
+      title: evil,
+      admin_notes: evil,
+      categories: [{ id: 1, name: '<script>window.pwned=1</script>' }],
+      attributions: [{ name: '<img src=x onerror="window.pwned=1">', contact_type: 'text', contact_value: null }],
+    })])));
+    await connect();
+
+    expect(document.querySelector('.law svg, .law script, .law img')).toBeNull();
+    expect((document.getElementById('title-1') as HTMLInputElement).value).toBe(evil);
+    expect(document.querySelector('.law-head')?.textContent).toContain('<script>window.pwned=1</script>');
+    expect((window as unknown as { pwned?: number }).pwned).toBeUndefined();
   });
 
   it('searches, pages with Previous/Next and ignores out-of-order responses', async () => {

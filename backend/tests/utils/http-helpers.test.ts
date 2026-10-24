@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as httpHelpers from '../../src/utils/http-helpers.ts';
@@ -282,6 +283,28 @@ describe('HTTP Helpers', () => {
         'Access-Control-Allow-Origin': 'http://example.com',
         'Access-Control-Allow-Credentials': 'true',
       }));
+    });
+  });
+
+  describe('readBody size cap', () => {
+    const streamOf = (...chunks: (string | Buffer)[]) => {
+      const stream = new Readable({ read() {} });
+      chunks.forEach((chunk) => stream.push(chunk));
+      stream.push(null);
+      return stream as unknown as IncomingMessage;
+    };
+
+    it('parses bodies within the cap, including string chunks', async () => {
+      await expect(httpHelpers.readBody(streamOf('{"a":', Buffer.from('1}')), 100)).resolves.toEqual({ a: 1 });
+    });
+
+    it('rejects bodies over the cap with PayloadTooLargeError, even across chunks', async () => {
+      await expect(httpHelpers.readBody(streamOf('{"a":"', 'x'.repeat(30), '"}'), 20)).rejects.toBeInstanceOf(httpHelpers.PayloadTooLargeError);
+      await expect(httpHelpers.readBody(streamOf('x'.repeat(50)), 20)).rejects.toThrow('Request body too large');
+    });
+
+    it('accepts any size when no cap is given', async () => {
+      await expect(httpHelpers.readBody(streamOf(JSON.stringify({ a: 'x'.repeat(5000) })))).resolves.toHaveProperty('a');
     });
   });
 });

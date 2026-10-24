@@ -109,11 +109,13 @@ export function createApiServer(options?: CreateApiServerOptions) {
   const spaController = new SpaController(htmlInjection);
 
   const adminState = getAdminApiState();
-  console.log(
-    adminState === 'enabled'
-      ? 'Admin API enabled'
-      : `Admin API disabled (${adminState === 'token_too_short' ? 'ADMIN_API_TOKEN is shorter than 32 characters' : 'ADMIN_API_TOKEN unset'})`
-  );
+  if (adminState === 'enabled') {
+    console.log('Admin API enabled');
+  } else if (adminState === 'token_too_short') {
+    console.warn('Admin API disabled (ADMIN_API_TOKEN is shorter than 32 characters)');
+  } else {
+    console.log('Admin API disabled (ADMIN_API_TOKEN unset)');
+  }
   const adminController = new AdminController(new AdminLawService(db));
   const adminUiController = new AdminUiController();
 

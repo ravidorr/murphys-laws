@@ -51,7 +51,7 @@ export interface AdminLaw extends AdminLawRow {
 }
 
 export type AdminUpdateResult =
-  | { outcome: 'updated'; law: AdminLaw }
+  | { outcome: 'updated'; law: AdminLaw; previousStatus: AdminLawStatus }
   | { outcome: 'conflict' }
   | { outcome: 'not_found' };
 
@@ -110,17 +110,20 @@ export class AdminLawService {
     sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
 
     const apply = this.db.transaction((): AdminUpdateResult => {
+      const before = this.db.prepare('SELECT status FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus } | undefined;
+      if (!before) {
+        return { outcome: 'not_found' };
+      }
+
       const guard = update.expectedUpdatedAt === undefined ? '' : ' AND updated_at = ?';
       const guardParams = update.expectedUpdatedAt === undefined ? [] : [update.expectedUpdatedAt];
       const result = this.db.prepare(`UPDATE laws SET ${sets.join(', ')} WHERE id = ?${guard}`).run(...params, id, ...guardParams);
-
       if (result.changes === 0) {
-        const exists = this.db.prepare('SELECT 1 FROM laws WHERE id = ?').get(id);
-        return { outcome: exists ? 'conflict' : 'not_found' };
+        return { outcome: 'conflict' };
       }
 
       const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
-      return { outcome: 'updated', law: this.attachDetails([row])[0] };
+      return { outcome: 'updated', law: this.attachDetails([row])[0], previousStatus: before.status };
     });
     return apply();
   }

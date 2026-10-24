@@ -10,7 +10,7 @@ vi.mock('../../src/utils/http-helpers.ts', async (importOriginal) => {
 });
 
 import { checkRateLimit } from '../../src/middleware/rate-limit.ts';
-import { readBody } from '../../src/utils/http-helpers.ts';
+import { readBody, PayloadTooLargeError } from '../../src/utils/http-helpers.ts';
 
 const TOKEN = 't'.repeat(40);
 
@@ -32,7 +32,7 @@ describe('AdminController', () => {
     process.env.ADMIN_API_TOKEN = TOKEN;
     service = {
       listLaws: vi.fn(() => ({ data: [], total: 0, counts: {} })),
-      updateLaw: vi.fn(() => ({ outcome: 'updated', law: { id: 5 } })),
+      updateLaw: vi.fn(() => ({ outcome: 'updated', law: { id: 5 }, previousStatus: 'in_review' })),
     };
     controller = new AdminController(service);
     req = { headers: { authorization: `Bearer ${TOKEN}` } };
@@ -64,11 +64,12 @@ describe('AdminController', () => {
       expect(service.listLaws).not.toHaveBeenCalled();
     });
 
-    it('returns 429 when failed logins exceed the limit', async () => {
+    it('returns 429 when failed logins exceed the limit, without logging every throttled attempt', async () => {
       req.headers.authorization = 'Bearer nope';
       vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, limit: 10, remaining: 0, resetTime: Date.now() + 1000 });
       await controller.list(req, res, { query: {} });
       expect(status()).toBe(429);
+      expect(console.warn).not.toHaveBeenCalled();
     });
 
     it('does not rate limit valid requests', async () => {
@@ -92,6 +93,15 @@ describe('AdminController', () => {
       expect(status()).toBe(200);
       expect(headers()['Cache-Control']).toBe('no-store');
       expect(payload()).toMatchObject({ status: 'in_review', limit: 100, offset: 0, q: 'toast' });
+    });
+
+    it('treats blank paging values as unset and rejects an overlong search', async () => {
+      await controller.list(req, res, { query: { limit: '', offset: '' } });
+      expect(service.listLaws).toHaveBeenCalledWith(expect.objectContaining({ limit: 50, offset: 0 }));
+
+      res.writeHead.mockClear();
+      await controller.list(req, res, { query: { q: 'x'.repeat(201) } });
+      expect(status()).toBe(400);
     });
 
     it.each([
@@ -131,8 +141,23 @@ describe('AdminController', () => {
       });
       expect(status()).toBe(200);
       expect(headers()['Cache-Control']).toBe('no-store');
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Admin updated law 5'));
-      expect(console.log).toHaveBeenCalledWith(expect.not.stringContaining('expectedUpdatedAt'));
+      expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string)).toEqual({
+        event: 'admin_law_update',
+        lawId: 5,
+        actor: '127.0.0.1',
+        fields: ['status', 'text', 'title', 'adminNotes'],
+        statusFrom: 'in_review',
+        statusTo: 'published',
+        guarded: true,
+      });
+    });
+
+    it('logs without status text or notes and reports unguarded updates', async () => {
+      await update({ admin_notes: 'secret reasoning', updated_at: null });
+      const line = vi.mocked(console.log).mock.calls[0][0] as string;
+      expect(line).not.toContain('secret reasoning');
+      expect(JSON.parse(line)).toMatchObject({ statusFrom: 'in_review', statusTo: 'in_review', guarded: false, fields: ['adminNotes'] });
+      expect(service.updateLaw).toHaveBeenCalledWith(5, { adminNotes: 'secret reasoning' });
     });
 
     it('accepts text at exactly the minimum and maximum length', async () => {
@@ -152,6 +177,7 @@ describe('AdminController', () => {
       ['invalid id', {}, 'abc'],
       ['invalid status', { status: 'x' }, '5'],
       ['non-string text', { text: 5 }, '5'],
+      ['non-string text with other fields', { status: 'published', text: null }, '5'],
       ['text too short', { text: 'x'.repeat(9) }, '5'],
       ['text too long', { text: 'x'.repeat(1001) }, '5'],
       ['non-string title', { title: 5 }, '5'],
@@ -176,6 +202,22 @@ describe('AdminController', () => {
 
       vi.mocked(readBody).mockRejectedValue(new Error('socket closed'));
       await expect(controller.update(req, res, '5')).rejects.toThrow('socket closed');
+    });
+
+    it('answers 413 for oversized bodies and passes a size cap to readBody', async () => {
+      vi.mocked(readBody).mockRejectedValue(new PayloadTooLargeError());
+      await controller.update(req, res, '5');
+      expect(status()).toBe(413);
+      expect(vi.mocked(readBody).mock.calls[0][1]).toBe(16 * 1024);
+    });
+
+    it('logs conflicts and missing laws as warnings', async () => {
+      service.updateLaw.mockReturnValue({ outcome: 'conflict' });
+      await update({ status: 'rejected', updated_at: 'old' });
+      service.updateLaw.mockReturnValue({ outcome: 'not_found' });
+      await update({ status: 'rejected' });
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('rejected: law changed'));
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('missing law 5'));
     });
 
     it('returns 404 for unknown laws and 409 for conflicts', async () => {
