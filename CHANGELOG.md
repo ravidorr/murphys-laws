@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sections in favour of label/value and plain rows; add subheadings and up to 10
   distinct example requests per HTTP error status to the nginx section
   (`errorSamples` from `log-analyzer.sh`); parse the status from the field after
-  the quoted request. No dependency changes. Backend bumped to `2.3.34`; root to `2.6.78`.
+  the quoted request. No dependency changes (the MCP package and its lockfile entries are untouched). Backend bumped to `2.3.34`; root to `2.6.78`.
 
 ### Fixed
 
