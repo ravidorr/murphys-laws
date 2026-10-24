@@ -122,7 +122,7 @@ if [ -f "$NGINX_ACCESS_LOG" ]; then
     REPORT+="\n"
 
     # 4xx errors
-    ERROR_4XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 4[0-9][0-9] ' | wc -l)
+    ERROR_4XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^4[0-9][0-9]$/) count++} END {print count + 0}')
     if [ "$ERROR_4XX" -gt 0 ]; then
         REPORT+="4xx Client Errors: $ERROR_4XX\n"
         REPORT+="Top 404 URLs:\n"
@@ -133,7 +133,7 @@ if [ -f "$NGINX_ACCESS_LOG" ]; then
     fi
 
     # 5xx errors
-    ERROR_5XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 5[0-9][0-9] ' | wc -l)
+    ERROR_5XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^5[0-9][0-9]$/) count++} END {print count + 0}')
     if [ "$ERROR_5XX" -gt 0 ]; then
         REPORT+="5xx Server Errors: $ERROR_5XX\n"
         while IFS= read -r line; do
@@ -392,6 +392,7 @@ emit_json_report() {
     local top_urls='[]'
     local top_ips='[]'
     local suspicious='[]'
+    local error_samples='[]'
     local app_errors='[]'
     local findings='[]'
     local attack_lines='[]'
@@ -399,7 +400,7 @@ emit_json_report() {
 
     if [ -f "$NGINX_ACCESS_LOG" ]; then
         status_codes=$(
-            grep "$today" "$NGINX_ACCESS_LOG" | awk '$9 ~ /^[0-9]+$/ {print $9}' | sort | uniq -c | sort -rn | head -10 |
+            grep "$today" "$NGINX_ACCESS_LOG" | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^[1-5][0-9][0-9]$/) print rest[1]}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{print $1"\t"$2}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), code:(.[1]|tonumber)})'
         )
@@ -418,6 +419,24 @@ emit_json_report() {
                 awk -F'"' '{print $6}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{count=$1; $1=""; sub(/^ /,""); print count"\t"$0}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), agent:.[1]})'
+        )
+        # Up to 10 most frequent distinct requests for each 4xx/5xx status code.
+        error_samples=$(
+            grep "$today" "$NGINX_ACCESS_LOG" |
+                awk -F'"' '{
+                    split($3, rest, " "); code = rest[1]
+                    if (code !~ /^[45][0-9][0-9]$/) next
+                    split($1, head, " "); req = $2; sub(/ HTTP\/[0-9.]+$/, "", req)
+                    key = code "\t" req
+                    if (!(key in count)) { ip[key] = head[1]; agent[key] = $6 }
+                    count[key]++; total[code]++
+                }
+                END { for (key in count) { split(key, parts, "\t"); printf "%s\t%d\t%d\t%s\t%s\t%s\n", parts[1], total[parts[1]], count[key], ip[key], agent[key], parts[2] } }' |
+                sort -t "$(printf '\t')" -k1,1n -k3,3nr |
+                awk -F'\t' '{ if (seen[$1]++ < 10) print }' |
+                jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | group_by(.[0]) |
+                    map({code:(.[0][0]|tonumber), total:(.[0][1]|tonumber),
+                         samples:map({count:(.[2]|tonumber), ip:.[3], agent:.[4], request:.[5]})})'
         )
     fi
 
@@ -482,9 +501,10 @@ emit_json_report() {
         --argjson topUrls "$top_urls" \
         --argjson topIps "$top_ips" \
         --argjson suspiciousUserAgents "$suspicious" \
+        --argjson errorSamples "$error_samples" \
         --argjson securityFindings "$findings" \
         --argjson applicationErrors "$app_errors" \
-        '{summary:$summary,statusCodes:$statusCodes,topUrls:$topUrls,topIps:$topIps,suspiciousUserAgents:$suspiciousUserAgents,securityFindings:$securityFindings,applicationErrors:$applicationErrors}'
+        '{summary:$summary,statusCodes:$statusCodes,topUrls:$topUrls,topIps:$topIps,suspiciousUserAgents:$suspiciousUserAgents,errorSamples:$errorSamples,securityFindings:$securityFindings,applicationErrors:$applicationErrors}'
 }
 
 if [ "$OUTPUT_FORMAT" = "json" ]; then
