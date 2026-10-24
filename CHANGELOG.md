@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Thank-you email to the submitter when an admin approves a pending law that has a
+  valid email address (new `law-approval-email-template` and
+  `EmailService.sendLawApprovedEmail`). It needs SMTP, goes to one plain address, never
+  blocks moderation, and is recorded in `laws.approval_email_sent_at` (migration 018)
+  so approving a law again does not email twice; a failed send is retried by the next
+  approval. The admin API returns `thank_you` (`queued` or `skipped` with a reason) and
+  the page says whether one is being sent or why not. Failures are logged by law id and
+  error codes only. Backend bumped to `2.3.37`; root to `2.6.81`.
+
 - Moderation tooling for submitted laws: token-protected `GET /api/v1/admin/laws`
   and `POST /api/v1/admin/laws/:id` endpoints (list by status with search, approve,
   reject, edit text/title, admin notes, with a 409 on concurrent edits) and a
