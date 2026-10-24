@@ -3,6 +3,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /admin
 
 # Sitemap locations
 Sitemap: https://murphys-laws.com/sitemap.xml

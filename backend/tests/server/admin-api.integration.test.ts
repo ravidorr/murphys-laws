@@ -116,6 +116,9 @@ describe('admin API through the real server and migrated database', () => {
     const page = await request('GET', '/api/v1/admin/ui');
     expect(page.status).toBe(200);
     expect(page.headers['Content-Security-Policy']).toContain("script-src 'self'");
+    const alias = await request('GET', '/admin');
+    expect(alias.status).toBe(200);
+    expect(alias.headers['Content-Security-Policy']).toBe(page.headers['Content-Security-Policy']);
     expect((await request('GET', '/api/v1/admin/ui/admin.js')).status).toBe(200);
     expect((await request('GET', '/api/v1/admin/ui/missing.js')).status).toBe(404);
     expect((await request('GET', '/api/v1/admin/ui/..%2Fadmin.controller.ts')).status).toBe(404);
@@ -138,6 +141,7 @@ describe('admin API through the real server and migrated database', () => {
     expect(console.log).toHaveBeenCalledWith('Admin API disabled (ADMIN_API_TOKEN unset)');
     expect((await request('GET', '/api/v1/admin/laws', { token: TOKEN })).status).toBe(404);
     expect((await request('GET', '/api/v1/admin/ui')).status).toBe(404);
+    expect((await request('GET', '/admin')).status).toBe(404);
 
     process.env.ADMIN_API_TOKEN = 'too-short';
     createApiServer({ db: db as any });
