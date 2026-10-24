@@ -17,6 +17,7 @@ import { HtmlInjectionService } from '../services/html-injection.service.ts';
 
 import { LawController } from '../controllers/laws.controller.ts';
 import { AdminController } from '../controllers/admin.controller.ts';
+import { getAdminApiState } from '../middleware/admin-auth.ts';
 import { AdminUiController } from '../controllers/admin-ui.controller.ts';
 import { VoteController } from '../controllers/votes.controller.ts';
 import { CategoryController } from '../controllers/categories.controller.ts';
@@ -107,6 +108,12 @@ export function createApiServer(options?: CreateApiServerOptions) {
   const htmlInjection = new HtmlInjectionService({ lawService, categoryService });
   const spaController = new SpaController(htmlInjection);
 
+  const adminState = getAdminApiState();
+  console.log(
+    adminState === 'enabled'
+      ? 'Admin API enabled'
+      : `Admin API disabled (${adminState === 'token_too_short' ? 'ADMIN_API_TOKEN is shorter than 32 characters' : 'ADMIN_API_TOKEN unset'})`
+  );
   const adminController = new AdminController(new AdminLawService(db));
   const adminUiController = new AdminUiController();
 

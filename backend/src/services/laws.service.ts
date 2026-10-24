@@ -410,10 +410,13 @@ export class LawService {
   async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {
     const today = new Date().toISOString().split('T')[0];
 
+    // Ignore a stale pick whose law was unpublished (e.g. rejected by a moderator) so a new one is chosen.
     const existingStmt = this.db.prepare(`
-      SELECT law_id
-      FROM law_of_the_day_history
-      WHERE featured_date = ?
+      SELECT h.law_id
+      FROM law_of_the_day_history h
+      JOIN laws l ON l.id = h.law_id
+      WHERE h.featured_date = ? AND l.status = 'published'
+      ORDER BY h.rowid DESC
       LIMIT 1
     `);
     const existingLaw = existingStmt.get(today) as LawOfTheDayHistoryRow | undefined;

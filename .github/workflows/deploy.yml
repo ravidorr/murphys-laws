@@ -151,6 +151,10 @@ jobs:
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
 
+            if [ -z "${{ secrets['ADMIN_API_TOKEN'] }}" ]; then
+              echo "::warning::ADMIN_API_TOKEN secret is empty; the admin moderation API will be disabled"
+            fi
+
             # Create .env file with secrets (delimiter chosen to avoid secrets breaking heredoc)
             cat > .env << '__ENV_END__'
             HOST=127.0.0.1

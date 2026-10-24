@@ -1,3 +1,7 @@
+/*
+ * Pure logic for the moderation page, kept apart from admin.js (DOM and fetch) so it can be unit tested.
+ * admin.js imports this file, so it must stay listed in AdminUiController's ASSETS.
+ */
 export const PAGE_SIZE = 25;
 
 export const STATUSES = [
@@ -65,10 +69,21 @@ export function errorMessage(status, fallback) {
     return 'Token rejected. Check ADMIN_API_TOKEN and try again.';
   }
   if (status === 404) {
-    return 'Admin API is not enabled on this server.';
+    return fallback && fallback !== 'Not Found' ? fallback : 'Admin API is not enabled on this server.';
   }
   if (status === 429) {
     return 'Too many requests. Wait a minute and retry.';
   }
   return fallback || `Request failed (${status}).`;
+}
+
+/** Counts, list total and whether the card leaves the current view after a status change. */
+export function applyStatusChange({ counts, total, filter }, from, to) {
+  const next = { ...counts };
+  if (from !== to) {
+    next[from] = Math.max(0, (next[from] ?? 0) - 1);
+    next[to] = (next[to] ?? 0) + 1;
+  }
+  const removed = filter !== 'all' && to !== filter;
+  return { counts: next, total: removed ? Math.max(0, total - 1) : total, removed };
 }

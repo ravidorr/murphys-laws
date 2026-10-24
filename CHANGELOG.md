@@ -31,12 +31,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Moderation tooling for submitted laws: token-protected `GET /api/v1/admin/laws`
   and `POST /api/v1/admin/laws/:id` endpoints (list by status with search, approve,
-  reject, edit text/title, admin notes) and a standalone page at
-  `/api/v1/admin/ui`. Both are disabled (404) unless `ADMIN_API_TOKEN` is set;
-  the deploy workflow now writes it to the server `.env` from the GitHub secret of
-  the same name. Admin routes are intentionally absent from the public OpenAPI
-  spec, and CORS now allows the `Authorization` header.
+  reject, edit text/title, admin notes, with a 409 on concurrent edits) and a
+  standalone page at `/api/v1/admin/ui`. Everything is disabled (404) unless
+  `ADMIN_API_TOKEN` is set to 32+ characters; the deploy workflow writes it to the
+  server `.env` from the GitHub secret of the same name and warns when it is empty.
+  Failed admin logins are rate limited, changes are logged, and admin routes stay out
+  of the public OpenAPI spec. CORS now allows the `Authorization` header.
   Backend bumped to `2.3.35`; root to `2.6.79`.
+
+### Fixed
+
+- Law of the day no longer returns 404 (and breaks the deploy health check) when the
+  featured law is unpublished; a new published law is picked instead.
 
 ### Changed
 

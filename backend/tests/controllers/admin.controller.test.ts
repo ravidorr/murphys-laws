@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AdminController } from '../../src/controllers/admin.controller.ts';
 
 vi.mock('../../src/middleware/rate-limit.ts', () => ({
-  checkRateLimit: vi.fn(() => ({ allowed: true, limit: 120, remaining: 10, resetTime: 0 })),
+  checkRateLimit: vi.fn(() => ({ allowed: true, limit: 10, remaining: 9, resetTime: 0 })),
 }));
 vi.mock('../../src/utils/http-helpers.ts', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
@@ -12,6 +12,8 @@ vi.mock('../../src/utils/http-helpers.ts', async (importOriginal) => {
 import { checkRateLimit } from '../../src/middleware/rate-limit.ts';
 import { readBody } from '../../src/utils/http-helpers.ts';
 
+const TOKEN = 't'.repeat(40);
+
 describe('AdminController', () => {
   let service: { listLaws: ReturnType<typeof vi.fn>; updateLaw: ReturnType<typeof vi.fn> };
   let controller: AdminController;
@@ -19,6 +21,7 @@ describe('AdminController', () => {
   let res: { writeHead: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
 
   const status = () => res.writeHead.mock.calls[0][0];
+  const headers = () => res.writeHead.mock.calls[0][1];
   const payload = () => JSON.parse(res.end.mock.calls[0][0]);
   const update = async (body: unknown, id = '5') => {
     vi.mocked(readBody).mockResolvedValue(body as Record<string, unknown>);
@@ -26,95 +29,167 @@ describe('AdminController', () => {
   };
 
   beforeEach(() => {
-    process.env.ADMIN_API_TOKEN = 'tok';
-    service = { listLaws: vi.fn(() => ({ data: [], total: 0, counts: {} })), updateLaw: vi.fn(() => ({ id: 5 })) };
+    process.env.ADMIN_API_TOKEN = TOKEN;
+    service = {
+      listLaws: vi.fn(() => ({ data: [], total: 0, counts: {} })),
+      updateLaw: vi.fn(() => ({ outcome: 'updated', law: { id: 5 } })),
+    };
     controller = new AdminController(service);
-    req = { headers: { authorization: 'Bearer tok' } };
+    req = { headers: { authorization: `Bearer ${TOKEN}` } };
     res = { writeHead: vi.fn(), end: vi.fn() };
-    vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, limit: 120, remaining: 10, resetTime: 0 });
+    vi.mocked(checkRateLimit).mockClear();
+    vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, limit: 10, remaining: 9, resetTime: 0 });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     delete process.env.ADMIN_API_TOKEN;
+    vi.restoreAllMocks();
   });
 
-  it('returns 404 when disabled, 401 when unauthorized, 429 when rate limited', async () => {
-    delete process.env.ADMIN_API_TOKEN;
-    await controller.list(req, res, { query: {} });
-    expect(status()).toBe(404);
+  describe('authorization', () => {
+    it('returns 404 when the admin API is disabled, without touching the rate limiter', async () => {
+      delete process.env.ADMIN_API_TOKEN;
+      await controller.list(req, res, { query: {} });
+      expect(status()).toBe(404);
+      expect(checkRateLimit).not.toHaveBeenCalled();
+    });
 
-    process.env.ADMIN_API_TOKEN = 'tok';
-    res.writeHead.mockClear();
-    req.headers.authorization = 'Bearer nope';
-    await controller.list(req, res, { query: {} });
-    expect(status()).toBe(401);
+    it('returns 401 for a wrong token and counts it as a failed login', async () => {
+      req.headers.authorization = 'Bearer nope';
+      await controller.list(req, res, { query: {} });
+      expect(status()).toBe(401);
+      expect(checkRateLimit).toHaveBeenCalledWith('127.0.0.1', 'admin-fail');
+      expect(service.listLaws).not.toHaveBeenCalled();
+    });
 
-    res.writeHead.mockClear();
-    vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, limit: 120, remaining: 0, resetTime: Date.now() + 1000 });
-    await controller.list(req, res, { query: {} });
-    expect(status()).toBe(429);
-    expect(service.listLaws).not.toHaveBeenCalled();
+    it('returns 429 when failed logins exceed the limit', async () => {
+      req.headers.authorization = 'Bearer nope';
+      vi.mocked(checkRateLimit).mockReturnValue({ allowed: false, limit: 10, remaining: 0, resetTime: Date.now() + 1000 });
+      await controller.list(req, res, { query: {} });
+      expect(status()).toBe(429);
+    });
+
+    it('does not rate limit valid requests', async () => {
+      await controller.list(req, res, { query: {} });
+      expect(status()).toBe(200);
+      expect(checkRateLimit).not.toHaveBeenCalled();
+    });
+
+    it('requires auth on update', async () => {
+      req.headers.authorization = '';
+      await update({ status: 'rejected' });
+      expect(status()).toBe(401);
+      expect(service.updateLaw).not.toHaveBeenCalled();
+    });
   });
 
-  it('lists in_review laws by default with bounded paging', async () => {
-    await controller.list(req, res, { query: { limit: '500', offset: 'x', q: ' toast ' } });
-    expect(service.listLaws).toHaveBeenCalledWith({ status: 'in_review', q: 'toast', limit: 100, offset: 0 });
-    expect(status()).toBe(200);
-    expect(payload()).toMatchObject({ status: 'in_review', limit: 100, offset: 0, q: 'toast' });
+  describe('list', () => {
+    it('lists in_review laws by default with bounded paging and no-store caching', async () => {
+      await controller.list(req, res, { query: { limit: '500', offset: 'x', q: ' toast ' } });
+      expect(service.listLaws).toHaveBeenCalledWith({ status: 'in_review', q: 'toast', limit: 100, offset: 0 });
+      expect(status()).toBe(200);
+      expect(headers()['Cache-Control']).toBe('no-store');
+      expect(payload()).toMatchObject({ status: 'in_review', limit: 100, offset: 0, q: 'toast' });
+    });
+
+    it.each([
+      [{ limit: '0' }, 1],
+      [{ limit: '-5' }, 1],
+      [{ limit: '12.9' }, 12],
+    ])('bounds limit %j to %i', async (query, expected) => {
+      await controller.list(req, res, { query });
+      expect(service.listLaws).toHaveBeenCalledWith(expect.objectContaining({ limit: expected }));
+    });
+
+    it('clamps a negative offset to 0', async () => {
+      await controller.list(req, res, { query: { offset: '-3' } });
+      expect(service.listLaws).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+    });
+
+    it('accepts status=all', async () => {
+      await controller.list(req, res, { query: { status: 'all' } });
+      expect(service.listLaws).toHaveBeenCalledWith(expect.objectContaining({ status: 'all' }));
+    });
+
+    it.each(['bogus', ['a', 'b']])('rejects invalid status %j', async (value) => {
+      await controller.list(req, res, { query: { status: value } });
+      expect(status()).toBe(400);
+    });
   });
 
-  it('accepts status=all and rejects invalid status', async () => {
-    await controller.list(req, res, { query: { status: 'all' } });
-    expect(service.listLaws).toHaveBeenCalledWith(expect.objectContaining({ status: 'all' }));
+  describe('update', () => {
+    it('updates all fields and logs the change', async () => {
+      await update({ status: 'published', text: '  A valid law text  ', title: ' T ', admin_notes: ' n ', updated_at: 'v1' });
+      expect(service.updateLaw).toHaveBeenCalledWith(5, {
+        status: 'published',
+        text: 'A valid law text',
+        title: 'T',
+        adminNotes: 'n',
+        expectedUpdatedAt: 'v1',
+      });
+      expect(status()).toBe(200);
+      expect(headers()['Cache-Control']).toBe('no-store');
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Admin updated law 5'));
+      expect(console.log).toHaveBeenCalledWith(expect.not.stringContaining('expectedUpdatedAt'));
+    });
 
-    res.writeHead.mockClear();
-    await controller.list(req, res, { query: { status: 'bogus' } });
-    expect(status()).toBe(400);
-  });
+    it('accepts text at exactly the minimum and maximum length', async () => {
+      await update({ text: 'x'.repeat(10) });
+      await update({ text: 'x'.repeat(1000) });
+      expect(service.updateLaw).toHaveBeenCalledTimes(2);
+    });
 
-  it('updates all fields', async () => {
-    await update({ status: 'published', text: '  A valid law text  ', title: ' T ', admin_notes: ' n ' });
-    expect(service.updateLaw).toHaveBeenCalledWith(5, { status: 'published', text: 'A valid law text', title: 'T', adminNotes: 'n' });
-    expect(status()).toBe(200);
-  });
+    it('clears title and notes with null or blank values', async () => {
+      await update({ title: '  ', admin_notes: null });
+      expect(service.updateLaw).toHaveBeenLastCalledWith(5, { title: null, adminNotes: null });
+      await update({ title: null, admin_notes: '  ' });
+      expect(service.updateLaw).toHaveBeenLastCalledWith(5, { title: null, adminNotes: null });
+    });
 
-  it('clears title and notes with null or blank values', async () => {
-    await update({ title: '  ', admin_notes: null });
-    expect(service.updateLaw).toHaveBeenCalledWith(5, { title: null, adminNotes: null });
+    it.each([
+      ['invalid id', {}, 'abc'],
+      ['invalid status', { status: 'x' }, '5'],
+      ['non-string text', { text: 5 }, '5'],
+      ['text too short', { text: 'x'.repeat(9) }, '5'],
+      ['text too long', { text: 'x'.repeat(1001) }, '5'],
+      ['non-string title', { title: 5 }, '5'],
+      ['title too long', { title: 'x'.repeat(201) }, '5'],
+      ['non-string notes', { admin_notes: 5 }, '5'],
+      ['notes too long', { admin_notes: 'x'.repeat(2001) }, '5'],
+      ['non-string updated_at', { status: 'published', updated_at: 5 }, '5'],
+      ['empty update', {}, '5'],
+      ['null body', null, '5'],
+      ['array body', [], '5'],
+      ['string body', 'x', '5'],
+    ])('rejects %s with 400', async (_name, body, id) => {
+      await update(body, id);
+      expect(status()).toBe(400);
+      expect(service.updateLaw).not.toHaveBeenCalled();
+    });
 
-    service.updateLaw.mockClear();
-    await update({ title: null, admin_notes: '  ' });
-    expect(service.updateLaw).toHaveBeenCalledWith(5, { title: null, adminNotes: null });
-  });
+    it('rejects invalid JSON with 400 but rethrows other read errors', async () => {
+      vi.mocked(readBody).mockRejectedValue(new SyntaxError('bad'));
+      await controller.update(req, res, '5');
+      expect(status()).toBe(400);
 
-  it.each([
-    ['invalid id', {}, 'abc'],
-    ['invalid status', { status: 'x' }, '5'],
-    ['non-string text', { text: 5 }, '5'],
-    ['short text', { text: 'short' }, '5'],
-    ['non-string title', { title: 5 }, '5'],
-    ['non-string notes', { admin_notes: 5 }, '5'],
-    ['empty update', {}, '5'],
-  ])('rejects %s', async (_name, body, id) => {
-    await update(body, id);
-    expect(status()).toBe(400);
-    expect(service.updateLaw).not.toHaveBeenCalled();
-  });
+      vi.mocked(readBody).mockRejectedValue(new Error('socket closed'));
+      await expect(controller.update(req, res, '5')).rejects.toThrow('socket closed');
+    });
 
-  it('rejects invalid JSON and unknown laws', async () => {
-    vi.mocked(readBody).mockRejectedValue(new Error('bad'));
-    await controller.update(req, res, '5');
-    expect(status()).toBe(400);
+    it('returns 404 for unknown laws and 409 for conflicts', async () => {
+      service.updateLaw.mockReturnValue({ outcome: 'not_found' });
+      await update({ status: 'rejected' });
+      expect(status()).toBe(404);
+      expect(payload()).toEqual({ error: 'Law not found' });
 
-    res.writeHead.mockClear();
-    service.updateLaw.mockReturnValue(null);
-    await update({ status: 'rejected' });
-    expect(status()).toBe(404);
-  });
-
-  it('requires auth on update', async () => {
-    req.headers.authorization = '';
-    await update({ status: 'rejected' });
-    expect(status()).toBe(401);
+      res.writeHead.mockClear();
+      res.end.mockClear();
+      service.updateLaw.mockReturnValue({ outcome: 'conflict' });
+      await update({ status: 'rejected', updated_at: 'old' });
+      expect(status()).toBe(409);
+      expect(payload().error).toContain('changed since you loaded it');
+    });
   });
 });
