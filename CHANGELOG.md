@@ -27,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Daily Status Report: drop bullets from the law of the day, performance,
+  traffic, backup, log analysis, nginx, and path traversal/command injection
+  sections in favour of label/value and plain rows; add subheadings and up to 10
+  distinct example requests per HTTP error status to the nginx section
+  (`errorSamples` from `log-analyzer.sh`); parse the status from the field after
+  the quoted request. Backend bumped to `2.3.34`; root to `2.6.78`.
+
 ### Fixed
 
 - Restore the Daily Status Report's API status, PM2 status, and log analysis:
