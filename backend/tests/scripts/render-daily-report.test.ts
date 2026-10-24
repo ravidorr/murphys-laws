@@ -104,8 +104,18 @@ describe('buildAdminUrl', () => {
     expect(buildAdminUrl()).toBe(`https://env.example.com${ADMIN_UI_PATH}`);
   });
 
-  it.each(['murphys-laws.com', 'javascript:alert(1)', 'https://'])(
-    'ignores and logs a BASE_URL without an http(s) origin (%s)',
+  it('keeps a base path', () => {
+    expect(buildAdminUrl({ BASE_URL: 'https://example.com/app/' })).toBe(`https://example.com/app${ADMIN_UI_PATH}`);
+  });
+
+  it.each([
+    'murphys-laws.com',
+    'javascript:alert(1)',
+    'https://',
+    'https://example.com?tenant=x',
+    'https://example.com/#frag',
+  ])(
+    'ignores and logs a BASE_URL that is not a plain http(s) URL (%s)',
     (BASE_URL) => {
       const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
       expect(buildAdminUrl({ BASE_URL })).toBe(`https://murphys-laws.com${ADMIN_UI_PATH}`);
@@ -239,9 +249,9 @@ describe('daily report pending approvals', () => {
   });
 
   it('escapes the admin link in HTML', () => {
-    const { report } = liveReport('2', 'https://example.com/?a=1&b="2"');
+    const { report } = liveReport('2', 'https://example.com/a&b');
     const html = renderHtmlReport(report);
-    expect(html).toContain('href="https://example.com/?a=1&amp;b=&quot;2&quot;/api/v1/admin/ui"');
+    expect(html).toContain('href="https://example.com/a&amp;b/api/v1/admin/ui"');
   });
 
   it('flags the count as unavailable and logs when the database file is missing', () => {

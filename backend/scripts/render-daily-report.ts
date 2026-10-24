@@ -1126,21 +1126,35 @@ function buildTestEmailReport(now: Date): DailyReport {
   };
 }
 
+/** Parses `BASE_URL` as an http(s) URL with no query or fragment, or returns null. */
+function parseBaseUrl(value: string): URL | null {
+  try {
+    const url = new URL(value);
+    const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+    return isHttp && !url.search && !url.hash ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Builds the admin moderation page URL from the configured base URL (`BASE_URL`, else the
- * site URL). A blank, non-http(s), or unparsable `BASE_URL` is logged and ignored.
+ * site URL). A blank, unparsable, non-http(s) `BASE_URL`, or one carrying a query or
+ * fragment (which would swallow the admin path), is logged and ignored.
  */
 export function buildAdminUrl(env: NodeJS.ProcessEnv = process.env): string {
-  let base = SITE_URL;
+  let base = new URL(SITE_URL);
   const configured = env.BASE_URL?.trim();
   if (configured) {
-    if (/^https?:\/\/[^\s/]+/i.test(configured)) {
-      base = configured;
+    const parsed = parseBaseUrl(configured);
+    if (parsed) {
+      base = parsed;
     } else {
-      logCollectorError('admin link', new Error(`ignoring BASE_URL without an http(s) origin: ${configured}`));
+      logCollectorError('admin link', new Error(`ignoring BASE_URL that is not a plain http(s) URL: ${configured}`));
     }
   }
-  return `${base.replace(/\/+$/, '')}${ADMIN_UI_PATH}`;
+  base.pathname = `${base.pathname.replace(/\/+$/, '')}${ADMIN_UI_PATH}`;
+  return base.toString();
 }
 
 /**
