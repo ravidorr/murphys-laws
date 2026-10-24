@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/admin` with the same token rules and security headers as `/api/v1/admin/ui`
   (still available), nginx proxies `/admin` to the API, the service worker lets it
   pass through uncached (including `/admin/`), nginx shows the normal 404 page when
-  the admin is disabled, and `robots.txt` disallows it. Docs and tests updated.
+  the admin is disabled, and `robots.txt` disallows it for every crawler group, including the named ones. Docs and tests updated.
   Backend bumped to `2.3.38`; web to `3.4.23`; root to `2.6.82`.
 
 - Thank-you email to the submitter when an admin approves a pending law that has a
