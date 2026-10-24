@@ -78,4 +78,14 @@ describe('RateLimit Middleware', () => {
         expect(resultA.remaining).toBe(27); // 30 - 3
         expect(resultB.remaining).toBe(29); // 30 - 1
     });
+
+    it('limits failed admin logins to 10 per minute without affecting other buckets', () => {
+        for (let i = 0; i < 10; i++) {
+            expect(checkRateLimit('admin-user', 'admin-fail').allowed).toBe(true);
+        }
+        const blocked = checkRateLimit('admin-user', 'admin-fail');
+        expect(blocked.allowed).toBe(false);
+        expect(blocked.limit).toBe(10);
+        expect(checkRateLimit('admin-user', 'vote').allowed).toBe(true);
+    });
 });

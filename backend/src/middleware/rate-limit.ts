@@ -1,5 +1,5 @@
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-type RateLimitType = 'vote' | 'submit' | 'email';
+type RateLimitType = 'vote' | 'submit' | 'email' | 'admin-fail';
 
 interface RateLimitConfig {
   max: number;
@@ -22,6 +22,7 @@ const RATE_LIMITS: Record<RateLimitType, RateLimitConfig> = {
   vote: { max: 30, window: RATE_LIMIT_WINDOW_MS }, // 30 votes per minute
   submit: { max: 3, window: RATE_LIMIT_WINDOW_MS }, // 3 submissions per minute
   email: { max: 5, window: RATE_LIMIT_WINDOW_MS }, // 5 emails per minute
+  'admin-fail': { max: 10, window: RATE_LIMIT_WINDOW_MS }, // 10 failed admin logins per minute
 };
 
 const rateLimitStore = new Map<string, RateLimitRecord>();

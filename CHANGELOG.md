@@ -27,6 +27,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Moderation tooling for submitted laws: token-protected `GET /api/v1/admin/laws`
+  and `POST /api/v1/admin/laws/:id` endpoints (list by status with search, approve,
+  reject, edit text/title, admin notes, with a 409 on concurrent edits) and a
+  standalone page at `/api/v1/admin/ui`. Everything is disabled (404) unless
+  `ADMIN_API_TOKEN` is set to 32+ characters; the deploy workflow writes it to the
+  server `.env` from the GitHub secret of the same name and warns when it is empty.
+  Failed admin logins are rate limited, changes are logged, and admin routes stay out
+  of the public OpenAPI spec. Request bodies are capped at 16 KB and the page
+  handles conflicts, deleted laws, malformed replies, and concurrent refreshes.
+  CORS now allows the `Authorization` header.
+  Backend bumped to `2.3.35`; root to `2.6.79`.
+
+### Fixed
+
+- Law of the day no longer returns 404 (and breaks the deploy health check) when the
+  featured law is unpublished; a new published law is picked instead.
+- Resolved CodeQL findings in the admin page DOM test by parsing the page HTML
+  instead of stripping `<script>` tags with a regular expression.
+
 ### Changed
 
 - Daily Status Report: drop bullets from the law of the day, performance,

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Murphy's Laws moderation</title>
+  <link rel="stylesheet" href="/api/v1/admin/ui/admin.css">
+</head>
+<body>
+  <header class="bar">
+    <h1>Law moderation</h1>
+    <form id="connect-form" class="connect" autocomplete="off">
+      <label for="token">Admin token</label>
+      <input id="token" name="token" type="password" required autocomplete="off" spellcheck="false">
+      <button type="submit" class="btn btn-primary">Connect</button>
+    </form>
+  </header>
+
+  <main>
+    <div id="toolbar" class="toolbar" hidden>
+      <div class="tabs" id="tabs" role="group" aria-label="Filter by status"></div>
+      <form id="search-form" class="search" role="search">
+        <label for="search" class="visually-hidden">Search laws</label>
+        <input id="search" name="q" type="search" placeholder="Search title or text">
+        <button type="submit" class="btn">Search</button>
+      </form>
+    </div>
+
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+    <ul id="laws" class="laws"></ul>
+
+    <nav id="pager" class="pager" aria-label="Pagination" hidden>
+      <button type="button" id="prev" class="btn">Previous</button>
+      <span id="page-label"></span>
+      <button type="button" id="next" class="btn">Next</button>
+    </nav>
+  </main>
+
+  <script type="module" src="/api/v1/admin/ui/admin.js"></script>
+</body>
+</html>
