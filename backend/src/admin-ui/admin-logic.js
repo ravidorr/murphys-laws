@@ -52,7 +52,7 @@ function isSoleCategory(law, categoryId) {
   return current.length === 1 && current[0].id === categoryId;
 }
 
-/** Value for the category selector: the single category, or '' (shown as "Mixed") when the law has none or several. */
+/** Value for the category selector: the single category, or '' (the disabled placeholder option) when the law has none or several. */
 export function categorySelectValue(law) {
   const current = law.categories || [];
   return current.length === 1 ? String(current[0].id) : '';

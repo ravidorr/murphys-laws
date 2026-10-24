@@ -150,6 +150,13 @@ async function recoverFromSaveError(error, law, item, actions) {
       : error.message, true);
     return;
   }
+  if (error.status === 400 && error.message === 'Unknown category') {
+    const ok = await load({}, false);
+    say(ok
+      ? 'That category no longer exists. The list was reloaded; pick a category again.'
+      : error.message, true);
+    return;
+  }
   if (error.status === 404 && error.message === 'Law not found') {
     const change = applyStatusChange({ counts: state.counts, total: state.total, filter: state.status }, law.status, null);
     state.counts = change.counts;
@@ -164,7 +171,7 @@ async function recoverFromSaveError(error, law, item, actions) {
   handleError(error);
 }
 
-/** The server's category list, plus the law's own categories in case the list has not loaded them. */
+/** The server's category list, plus any of the law's own categories it lacks (for example when the list was omitted). */
 function categoryOptions(law, serverCategories) {
   const known = new Map(serverCategories.map((c) => [c.id, c]));
   for (const c of law.categories || []) {
@@ -204,6 +211,8 @@ function renderLaw(law, serverCategories = state.categories) {
   const category = el('select');
   const unset = el('option', null, law.categories && law.categories.length > 1 ? 'Several categories (pick one to replace)' : 'No category');
   unset.value = '';
+  // Clearing a category is not supported, so the placeholder is never a choice; it only shows the current state.
+  unset.disabled = true;
   category.append(unset);
   for (const option of categoryOptions(law, serverCategories)) {
     const node = el('option', null, option.name);

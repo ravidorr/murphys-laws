@@ -307,14 +307,46 @@ describe('admin page', () => {
       expect(select().value).toBe('9');
     });
 
-    it('shows the server error and keeps the selection when the category is rejected', async () => {
+    it('never offers the placeholder as a choice, since a category cannot be cleared', async () => {
+      await boot(jsonResponse(listReply([law(), law({ id: 2, categories: [] }), law({ id: 3, categories: cats })], { categories: cats })));
+      await connect();
+      for (const id of [1, 2, 3]) {
+        expect(select(id).options[0].disabled).toBe(true);
+      }
+      expect(select(1).value).toBe('1');
+    });
+
+    it('reloads the list when the chosen category no longer exists', async () => {
       await boot(jsonResponse(listReply([law()], { categories: cats })));
       await connect();
       select().value = '2';
       fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unknown category' }, 400));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law()], { categories: [cats[0]] })));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('That category no longer exists. The list was reloaded; pick a category again.');
+      expect([...select().options].map((o) => o.textContent)).toEqual(['No category', 'Cat']);
+    });
+
+    it('shows the server message when the reload after an unknown category also fails', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      select().value = '2';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unknown category' }, 400));
+      fetchMock.mockRejectedValueOnce(new Error('offline'));
       click(action('Save edits'));
       await flush();
       expect($('message').textContent).toBe('Unknown category');
+    });
+
+    it('shows the server error and keeps the selection when the category is rejected', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      select().value = '2';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'category_id must be a positive integer' }, 400));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('category_id must be a positive integer');
       expect(select().value).toBe('2');
       expect((action('Save edits') as HTMLButtonElement).disabled).toBe(false);
     });
