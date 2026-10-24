@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Admins can change the category of a submitted law. `POST /api/v1/admin/laws/:id`
+  accepts `category_id` (a positive integer naming an existing category, otherwise
+  400 `Unknown category`), which replaces all of the law's categories with that one in
+  the same transaction as the other edits, so category listings, counts and filters
+  update at once. The admin list also returns every category, the moderation page has a
+  category selector on each law, and the audit log line records the previous and new
+  category ids. Submitters cannot edit categories; this stays an admin action.
+  Backend bumped to `2.3.38`; root to `2.6.82`.
+
 - Thank-you email to the submitter when an admin approves a pending law that has a
   valid email address (new `law-approval-email-template` and
   `EmailService.sendLawApprovedEmail`). It needs SMTP, goes to one plain address, never
@@ -52,6 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Search index no longer drops a published law when it is updated without its text or
+  title changing (admin notes, category). The update triggers from migration 015 had no
+  guaranteed order, so the removal could undo the re-insert; migration 019 removes the old
+  entry BEFORE the update, inserts AFTER it, and rebuilds the index from published laws.
 - Law of the day no longer returns 404 (and breaks the deploy health check) when the
   featured law is unpublished; a new published law is picked instead.
 - Resolved CodeQL findings in the admin page DOM test by parsing the page HTML

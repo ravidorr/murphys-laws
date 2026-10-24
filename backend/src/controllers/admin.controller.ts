@@ -194,6 +194,13 @@ export class AdminController {
       update.adminNotes = body.admin_notes ? body.admin_notes.trim() || null : null;
     }
 
+    if (body.category_id !== undefined) {
+      if (typeof body.category_id !== 'number' || !Number.isInteger(body.category_id) || body.category_id <= 0) {
+        return this.fail(res, 400, 'category_id must be a positive integer', req);
+      }
+      update.categoryId = body.category_id;
+    }
+
     if (Object.keys(update).length === 0) {
       return this.fail(res, 400, 'No updatable fields provided', req);
     }
@@ -212,6 +219,10 @@ export class AdminController {
       console.warn(`Admin update of missing law ${lawId} from ${actor}`);
       return this.fail(res, 404, 'Law not found', req);
     }
+    if (result.outcome === 'invalid_category') {
+      console.warn(`Admin update of law ${lawId} from ${actor} rejected: unknown category ${update.categoryId}`);
+      return this.fail(res, 400, 'Unknown category', req);
+    }
     if (result.outcome === 'conflict') {
       console.warn(`Admin update of law ${lawId} from ${actor} rejected: law changed since it was loaded`);
       return this.fail(res, 409, 'This law changed since you loaded it. Reload the list and try again.', req);
@@ -225,6 +236,8 @@ export class AdminController {
       fields: Object.keys(update).filter((key) => key !== 'expectedUpdatedAt'),
       statusFrom: result.previousStatus,
       statusTo: update.status ?? result.previousStatus,
+      categoryFrom: update.categoryId === undefined ? undefined : result.previousCategoryIds,
+      categoryTo: update.categoryId,
       guarded: update.expectedUpdatedAt !== undefined,
       thankYou: thankYou === null ? undefined : thankYou.status === 'queued' ? 'queued' : `skipped:${thankYou.reason}`,
     }));
