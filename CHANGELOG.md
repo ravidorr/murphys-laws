@@ -42,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`/var/log/daily-report.log`) when the PM2, log analysis, backup, resource
   peak, vulnerability, or cost collectors fail, and let `daily-report.sh` use the
   `tsx` installed in `backend/node_modules` instead of downloading it through
-  `npx` on every run. Backend bumped to `2.3.35`; root to `2.6.79`.
+  `npx` on every run. Failure-logging tests mock `execFileSync` so they run no
+  host commands. Backend bumped to `2.3.35`; root to `2.6.79`.
 
 - Restore the Daily Status Report's API status, PM2 status, and log analysis:
   tolerate the banner and `[PM2]` diagnostics `pm2 jlist` prints before its JSON, and ignore non-numeric
