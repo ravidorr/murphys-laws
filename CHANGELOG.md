@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The admin moderation page is now served at `https://murphys-laws.com/admin`
+  (and `/admin` locally and through the Vite dev server). The backend serves it at
+  `/admin` with the same token rules and security headers as `/api/v1/admin/ui`
+  (still available), nginx proxies `/admin` to the API, the service worker lets it
+  pass through uncached, and `robots.txt` disallows it. Docs updated.
+  Backend bumped to `2.3.38`; web to `3.4.23`; root to `2.6.82`.
+
 - Thank-you email to the submitter when an admin approves a pending law that has a
   valid email address (new `law-approval-email-template` and
   `EmailService.sendLawApprovedEmail`). It needs SMTP, goes to one plain address, never

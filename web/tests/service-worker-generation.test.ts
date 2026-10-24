@@ -106,6 +106,18 @@ describe("service worker generation", () => {
     expect(sameOriginFallback).toBeGreaterThan(apiBypass);
   });
 
+  it("lets /admin navigations pass through to the backend-served moderation page", () => {
+    const source = renderServiceWorker({
+      revision: "test-revision",
+      urls: ["/", "/index.html"],
+    });
+    const bypass = source.indexOf("url.pathname === '/admin'");
+    const navigationHandler = source.indexOf("networkFirst(request, RUNTIME, '/index.html')");
+
+    expect(bypass).toBeGreaterThan(-1);
+    expect(bypass).toBeLessThan(navigationHandler);
+  });
+
   it("changes the cache revision when an excluded SSG page changes content", () => {
     const directoryEntries = new Map<string, fs.Dirent[]>([
       ["/dist", [entry("index.html", "file"), entry("law", "directory")]],
