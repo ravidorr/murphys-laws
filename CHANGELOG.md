@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Law of the day no longer returns 404 (and breaks the deploy health check) when the
   featured law is unpublished; a new published law is picked instead.
+- Resolved CodeQL findings in the admin page DOM test by parsing the page HTML
+  instead of stripping `<script>` tags with a regular expression.
 
 ### Changed
 

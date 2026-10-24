@@ -6,7 +6,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const pageHtml = readFileSync(resolve(__dirname, '../src/admin-ui/index.html'), 'utf8');
-const body = pageHtml.slice(pageHtml.indexOf('<body>') + 6, pageHtml.indexOf('</body>')).replace(/<script[\s\S]*?<\/script>/, '');
+const pageDoc = new DOMParser().parseFromString(pageHtml, 'text/html');
+pageDoc.querySelectorAll('script').forEach((node) => node.remove());
+const body = pageDoc.body.innerHTML;
 
 const law = (over: Record<string, unknown> = {}) => ({
   id: 1,
