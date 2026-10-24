@@ -23,5 +23,7 @@ export function errorMessage(status: number, fallback?: string): string;
 export function applyStatusChange(
   state: { counts: Record<string, number>; total: number; filter: string },
   from: string,
-  to: string,
+  to: string | null,
 ): { counts: Record<string, number>; total: number; removed: boolean };
+export function isListReply(data: unknown): boolean;
+export function isLawReply(data: unknown): boolean;

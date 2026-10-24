@@ -1,10 +1,12 @@
 import { checkAdminAuth } from '../middleware/admin-auth.ts';
 import { checkRateLimit } from '../middleware/rate-limit.ts';
 import { ADMIN_LAW_STATUSES, type AdminLawStatus, type AdminLawUpdate } from '../services/admin-laws.service.ts';
-import { getVoterIdentifier, readBody, sendJson, notFound, rateLimitExceeded } from '../utils/http-helpers.ts';
+import { getVoterIdentifier, readBody, sendJson, notFound, rateLimitExceeded, PayloadTooLargeError } from '../utils/http-helpers.ts';
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_NOTES_LENGTH = 2000;
+const MAX_QUERY_LENGTH = 200;
+const MAX_BODY_BYTES = 16 * 1024;
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
 function isStatus(value: unknown): value is AdminLawStatus {
@@ -12,6 +14,9 @@ function isStatus(value: unknown): value is AdminLawStatus {
 }
 
 function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; max: number; fallback: number }) {
+  if (value === undefined || value === '') {
+    return fallback;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(min, Math.min(max, Math.trunc(parsed))) : fallback;
 }
@@ -43,11 +48,11 @@ export class AdminController {
     }
     if (auth === 'unauthorized') {
       const identifier = getVoterIdentifier(req);
-      console.warn(`Admin auth failed from ${identifier}`);
       const rateLimit = checkRateLimit(identifier, 'admin-fail');
       if (!rateLimit.allowed) {
         rateLimitExceeded(res, rateLimit, req);
       } else {
+        console.warn(`Admin auth failed from ${identifier}`);
         this.fail(res, 401, 'Unauthorized', req);
       }
       return false;
@@ -67,6 +72,9 @@ export class AdminController {
     const limit = parseBoundedInt(query.limit, { min: 1, max: 100, fallback: 50 });
     const offset = parseBoundedInt(query.offset, { min: 0, max: Number.MAX_SAFE_INTEGER, fallback: 0 });
     const q = (query.q || '').toString().trim();
+    if (q.length > MAX_QUERY_LENGTH) {
+      return this.fail(res, 400, `q must be at most ${MAX_QUERY_LENGTH} characters`, req);
+    }
 
     const result = this.adminLawService.listLaws({ status: statusParam, q, limit, offset });
     return this.json(res, 200, { ...result, limit, offset, status: statusParam, q }, req);
@@ -82,8 +90,11 @@ export class AdminController {
 
     let body: any;
     try {
-      body = await readBody(req);
+      body = await readBody(req, MAX_BODY_BYTES);
     } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        return this.fail(res, 413, 'Request body too large', req);
+      }
       if (error instanceof SyntaxError) {
         return this.fail(res, 400, 'Invalid JSON body', req);
       }
@@ -103,7 +114,10 @@ export class AdminController {
     }
 
     if (body.text !== undefined) {
-      const text = typeof body.text === 'string' ? body.text.trim() : '';
+      if (typeof body.text !== 'string') {
+        return this.fail(res, 400, 'Law text must be a string', req);
+      }
+      const text = body.text.trim();
       if (text.length < 10 || text.length > 1000) {
         return this.fail(res, 400, 'Law text must be between 10 and 1000 characters', req);
       }
@@ -134,7 +148,8 @@ export class AdminController {
       return this.fail(res, 400, 'No updatable fields provided', req);
     }
 
-    if (body.updated_at !== undefined) {
+    // Optional: omitted or null means last write wins (a law without updated_at cannot be guarded).
+    if (body.updated_at !== undefined && body.updated_at !== null) {
       if (typeof body.updated_at !== 'string') {
         return this.fail(res, 400, 'updated_at must be a string', req);
       }
@@ -142,15 +157,25 @@ export class AdminController {
     }
 
     const result = this.adminLawService.updateLaw(lawId, update);
+    const actor = getVoterIdentifier(req);
     if (result.outcome === 'not_found') {
+      console.warn(`Admin update of missing law ${lawId} from ${actor}`);
       return this.fail(res, 404, 'Law not found', req);
     }
     if (result.outcome === 'conflict') {
+      console.warn(`Admin update of law ${lawId} from ${actor} rejected: law changed since it was loaded`);
       return this.fail(res, 409, 'This law changed since you loaded it. Reload the list and try again.', req);
     }
 
-    const { expectedUpdatedAt: _expected, ...applied } = update;
-    console.log(`Admin updated law ${lawId} from ${getVoterIdentifier(req)}: ${JSON.stringify(applied)}`);
+    console.log(JSON.stringify({
+      event: 'admin_law_update',
+      lawId,
+      actor,
+      fields: Object.keys(update).filter((key) => key !== 'expectedUpdatedAt'),
+      statusFrom: result.previousStatus,
+      statusTo: update.status ?? result.previousStatus,
+      guarded: update.expectedUpdatedAt !== undefined,
+    }));
     return this.json(res, 200, { data: result.law }, req);
   }
 }

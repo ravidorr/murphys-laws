@@ -23,14 +23,37 @@ function getAllowedOrigins(): string[] {
     : ['*'];
 }
 
-// Helper to read POST body
-export function readBody<T = Record<string, unknown>>(req: IncomingMessage): Promise<T> {
+export class PayloadTooLargeError extends Error {
+  constructor() {
+    super('Request body too large');
+    this.name = 'PayloadTooLargeError';
+  }
+}
+
+// Helper to read POST body. Pass maxBytes to reject oversized bodies with PayloadTooLargeError.
+export function readBody<T = Record<string, unknown>>(req: IncomingMessage, maxBytes?: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const chunks: Buffer[] = [];
+    let size = 0;
+    let tooLarge = false;
     req.on('data', (chunk: Buffer | string) => {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      if (tooLarge) {
+        return;
+      }
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      size += buffer.length;
+      if (maxBytes !== undefined && size > maxBytes) {
+        tooLarge = true;
+        chunks.length = 0;
+        return;
+      }
+      chunks.push(buffer);
     });
     req.on('end', () => {
+      if (tooLarge) {
+        reject(new PayloadTooLargeError());
+        return;
+      }
       try {
         const body = Buffer.concat(chunks).toString('utf8');
         resolve((body ? JSON.parse(body) : {}) as T);

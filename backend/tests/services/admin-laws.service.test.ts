@@ -83,6 +83,7 @@ describe('AdminLawService (real migrated schema)', () => {
     const result = admin.updateLaw(id, { status: 'published', title: null, text: 'New text of the law', adminNotes: 'ok' });
     expect(result.outcome).toBe('updated');
     if (result.outcome === 'updated') {
+      expect(result.previousStatus).toBe('in_review');
       expect(result.law).toMatchObject({ id, status: 'published', title: null, text: 'New text of the law', admin_notes: 'ok' });
       expect(result.law.updated_at).not.toBe('2030-01-01T00:00:00.000Z');
     }
@@ -102,23 +103,53 @@ describe('AdminLawService (real migrated schema)', () => {
     expect(admin.updateLaw(999999, { title: 'x', expectedUpdatedAt: 'whatever' })).toEqual({ outcome: 'not_found' });
   });
 
+  it('lets only one of two updates with the same expectedUpdatedAt win', () => {
+    const id = insertLaw(null, 'Another law about queues', 'in_review');
+    const guard = '2030-01-01T00:00:00.000Z';
+    const first = admin.updateLaw(id, { title: 'First', expectedUpdatedAt: guard });
+    const second = admin.updateLaw(id, { title: 'Second', expectedUpdatedAt: guard });
+    expect([first.outcome, second.outcome].sort()).toEqual(['conflict', 'updated']);
+    expect(admin.listLaws({ status: 'all', q: 'queues', limit: 5, offset: 0 }).data[0].title).toBe('First');
+  });
+
   it('rejects an invalid status at the database level', () => {
     const id = insertLaw(null, 'Another law about queues', 'in_review');
     expect(() => admin.updateLaw(id, { status: 'weird' as never })).toThrow();
   });
 
-  it('keeps law of the day available after the featured law is rejected', async () => {
-    const featured = insertLaw('Featured', 'Zebrafish law that is featured today', 'published');
-    const other = insertLaw('Other', 'Narwhal law that is available as a replacement', 'published');
-    const today = new Date().toISOString().split('T')[0];
-    db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(featured, today);
+  describe('law of the day', () => {
+    const today = () => new Date().toISOString().split('T')[0];
+    let featured: number;
+    let other: number;
 
-    expect((await laws.getLawOfTheDay())?.law.id).toBe(featured);
+    beforeEach(() => {
+      // Isolate from the seeded laws so the replacement is predictable.
+      db.exec("DELETE FROM laws WHERE status = 'published'");
+      featured = insertLaw('Featured', 'Zebrafish law that is featured today', 'published');
+      other = insertLaw('Other', 'Narwhal law that is available as a replacement', 'published');
+      db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(featured, today());
+    });
 
-    admin.updateLaw(featured, { status: 'rejected' });
-    const replacement = await laws.getLawOfTheDay();
-    expect(replacement).not.toBeNull();
-    expect(replacement?.law.id).not.toBe(featured);
-    expect([other, replacement?.law.id]).toContain(replacement?.law.id);
+    it('picks a new published law once after the featured law is rejected, and keeps it', async () => {
+      expect((await laws.getLawOfTheDay())?.law.id).toBe(featured);
+
+      admin.updateLaw(featured, { status: 'rejected' });
+      expect((await laws.getLawOfTheDay())?.law.id).toBe(other);
+      expect((await laws.getLawOfTheDay())?.law.id).toBe(other);
+      expect(db.prepare('SELECT COUNT(*) AS n FROM law_of_the_day_history WHERE featured_date = ?').get(today())).toEqual({ n: 2 });
+    });
+
+    it('does not override the newer pick when the rejected law is approved again', async () => {
+      admin.updateLaw(featured, { status: 'rejected' });
+      await laws.getLawOfTheDay();
+      admin.updateLaw(featured, { status: 'published' });
+      expect((await laws.getLawOfTheDay())?.law.id).toBe(other);
+    });
+
+    it('returns null instead of throwing when no published law is left', async () => {
+      admin.updateLaw(featured, { status: 'rejected' });
+      admin.updateLaw(other, { status: 'in_review' });
+      expect(await laws.getLawOfTheDay()).toBeNull();
+    });
   });
 });

@@ -9,10 +9,14 @@ import {
   describeSubmitter,
   errorMessage,
   applyStatusChange,
+  isListReply,
+  isLawReply,
 } from './admin-logic.js';
 
 const state = { token: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {} };
 let loadSeq = 0;
+let inFlightLoads = 0;
+const INITIAL_STATE = { ...state };
 
 const $ = (id) => document.getElementById(id);
 const lawsEl = $('laws');
@@ -62,14 +66,15 @@ async function api(path, options = {}) {
     data = {};
   }
   if (!response.ok) {
-    throw new ApiError(errorMessage(response.status, data.error), response.status);
+    throw new ApiError(errorMessage(response.status, data && data.error), response.status);
   }
   return data;
 }
 
-/** After a rejected token the list and filters stay hidden until the admin connects again. */
+/** After a rejected token everything is reset and hidden until the admin connects again. */
 function disconnect() {
-  state.token = '';
+  Object.assign(state, INITIAL_STATE);
+  $('search').value = '';
   $('toolbar').hidden = true;
   $('pager').hidden = true;
   lawsEl.replaceChildren();
@@ -118,8 +123,8 @@ function setBusy(actions, busy) {
   actions.querySelectorAll('button').forEach((b) => { b.disabled = busy; });
 }
 
-/** Rebuild the list when a save emptied the current page. */
-async function refillIfEmpty() {
+/** Rebuild the list when a save emptied the current page; reloads the same offset so the next laws move up. */
+async function refillIfEmpty(lawId) {
   if (lawsEl.children.length > 0) {
     renderPager();
     return;
@@ -129,7 +134,32 @@ async function refillIfEmpty() {
     renderPager();
     return;
   }
-  await load({ offset: Math.max(0, state.offset - PAGE_SIZE) }, false);
+  if (!(await load({}, false))) {
+    say(`Law #${lawId} was saved, but the list could not refresh. Click a tab to reload.`, true);
+  }
+}
+
+/** 409 and 404 leave a stale card behind, so the list is brought back in line with the server. */
+async function recoverFromSaveError(error, law, item, actions) {
+  if (error.status === 409) {
+    const ok = await load({}, false);
+    say(ok
+      ? `Law #${law.id} changed since you loaded it. The list was reloaded; apply your edit again.`
+      : error.message, true);
+    return;
+  }
+  if (error.status === 404 && error.message === 'Law not found') {
+    const change = applyStatusChange({ counts: state.counts, total: state.total, filter: state.status }, law.status, null);
+    state.counts = change.counts;
+    state.total = change.total;
+    renderTabs();
+    item.remove();
+    say(`Law #${law.id} no longer exists.`, true);
+    await refillIfEmpty(law.id);
+    return;
+  }
+  setBusy(actions, false);
+  handleError(error);
 }
 
 function renderLaw(law) {
@@ -164,30 +194,50 @@ function renderLaw(law) {
       say(`Law #${law.id} has no changes.`);
       return;
     }
+    if (typeof law.updated_at === 'string') {
+      body.updated_at = law.updated_at;
+    }
+
     setBusy(actions, true);
-    let updated;
+    const seqAtStart = loadSeq;
+    let reply;
     try {
-      ({ data: updated } = await api(`/api/v1/admin/laws/${law.id}`, {
-        method: 'POST',
-        body: JSON.stringify({ ...body, updated_at: law.updated_at }),
-      }));
+      reply = await api(`/api/v1/admin/laws/${law.id}`, { method: 'POST', body: JSON.stringify(body) });
+      if (!isLawReply(reply)) {
+        throw new ApiError('The server reply could not be read. Reload the list to check the law.', 0);
+      }
     } catch (error) {
-      setBusy(actions, false);
-      handleError(error);
+      await recoverFromSaveError(error, law, item, actions);
       return;
     }
 
-    const change = applyStatusChange({ counts: state.counts, total: state.total, filter: state.status }, law.status, updated.status);
-    state.counts = change.counts;
-    state.total = change.total;
-    renderTabs();
-    if (change.removed) {
-      item.remove();
-    } else {
-      item.replaceWith(renderLaw(updated));
+    try {
+      const updated = reply.data;
+      // A list refresh that ran during the save (or is still running) cannot be patched locally.
+      const concurrent = inFlightLoads > 0 || loadSeq !== seqAtStart || !item.isConnected;
+      loadSeq += 1;
+      if (concurrent) {
+        const ok = await load({}, false);
+        say(ok ? `Law #${law.id} updated.` : `Law #${law.id} was saved, but the list could not refresh. Click a tab to reload.`, !ok);
+        return;
+      }
+
+      const change = applyStatusChange({ counts: state.counts, total: state.total, filter: state.status }, law.status, updated.status);
+      state.counts = change.counts;
+      state.total = change.total;
+      renderTabs();
+      if (change.removed) {
+        item.remove();
+      } else {
+        item.replaceWith(renderLaw(updated));
+      }
+      say(`Law #${law.id} updated.`);
+      await refillIfEmpty(law.id);
+    } catch (error) {
+      console.error('Admin page could not refresh after a save', error);
+      setBusy(actions, false);
+      say(`Law #${law.id} was saved, but the page could not refresh. Reload the page.`, true);
     }
-    say(`Law #${law.id} updated.`);
-    await refillIfEmpty();
   };
 
   const addAction = (label, className, status) => {
@@ -218,38 +268,52 @@ function renderLaw(law) {
 }
 
 /**
- * Fetches a page for the requested filter. State changes only after the fetch succeeds, and a newer
- * request makes older, slower responses be ignored.
+ * Fetches a page for the requested filter. The new view is built before any state changes, so a failure
+ * leaves the old view intact, and a newer request makes older, slower responses be ignored.
  */
 async function load(patch = {}, announce = true) {
   const next = { ...state, ...patch };
   const seq = ++loadSeq;
-  let data;
+  inFlightLoads += 1;
   try {
-    data = await api(buildListUrl(next));
+    const data = await api(buildListUrl(next));
+    if (seq !== loadSeq) {
+      return false;
+    }
+    if (!isListReply(data)) {
+      throw new ApiError('The server reply could not be read. Reload the page.', 0);
+    }
+    if (data.data.length === 0 && data.total > 0 && next.offset > 0) {
+      inFlightLoads -= 1;
+      try {
+        return await load({ ...patch, offset: Math.max(0, next.offset - PAGE_SIZE) }, announce);
+      } finally {
+        inFlightLoads += 1;
+      }
+    }
+
+    const cards = data.data.map(renderLaw);
+    Object.assign(state, next, { total: data.total, counts: data.counts });
+    $('toolbar').hidden = false;
+    $('token').value = '';
+    renderTabs();
+    lawsEl.replaceChildren(...cards);
+    renderPager();
+    if (announce) {
+      say(data.total === 0 ? 'Nothing to show for this filter.' : '');
+    }
+    return true;
   } catch (error) {
     if (seq === loadSeq) {
-      handleError(error);
+      if (!(error instanceof ApiError)) {
+        console.error('Admin list could not be displayed', error);
+      }
+      handleError(error instanceof ApiError ? error : new ApiError('The server reply could not be displayed. Reload the page.', 0));
     }
     return false;
+  } finally {
+    inFlightLoads -= 1;
   }
-  if (seq !== loadSeq) {
-    return false;
-  }
-
-  if (data.data.length === 0 && data.total > 0 && next.offset > 0) {
-    return load({ ...patch, offset: Math.max(0, next.offset - PAGE_SIZE) }, announce);
-  }
-
-  Object.assign(state, next, { total: data.total, counts: data.counts });
-  $('toolbar').hidden = false;
-  renderTabs();
-  lawsEl.replaceChildren(...data.data.map(renderLaw));
-  renderPager();
-  if (announce) {
-    say(data.total === 0 ? 'Nothing to show for this filter.' : '');
-  }
-  return true;
 }
 
 $('connect-form').addEventListener('submit', (event) => {
@@ -258,10 +322,14 @@ $('connect-form').addEventListener('submit', (event) => {
   load({ offset: 0 });
 });
 
-$('search-form').addEventListener('submit', (event) => {
+$('search-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  load({ q: $('search').value.trim(), offset: 0 });
+  const ok = await load({ q: $('search').value.trim(), offset: 0 });
+  if (!ok) {
+    $('search').value = state.q;
+  }
 });
 
 $('prev').addEventListener('click', () => load({ offset: Math.max(0, state.offset - PAGE_SIZE) }));
-$('next').addEventListener('click', () => load({ offset: state.offset + PAGE_SIZE }));
+// Next continues after the laws still on screen, so cards removed by a save do not make laws get skipped.
+$('next').addEventListener('click', () => load({ offset: state.offset + lawsEl.children.length }));

@@ -36,7 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ADMIN_API_TOKEN` is set to 32+ characters; the deploy workflow writes it to the
   server `.env` from the GitHub secret of the same name and warns when it is empty.
   Failed admin logins are rate limited, changes are logged, and admin routes stay out
-  of the public OpenAPI spec. CORS now allows the `Authorization` header.
+  of the public OpenAPI spec. Request bodies are capped at 16 KB and the page
+  handles conflicts, deleted laws, malformed replies, and concurrent refreshes.
+  CORS now allows the `Authorization` header.
   Backend bumped to `2.3.35`; root to `2.6.79`.
 
 ### Fixed
