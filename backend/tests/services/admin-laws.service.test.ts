@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach } from 'vitest';
 import type Database from 'better-sqlite3';
 import { AdminLawService } from '../../src/services/admin-laws.service.ts';
@@ -86,6 +89,33 @@ describe('AdminLawService (real migrated schema)', () => {
     expect(indexed()).toEqual([{ rowid: id }]);
     admin.updateLaw(id, { status: 'in_review' });
     expect(indexed()).toEqual([]);
+  });
+
+  describe('migration 019', () => {
+    const migrationSql = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'db', 'migrations', '019_fix_law_fts_update_triggers.sql'), 'utf8');
+    const indexed = () => (db.prepare("SELECT rowid FROM laws_fts WHERE laws_fts MATCH 'zebrafish'").all() as { rowid: number }[]).map((r) => r.rowid);
+
+    it('leaves exactly one update-removal trigger, running before the update', () => {
+      const triggers = db.prepare("SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND tbl_name = 'laws' ORDER BY name").all() as { name: string; sql: string }[];
+      expect(triggers.map((t) => t.name)).toEqual([
+        'laws_fts_after_delete',
+        'laws_fts_after_insert',
+        'laws_fts_after_update_insert',
+        'laws_fts_before_update_delete',
+      ]);
+      expect(triggers.find((t) => t.name === 'laws_fts_before_update_delete')?.sql).toContain('BEFORE UPDATE');
+    });
+
+    it('repairs an index damaged earlier and drops entries of unpublished laws', () => {
+      const published = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'published');
+      const pending = insertLaw('Pending', 'Zebrafish in review must not be searchable', 'in_review');
+      db.prepare("INSERT INTO laws_fts(laws_fts, rowid, title, text) VALUES ('delete', ?, 'Fish', 'Zebrafish always escape the net you bought yesterday')").run(published);
+      db.prepare("INSERT INTO laws_fts(rowid, title, text) VALUES (?, 'Pending', 'Zebrafish in review must not be searchable')").run(pending);
+      expect(indexed()).toEqual([pending]);
+
+      db.exec(migrationSql);
+      expect(indexed()).toEqual([published]);
+    });
   });
 
   it('editing a published law refreshes the search index', async () => {

@@ -30,8 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Admins can change the category of a submitted law. `POST /api/v1/admin/laws/:id`
-  accepts `category_id` (a positive integer naming an existing category, otherwise
-  400 `Unknown category`), which replaces all of the law's categories with that one in
+  accepts `category_id` (a positive integer: 400 `category_id must be a positive integer`
+  if malformed, 400 `Unknown category` if no such category exists), which replaces all of the law's categories with that one in
   the same transaction as the other edits, so category listings, counts and filters
   update at once. The admin list also returns every category, the moderation page has a
   category selector on each law, and the audit log line records the previous and new
