@@ -6,6 +6,9 @@ import { notFound } from '../utils/http-helpers.ts';
 import { getCorsOrigin } from '../middleware/cors.ts';
 import { OPENAPI_SPEC } from '../openapi.ts';
 
+/** Token-protected moderation endpoints; intentionally absent from the public OpenAPI spec. */
+export const ADMIN_API_PREFIX = '/api/v1/admin/';
+
 export type RouteMethod = 'GET' | 'POST' | 'DELETE';
 type ParsedRequestUrl = url.UrlWithParsedQuery & { query: ParsedUrlQuery };
 type RouteHandler = (req: IncomingMessage, res: ServerResponse, ...args: any[]) => unknown | Promise<unknown>;
@@ -100,7 +103,7 @@ export class Router {
   assertPublicApiContract(): void {
     const registered = new Set<string>();
     for (const route of this.routes) {
-      if (typeof route.originalPath !== 'string' || !route.originalPath.startsWith('/api')) {
+      if (typeof route.originalPath !== 'string' || !route.originalPath.startsWith('/api') || route.originalPath.startsWith(ADMIN_API_PREFIX)) {
         continue;
       }
 
@@ -163,7 +166,7 @@ export class Router {
     const headers: OutgoingHttpHeaders = {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
     if (origin !== '*') {
