@@ -28,6 +28,7 @@ interface AdminLawRow {
   status: AdminLawStatus;
   admin_notes: string | null;
   first_seen_file_path: string | null;
+  approval_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +56,7 @@ export type AdminUpdateResult =
   | { outcome: 'conflict' }
   | { outcome: 'not_found' };
 
-const LAW_COLUMNS = 'id, title, text, status, admin_notes, first_seen_file_path, created_at, updated_at';
+const LAW_COLUMNS = 'id, title, text, status, admin_notes, first_seen_file_path, approval_email_sent_at, created_at, updated_at';
 
 export class AdminLawService {
   db: Db;
@@ -126,6 +127,13 @@ export class AdminLawService {
       return { outcome: 'updated', law: this.attachDetails([row])[0], previousStatus: before.status };
     });
     return apply();
+  }
+
+  /** Records the thank-you without touching updated_at, so open admin pages do not see a false conflict. */
+  markApprovalEmailSent(id: number): void {
+    this.db
+      .prepare("UPDATE laws SET approval_email_sent_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ? AND approval_email_sent_at IS NULL")
+      .run(id);
   }
 
   private statusCounts(): Record<AdminLawStatus, number> {

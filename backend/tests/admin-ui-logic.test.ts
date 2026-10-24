@@ -85,4 +85,16 @@ describe('admin-logic', () => {
       expect(logic.isLawReply(bad)).toBe(false);
     }
   });
+
+  it('describes the thank-you email outcome for the admin', () => {
+    expect(logic.describeThankYou(undefined)).toBe('');
+    expect(logic.describeThankYou(null)).toBe('');
+    expect(logic.describeThankYou({ status: 'queued' })).toBe(' Thank-you email is being sent (delivery is not confirmed).');
+    expect(logic.describeThankYou({ status: 'skipped', reason: 'no_email' })).toContain('left no email address');
+    expect(logic.describeThankYou({ status: 'skipped', reason: 'invalid_email' })).toContain('not valid');
+    expect(logic.describeThankYou({ status: 'skipped', reason: 'not_configured' })).toContain('not set up');
+    expect(logic.describeThankYou({ status: 'skipped', reason: 'already_sent' })).toContain('already sent');
+    expect(logic.describeThankYou({ status: 'skipped', reason: 'error' })).toContain('server logs');
+    expect(logic.describeThankYou({ status: 'skipped', reason: 'something-new' })).toBe(' No thank-you email was sent.');
+  });
 });

@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Readable } from 'node:stream';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createApiServer } from '../../src/server/api-server.ts';
+import { EmailService } from '../../src/services/email.service.ts';
 import { createMigratedDb } from '../helpers/migrated-db.ts';
+
+const { mockSendMail } = vi.hoisted(() => ({ mockSendMail: vi.fn() }));
+vi.mock('nodemailer', () => ({
+  default: { createTransport: () => ({ sendMail: mockSendMail }) },
+}));
 
 const TOKEN = 'k'.repeat(40);
 let ipCounter = 0;
@@ -13,6 +19,8 @@ interface Reply {
   body: string;
   json: () => any;
 }
+
+const smtp = () => new EmailService({ host: 'smtp.example.com', user: 'u', pass: 'p', from: 'noreply@murphys-laws.com', to: 'admin@murphys-laws.com' });
 
 describe('admin API through the real server and migrated database', () => {
   let db: ReturnType<typeof createMigratedDb>;
@@ -57,7 +65,9 @@ describe('admin API through the real server and migrated database', () => {
     lawId = Number(
       db.prepare("INSERT INTO laws (title, text, status, first_seen_file_path) VALUES ('Fish', 'Zebrafish always escape the net you bought', 'in_review', 'web-submission')").run().lastInsertRowid,
     );
-    ({ server } = createApiServer({ db: db as any }));
+    mockSendMail.mockReset();
+    mockSendMail.mockResolvedValue(undefined);
+    ({ server } = createApiServer({ db: db as any, emailService: smtp() }));
   });
 
   afterEach(() => {
@@ -190,5 +200,102 @@ describe('admin API through the real server and migrated database', () => {
   it('keeps admin routes out of the public OpenAPI spec', async () => {
     const spec = (await request('GET', '/api/v1/openapi.json')).json();
     expect(Object.keys(spec.paths).filter((path) => path.includes('/admin'))).toEqual([]);
+  });
+
+  describe('thank-you email', () => {
+    const post = (id: number, body: unknown) => request('POST', `/api/v1/admin/laws/${id}`, { token: TOKEN, body });
+    const addContact = (id: number, type: string, value: string | null, name = 'Ann') =>
+      db.prepare('INSERT INTO attributions (law_id, name, contact_type, contact_value) VALUES (?, ?, ?, ?)').run(id, name, type, value);
+    const sentAt = (id: number) => (db.prepare('SELECT approval_email_sent_at AS at FROM laws WHERE id = ?').get(id) as { at: string | null }).at;
+    const newPendingLaw = () =>
+      Number(db.prepare("INSERT INTO laws (title, text, status, first_seen_file_path) VALUES (NULL, 'Another submitted law about socks', 'in_review', 'web-submission')").run().lastInsertRowid);
+
+    it('sends one thank-you through the real mail service and remembers it', async () => {
+      addContact(lawId, 'email', 'ann@example.com');
+
+      const approved = await post(lawId, { status: 'published' });
+      expect(approved.json().thank_you).toEqual({ status: 'queued' });
+      await vi.waitFor(() => expect(sentAt(lawId)).not.toBeNull());
+
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      const [mail] = mockSendMail.mock.calls[0];
+      expect(mail).toMatchObject({ from: 'noreply@murphys-laws.com', to: { name: '', address: 'ann@example.com' }, subject: 'Your Murphy\'s Law is now published' });
+      expect(mail.bcc).toBeUndefined();
+      expect(mail.text).toContain('Hi Ann,');
+      expect(mail.text).toContain(`https://murphys-laws.com/law/${lawId}`);
+
+      // Review and approve again: the submitter is not emailed twice.
+      await post(lawId, { status: 'in_review' });
+      const again = await post(lawId, { status: 'published' });
+      expect(again.json().thank_you).toEqual({ status: 'skipped', reason: 'already_sent' });
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries on the next approval when the send failed', async () => {
+      addContact(lawId, 'email', 'ann@example.com');
+      mockSendMail.mockRejectedValueOnce(Object.assign(new Error('550 <ann@example.com> rejected'), { code: 'EENVELOPE', responseCode: 550 }));
+
+      expect((await post(lawId, { status: 'published' })).json().thank_you).toEqual({ status: 'queued' });
+      await vi.waitFor(() => expect(mockSendMail).toHaveBeenCalledTimes(1));
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(sentAt(lawId)).toBeNull();
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('(code: EENVELOPE, response: 550)'));
+      expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('ann@example.com');
+
+      await post(lawId, { status: 'in_review' });
+      expect((await post(lawId, { status: 'published' })).json().thank_you).toEqual({ status: 'queued' });
+      await vi.waitFor(() => expect(sentAt(lawId)).not.toBeNull());
+      expect(mockSendMail).toHaveBeenCalledTimes(2);
+    });
+
+    it('answers before the mail server responds', async () => {
+      addContact(lawId, 'email', 'ann@example.com');
+      mockSendMail.mockReturnValue(new Promise(() => {}));
+      const reply = await post(lawId, { status: 'published' });
+      expect(reply.status).toBe(200);
+      expect(reply.json().thank_you).toEqual({ status: 'queued' });
+      expect(sentAt(lawId)).toBeNull();
+    });
+
+    it('says why nothing was sent', async () => {
+      const noEmail = newPendingLaw();
+      addContact(noEmail, 'text', 'Bob');
+      expect((await post(noEmail, { status: 'published' })).json().thank_you).toEqual({ status: 'skipped', reason: 'no_email' });
+
+      const badEmail = newPendingLaw();
+      addContact(badEmail, 'email', 'a@b.co,c@d.co');
+      expect((await post(badEmail, { status: 'published' })).json().thank_you).toEqual({ status: 'skipped', reason: 'invalid_email' });
+
+      ({ server } = createApiServer({ db: db as any, emailService: new EmailService({}) }));
+      const unconfigured = newPendingLaw();
+      addContact(unconfigured, 'email', 'ann@example.com');
+      expect((await post(unconfigured, { status: 'published' })).json().thank_you).toEqual({ status: 'skipped', reason: 'not_configured' });
+      expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it('sends nothing for rejections, edits of pending laws, edits of published laws or stale requests', async () => {
+      addContact(lawId, 'email', 'ann@example.com');
+
+      expect((await post(lawId, { admin_notes: 'checking' })).json().thank_you).toBeNull();
+      expect((await post(lawId, { status: 'published', updated_at: 'stale' })).status).toBe(409);
+      expect((await post(lawId, { status: 'rejected' })).json().thank_you).toBeNull();
+
+      await post(lawId, { status: 'published' });
+      await post(lawId, { status: 'in_review' });
+      await post(lawId, { status: 'rejected' });
+      expect((await post(lawId, { status: 'published' })).json().thank_you).toBeNull();
+      expect((await post(lawId, { admin_notes: 'edit after publishing' })).json().thank_you).toBeNull();
+      expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it('uses the first valid email when a law lists several', async () => {
+      addContact(lawId, 'email', 'broken address');
+      addContact(lawId, 'email', 'zed@example.com', 'Zed');
+      addContact(lawId, 'email', 'later@example.com', 'Later');
+      await post(lawId, { status: 'published' });
+      await vi.waitFor(() => expect(mockSendMail).toHaveBeenCalledTimes(1));
+      expect(mockSendMail.mock.calls[0][0].to.address).toBe('zed@example.com');
+      expect(mockSendMail.mock.calls[0][0].text).toContain('Hi Zed,');
+    });
   });
 });

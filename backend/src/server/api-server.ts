@@ -116,7 +116,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   } else {
     console.log('Admin API disabled (ADMIN_API_TOKEN unset)');
   }
-  const adminController = new AdminController(new AdminLawService(db));
+  const adminController = new AdminController(new AdminLawService(db), emailService);
   const adminUiController = new AdminUiController();
 
   const router = new Router();
