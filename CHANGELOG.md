@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/api/v1/admin/ui`). A zero count says so and omits the link; if the count cannot be
   read (including a missing database or a hung query) the report still sends, flags the
   count as unavailable, and logs the failure. The report script reads `BASE_URL` from the
-  environment or the root/backend `.env`, since the cron launcher does not load it. Backend bumped to `2.3.38`; root to `2.6.82`.
+  environment or the root/backend `.env`, since the cron launcher does not load it. A `BASE_URL` that is not a plain http(s) URL (for example one with a query or fragment) is logged and ignored. Backend bumped to `2.3.38`; root to `2.6.82`.
 
 - Thank-you email to the submitter when an admin approves a pending law that has a
   valid email address (new `law-approval-email-template` and
