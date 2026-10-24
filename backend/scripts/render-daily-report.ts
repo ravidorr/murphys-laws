@@ -590,6 +590,12 @@ function scriptPath(repoRoot: string, fileName: string): string {
   return inRepo;
 }
 
+/** Writes a collector failure to stderr so it lands in the daily-report log. */
+export function logCollectorError(collector: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`[daily-report] ${collector} failed: ${message}\n`);
+}
+
 function runShellJson<T>(script: string, args: string[], env: NodeJS.ProcessEnv): T {
   const stdout = execFileSync('bash', [script, ...args], {
     env,
@@ -707,7 +713,8 @@ function collectMurphysApiPm2Status(): { section: ReportSection; summaryItem?: R
       ]),
       summaryItem: { label: 'API', value: `${status} (${restarts} restarts)`, tone },
     };
-  } catch {
+  } catch (error) {
+    logCollectorError('PM2 status', error);
     return {
       section: section('PM2 APPLICATIONS', [
         { value: 'Unable to retrieve PM2 status', kind: 'callout-check-failed' },
@@ -1210,7 +1217,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         env,
       );
       sections.push(mapPeakSection(peaks));
-    } catch {
+    } catch (error) {
+      logCollectorError('resource peak analysis', error);
       sections.push(section('PEAK RESOURCE USAGE (Last 30 Days)', [{ value: 'Peak resource analysis not available' }]));
     }
   }
@@ -1291,7 +1299,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
           });
           summary.push({ label: 'Backups', value: `${hoursOld} hours old`, tone: 'warning' });
         }
-      } catch {
+      } catch (error) {
+        logCollectorError('backup date', error);
         backupItems.push({ label: 'Backup date', value: 'Unknown' });
       }
     } else {
@@ -1335,7 +1344,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         tone: 'warning',
       });
     }
-  } catch {
+  } catch (error) {
+    logCollectorError('log analysis', error);
     sections.push(section('LOG ANALYSIS & ATTACK DETECTION', [{ value: 'Log analysis not available' }]));
   }
 
@@ -1347,7 +1357,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         env,
       );
       sections.push(mapVulnerabilitySection(vuln));
-    } catch {
+    } catch (error) {
+      logCollectorError('vulnerability scan', error);
       sections.push(section('WEEKLY VULNERABILITY SCAN', [{ value: 'Vulnerability scan failed' }]));
     }
   }
@@ -1361,7 +1372,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       );
       sections.push(mapCostSection(cost));
       sections.push(backupReminderSection());
-    } catch {
+    } catch (error) {
+      logCollectorError('cost optimization report', error);
       sections.push(section('MONTHLY COST OPTIMIZATION REPORT', [{ value: 'Cost optimization report not available' }]));
     }
   }
