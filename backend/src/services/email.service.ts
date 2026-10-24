@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { SITE_URL } from '../utils/constants.ts';
 import {
   createSodsEmailHtml,
   createSodsEmailSubject,
@@ -10,6 +11,12 @@ import {
   createLawSubmissionEmailText,
   createLawSubmissionEmailHtml,
 } from '../../../shared/modules/law-submission-email-template.ts';
+import {
+  type LawApprovalEmailData,
+  createLawApprovalEmailSubject,
+  createLawApprovalEmailText,
+  createLawApprovalEmailHtml,
+} from '../../../shared/modules/law-approval-email-template.ts';
 
 export interface EmailConfig {
   host?: string;
@@ -19,6 +26,11 @@ export interface EmailConfig {
   from?: string;
   to?: string;
 }
+
+export type ApprovalEmailResult =
+  | { status: 'sent' }
+  | { status: 'skipped'; reason: 'not_configured' }
+  | { status: 'failed' };
 
 export class EmailService {
   private config: EmailConfig;
@@ -41,6 +53,36 @@ export class EmailService {
       console.log('Email notifications enabled');
     } else {
       console.log('Email notifications disabled (SMTP not configured)');
+    }
+  }
+
+  isConfigured(): boolean {
+    return this.transporter !== null;
+  }
+
+  /**
+   * Thanks the submitter once their law is published. Never throws. Failures are logged by law ID, error code
+   * and SMTP response code only, because the rest of an SMTP error can contain the recipient's address.
+   */
+  async sendLawApprovedEmail(to: string, lawData: LawApprovalEmailData): Promise<ApprovalEmailResult> {
+    if (!this.transporter) {
+      return { status: 'skipped', reason: 'not_configured' };
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: this.config.from,
+        to: { name: '', address: to },
+        subject: createLawApprovalEmailSubject(),
+        text: createLawApprovalEmailText(lawData, SITE_URL),
+        html: createLawApprovalEmailHtml(lawData, SITE_URL),
+      });
+      console.log(`Thank-you email sent for law ID ${lawData.id}`);
+      return { status: 'sent' };
+    } catch (error: unknown) {
+      const { code, responseCode } = (error ?? {}) as { code?: unknown; responseCode?: unknown };
+      console.error(`Failed to send thank-you email for law ID ${lawData.id} (code: ${String(code ?? 'unknown')}, response: ${String(responseCode ?? 'none')})`);
+      return { status: 'failed' };
     }
   }
 

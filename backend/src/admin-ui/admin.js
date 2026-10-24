@@ -11,6 +11,7 @@ import {
   applyStatusChange,
   isListReply,
   isLawReply,
+  describeThankYou,
 } from './admin-logic.js';
 
 const state = { token: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {} };
@@ -213,12 +214,13 @@ function renderLaw(law) {
 
     try {
       const updated = reply.data;
+      const thanks = describeThankYou(reply.thank_you);
       // A list refresh that ran during the save (or is still running) cannot be patched locally.
       const concurrent = inFlightLoads > 0 || loadSeq !== seqAtStart || !item.isConnected;
       loadSeq += 1;
       if (concurrent) {
         const ok = await load({}, false);
-        say(ok ? `Law #${law.id} updated.` : `Law #${law.id} was saved, but the list could not refresh. Click a tab to reload.`, !ok);
+        say(ok ? `Law #${law.id} updated.${thanks}` : `Law #${law.id} was saved, but the list could not refresh. Click a tab to reload.${thanks}`, !ok);
         return;
       }
 
@@ -231,7 +233,7 @@ function renderLaw(law) {
       } else {
         item.replaceWith(renderLaw(updated));
       }
-      say(`Law #${law.id} updated.`);
+      say(`Law #${law.id} updated.${thanks}`);
       await refillIfEmpty(law.id);
     } catch (error) {
       console.error('Admin page could not refresh after a save', error);

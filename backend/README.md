@@ -53,7 +53,7 @@ intentionally not in the public OpenAPI spec.
 - Page: `/api/v1/admin/ui` (paste the token; it is kept in memory only).
 - `GET /api/v1/admin/laws` - query `status` (`in_review` default, `published`, `rejected`, `all`), `q` (max 200 characters), `limit` (1-100, default 50), `offset`. Returns `data`, `total`, and per-status `counts`.
 - `POST /api/v1/admin/laws/{id}` - JSON body (max 16 KB, else `413`) with any of `status`, `text` (10-1000 characters), `title` (max 200), `admin_notes` (max 2000, `null` clears). Send the law's `updated_at` to get a `409` if someone else changed it first; omit it (or send `null`) for last write wins.
-- Auth: `Authorization: Bearer <ADMIN_API_TOKEN>`. Without a token of at least 32 characters, every admin route and the page return `404` (an unset and a too-short token look the same to clients; the startup log tells them apart). Failed logins are limited to 10 per minute per IP (valid requests are not limited). Each change is logged as one JSON line with the law id, caller IP, changed fields and status before/after, never the text or notes.
+- Auth: `Authorization: Bearer <ADMIN_API_TOKEN>`. Without a token of at least 32 characters, every admin route and the page return `404` (an unset and a too-short token look the same to clients; the startup log tells them apart). Failed logins are limited to 10 per minute per IP (valid requests are not limited). Approving a pending law (`in_review` to `published`) that has a valid email contact also starts a thank-you email to the submitter through the configured SMTP settings. The response and page report `thank_you`: `queued` means a send was started (delivery is not confirmed), `skipped` comes with a reason (`no_email`, `invalid_email`, `not_configured`, `already_sent`, `error`), and it is `null` for anything that is not an approval. Success is stored in `laws.approval_email_sent_at`, so moving a law back to review and approving it again does not email twice; a failed send is not stored and is retried by the next approval. Send failures never block moderation, and our log lines contain only the law id plus the error and SMTP response codes. Each change is logged as one JSON line with the law id, caller IP, changed fields and status before/after, never the text or notes.
 
 **Production setup:** create the GitHub Actions secret `ADMIN_API_TOKEN` (for example `openssl rand -hex 32`) before the
 deploy; the workflow writes it to the server `.env` and warns when it is empty. The server logs `Admin API enabled` or
@@ -81,6 +81,8 @@ Environment variables (`.env`):
 - `SMTP_PORT` - Email SMTP port
 - `SMTP_USER` - Email username
 - `SMTP_PASS` - Email password
+- `EMAIL_FROM` - Sender address, also what submitters see on thank-you emails (default: `noreply@murphys-laws.com`)
+- `EMAIL_TO` - Receives new-submission notices (default: `admin@murphys-laws.com`)
 - `SENTRY_DSN` - Sentry error tracking DSN (optional, for production monitoring)
 - `ADMIN_API_TOKEN` - Bearer token (32+ characters) enabling the admin moderation API and page (optional)
 

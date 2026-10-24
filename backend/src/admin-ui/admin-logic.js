@@ -104,3 +104,22 @@ export function isListReply(data) {
 export function isLawReply(data) {
   return Boolean(data) && Boolean(data.data) && typeof data.data === 'object' && typeof data.data.status === 'string';
 }
+
+const THANK_YOU_SKIPPED = {
+  not_configured: 'Email is not set up on the server, so no thank-you was sent.',
+  already_sent: 'A thank-you was already sent for this law.',
+  no_email: 'The submitter left no email address, so no thank-you was sent.',
+  invalid_email: 'The submitter\'s email address is not valid, so no thank-you was sent.',
+  error: 'The thank-you email could not be started. Check the server logs.',
+};
+
+/** Text appended to the "updated" message about the submitter's thank-you email; empty when not an approval. */
+export function describeThankYou(thankYou) {
+  if (!thankYou) {
+    return '';
+  }
+  if (thankYou.status === 'queued') {
+    return ' Thank-you email is being sent (delivery is not confirmed).';
+  }
+  return ` ${THANK_YOU_SKIPPED[thankYou.reason] || 'No thank-you email was sent.'}`;
+}
