@@ -215,6 +215,28 @@ describe('Router', () => {
     );
   });
 
+  it('should skip undocumented routes under the admin prefix in the public contract check', () => {
+    const router = new Router();
+    for (const [path, pathItem] of Object.entries(OPENAPI_SPEC.paths)) {
+      if (path.startsWith('/api') && 'get' in pathItem) {
+        router.registerPublicRoute('GET', path.replace(/\{(\w+)\}/g, ':$1'), path, vi.fn());
+      }
+      if (path.startsWith('/api') && 'post' in pathItem) {
+        router.registerPublicRoute('POST', path.replace(/\{(\w+)\}/g, ':$1'), path, vi.fn());
+      }
+      if (path.startsWith('/api') && 'delete' in pathItem) {
+        router.registerPublicRoute('DELETE', path.replace(/\{(\w+)\}/g, ':$1'), path, vi.fn());
+      }
+    }
+    router.get('/api/v1/admin/laws', vi.fn());
+    router.post('/api/v1/admin/laws/:id', vi.fn());
+
+    expect(() => router.assertPublicApiContract()).not.toThrow();
+
+    router.get('/api/v1/administrator/x', vi.fn());
+    expect(() => router.assertPublicApiContract()).toThrow('Public route has no OpenAPI operation: GET /api/v1/administrator/x');
+  });
+
   it('should handle OPTIONS with handleOptions and return 204 with CORS headers', async () => {
     const router = new Router();
     const handler = vi.fn();

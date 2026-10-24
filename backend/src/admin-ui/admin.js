@@ -8,13 +8,22 @@ import {
   formatDate,
   describeSubmitter,
   errorMessage,
-} from '/api/v1/admin/ui/admin-logic.js';
+  applyStatusChange,
+} from './admin-logic.js';
 
 const state = { token: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {} };
+let loadSeq = 0;
 
 const $ = (id) => document.getElementById(id);
 const lawsEl = $('laws');
 const messageEl = $('message');
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -33,15 +42,44 @@ function say(text, isError = false) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: { Authorization: `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-  });
-  const data = await response.json().catch(() => ({}));
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: { Authorization: `Bearer ${state.token}`, 'Content-Type': 'application/json' },
+    });
+  } catch {
+    throw new ApiError('Cannot reach the server. Check your connection and retry.', 0);
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    if (response.ok) {
+      throw new ApiError('Server returned an unreadable response.', response.status);
+    }
+    data = {};
+  }
   if (!response.ok) {
-    throw new Error(errorMessage(response.status, data.error));
+    throw new ApiError(errorMessage(response.status, data.error), response.status);
   }
   return data;
+}
+
+/** After a rejected token the list and filters stay hidden until the admin connects again. */
+function disconnect() {
+  state.token = '';
+  $('toolbar').hidden = true;
+  $('pager').hidden = true;
+  lawsEl.replaceChildren();
+}
+
+function handleError(error) {
+  if (error.status === 401) {
+    disconnect();
+  }
+  say(error.message, true);
 }
 
 function renderTabs() {
@@ -54,20 +92,17 @@ function renderTabs() {
     const button = el('button', 'tab', `${label} (${count})`);
     button.type = 'button';
     button.setAttribute('aria-pressed', String(state.status === value));
-    button.addEventListener('click', () => {
-      state.status = value;
-      state.offset = 0;
-      load();
-    });
+    button.addEventListener('click', () => load({ status: value, offset: 0 }));
     tabs.append(button);
   }
 }
 
-function renderPager(count) {
+function renderPager() {
+  const shown = lawsEl.children.length;
   $('pager').hidden = state.total <= PAGE_SIZE;
-  $('page-label').textContent = pageLabel(state.total, state.offset, count);
+  $('page-label').textContent = pageLabel(state.total, state.offset, shown);
   $('prev').disabled = state.offset === 0;
-  $('next').disabled = state.offset + count >= state.total;
+  $('next').disabled = state.offset + shown >= state.total;
 }
 
 function field(id, labelText, control) {
@@ -77,6 +112,24 @@ function field(id, labelText, control) {
   control.id = id;
   wrap.append(label, control);
   return wrap;
+}
+
+function setBusy(actions, busy) {
+  actions.querySelectorAll('button').forEach((b) => { b.disabled = busy; });
+}
+
+/** Rebuild the list when a save emptied the current page. */
+async function refillIfEmpty() {
+  if (lawsEl.children.length > 0) {
+    renderPager();
+    return;
+  }
+  if (state.total === 0) {
+    say('Nothing to show for this filter.');
+    renderPager();
+    return;
+  }
+  await load({ offset: Math.max(0, state.offset - PAGE_SIZE) }, false);
 }
 
 function renderLaw(law) {
@@ -93,6 +146,7 @@ function renderLaw(law) {
 
   const title = el('input');
   title.type = 'text';
+  title.maxLength = 200;
   title.value = law.title || '';
   const text = el('textarea');
   text.rows = 3;
@@ -100,6 +154,7 @@ function renderLaw(law) {
   text.value = law.text;
   const notes = el('input');
   notes.type = 'text';
+  notes.maxLength = 2000;
   notes.value = law.admin_notes || '';
 
   const actions = el('div', 'actions');
@@ -109,15 +164,30 @@ function renderLaw(law) {
       say(`Law #${law.id} has no changes.`);
       return;
     }
-    actions.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    setBusy(actions, true);
+    let updated;
     try {
-      await api(`/api/v1/admin/laws/${law.id}`, { method: 'POST', body: JSON.stringify(body) });
-      say(`Law #${law.id} updated.`);
-      await load(false);
+      ({ data: updated } = await api(`/api/v1/admin/laws/${law.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ ...body, updated_at: law.updated_at }),
+      }));
     } catch (error) {
-      say(error.message, true);
-      actions.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+      setBusy(actions, false);
+      handleError(error);
+      return;
     }
+
+    const change = applyStatusChange({ counts: state.counts, total: state.total, filter: state.status }, law.status, updated.status);
+    state.counts = change.counts;
+    state.total = change.total;
+    renderTabs();
+    if (change.removed) {
+      item.remove();
+    } else {
+      item.replaceWith(renderLaw(updated));
+    }
+    say(`Law #${law.id} updated.`);
+    await refillIfEmpty();
   };
 
   const addAction = (label, className, status) => {
@@ -147,43 +217,51 @@ function renderLaw(law) {
   return item;
 }
 
-async function load(announce = true) {
+/**
+ * Fetches a page for the requested filter. State changes only after the fetch succeeds, and a newer
+ * request makes older, slower responses be ignored.
+ */
+async function load(patch = {}, announce = true) {
+  const next = { ...state, ...patch };
+  const seq = ++loadSeq;
+  let data;
   try {
-    const data = await api(buildListUrl(state));
-    state.total = data.total;
-    state.counts = data.counts;
-    $('toolbar').hidden = false;
-    renderTabs();
-    lawsEl.replaceChildren(...data.data.map(renderLaw));
-    renderPager(data.data.length);
-    if (announce) {
-      say(data.total === 0 ? 'Nothing to show for this filter.' : '');
-    }
+    data = await api(buildListUrl(next));
   } catch (error) {
-    say(error.message, true);
+    if (seq === loadSeq) {
+      handleError(error);
+    }
+    return false;
   }
+  if (seq !== loadSeq) {
+    return false;
+  }
+
+  if (data.data.length === 0 && data.total > 0 && next.offset > 0) {
+    return load({ ...patch, offset: Math.max(0, next.offset - PAGE_SIZE) }, announce);
+  }
+
+  Object.assign(state, next, { total: data.total, counts: data.counts });
+  $('toolbar').hidden = false;
+  renderTabs();
+  lawsEl.replaceChildren(...data.data.map(renderLaw));
+  renderPager();
+  if (announce) {
+    say(data.total === 0 ? 'Nothing to show for this filter.' : '');
+  }
+  return true;
 }
 
 $('connect-form').addEventListener('submit', (event) => {
   event.preventDefault();
   state.token = $('token').value.trim();
-  state.offset = 0;
-  load();
+  load({ offset: 0 });
 });
 
 $('search-form').addEventListener('submit', (event) => {
   event.preventDefault();
-  state.q = $('search').value.trim();
-  state.offset = 0;
-  load();
+  load({ q: $('search').value.trim(), offset: 0 });
 });
 
-$('prev').addEventListener('click', () => {
-  state.offset = Math.max(0, state.offset - PAGE_SIZE);
-  load();
-});
-
-$('next').addEventListener('click', () => {
-  state.offset += PAGE_SIZE;
-  load();
-});
+$('prev').addEventListener('click', () => load({ offset: Math.max(0, state.offset - PAGE_SIZE) }));
+$('next').addEventListener('click', () => load({ offset: state.offset + PAGE_SIZE }));

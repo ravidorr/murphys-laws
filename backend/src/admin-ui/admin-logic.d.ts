@@ -20,3 +20,8 @@ export function describeSubmitter(
   attributions: { name?: string | null; contact_type?: string | null; contact_value?: string | null }[] | undefined,
 ): string;
 export function errorMessage(status: number, fallback?: string): string;
+export function applyStatusChange(
+  state: { counts: Record<string, number>; total: number; filter: string },
+  from: string,
+  to: string,
+): { counts: Record<string, number>; total: number; removed: boolean };

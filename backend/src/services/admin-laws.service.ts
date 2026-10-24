@@ -17,6 +17,8 @@ export interface AdminLawUpdate {
   title?: string | null;
   text?: string;
   adminNotes?: string | null;
+  /** When set, the update only applies if the law still has this updated_at (optimistic concurrency). */
+  expectedUpdatedAt?: string;
 }
 
 interface AdminLawRow {
@@ -42,6 +44,16 @@ interface CategoryRow {
   id: number;
   name: string;
 }
+
+export interface AdminLaw extends AdminLawRow {
+  attributions: { name: string | null; contact_type: string | null; contact_value: string | null }[];
+  categories: { id: number; name: string }[];
+}
+
+export type AdminUpdateResult =
+  | { outcome: 'updated'; law: AdminLaw }
+  | { outcome: 'conflict' }
+  | { outcome: 'not_found' };
 
 const LAW_COLUMNS = 'id, title, text, status, admin_notes, first_seen_file_path, created_at, updated_at';
 
@@ -97,27 +109,33 @@ export class AdminLawService {
     }
     sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
 
-    const result = this.db.prepare(`UPDATE laws SET ${sets.join(', ')} WHERE id = ?`).run(...params, id);
-    if (result.changes === 0) {
-      return null;
-    }
+    const apply = this.db.transaction((): AdminUpdateResult => {
+      const guard = update.expectedUpdatedAt === undefined ? '' : ' AND updated_at = ?';
+      const guardParams = update.expectedUpdatedAt === undefined ? [] : [update.expectedUpdatedAt];
+      const result = this.db.prepare(`UPDATE laws SET ${sets.join(', ')} WHERE id = ?${guard}`).run(...params, id, ...guardParams);
 
-    const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
-    return this.attachDetails([row])[0];
+      if (result.changes === 0) {
+        const exists = this.db.prepare('SELECT 1 FROM laws WHERE id = ?').get(id);
+        return { outcome: exists ? 'conflict' : 'not_found' };
+      }
+
+      const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
+      return { outcome: 'updated', law: this.attachDetails([row])[0] };
+    });
+    return apply();
   }
 
   private statusCounts(): Record<AdminLawStatus, number> {
     const counts: Record<AdminLawStatus, number> = { published: 0, in_review: 0, rejected: 0 };
     const rows = this.db.prepare('SELECT status, COUNT(*) AS n FROM laws GROUP BY status').all() as { status: AdminLawStatus; n: number }[];
+    // laws.status has a CHECK constraint, so every row is one of the three known values.
     for (const row of rows) {
-      if (row.status in counts) {
-        counts[row.status] = row.n;
-      }
+      counts[row.status] = row.n;
     }
     return counts;
   }
 
-  private attachDetails(rows: AdminLawRow[]) {
+  private attachDetails(rows: AdminLawRow[]): AdminLaw[] {
     if (rows.length === 0) {
       return [];
     }

@@ -1,7 +1,11 @@
 import { checkAdminAuth } from '../middleware/admin-auth.ts';
 import { checkRateLimit } from '../middleware/rate-limit.ts';
 import { ADMIN_LAW_STATUSES, type AdminLawStatus, type AdminLawUpdate } from '../services/admin-laws.service.ts';
-import { getVoterIdentifier, readBody, sendJson, badRequest, notFound, rateLimitExceeded } from '../utils/http-helpers.ts';
+import { getVoterIdentifier, readBody, sendJson, notFound, rateLimitExceeded } from '../utils/http-helpers.ts';
+
+const MAX_TITLE_LENGTH = 200;
+const MAX_NOTES_LENGTH = 2000;
+const NO_STORE = { 'Cache-Control': 'no-store' };
 
 function isStatus(value: unknown): value is AdminLawStatus {
   return typeof value === 'string' && (ADMIN_LAW_STATUSES as readonly string[]).includes(value);
@@ -19,21 +23,33 @@ export class AdminController {
     this.adminLawService = adminLawService;
   }
 
-  /** Returns true when the request may proceed; otherwise the response has been sent. */
-  private authorize(req: any, res: any): boolean {
-    const rateLimit = checkRateLimit(getVoterIdentifier(req), 'admin');
-    if (!rateLimit.allowed) {
-      rateLimitExceeded(res, rateLimit, req);
-      return false;
-    }
+  private json(res: any, status: number, body: unknown, req: any) {
+    return sendJson(res, status, body, req, null, NO_STORE);
+  }
 
+  private fail(res: any, status: number, message: string, req: any) {
+    return this.json(res, status, { error: message }, req);
+  }
+
+  /**
+   * Returns true when the request may proceed; otherwise the response has been sent.
+   * Only failed logins are rate limited, so wrong-token traffic cannot lock out the real admin.
+   */
+  private authorize(req: any, res: any): boolean {
     const auth = checkAdminAuth(req);
     if (auth === 'disabled') {
       notFound(res, req);
       return false;
     }
     if (auth === 'unauthorized') {
-      sendJson(res, 401, { error: 'Unauthorized' }, req);
+      const identifier = getVoterIdentifier(req);
+      console.warn(`Admin auth failed from ${identifier}`);
+      const rateLimit = checkRateLimit(identifier, 'admin-fail');
+      if (!rateLimit.allowed) {
+        rateLimitExceeded(res, rateLimit, req);
+      } else {
+        this.fail(res, 401, 'Unauthorized', req);
+      }
       return false;
     }
     return true;
@@ -45,7 +61,7 @@ export class AdminController {
     const query = parsed.query;
     const statusParam = (query.status || 'in_review').toString();
     if (statusParam !== 'all' && !isStatus(statusParam)) {
-      return badRequest(res, 'Invalid status', req);
+      return this.fail(res, 400, 'Invalid status', req);
     }
 
     const limit = parseBoundedInt(query.limit, { min: 1, max: 100, fallback: 50 });
@@ -53,7 +69,7 @@ export class AdminController {
     const q = (query.q || '').toString().trim();
 
     const result = this.adminLawService.listLaws({ status: statusParam, q, limit, offset });
-    return sendJson(res, 200, { ...result, limit, offset, status: statusParam, q }, req);
+    return this.json(res, 200, { ...result, limit, offset, status: statusParam, q }, req);
   }
 
   async update(req: any, res: any, id: string) {
@@ -61,21 +77,27 @@ export class AdminController {
 
     const lawId = Number(id);
     if (!Number.isInteger(lawId) || lawId <= 0) {
-      return badRequest(res, 'Invalid law ID', req);
+      return this.fail(res, 400, 'Invalid law ID', req);
     }
 
     let body: any;
     try {
       body = await readBody(req);
-    } catch {
-      return badRequest(res, 'Invalid JSON body', req);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return this.fail(res, 400, 'Invalid JSON body', req);
+      }
+      throw error;
+    }
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      return this.fail(res, 400, 'Body must be a JSON object', req);
     }
 
     const update: AdminLawUpdate = {};
 
     if (body.status !== undefined) {
       if (!isStatus(body.status)) {
-        return badRequest(res, 'Invalid status', req);
+        return this.fail(res, 400, 'Invalid status', req);
       }
       update.status = body.status;
     }
@@ -83,33 +105,52 @@ export class AdminController {
     if (body.text !== undefined) {
       const text = typeof body.text === 'string' ? body.text.trim() : '';
       if (text.length < 10 || text.length > 1000) {
-        return badRequest(res, 'Law text must be between 10 and 1000 characters', req);
+        return this.fail(res, 400, 'Law text must be between 10 and 1000 characters', req);
       }
       update.text = text;
     }
 
     if (body.title !== undefined) {
       if (body.title !== null && typeof body.title !== 'string') {
-        return badRequest(res, 'Title must be a string or null', req);
+        return this.fail(res, 400, 'Title must be a string or null', req);
+      }
+      if (body.title && body.title.trim().length > MAX_TITLE_LENGTH) {
+        return this.fail(res, 400, `Title must be at most ${MAX_TITLE_LENGTH} characters`, req);
       }
       update.title = body.title ? body.title.trim() || null : null;
     }
 
     if (body.admin_notes !== undefined) {
       if (body.admin_notes !== null && typeof body.admin_notes !== 'string') {
-        return badRequest(res, 'admin_notes must be a string or null', req);
+        return this.fail(res, 400, 'admin_notes must be a string or null', req);
+      }
+      if (body.admin_notes && body.admin_notes.trim().length > MAX_NOTES_LENGTH) {
+        return this.fail(res, 400, `admin_notes must be at most ${MAX_NOTES_LENGTH} characters`, req);
       }
       update.adminNotes = body.admin_notes ? body.admin_notes.trim() || null : null;
     }
 
     if (Object.keys(update).length === 0) {
-      return badRequest(res, 'No updatable fields provided', req);
+      return this.fail(res, 400, 'No updatable fields provided', req);
     }
 
-    const law = this.adminLawService.updateLaw(lawId, update);
-    if (!law) {
-      return notFound(res, req);
+    if (body.updated_at !== undefined) {
+      if (typeof body.updated_at !== 'string') {
+        return this.fail(res, 400, 'updated_at must be a string', req);
+      }
+      update.expectedUpdatedAt = body.updated_at;
     }
-    return sendJson(res, 200, { data: law }, req);
+
+    const result = this.adminLawService.updateLaw(lawId, update);
+    if (result.outcome === 'not_found') {
+      return this.fail(res, 404, 'Law not found', req);
+    }
+    if (result.outcome === 'conflict') {
+      return this.fail(res, 409, 'This law changed since you loaded it. Reload the list and try again.', req);
+    }
+
+    const { expectedUpdatedAt: _expected, ...applied } = update;
+    console.log(`Admin updated law ${lawId} from ${getVoterIdentifier(req)}: ${JSON.stringify(applied)}`);
+    return this.json(res, 200, { data: result.law }, req);
   }
 }

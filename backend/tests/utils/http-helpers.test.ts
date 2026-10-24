@@ -133,6 +133,12 @@ describe('HTTP Helpers', () => {
       expect(res.end).toHaveBeenCalledWith('{"data":"ok"}');
     });
 
+    it('should merge extra headers into the response', () => {
+      httpHelpers.sendJson(asRes(res), 200, { data: 'ok' }, null, null, { 'Cache-Control': 'no-store' });
+
+      expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Cache-Control': 'no-store' }));
+    });
+
     it('should send JSON response with specific CORS and Credentials', () => {
       process.env.ALLOWED_ORIGINS = 'http://example.com';
       req.headers.origin = 'http://example.com';

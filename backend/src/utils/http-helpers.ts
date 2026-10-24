@@ -63,7 +63,8 @@ export function sendJson(
   status: number,
   obj: unknown,
   req: IncomingMessage | null = null,
-  rateLimit: RateLimitResult | null = null
+  rateLimit: RateLimitResult | null = null,
+  extraHeaders: OutgoingHttpHeaders = {}
 ): void {
   const body = JSON.stringify(obj);
   const ALLOWED_ORIGINS = getAllowedOrigins();
@@ -77,6 +78,7 @@ export function sendJson(
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Link': '<https://murphys-laws.com/openapi.json>; rel="describedby"',
     ...rateLimitHeaders(rateLimit),
+    ...extraHeaders,
   };
 
   // Only add credentials header if not using wildcard

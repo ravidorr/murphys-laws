@@ -1,4 +1,8 @@
-/* Standalone moderation page. Token names and values mirror web/styles/partials/variables.css. */
+/*
+ * Standalone moderation page, served by the backend without the web bundle.
+ * The literal values in :root are copies of web/styles/partials/variables.css under the same names;
+ * tests/admin-ui-tokens.test.ts fails if any of them drifts from that file.
+ */
 :root {
   --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --bg: #fff;
@@ -22,27 +26,59 @@
   --rounded-lg: 0.5rem;
   --rounded-xl: 0.75rem;
   --rounded-full: 624.9375rem;
+  --dark-bg-primary: #0b0b11;
+  --dark-fg-primary: #e9eaee;
+  --dark-muted-fg: #9ca3af;
+  --dark-surface: #15151d;
+  --dark-surface-border: #4b5563;
+  --dark-link: #9ecbff;
+  --dark-error: #f87171;
+  --dark-success-bg: #103424;
+  --dark-success-fg: #c9f1dd;
+  --dark-warning-bg: #3b2f07;
+  --dark-warning-fg: #ffe29a;
+  --dark-error-bg: #3c151d;
+  --dark-error-fg: #ffc4cc;
   color-scheme: light;
 }
 
+/* Same dark-mode pattern as web/styles/partials/theme.css: follow the system unless data-theme says otherwise. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0b0f14;
-    --fg: #f3f4f6;
-    --muted-fg: #9ca3af;
-    --surface: #111827;
-    --surface-border: #374151;
-    --btn-primary-bg: #3b82f6;
-    --btn-primary-fg: #08111f;
-    --success-bg: #0b3d22;
-    --success-text: #86efac;
-    --error: #fca5a5;
-    --error-bg: #5e0010;
-    --error-text: #fecaca;
-    --warning-bg: #3a2c00;
-    --warning-text: #fde68a;
+    --bg: var(--dark-bg-primary);
+    --fg: var(--dark-fg-primary);
+    --muted-fg: var(--dark-muted-fg);
+    --surface: var(--dark-surface);
+    --surface-border: var(--dark-surface-border);
+    --btn-primary-bg: var(--dark-link);
+    --btn-primary-fg: var(--dark-bg-primary);
+    --success-bg: var(--dark-success-bg);
+    --success-text: var(--dark-success-fg);
+    --error: var(--dark-error);
+    --error-bg: var(--dark-error-bg);
+    --error-text: var(--dark-error-fg);
+    --warning-bg: var(--dark-warning-bg);
+    --warning-text: var(--dark-warning-fg);
     color-scheme: dark;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: var(--dark-bg-primary);
+  --fg: var(--dark-fg-primary);
+  --muted-fg: var(--dark-muted-fg);
+  --surface: var(--dark-surface);
+  --surface-border: var(--dark-surface-border);
+  --btn-primary-bg: var(--dark-link);
+  --btn-primary-fg: var(--dark-bg-primary);
+  --success-bg: var(--dark-success-bg);
+  --success-text: var(--dark-success-fg);
+  --error: var(--dark-error);
+  --error-bg: var(--dark-error-bg);
+  --error-text: var(--dark-error-fg);
+  --warning-bg: var(--dark-warning-bg);
+  --warning-text: var(--dark-warning-fg);
+  color-scheme: dark;
 }
 
 * {
