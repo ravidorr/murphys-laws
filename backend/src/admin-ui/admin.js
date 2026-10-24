@@ -12,9 +12,10 @@ import {
   isListReply,
   isLawReply,
   describeThankYou,
+  categorySelectValue,
 } from './admin-logic.js';
 
-const state = { token: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {} };
+const state = { token: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
 let loadSeq = 0;
 let inFlightLoads = 0;
 const INITIAL_STATE = { ...state };
@@ -163,13 +164,25 @@ async function recoverFromSaveError(error, law, item, actions) {
   handleError(error);
 }
 
-function renderLaw(law) {
+/** The server's category list, plus the law's own categories in case the list has not loaded them. */
+function categoryOptions(law, serverCategories) {
+  const known = new Map(serverCategories.map((c) => [c.id, c]));
+  for (const c of law.categories || []) {
+    if (!known.has(c.id)) {
+      known.set(c.id, c);
+    }
+  }
+  return [...known.values()];
+}
+
+function renderLaw(law, serverCategories = state.categories) {
   const item = el('li', 'law');
   const head = el('div', 'law-head');
   head.append(
     el('span', `pill pill-${law.status}`, STATUS_LABELS[law.status] || law.status),
     el('span', 'meta', `#${law.id} · ${formatDate(law.created_at)} · ${describeSubmitter(law.attributions)}`),
   );
+
   const categories = (law.categories || []).map((c) => c.name).join(', ');
   if (categories) {
     head.append(el('span', 'meta', categories));
@@ -188,9 +201,22 @@ function renderLaw(law) {
   notes.maxLength = 2000;
   notes.value = law.admin_notes || '';
 
+  const category = el('select');
+  const unset = el('option', null, law.categories && law.categories.length > 1 ? 'Several categories (pick one to replace)' : 'No category');
+  unset.value = '';
+  category.append(unset);
+  for (const option of categoryOptions(law, serverCategories)) {
+    const node = el('option', null, option.name);
+    node.value = String(option.id);
+    category.append(node);
+  }
+  category.value = categorySelectValue(law);
+
   const actions = el('div', 'actions');
   const save = async (status) => {
-    const body = buildUpdateBody(law, { status, title: title.value, text: text.value, notes: notes.value });
+    const body = buildUpdateBody(law, { status, title: title.value, text: text.value, notes: notes.value,
+      categoryId: category.value === '' ? undefined : Number(category.value),
+    });
     if (Object.keys(body).length === 0) {
       say(`Law #${law.id} has no changes.`);
       return;
@@ -263,6 +289,7 @@ function renderLaw(law) {
     head,
     field(`title-${law.id}`, 'Title', title),
     field(`text-${law.id}`, 'Law', text),
+    field(`category-${law.id}`, 'Category', category),
     field(`notes-${law.id}`, 'Admin notes', notes),
     actions,
   );
@@ -294,8 +321,9 @@ async function load(patch = {}, announce = true) {
       }
     }
 
-    const cards = data.data.map(renderLaw);
-    Object.assign(state, next, { total: data.total, counts: data.counts });
+    const categories = Array.isArray(data.categories) ? data.categories : state.categories;
+    const cards = data.data.map((item) => renderLaw(item, categories));
+    Object.assign(state, next, { total: data.total, counts: data.counts, categories });
     $('toolbar').hidden = false;
     $('token').value = '';
     renderTabs();
