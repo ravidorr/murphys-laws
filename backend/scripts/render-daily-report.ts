@@ -6,6 +6,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import { SITE_URL } from '../src/utils/constants.ts';
 
 export type ReportItemKind =
@@ -1518,10 +1519,27 @@ export function runCli(args: string[], options: RunCliOptions = {}): void {
   }
 }
 
+/**
+ * The cron launcher does not load `.env`, so read `BASE_URL` from the same files the API
+ * server uses (root `.env`, then `backend/.env`). A value already in `env` always wins.
+ */
+export function loadBaseUrlFromEnvFiles(repoRoot: string, env: NodeJS.ProcessEnv = process.env): void {
+  for (const envFile of [path.join(repoRoot, '.env'), path.join(repoRoot, 'backend/.env')]) {
+    if (env.BASE_URL?.trim() || !existsSync(envFile)) {
+      continue;
+    }
+    const baseUrl = dotenv.parse(readFileSync(envFile))['BASE_URL'];
+    if (baseUrl?.trim()) {
+      env.BASE_URL = baseUrl;
+    }
+  }
+}
+
 const isMain =
   process.argv[1] !== undefined &&
   fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMain) {
+  loadBaseUrlFromEnvFiles(repoRootFromEnv(process.env.REPO_ROOT));
   runCli(process.argv.slice(2));
 }
