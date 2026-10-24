@@ -28,7 +28,7 @@ export interface ReportItem {
   timestamp?: string;
   boldValue?: boolean;
   valueSecondary?: string;
-  /** When set, the value is rendered as a link to this URL in the HTML report. */
+  /** Rendered as a link in the HTML report only; the plain-text report shows `value`, so put the URL there too. */
   href?: string;
 }
 
@@ -61,6 +61,8 @@ export interface MessageOptions {
 const DEFAULT_FROM = "Murphy's Laws Server <alerts@murphys-laws.com>";
 const DEFAULT_ALERT_EMAIL = 'ravidor@gmail.com';
 const SECTION_RULE = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
+const PENDING_COUNT_TIMEOUT_MS = 15_000;
 
 /** Path of the admin moderation page, appended to the configured base URL. */
 export const ADMIN_UI_PATH = '/api/v1/admin/ui';
@@ -1123,40 +1125,58 @@ function buildTestEmailReport(now: Date): DailyReport {
   };
 }
 
-/** Builds the admin moderation page URL from the configured base URL (`BASE_URL`, else the site URL). */
+/**
+ * Builds the admin moderation page URL from the configured base URL (`BASE_URL`, else the
+ * site URL). A blank, non-http(s), or unparsable `BASE_URL` is logged and ignored.
+ */
 export function buildAdminUrl(env: NodeJS.ProcessEnv = process.env): string {
-  const base = (env.BASE_URL?.trim() || SITE_URL).replace(/\/+$/, '');
-  return `${base}${ADMIN_UI_PATH}`;
+  let base = SITE_URL;
+  const configured = env.BASE_URL?.trim();
+  if (configured) {
+    if (/^https?:\/\/[^\s/]+/i.test(configured)) {
+      base = configured;
+    } else {
+      logCollectorError('admin link', new Error(`ignoring BASE_URL without an http(s) origin: ${configured}`));
+    }
+  }
+  return `${base.replace(/\/+$/, '')}${ADMIN_UI_PATH}`;
 }
 
 /**
- * Counts laws waiting for approval. Returns null (after logging) when the count
- * cannot be retrieved, so the report can still be sent.
+ * Counts laws with status 'in_review' by querying `dbPath` through the sqlite3 CLI.
+ * Returns null (after logging) if the query fails, times out, or prints a non-numeric
+ * result, so the report can still be sent.
  */
 export function countPendingApprovals(dbPath: string): number | null {
   try {
     const stdout = execFileSync(
       'sqlite3',
       [dbPath, "SELECT COUNT(*) FROM laws WHERE status='in_review';"],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: PENDING_COUNT_TIMEOUT_MS },
     ).trim();
     if (!/^\d+$/.test(stdout)) {
       throw new Error(`unexpected sqlite3 output: ${JSON.stringify(stdout)}`);
     }
     return Number(stdout);
   } catch (error) {
-    logCollectorError('pending approvals count', error);
+    const stderr = String((error as { stderr?: Buffer | string } | null)?.stderr ?? '').trim();
+    const reason = error instanceof Error ? error.message : String(error);
+    logCollectorError('pending approvals count', stderr ? `${reason}: ${stderr}` : error);
     return null;
   }
 }
 
+/**
+ * Builds the pending approvals section: null (count unavailable) and a positive count
+ * both warn, a zero count is a success, and only a positive count carries the admin link.
+ */
 export function buildPendingApprovalsSection(
   pending: number | null,
   env: NodeJS.ProcessEnv = process.env,
 ): ReportSection {
   if (pending === null) {
     return section('PENDING APPROVALS', [
-      { label: 'Awaiting Approval', value: 'Count unavailable (check failed)', tone: 'warning' },
+      { label: 'Awaiting Approval', value: 'Count unavailable - see the daily-report log', tone: 'warning' },
     ]);
   }
   if (pending === 0) {
@@ -1254,6 +1274,9 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         { value: lawOfDay || `No law of the day set for ${date}`, kind: 'text' },
       ]),
     );
+  } else {
+    logCollectorError('pending approvals count', new Error(`database not found at ${dbPath}`));
+    sections.push(buildPendingApprovalsSection(null, env));
   }
 
   const metricsMonth = date.slice(0, 7);

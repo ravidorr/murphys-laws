@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import {
   ADMIN_UI_PATH,
@@ -19,6 +19,12 @@ vi.mock('node:child_process', async (importOriginal) => ({
   ...(await importOriginal<typeof import('node:child_process')>()),
   execFileSync: vi.fn(),
 }));
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+  vi.mocked(execFileSync).mockReset();
+});
 
 const json = '[{"name":"murphys-api","pm2_env":{"status":"online","restart_time":1}}]';
 
@@ -95,8 +101,16 @@ describe('buildAdminUrl', () => {
   it('defaults to process.env', () => {
     vi.stubEnv('BASE_URL', 'https://env.example.com');
     expect(buildAdminUrl()).toBe(`https://env.example.com${ADMIN_UI_PATH}`);
-    vi.unstubAllEnvs();
   });
+
+  it.each(['murphys-laws.com', 'javascript:alert(1)', 'https://'])(
+    'ignores and logs a BASE_URL without an http(s) origin (%s)',
+    (BASE_URL) => {
+      const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      expect(buildAdminUrl({ BASE_URL })).toBe(`https://murphys-laws.com${ADMIN_UI_PATH}`);
+      expect(String(write.mock.calls[0]?.[0])).toContain('[daily-report] admin link failed');
+    },
+  );
 });
 
 describe('countPendingApprovals', () => {
@@ -119,6 +133,33 @@ describe('countPendingApprovals', () => {
     expect(write).toHaveBeenCalledWith('[daily-report] pending approvals count failed: database is locked\n');
     write.mockRestore();
     vi.mocked(execFileSync).mockReset();
+  });
+
+  it('includes sqlite3 stderr and applies a timeout', () => {
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw Object.assign(new Error('Command failed: sqlite3'), { stderr: Buffer.from('database is locked\n') });
+    });
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    expect(countPendingApprovals('/db')).toBeNull();
+    expect(write).toHaveBeenCalledWith(
+      '[daily-report] pending approvals count failed: Command failed: sqlite3: database is locked\n',
+    );
+    expect(vi.mocked(execFileSync).mock.calls[0]?.[2]).toMatchObject({ timeout: 15_000 });
+  });
+
+  it('logs a thrown non-Error value', () => {
+    vi.mocked(execFileSync).mockImplementation(() => {
+      throw 'boom';
+    });
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    expect(countPendingApprovals('/db')).toBeNull();
+    expect(write).toHaveBeenCalledWith('[daily-report] pending approvals count failed: boom\n');
+  });
+
+  it.each(['abc', '-1', '1\n2', '3 rows'])('rejects non-count output %j', (output) => {
+    vi.mocked(execFileSync).mockReturnValue(output);
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    expect(countPendingApprovals('/db')).toBeNull();
   });
 
   it('logs and returns null when sqlite3 prints something that is not a count', () => {
@@ -149,24 +190,27 @@ describe('buildPendingApprovalsSection', () => {
 
   it('says nothing is pending and omits the link when the count is zero', () => {
     const section = buildPendingApprovalsSection(0, env);
-    expect(section.items).toHaveLength(1);
-    expect(section.items[0]?.value).toContain('0');
+    expect(section.items).toEqual([
+      { label: 'Awaiting Approval', value: '0 (nothing to review)', tone: 'success' },
+    ]);
     expect(JSON.stringify(section)).not.toContain(ADMIN_UI_PATH);
   });
 
   it('flags an unavailable count without a link', () => {
     const section = buildPendingApprovalsSection(null, env);
     expect(section.items).toEqual([
-      { label: 'Awaiting Approval', value: 'Count unavailable (check failed)', tone: 'warning' },
+      { label: 'Awaiting Approval', value: 'Count unavailable - see the daily-report log', tone: 'warning' },
     ]);
   });
 });
 
 describe('daily report pending approvals', () => {
-  function liveReport(sqliteResult: string | Error) {
+  function liveReport(sqliteResult: string | Error, baseUrl = 'https://example.com', withDb = true) {
     const repoRoot = mkdtempSync(path.join(tmpdir(), 'daily-report-pending-'));
     mkdirSync(path.join(repoRoot, 'backend'));
-    writeFileSync(path.join(repoRoot, 'backend/murphys.db'), '');
+    if (withDb) {
+      writeFileSync(path.join(repoRoot, 'backend/murphys.db'), '');
+    }
     vi.mocked(execFileSync).mockImplementation((command, args) => {
       if (command === 'sqlite3' && String(args?.[1]).includes("status='in_review'")) {
         if (sqliteResult instanceof Error) {
@@ -177,21 +221,33 @@ describe('daily report pending approvals', () => {
       return '';
     });
     const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-    vi.stubEnv('BASE_URL', 'https://example.com');
+    vi.stubEnv('BASE_URL', baseUrl);
     const report = collectDailyReport({ repoRoot, now: new Date(Date.UTC(2026, 1, 4)) });
     const logged = write.mock.calls.map(([chunk]) => String(chunk));
-    write.mockRestore();
-    vi.unstubAllEnvs();
-    vi.mocked(execFileSync).mockReset();
     return { report, logged };
   }
 
   it('includes the count and a working admin link in text and HTML when non-zero', () => {
     const { report } = liveReport('4');
     const url = `https://example.com${ADMIN_UI_PATH}`;
-    expect(renderPlainTextReport(report)).toContain(url);
-    expect(renderPlainTextReport(report)).toContain('PENDING APPROVALS');
+    const text = renderPlainTextReport(report);
+    expect(text).toContain(url);
+    expect(text).toContain('PENDING APPROVALS');
+    expect(text).toMatch(/Awaiting Approval\W+4\b/);
     expect(renderHtmlReport(report)).toContain(`<a href="${url}"`);
+  });
+
+  it('escapes the admin link in HTML', () => {
+    const { report } = liveReport('2', 'https://example.com/?a=1&b="2"');
+    const html = renderHtmlReport(report);
+    expect(html).toContain('href="https://example.com/?a=1&amp;b=&quot;2&quot;/api/v1/admin/ui"');
+  });
+
+  it('flags the count as unavailable and logs when the database file is missing', () => {
+    const { report, logged } = liveReport('5', 'https://example.com', false);
+    const pending = report.sections.find((entry) => entry.title === 'PENDING APPROVALS');
+    expect(pending?.items[0]?.value).toContain('Count unavailable');
+    expect(logged.some((line) => line.includes('database not found'))).toBe(true);
   });
 
   it('reports zero without a link', () => {
