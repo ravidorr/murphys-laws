@@ -142,13 +142,36 @@ describe('admin page', () => {
     expect(button('In review (1)')).not.toBeNull();
   });
 
-  it('mentions the thank-you email when one was queued', async () => {
+  it.each([
+    [{ status: 'queued' }, 'Law #1 updated. Thank-you email is being sent (delivery is not confirmed).'],
+    [{ status: 'skipped', reason: 'no_email' }, 'Law #1 updated. The submitter left no email address, so no thank-you was sent.'],
+    [{ status: 'skipped', reason: 'not_configured' }, 'Law #1 updated. Email is not set up on the server, so no thank-you was sent.'],
+    [null, 'Law #1 updated.'],
+    [undefined, 'Law #1 updated.'],
+  ])('reports the thank-you outcome %j in the update message', async (thankYou, expected) => {
     await boot(jsonResponse(listReply([law(), law({ id: 2, text: 'Second law of enough length' })])));
     await connect();
-    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ status: 'published' }), thank_you_queued: true }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ status: 'published' }), thank_you: thankYou }));
     click(action('Approve'));
     await flush();
-    expect($('message').textContent).toBe('Law #1 updated. Thank-you email queued for the submitter.');
+    expect($('message').textContent).toBe(expected);
+  });
+
+  it('keeps the thank-you note when the list cannot refresh after a concurrent save', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+    let finishSave!: (value: unknown) => void;
+    fetchMock.mockReturnValueOnce(new Promise((resolve) => { finishSave = resolve; }));
+    click(action('Approve'));
+    await flush();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    click(button('Published'));
+    await flush();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+    finishSave(jsonResponse({ data: law({ status: 'published' }), thank_you: { status: 'queued' } }));
+    await flush();
+    expect($('message').textContent).toContain('delivery is not confirmed');
   });
 
   it('keeps edits in other cards and re-enables buttons when a save fails', async () => {

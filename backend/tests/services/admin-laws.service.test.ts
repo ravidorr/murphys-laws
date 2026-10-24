@@ -112,6 +112,20 @@ describe('AdminLawService (real migrated schema)', () => {
     expect(admin.listLaws({ status: 'all', q: 'queues', limit: 5, offset: 0 }).data[0].title).toBe('First');
   });
 
+  it('records the thank-you email once without touching updated_at', () => {
+    const id = insertLaw(null, 'Another law about queues', 'published');
+    const before = admin.listLaws({ status: 'published', q: 'queues', limit: 1, offset: 0 }).data[0];
+    expect(before.approval_email_sent_at).toBeNull();
+
+    admin.markApprovalEmailSent(id);
+    const sentAt = admin.listLaws({ status: 'published', q: 'queues', limit: 1, offset: 0 }).data[0];
+    expect(sentAt.approval_email_sent_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(sentAt.updated_at).toBe(before.updated_at);
+
+    admin.markApprovalEmailSent(id);
+    expect(admin.listLaws({ status: 'published', q: 'queues', limit: 1, offset: 0 }).data[0].approval_email_sent_at).toBe(sentAt.approval_email_sent_at);
+  });
+
   it('rejects an invalid status at the database level', () => {
     const id = insertLaw(null, 'Another law about queues', 'in_review');
     expect(() => admin.updateLaw(id, { status: 'weird' as never })).toThrow();

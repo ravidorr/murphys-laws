@@ -12,6 +12,7 @@ export interface LawApprovalEmailData {
   name?: string | null;
 }
 
+/** Production origin; callers pass their own (the backend uses SITE_URL from its constants). */
 export const DEFAULT_SITE_URL = 'https://murphys-laws.com';
 
 function escapeHtml(value: Escapable): string {
@@ -69,6 +70,8 @@ Thanks for contributing, and keep the laws coming.
 
 Murphy's Laws
 ${siteUrl}
+
+You received this because this email address was given when submitting law #${id} to Murphy's Laws.
 `;
 }
 
@@ -91,5 +94,6 @@ export function createLawApprovalEmailHtml(
     <p><a href="${safeLawUrl}">See it on the site</a></p>
     <p>Thanks for contributing, and keep the laws coming.</p>
     <p>Murphy's Laws<br><a href="${safeSiteUrl}">${safeSiteUrl}</a></p>
+    <p><small>You received this because this email address was given when submitting law #${escapeHtml(id)} to Murphy's Laws.</small></p>
   `;
 }
