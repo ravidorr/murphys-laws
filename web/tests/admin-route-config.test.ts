@@ -31,6 +31,18 @@ describe('admin UI route configuration', () => {
     expect(allAgents).toContain('Disallow: /api/');
   });
 
+  it('robots.txt repeats the /admin disallow in every named crawler group', () => {
+    const robots = read('web/public/robots.txt');
+    const namedGroups = robots
+      .split(/\n\s*\n/)
+      .filter((group) => /^User-agent: (?!\*)/m.test(group));
+
+    expect(namedGroups.length).toBeGreaterThan(0);
+    for (const group of namedGroups) {
+      expect(group).toContain('Disallow: /admin');
+    }
+  });
+
   it('the Vite dev and preview servers proxy /admin to the API like /api', () => {
     const config = read('web/vite.config.ts');
     const sections = {
