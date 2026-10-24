@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Daily email report now has a "Pending approvals" section with the number of submitted
   laws waiting for review and, when there are any, a link to the admin moderation page
-  built from the configured `BASE_URL` (falling back to the site URL). A zero count says
-  so and omits the link; if the count cannot be read the report still sends, flags the
+  built from the configured `BASE_URL` (falling back to the site URL; the path is
+  `/api/v1/admin/ui`). A zero count says so and omits the link; if the count cannot be
+  read (including a missing database or a hung query) the report still sends, flags the
   count as unavailable, and logs the failure. Backend bumped to `2.3.38`; root to `2.6.82`.
 
 - Thank-you email to the submitter when an admin approves a pending law that has a
