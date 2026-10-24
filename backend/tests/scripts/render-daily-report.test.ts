@@ -9,6 +9,7 @@ import {
   buildPendingApprovalsSection,
   collectDailyReport,
   countPendingApprovals,
+  loadBaseUrlFromEnvFiles,
   logCollectorError,
   parsePm2Jlist,
   renderHtmlReport,
@@ -262,5 +263,55 @@ describe('daily report pending approvals', () => {
     expect(renderPlainTextReport(report)).toContain('Count unavailable');
     expect(report.sections.some((entry) => entry.title === 'WEBSITE ACTIVITY')).toBe(true);
     expect(logged).toContain('[daily-report] pending approvals count failed: no such table: laws\n');
+  });
+});
+
+describe('loadBaseUrlFromEnvFiles', () => {
+  function repoWith(files: Record<string, string>) {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), 'daily-report-env-'));
+    mkdirSync(path.join(repoRoot, 'backend'));
+    for (const [name, content] of Object.entries(files)) {
+      writeFileSync(path.join(repoRoot, name), content);
+    }
+    return repoRoot;
+  }
+
+  it('reads BASE_URL from the root .env', () => {
+    const env: NodeJS.ProcessEnv = {};
+    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://root.example.com\n' }), env);
+    expect(env.BASE_URL).toBe('https://root.example.com');
+  });
+
+  it('falls back to backend/.env and lets the root file win', () => {
+    const env: NodeJS.ProcessEnv = {};
+    loadBaseUrlFromEnvFiles(
+      repoWith({ '.env': 'OTHER=1\n', 'backend/.env': 'BASE_URL=https://backend.example.com\n' }),
+      env,
+    );
+    expect(env.BASE_URL).toBe('https://backend.example.com');
+    const both: NodeJS.ProcessEnv = {};
+    loadBaseUrlFromEnvFiles(
+      repoWith({ '.env': 'BASE_URL=https://root.example.com\n', 'backend/.env': 'BASE_URL=https://backend.example.com\n' }),
+      both,
+    );
+    expect(both.BASE_URL).toBe('https://root.example.com');
+  });
+
+  it('does not override an existing value or touch other variables', () => {
+    const env: NodeJS.ProcessEnv = { BASE_URL: 'https://already.example.com' };
+    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://root.example.com\nALERT_EMAIL=x@y.z\n' }), env);
+    expect(env).toEqual({ BASE_URL: 'https://already.example.com' });
+  });
+
+  it('leaves env untouched when files are missing or have no BASE_URL', () => {
+    const env: NodeJS.ProcessEnv = {};
+    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'OTHER=1\n' }), env);
+    expect(env).toEqual({});
+  });
+
+  it('defaults to process.env', () => {
+    vi.stubEnv('BASE_URL', '');
+    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://proc.example.com\n' }));
+    expect(process.env.BASE_URL).toBe('https://proc.example.com');
   });
 });
