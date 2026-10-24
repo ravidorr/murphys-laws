@@ -7,6 +7,8 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_NOTES_LENGTH = 2000;
 const MAX_QUERY_LENGTH = 200;
 const MAX_BODY_BYTES = 16 * 1024;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
 function isStatus(value: unknown): value is AdminLawStatus {
@@ -23,9 +25,34 @@ function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; 
 
 export class AdminController {
   adminLawService: any;
+  emailService: any;
 
-  constructor(adminLawService: any) {
+  constructor(adminLawService: any, emailService: any) {
     this.adminLawService = adminLawService;
+    this.emailService = emailService;
+  }
+
+  /**
+   * Thanks the submitter when a law moves from review to published and they left an email address.
+   * Sending is fire and forget so a slow mail server never delays moderation. Returns whether one was queued.
+   */
+  private thankSubmitter(result: any): boolean {
+    const law = result.law;
+    if (result.previousStatus !== 'in_review' || law.status !== 'published' || !this.emailService.isConfigured()) {
+      return false;
+    }
+
+    const attribution = (law.attributions as { name: string | null; contact_type: string | null; contact_value: string | null }[])
+      .find((a) => a.contact_type === 'email' && typeof a.contact_value === 'string'
+        && a.contact_value.length <= MAX_EMAIL_LENGTH && EMAIL_PATTERN.test(a.contact_value));
+    if (!attribution) {
+      return false;
+    }
+
+    this.emailService
+      .sendLawApprovedEmail(attribution.contact_value, { id: law.id, title: law.title, text: law.text, name: attribution.name })
+      .catch((error: unknown) => console.error(`Thank-you email failed for law ID ${law.id}:`, error));
+    return true;
   }
 
   private json(res: any, status: number, body: unknown, req: any) {
@@ -176,6 +203,6 @@ export class AdminController {
       statusTo: update.status ?? result.previousStatus,
       guarded: update.expectedUpdatedAt !== undefined,
     }));
-    return this.json(res, 200, { data: result.law }, req);
+    return this.json(res, 200, { data: result.law, thank_you_queued: this.thankSubmitter(result) }, req);
   }
 }

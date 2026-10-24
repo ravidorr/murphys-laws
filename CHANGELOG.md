@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Thank-you email to the submitter when an admin approves a pending law that has an
+  email address (new `law-approval-email-template` and `EmailService.sendLawApprovedEmail`).
+  It is sent only on the move from review to published, needs SMTP to be configured,
+  never blocks moderation, and the page mentions when one was queued.
+  Backend bumped to `2.3.36`; root to `2.6.80`.
+
 - Moderation tooling for submitted laws: token-protected `GET /api/v1/admin/laws`
   and `POST /api/v1/admin/laws/:id` endpoints (list by status with search, approve,
   reject, edit text/title, admin notes, with a 409 on concurrent edits) and a

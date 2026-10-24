@@ -230,4 +230,39 @@ describe('EmailService', () => {
       })
     ).rejects.toThrow(/Failed to send calculation email.*plain string rejection/);
   });
+
+  describe('sendLawApprovedEmail', () => {
+    const law = { id: 9, title: 'T', text: 'A law of enough length', name: 'Ann' };
+
+    it('reports configuration state', () => {
+      expect(new EmailService({}).isConfigured()).toBe(false);
+      expect(new EmailService({ host: 'h', user: 'u', pass: 'p' }).isConfigured()).toBe(true);
+    });
+
+    it('does nothing and returns false without SMTP', async () => {
+      await expect(new EmailService({}).sendLawApprovedEmail('a@b.co', law)).resolves.toBe(false);
+      expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it('sends a thank-you to the submitter and logs only the law id', async () => {
+      const service = new EmailService({ host: 'h', user: 'u', pass: 'p', from: 'from@example.com', to: 'admin@example.com' });
+      await expect(service.sendLawApprovedEmail('ann@example.com', law)).resolves.toBe(true);
+
+      const [opts] = mockSendMail.mock.calls[0];
+      expect(opts).toMatchObject({ from: 'from@example.com', to: 'ann@example.com', subject: 'Your Murphy\'s Law is now published' });
+      expect(opts.bcc).toBeUndefined();
+      expect(opts.text).toContain('https://murphys-laws.com/law/9');
+      expect(opts.html).toContain('A law of enough length');
+    });
+
+    it('returns false instead of throwing when sending fails, without logging the address', async () => {
+      mockSendMail.mockRejectedValueOnce(new Error('SMTP error'));
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const service = new EmailService({ host: 'h', user: 'u', pass: 'p' });
+
+      await expect(service.sendLawApprovedEmail('private@example.com', law)).resolves.toBe(false);
+      expect(JSON.stringify(errorSpy.mock.calls[0].slice(0, 1))).not.toContain('private@example.com');
+      errorSpy.mockRestore();
+    });
+  });
 });
