@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   update at once. The admin list also returns every category, the moderation page has a
   category selector on each law, and the audit log line records the previous and new
   category ids. Submitters cannot edit categories; this stays an admin action.
-  Backend bumped to `2.3.38`; root to `2.6.82`.
+  Backend bumped to `2.3.38`; root to `2.6.82` (lockfiles kept in sync).
 
 - Thank-you email to the submitter when an admin approves a pending law that has a
   valid email address (new `law-approval-email-template` and
