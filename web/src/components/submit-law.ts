@@ -346,8 +346,9 @@ export function SubmitLawSection() {
       duplicateWarningShown = false;
       reportedDuplicateMatchIds.clear();
 
+      const emailNote = lawData.email ? ' We will email you a thank-you note when it is published.' : '';
       showMessage(
-        'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
+        `Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive.${emailNote} You cannot edit after submission.`,
         false
       );
       showNextActions(categorySlug || undefined);
