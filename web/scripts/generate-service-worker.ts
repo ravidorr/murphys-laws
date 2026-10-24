@@ -225,7 +225,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate' && sameOrigin) {
     // /admin is the backend-served moderation page, not an SPA route: never cache it or fall back to index.html.
-    if (isApi || url.pathname === '/admin' || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
+    if (isApi || /^\\/admin\\/?$/.test(url.pathname) || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
     event.respondWith(
       networkFirst(request, RUNTIME, '/index.html')
         .catch(() => caches.match('/offline.html'))
