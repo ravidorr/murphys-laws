@@ -11,6 +11,9 @@ import {
   captureCommandStdout,
   collectDailyReport,
   escapeHtml,
+  labelValueItem,
+  mapLogSections,
+  type LogAnalyzerJson,
   renderHtmlReport,
   mapVulnerabilitySection,
   renderPlainTextReport,
@@ -364,6 +367,128 @@ test('log-analyzer --format json includes detail arrays', () => {
     'a non-numeric status field ("-") must be excluded, not break JSON generation',
   );
   assert.deepEqual(parsed.topUrls.find((row) => row.url === '/missing'), { url: '/missing', count: 1 });
+});
+
+function logFixture(overrides: Partial<LogAnalyzerJson> = {}): LogAnalyzerJson {
+  return {
+    summary: {
+      totalAttackAttempts: 8,
+      totalRequests: 300,
+      errors4xx: 231,
+      errors5xx: 0,
+      attackLines: ['Path Traversal: 7 attempts', 'No security issues detected in logs'],
+    },
+    statusCodes: [{ code: 404, count: 231 }],
+    topUrls: [{ url: '/missing', count: 12 }],
+    topIps: [{ ip: '1.2.3.4', count: 40 }],
+    suspiciousUserAgents: [{ agent: 'sqlmap/1.7', count: 3 }],
+    errorSamples: [
+      {
+        code: 404,
+        total: 231,
+        samples: [
+          { count: 20, ip: '1.2.3.4', agent: 'sqlmap/1.7', request: 'GET /wp-login.php' },
+          { count: 5, ip: '5.6.7.8', agent: '-', request: 'GET /.env' },
+        ],
+      },
+    ],
+    securityFindings: [{ category: 'Path Traversal', count: 7, samples: ['1.2.3.4 - - "GET /../.env HTTP/1.1" 400 166'] }],
+    applicationErrors: [],
+    ...overrides,
+  };
+}
+
+function reportFromSections(sections: DailyReport['sections']): DailyReport {
+  return { date: '2026-10-22', subjectSuffix: '', summary: [], preview: 'preview', sections };
+}
+
+test('labelValueItem splits "Label: value" lines and keeps others as plain text', () => {
+  assert.deepEqual(labelValueItem('Total Requests: 4500'), { label: 'Total Requests', value: '4500' });
+  assert.deepEqual(labelValueItem('Bandwidth: 39MB: peak'), { label: 'Bandwidth', value: '39MB: peak' });
+  assert.deepEqual(labelValueItem('no separator'), { value: 'no separator', kind: 'text' });
+});
+
+test('mapLogSections renders log rows without bullets and adds HTTP error examples', () => {
+  const report = reportFromSections(mapLogSections(logFixture()));
+  const html = renderHtmlReport(report);
+  assert.equal(html.includes('&bull;'), false);
+  assert.match(html, /HTTP 404 - 231 requests, top 2 distinct/);
+  assert.match(html, /GET \/wp-login\.php/);
+  assert.match(html, /20 requests - e\.g\. 1\.2\.3\.4 - sqlmap\/1\.7/);
+  assert.match(html, />Path Traversal<\/td>/);
+
+  const plain = renderPlainTextReport(report);
+  assert.match(plain, /HTTP 404 - 231 requests, top 2 distinct/);
+  assert.match(plain, /GET \/\.env: 5 requests - e\.g\. 5\.6\.7\.8 - -/);
+  assert.match(plain, /Path Traversal: 7 attempts/);
+  assert.equal(plain.includes('•'), false);
+});
+
+test('mapLogSections omits the HTTP error group when the analyzer predates errorSamples', () => {
+  const report = reportFromSections(mapLogSections(logFixture({ errorSamples: undefined })));
+  assert.equal(renderPlainTextReport(report).includes('HTTP 404'), false);
+});
+
+test('mapLogSections truncates very long error sample requests and user agents', () => {
+  const fixture = logFixture();
+  fixture.errorSamples = [
+    {
+      code: 400,
+      total: 1,
+      samples: [{ count: 1, ip: '1.2.3.4', agent: 'A'.repeat(400), request: `\\x16\\x03${'\\xAB'.repeat(500)}` }],
+    },
+  ];
+  const plain = renderPlainTextReport(reportFromSections(mapLogSections(fixture)));
+  const line = plain.split('\n').find((row) => row.includes('\\x16\\x03')) ?? '';
+  assert.ok(line.length > 0 && line.length < 400, `row length ${line.length}`);
+  assert.match(line, /\.\.\.: 1 requests/);
+  assert.match(line, /A{20,}\.\.\.$/);
+});
+
+test('renderHtmlReport renders text rows without a bullet', () => {
+  const html = renderHtmlReport(
+    reportFromSections([{ title: "MURPHY'S LAW OF THE DAY", items: [{ value: 'Anything can go wrong.', kind: 'text' }] }]),
+  );
+  assert.match(html, /Anything can go wrong\./);
+  assert.equal(html.includes('&bull;'), false);
+});
+
+test('log-analyzer errorSamples caps at 10 distinct requests per code, most frequent first', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'log-analyzer-errors-'));
+  const logPath = path.join(tempDir, 'access.log');
+  const today = nginxLogDate();
+  const lines: string[] = [];
+  for (let index = 0; index < 14; index += 1) {
+    lines.push(`1.1.1.${index} - - [${today}:12:00:00 +0000] "GET /missing-${index} HTTP/1.1" 404 10 "-" "bot"`);
+  }
+  for (let repeat = 0; repeat < 5; repeat += 1) {
+    lines.push(`9.9.9.9 - - [${today}:12:00:00 +0000] "GET /missing-0 HTTP/1.1" 404 10 "-" "bot"`);
+  }
+  lines.push(`2.2.2.2 - - [${today}:12:01:00 +0000] "GET /boom HTTP/1.1" 502 10 "-" "Mozilla"`);
+  // A 200 whose response size is 404 bytes must not be counted as a 4xx error.
+  lines.push(`3.3.3.3 - - [${today}:12:02:00 +0000] "GET /big HTTP/1.1" 200 404 "-" "Mozilla"`);
+  writeFileSync(logPath, `${lines.join('\n')}\n`);
+
+  const script = path.join(rootDirectory, 'backend/scripts/log-analyzer.sh');
+  const stdout = execFileSync('bash', [script, '--format', 'json'], {
+    env: { ...process.env, NGINX_ACCESS_LOG: logPath, LOG_ANALYZER_LOG: path.join(tempDir, 'log.log') },
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  const parsed = JSON.parse(stdout) as {
+    summary: { errors4xx: number; errors5xx: number };
+    errorSamples: Array<{ code: number; total: number; samples: Array<{ count: number; request: string; ip: string }> }>;
+  };
+
+  assert.equal(parsed.summary.errors4xx, 19);
+  assert.equal(parsed.summary.errors5xx, 1);
+
+  assert.deepEqual(parsed.errorSamples.map((group) => group.code), [404, 502]);
+  const notFound = parsed.errorSamples[0];
+  assert.equal(notFound.total, 19);
+  assert.equal(notFound.samples.length, 10);
+  assert.deepEqual(notFound.samples[0], { count: 6, ip: '1.1.1.0', agent: 'bot', request: 'GET /missing-0' });
+  assert.equal(parsed.errorSamples[1].samples[0].request, 'GET /boom');
 });
 
 test('analyze-resource-peaks --format json returns metrics array', () => {
