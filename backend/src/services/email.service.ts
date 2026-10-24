@@ -10,6 +10,12 @@ import {
   createLawSubmissionEmailText,
   createLawSubmissionEmailHtml,
 } from '../../../shared/modules/law-submission-email-template.ts';
+import {
+  type LawApprovalEmailData,
+  createLawApprovalEmailSubject,
+  createLawApprovalEmailText,
+  createLawApprovalEmailHtml,
+} from '../../../shared/modules/law-approval-email-template.ts';
 
 export interface EmailConfig {
   host?: string;
@@ -41,6 +47,32 @@ export class EmailService {
       console.log('Email notifications enabled');
     } else {
       console.log('Email notifications disabled (SMTP not configured)');
+    }
+  }
+
+  isConfigured(): boolean {
+    return this.transporter !== null;
+  }
+
+  /** Thanks the submitter once their law is published. Never throws; addresses are not logged. */
+  async sendLawApprovedEmail(to: string, lawData: LawApprovalEmailData): Promise<boolean> {
+    if (!this.transporter) {
+      return false;
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: this.config.from,
+        to,
+        subject: createLawApprovalEmailSubject(),
+        text: createLawApprovalEmailText(lawData),
+        html: createLawApprovalEmailHtml(lawData),
+      });
+      console.log(`Thank-you email sent for law ID ${lawData.id}`);
+      return true;
+    } catch (error: unknown) {
+      console.error(`Failed to send thank-you email for law ID ${lawData.id}:`, error);
+      return false;
     }
   }
 

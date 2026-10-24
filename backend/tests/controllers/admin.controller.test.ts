@@ -17,6 +17,7 @@ const TOKEN = 't'.repeat(40);
 describe('AdminController', () => {
   let service: { listLaws: ReturnType<typeof vi.fn>; updateLaw: ReturnType<typeof vi.fn> };
   let controller: AdminController;
+  let emailService: { isConfigured: ReturnType<typeof vi.fn>; sendLawApprovedEmail: ReturnType<typeof vi.fn> };
   let req: { headers: Record<string, string> };
   let res: { writeHead: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
 
@@ -34,7 +35,8 @@ describe('AdminController', () => {
       listLaws: vi.fn(() => ({ data: [], total: 0, counts: {} })),
       updateLaw: vi.fn(() => ({ outcome: 'updated', law: { id: 5 }, previousStatus: 'in_review' })),
     };
-    controller = new AdminController(service);
+    emailService = { isConfigured: vi.fn(() => true), sendLawApprovedEmail: vi.fn(() => Promise.resolve(true)) };
+    controller = new AdminController(service, emailService);
     req = { headers: { authorization: `Bearer ${TOKEN}` } };
     res = { writeHead: vi.fn(), end: vi.fn() };
     vi.mocked(checkRateLimit).mockClear();
@@ -218,6 +220,72 @@ describe('AdminController', () => {
       await update({ status: 'rejected' });
       expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('rejected: law changed'));
       expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('missing law 5'));
+    });
+
+    describe('thank-you email', () => {
+      const approved = (attributions: unknown[], over: Record<string, unknown> = {}) => ({
+        outcome: 'updated',
+        previousStatus: 'in_review',
+        law: { id: 5, title: 'T', text: 'Law text of enough length', status: 'published', attributions, ...over },
+      });
+      const ann = { name: 'Ann', contact_type: 'email', contact_value: 'ann@example.com' };
+
+      it('queues a thank-you when a pending law with an email address is approved', async () => {
+        service.updateLaw.mockReturnValue(approved([{ name: 'Bob', contact_type: 'text', contact_value: null }, ann]));
+        await update({ status: 'published' });
+
+        expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', {
+          id: 5,
+          title: 'T',
+          text: 'Law text of enough length',
+          name: 'Ann',
+        });
+        expect(payload().thank_you_queued).toBe(true);
+      });
+
+      it.each([
+        ['no attribution', []],
+        ['no email contact', [{ name: 'Ann', contact_type: 'text', contact_value: 'x' }]],
+        ['null contact value', [{ name: 'Ann', contact_type: 'email', contact_value: null }]],
+        ['malformed address', [{ name: 'Ann', contact_type: 'email', contact_value: 'not an email' }]],
+        ['overlong address', [{ name: 'Ann', contact_type: 'email', contact_value: `${'a'.repeat(250)}@b.co` }]],
+      ])('does not send with %s', async (_name, attributions) => {
+        service.updateLaw.mockReturnValue(approved(attributions));
+        await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
+        expect(payload().thank_you_queued).toBe(false);
+      });
+
+      it.each([
+        ['rejecting', { law: { status: 'rejected' } }],
+        ['editing an already published law', { previousStatus: 'published' }],
+        ['re-approving a rejected law', { previousStatus: 'rejected' }],
+      ])('does not send when %s', async (_name, over) => {
+        const result = approved([ann]);
+        service.updateLaw.mockReturnValue({ ...result, ...over, law: { ...result.law, ...(over as any).law } });
+        await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
+      });
+
+      it('skips sending when SMTP is not configured', async () => {
+        emailService.isConfigured.mockReturnValue(false);
+        service.updateLaw.mockReturnValue(approved([ann]));
+        await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
+        expect(payload().thank_you_queued).toBe(false);
+      });
+
+      it('still answers 200 and logs when sending rejects', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        emailService.sendLawApprovedEmail.mockReturnValue(Promise.reject(new Error('smtp down')));
+        service.updateLaw.mockReturnValue(approved([ann]));
+        await update({ status: 'published' });
+        await Promise.resolve();
+
+        expect(status()).toBe(200);
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('law ID 5'), expect.any(Error));
+        expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('ann@example.com');
+      });
     });
 
     it('returns 404 for unknown laws and 409 for conflicts', async () => {

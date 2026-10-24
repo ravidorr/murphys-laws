@@ -18,6 +18,7 @@ describe('admin API through the real server and migrated database', () => {
   let db: ReturnType<typeof createMigratedDb>;
   let server: ReturnType<typeof createApiServer>['server'];
   let lawId: number;
+  let emailService: { isConfigured: ReturnType<typeof vi.fn>; sendLawApprovedEmail: ReturnType<typeof vi.fn>; sendNewLawEmail: ReturnType<typeof vi.fn> };
 
   let ip = '';
 
@@ -57,7 +58,8 @@ describe('admin API through the real server and migrated database', () => {
     lawId = Number(
       db.prepare("INSERT INTO laws (title, text, status, first_seen_file_path) VALUES ('Fish', 'Zebrafish always escape the net you bought', 'in_review', 'web-submission')").run().lastInsertRowid,
     );
-    ({ server } = createApiServer({ db: db as any }));
+    emailService = { isConfigured: vi.fn(() => true), sendLawApprovedEmail: vi.fn(() => Promise.resolve(true)), sendNewLawEmail: vi.fn() };
+    ({ server } = createApiServer({ db: db as any, emailService: emailService as any }));
   });
 
   afterEach(() => {
@@ -190,5 +192,30 @@ describe('admin API through the real server and migrated database', () => {
   it('keeps admin routes out of the public OpenAPI spec', async () => {
     const spec = (await request('GET', '/api/v1/openapi.json')).json();
     expect(Object.keys(spec.paths).filter((path) => path.includes('/admin'))).toEqual([]);
+  });
+
+  it('thanks the submitter by email when their pending law is approved, once', async () => {
+    db.prepare("INSERT INTO attributions (law_id, name, contact_type, contact_value) VALUES (?, 'Ann', 'email', 'ann@example.com')").run(lawId);
+
+    const approve = (status: string) => request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { status } });
+
+    const first = await approve('published');
+    expect(first.json().thank_you_queued).toBe(true);
+    expect(emailService.sendLawApprovedEmail).toHaveBeenCalledTimes(1);
+    expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', expect.objectContaining({ id: lawId, name: 'Ann' }));
+
+    const edit = await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { admin_notes: 'checked' } });
+    expect(edit.json().thank_you_queued).toBe(false);
+    expect(emailService.sendLawApprovedEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not email when a law without an email address is approved or a law is rejected', async () => {
+    const reject = await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { status: 'rejected' } });
+    expect(reject.json().thank_you_queued).toBe(false);
+
+    const other = Number(db.prepare("INSERT INTO laws (title, text, status, first_seen_file_path) VALUES (NULL, 'Another submitted law about socks', 'in_review', 'web-submission')").run().lastInsertRowid);
+    const approve = await request('POST', `/api/v1/admin/laws/${other}`, { token: TOKEN, body: { status: 'published' } });
+    expect(approve.json().thank_you_queued).toBe(false);
+    expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
   });
 });

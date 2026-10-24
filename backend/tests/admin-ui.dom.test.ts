@@ -142,6 +142,15 @@ describe('admin page', () => {
     expect(button('In review (1)')).not.toBeNull();
   });
 
+  it('mentions the thank-you email when one was queued', async () => {
+    await boot(jsonResponse(listReply([law(), law({ id: 2, text: 'Second law of enough length' })])));
+    await connect();
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ status: 'published' }), thank_you_queued: true }));
+    click(action('Approve'));
+    await flush();
+    expect($('message').textContent).toBe('Law #1 updated. Thank-you email queued for the submitter.');
+  });
+
   it('keeps edits in other cards and re-enables buttons when a save fails', async () => {
     await boot(jsonResponse(listReply([law(), law({ id: 2, text: 'Second law of enough length' })])));
     await connect();
