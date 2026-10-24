@@ -144,7 +144,8 @@ describe('admin API through the real server and migrated database', () => {
     expect((await request('GET', '/admin')).status).toBe(404);
 
     process.env.ADMIN_API_TOKEN = 'too-short';
-    createApiServer({ db: db as any });
+    ({ server } = createApiServer({ db: db as any }));
+    expect((await request('GET', '/admin')).status).toBe(404);
     expect(console.warn).toHaveBeenCalledWith('Admin API disabled (ADMIN_API_TOKEN is shorter than 32 characters)');
 
     process.env.ADMIN_API_TOKEN = TOKEN;
