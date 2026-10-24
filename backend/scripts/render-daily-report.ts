@@ -11,6 +11,7 @@ export type ReportItemKind =
   | 'row'
   | 'bullet'
   | 'bullet-pass'
+  | 'text'
   | 'callout'
   | 'callout-check-failed'
   | 'subheading'
@@ -239,6 +240,14 @@ function renderHtmlBulletRow(item: ReportItem): string {
   ].join('');
 }
 
+function renderHtmlTextRow(item: ReportItem): string {
+  return [
+    '<tr>',
+    `<td colspan="2" style="${valueTdStyle('border-top:1px solid #e5e7eb;overflow-wrap:break-word;')}">${escapeHtml(item.value)}</td>`,
+    '</tr>',
+  ].join('');
+}
+
 function renderHtmlTrafficCodeRow(value: string): string {
   const match = value.match(/^(\d{3}):\s*(.+)$/);
   if (!match) {
@@ -246,7 +255,7 @@ function renderHtmlTrafficCodeRow(value: string): string {
   }
   return [
     '<tr>',
-    `<td width="1%" style="${narrowLabelTdStyle('border-top:1px solid #e5e7eb;')}"><span style="color:#4b5563;">&bull;</span> ${escapeHtml(match[1])}</td>`,
+    `<td width="1%" style="${narrowLabelTdStyle('border-top:1px solid #e5e7eb;')}">${escapeHtml(match[1])}</td>`,
     `<td style="${valueTdStyle('border-top:1px solid #e5e7eb;')}">${escapeHtml(match[2])}</td>`,
     '</tr>',
   ].join('');
@@ -336,6 +345,10 @@ function renderHtmlSection(sectionBlock: ReportSection): string {
       rows.push(renderHtmlLabelValueRow(item, false));
       continue;
     }
+    if (kind === 'text') {
+      rows.push(renderHtmlTextRow(item));
+      continue;
+    }
     if (!item.label && /^\d{3}:\s/.test(item.value)) {
       rows.push(renderHtmlTrafficCodeRow(item.value));
       continue;
@@ -356,6 +369,11 @@ function appendPlainSection(lines: string[], sectionBlock: ReportSection): void 
     const kind = defaultItemKind(item);
     if (kind === 'subheading') {
       lines.push('');
+      lines.push(item.value);
+      continue;
+    }
+    if (kind === 'text') {
+      lines.push(`  ${item.value}`);
       continue;
     }
     if (kind === 'callout' || kind === 'callout-check-failed') {
@@ -736,18 +754,35 @@ function summarizePerformanceMetrics(metricsPath: string): ReportItem[] {
   const avgMemory = average(mp);
   const items: ReportItem[] = [];
   if (avgFrontend !== null) {
-    items.push({ value: `Frontend: avg ${avgFrontend.toFixed(0)}ms` });
+    items.push({ label: 'Frontend', value: `avg ${avgFrontend.toFixed(0)}ms` });
   }
   if (avgApi !== null) {
-    items.push({ value: `API: avg ${avgApi.toFixed(0)}ms` });
+    items.push({ label: 'API', value: `avg ${avgApi.toFixed(0)}ms` });
   }
   if (avgDb !== null) {
-    items.push({ value: `Database: avg ${avgDb.toFixed(0)}ms` });
+    items.push({ label: 'Database', value: `avg ${avgDb.toFixed(0)}ms` });
   }
   if (avgMemory !== null) {
-    items.push({ value: `Avg Memory Usage: ${avgMemory.toFixed(1)}%` });
+    items.push({ label: 'Avg Memory Usage', value: `${avgMemory.toFixed(1)}%` });
   }
   return items;
+}
+
+const ERROR_SAMPLE_REQUEST_MAX_LENGTH = 120;
+const ERROR_SAMPLE_AGENT_MAX_LENGTH = 100;
+
+/** Raw attack payloads (e.g. TLS handshakes) can be kilobytes long; keep report rows readable. */
+function truncateText(value: string, maxLength: number): string {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
+/** Splits "Label: value" output lines into label/value rows; other lines stay plain text. */
+export function labelValueItem(line: string): ReportItem {
+  const separator = line.indexOf(': ');
+  if (separator <= 0) {
+    return { value: line, kind: 'text' };
+  }
+  return { label: line.slice(0, separator), value: line.slice(separator + 2) };
 }
 
 function section(title: string, items: ReportItem[]): ReportSection {
@@ -775,7 +810,7 @@ function subjectSuffixForDate(date: Date, forceAllOptional: boolean): string {
   return ` (+ ${parts.join(' + ')})`;
 }
 
-interface LogAnalyzerJson {
+export interface LogAnalyzerJson {
   summary: {
     totalAttackAttempts: number;
     totalRequests: number;
@@ -787,6 +822,12 @@ interface LogAnalyzerJson {
   topUrls: Array<{ url: string; count: number }>;
   topIps: Array<{ ip: string; count: number }>;
   suspiciousUserAgents: Array<{ agent: string; count: number }>;
+  /** Absent when the installed log-analyzer.sh predates error samples. */
+  errorSamples?: Array<{
+    code: number;
+    total: number;
+    samples: Array<{ count: number; ip: string; agent: string; request: string }>;
+  }>;
   securityFindings: Array<{ category: string; count: number; samples: string[] }>;
   applicationErrors: string[];
 }
@@ -829,11 +870,11 @@ interface CostJson {
   nextReview: string;
 }
 
-function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
+export function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
   const sections: ReportSection[] = [];
   const summaryItems: ReportItem[] = [];
   for (const line of log.summary.attackLines) {
-    summaryItems.push({ value: line });
+    summaryItems.push(labelValueItem(line));
   }
   summaryItems.push({ label: 'Total attack attempts', value: String(log.summary.totalAttackAttempts) });
   summaryItems.push({ label: 'Total requests today', value: String(log.summary.totalRequests) });
@@ -844,17 +885,35 @@ function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
   const nginxItems: ReportItem[] = [
     { label: 'Total requests today', value: String(log.summary.totalRequests) },
   ];
+  nginxItems.push({ kind: 'subheading', value: 'Status codes' });
   for (const row of log.statusCodes) {
-    nginxItems.push({ value: `${row.code}: ${row.count} requests` });
+    nginxItems.push({ label: String(row.code), value: `${row.count} requests` });
   }
+  nginxItems.push({ kind: 'subheading', value: 'Top IPs' });
   for (const row of log.topIps) {
-    nginxItems.push({ value: `${row.ip}: ${row.count} requests` });
+    nginxItems.push({ label: row.ip, value: `${row.count} requests` });
   }
+  nginxItems.push({ kind: 'subheading', value: 'Top URLs' });
   for (const row of log.topUrls.slice(0, 10)) {
-    nginxItems.push({ value: `${row.url}: ${row.count} times` });
+    nginxItems.push({ label: row.url, value: `${row.count} times` });
+  }
+  if (log.suspiciousUserAgents.length > 0) {
+    nginxItems.push({ kind: 'subheading', value: 'Suspicious user agents' });
   }
   for (const row of log.suspiciousUserAgents) {
-    nginxItems.push({ value: `${row.count} - ${row.agent}` });
+    nginxItems.push({ label: row.agent, value: `${row.count} requests` });
+  }
+  for (const errorGroup of log.errorSamples ?? []) {
+    nginxItems.push({
+      kind: 'subheading',
+      value: `HTTP ${errorGroup.code} - ${errorGroup.total} requests, top ${errorGroup.samples.length} distinct`,
+    });
+    for (const sample of errorGroup.samples) {
+      nginxItems.push({
+        label: truncateText(sample.request, ERROR_SAMPLE_REQUEST_MAX_LENGTH),
+        value: `${sample.count} requests - e.g. ${sample.ip} - ${truncateText(sample.agent, ERROR_SAMPLE_AGENT_MAX_LENGTH)}`,
+      });
+    }
   }
   sections.push(section('NGINX ACCESS LOG ANALYSIS', nginxItems));
 
@@ -863,7 +922,7 @@ function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
       { label: 'Detected', value: `${finding.count} potential ${finding.category} attempts` },
     ];
     for (const sample of finding.samples) {
-      items.push({ value: sample });
+      items.push({ value: sample, kind: 'text' });
     }
     sections.push(section(`${finding.category.toUpperCase()} ATTEMPTS`, items));
   }
@@ -1126,7 +1185,7 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
     ]);
     sections.push(
       section('MURPHY\'S LAW OF THE DAY', [
-        { value: lawOfDay || `No law of the day set for ${date}` },
+        { value: lawOfDay || `No law of the day set for ${date}`, kind: 'text' },
       ]),
     );
   }
@@ -1162,7 +1221,7 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
   ]);
   if (trafficSummary) {
     sections.push(
-      section('TRAFFIC & BANDWIDTH', trafficSummary.split('\n').map((line) => ({ value: line }))),
+      section('TRAFFIC & BANDWIDTH', trafficSummary.split('\n').map(labelValueItem)),
     );
   }
 
@@ -1242,7 +1301,7 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       label: 'Total backup size',
       value: tryCommand('du', ['-sh', '/root/backups']).split('\t')[0] ?? 'Unknown',
     });
-    backupItems.push({ value: 'Off-site copy: not configured (local integrity only)' });
+    backupItems.push({ label: 'Off-site copy', value: 'not configured (local integrity only)' });
     sections.push(section('BACKUP STATUS', backupItems));
   }
 
