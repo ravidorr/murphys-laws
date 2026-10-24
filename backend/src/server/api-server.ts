@@ -7,6 +7,7 @@ import type Database from 'better-sqlite3';
 import { DatabaseService } from '../services/database.service.ts';
 import { EmailService } from '../services/email.service.ts';
 import { LawService } from '../services/laws.service.ts';
+import { AdminLawService } from '../services/admin-laws.service.ts';
 import { VoteService } from '../services/votes.service.ts';
 import { CategoryService } from '../services/categories.service.ts';
 import { AttributionService } from '../services/attributions.service.ts';
@@ -15,6 +16,8 @@ import { OgImageService } from '../services/og-image.service.ts';
 import { HtmlInjectionService } from '../services/html-injection.service.ts';
 
 import { LawController } from '../controllers/laws.controller.ts';
+import { AdminController } from '../controllers/admin.controller.ts';
+import { AdminUiController } from '../controllers/admin-ui.controller.ts';
 import { VoteController } from '../controllers/votes.controller.ts';
 import { CategoryController } from '../controllers/categories.controller.ts';
 import { AttributionController } from '../controllers/attributions.controller.ts';
@@ -104,6 +107,9 @@ export function createApiServer(options?: CreateApiServerOptions) {
   const htmlInjection = new HtmlInjectionService({ lawService, categoryService });
   const spaController = new SpaController(htmlInjection);
 
+  const adminController = new AdminController(new AdminLawService(db));
+  const adminUiController = new AdminUiController();
+
   const router = new Router();
 
   router.get(/^\/law\/(\d+)\/?$/, (req, res, lawId) => spaController.serveLaw(req, res, lawId));
@@ -143,6 +149,11 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.registerPublicRoute('GET', '/api/v1/feed.atom', '/api/v1/feed.atom', (req, res) => feedController.getAtomFeed(req, res));
 
   router.registerPublicRoute('GET', '/api/v1/og/law/:id.png', '/api/v1/og/law/{id}.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
+
+  router.post('/api/v1/admin/laws/:id', (req, res, id) => adminController.update(req, res, id));
+  router.get('/api/v1/admin/ui', (req, res) => adminUiController.serve(req, res));
+  router.get('/api/v1/admin/ui/:file', (req, res, file) => adminUiController.serve(req, res, file));
+  router.get('/api/v1/admin/laws', (req, res, parsed) => adminController.list(req, res, parsed));
 
   router.assertPublicApiContract();
 

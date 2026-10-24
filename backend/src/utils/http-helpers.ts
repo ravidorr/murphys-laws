@@ -74,7 +74,7 @@ export function sendJson(
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Link': '<https://murphys-laws.com/openapi.json>; rel="describedby"',
     ...rateLimitHeaders(rateLimit),
   };
@@ -117,7 +117,7 @@ export function rateLimitExceeded(
     'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     ...(Number.isFinite(rateLimit.limit) ? { 'X-RateLimit-Limit': String(rateLimit.limit) } : {}),
     'X-RateLimit-Remaining': '0',
   };

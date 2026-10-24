@@ -286,6 +286,11 @@ describe('api-server', () => {
       await emitRequest('DELETE', '/api/v1/laws/1/vote');
       await emitRequest('GET', '/law/1');
       await emitRequest('GET', '/category/c');
+      // Admin routes are disabled (404) when ADMIN_API_TOKEN is unset
+      await emitRequest('GET', '/api/v1/admin/laws');
+      await emitRequest('POST', '/api/v1/admin/laws/1', { status: 'published' });
+      await emitRequest('GET', '/api/v1/admin/ui');
+      await emitRequest('GET', '/api/v1/admin/ui/admin.css');
 
       expect(mockLawService.listLaws).toHaveBeenCalled();
       expect(mockLawService.getLaw).toHaveBeenCalled();
