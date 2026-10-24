@@ -31,11 +31,16 @@ describe('admin UI route configuration', () => {
     expect(allAgents).toContain('Disallow: /api/');
   });
 
-  it('the Vite dev server proxies /admin to the API like /api', () => {
+  it('the Vite dev and preview servers proxy /admin to the API like /api', () => {
     const config = read('web/vite.config.ts');
-    const dev = config.slice(config.indexOf('server: {'), config.indexOf('preview: {'));
+    const sections = {
+      dev: config.slice(config.indexOf('server: {'), config.indexOf('preview: {')),
+      preview: config.slice(config.indexOf('preview: {'), config.indexOf('resolve: {')),
+    };
 
-    expect(dev).toMatch(/'\/api': \{\s+target: 'http:\/\/127\.0\.0\.1:8787'/);
-    expect(dev).toMatch(/'\/admin': \{\s+target: 'http:\/\/127\.0\.0\.1:8787'/);
+    for (const section of Object.values(sections)) {
+      expect(section).toMatch(/'\/api': \{\s+target: 'http:\/\/127\.0\.0\.1:8787'/);
+      expect(section).toMatch(/'\/admin': \{\s+target: 'http:\/\/127\.0\.0\.1:8787'/);
+    }
   });
 });
