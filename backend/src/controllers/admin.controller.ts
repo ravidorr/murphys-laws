@@ -7,7 +7,8 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_NOTES_LENGTH = 2000;
 const MAX_QUERY_LENGTH = 200;
 const MAX_BODY_BYTES = 16 * 1024;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// One plain address: no whitespace, list separators, group or display-name syntax, quotes or brackets.
+const EMAIL_PATTERN = /^[^\s@,;:<>()"\\[\]]+@[^\s@,;:<>()"\\[\]]+\.[^\s@,;:<>()"\\[\]]+$/;
 const MAX_EMAIL_LENGTH = 254;
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
@@ -33,26 +34,48 @@ export class AdminController {
   }
 
   /**
-   * Thanks the submitter when a law moves from review to published and they left an email address.
-   * Sending is fire and forget so a slow mail server never delays moderation. Returns whether one was queued.
+   * Thanks the submitter when a law moves from review to published. Sending is fire and forget so a slow mail
+   * server never delays moderation, and any problem here is contained so it cannot fail an update that is
+   * already saved. `queued` means a send was started, not that the mail was delivered.
+   * Returns null when the update was not an approval.
    */
-  private thankSubmitter(result: any): boolean {
-    const law = result.law;
-    if (result.previousStatus !== 'in_review' || law.status !== 'published' || !this.emailService.isConfigured()) {
-      return false;
-    }
+  private thankSubmitter(result: any): { status: 'queued' } | { status: 'skipped'; reason: string } | null {
+    try {
+      const law = result.law;
+      if (result.previousStatus !== 'in_review' || law.status !== 'published') {
+        return null;
+      }
+      if (!this.emailService.isConfigured()) {
+        return { status: 'skipped', reason: 'not_configured' };
+      }
+      if (law.approval_email_sent_at) {
+        return { status: 'skipped', reason: 'already_sent' };
+      }
 
-    const attribution = (law.attributions as { name: string | null; contact_type: string | null; contact_value: string | null }[])
-      .find((a) => a.contact_type === 'email' && typeof a.contact_value === 'string'
-        && a.contact_value.length <= MAX_EMAIL_LENGTH && EMAIL_PATTERN.test(a.contact_value));
-    if (!attribution) {
-      return false;
-    }
+      const contacts = (law.attributions as { name: string | null; contact_type: string | null; contact_value: string | null }[])
+        .filter((a) => a.contact_type === 'email' && typeof a.contact_value === 'string');
+      if (contacts.length === 0) {
+        return { status: 'skipped', reason: 'no_email' };
+      }
+      const attribution = contacts.find((a) => (a.contact_value as string).length <= MAX_EMAIL_LENGTH && EMAIL_PATTERN.test(a.contact_value as string));
+      if (!attribution) {
+        return { status: 'skipped', reason: 'invalid_email' };
+      }
 
-    this.emailService
-      .sendLawApprovedEmail(attribution.contact_value, { id: law.id, title: law.title, text: law.text, name: attribution.name })
-      .catch((error: unknown) => console.error(`Thank-you email failed for law ID ${law.id}:`, error));
-    return true;
+      Promise.resolve(
+        this.emailService.sendLawApprovedEmail(attribution.contact_value, { id: law.id, title: law.title, text: law.text, name: attribution.name }),
+      )
+        .then((outcome: { status: string }) => {
+          if (outcome.status === 'sent') {
+            this.adminLawService.markApprovalEmailSent(law.id);
+          }
+        })
+        .catch((error: unknown) => console.error(`Thank-you email follow-up failed for law ID ${law.id}: ${error instanceof Error ? error.name : 'unknown error'}`));
+      return { status: 'queued' };
+    } catch (error) {
+      console.error(`Thank-you email could not be started for law ID ${result?.law?.id}: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return { status: 'skipped', reason: 'error' };
+    }
   }
 
   private json(res: any, status: number, body: unknown, req: any) {
@@ -194,6 +217,7 @@ export class AdminController {
       return this.fail(res, 409, 'This law changed since you loaded it. Reload the list and try again.', req);
     }
 
+    const thankYou = this.thankSubmitter(result);
     console.log(JSON.stringify({
       event: 'admin_law_update',
       lawId,
@@ -202,7 +226,8 @@ export class AdminController {
       statusFrom: result.previousStatus,
       statusTo: update.status ?? result.previousStatus,
       guarded: update.expectedUpdatedAt !== undefined,
+      thankYou: thankYou === null ? undefined : thankYou.status === 'queued' ? 'queued' : `skipped:${thankYou.reason}`,
     }));
-    return this.json(res, 200, { data: result.law, thank_you_queued: this.thankSubmitter(result) }, req);
+    return this.json(res, 200, { data: result.law, thank_you: thankYou }, req);
   }
 }

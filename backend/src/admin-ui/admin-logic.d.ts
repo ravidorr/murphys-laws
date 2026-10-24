@@ -27,3 +27,4 @@ export function applyStatusChange(
 ): { counts: Record<string, number>; total: number; removed: boolean };
 export function isListReply(data: unknown): boolean;
 export function isLawReply(data: unknown): boolean;
+export function describeThankYou(thankYou: { status: string; reason?: string } | null | undefined): string;

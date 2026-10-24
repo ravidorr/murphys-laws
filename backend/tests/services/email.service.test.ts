@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EmailService } from '../../src/services/email.service.ts';
 
@@ -237,31 +238,58 @@ describe('EmailService', () => {
     it('reports configuration state', () => {
       expect(new EmailService({}).isConfigured()).toBe(false);
       expect(new EmailService({ host: 'h', user: 'u', pass: 'p' }).isConfigured()).toBe(true);
+      expect(new EmailService({ host: 'h', user: 'u' }).isConfigured()).toBe(false);
     });
 
-    it('does nothing and returns false without SMTP', async () => {
-      await expect(new EmailService({}).sendLawApprovedEmail('a@b.co', law)).resolves.toBe(false);
+    it('does nothing and reports a skip without SMTP', async () => {
+      await expect(new EmailService({}).sendLawApprovedEmail('a@b.co', law)).resolves.toEqual({ status: 'skipped', reason: 'not_configured' });
       expect(mockSendMail).not.toHaveBeenCalled();
     });
 
-    it('sends a thank-you to the submitter and logs only the law id', async () => {
+    it('sends a thank-you to a single plain recipient with production links and logs only the law id', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const service = new EmailService({ host: 'h', user: 'u', pass: 'p', from: 'from@example.com', to: 'admin@example.com' });
-      await expect(service.sendLawApprovedEmail('ann@example.com', law)).resolves.toBe(true);
+      await expect(service.sendLawApprovedEmail('ann@example.com', law)).resolves.toEqual({ status: 'sent' });
 
       const [opts] = mockSendMail.mock.calls[0];
-      expect(opts).toMatchObject({ from: 'from@example.com', to: 'ann@example.com', subject: 'Your Murphy\'s Law is now published' });
+      expect(opts).toMatchObject({ from: 'from@example.com', to: { name: '', address: 'ann@example.com' }, subject: 'Your Murphy\'s Law is now published' });
       expect(opts.bcc).toBeUndefined();
       expect(opts.text).toContain('https://murphys-laws.com/law/9');
+      expect(opts.text).toContain('You received this because this email address was given when submitting law #9');
       expect(opts.html).toContain('A law of enough length');
+      expect(logSpy).toHaveBeenCalledWith('Thank-you email sent for law ID 9');
+      logSpy.mockRestore();
     });
 
-    it('returns false instead of throwing when sending fails, without logging the address', async () => {
-      mockSendMail.mockRejectedValueOnce(new Error('SMTP error'));
+    it('logs only the law id and error codes when sending fails, never the address or SMTP text', async () => {
+      const smtpError = Object.assign(new Error('550 5.1.1 <ann@example.com> Recipient address rejected'), {
+        code: 'EENVELOPE',
+        responseCode: 550,
+        response: '550 5.1.1 <ann@example.com> Recipient address rejected',
+        rejected: ['ann@example.com'],
+        command: 'RCPT TO',
+      });
+      mockSendMail.mockRejectedValueOnce(smtpError);
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const service = new EmailService({ host: 'h', user: 'u', pass: 'p' });
 
-      await expect(service.sendLawApprovedEmail('private@example.com', law)).resolves.toBe(false);
-      expect(JSON.stringify(errorSpy.mock.calls[0].slice(0, 1))).not.toContain('private@example.com');
+      await expect(service.sendLawApprovedEmail('ann@example.com', law)).resolves.toEqual({ status: 'failed' });
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      const logged = errorSpy.mock.calls[0].map((arg) => inspect(arg, { depth: 5 })).join(' ');
+      expect(logged).toContain('law ID 9');
+      expect(logged).toContain('EENVELOPE');
+      expect(logged).toContain('550');
+      expect(logged).not.toContain('ann@example.com');
+      errorSpy.mockRestore();
+    });
+
+    it('copes with failures that carry no error details', async () => {
+      mockSendMail.mockRejectedValueOnce(undefined);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const service = new EmailService({ host: 'h', user: 'u', pass: 'p' });
+      await expect(service.sendLawApprovedEmail('ann@example.com', law)).resolves.toEqual({ status: 'failed' });
+      expect(errorSpy).toHaveBeenCalledWith('Failed to send thank-you email for law ID 9 (code: unknown, response: none)');
       errorSpy.mockRestore();
     });
   });

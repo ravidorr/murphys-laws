@@ -43,6 +43,13 @@ describe('law approval email template', () => {
     expect(html).toContain('Hi there,');
   });
 
+  it('explains why the email was sent, in both versions, with the escaped law number', () => {
+    const note = 'You received this because this email address was given when submitting law #42 to Murphy\'s Laws.';
+    expect(template.createLawApprovalEmailText(law)).toContain(note);
+    expect(template.createLawApprovalEmailHtml(law)).toContain(note);
+    expect(template.createLawApprovalEmailHtml({ ...law, id: '<b>' })).toContain('law #&lt;b&gt; ');
+  });
+
   it('uses a custom site URL', () => {
     expect(template.createLawApprovalEmailHtml(law, 'https://staging.example.com')).toContain('https://staging.example.com/law/42');
   });

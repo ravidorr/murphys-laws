@@ -15,7 +15,7 @@ import { readBody, PayloadTooLargeError } from '../../src/utils/http-helpers.ts'
 const TOKEN = 't'.repeat(40);
 
 describe('AdminController', () => {
-  let service: { listLaws: ReturnType<typeof vi.fn>; updateLaw: ReturnType<typeof vi.fn> };
+  let service: { listLaws: ReturnType<typeof vi.fn>; updateLaw: ReturnType<typeof vi.fn>; markApprovalEmailSent: ReturnType<typeof vi.fn> };
   let controller: AdminController;
   let emailService: { isConfigured: ReturnType<typeof vi.fn>; sendLawApprovedEmail: ReturnType<typeof vi.fn> };
   let req: { headers: Record<string, string> };
@@ -32,10 +32,11 @@ describe('AdminController', () => {
   beforeEach(() => {
     process.env.ADMIN_API_TOKEN = TOKEN;
     service = {
+      markApprovalEmailSent: vi.fn(),
       listLaws: vi.fn(() => ({ data: [], total: 0, counts: {} })),
       updateLaw: vi.fn(() => ({ outcome: 'updated', law: { id: 5 }, previousStatus: 'in_review' })),
     };
-    emailService = { isConfigured: vi.fn(() => true), sendLawApprovedEmail: vi.fn(() => Promise.resolve(true)) };
+    emailService = { isConfigured: vi.fn(() => true), sendLawApprovedEmail: vi.fn(() => Promise.resolve({ status: 'sent' })) };
     controller = new AdminController(service, emailService);
     req = { headers: { authorization: `Bearer ${TOKEN}` } };
     res = { writeHead: vi.fn(), end: vi.fn() };
@@ -223,16 +224,20 @@ describe('AdminController', () => {
     });
 
     describe('thank-you email', () => {
-      const approved = (attributions: unknown[], over: Record<string, unknown> = {}) => ({
+      const approved = (attributions: unknown[], over: Record<string, unknown> = {}, lawOver: Record<string, unknown> = {}) => ({
         outcome: 'updated',
         previousStatus: 'in_review',
-        law: { id: 5, title: 'T', text: 'Law text of enough length', status: 'published', attributions, ...over },
+        law: { id: 5, title: 'T', text: 'Law text of enough length', status: 'published', approval_email_sent_at: null, attributions, ...lawOver },
+        ...over,
       });
       const ann = { name: 'Ann', contact_type: 'email', contact_value: 'ann@example.com' };
+      const thankYou = () => payload().thank_you;
+      const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-      it('queues a thank-you when a pending law with an email address is approved', async () => {
+      it('queues a thank-you when a pending law with an email address is approved, and records it once sent', async () => {
         service.updateLaw.mockReturnValue(approved([{ name: 'Bob', contact_type: 'text', contact_value: null }, ann]));
         await update({ status: 'published' });
+        await flush();
 
         expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', {
           id: 5,
@@ -240,51 +245,166 @@ describe('AdminController', () => {
           text: 'Law text of enough length',
           name: 'Ann',
         });
-        expect(payload().thank_you_queued).toBe(true);
+        expect(thankYou()).toEqual({ status: 'queued' });
+        expect(service.markApprovalEmailSent).toHaveBeenCalledWith(5);
+        expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string).thankYou).toBe('queued');
+      });
+
+      it('uses the first valid email contact and ignores invalid ones before it', async () => {
+        const bad = { name: 'Bad', contact_type: 'email', contact_value: 'nope' };
+        const second = { name: 'Zed', contact_type: 'email', contact_value: 'zed@example.com' };
+        const third = { name: 'Third', contact_type: 'email', contact_value: 'third@example.com' };
+        service.updateLaw.mockReturnValue(approved([bad, second, third, { name: 'N', contact_type: 'email', contact_value: 42 }]));
+        await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail).toHaveBeenCalledTimes(1);
+        expect(emailService.sendLawApprovedEmail.mock.calls[0][0]).toBe('zed@example.com');
       });
 
       it.each([
-        ['no attribution', []],
-        ['no email contact', [{ name: 'Ann', contact_type: 'text', contact_value: 'x' }]],
-        ['null contact value', [{ name: 'Ann', contact_type: 'email', contact_value: null }]],
-        ['malformed address', [{ name: 'Ann', contact_type: 'email', contact_value: 'not an email' }]],
-        ['overlong address', [{ name: 'Ann', contact_type: 'email', contact_value: `${'a'.repeat(250)}@b.co` }]],
-      ])('does not send with %s', async (_name, attributions) => {
+        ['no attribution', [], 'no_email'],
+        ['no email contact', [{ name: 'Ann', contact_type: 'text', contact_value: 'x' }], 'no_email'],
+        ['null contact value', [{ name: 'Ann', contact_type: 'email', contact_value: null }], 'no_email'],
+        ['numeric contact value', [{ name: 'Ann', contact_type: 'email', contact_value: 7 }], 'no_email'],
+        ['malformed address', [{ name: 'Ann', contact_type: 'email', contact_value: 'not an email' }], 'invalid_email'],
+        ['overlong address', [{ name: 'Ann', contact_type: 'email', contact_value: `${'a'.repeat(250)}@b.co` }], 'invalid_email'],
+      ])('skips with %s', async (_name, attributions, reason) => {
         service.updateLaw.mockReturnValue(approved(attributions));
         await update({ status: 'published' });
         expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
-        expect(payload().thank_you_queued).toBe(false);
+        expect(thankYou()).toEqual({ status: 'skipped', reason });
+        expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string).thankYou).toBe(`skipped:${reason}`);
       });
 
       it.each([
-        ['rejecting', { law: { status: 'rejected' } }],
-        ['editing an already published law', { previousStatus: 'published' }],
-        ['re-approving a rejected law', { previousStatus: 'rejected' }],
-      ])('does not send when %s', async (_name, over) => {
-        const result = approved([ann]);
-        service.updateLaw.mockReturnValue({ ...result, ...over, law: { ...result.law, ...(over as any).law } });
+        'a@b.co,c@d.co',
+        'a@b.co;c@d.co',
+        'a@b.co\r\nBcc: x@y.co',
+        'a@b.co\nBcc: x@y.co',
+        'Ann <a@b.co>',
+        '"Ann" <a@b.co>',
+        '<a@b.co>',
+        'a@b.co>',
+        'g:a@b.co;',
+        'a@@b.co',
+        '@b.co',
+        'a@b.',
+        'a b@c.co',
+        '"a,b"@c.co',
+        'a@[127.0.0.1]',
+        'a(comment)@b.co',
+      ])('refuses the injection or multi-recipient form %j', async (address) => {
+        service.updateLaw.mockReturnValue(approved([{ name: 'Ann', contact_type: 'email', contact_value: address }]));
         await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
+        expect(thankYou().reason).toBe('invalid_email');
+      });
+
+      it.each(['a@b.co', 'a+tag@b.co', 'first.last@sub.example.org', 'ann@exämple.com', 'ännä@example.com'])('accepts %s', async (address) => {
+        service.updateLaw.mockReturnValue(approved([{ name: 'Ann', contact_type: 'email', contact_value: address }]));
+        await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail.mock.calls[0][0]).toBe(address);
+      });
+
+      it.each([
+        ['rejecting', { law: { id: 5, status: 'rejected', attributions: [ann] } }],
+        ['editing an already published law', { previousStatus: 'published' }],
+        ['editing a law that is still in review', { law: { id: 5, status: 'in_review', attributions: [ann] } }],
+        ['re-approving a rejected law', { previousStatus: 'rejected' }],
+      ])('does not send and reports nothing when %s', async (_name, over) => {
+        service.updateLaw.mockReturnValue(approved([ann], over as Record<string, unknown>));
+        await update({ status: 'published' });
+        expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
+        expect(thankYou()).toBeNull();
+      });
+
+      it('does not email after a conflict or a missing law', async () => {
+        for (const outcome of ['conflict', 'not_found']) {
+          res.writeHead.mockClear();
+          res.end.mockClear();
+          service.updateLaw.mockReturnValue({ outcome, previousStatus: 'in_review', law: approved([ann]).law });
+          await update({ status: 'published', updated_at: 'old' });
+          expect(payload()).not.toHaveProperty('thank_you');
+        }
         expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
       });
 
-      it('skips sending when SMTP is not configured', async () => {
+      it('skips when SMTP is not configured or a thank-you was already sent', async () => {
         emailService.isConfigured.mockReturnValue(false);
         service.updateLaw.mockReturnValue(approved([ann]));
         await update({ status: 'published' });
+        expect(thankYou()).toEqual({ status: 'skipped', reason: 'not_configured' });
+
+        emailService.isConfigured.mockReturnValue(true);
+        res.writeHead.mockClear();
+        res.end.mockClear();
+        service.updateLaw.mockReturnValue(approved([ann], {}, { approval_email_sent_at: '2030-01-01T00:00:00.000Z' }));
+        await update({ status: 'published' });
+        expect(thankYou()).toEqual({ status: 'skipped', reason: 'already_sent' });
         expect(emailService.sendLawApprovedEmail).not.toHaveBeenCalled();
-        expect(payload().thank_you_queued).toBe(false);
       });
 
-      it('still answers 200 and logs when sending rejects', async () => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        emailService.sendLawApprovedEmail.mockReturnValue(Promise.reject(new Error('smtp down')));
+      it('answers before the email send finishes', async () => {
+        emailService.sendLawApprovedEmail.mockReturnValue(new Promise(() => {}));
         service.updateLaw.mockReturnValue(approved([ann]));
         await update({ status: 'published' });
-        await Promise.resolve();
+        expect(status()).toBe(200);
+        expect(thankYou()).toEqual({ status: 'queued' });
+        expect(service.markApprovalEmailSent).not.toHaveBeenCalled();
+      });
+
+      it('does not record a thank-you that failed or was skipped', async () => {
+        service.updateLaw.mockReturnValue(approved([ann]));
+        for (const outcome of [{ status: 'failed' }, { status: 'skipped', reason: 'not_configured' }]) {
+          emailService.sendLawApprovedEmail.mockResolvedValue(outcome);
+          await update({ status: 'published' });
+          await flush();
+        }
+        expect(service.markApprovalEmailSent).not.toHaveBeenCalled();
+      });
+
+      it('logs a rejected send or a failing flag write without the address or error details', async () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        service.updateLaw.mockReturnValue(approved([ann]));
+        const smtp = Object.assign(new Error('550 5.1.1 <ann@example.com> unknown'), { rejected: ['ann@example.com'] });
+
+        emailService.sendLawApprovedEmail.mockImplementation(() => Promise.reject(smtp));
+        await update({ status: 'published' });
+        await flush();
+
+        emailService.sendLawApprovedEmail.mockResolvedValue({ status: 'sent' });
+        service.markApprovalEmailSent.mockImplementation(() => {
+          throw 'disk full';
+        });
+        await update({ status: 'published' });
+        await flush();
 
         expect(status()).toBe(200);
-        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('law ID 5'), expect.any(Error));
-        expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('ann@example.com');
+        expect(errorSpy).toHaveBeenCalledTimes(2);
+        expect(errorSpy.mock.calls.join('\n')).toContain('law ID 5');
+        expect(errorSpy.mock.calls.join('\n')).toContain('unknown error');
+        expect(errorSpy.mock.calls.join('\n')).not.toContain('ann@example.com');
+      });
+
+      it.each([
+        ['isConfigured throws', () => emailService.isConfigured.mockImplementation(() => { throw new TypeError('boom ann@example.com'); }), approved([ann])],
+        ['the email service throws synchronously', () => emailService.sendLawApprovedEmail.mockImplementation(() => { throw new Error('boom'); }), approved([ann])],
+        ['the send returns a non-promise', () => emailService.sendLawApprovedEmail.mockReturnValue(undefined), approved([ann])],
+        ['attributions is null', () => {}, approved(null as never)],
+        ['something that is not an Error is thrown', () => emailService.isConfigured.mockImplementation(() => { throw 'weird'; }), approved([ann])],
+        ['the updated law is missing from the result', () => {}, { outcome: 'updated', previousStatus: 'in_review' } as never],
+      ])('still answers 200 when %s', async (_name, arrange, result) => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        arrange();
+        service.updateLaw.mockReturnValue(result);
+        await update({ status: 'published' });
+        await flush();
+
+        expect(status()).toBe(200);
+        expect(payload().data?.id).toBe((result as { law?: { id: number } }).law?.id);
+        expect(errorSpy.mock.calls.join('\n')).not.toContain('ann@example.com');
+        if (_name !== 'the send returns a non-promise') {
+          expect(thankYou()).toEqual({ status: 'skipped', reason: 'error' });
+        }
       });
     });
 
