@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   category ids. Submitters cannot edit categories; this stays an admin action.
   Backend bumped to `2.3.40`; root to `2.6.84` (lockfiles kept in sync).
 
+- The admin moderation page is now served at `https://murphys-laws.com/admin`
+  (and `/admin` locally and through the Vite dev and preview servers). The backend serves it at
+  `/admin` with the same token rules and security headers as `/api/v1/admin/ui`
+  (still available), nginx proxies `/admin` to the API, the service worker lets it
+  pass through uncached (including `/admin/`), nginx shows the normal 404 page when
+  the admin is disabled, and `robots.txt` disallows it for every crawler group, including the named ones. Docs and tests updated.
+  Backend bumped to `2.3.39`; web to `3.4.23`; root to `2.6.83`.
+
 - Daily email report now has a "Pending approvals" section with the number of submitted
   laws waiting for review and, when there are any, a link to the admin moderation page
   built from the configured `BASE_URL` (falling back to the site URL; the path is
