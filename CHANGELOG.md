@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Upgraded `vitest` and `@vitest/coverage-v8` to `4.1.12` in every workspace, which pulls in
+  the patched `@vitest/mocker` `4.1.12` and clears the four open Dependabot alerts (root and
+  backend lockfiles). Dev-only dependencies. Backend bumped to `2.3.41`; root to `2.6.85`.
+
 ### Added
 
 - Admins can change the category of a submitted law. `POST /api/v1/admin/laws/:id`
