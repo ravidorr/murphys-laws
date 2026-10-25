@@ -256,6 +256,102 @@ describe('admin page', () => {
     expect(JSON.parse(options.body)).toEqual({ admin_notes: 'checked twice', updated_at: 'v1' });
   });
 
+  describe('category selector', () => {
+    const cats = [{ id: 1, name: 'Cat' }, { id: 2, name: 'Dog' }];
+    const select = (id = 1) => document.getElementById(`category-${id}`) as HTMLSelectElement;
+
+    it('lists the server categories with the current one selected', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      expect([...select().options].map((o) => o.textContent)).toEqual(['No category', 'Cat', 'Dog']);
+      expect(select().value).toBe('1');
+      expect(document.querySelector('label[for="category-1"]')?.textContent).toBe('Category');
+    });
+
+    it('saves only the new category and shows it on the refreshed card', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      select().value = '2';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ categories: [cats[1]], updated_at: 'v2' }) }));
+      click(action('Save edits'));
+      await flush();
+
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ category_id: 2, updated_at: 'v1' });
+      expect($('message').textContent).toBe('Law #1 updated.');
+      expect(select().value).toBe('2');
+    });
+
+    it('does not send a request when the category is unchanged', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      click(action('Save edits'));
+      await flush();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect($('message').textContent).toBe('Law #1 has no changes.');
+    });
+
+    it('shows a placeholder for a law with several categories and leaves it alone until one is picked', async () => {
+      await boot(jsonResponse(listReply([law({ categories: cats })], { categories: cats })));
+      await connect();
+      expect(select().options[0].textContent).toBe('Several categories (pick one to replace)');
+      expect(select().value).toBe('');
+      click(action('Save edits'));
+      await flush();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("still shows the law's own category when the server sent no category list", async () => {
+      await boot(jsonResponse(listReply([law({ categories: [{ id: 9, name: 'Odd' }] })])));
+      await connect();
+      expect([...select().options].map((o) => o.textContent)).toEqual(['No category', 'Odd']);
+      expect(select().value).toBe('9');
+    });
+
+    it('never offers the placeholder as a choice, since a category cannot be cleared', async () => {
+      await boot(jsonResponse(listReply([law(), law({ id: 2, categories: [] }), law({ id: 3, categories: cats })], { categories: cats })));
+      await connect();
+      for (const id of [1, 2, 3]) {
+        expect(select(id).options[0].disabled).toBe(true);
+      }
+      expect(select(1).value).toBe('1');
+    });
+
+    it('reloads the list when the chosen category no longer exists', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      select().value = '2';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unknown category' }, 400));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law()], { categories: [cats[0]] })));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('That category no longer exists. The list was reloaded; pick a category again.');
+      expect([...select().options].map((o) => o.textContent)).toEqual(['No category', 'Cat']);
+    });
+
+    it('shows the server message when the reload after an unknown category also fails', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      select().value = '2';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unknown category' }, 400));
+      fetchMock.mockRejectedValueOnce(new Error('offline'));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('Unknown category');
+    });
+
+    it('shows the server error and keeps the selection when the category is rejected', async () => {
+      await boot(jsonResponse(listReply([law()], { categories: cats })));
+      await connect();
+      select().value = '2';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'category_id must be a positive integer' }, 400));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('category_id must be a positive integer');
+      expect(select().value).toBe('2');
+      expect((action('Save edits') as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
+
   it('omits updated_at for a law that has none', async () => {
     await boot(jsonResponse(listReply([law({ updated_at: null })])));
     await connect();

@@ -7,13 +7,15 @@ export interface AdminLawLike {
   title?: string | null;
   text: string;
   admin_notes?: string | null;
+  categories?: { id: number; name: string }[];
 }
 
 export function buildListUrl(params: { status: string; q: string; offset: number }): string;
 export function buildUpdateBody(
   law: AdminLawLike,
-  edits: { status?: string; title?: string; text?: string; notes?: string },
-): Record<string, string | null>;
+  edits: { status?: string; title?: string; text?: string; notes?: string; categoryId?: number },
+): Record<string, string | number | null>;
+export function categorySelectValue(law: AdminLawLike): string;
 export function pageLabel(total: number, offset: number, count: number): string;
 export function formatDate(iso: string): string;
 export function describeSubmitter(
