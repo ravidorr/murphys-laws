@@ -61,6 +61,20 @@ jobs:
             echo "::warning::ADMIN_API_TOKEN secret is empty or shorter than 32 characters; the admin moderation API will be disabled"
           fi
 
+      - name: Check admin GitHub sign-in secrets
+        env:
+          # Repository secrets cannot start with GITHUB_, so these two are stored as ADMIN_GITHUB_OAUTH_*.
+          GITHUB_OAUTH_CLIENT_ID: ${{ secrets.ADMIN_GITHUB_OAUTH_CLIENT_ID }}
+          GITHUB_OAUTH_CLIENT_SECRET: ${{ secrets.ADMIN_GITHUB_OAUTH_CLIENT_SECRET }}
+          ADMIN_GITHUB_USERS: ${{ secrets.ADMIN_GITHUB_USERS }}
+          ADMIN_SESSION_SECRET: ${{ secrets.ADMIN_SESSION_SECRET }}
+        run: |
+          if [ -n "$GITHUB_OAUTH_CLIENT_ID$GITHUB_OAUTH_CLIENT_SECRET$ADMIN_GITHUB_USERS$ADMIN_SESSION_SECRET" ]; then
+            if [ -z "$GITHUB_OAUTH_CLIENT_ID" ] || [ -z "$GITHUB_OAUTH_CLIENT_SECRET" ] || [ -z "$ADMIN_GITHUB_USERS" ] || [ "${#ADMIN_SESSION_SECRET}" -lt 32 ]; then
+              echo "::warning::Admin GitHub sign-in is only partly configured (all of GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET, ADMIN_GITHUB_USERS and a 32+ character ADMIN_SESSION_SECRET are needed); sign-in will stay disabled"
+            fi
+          fi
+
       - name: Deploy and restart services
         uses: appleboy/ssh-action@v1.0.0
         env:
@@ -173,6 +187,10 @@ jobs:
             ALLOWED_ORIGINS=${{ secrets['ALLOWED_ORIGINS'] }}
             SENTRY_DSN=${{ secrets['SENTRY_DSN'] }}
             ADMIN_API_TOKEN=${{ secrets['ADMIN_API_TOKEN'] }}
+            GITHUB_OAUTH_CLIENT_ID=${{ secrets['ADMIN_GITHUB_OAUTH_CLIENT_ID'] }}
+            GITHUB_OAUTH_CLIENT_SECRET=${{ secrets['ADMIN_GITHUB_OAUTH_CLIENT_SECRET'] }}
+            ADMIN_GITHUB_USERS=${{ secrets['ADMIN_GITHUB_USERS'] }}
+            ADMIN_SESSION_SECRET=${{ secrets['ADMIN_SESSION_SECRET'] }}
             __ENV_END__
 
             echo "==> Contents of $TARGET_DIR/backend:"

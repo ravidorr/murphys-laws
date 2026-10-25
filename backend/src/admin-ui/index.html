@@ -10,11 +10,21 @@
 <body>
   <header class="bar">
     <h1>Law moderation</h1>
-    <form id="connect-form" class="connect" autocomplete="off">
-      <label for="token">Admin token</label>
-      <input id="token" name="token" type="password" required autocomplete="off" spellcheck="false">
-      <button type="submit" class="btn btn-primary">Connect</button>
-    </form>
+    <div id="session" class="session" hidden>
+      <span>Signed in as <strong id="session-login"></strong></span>
+      <button type="button" id="sign-out" class="btn">Sign out</button>
+    </div>
+    <div id="signin" class="signin">
+      <a id="github-signin" class="btn btn-primary" href="/api/v1/admin/auth/github" hidden>Sign in with GitHub</a>
+      <details id="token-fallback" class="token-fallback">
+        <summary>Use an API token instead</summary>
+        <form id="connect-form" class="connect" autocomplete="off">
+          <label for="token">Admin token</label>
+          <input id="token" name="token" type="password" required autocomplete="off" spellcheck="false">
+          <button type="submit" class="btn btn-primary">Connect</button>
+        </form>
+      </details>
+    </div>
   </header>
 
   <main>
