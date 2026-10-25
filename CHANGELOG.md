@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `.env.example` reorganized into sections with a header explaining where to copy it and that every
+  variable is optional, a default noted for each variable, and a single `BASE_URL` entry that now
+  covers the admin GitHub sign-in as well as the daily report. Added the variables the code
+  reads that were missing (`VITE_API_URL`, `VITE_SITE_URL`, `WEB_DIST_PATH`, `PM2_PATH` and the
+  `HEALTH_CHECK_*` settings) and a note that `FACEBOOK_APP_SECRET` is not read by any code yet.
+  Root bumped to `2.6.90`.
 - MCP Release workflow: the registry-version logic now lives in `scripts/mcp-registry-state.ts`
   with unit tests built from a multi-version registry response (it reads the entry the registry
   flags as latest and fails loudly when that is ambiguous), replacing inline `jq`. The workflow
