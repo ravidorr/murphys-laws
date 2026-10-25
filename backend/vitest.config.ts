@@ -16,6 +16,7 @@ export default defineConfig({
         'scripts/**',
         'coverage/**',
         '**/*.config.ts',
+        '**/*.d.ts',
       ],
       thresholds: {
         lines: 100,
