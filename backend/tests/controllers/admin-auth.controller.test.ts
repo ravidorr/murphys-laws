@@ -5,13 +5,14 @@ import { STATE_TTL_MS, createSessionToken, createStateToken } from '../../src/ut
 
 vi.mock('../../src/middleware/rate-limit.ts', () => ({
   checkRateLimit: vi.fn(() => ({ allowed: true, limit: 10, remaining: 9, resetTime: 0 })),
+  peekRateLimit: vi.fn(() => ({ allowed: true, limit: 10, remaining: 10, resetTime: 0 })),
 }));
 vi.mock('../../src/utils/http-helpers.ts', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return { ...actual, getVoterIdentifier: vi.fn(() => '127.0.0.1') };
 });
 
-import { checkRateLimit } from '../../src/middleware/rate-limit.ts';
+import { checkRateLimit, peekRateLimit } from '../../src/middleware/rate-limit.ts';
 
 const SECRET = 's'.repeat(40);
 const ENV: Record<string, string> = {
@@ -59,6 +60,8 @@ describe('AdminAuthController', () => {
     res = { writeHead: vi.fn(), end: vi.fn() };
     vi.mocked(checkRateLimit).mockClear();
     vi.mocked(checkRateLimit).mockReturnValue({ allowed: true, limit: 10, remaining: 9, resetTime: 0 });
+    vi.mocked(peekRateLimit).mockClear();
+    vi.mocked(peekRateLimit).mockReturnValue({ allowed: true, limit: 10, remaining: 10, resetTime: 0 });
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -183,6 +186,24 @@ describe('AdminAuthController', () => {
       await callback({ code: 'c', state: 'wrong' }, stateCookie().cookie);
       expect(status()).toBe(429);
       expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('refuses with 429 before contacting GitHub when the client is already over the failed-login limit', async () => {
+      github();
+      vi.mocked(peekRateLimit).mockReturnValue({ allowed: false, limit: 10, remaining: 0, resetTime: Date.now() + 1000 });
+      const { state, cookie } = stateCookie();
+      await callback({ code: 'c', state }, cookie);
+
+      expect(status()).toBe(429);
+      expect(peekRateLimit).toHaveBeenCalledWith('127.0.0.1', 'admin-fail');
+      expect(fetchStub).not.toHaveBeenCalled();
+      expect(checkRateLimit).not.toHaveBeenCalled();
+    });
+
+    it('still checks the state before looking at the quota, so a bad state never reaches GitHub either way', async () => {
+      await callback({ code: 'c', state: 'a'.repeat(32) }, stateCookie().cookie);
+      expect(status()).toBe(400);
+      expect(peekRateLimit).not.toHaveBeenCalled();
     });
 
     it.each([
