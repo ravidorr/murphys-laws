@@ -7,7 +7,7 @@ import {
   passesCsrfCheck,
   type AdminOAuthConfig,
 } from '../middleware/admin-auth.ts';
-import { checkRateLimit } from '../middleware/rate-limit.ts';
+import { checkRateLimit, peekRateLimit } from '../middleware/rate-limit.ts';
 import {
   SESSION_COOKIE,
   SESSION_TTL_MS,
@@ -111,6 +111,12 @@ export class AdminAuthController {
     const expectedState = readStateToken(config.sessionSecret, parseCookies(req.headers.cookie).get(STATE_COOKIE));
     if (!expectedState || !safeEqual(expectedState, state)) {
       return reject(400, 'The sign-in expired or did not start here. Please try again.');
+    }
+
+    // A client that is already over the failed-login limit must not keep costing outbound GitHub requests.
+    const quota = peekRateLimit(getVoterIdentifier(req), 'admin-fail');
+    if (!quota.allowed) {
+      return rateLimitExceeded(res, quota, req);
     }
 
     let user: GitHubUser;

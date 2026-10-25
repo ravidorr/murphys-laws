@@ -39,6 +39,30 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 /* v8 ignore stop */
 
+/**
+ * Reads a quota without using any of it up. `allowed` is false once the limit has been reached in the
+ * current window, so callers can refuse expensive work for a client that is already over its limit.
+ */
+export function peekRateLimit(identifier: string, type: string): RateLimitResult {
+  const limit = RATE_LIMITS[type as RateLimitType];
+  if (!limit) {
+    return { allowed: true, limit: Infinity, remaining: Infinity, resetTime: 0 };
+  }
+
+  const now = Date.now();
+  const record = rateLimitStore.get(`${type}:${identifier}`);
+  if (!record || now > record.resetTime) {
+    return { allowed: true, limit: limit.max, remaining: limit.max, resetTime: now + limit.window };
+  }
+
+  return {
+    allowed: record.count < limit.max,
+    limit: limit.max,
+    remaining: Math.max(0, limit.max - record.count),
+    resetTime: record.resetTime,
+  };
+}
+
 export function checkRateLimit(identifier: string, type: string): RateLimitResult {
   const limit = RATE_LIMITS[type as RateLimitType];
   if (!limit) {
