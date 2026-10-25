@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { checkRateLimit } from '../../src/middleware/rate-limit.ts';
+import { checkRateLimit, peekRateLimit } from '../../src/middleware/rate-limit.ts';
 
 describe('RateLimit Middleware', () => {
     beforeEach(() => {
@@ -87,5 +87,39 @@ describe('RateLimit Middleware', () => {
         expect(blocked.allowed).toBe(false);
         expect(blocked.limit).toBe(10);
         expect(checkRateLimit('admin-user', 'vote').allowed).toBe(true);
+    });
+    describe('peekRateLimit', () => {
+        it('reports a fresh full quota without using any of it up', () => {
+            const first = peekRateLimit('peek-fresh', 'admin-fail');
+            expect(first).toMatchObject({ allowed: true, limit: 10, remaining: 10 });
+            expect(peekRateLimit('peek-fresh', 'admin-fail').remaining).toBe(10);
+            expect(checkRateLimit('peek-fresh', 'admin-fail').remaining).toBe(9);
+        });
+
+        it('shows what is left and stays allowed until the limit is reached', () => {
+            for (let i = 0; i < 9; i++) {
+                checkRateLimit('peek-partial', 'admin-fail');
+            }
+            expect(peekRateLimit('peek-partial', 'admin-fail')).toMatchObject({ allowed: true, remaining: 1 });
+            checkRateLimit('peek-partial', 'admin-fail');
+            const blocked = peekRateLimit('peek-partial', 'admin-fail');
+            expect(blocked).toMatchObject({ allowed: false, limit: 10, remaining: 0 });
+            expect(blocked.resetTime).toBeGreaterThan(Date.now());
+        });
+
+        it('does not count the check itself, even when blocked', () => {
+            for (let i = 0; i < 10; i++) {
+                checkRateLimit('peek-blocked', 'admin-fail');
+            }
+            for (let i = 0; i < 5; i++) {
+                expect(peekRateLimit('peek-blocked', 'admin-fail').allowed).toBe(false);
+            }
+            vi.advanceTimersByTime(60 * 1000 + 1);
+            expect(peekRateLimit('peek-blocked', 'admin-fail').allowed).toBe(true);
+        });
+
+        it('allows everything for an unknown limit type', () => {
+            expect(peekRateLimit('anyone', 'unknown-type')).toEqual({ allowed: true, limit: Infinity, remaining: Infinity, resetTime: 0 });
+        });
     });
 });

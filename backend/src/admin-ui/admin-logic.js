@@ -83,6 +83,9 @@ export function errorMessage(status, fallback) {
   if (status === 401) {
     return 'Token rejected. Check ADMIN_API_TOKEN and try again.';
   }
+  if (status === 403) {
+    return 'This request was refused. Reload the page and sign in again.';
+  }
   if (status === 404) {
     return fallback && fallback !== 'Not Found' ? fallback : 'Admin API is not enabled on this server.';
   }
