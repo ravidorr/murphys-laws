@@ -59,13 +59,51 @@ test('MCP release workflow buffers registry reads before parsing retried respons
   assert.equal(
     (
       workflow.match(
-        /--output "\$RESPONSE_FILE"[\s\S]*?jq -r --arg name "\$EXPECTED_NAME"[\s\S]*?"\$RESPONSE_FILE"/g,
+        /--output "\$RESPONSE_FILE"[\s\S]*?mcp-registry-state\.ts "\$RESPONSE_FILE" "\$EXPECTED_NAME" "\$EXPECTED_VERSION"/g,
       ) ?? []
     ).length,
     2,
   );
 });
 
+test('MCP release workflow reads registry state through the tested helper, not inline jq', () => {
+  assert.doesNotMatch(workflow, /select\(\.server\.name == \$name\)/);
+  assert.match(workflow, /node --experimental-strip-types scripts\/mcp-registry-state\.ts/);
+});
+
+test('MCP release workflow only triggers on paths that change the published package', () => {
+  assert.doesNotMatch(workflow, /- 'mcp\/\*\*'/);
+  for (const trigger of ['mcp/src/**', 'mcp/bin/**', 'mcp/package.json', 'mcp/server.json']) {
+    assert.ok(workflow.includes(`- '${trigger}'`), `${trigger} must trigger a release`);
+  }
+  assert.doesNotMatch(workflow, /- 'mcp\/tests/);
+});
+
+test('MCP release workflow checks state before installing and exits early when released', () => {
+  const planned = workflow.indexOf('id: plan');
+  assert.ok(workflow.indexOf('id: npm') < planned, 'npm state is checked before the plan');
+  assert.ok(workflow.indexOf('id: registry') < planned, 'registry state is checked before the plan');
+  assert.match(workflow, /release_needed=false/);
+
+  for (const step of [
+    'Install npm for trusted publishing',
+    'Install dependencies',
+    'Validate MCP release version contract',
+    'Build SDK',
+    'Validate MCP package',
+    'Publish npm package',
+    'Wait for npm package availability',
+    'Install mcp-publisher',
+    'Publish to MCP Registry',
+    'Verify entry is live at expected version',
+  ]) {
+    const start = workflow.indexOf(`- name: ${step}`);
+    assert.ok(start > planned, `${step} must come after the plan step`);
+    const stepEnd = workflow.indexOf('\n      - name:', start + 1);
+    const body = workflow.slice(start, stepEnd === -1 ? undefined : stepEnd);
+    assert.match(body, /if: steps\.plan\.outputs\.release_needed == 'true'/, `${step} must be gated`);
+  }
+});
 test('MCP release workflow reads only the latest registry version', () => {
   // The search endpoint lists every published version; without version=latest the first
   // match can be an older release (1.2.1) and the workflow re-publishes an existing version.
