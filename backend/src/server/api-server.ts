@@ -17,7 +17,8 @@ import { HtmlInjectionService } from '../services/html-injection.service.ts';
 
 import { LawController } from '../controllers/laws.controller.ts';
 import { AdminController } from '../controllers/admin.controller.ts';
-import { getAdminApiState } from '../middleware/admin-auth.ts';
+import { getAdminApiState, getAdminOAuthState } from '../middleware/admin-auth.ts';
+import { AdminAuthController } from '../controllers/admin-auth.controller.ts';
 import { AdminUiController } from '../controllers/admin-ui.controller.ts';
 import { VoteController } from '../controllers/votes.controller.ts';
 import { CategoryController } from '../controllers/categories.controller.ts';
@@ -116,7 +117,14 @@ export function createApiServer(options?: CreateApiServerOptions) {
   } else {
     console.log('Admin API disabled (ADMIN_API_TOKEN unset)');
   }
+  const oauthState = getAdminOAuthState();
+  if (oauthState === 'enabled') {
+    console.log('Admin GitHub sign-in enabled');
+  } else if (oauthState !== 'disabled') {
+    console.warn(`Admin GitHub sign-in disabled (${oauthState.replace(/_/g, ' ')}); check GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET, ADMIN_GITHUB_USERS, ADMIN_SESSION_SECRET (32+ characters) and BASE_URL`);
+  }
   const adminController = new AdminController(new AdminLawService(db), emailService);
+  const adminAuthController = new AdminAuthController();
   const adminUiController = new AdminUiController();
 
   const router = new Router();
@@ -160,6 +168,10 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.registerPublicRoute('GET', '/api/v1/og/law/:id.png', '/api/v1/og/law/{id}.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
 
   router.post('/api/v1/admin/laws/:id', (req, res, id) => adminController.update(req, res, id));
+  router.get('/api/v1/admin/auth/github', (req, res) => adminAuthController.login(req, res));
+  router.get('/api/v1/admin/auth/github/callback', (req, res, parsed) => adminAuthController.callback(req, res, parsed));
+  router.get('/api/v1/admin/auth/session', (req, res) => adminAuthController.session(req, res));
+  router.post('/api/v1/admin/auth/logout', (req, res) => adminAuthController.logout(req, res));
   router.get('/admin', (req, res) => adminUiController.serve(req, res));
   router.get('/api/v1/admin/ui', (req, res) => adminUiController.serve(req, res));
   router.get('/api/v1/admin/ui/:file', (req, res, file) => adminUiController.serve(req, res, file));

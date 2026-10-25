@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AdminController } from '../../src/controllers/admin.controller.ts';
+import { createSessionToken } from '../../src/utils/admin-session.ts';
 
 vi.mock('../../src/middleware/rate-limit.ts', () => ({
   checkRateLimit: vi.fn(() => ({ allowed: true, limit: 10, remaining: 9, resetTime: 0 })),
@@ -18,7 +19,7 @@ describe('AdminController', () => {
   let service: { listLaws: ReturnType<typeof vi.fn>; updateLaw: ReturnType<typeof vi.fn>; markApprovalEmailSent: ReturnType<typeof vi.fn> };
   let controller: AdminController;
   let emailService: { isConfigured: ReturnType<typeof vi.fn>; sendLawApprovedEmail: ReturnType<typeof vi.fn> };
-  let req: { headers: Record<string, string> };
+  let req: { headers: Record<string, string>; method?: string };
   let res: { writeHead: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
 
   const status = () => res.writeHead.mock.calls[0][0];
@@ -86,6 +87,65 @@ describe('AdminController', () => {
       await update({ status: 'rejected' });
       expect(status()).toBe(401);
       expect(service.updateLaw).not.toHaveBeenCalled();
+    });
+
+    describe('with GitHub sign-in configured', () => {
+      const SESSION_SECRET = 'z'.repeat(40);
+      const signIn = (login = 'ravidorr') => ({ cookie: `admin_session=${createSessionToken(SESSION_SECRET, { login, id: 1 })}` });
+      const csrf = { 'x-admin-request': '1', origin: 'https://murphys-laws.com' };
+
+      beforeEach(() => {
+        delete process.env.ADMIN_API_TOKEN;
+        Object.assign(process.env, {
+          GITHUB_OAUTH_CLIENT_ID: 'id',
+          GITHUB_OAUTH_CLIENT_SECRET: 'secret',
+          ADMIN_GITHUB_USERS: 'ravidorr',
+          ADMIN_SESSION_SECRET: SESSION_SECRET,
+          BASE_URL: 'https://murphys-laws.com',
+        });
+        req = { headers: {} };
+      });
+
+      afterEach(() => {
+        for (const key of ['GITHUB_OAUTH_CLIENT_ID', 'GITHUB_OAUTH_CLIENT_SECRET', 'ADMIN_GITHUB_USERS', 'ADMIN_SESSION_SECRET', 'BASE_URL']) {
+          delete process.env[key];
+        }
+      });
+
+      it('lists laws for a signed-in user without a token', async () => {
+        Object.assign(req, { method: 'GET', headers: signIn() });
+        await controller.list(req, res, { query: {} });
+        expect(status()).toBe(200);
+      });
+
+      it('updates a law for a signed-in user whose request carries the CSRF header and origin', async () => {
+        Object.assign(req, { method: 'POST', headers: { ...signIn(), ...csrf } });
+        await update({ status: 'rejected' });
+        expect(status()).toBe(200);
+        expect(service.updateLaw).toHaveBeenCalled();
+      });
+
+      it('refuses a signed-in write without the CSRF header with 403, without counting a failed login', async () => {
+        Object.assign(req, { method: 'POST', headers: signIn() });
+        await update({ status: 'rejected' });
+        expect(status()).toBe(403);
+        expect(payload()).toEqual({ error: 'Forbidden' });
+        expect(service.updateLaw).not.toHaveBeenCalled();
+        expect(checkRateLimit).not.toHaveBeenCalled();
+      });
+
+      it('answers 401 and counts a failed login when there is no session', async () => {
+        await controller.list(req, res, { query: {} });
+        expect(status()).toBe(401);
+        expect(checkRateLimit).toHaveBeenCalledWith('127.0.0.1', 'admin-fail');
+      });
+
+      it('still accepts the API token as a fallback', async () => {
+        process.env.ADMIN_API_TOKEN = TOKEN;
+        req = { headers: { authorization: `Bearer ${TOKEN}` } };
+        await controller.list(req, res, { query: {} });
+        expect(status()).toBe(200);
+      });
     });
   });
 

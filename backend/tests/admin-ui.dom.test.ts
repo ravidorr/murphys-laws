@@ -60,9 +60,16 @@ describe('admin page', () => {
     vi.unstubAllGlobals();
   });
 
-  const boot = async (...replies: unknown[]) => {
+  // The page asks for its GitHub session as soon as it loads; by default nobody is signed in and sign-in is not offered.
+  const signedOut = (oauth = false) => jsonResponse({ authenticated: false, oauth });
+  const boot = async (...replies: unknown[]) => bootWith(signedOut(), ...replies);
+  const bootWith = async (sessionReply: unknown, ...replies: unknown[]) => {
+    fetchMock.mockResolvedValueOnce(sessionReply);
     for (const r of replies) fetchMock.mockResolvedValueOnce(r);
     await import('../src/admin-ui/admin.js');
+    await flush();
+    // Forget the session check (always the first request) so each test sees only the requests it caused.
+    fetchMock.mock.calls.shift();
   };
 
   it('connects with a bearer token and renders laws as text, never as HTML', async () => {
@@ -109,8 +116,8 @@ describe('admin page', () => {
   });
 
   it('explains network failures and unreadable responses', async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     await boot();
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     await connect();
     expect($('message').textContent).toContain('Cannot reach the server');
 
@@ -594,5 +601,137 @@ describe('admin page', () => {
     const labels = (n: number) => [...document.querySelectorAll('.law')[n].querySelectorAll('.actions button')].map((b) => b.textContent);
     expect(labels(0)).toEqual(['Reject', 'Move to review', 'Save edits']);
     expect(labels(1)).toEqual(['Approve', 'Move to review', 'Save edits']);
+  });
+
+  describe('GitHub sign-in', () => {
+    const signedIn = (login = 'ravidorr') => jsonResponse({ authenticated: true, login, oauth: true });
+
+    it('shows the token form only, with no GitHub link, when the server does not offer sign-in', async () => {
+      await boot();
+      expect(($('github-signin') as HTMLElement).hidden).toBe(true);
+      expect(($('token-fallback') as HTMLDetailsElement).open).toBe(true);
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+    });
+
+    it('offers the GitHub link with the token form tucked away when the server offers sign-in', async () => {
+      await bootWith(signedOut(true));
+      const link = $('github-signin') as HTMLAnchorElement;
+      expect(link.hidden).toBe(false);
+      expect(link.getAttribute('href')).toBe('/api/v1/admin/auth/github');
+      expect(($('token-fallback') as HTMLDetailsElement).open).toBe(false);
+      expect(document.querySelector('#token-fallback summary')?.textContent).toBe('Use an API token instead');
+    });
+
+    it('keeps the token form working next to the GitHub link', async () => {
+      await bootWith(signedOut(true), jsonResponse(listReply([law()])));
+      await connect();
+      expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer secret');
+      expect(document.querySelectorAll('.law').length).toBe(1);
+    });
+
+    it('loads the laws straight away when the browser already has a session, using the cookie and no token', async () => {
+      await bootWith(signedIn(), jsonResponse(listReply([law()])));
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toContain('/api/v1/admin/laws?status=in_review');
+      expect(options.credentials).toBe('same-origin');
+      expect(options.headers.Authorization).toBeUndefined();
+      expect(options.headers['X-Admin-Request']).toBe('1');
+      expect(document.querySelectorAll('.law').length).toBe(1);
+      expect(($('session') as HTMLElement).hidden).toBe(false);
+      expect($('session-login').textContent).toBe('ravidorr');
+      expect(($('signin') as HTMLElement).hidden).toBe(true);
+    });
+
+    it('sends the CSRF header on writes made with the session', async () => {
+      await bootWith(signedIn(), jsonResponse(listReply([law()])));
+      (document.getElementById('notes-1') as HTMLInputElement).value = 'checked';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ admin_notes: 'checked', updated_at: 'v2' }) }));
+      click(action('Save edits'));
+      await flush();
+
+      const [url, options] = fetchMock.mock.calls[1];
+      expect(url).toBe('/api/v1/admin/laws/1');
+      expect(options.headers['X-Admin-Request']).toBe('1');
+      expect(options.headers.Authorization).toBeUndefined();
+    });
+
+    it('signs out: asks the server to clear the cookie and returns to the sign-in controls', async () => {
+      await bootWith(signedIn(), jsonResponse(listReply([law()])));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true }));
+      click($('sign-out'));
+      await flush();
+
+      const [url, options] = fetchMock.mock.calls[1];
+      expect(url).toBe('/api/v1/admin/auth/logout');
+      expect(options.method).toBe('POST');
+      expect(options.headers['X-Admin-Request']).toBe('1');
+      expect($('message').textContent).toBe('Signed out.');
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+      expect(($('signin') as HTMLElement).hidden).toBe(false);
+      expect(($('github-signin') as HTMLElement).hidden).toBe(false);
+      expect(document.querySelectorAll('.law').length).toBe(0);
+      expect($('toolbar').hidden).toBe(true);
+    });
+
+    it('stays signed in and says why when signing out fails', async () => {
+      await bootWith(signedIn(), jsonResponse(listReply([law()])));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Forbidden' }, 403));
+      click($('sign-out'));
+      await flush();
+
+      expect($('message').textContent).toContain('refused');
+      expect(($('session') as HTMLElement).hidden).toBe(false);
+      expect(document.querySelectorAll('.law').length).toBe(1);
+    });
+
+    it('asks to sign in again when the session ends while using the page', async () => {
+      await bootWith(signedIn(), jsonResponse(listReply([law()])), jsonResponse({ error: 'Unauthorized' }, 401));
+      click(button('Published'));
+      await flush();
+
+      expect($('message').textContent).toBe('Your session ended. Sign in with GitHub again.');
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+      expect(($('github-signin') as HTMLElement).hidden).toBe(false);
+      expect(document.querySelectorAll('.law').length).toBe(0);
+    });
+
+    it('explains a refused write', async () => {
+      await bootWith(signedIn(), jsonResponse(listReply([law()])));
+      (document.getElementById('notes-1') as HTMLInputElement).value = 'x';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Forbidden' }, 403));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('This request was refused. Reload the page and sign in again.');
+    });
+
+    it.each([
+      ['the session check cannot be reached', () => Promise.reject(new TypeError('offline'))],
+      ['the session reply is not JSON', () => Promise.resolve({ ok: false, status: 502, json: async () => { throw new SyntaxError('x'); } })],
+      ['the session reply is empty', () => Promise.resolve(jsonResponse(null))],
+    ])('falls back to the token form when %s', async (_name, sessionReply) => {
+      fetchMock.mockImplementationOnce(sessionReply);
+      await import('../src/admin-ui/admin.js');
+      await flush();
+
+      expect(($('github-signin') as HTMLElement).hidden).toBe(true);
+      expect(($('token-fallback') as HTMLDetailsElement).open).toBe(true);
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+    });
+
+    it('does not take over a token connection when the session check answers late', async () => {
+      let answer: (reply: unknown) => void = () => {};
+      fetchMock.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law()])));
+      await import('../src/admin-ui/admin.js');
+      await connect();
+      expect(document.querySelectorAll('.law').length).toBe(1);
+
+      answer(signedIn());
+      await flush();
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
   });
 });

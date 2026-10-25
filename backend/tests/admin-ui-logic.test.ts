@@ -53,6 +53,7 @@ describe('admin-logic', () => {
 
   it('maps error statuses to messages', () => {
     expect(logic.errorMessage(401)).toContain('Token rejected');
+    expect(logic.errorMessage(403)).toContain('refused');
     expect(logic.errorMessage(404)).toContain('not enabled');
     expect(logic.errorMessage(404, 'Not Found')).toContain('not enabled');
     expect(logic.errorMessage(404, 'Law not found')).toBe('Law not found');
