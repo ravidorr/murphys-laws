@@ -173,6 +173,14 @@ jobs:
             # Backup production database before migrations
             cp murphys.db murphys.db.backup 2>/dev/null || true
 
+            # Monitoring emails have no built-in address, so a deploy without one would silently turn every
+            # alert off. Stop before the existing .env is overwritten. The expression renders only true or
+            # false, never the secret values.
+            if [ "${{ secrets['ALERT_EMAIL'] == '' && secrets['EMAIL_TO'] == '' }}" = "true" ]; then
+              echo "ERROR: neither the ALERT_EMAIL nor the EMAIL_TO secret is set; monitoring alerts would have no recipient. Add one (see shared/docs/GITHUB-SECRETS-SETUP.md)." >&2
+              exit 1
+            fi
+
             # Create .env file with secrets (delimiter chosen to avoid secrets breaking heredoc)
             cat > .env << '__ENV_END__'
             HOST=127.0.0.1
@@ -184,6 +192,8 @@ jobs:
             SMTP_PASS=${{ secrets['SMTP_PASS'] }}
             EMAIL_FROM=${{ secrets['EMAIL_FROM'] }}
             EMAIL_TO=${{ secrets['EMAIL_TO'] }}
+            ALERT_EMAIL=${{ secrets['ALERT_EMAIL'] }}
+            HEALTH_CHECK_EMAIL_TO=${{ secrets['HEALTH_CHECK_EMAIL_TO'] }}
             ALLOWED_ORIGINS=${{ secrets['ALLOWED_ORIGINS'] }}
             SENTRY_DSN=${{ secrets['SENTRY_DSN'] }}
             ADMIN_API_TOKEN=${{ secrets['ADMIN_API_TOKEN'] }}
@@ -192,6 +202,9 @@ jobs:
             ADMIN_GITHUB_USERS=${{ secrets['ADMIN_GITHUB_USERS'] }}
             ADMIN_SESSION_SECRET=${{ secrets['ADMIN_SESSION_SECRET'] }}
             __ENV_END__
+
+            # The optional recipients are left out when unset instead of being written as empty values
+            sed -i -e '/^ALERT_EMAIL=$/d' -e '/^HEALTH_CHECK_EMAIL_TO=$/d' .env
 
             echo "==> Contents of $TARGET_DIR/backend:"
             ls -la
@@ -209,14 +222,23 @@ jobs:
 
             # Update server maintenance scripts
             sudo cp "$TARGET_DIR/backend/scripts/backup-murphys.sh" /usr/local/bin/backup-murphys.sh 2>/dev/null || true
+            # Sourced by the monitoring scripts below to resolve the alert address. They fall back to the repo
+            # copy, but the installed one is preferred, so unlike the other copies a failure here fails the
+            # deploy instead of being ignored
+            sudo cp "$TARGET_DIR/backend/scripts/alert-email.sh" /usr/local/bin/alert-email.sh \
+              && sudo chmod +x /usr/local/bin/alert-email.sh \
+              && test -f /usr/local/bin/alert-email.sh \
+              || { echo "ERROR: could not install /usr/local/bin/alert-email.sh; the monitoring scripts would lose their alerts" >&2; exit 1; }
+            # These scripts now load that helper, so a copy that fails would leave an old script running with
+            # the old behavior. Fail the deploy and show the cause instead of hiding it.
+            for script in health-monitor ssl-monitor vulnerability-scanner cost-optimization-report test-backup-restore; do
+              sudo cp "$TARGET_DIR/backend/scripts/$script.sh" "/usr/local/bin/$script.sh" \
+                && sudo chmod +x "/usr/local/bin/$script.sh" \
+                || { echo "ERROR: could not install /usr/local/bin/$script.sh" >&2; exit 1; }
+            done
             sudo cp "$TARGET_DIR/backend/scripts/daily-report.sh" /usr/local/bin/daily-report.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/vulnerability-scanner.sh" /usr/local/bin/vulnerability-scanner.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/cost-optimization-report.sh" /usr/local/bin/cost-optimization-report.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/test-backup-restore.sh" /usr/local/bin/test-backup-restore.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/health-monitor.sh" /usr/local/bin/health-monitor.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/scripts/analyze-resource-peaks.sh" /usr/local/bin/analyze-resource-peaks.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/ssl-monitor.sh" /usr/local/bin/ssl-monitor.sh 2>/dev/null || true
             sudo mkdir -p /etc/murphys-laws
             sudo cp "$TARGET_DIR/backend/config/operational-metrics-main-app.env.example" /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true
             sudo cp "$TARGET_DIR/backend/config/infrastructure-inventory.json.example" /etc/murphys-laws/infrastructure-inventory.json.example 2>/dev/null || true

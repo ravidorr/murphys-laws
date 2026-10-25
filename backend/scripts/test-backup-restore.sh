@@ -5,7 +5,20 @@
 # Tests database and environment backup integrity without affecting production
 #############################################################################
 
-ALERT_EMAIL="ravidor@gmail.com"
+# Load the shared alert helper from beside this script (following symlinks), else from the repo copy;
+# if neither exists, stop rather than carry on and lose every alert silently.
+_alert_self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+_alert_helper="$(dirname "$_alert_self")/alert-email.sh"
+[ -f "$_alert_helper" ] || _alert_helper="${REPO_ROOT:-/root/murphys-laws}/backend/scripts/alert-email.sh"
+# The helper's existence is tested before sourcing it so a missing file is always handled here, whatever
+# shell options are set (a POSIX-mode shell exits as soon as `source` fails).
+# shellcheck source=alert-email.sh
+if [ ! -f "$_alert_helper" ] || ! source "$_alert_helper"; then
+    echo "FATAL: cannot load alert-email.sh (looked beside $0 and under \${REPO_ROOT:-/root/murphys-laws}); alerts would be lost" >&2
+    logger -t murphys-alerts -p user.err -- "FATAL: $(basename "$0") cannot load alert-email.sh" 2>/dev/null
+    exit 1
+fi
+ALERT_EMAIL="$(resolve_alert_email)"
 TEST_REPORT="/tmp/backup-restore-test-$(date +%Y-%m-%d).txt"
 PASSED=0
 FAILED=0
@@ -307,6 +320,12 @@ log "Full report saved to: $TEST_REPORT"
 log "=========================================="
 
 # Email report
-cat "$TEST_REPORT" | mail -s "[Murphy's Laws] Backup Restore Test - $PASSED Passed, $FAILED Failed" "$ALERT_EMAIL"
+MAIL_STATUS=0
+cat "$TEST_REPORT" | send_alert_mail "[Murphy's Laws] Backup Restore Test - $PASSED Passed, $FAILED Failed" || MAIL_STATUS=$?
+if [ "$MAIL_STATUS" -ne 0 ]; then
+    log "Report NOT emailed ($(describe_alert_mail_status "$MAIL_STATUS"))"
+    ALERT_UNDELIVERED=1
+fi
 
-exit $EXIT_CODE
+# A failed test keeps its own exit code; a passing run whose report was not delivered exits 2
+exit "$(delivery_exit_code "$EXIT_CODE")"

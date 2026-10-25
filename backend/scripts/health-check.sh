@@ -10,7 +10,20 @@
 FRONTEND_URL="${HEALTH_CHECK_FRONTEND_URL:-https://murphys-laws.com}"
 API_URL="${HEALTH_CHECK_API_URL:-https://murphys-laws.com/api/health}"
 DB_PATH="/root/murphys-laws/backend/murphys.db"
-ALERT_EMAIL="ravidor@gmail.com"
+# Load the shared alert helper from beside this script (following symlinks), else from the repo copy;
+# if neither exists, stop rather than carry on and lose every alert silently.
+_alert_self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+_alert_helper="$(dirname "$_alert_self")/alert-email.sh"
+[ -f "$_alert_helper" ] || _alert_helper="${REPO_ROOT:-/root/murphys-laws}/backend/scripts/alert-email.sh"
+# The helper's existence is tested before sourcing it so a missing file is always handled here, whatever
+# shell options are set (a POSIX-mode shell exits as soon as `source` fails).
+# shellcheck source=alert-email.sh
+if [ ! -f "$_alert_helper" ] || ! source "$_alert_helper"; then
+    echo "FATAL: cannot load alert-email.sh (looked beside $0 and under \${REPO_ROOT:-/root/murphys-laws}); alerts would be lost" >&2
+    logger -t murphys-alerts -p user.err -- "FATAL: $(basename "$0") cannot load alert-email.sh" 2>/dev/null
+    exit 1
+fi
+ALERT_EMAIL="$(resolve_alert_email HEALTH_CHECK_EMAIL_TO)"
 ALERT_THRESHOLD_MS=5000  # Alert if response time > 5 seconds
 LOG_FILE="/var/log/health-check.log"
 ALERT_COOLDOWN=3600  # Only send one alert per hour per issue
@@ -24,7 +37,7 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-# Check if alert was recently sent
+# Check whether an alert is due: not within the cooldown of the last one that was actually sent
 should_send_alert() {
     local alert_type="$1"
     local state_file="$ALERT_STATE_DIR/$alert_type"
@@ -39,9 +52,12 @@ should_send_alert() {
         fi
     fi
 
-    # Update alert timestamp
-    date +%s > "$state_file"
     return 0  # Send alert
+}
+
+# Start the cooldown. Called only after the mail was accepted, so a dropped alert cannot hide the next one.
+record_alert_sent() {
+    date +%s > "$ALERT_STATE_DIR/$1"
 }
 
 # Send email alert
@@ -51,8 +67,15 @@ send_alert() {
     local alert_type="$3"
 
     if should_send_alert "$alert_type"; then
-        echo "$body" | mail -s "$subject" "$ALERT_EMAIL"
-        log "ALERT SENT: $subject"
+        local mail_status=0
+        echo "$body" | send_alert_mail "$subject" || mail_status=$?
+        if [ "$mail_status" -eq 0 ]; then
+            record_alert_sent "$alert_type"
+            log "ALERT SENT: $subject"
+        else
+            log "ALERT NOT SENT ($(describe_alert_mail_status "$mail_status")): $subject"
+            ALERT_UNDELIVERED=1
+        fi
     else
         log "ALERT SUPPRESSED (cooldown): $subject"
     fi
@@ -291,7 +314,7 @@ main() {
         log "=========================================="
         log "All Health Checks Passed"
         log "=========================================="
-        exit 0
+        exit "$(delivery_exit_code 0)"
     else
         log "=========================================="
         log "Some Health Checks Failed"
