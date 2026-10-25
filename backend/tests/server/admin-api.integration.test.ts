@@ -106,6 +106,23 @@ describe('admin API through the real server and migrated database', () => {
     expect(stale.status).toBe(409);
   });
 
+  it('changes the category of a law and rejects unknown categories', async () => {
+    const list = (await request('GET', '/api/v1/admin/laws?status=in_review', { token: TOKEN })).json();
+    expect(list.categories.length).toBeGreaterThan(1);
+    const target = list.categories[1];
+
+    const bad = await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { category_id: 999999 } });
+    expect(bad.status).toBe(400);
+    expect(bad.json().error).toBe('Unknown category');
+    expect((await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { category_id: 'x' } })).status).toBe(400);
+
+    const changed = await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { category_id: target.id, status: 'published' } });
+    expect(changed.status).toBe(200);
+    expect(changed.json().data.categories).toEqual([{ id: target.id, name: target.name }]);
+    const inCategory = (await request('GET', `/api/v1/laws?category_id=${target.id}&limit=100`)).json();
+    expect(inCategory.data.map((l: { id: number }) => l.id)).toContain(lawId);
+  });
+
   it('answers 404 for an unknown law', async () => {
     const reply = await request('POST', '/api/v1/admin/laws/999999', { token: TOKEN, body: { status: 'rejected' } });
     expect(reply.status).toBe(404);

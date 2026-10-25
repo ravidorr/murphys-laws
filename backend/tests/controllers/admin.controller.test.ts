@@ -408,6 +408,36 @@ describe('AdminController', () => {
       });
     });
 
+    describe('category_id', () => {
+      it('passes a valid category through and audits the before and after', async () => {
+        service.updateLaw.mockReturnValue({ outcome: 'updated', law: { id: 5 }, previousStatus: 'published', previousCategoryIds: [2, 3] });
+        await update({ category_id: 7 });
+        expect(service.updateLaw).toHaveBeenCalledWith(5, { categoryId: 7 });
+        expect(status()).toBe(200);
+        expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string)).toMatchObject({
+          event: 'admin_law_update',
+          fields: ['categoryId'],
+          categoryFrom: [2, 3],
+          categoryTo: 7,
+        });
+      });
+
+      it.each([['7'], [0], [-1], [1.5], [null], [true], [[1]]])('rejects category_id %j with 400 before touching the database', async (value) => {
+        await update({ category_id: value });
+        expect(status()).toBe(400);
+        expect(payload()).toEqual({ error: 'category_id must be a positive integer' });
+        expect(service.updateLaw).not.toHaveBeenCalled();
+      });
+
+      it('answers 400 with a clear error when the category does not exist', async () => {
+        service.updateLaw.mockReturnValue({ outcome: 'invalid_category' });
+        await update({ category_id: 999 });
+        expect(status()).toBe(400);
+        expect(payload()).toEqual({ error: 'Unknown category' });
+        expect(vi.mocked(console.warn).mock.calls.at(-1)?.[0]).toContain('unknown category 999');
+      });
+    });
+
     it('returns 404 for unknown laws and 409 for conflicts', async () => {
       service.updateLaw.mockReturnValue({ outcome: 'not_found' });
       await update({ status: 'rejected' });
