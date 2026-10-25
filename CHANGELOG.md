@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SameSite=Strict`, signed with `ADMIN_SESSION_SECRET`, stateless so rotating the secret signs
   everyone out) and no longer needs to paste a token. New routes
   `GET /api/v1/admin/auth/github`, `GET /api/v1/admin/auth/github/callback`,
-  `GET /api/v1/admin/auth/session` (always `200`) and `POST /api/v1/admin/auth/logout`. The callback checks a signed
+  `GET /api/v1/admin/auth/session` (always `200`) and `POST /api/v1/admin/auth/logout`. The sign-in error page uses the admin stylesheet, with no inline styles. The callback checks a signed
   `state` cookie, answers `403` for a login that is not on the allowlist and shares the failed-login
   rate limit. Cookie-authenticated writes must send `X-Admin-Request: 1` and an `Origin` equal to
   `BASE_URL`. `ADMIN_API_TOKEN` keeps working (CLI, MCP and a collapsed "Use an API token instead"
