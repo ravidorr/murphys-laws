@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The MCP Release workflow now asks the registry for the latest version only
+  (`version=latest`). The search endpoint lists every published version, so the first match
+  could be an older release, which made the workflow try to re-publish an existing version
+  and fail after every MCP change merged to main. Root bumped to `2.6.86`.
+
 ### Security
 
 - Upgraded `vitest` and `@vitest/coverage-v8` to `4.1.12` in every workspace, which pulls in

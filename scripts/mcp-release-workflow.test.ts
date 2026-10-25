@@ -65,3 +65,13 @@ test('MCP release workflow buffers registry reads before parsing retried respons
     2,
   );
 });
+
+test('MCP release workflow reads only the latest registry version', () => {
+  // The search endpoint lists every published version; without version=latest the first
+  // match can be an older release (1.2.1) and the workflow re-publishes an existing version.
+  assert.equal(
+    (workflow.match(/v0\/servers\?search=\$\{EXPECTED_NAME\}&version=latest/g) ?? []).length,
+    2,
+  );
+  assert.doesNotMatch(workflow, /v0\/servers\?search=\$\{EXPECTED_NAME\}"/);
+});
