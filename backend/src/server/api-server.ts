@@ -160,6 +160,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.registerPublicRoute('GET', '/api/v1/og/law/:id.png', '/api/v1/og/law/{id}.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
 
   router.post('/api/v1/admin/laws/:id', (req, res, id) => adminController.update(req, res, id));
+  router.get('/admin', (req, res) => adminUiController.serve(req, res));
   router.get('/api/v1/admin/ui', (req, res) => adminUiController.serve(req, res));
   router.get('/api/v1/admin/ui/:file', (req, res, file) => adminUiController.serve(req, res, file));
   router.get('/api/v1/admin/laws', (req, res, parsed) => adminController.list(req, res, parsed));

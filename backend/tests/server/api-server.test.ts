@@ -289,6 +289,7 @@ describe('api-server', () => {
       // Admin routes are disabled (404) when ADMIN_API_TOKEN is unset
       await emitRequest('GET', '/api/v1/admin/laws');
       await emitRequest('POST', '/api/v1/admin/laws/1', { status: 'published' });
+      await emitRequest('GET', '/admin');
       await emitRequest('GET', '/api/v1/admin/ui');
       await emitRequest('GET', '/api/v1/admin/ui/admin.css');
 
