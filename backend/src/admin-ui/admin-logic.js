@@ -26,7 +26,7 @@ export function buildListUrl({ status, q, offset }) {
 }
 
 /** Only fields that changed are sent, so a note edit never overwrites text. */
-export function buildUpdateBody(law, { status, title, text, notes }) {
+export function buildUpdateBody(law, { status, title, text, notes, categoryId }) {
   const body = {};
   if (status !== undefined && status !== law.status) {
     body.status = status;
@@ -40,7 +40,22 @@ export function buildUpdateBody(law, { status, title, text, notes }) {
   if (notes !== undefined && notes.trim() !== (law.admin_notes || '')) {
     body.admin_notes = notes.trim() || null;
   }
+  if (categoryId !== undefined && !isSoleCategory(law, categoryId)) {
+    body.category_id = categoryId;
+  }
   return body;
+}
+
+/** True when the law already has exactly this one category, so selecting it again changes nothing. */
+function isSoleCategory(law, categoryId) {
+  const current = law.categories || [];
+  return current.length === 1 && current[0].id === categoryId;
+}
+
+/** Value for the category selector: the single category, or '' (the disabled placeholder option) when the law has none or several. */
+export function categorySelectValue(law) {
+  const current = law.categories || [];
+  return current.length === 1 ? String(current[0].id) : '';
 }
 
 export function pageLabel(total, offset, count) {

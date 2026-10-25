@@ -17,6 +17,8 @@ export interface AdminLawUpdate {
   title?: string | null;
   text?: string;
   adminNotes?: string | null;
+  /** Replaces the law's categories with this single existing category. */
+  categoryId?: number;
   /** When set, the update only applies if the law still has this updated_at (optimistic concurrency). */
   expectedUpdatedAt?: string;
 }
@@ -52,7 +54,8 @@ export interface AdminLaw extends AdminLawRow {
 }
 
 export type AdminUpdateResult =
-  | { outcome: 'updated'; law: AdminLaw; previousStatus: AdminLawStatus }
+  | { outcome: 'updated'; law: AdminLaw; previousStatus: AdminLawStatus; previousCategoryIds: number[] }
+  | { outcome: 'invalid_category' }
   | { outcome: 'conflict' }
   | { outcome: 'not_found' };
 
@@ -85,7 +88,12 @@ export class AdminLawService {
       .prepare(`SELECT ${LAW_COLUMNS} FROM laws ${where} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`)
       .all(...params, limit, offset) as AdminLawRow[];
 
-    return { data: this.attachDetails(rows), total, counts: this.statusCounts() };
+    return { data: this.attachDetails(rows), total, counts: this.statusCounts(), categories: this.listCategories() };
+  }
+
+  /** Every category a moderator may pick, in the order shown in the selector. */
+  listCategories() {
+    return this.db.prepare('SELECT id, slug, title AS name FROM categories ORDER BY title').all() as { id: number; slug: string; name: string }[];
   }
 
   updateLaw(id: number, update: AdminLawUpdate) {
@@ -116,6 +124,11 @@ export class AdminLawService {
         return { outcome: 'not_found' };
       }
 
+      if (update.categoryId !== undefined && !this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(update.categoryId)) {
+        return { outcome: 'invalid_category' };
+      }
+      const previousCategoryIds = (this.db.prepare('SELECT category_id FROM law_categories WHERE law_id = ? ORDER BY category_id').all(id) as { category_id: number }[]).map((r) => r.category_id);
+
       const guard = update.expectedUpdatedAt === undefined ? '' : ' AND updated_at = ?';
       const guardParams = update.expectedUpdatedAt === undefined ? [] : [update.expectedUpdatedAt];
       const result = this.db.prepare(`UPDATE laws SET ${sets.join(', ')} WHERE id = ?${guard}`).run(...params, id, ...guardParams);
@@ -123,8 +136,14 @@ export class AdminLawService {
         return { outcome: 'conflict' };
       }
 
+      if (update.categoryId !== undefined) {
+        // Category listings, counts and searches all read law_categories, so replacing the rows updates them everywhere.
+        this.db.prepare('DELETE FROM law_categories WHERE law_id = ?').run(id);
+        this.db.prepare('INSERT INTO law_categories (law_id, category_id, position) VALUES (?, ?, 0)').run(id, update.categoryId);
+      }
+
       const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
-      return { outcome: 'updated', law: this.attachDetails([row])[0], previousStatus: before.status };
+      return { outcome: 'updated', law: this.attachDetails([row])[0], previousStatus: before.status, previousCategoryIds };
     });
     return apply();
   }

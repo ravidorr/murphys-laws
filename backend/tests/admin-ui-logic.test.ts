@@ -20,6 +20,23 @@ describe('admin-logic', () => {
     expect(logic.buildUpdateBody({ ...law, title: null }, { title: '' })).toEqual({});
   });
 
+  it('sends category_id only when a different single category is chosen', () => {
+    const base = { status: 'published', title: 'T', text: 'Original law text', categories: [{ id: 3, name: 'C' }] };
+    expect(logic.buildUpdateBody(base, { categoryId: 3 })).toEqual({});
+    expect(logic.buildUpdateBody(base, { categoryId: 4 })).toEqual({ category_id: 4 });
+    expect(logic.buildUpdateBody(base, {})).toEqual({});
+    expect(logic.buildUpdateBody({ ...base, categories: [] }, { categoryId: 3 })).toEqual({ category_id: 3 });
+    expect(logic.buildUpdateBody({ ...base, categories: undefined }, { categoryId: 3 })).toEqual({ category_id: 3 });
+    expect(logic.buildUpdateBody({ ...base, categories: [{ id: 3, name: 'C' }, { id: 4, name: 'D' }] }, { categoryId: 3 })).toEqual({ category_id: 3 });
+  });
+
+  it('preselects only a single category', () => {
+    expect(logic.categorySelectValue({ status: 'published', text: 'x', categories: [{ id: 3, name: 'C' }] })).toBe('3');
+    expect(logic.categorySelectValue({ status: 'published', text: 'x', categories: [] })).toBe('');
+    expect(logic.categorySelectValue({ status: 'published', text: 'x' })).toBe('');
+    expect(logic.categorySelectValue({ status: 'published', text: 'x', categories: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] })).toBe('');
+  });
+
   it('labels pages', () => {
     expect(logic.pageLabel(0, 0, 0)).toBe('No laws');
     expect(logic.pageLabel(60, 25, 25)).toBe('26-50 of 60');

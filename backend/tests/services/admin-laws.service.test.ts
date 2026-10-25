@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach } from 'vitest';
 import type Database from 'better-sqlite3';
 import { AdminLawService } from '../../src/services/admin-laws.service.ts';
+import { CategoryService } from '../../src/services/categories.service.ts';
 import { LawService } from '../../src/services/laws.service.ts';
 import { createMigratedDb } from '../helpers/migrated-db.ts';
 
@@ -69,6 +73,51 @@ describe('AdminLawService (real migrated schema)', () => {
     expect(await searchHits('zebrafish')).not.toContain(id);
   });
 
+  it('keeps a published law searchable after an update that leaves its text and title alone', async () => {
+    const id = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'published');
+    admin.updateLaw(id, { adminNotes: 'checked' });
+    admin.updateLaw(id, { title: 'Fish' });
+    expect(await searchHits('zebrafish')).toContain(id);
+  });
+
+  it('indexes a law only while it is published', () => {
+    const indexed = () => db.prepare("SELECT rowid FROM laws_fts WHERE laws_fts MATCH 'zebrafish'").all();
+    const id = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'in_review');
+    admin.updateLaw(id, { adminNotes: 'still pending' });
+    expect(indexed()).toEqual([]);
+    admin.updateLaw(id, { status: 'published' });
+    expect(indexed()).toEqual([{ rowid: id }]);
+    admin.updateLaw(id, { status: 'in_review' });
+    expect(indexed()).toEqual([]);
+  });
+
+  describe('migration 019', () => {
+    const migrationSql = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'db', 'migrations', '019_fix_law_fts_update_triggers.sql'), 'utf8');
+    const indexed = () => (db.prepare("SELECT rowid FROM laws_fts WHERE laws_fts MATCH 'zebrafish'").all() as { rowid: number }[]).map((r) => r.rowid);
+
+    it('leaves exactly one update-removal trigger, running before the update', () => {
+      const triggers = db.prepare("SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND tbl_name = 'laws' ORDER BY name").all() as { name: string; sql: string }[];
+      expect(triggers.map((t) => t.name)).toEqual([
+        'laws_fts_after_delete',
+        'laws_fts_after_insert',
+        'laws_fts_after_update_insert',
+        'laws_fts_before_update_delete',
+      ]);
+      expect(triggers.find((t) => t.name === 'laws_fts_before_update_delete')?.sql).toContain('BEFORE UPDATE');
+    });
+
+    it('repairs an index damaged earlier and drops entries of unpublished laws', () => {
+      const published = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'published');
+      const pending = insertLaw('Pending', 'Zebrafish in review must not be searchable', 'in_review');
+      db.prepare("INSERT INTO laws_fts(laws_fts, rowid, title, text) VALUES ('delete', ?, 'Fish', 'Zebrafish always escape the net you bought yesterday')").run(published);
+      db.prepare("INSERT INTO laws_fts(rowid, title, text) VALUES (?, 'Pending', 'Zebrafish in review must not be searchable')").run(pending);
+      expect(indexed()).toEqual([pending]);
+
+      db.exec(migrationSql);
+      expect(indexed()).toEqual([published]);
+    });
+  });
+
   it('editing a published law refreshes the search index', async () => {
     const id = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'published');
     expect(await searchHits('zebrafish')).toContain(id);
@@ -124,6 +173,84 @@ describe('AdminLawService (real migrated schema)', () => {
 
     admin.markApprovalEmailSent(id);
     expect(admin.listLaws({ status: 'published', q: 'queues', limit: 1, offset: 0 }).data[0].approval_email_sent_at).toBe(sentAt.approval_email_sent_at);
+  });
+
+  describe('changing the category', () => {
+    const categories = () => db.prepare('SELECT id, title, slug FROM categories ORDER BY id LIMIT 2').all() as { id: number; title: string; slug: string }[];
+    const categoryIdsOf = (id: number) => (admin.listLaws({ status: 'all', q: '', limit: 100, offset: 0 }).data.find((l) => l.id === id)?.categories ?? []).map((c) => c.id);
+
+    it('replaces the categories and reports the previous ones', () => {
+      const [first, second] = categories();
+      const id = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'published');
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, first.id);
+
+      const result = admin.updateLaw(id, { categoryId: second.id });
+      expect(result.outcome).toBe('updated');
+      if (result.outcome === 'updated') {
+        expect(result.previousCategoryIds).toEqual([first.id]);
+        expect(result.law.categories).toEqual([{ id: second.id, name: second.title }]);
+        expect(result.law.updated_at).not.toBe('2030-01-01T00:00:00.000Z');
+      }
+      expect(categoryIdsOf(id)).toEqual([second.id]);
+    });
+
+    it('collapses several categories into the chosen one and categorises an uncategorised law', () => {
+      const [first, second] = categories();
+      const multi = insertLaw(null, 'Law that sits in two categories at once', 'published');
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?), (?, ?)').run(multi, first.id, multi, second.id);
+      const none = insertLaw(null, 'Law that has no category at all so far', 'in_review');
+
+      admin.updateLaw(multi, { categoryId: first.id });
+      const result = admin.updateLaw(none, { categoryId: second.id });
+      expect(categoryIdsOf(multi)).toEqual([first.id]);
+      expect(categoryIdsOf(none)).toEqual([second.id]);
+      expect(result.outcome === 'updated' && result.previousCategoryIds).toEqual([]);
+    });
+
+    it('moves the law between public category listings and counts, and the search filter', async () => {
+      const [first, second] = categories();
+      const id = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'published');
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, first.id);
+      const categoryService = new CategoryService(db);
+      const count = async (categoryId: number) => ((await categoryService.listCategories()) as { id: number; law_count: number }[]).find((c) => c.id === categoryId)?.law_count ?? 0;
+      const inCategory = async (categoryId: number) => (await laws.listLaws({ limit: 100, offset: 0, categoryId })).data.map((l: { id: number }) => l.id);
+      const [firstBefore, secondBefore] = [await count(first.id), await count(second.id)];
+      expect(await inCategory(first.id)).toContain(id);
+
+      admin.updateLaw(id, { categoryId: second.id });
+      expect(await searchHits('zebrafish')).toContain(id);
+      expect(await inCategory(first.id)).not.toContain(id);
+      expect(await inCategory(second.id)).toContain(id);
+      expect(await count(first.id)).toBe(firstBefore - 1);
+      expect(await count(second.id)).toBe(secondBefore + 1);
+      expect((await laws.listLaws({ limit: 100, offset: 0, categorySlug: second.slug, q: 'zebrafish' })).data.map((l: { id: number }) => l.id)).toEqual([id]);
+      expect((await laws.getLaw(id))?.category_id).toBe(second.id);
+    });
+
+    it('rejects an unknown category without changing anything', () => {
+      const [first] = categories();
+      const id = insertLaw('Fish', 'Zebrafish always escape the net you bought yesterday', 'in_review');
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, first.id);
+
+      expect(admin.updateLaw(id, { categoryId: 999999, title: 'Changed', status: 'published' })).toEqual({ outcome: 'invalid_category' });
+      expect(categoryIdsOf(id)).toEqual([first.id]);
+      expect(admin.listLaws({ status: 'all', q: 'Zebrafish', limit: 5, offset: 0 }).data[0]).toMatchObject({ title: 'Fish', status: 'in_review' });
+    });
+
+    it('keeps the old categories when a concurrent edit wins', () => {
+      const [first, second] = categories();
+      const id = insertLaw(null, 'Another law about queues', 'in_review');
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, first.id);
+      expect(admin.updateLaw(id, { categoryId: second.id, expectedUpdatedAt: 'stale' })).toEqual({ outcome: 'conflict' });
+      expect(categoryIdsOf(id)).toEqual([first.id]);
+    });
+
+    it('lists every category for the selector, and returns them with the law list', () => {
+      const all = admin.listCategories();
+      expect(all.length).toBeGreaterThan(1);
+      expect(all[0]).toEqual({ id: expect.any(Number), slug: expect.any(String), name: expect.any(String) });
+      expect(admin.listLaws({ status: 'all', q: '', limit: 1, offset: 0 }).categories).toEqual(all);
+    });
   });
 
   it('rejects an invalid status at the database level', () => {
