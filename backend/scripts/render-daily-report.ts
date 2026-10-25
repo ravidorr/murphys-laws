@@ -6,6 +6,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
+import { SITE_URL } from '../src/utils/constants.ts';
 
 export type ReportItemKind =
   | 'row'
@@ -27,6 +29,8 @@ export interface ReportItem {
   timestamp?: string;
   boldValue?: boolean;
   valueSecondary?: string;
+  /** Rendered as a link in the HTML report only; the plain-text report shows `value`, so put the URL there too. */
+  href?: string;
 }
 
 export interface ReportSection {
@@ -58,6 +62,11 @@ export interface MessageOptions {
 const DEFAULT_FROM = "Murphy's Laws Server <alerts@murphys-laws.com>";
 const DEFAULT_ALERT_EMAIL = 'ravidor@gmail.com';
 const SECTION_RULE = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
+const PENDING_COUNT_TIMEOUT_MS = 15_000;
+
+/** Path of the admin moderation page, appended to the configured base URL. */
+export const ADMIN_UI_PATH = '/api/v1/admin/ui';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -202,6 +211,9 @@ function renderHtmlLabelValueRow(item: ReportItem, strongTop: boolean): string {
   let valueHtml = escapeHtml(item.value);
   if (item.timestamp) {
     valueHtml += `<span style="font-size:12px;color:#4b5563;"> (${escapeHtml(item.timestamp)})</span>`;
+  }
+  if (item.href) {
+    valueHtml = `<a href="${escapeHtml(item.href)}" style="color:#1d4ed8;">${valueHtml}</a>`;
   }
   if (item.tone === 'warning') {
     valueHtml = `<span style="color:#a16207;font-weight:bold;">! </span>${valueHtml}`;
@@ -1114,6 +1126,86 @@ function buildTestEmailReport(now: Date): DailyReport {
   };
 }
 
+/** Parses `BASE_URL` as an http(s) URL with no query or fragment, or returns null. */
+function parseBaseUrl(value: string): URL | null {
+  try {
+    const url = new URL(value);
+    const isHttp = url.protocol === 'http:' || url.protocol === 'https:';
+    return isHttp && !url.search && !url.hash ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds the admin moderation page URL from the configured base URL (`BASE_URL`, else the
+ * site URL). A blank, unparsable, non-http(s) `BASE_URL`, or one carrying a query or
+ * fragment (which would swallow the admin path), is logged and ignored.
+ */
+export function buildAdminUrl(env: NodeJS.ProcessEnv = process.env): string {
+  let base = new URL(SITE_URL);
+  const configured = env.BASE_URL?.trim();
+  if (configured) {
+    const parsed = parseBaseUrl(configured);
+    if (parsed) {
+      base = parsed;
+    } else {
+      logCollectorError('admin link', new Error(`ignoring BASE_URL that is not a plain http(s) URL: ${configured}`));
+    }
+  }
+  base.pathname = `${base.pathname.replace(/\/+$/, '')}${ADMIN_UI_PATH}`;
+  return base.toString();
+}
+
+/**
+ * Counts laws with status 'in_review' by querying `dbPath` through the sqlite3 CLI.
+ * Returns null (after logging) if the query fails, times out, or prints a non-numeric
+ * result, so the report can still be sent.
+ */
+export function countPendingApprovals(dbPath: string): number | null {
+  try {
+    const stdout = execFileSync(
+      'sqlite3',
+      [dbPath, "SELECT COUNT(*) FROM laws WHERE status='in_review';"],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: PENDING_COUNT_TIMEOUT_MS },
+    ).trim();
+    if (!/^\d+$/.test(stdout)) {
+      throw new Error(`unexpected sqlite3 output: ${JSON.stringify(stdout)}`);
+    }
+    return Number(stdout);
+  } catch (error) {
+    const stderr = String((error as { stderr?: Buffer | string } | null)?.stderr ?? '').trim();
+    const reason = error instanceof Error ? error.message : String(error);
+    logCollectorError('pending approvals count', stderr ? `${reason}: ${stderr}` : error);
+    return null;
+  }
+}
+
+/**
+ * Builds the pending approvals section: null (count unavailable) and a positive count
+ * both warn, a zero count is a success, and only a positive count carries the admin link.
+ */
+export function buildPendingApprovalsSection(
+  pending: number | null,
+  env: NodeJS.ProcessEnv = process.env,
+): ReportSection {
+  if (pending === null) {
+    return section('PENDING APPROVALS', [
+      { label: 'Awaiting Approval', value: 'Count unavailable - see the daily-report log', tone: 'warning' },
+    ]);
+  }
+  if (pending === 0) {
+    return section('PENDING APPROVALS', [
+      { label: 'Awaiting Approval', value: '0 (nothing to review)', tone: 'success' },
+    ]);
+  }
+  const adminUrl = buildAdminUrl(env);
+  return section('PENDING APPROVALS', [
+    { label: 'Awaiting Approval', value: String(pending), tone: 'warning' },
+    { label: 'Review Queue', value: adminUrl, href: adminUrl },
+  ]);
+}
+
 function collectLiveReport(now: Date, repoRoot: string): DailyReport {
   const date = now.toISOString().slice(0, 10);
   const dayOfWeek = now.getUTCDay();
@@ -1186,6 +1278,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       ]),
     );
 
+    sections.push(buildPendingApprovalsSection(countPendingApprovals(dbPath), env));
+
     const lawOfDay = tryCommand('sqlite3', [
       dbPath,
       `SELECT COALESCE(l.title || ': ', '') || l.text FROM law_of_the_day_history lod JOIN laws l ON lod.law_id = l.id WHERE lod.featured_date = '${date}' LIMIT 1;`,
@@ -1195,6 +1289,9 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
         { value: lawOfDay || `No law of the day set for ${date}`, kind: 'text' },
       ]),
     );
+  } else {
+    logCollectorError('pending approvals count', new Error(`database not found at ${dbPath}`));
+    sections.push(buildPendingApprovalsSection(null, env));
   }
 
   const metricsMonth = date.slice(0, 7);
@@ -1436,10 +1533,27 @@ export function runCli(args: string[], options: RunCliOptions = {}): void {
   }
 }
 
+/**
+ * The cron launcher does not load `.env`, so read `BASE_URL` from the same files the API
+ * server uses (root `.env`, then `backend/.env`). A value already in `env` always wins.
+ */
+export function loadBaseUrlFromEnvFiles(repoRoot: string, env: NodeJS.ProcessEnv = process.env): void {
+  for (const envFile of [path.join(repoRoot, '.env'), path.join(repoRoot, 'backend/.env')]) {
+    if (env.BASE_URL?.trim() || !existsSync(envFile)) {
+      continue;
+    }
+    const baseUrl = dotenv.parse(readFileSync(envFile))['BASE_URL'];
+    if (baseUrl?.trim()) {
+      env.BASE_URL = baseUrl;
+    }
+  }
+}
+
 const isMain =
   process.argv[1] !== undefined &&
   fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMain) {
+  loadBaseUrlFromEnvFiles(repoRootFromEnv(process.env.REPO_ROOT));
   runCli(process.argv.slice(2));
 }
