@@ -188,7 +188,7 @@ expose `--format json` for the renderer.
 After deploy, send an all-sections smoke test only to an explicit recipient:
 
 ```bash
-sudo DAILY_REPORT_TEST_RECIPIENT=you@example.com \
+sudo DAILY_REPORT_TEST_RECIPIENT=<your-email> \
   /usr/local/bin/daily-report.sh --test-email
 ```
 
@@ -323,7 +323,7 @@ After deployment, verify:
 ### Testing Email Alerts
 
 ```bash
-echo "Test from main droplet" | mail -s "Test Alert" you@example.com
+echo "Test from main droplet" | mail -s "Test Alert" <your-email>
 ```
 
 ---
@@ -444,7 +444,7 @@ sudo systemctl status postfix
 tail -100 /var/log/mail.log
 
 # Test email manually
-echo "Test" | mail -s "Test" you@example.com
+echo "Test" | mail -s "Test" <your-email>
 
 # Verify SMTP configuration
 cat /etc/postfix/sasl_passwd

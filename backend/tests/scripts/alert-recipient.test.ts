@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { ALERT_RECIPIENT_KEYS, fillEnvFromFiles, resolveAlertRecipient } from '../../scripts/alert-recipient.ts';
+import { ALERT_RECIPIENT_KEYS, fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from '../../scripts/alert-recipient.ts';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { scratchDir } from '../helpers/shell-sandbox.ts';
 
 describe('resolveAlertRecipient', () => {
@@ -71,5 +71,61 @@ describe('fillEnvFromFiles', () => {
     expect(env.ALERT_EMAIL).toBe('env@example.com');
     expect(env.EMAIL_TO).toBe('file-admin@example.com');
     expect(env.OTHER).toBeUndefined();
+  });
+});
+
+describe('parseRecipientList', () => {
+  it('returns a single address, trimmed', () => {
+    expect(parseRecipientList(' a@example.com\n')).toEqual(['a@example.com']);
+  });
+
+  it('splits a comma-separated list, ignoring spaces around the commas and empty entries', () => {
+    expect(parseRecipientList('a@example.com, b@example.com ,c@example.com,')).toEqual([
+      'a@example.com',
+      'b@example.com',
+      'c@example.com',
+    ]);
+  });
+
+  it.each([
+    ['an address without an @', 'ops'],
+    ['an address with a space inside', 'Ops <a@example.com>'],
+    ['an option-looking address', '-Sfoo@example.com'],
+    ['one bad entry among good ones', 'a@example.com, ops, b@example.com'],
+  ])('throws, naming the setting, for %s', (_name, value) => {
+    expect(() => parseRecipientList(value)).toThrow(/is not a valid email address/);
+    expect(() => parseRecipientList(value)).toThrow(value.includes(',') ? 'recipient setting' : value.trim());
+  });
+
+  it('throws for a value with no address in it', () => {
+    expect(() => parseRecipientList(' , ,')).toThrow('holds no email address');
+  });
+});
+
+describe('fillEnvFromFiles with files it cannot use', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+  const keys = ['EMAIL_TO'];
+
+  it('skips a file it cannot read, with a warning naming it, and uses the next one', () => {
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const root = scratchDir('alert-recipient-unreadable-');
+    mkdirSync(path.join(root, 'backend'));
+    mkdirSync(path.join(root, '.env')); // a directory where the file should be: reading it throws EISDIR
+    writeFileSync(path.join(root, 'backend/.env'), 'EMAIL_TO=backend@example.com\n');
+    const env: NodeJS.ProcessEnv = {};
+    fillEnvFromFiles(root, env, keys);
+    expect(env.EMAIL_TO).toBe('backend@example.com');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(`cannot read ${path.join(root, '.env')}`));
+  });
+
+  it('ignores a whitespace-only ALERT_ENV_FILE', () => {
+    const root = scratchDir('alert-recipient-blank-');
+    mkdirSync(path.join(root, 'backend'));
+    writeFileSync(path.join(root, 'backend/.env'), 'EMAIL_TO=backend@example.com\n');
+    const env: NodeJS.ProcessEnv = { ALERT_ENV_FILE: '   ' };
+    fillEnvFromFiles(root, env, keys);
+    expect(env.EMAIL_TO).toBe('backend@example.com');
   });
 });

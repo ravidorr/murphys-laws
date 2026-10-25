@@ -6,8 +6,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
-import { fillEnvFromFiles, resolveAlertRecipient } from './alert-recipient.ts';
+import { fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from './alert-recipient.ts';
 import { SITE_URL } from '../src/utils/constants.ts';
 
 export type ReportItemKind =
@@ -1525,23 +1524,27 @@ export function runCli(args: string[], options: RunCliOptions = {}): void {
     );
   }
 
+  // One address or a comma-separated list; each is checked before anything is collected, so nothing odd
+  // reaches sendmail's arguments.
+  const recipients = parseRecipientList(recipient);
+
   const report = collectDailyReport({
     mode: testEmail ? 'test-email' : 'live',
     now: new Date(),
   });
 
   const from = env.FROM_EMAIL ?? DEFAULT_FROM;
-  const { message } = buildMultipartMessage(report, { from, to: recipient });
+  const { message } = buildMultipartMessage(report, { from, to: recipients.join(', ') });
   const sendmailPath = options.sendmailPath ?? 'sendmail';
 
-  const result = spawnSync(sendmailPath, ['-t', recipient], {
+  const result = spawnSync(sendmailPath, ['-t', ...recipients], {
     input: message,
     encoding: 'utf8',
     env,
   });
   if (result.error) {
     // sendmail could not be started at all (for example it is not installed): say why.
-    throw new Error(`Could not run ${sendmailPath}: ${result.error.message}`);
+    throw new Error(`Could not run ${sendmailPath}: ${result.error.message} (PATH: ${env.PATH ?? 'not set'})`);
   }
   if (result.status !== 0) {
     throw new Error(result.stderr || `sendmail exited with code ${result.status ?? `signal ${result.signal}`}`);
@@ -1552,9 +1555,9 @@ export function runCli(args: string[], options: RunCliOptions = {}): void {
 const ENV_FILE_KEYS = ['BASE_URL', 'ALERT_EMAIL', 'EMAIL_TO'] as const;
 
 /**
- * Reads `BASE_URL`, `ALERT_EMAIL` and `EMAIL_TO` from the same files the API server uses (root
- * `.env`, then `backend/.env`). A non-blank value already in `env` always wins, and the root file
- * wins over `backend/.env`.
+ * Reads `BASE_URL`, `ALERT_EMAIL` and `EMAIL_TO` from the files alert-email.sh reads: `$ALERT_ENV_FILE`
+ * when set, then the root `.env` and `backend/.env` the API server uses. A non-blank value already in
+ * `env` always wins, and earlier files win over later ones.
  */
 export function loadConfigFromEnvFiles(repoRoot: string, env: NodeJS.ProcessEnv = process.env): void {
   fillEnvFromFiles(repoRoot, env, ENV_FILE_KEYS);

@@ -13,6 +13,9 @@ HEALTH_CHECK_FAILURES="/var/tmp/health-check-failures"
 
 # Configuration
 MAX_FAILURES=3  # Restart after 3 consecutive failures
+
+# cron's default PATH is just /usr/bin:/bin; add the usual places for mail, sendmail and node after it
+export PATH="$PATH:/usr/local/bin:/usr/sbin"
 # Load the shared alert helper from beside this script (following symlinks), else from the repo copy;
 # if neither exists, stop rather than carry on and lose every alert silently.
 _alert_self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
@@ -87,7 +90,9 @@ send_alert() {
 
 # Runs the TypeScript health check, preferring the locally installed tsx (deploys run `npm ci` in backend/).
 # Exit codes: 0 healthy, 1 a check failed, 2 the check is misconfigured (not an outage), 3 only warnings
-# and the check's own alert email was not delivered.
+# and the check's own alert email was not delivered. Anything else (126/127 when tsx, npx or node cannot be
+# started, 137 when it is killed, ...) means the check itself could not run, which says nothing about the
+# site.
 run_health_check() {
     local tsx_bin="$PROJECT_DIR/backend/node_modules/.bin/tsx"
     if [ -x "$tsx_bin" ]; then
@@ -95,6 +100,16 @@ run_health_check() {
     else
         npx --yes tsx backend/scripts/health-check.ts
     fi
+}
+
+# What an exit code from run_health_check means: healthy, outage (a real check failed) or monitor-problem
+# (the check could not run or is misconfigured). Only an outage counts towards a restart.
+classify_health_exit() {
+    case "$1" in
+        0|3) echo healthy ;;
+        1) echo outage ;;
+        *) echo monitor-problem ;;
+    esac
 }
 
 # Run health check
@@ -106,7 +121,9 @@ cd "$PROJECT_DIR" || exit 1
 health_check_exit_code=0
 run_health_check > /tmp/health-check-output.txt 2>&1 || health_check_exit_code=$?
 
-if [ "$health_check_exit_code" -eq 0 ] || [ "$health_check_exit_code" -eq 3 ]; then
+health_check_class="$(classify_health_exit "$health_check_exit_code")"
+
+if [ "$health_check_class" = "healthy" ]; then
     log "Health check passed"
     if [ "$health_check_exit_code" -eq 3 ]; then
         log "Warning: the health check could not deliver its own alert email: $(cat /tmp/health-check-output.txt)"
@@ -114,13 +131,14 @@ if [ "$health_check_exit_code" -eq 0 ] || [ "$health_check_exit_code" -eq 3 ]; t
     reset_failure_count
     ping_deadman
     exit 0
-elif [ "$health_check_exit_code" -eq 2 ]; then
-    # A configuration problem (no SMTP settings or recipient) says nothing about the site, so it must
-    # not count towards a restart. Report it and leave the failure count alone.
+elif [ "$health_check_class" = "monitor-problem" ]; then
+    # The check is misconfigured (exit 2) or could not be started at all (for example tsx or node is
+    # missing). That says nothing about the site, so it must not count towards a restart. Report it and
+    # leave the failure count alone.
     health_check_output=$(cat /tmp/health-check-output.txt)
-    log "Health check is misconfigured (exit code: 2): $health_check_output"
-    send_alert "Health Check Misconfigured" \
-"The health check could not run because of a configuration problem. Services were not restarted.
+    log "Health check could not run (exit code: $health_check_exit_code): $health_check_output"
+    send_alert "Health Check Could Not Run" \
+"The health check could not run (exit code $health_check_exit_code), either because it is misconfigured or because tsx or node could not be started. This says nothing about the site, so services were not restarted.
 
 Output:
 $health_check_output
@@ -177,10 +195,23 @@ Please investigate the root cause of the failures."
         sleep 10
         retest_exit_code=0
         run_health_check > /tmp/health-check-retest.txt 2>&1 || retest_exit_code=$?
-        if [ "$retest_exit_code" -eq 0 ] || [ "$retest_exit_code" -eq 3 ]; then
+        retest_class="$(classify_health_exit "$retest_exit_code")"
+        if [ "$retest_class" = "healthy" ]; then
             log "Health check passed after restart"
             ping_deadman
             exit "$(delivery_exit_code 0)"
+        elif [ "$retest_class" = "monitor-problem" ]; then
+            retest_output=$(cat /tmp/health-check-retest.txt)
+            log "Health check could not run after restart (exit code: $retest_exit_code)"
+
+            send_alert "Health Check Could Not Run After Restart" \
+"Services were restarted, but the health check could not run afterwards (exit code $retest_exit_code), so it is not known whether the site recovered.
+
+Output:
+$retest_output
+
+Time: $(date)" || true
+            exit 2
         else
             retest_output=$(cat /tmp/health-check-retest.txt)
             log "Health check still failing after restart"
