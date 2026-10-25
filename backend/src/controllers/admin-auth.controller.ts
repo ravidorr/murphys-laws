@@ -38,7 +38,7 @@ const PAGE_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Robots-Tag': 'noindex, nofollow',
   'Referrer-Policy': 'no-referrer',
-  'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'Content-Security-Policy': "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
 };
 
 type FetchLike = typeof fetch;
@@ -225,8 +225,9 @@ export class AdminAuthController {
     console.warn(`Admin GitHub sign-in refused (${status}) from ${identifier}`);
     res.writeHead(status, { ...PAGE_HEADERS, 'Set-Cookie': stateCookie(config, '', 0) });
     res.end(
-      `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Admin sign-in</title>` +
-        `<body style="font-family:sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem"><p>${message}</p><p><a href="${ADMIN_PAGE}">Back to the admin page</a></p></body></html>`,
+      `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">` +
+        `<title>Admin sign-in</title><link rel="stylesheet" href="/api/v1/admin/ui/admin.css">` +
+        `<body><main><p class="message">${message}</p><p><a href="${ADMIN_PAGE}">Back to the admin page</a></p></main></body></html>`,
     );
   }
 }
