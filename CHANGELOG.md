@@ -44,6 +44,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ADMIN_GITHUB_OAUTH_CLIENT_SECRET` because secret names cannot start with `GITHUB_`.
   Backend bumped to `2.3.42`; root to `2.6.88`.
 
+### Changed
+
+- MCP Release workflow: the registry-version logic now lives in `scripts/mcp-registry-state.ts`
+  with unit tests built from a multi-version registry response (it reads the entry the registry
+  flags as latest and fails loudly when that is ambiguous), replacing inline `jq`. The workflow
+  checks npm and registry state before installing anything and exits early when both already
+  have the version, and it only triggers on paths that change the published package
+  (`mcp/src`, `mcp/bin`, `mcp/package.json`, `mcp/server.json`, `mcp/tsconfig.build.json`,
+  `mcp/README.md`). Root bumped to `2.6.87`.
+
 ### Fixed
 
 - The MCP Release workflow now asks the registry for the latest version only
