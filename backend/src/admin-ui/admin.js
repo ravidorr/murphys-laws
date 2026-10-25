@@ -15,7 +15,9 @@ import {
   categorySelectValue,
 } from './admin-logic.js';
 
-const state = { token: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
+const state = { token: '', login: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
+// Whether the server offers GitHub sign-in; learned from the session check when the page opens.
+let oauthAvailable = false;
 let loadSeq = 0;
 let inFlightLoads = 0;
 const INITIAL_STATE = { ...state };
@@ -50,10 +52,14 @@ function say(text, isError = false) {
 async function api(path, options = {}) {
   let response;
   try {
-    response = await fetch(path, {
-      ...options,
-      headers: { Authorization: `Bearer ${state.token}`, 'Content-Type': 'application/json' },
-    });
+    // A typed API token wins; otherwise the GitHub session cookie is used, and its writes must carry the CSRF header.
+    const headers = { 'Content-Type': 'application/json' };
+    if (state.token) {
+      headers.Authorization = `Bearer ${state.token}`;
+    } else {
+      headers['X-Admin-Request'] = '1';
+    }
+    response = await fetch(path, { ...options, credentials: 'same-origin', headers });
   } catch {
     throw new ApiError('Cannot reach the server. Check your connection and retry.', 0);
   }
@@ -73,18 +79,32 @@ async function api(path, options = {}) {
   return data;
 }
 
-/** After a rejected token everything is reset and hidden until the admin connects again. */
+/** Shows the signed-in bar or the sign-in controls, depending on how the admin is connected. */
+function renderAuth() {
+  const signedIn = Boolean(state.login);
+  $('session').hidden = !signedIn;
+  $('session-login').textContent = state.login;
+  $('signin').hidden = signedIn;
+  $('github-signin').hidden = !oauthAvailable;
+  $('token-fallback').open = !oauthAvailable;
+}
+
+/** After a rejected token or an ended session everything is reset and hidden until the admin connects again. */
 function disconnect() {
   Object.assign(state, INITIAL_STATE);
   $('search').value = '';
   $('toolbar').hidden = true;
   $('pager').hidden = true;
   lawsEl.replaceChildren();
+  renderAuth();
 }
 
 function handleError(error) {
   if (error.status === 401) {
+    const endedSession = Boolean(state.login);
     disconnect();
+    say(endedSession ? 'Your session ended. Sign in with GitHub again.' : error.message, true);
+    return;
   }
   say(error.message, true);
 }
@@ -355,6 +375,37 @@ async function load(patch = {}, announce = true) {
   }
 }
 
+/** Asks the server whether the browser already has a GitHub session and whether sign-in is offered at all. */
+async function checkSession() {
+  let response;
+  let data = {};
+  try {
+    response = await fetch('/api/v1/admin/auth/session', { credentials: 'same-origin' });
+    data = (await response.json()) || {};
+  } catch {
+    // Without an answer the page stays on the token form, which always works.
+  }
+  oauthAvailable = data.oauth === true;
+  if (response && response.ok && data.authenticated === true && typeof data.login === 'string' && !state.token) {
+    state.login = data.login;
+    renderAuth();
+    await load({ offset: 0 });
+    return;
+  }
+  renderAuth();
+}
+
+$('sign-out').addEventListener('click', async () => {
+  try {
+    await api('/api/v1/admin/auth/logout', { method: 'POST' });
+  } catch (error) {
+    say(error.message, true);
+    return;
+  }
+  disconnect();
+  say('Signed out.');
+});
+
 $('connect-form').addEventListener('submit', (event) => {
   event.preventDefault();
   state.token = $('token').value.trim();
@@ -372,3 +423,6 @@ $('search-form').addEventListener('submit', async (event) => {
 $('prev').addEventListener('click', () => load({ offset: Math.max(0, state.offset - PAGE_SIZE) }));
 // Next continues after the laws still on screen, so cards removed by a save do not make laws get skipped.
 $('next').addEventListener('click', () => load({ offset: state.offset + lawsEl.children.length }));
+
+renderAuth();
+checkSession();
