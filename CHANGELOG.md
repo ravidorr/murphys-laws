@@ -35,7 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (still available), nginx proxies `/admin` to the API, the service worker lets it
   pass through uncached (including `/admin/`), nginx shows the normal 404 page when
   the admin is disabled, and `robots.txt` disallows it for every crawler group, including the named ones. Docs and tests updated.
-  Backend bumped to `2.3.38`; web to `3.4.23`; root to `2.6.82`.
+  Backend bumped to `2.3.39`; web to `3.4.23`; root to `2.6.83`.
+
+- Daily email report now has a "Pending approvals" section with the number of submitted
+  laws waiting for review and, when there are any, a link to the admin moderation page
+  built from the configured `BASE_URL` (falling back to the site URL; the path is
+  `/api/v1/admin/ui`). A zero count says so and omits the link; if the count cannot be
+  read (including a missing database or a hung query) the report still sends, flags the
+  count as unavailable, and logs the failure. The report script reads `BASE_URL` from the
+  environment or the root/backend `.env`, since the cron launcher does not load it. A `BASE_URL` that is not a plain http(s) URL (for example one with a query or fragment) is logged and ignored. Backend bumped to `2.3.38`; root to `2.6.82`.
 
 - Thank-you email to the submitter when an admin approves a pending law that has a
   valid email address (new `law-approval-email-template` and
