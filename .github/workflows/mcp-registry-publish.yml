@@ -2,6 +2,8 @@ name: MCP Release
 
 # Releases the MCP npm package and matching registry manifest after MCP changes
 # merge to main, or retries the process when manually dispatched from main.
+# Only paths that change the published package trigger it, and the run exits before
+# installing or testing anything when npm and the registry already have the version.
 #
 # Requires repo secret: MCP_PUBLISHER_PRIVATE_KEY for MCP Registry DNS
 # authentication. npm publishing uses GitHub Actions OIDC trusted publishing.
@@ -10,7 +12,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'mcp/**'
+      - 'mcp/src/**'
+      - 'mcp/bin/**'
+      - 'mcp/package.json'
+      - 'mcp/server.json'
+      - 'mcp/tsconfig.build.json'
+      - 'mcp/README.md'
   workflow_dispatch:
 
 permissions:
@@ -29,23 +36,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-
-      - name: Install npm for trusted publishing
-        run: npm install --global npm@11.5.1
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate MCP release version contract
-        run: node --import tsx scripts/mcp-release-contract.ts
-
-      - name: Build SDK
-        run: npm run build
-        working-directory: sdk
-
-      - name: Validate MCP package
-        run: npm run typecheck && npm run lint && npm run test:coverage && npm run build
-        working-directory: mcp
 
       - name: Read MCP release metadata
         id: server
@@ -82,11 +72,73 @@ jobs:
             exit 1
           fi
 
+      - name: Check current registry state
+        id: registry
+        env:
+          EXPECTED_NAME: ${{ steps.server.outputs.name }}
+          EXPECTED_VERSION: ${{ steps.server.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          RESPONSE_FILE=$(mktemp)
+          trap 'rm -f "$RESPONSE_FILE"' EXIT
+          curl --fail --show-error --silent --location \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 15 \
+            --retry-max-time 120 \
+            --connect-timeout 15 \
+            --max-time 30 \
+            --output "$RESPONSE_FILE" \
+            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}&version=latest"
+          node --experimental-strip-types scripts/mcp-registry-state.ts "$RESPONSE_FILE" "$EXPECTED_NAME" "$EXPECTED_VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$(grep '^needs_publish=' "$GITHUB_OUTPUT" | tail -1)" = "needs_publish=false" ]; then
+            echo "Registry already has $EXPECTED_NAME@$EXPECTED_VERSION - skipping publish"
+          else
+            echo "Registry does not have $EXPECTED_NAME@$EXPECTED_VERSION as its latest version - publish needed"
+          fi
+
+      - name: Decide whether a release is needed
+        id: plan
+        env:
+          NPM_NEEDS_PUBLISH: ${{ steps.npm.outputs.needs_publish }}
+          REGISTRY_NEEDS_PUBLISH: ${{ steps.registry.outputs.needs_publish }}
+        run: |
+          if [ "$NPM_NEEDS_PUBLISH" = "true" ] || [ "$REGISTRY_NEEDS_PUBLISH" = "true" ]; then
+            echo "release_needed=true" >> "$GITHUB_OUTPUT"
+            echo "A release is needed - running validation and publish steps"
+          else
+            echo "release_needed=false" >> "$GITHUB_OUTPUT"
+            echo "npm and the registry are already at the target version - nothing to release"
+          fi
+
+      - name: Install npm for trusted publishing
+        if: steps.plan.outputs.release_needed == 'true'
+        run: npm install --global npm@11.5.1
+
+      - name: Install dependencies
+        if: steps.plan.outputs.release_needed == 'true'
+        run: npm ci
+
+      - name: Validate MCP release version contract
+        if: steps.plan.outputs.release_needed == 'true'
+        run: node --import tsx scripts/mcp-release-contract.ts
+
+      - name: Build SDK
+        if: steps.plan.outputs.release_needed == 'true'
+        run: npm run build
+        working-directory: sdk
+
+      - name: Validate MCP package
+        if: steps.plan.outputs.release_needed == 'true'
+        run: npm run typecheck && npm run lint && npm run test:coverage && npm run build
+        working-directory: mcp
+
       - name: Publish npm package
-        if: steps.npm.outputs.needs_publish == 'true'
+        if: steps.plan.outputs.release_needed == 'true' && steps.npm.outputs.needs_publish == 'true'
         run: npm publish --workspace=murphys-laws-mcp --provenance --access public
 
       - name: Wait for npm package availability
+        if: steps.plan.outputs.release_needed == 'true'
         env:
           PACKAGE_NAME: ${{ steps.server.outputs.package_name }}
           PACKAGE_VERSION: ${{ steps.server.outputs.package_version }}
@@ -106,38 +158,8 @@ jobs:
           echo "::error::npm package $PACKAGE_NAME@$PACKAGE_VERSION did not become publicly available"
           exit 1
 
-      - name: Check current registry state
-        id: registry
-        env:
-          EXPECTED_NAME: ${{ steps.server.outputs.name }}
-          EXPECTED_VERSION: ${{ steps.server.outputs.package_version }}
-        run: |
-          set -euo pipefail
-          RESPONSE_FILE=$(mktemp)
-          trap 'rm -f "$RESPONSE_FILE"' EXIT
-          curl --fail --show-error --silent --location \
-            --retry 5 \
-            --retry-all-errors \
-            --retry-delay 15 \
-            --retry-max-time 120 \
-            --connect-timeout 15 \
-            --max-time 30 \
-            --output "$RESPONSE_FILE" \
-            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}&version=latest"
-          LIVE_VERSION=$(jq -r --arg name "$EXPECTED_NAME" \
-            'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""' \
-            "$RESPONSE_FILE")
-          echo "live_version=$LIVE_VERSION" >> "$GITHUB_OUTPUT"
-          if [ "$LIVE_VERSION" = "$EXPECTED_VERSION" ]; then
-            echo "Registry already has $EXPECTED_NAME@$EXPECTED_VERSION - skipping publish"
-            echo "needs_publish=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Registry has '${LIVE_VERSION:-<none>}', target '$EXPECTED_VERSION' - publish needed"
-            echo "needs_publish=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Install mcp-publisher
-        if: steps.registry.outputs.needs_publish == 'true'
+        if: steps.plan.outputs.release_needed == 'true' && steps.registry.outputs.needs_publish == 'true'
         run: |
           set -euo pipefail
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -149,7 +171,7 @@ jobs:
           echo "mcp-publisher installed"
 
       - name: Authenticate with registry (DNS auth)
-        if: steps.registry.outputs.needs_publish == 'true'
+        if: steps.plan.outputs.release_needed == 'true' && steps.registry.outputs.needs_publish == 'true'
         env:
           PRIVATE_KEY: ${{ secrets.MCP_PUBLISHER_PRIVATE_KEY }}
         run: |
@@ -160,11 +182,12 @@ jobs:
           mcp-publisher login dns --domain murphys-laws.com --private-key "$PRIVATE_KEY"
 
       - name: Publish to MCP Registry
-        if: steps.registry.outputs.needs_publish == 'true'
+        if: steps.plan.outputs.release_needed == 'true' && steps.registry.outputs.needs_publish == 'true'
         working-directory: mcp
         run: mcp-publisher publish
 
       - name: Verify entry is live at expected version
+        if: steps.plan.outputs.release_needed == 'true'
         env:
           EXPECTED_NAME: ${{ steps.server.outputs.name }}
           EXPECTED_VERSION: ${{ steps.server.outputs.package_version }}
@@ -176,9 +199,8 @@ jobs:
           if [ "$NEEDS_PUBLISH" = "true" ]; then
             sleep 5
           fi
-          # The search endpoint may return multiple partial matches with
-          # non-guaranteed ordering, so filter by exact server.name match
-          # rather than trusting .servers[0].
+          # The search endpoint lists every published version; the tested helper picks the
+          # entry the registry flags as latest instead of trusting the first match.
           RESPONSE_FILE=$(mktemp)
           trap 'rm -f "$RESPONSE_FILE"' EXIT
           curl --fail --show-error --silent --location \
@@ -190,9 +212,7 @@ jobs:
             --max-time 30 \
             --output "$RESPONSE_FILE" \
             "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}&version=latest"
-          LIVE_VERSION=$(jq -r --arg name "$EXPECTED_NAME" \
-            'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""' \
-            "$RESPONSE_FILE")
+          LIVE_VERSION=$(node --experimental-strip-types scripts/mcp-registry-state.ts "$RESPONSE_FILE" "$EXPECTED_NAME" "$EXPECTED_VERSION" | sed -n 's/^live_version=//p')
           if [ -z "$LIVE_VERSION" ]; then
             echo "::error::No registry entry found for '$EXPECTED_NAME'"
             exit 1
