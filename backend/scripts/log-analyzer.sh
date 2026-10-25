@@ -6,7 +6,6 @@
 # Should be run daily via cron
 #############################################################################
 
-ALERT_EMAIL="ravidor@gmail.com"
 LOG_FILE="${LOG_ANALYZER_LOG:-/var/log/log-analyzer.log}"
 REPORT_FILE="/tmp/log-analysis-$(date +%Y-%m-%d).txt"
 OUTPUT_FORMAT="text"

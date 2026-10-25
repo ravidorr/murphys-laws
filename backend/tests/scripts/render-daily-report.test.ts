@@ -1,15 +1,17 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
+import { scratchDir } from '../helpers/shell-sandbox.ts';
 import {
   ADMIN_UI_PATH,
   buildAdminUrl,
   buildPendingApprovalsSection,
   collectDailyReport,
   countPendingApprovals,
-  loadBaseUrlFromEnvFiles,
+  loadConfigFromEnvFiles,
+  reportRecipient,
+  runCli,
   logCollectorError,
   parsePm2Jlist,
   renderHtmlReport,
@@ -75,7 +77,7 @@ describe('collectDailyReport collector failures', () => {
       throw new Error('command unavailable');
     });
     const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-    const repoRoot = mkdtempSync(path.join(tmpdir(), 'daily-report-'));
+    const repoRoot = scratchDir('daily-report-');
     // Sunday the 1st exercises the weekly and monthly collectors too.
     collectDailyReport({ repoRoot, now: new Date(Date.UTC(2026, 1, 1)) });
     const logged = write.mock.calls.map(([chunk]) => String(chunk));
@@ -217,7 +219,7 @@ describe('buildPendingApprovalsSection', () => {
 
 describe('daily report pending approvals', () => {
   function liveReport(sqliteResult: string | Error, baseUrl = 'https://example.com', withDb = true) {
-    const repoRoot = mkdtempSync(path.join(tmpdir(), 'daily-report-pending-'));
+    const repoRoot = scratchDir('daily-report-pending-');
     mkdirSync(path.join(repoRoot, 'backend'));
     if (withDb) {
       writeFileSync(path.join(repoRoot, 'backend/murphys.db'), '');
@@ -276,9 +278,9 @@ describe('daily report pending approvals', () => {
   });
 });
 
-describe('loadBaseUrlFromEnvFiles', () => {
+describe('loadConfigFromEnvFiles', () => {
   function repoWith(files: Record<string, string>) {
-    const repoRoot = mkdtempSync(path.join(tmpdir(), 'daily-report-env-'));
+    const repoRoot = scratchDir('daily-report-env-');
     mkdirSync(path.join(repoRoot, 'backend'));
     for (const [name, content] of Object.entries(files)) {
       writeFileSync(path.join(repoRoot, name), content);
@@ -286,42 +288,154 @@ describe('loadBaseUrlFromEnvFiles', () => {
     return repoRoot;
   }
 
-  it('reads BASE_URL from the root .env', () => {
+  it('reads BASE_URL, ALERT_EMAIL and EMAIL_TO from the root .env', () => {
     const env: NodeJS.ProcessEnv = {};
-    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://root.example.com\n' }), env);
-    expect(env.BASE_URL).toBe('https://root.example.com');
-  });
-
-  it('falls back to backend/.env and lets the root file win', () => {
-    const env: NodeJS.ProcessEnv = {};
-    loadBaseUrlFromEnvFiles(
-      repoWith({ '.env': 'OTHER=1\n', 'backend/.env': 'BASE_URL=https://backend.example.com\n' }),
+    loadConfigFromEnvFiles(
+      repoWith({ '.env': 'BASE_URL=https://root.example.com\nALERT_EMAIL=alerts@example.com\nEMAIL_TO=admin@example.com\n' }),
       env,
     );
-    expect(env.BASE_URL).toBe('https://backend.example.com');
+    expect(env).toEqual({
+      BASE_URL: 'https://root.example.com',
+      ALERT_EMAIL: 'alerts@example.com',
+      EMAIL_TO: 'admin@example.com',
+    });
+  });
+
+  it('falls back to backend/.env and lets the root file win, key by key', () => {
+    const env: NodeJS.ProcessEnv = {};
+    loadConfigFromEnvFiles(
+      repoWith({ '.env': 'OTHER=1\n', 'backend/.env': 'BASE_URL=https://backend.example.com\nEMAIL_TO=admin@example.com\n' }),
+      env,
+    );
+    expect(env).toEqual({ BASE_URL: 'https://backend.example.com', EMAIL_TO: 'admin@example.com' });
+
     const both: NodeJS.ProcessEnv = {};
-    loadBaseUrlFromEnvFiles(
-      repoWith({ '.env': 'BASE_URL=https://root.example.com\n', 'backend/.env': 'BASE_URL=https://backend.example.com\n' }),
+    loadConfigFromEnvFiles(
+      repoWith({
+        '.env': 'BASE_URL=https://root.example.com\n',
+        'backend/.env': 'BASE_URL=https://backend.example.com\nEMAIL_TO=admin@example.com\n',
+      }),
       both,
     );
-    expect(both.BASE_URL).toBe('https://root.example.com');
+    expect(both).toEqual({ BASE_URL: 'https://root.example.com', EMAIL_TO: 'admin@example.com' });
   });
 
-  it('does not override an existing value or touch other variables', () => {
-    const env: NodeJS.ProcessEnv = { BASE_URL: 'https://already.example.com' };
-    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://root.example.com\nALERT_EMAIL=x@y.z\n' }), env);
-    expect(env).toEqual({ BASE_URL: 'https://already.example.com' });
-  });
-
-  it('leaves env untouched when files are missing or have no BASE_URL', () => {
+  it('skips a blank value in the first file and uses the next one', () => {
     const env: NodeJS.ProcessEnv = {};
-    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'OTHER=1\n' }), env);
+    loadConfigFromEnvFiles(repoWith({ '.env': 'EMAIL_TO=\n', 'backend/.env': 'EMAIL_TO=admin@example.com\n' }), env);
+    expect(env.EMAIL_TO).toBe('admin@example.com');
+  });
+
+  it('does not override a non-blank existing value or touch other variables', () => {
+    const env: NodeJS.ProcessEnv = { BASE_URL: 'https://already.example.com' };
+    loadConfigFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://root.example.com\nOTHER=x\nEMAIL_TO=admin@example.com\n' }), env);
+    expect(env).toEqual({ BASE_URL: 'https://already.example.com', EMAIL_TO: 'admin@example.com' });
+  });
+
+  it('replaces a blank existing value', () => {
+    const env: NodeJS.ProcessEnv = { EMAIL_TO: '  ' };
+    loadConfigFromEnvFiles(repoWith({ '.env': 'EMAIL_TO=admin@example.com\n' }), env);
+    expect(env.EMAIL_TO).toBe('admin@example.com');
+  });
+
+  it('leaves env untouched when files are missing or hold none of the settings', () => {
+    const env: NodeJS.ProcessEnv = {};
+    loadConfigFromEnvFiles(repoWith({ '.env': 'OTHER=1\n' }), env);
+    expect(env).toEqual({});
+    loadConfigFromEnvFiles(scratchDir('daily-report-empty-'), env);
     expect(env).toEqual({});
   });
 
   it('defaults to process.env', () => {
     vi.stubEnv('BASE_URL', '');
-    loadBaseUrlFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://proc.example.com\n' }));
+    loadConfigFromEnvFiles(repoWith({ '.env': 'BASE_URL=https://proc.example.com\n' }));
     expect(process.env.BASE_URL).toBe('https://proc.example.com');
+  });
+});
+
+describe('reportRecipient', () => {
+  it('sends the live report to ALERT_EMAIL, then EMAIL_TO', () => {
+    expect(reportRecipient({ ALERT_EMAIL: 'alerts@example.com', EMAIL_TO: 'admin@example.com' }, false)).toBe('alerts@example.com');
+    expect(reportRecipient({ EMAIL_TO: 'admin@example.com' }, false)).toBe('admin@example.com');
+  });
+
+  it('has no built-in address: a live report with nothing configured has no recipient', () => {
+    expect(reportRecipient({}, false)).toBeNull();
+    expect(reportRecipient({ ALERT_EMAIL: ' ', EMAIL_TO: '' }, false)).toBeNull();
+  });
+
+  it('sends a --test-email report only to DAILY_REPORT_TEST_RECIPIENT, never to the alert address', () => {
+    const env = { DAILY_REPORT_TEST_RECIPIENT: ' tester@example.com ', ALERT_EMAIL: 'alerts@example.com', EMAIL_TO: 'admin@example.com' };
+    expect(reportRecipient(env, true)).toBe('tester@example.com');
+    expect(reportRecipient({ ALERT_EMAIL: 'alerts@example.com' }, true)).toBeNull();
+    expect(reportRecipient({ DAILY_REPORT_TEST_RECIPIENT: '' }, true)).toBeNull();
+  });
+});
+
+describe('runCli', () => {
+  function fakeSendmail(exitCode = 0) {
+    const dir = scratchDir('daily-report-sendmail-');
+    const log = path.join(dir, 'sendmail.log');
+    const script = path.join(dir, 'sendmail');
+    writeFileSync(script, `#!/bin/bash\n{ echo "ARGS: $*"; cat; } > "$SENDMAIL_LOG"\necho "sendmail said no" >&2\nexit ${exitCode}\n`);
+    chmodSync(script, 0o755);
+    return { script, log, read: () => { try { return readFileSync(log, 'utf8'); } catch { return ''; } } };
+  }
+
+  it('fails before collecting anything when a live report has no recipient', () => {
+    const sendmail = fakeSendmail();
+    expect(() => runCli([], { env: { SENDMAIL_LOG: sendmail.log }, sendmailPath: sendmail.script })).toThrow(
+      'No alert recipient. Set ALERT_EMAIL or EMAIL_TO',
+    );
+    expect(execFileSync).not.toHaveBeenCalled();
+    expect(sendmail.read()).toBe('');
+  });
+
+  it('needs DAILY_REPORT_TEST_RECIPIENT for --test-email, even when an alert address is set', () => {
+    const sendmail = fakeSendmail();
+    const env = { ALERT_EMAIL: 'alerts@example.com', EMAIL_TO: 'admin@example.com', SENDMAIL_LOG: sendmail.log };
+    expect(() => runCli(['--test-email'], { env, sendmailPath: sendmail.script })).toThrow(
+      'DAILY_REPORT_TEST_RECIPIENT must be set for --test-email',
+    );
+    expect(execFileSync).not.toHaveBeenCalled();
+    expect(sendmail.read()).toBe('');
+  });
+
+  it('sends a --test-email report only to the test recipient', () => {
+    const sendmail = fakeSendmail();
+    runCli(['--test-email'], {
+      env: {
+        DAILY_REPORT_TEST_RECIPIENT: 'tester@example.com',
+        ALERT_EMAIL: 'alerts@example.com',
+        EMAIL_TO: 'admin@example.com',
+        SENDMAIL_LOG: sendmail.log,
+      },
+      sendmailPath: sendmail.script,
+    });
+    const sent = sendmail.read();
+    expect(sent).toContain('ARGS: -t tester@example.com');
+    expect(sent).toContain('To: tester@example.com');
+    expect(sent).not.toContain('alerts@example.com');
+    expect(sent).not.toContain('admin@example.com');
+  });
+
+  it('raises the error text sendmail gives when it fails', () => {
+    const sendmail = fakeSendmail(75);
+    expect(() =>
+      runCli(['--test-email'], {
+        env: { DAILY_REPORT_TEST_RECIPIENT: 'tester@example.com', SENDMAIL_LOG: sendmail.log },
+        sendmailPath: sendmail.script,
+      }),
+    ).toThrow('sendmail said no');
+  });
+
+  it('says why sendmail could not be started at all, instead of "exited with code unknown"', () => {
+    const missing = path.join(scratchDir('daily-report-sendmail-'), 'no-such-sendmail');
+    expect(() =>
+      runCli(['--test-email'], {
+        env: { DAILY_REPORT_TEST_RECIPIENT: 'tester@example.com' },
+        sendmailPath: missing,
+      }),
+    ).toThrow(`Could not run ${missing}: spawnSync ${missing} ENOENT`);
   });
 });

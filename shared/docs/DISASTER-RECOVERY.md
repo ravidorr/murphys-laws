@@ -248,18 +248,19 @@ EOF
 1. **Configure SSL certificate**:
  ```bash
  certbot --nginx -d murphys-laws.com -d www.murphys-laws.com \
- --non-interactive --agree-tos --email ravidor@gmail.com
+ --non-interactive --agree-tos --email you@example.com
  ```
 
 1. **Install monitoring scripts**:
  ```bash
  # Copy scripts
- cp scripts/daily-report.sh /usr/local/bin/daily-report.sh
- cp scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
- cp scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh
- cp scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh
- cp scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh
- cp scripts/log-analyzer.sh /usr/local/bin/log-analyzer.sh
+ cp backend/scripts/alert-email.sh /usr/local/bin/alert-email.sh
+ cp backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh
+ cp backend/scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
+ cp backend/scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh
+ cp backend/scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh
+ cp backend/scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh
+ cp backend/scripts/log-analyzer.sh /usr/local/bin/log-analyzer.sh
 
  # Make executable
  chmod +x /usr/local/bin/*.sh
@@ -292,7 +293,7 @@ The daily report uses `backend/scripts/render-daily-report.ts` for multipart HTM
 plain-text delivery. After deploy, validate formatting with:
 
 ```bash
-sudo DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+sudo DAILY_REPORT_TEST_RECIPIENT=you@example.com \
   /usr/local/bin/daily-report.sh --test-email
 ```
 

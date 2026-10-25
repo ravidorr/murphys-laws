@@ -107,6 +107,21 @@ async function deploy(): Promise<void> {
   );
 
   log('\nUpdating server maintenance scripts...', 'blue');
+  // Sourced by the monitoring scripts below to resolve the alert address. They fall back to the repo
+  // copy, but the installed one is preferred, so a failed copy here (or of the scripts themselves, which
+  // would leave an old version running) must stop the deploy instead of being ignored
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/alert-email.sh /usr/local/bin/alert-email.sh && sudo chmod +x /usr/local/bin/alert-email.sh"`,
+    'Updating alert email helper'
+  );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/health-monitor.sh /usr/local/bin/health-monitor.sh && sudo chmod +x /usr/local/bin/health-monitor.sh"`,
+    'Updating health monitor script'
+  );
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh && sudo chmod +x /usr/local/bin/ssl-monitor.sh"`,
+    'Updating SSL monitor script'
+  );
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
     'Updating daily report script'
@@ -116,7 +131,7 @@ async function deploy(): Promise<void> {
     'Updating backup script'
   );
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/test-backup-restore.sh /usr/local/bin/test-backup-restore.sh 2>/dev/null && sudo chmod +x /usr/local/bin/test-backup-restore.sh || true"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/test-backup-restore.sh /usr/local/bin/test-backup-restore.sh && sudo chmod +x /usr/local/bin/test-backup-restore.sh"`,
     'Updating backup restore test script'
   );
   exec(
@@ -124,7 +139,7 @@ async function deploy(): Promise<void> {
     'Updating performance tracker script'
   );
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/cost-optimization-report.sh || true"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh && sudo chmod +x /usr/local/bin/cost-optimization-report.sh"`,
     'Updating cost optimization report script'
   );
   exec(
@@ -136,7 +151,7 @@ async function deploy(): Promise<void> {
     'Updating log analyzer script'
   );
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh 2>/dev/null && sudo chmod +x /usr/local/bin/vulnerability-scanner.sh || true"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh && sudo chmod +x /usr/local/bin/vulnerability-scanner.sh"`,
     'Updating vulnerability scanner script'
   );
   exec(

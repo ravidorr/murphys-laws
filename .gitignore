@@ -102,3 +102,7 @@ android/app/src/main/java/com/murphyslaws/ui/theme/Tokens.kt
 android/app/src/main/res/values/colors.xml
 android/app/src/main/res/values/dimens.xml
 android/app/src/main/res/values-night/colors.xml
+
+# SQLite write-ahead log sidecars created while a database is open; never track them
+*.db-shm
+*.db-wal

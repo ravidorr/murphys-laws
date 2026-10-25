@@ -13,7 +13,20 @@ HEALTH_CHECK_FAILURES="/var/tmp/health-check-failures"
 
 # Configuration
 MAX_FAILURES=3  # Restart after 3 consecutive failures
-ALERT_EMAIL="ravidor@gmail.com"
+# Load the shared alert helper from beside this script (following symlinks), else from the repo copy;
+# if neither exists, stop rather than carry on and lose every alert silently.
+_alert_self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+_alert_helper="$(dirname "$_alert_self")/alert-email.sh"
+[ -f "$_alert_helper" ] || _alert_helper="${REPO_ROOT:-/root/murphys-laws}/backend/scripts/alert-email.sh"
+# The helper's existence is tested before sourcing it so a missing file is always handled here, whatever
+# shell options are set (a POSIX-mode shell exits as soon as `source` fails).
+# shellcheck source=alert-email.sh
+if [ ! -f "$_alert_helper" ] || ! source "$_alert_helper"; then
+    echo "FATAL: cannot load alert-email.sh (looked beside $0 and under \${REPO_ROOT:-/root/murphys-laws}); alerts would be lost" >&2
+    logger -t murphys-alerts -p user.err -- "FATAL: $(basename "$0") cannot load alert-email.sh" 2>/dev/null
+    exit 1
+fi
+ALERT_EMAIL="$(resolve_alert_email)"
 
 # Optional config overrides (kept out of the repo so secrets like the dead-man-switch
 # UUID stay off public git history). Currently recognized:
@@ -61,7 +74,27 @@ reset_failure_count() {
 send_alert() {
     local subject="$1"
     local body="$2"
-    echo "$body" | mail -s "[Murphy's Laws] $subject" "$ALERT_EMAIL"
+    local mail_status=0
+    echo "$body" | send_alert_mail "[Murphy's Laws] $subject" || mail_status=$?
+    if [ "$mail_status" -eq 0 ]; then
+        log "Alert sent: $subject"
+    else
+        log "ALERT NOT SENT ($(describe_alert_mail_status "$mail_status")): $subject"
+        ALERT_UNDELIVERED=1
+    fi
+    return "$mail_status"
+}
+
+# Runs the TypeScript health check, preferring the locally installed tsx (deploys run `npm ci` in backend/).
+# Exit codes: 0 healthy, 1 a check failed, 2 the check is misconfigured (not an outage), 3 only warnings
+# and the check's own alert email was not delivered.
+run_health_check() {
+    local tsx_bin="$PROJECT_DIR/backend/node_modules/.bin/tsx"
+    if [ -x "$tsx_bin" ]; then
+        "$tsx_bin" backend/scripts/health-check.ts
+    else
+        npx --yes tsx backend/scripts/health-check.ts
+    fi
 }
 
 # Run health check
@@ -70,13 +103,31 @@ log "Running health check monitor"
 cd "$PROJECT_DIR" || exit 1
 
 # Run the health check script
-if node backend/scripts/health-check.mjs > /tmp/health-check-output.txt 2>&1; then
+health_check_exit_code=0
+run_health_check > /tmp/health-check-output.txt 2>&1 || health_check_exit_code=$?
+
+if [ "$health_check_exit_code" -eq 0 ] || [ "$health_check_exit_code" -eq 3 ]; then
     log "Health check passed"
+    if [ "$health_check_exit_code" -eq 3 ]; then
+        log "Warning: the health check could not deliver its own alert email: $(cat /tmp/health-check-output.txt)"
+    fi
     reset_failure_count
     ping_deadman
     exit 0
+elif [ "$health_check_exit_code" -eq 2 ]; then
+    # A configuration problem (no SMTP settings or recipient) says nothing about the site, so it must
+    # not count towards a restart. Report it and leave the failure count alone.
+    health_check_output=$(cat /tmp/health-check-output.txt)
+    log "Health check is misconfigured (exit code: 2): $health_check_output"
+    send_alert "Health Check Misconfigured" \
+"The health check could not run because of a configuration problem. Services were not restarted.
+
+Output:
+$health_check_output
+
+Time: $(date)" || true
+    exit 2
 else
-    health_check_exit_code=$?
     health_check_output=$(cat /tmp/health-check-output.txt)
 
     log "Health check failed (exit code: $health_check_exit_code)"
@@ -120,14 +171,16 @@ Time: $(date)
 
 Please investigate the root cause of the failures."
 
-        log "Services restarted. Alert sent."
+        log "Services restarted."
 
         # Wait a bit and run health check again
         sleep 10
-        if node backend/scripts/health-check.mjs > /tmp/health-check-retest.txt 2>&1; then
+        retest_exit_code=0
+        run_health_check > /tmp/health-check-retest.txt 2>&1 || retest_exit_code=$?
+        if [ "$retest_exit_code" -eq 0 ] || [ "$retest_exit_code" -eq 3 ]; then
             log "Health check passed after restart"
             ping_deadman
-            exit 0
+            exit "$(delivery_exit_code 0)"
         else
             retest_output=$(cat /tmp/health-check-retest.txt)
             log "Health check still failing after restart"

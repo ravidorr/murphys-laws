@@ -62,29 +62,46 @@ This consolidated approach reduces email noise while providing comprehensive dai
 
 ```bash
 # From your local machine in the project directory
-scp backend/scripts/health-check.mjs ravidor@167.99.53.90:/tmp/
-scp scripts/health-monitor.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/alert-email.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/health-monitor.sh ravidor@167.99.53.90:/tmp/
 scp backend/scripts/performance-tracker.sh ravidor@167.99.53.90:/tmp/
 scp backend/scripts/analyze-resource-peaks.sh ravidor@167.99.53.90:/tmp/
 scp backend/config/operational-metrics-main-app.env.example ravidor@167.99.53.90:/tmp/
-scp scripts/ssl-monitor.sh ravidor@167.99.53.90:/tmp/
-scp scripts/vulnerability-scanner.sh ravidor@167.99.53.90:/tmp/
-scp scripts/log-analyzer.sh ravidor@167.99.53.90:/tmp/
-scp scripts/daily-report.sh ravidor@167.99.53.90:/tmp/
-scp scripts/cost-optimization-report.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/ssl-monitor.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/vulnerability-scanner.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/log-analyzer.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/daily-report.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/cost-optimization-report.sh ravidor@167.99.53.90:/tmp/
 ```
 
 #### 2. Install Scripts on Server
+
+The scripts have no built-in alert address. They email `ALERT_EMAIL`, or `EMAIL_TO` (the admin address the
+server already uses for notices) when that is not set, looking in the environment first and then in the
+`.env` files (`$ALERT_ENV_FILE` if set, then `/root/murphys-laws/.env`, then
+`/root/murphys-laws/backend/.env`; the deploy writes only `backend/.env`, from the repository secrets, and the
+deploy stops if neither `ALERT_EMAIL` nor `EMAIL_TO` is set). `health-check` also honors `HEALTH_CHECK_EMAIL_TO` first. Unlike the API, they do not
+fall back to `admin@murphys-laws.com`: with no address configured a script logs `ALERT NOT SENT` (or `Report NOT emailed`), warns on
+stderr and in syslog (`logger -t murphys-alerts`), and skips the email instead of failing. To use a different
+address, set the repository secret `ALERT_EMAIL` and deploy (a value typed into `backend/.env` by hand is
+overwritten by the next deploy; to keep one by hand, put it in a separate file and export `ALERT_ENV_FILE`
+pointing at it in the cron job). Every script that sends mail sources `alert-email.sh` from its own directory,
+so install it next to them as below (the GitHub deploy and `npm run deploy` both do; a script falls back to
+the repo copy under `backend/scripts/`); a script that cannot find either stops with `FATAL: cannot load alert-email.sh` rather than losing alerts quietly. The recipient can be a comma-separated list. `mail` exiting 0 only means the
+local mail system accepted the message, so check `mailq` if an alert you expect does not arrive. A script that
+could not deliver its alert or report exits with code `2` (when it would otherwise have succeeded) so cron
+notices; see `HEALTH-CHECK.md`.
 
 ```bash
 # SSH into the server
 ssh ravidor@167.99.53.90
 
-# Move health check script to project directory (it's a Node.js script)
-sudo cp /tmp/health-check.mjs /root/murphys-laws/backend/scripts/
-sudo chmod +x /root/murphys-laws/backend/scripts/health-check.mjs
+# The health check itself (backend/scripts/health-check.ts) ships with the deploy and is run from the
+# repo through tsx by health-monitor.sh; nothing to copy by hand.
 
 # Move shell scripts to /usr/local/bin
+# alert-email.sh is sourced by the other scripts; install it next to them (they fall back to the repo copy)
+sudo cp /tmp/alert-email.sh /usr/local/bin/
 sudo cp /tmp/health-monitor.sh /usr/local/bin/
 sudo cp /tmp/performance-tracker.sh /usr/local/bin/
 sudo cp /tmp/ssl-monitor.sh /usr/local/bin/
@@ -171,7 +188,7 @@ expose `--format json` for the renderer.
 After deploy, send an all-sections smoke test only to an explicit recipient:
 
 ```bash
-sudo DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+sudo DAILY_REPORT_TEST_RECIPIENT=you@example.com \
   /usr/local/bin/daily-report.sh --test-email
 ```
 
@@ -224,7 +241,7 @@ sudo systemctl reload nginx
 ```bash
 # Test health check
 cd /root/murphys-laws
-node backend/scripts/health-check.mjs
+npx tsx backend/scripts/health-check.ts
 
 # Expected: Should report frontend and API response times
 
@@ -306,7 +323,7 @@ After deployment, verify:
 ### Testing Email Alerts
 
 ```bash
-echo "Test from main droplet" | mail -s "Test Alert" ravidor@gmail.com
+echo "Test from main droplet" | mail -s "Test Alert" you@example.com
 ```
 
 ---
@@ -427,7 +444,7 @@ sudo systemctl status postfix
 tail -100 /var/log/mail.log
 
 # Test email manually
-echo "Test" | mail -s "Test" ravidor@gmail.com
+echo "Test" | mail -s "Test" you@example.com
 
 # Verify SMTP configuration
 cat /etc/postfix/sasl_passwd
