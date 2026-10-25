@@ -436,6 +436,6 @@ describe('runCli', () => {
         env: { DAILY_REPORT_TEST_RECIPIENT: 'tester@example.com' },
         sendmailPath: missing,
       }),
-    ).toThrow(`Could not run ${missing}: spawnSync ${missing} ENOENT`);
+    ).toThrow(/Could not run .*no-such-sendmail: .*\(PATH: /);
   });
 });

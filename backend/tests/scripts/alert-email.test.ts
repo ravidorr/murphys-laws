@@ -32,7 +32,7 @@ describe('resolve_alert_email', () => {
     expect(resolve(box, { ALERT_EMAIL: 'env-alert@example.com' })).toBe('env-alert@example.com');
   });
 
-  it('checks ALERT_ENV_FILE, then the root .env, then backend/.env, the order the API server and the TypeScript scripts use', () => {
+  it('checks ALERT_ENV_FILE, then the root .env, then backend/.env, the order the TypeScript scripts use too', () => {
     const box = sandbox({ 'backend/.env': 'EMAIL_TO=backend@example.com\n', '.env': 'EMAIL_TO=root@example.com\n' });
     const custom = path.join(box.root, 'custom.env');
     writeFileSync(custom, 'EMAIL_TO=custom@example.com\n');
@@ -72,6 +72,11 @@ describe('resolve_alert_email', () => {
     ['an empty quoted value', 'EMAIL_TO=""\n'],
     ['a CRLF line ending after a quoted value', 'EMAIL_TO="a@example.com"\r\n'],
     ['a blank value followed by a real one', 'EMAIL_TO=\nEMAIL_TO=b@example.com\n'],
+    ['a commented-out key above the real one', '# EMAIL_TO=old@example.com\nEMAIL_TO=a@example.com\n'],
+    ['a commented-out key below the real one', 'EMAIL_TO=a@example.com\n# EMAIL_TO=old@example.com\n'],
+    ['a commented-out key with no space after the #', '#EMAIL_TO=old@example.com\nEMAIL_TO=a@example.com\n'],
+    ['a longer key that ends with the name', 'MY_EMAIL_TO=wrong@example.com\nEMAIL_TO=a@example.com\n'],
+    ['a key that is only commented out', '# EMAIL_TO=old@example.com\n'],
   ])('reads %s the same way dotenv does', (_name, content) => {
     const fromDotenv = (dotenv.parse(content).EMAIL_TO ?? '').trim();
     expect(resolve(sandbox({ 'backend/.env': content }))).toBe(fromDotenv);
@@ -89,6 +94,11 @@ describe('resolve_alert_email', () => {
     writeFileSync(path.join(valueBorne.root, 'backend/.env'), `EMAIL_TO=$(touch ${valueMarker})@example.com\n`);
     expect(resolve(valueBorne)).toBe(`$(touch ${valueMarker})@example.com`);
     expect(existsSync(valueMarker)).toBe(false);
+  });
+
+  it('still reads the address from a file that has a stray binary byte elsewhere', () => {
+    const box = sandbox({ 'backend/.env': 'BINARY=a\u0000b\nEMAIL_TO=a@example.com\n' });
+    expect(resolve(box)).toBe('a@example.com');
   });
 
   it('ignores an ALERT_ENV_FILE that does not exist', () => {
@@ -116,14 +126,17 @@ describe('send_alert_mail', () => {
     const box = sandbox();
     const result = send(box, '"Disk full"');
     expect(result.stdout).toBe('status=0\n');
-    expect(readLog(box.mailLog)).toBe('ARGS: -s Disk full -- a@example.com\ndetails here\n');
+    expect(readLog(box.mailLog)).toBe(
+      'ARGS: -s Disk full -- a@example.com\nARG<-s>\nARG<Disk full>\nARG<-->\nARG<a@example.com>\ndetails here\n',
+    );
     expect(readLog(box.loggerLog)).toBe('');
   });
 
   it('passes a subject with quotes, percent signs or a leading dash as one argument', () => {
     const box = sandbox();
     send(box, `"-x 100% 'quoted' \\"double\\""`);
-    expect(readLog(box.mailLog)).toContain(`ARGS: -s -x 100% 'quoted' "double" -- a@example.com`);
+    // The whole subject is one argument, then the option terminator, then the address.
+    expect(readLog(box.mailLog)).toContain(`ARG<-s>\nARG<-x 100% 'quoted' "double">\nARG<-->\nARG<a@example.com>\n`);
   });
 
   it('drops the message with status 3, warning on stderr and in syslog, when there is no recipient', () => {
@@ -154,7 +167,10 @@ describe('send_alert_mail', () => {
     const box = sandbox();
     const result = send(box, '"Disk full"', {}, 'a@example.com, b@example.com ,c@example.com,');
     expect(result.stdout).toBe('status=0\n');
-    expect(readLog(box.mailLog)).toBe('ARGS: -s Disk full -- a@example.com b@example.com c@example.com\ndetails here\n');
+    expect(readLog(box.mailLog)).toBe(
+      'ARGS: -s Disk full -- a@example.com b@example.com c@example.com\n' +
+        'ARG<-s>\nARG<Disk full>\nARG<-->\nARG<a@example.com>\nARG<b@example.com>\nARG<c@example.com>\ndetails here\n',
+    );
   });
 
   it.each([
@@ -187,7 +203,8 @@ describe('send_alert_mail', () => {
     symlinkSync('/bin/cat', path.join(bare, 'cat'));
     const result = bash('PATH="$BARE_BIN"; ALERT_EMAIL=a@example.com; send_alert_mail "Disk full"; echo "status=$?"', box, { BARE_BIN: bare }, 'x\n');
     expect(result.stdout).toBe('status=127\n');
-    expect(result.stderr).toContain('mail command is not installed');
+    expect(result.stderr).toContain('mail command is not installed or not on PATH');
+    expect(result.stderr).toContain(bare);
   });
 
   it('survives being called with no arguments under set -u, and still drains stdin', () => {

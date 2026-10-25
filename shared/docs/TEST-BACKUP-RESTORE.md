@@ -234,7 +234,7 @@ Status: Success / Failed
 EOF
 
 # Email report
-cat /tmp/recovery-drill-report.txt | mail -s "[Murphy's Laws] Disaster Recovery Drill Complete" you@example.com
+cat /tmp/recovery-drill-report.txt | mail -s "[Murphy's Laws] Disaster Recovery Drill Complete" <your-email>
 ```
 
 ---

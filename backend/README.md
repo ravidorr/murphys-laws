@@ -93,7 +93,7 @@ Environment variables (`.env`):
 - `SMTP_PASS` - Email password
 - `EMAIL_FROM` - Sender address, also what submitters see on thank-you emails (default: `noreply@murphys-laws.com`)
 - `EMAIL_TO` - Receives new-submission notices (default: `admin@murphys-laws.com`). The monitoring scripts and the daily report also email it when `ALERT_EMAIL` is not set, and have no built-in fallback
-- `ALERT_EMAIL` - Address for all monitoring email and the daily report (optional; default: `EMAIL_TO`)
+- `ALERT_EMAIL` - Address for all monitoring email and the daily report (optional; default: `EMAIL_TO`). The shell scripts and `health-check.ts` also accept a comma-separated list
 - `HEALTH_CHECK_EMAIL_TO` - Address for `health-check.ts` and `health-check.sh` alerts only (optional; default: `ALERT_EMAIL`, then `EMAIL_TO`)
 - `SENTRY_DSN` - Sentry error tracking DSN (optional, for production monitoring)
 - `ADMIN_API_TOKEN` - Bearer token (32+ characters) enabling the admin moderation API and page (optional)

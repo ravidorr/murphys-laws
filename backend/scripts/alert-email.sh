@@ -24,19 +24,20 @@
 # for notices). Each name is looked up in the environment first, then in the server's .env files,
 # because cron does not load them. The files are checked in the order the API server uses (root .env, then
 # backend/.env) with an extra override file first, and the first file with a value wins. The TypeScript
-# scripts (health-check.ts, the daily report) use the same files in the same order:
+# scripts (health-check.ts, the daily report) use the same files in the same order (the API server itself
+# does not read the override file):
 #   $ALERT_ENV_FILE (an extra file for overrides), $REPO_ROOT/.env, $REPO_ROOT/backend/.env
 # (REPO_ROOT defaults to /root/murphys-laws). The files are parsed like the dotenv package parses the
 # usual forms (plain, quoted, export, trailing comments), not the rarer ones such as backtick quotes or
-# escapes in double quotes, and are never sourced, so a secret containing shell characters cannot run anything. It prints
-# nothing, and still succeeds, when no address is configured.
+# escapes in double quotes, and are never sourced, so a secret containing shell characters cannot run
+# anything. It prints nothing, and still succeeds, when no address is configured.
 #
 # send_alert_mail returns 0 when mail accepted the message, 3 when there is no recipient, 4 when the
 # recipient is not a plausible address, 127 when `mail` is missing, and mail's own status otherwise.
 # Callers decide what a failure means; on a drop or a failure it also writes to syslog (when `logger`
 # exists) so the problem is visible somewhere durable, not only on a cron stderr nobody reads.
 #
-# The recipient may be a single address or a comma-separated list ("a@x.com, b@y.com"); spaces around the
+# The recipient may be a single address or a comma-separated list ("a@example.com, b@example.com"); spaces around the
 # commas are ignored and every address is checked on its own.
 #
 # Status 0 only means `mail` handed the message to the local mail system. If that system is down or
@@ -60,7 +61,9 @@ _alert_trim() {
 # after it, such as a comment, is dropped), and an unquoted value ends at the first `#`.
 _alert_env_file_value() {
   local file="$1" key="$2" line value
-  line="$(grep -E "^[[:space:]]*(export[[:space:]]+)?${key}[[:space:]]*=" "$file" 2>/dev/null | tail -n 1)"
+  # -a keeps a file with a stray binary byte readable as text (otherwise some greps answer "Binary file
+  # matches" or silently match nothing); a real read error is left visible on stderr.
+  line="$(grep -aE "^[[:space:]]*(export[[:space:]]+)?${key}[[:space:]]*=" "$file" | tail -n 1)"
   [ -n "$line" ] || return 0
   value="$(_alert_trim "${line#*=}")"
   case "$value" in
@@ -138,7 +141,7 @@ send_alert_mail() {
     return 4
   fi
   if ! command -v mail >/dev/null 2>&1; then
-    _alert_problem "the mail command is not installed; not emailing: $subject"
+    _alert_problem "the mail command is not installed or not on PATH ($PATH); not emailing: $subject"
     cat >/dev/null
     return 127
   fi

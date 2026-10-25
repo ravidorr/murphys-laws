@@ -9,12 +9,19 @@ export const helper = path.join(scriptsDir, 'alert-email.sh');
 
 const scratchRoots: string[] = [];
 
-// Every scratch directory made through this helper is removed when the test file finishes.
-afterAll(() => {
+const removeScratchRoots = () => {
   for (const dir of scratchRoots.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
-});
+};
+
+// Every scratch directory made through this helper is removed when the test file finishes. The exit hook
+// is a backstop for runs that share this module between files (no isolation).
+afterAll(removeScratchRoots);
+process.on('exit', removeScratchRoots);
+
+/** Upper bound for a script under test, so one that hangs fails the test instead of the whole run. */
+const SCRIPT_TIMEOUT_MS = 20_000;
 
 /** A new temporary directory that is deleted after the test file has run. */
 export function scratchDir(prefix: string): string {
@@ -45,7 +52,7 @@ export function sandbox(files: Record<string, string> = {}): Sandbox {
   mkdirSync(bin);
   const mailLog = path.join(root, 'mail.log');
   const loggerLog = path.join(root, 'logger.log');
-  writeFileSync(path.join(bin, 'mail'), '#!/bin/bash\n{ echo "ARGS: $*"; cat; } >> "$MAIL_LOG"\nexit "${MAIL_EXIT:-0}"\n');
+  writeFileSync(path.join(bin, 'mail'), '#!/bin/bash\n{ echo "ARGS: $*"; for arg in "$@"; do echo "ARG<$arg>"; done; cat; } >> "$MAIL_LOG"\nexit "${MAIL_EXIT:-0}"\n');
   writeFileSync(path.join(bin, 'logger'), '#!/bin/bash\necho "$*" >> "$LOGGER_LOG"\n');
   chmodSync(path.join(bin, 'mail'), 0o755);
   chmodSync(path.join(bin, 'logger'), 0o755);
@@ -79,6 +86,8 @@ export function bash(
   writeFileSync(file, `${prelude}\n${script}\n`);
   return spawnSync('bash', [file], {
     encoding: 'utf8',
+    timeout: SCRIPT_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
     input,
     env: {
       PATH: `${box.bin}:/usr/bin:/bin`,
@@ -100,6 +109,8 @@ export function runFile(
 ): SpawnSyncReturns<string> {
   return spawnSync('bash', [file, ...args], {
     encoding: 'utf8',
+    timeout: SCRIPT_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
     env: {
       PATH: `${box.bin}:/usr/bin:/bin`,
       // Pinned so date-stamped state files have the same name in the test and in the script.
@@ -132,13 +143,17 @@ export function throughFunction(name: string, fn: string): string {
     throw new Error(`${name} has no ${fn}() function`);
   }
   const end = lines.findIndex((line, index) => index > start && line === '}');
+  if (end === -1) {
+    throw new Error(`${name}: ${fn}() has no closing brace at the start of a line`);
+  }
   return `${lines.slice(0, end + 1).join('\n')}\n`;
 }
 
 /**
  * Installs a piece of a script into the sandbox the way the deploy installs scripts, next to a copy of
- * the helper, with its hard-coded /var/log, /var/tmp and /tmp locations redirected into the sandbox. Returns the
- * path of the installed file.
+ * the helper, with its hard-coded /var/log/ and /var/tmp/ locations redirected into the sandbox, and
+ * /tmp/ too when it directly follows a double quote (an unquoted /tmp/ is left alone). Returns the path
+ * of the installed file.
  */
 export function install(box: Sandbox, name: string, text: string, { withHelper = true } = {}): string {
   const installDir = path.join(box.root, 'usr-local-bin');

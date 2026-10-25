@@ -15,7 +15,8 @@ export function resolveAlertRecipient(
   env: NodeJS.ProcessEnv,
   keys: readonly string[] = ALERT_RECIPIENT_KEYS,
 ): string | null {
-  // A blank value counts as unset: the deploy writes "KEY=" (empty) for a secret that is not set.
+  // A blank value counts as unset: `EMAIL_TO` can be written empty by the deploy, and a hand-edited .env can
+  // hold an empty or whitespace-only value.
   for (const key of keys) {
     const value = env[key]?.trim();
     if (value) {
@@ -23,6 +24,31 @@ export function resolveAlertRecipient(
     }
   }
   return null;
+}
+
+/**
+ * Splits a recipient setting into addresses: one address or a comma-separated list ("a@example.com, b@example.com"),
+ * spaces around the commas ignored. Every address is checked the way alert-email.sh checks them (must
+ * contain an @, no whitespace inside, must not start with "-", which a mail program would read as an
+ * option). Throws, naming the bad entry, so a script stops with a clear message instead of handing a bad
+ * address to nodemailer or sendmail.
+ */
+export function parseRecipientList(value: string): string[] {
+  const recipients: string[] = [];
+  for (const entry of value.split(',')) {
+    const address = entry.trim();
+    if (!address) {
+      continue;
+    }
+    if (address.startsWith('-') || /\s/.test(address) || !address.includes('@')) {
+      throw new Error(`'${address}' is not a valid email address (in the recipient setting '${value}')`);
+    }
+    recipients.push(address);
+  }
+  if (recipients.length === 0) {
+    throw new Error(`'${value}' holds no email address`);
+  }
+  return recipients;
 }
 
 /**
@@ -34,7 +60,17 @@ export function resolveAlertRecipient(
 export function fillEnvFromFiles(repoRoot: string, env: NodeJS.ProcessEnv, keys: readonly string[]): void {
   const files = [env.ALERT_ENV_FILE?.trim(), path.join(repoRoot, '.env'), path.join(repoRoot, 'backend/.env')]
     .filter((envFile): envFile is string => Boolean(envFile) && existsSync(envFile as string))
-    .map((envFile) => dotenv.parse(readFileSync(envFile)));
+    .flatMap((envFile) => {
+      try {
+        return [dotenv.parse(readFileSync(envFile))];
+      } catch (error) {
+        // An unreadable file (a directory, no permission) is skipped, as alert-email.sh skips it, instead of
+        // crashing a monitor; say so, because the recipient may then come from another file.
+        const reason = error instanceof Error ? error.message : String(error);
+        console.error(`WARNING: cannot read ${envFile} for the alert recipient (${reason}); skipping it`);
+        return [];
+      }
+    });
 
   for (const key of keys) {
     if (env[key]?.trim()) {

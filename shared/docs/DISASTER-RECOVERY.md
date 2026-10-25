@@ -214,6 +214,9 @@ SMTP_PORT=2525
 SMTP_USER=your-smtp-username
 SMTP_PASS=your-smtp-password
 EMAIL_FROM=alerts@murphys-laws.com
+# Where notices and monitoring alerts go. The monitoring scripts have no built-in address, so without
+# EMAIL_TO (or ALERT_EMAIL) a rebuilt server sends no alerts. Replace the placeholder.
+EMAIL_TO=<your-admin-email>
 EOF
  ```
 
@@ -248,7 +251,7 @@ EOF
 1. **Configure SSL certificate**:
  ```bash
  certbot --nginx -d murphys-laws.com -d www.murphys-laws.com \
- --non-interactive --agree-tos --email you@example.com
+ --non-interactive --agree-tos --email <your-email>
  ```
 
 1. **Install monitoring scripts**:
@@ -259,6 +262,8 @@ EOF
  cp backend/scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
  cp backend/scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh
  cp backend/scripts/ssl-monitor.sh /usr/local/bin/ssl-monitor.sh
+ cp backend/scripts/cost-optimization-report.sh /usr/local/bin/cost-optimization-report.sh
+ cp backend/scripts/test-backup-restore.sh /usr/local/bin/test-backup-restore.sh
  cp backend/scripts/vulnerability-scanner.sh /usr/local/bin/vulnerability-scanner.sh
  cp backend/scripts/log-analyzer.sh /usr/local/bin/log-analyzer.sh
 
@@ -293,7 +298,7 @@ The daily report uses `backend/scripts/render-daily-report.ts` for multipart HTM
 plain-text delivery. After deploy, validate formatting with:
 
 ```bash
-sudo DAILY_REPORT_TEST_RECIPIENT=you@example.com \
+sudo DAILY_REPORT_TEST_RECIPIENT=<your-email> \
   /usr/local/bin/daily-report.sh --test-email
 ```
 

@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import nodemailer, { type Transporter } from 'nodemailer';
-import { fillEnvFromFiles, resolveAlertRecipient } from './alert-recipient.ts';
+import { fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from './alert-recipient.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,7 +47,13 @@ if (!alertRecipient) {
   console.error('No alert recipient. Set HEALTH_CHECK_EMAIL_TO, ALERT_EMAIL or EMAIL_TO (the admin address used for notices).');
   process.exit(EXIT_CONFIG_ERROR);
 }
-const EMAIL_TO: string = alertRecipient;
+let EMAIL_TO: string[];
+try {
+  EMAIL_TO = parseRecipientList(alertRecipient);
+} catch (error) {
+  console.error(`Invalid alert recipient: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(EXIT_CONFIG_ERROR);
+}
 
 interface CheckResult {
   success: boolean;
