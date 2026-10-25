@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `.github/FUNDING.yml` so the repository shows a GitHub Sponsors button for `ravidorr`
+  (the button is driven by this file, not by `package.json`). Root bumped to `2.6.91`.
 - Admin "Sign in with GitHub" (#186). The admin page shows a sign-in button; an allowlisted GitHub
   login (`ADMIN_GITHUB_USERS`) gets an 8 hour signed session cookie (`HttpOnly`, `Secure`,
   `SameSite=Strict`, signed with `ADMIN_SESSION_SECRET`, stateless so rotating the secret signs
