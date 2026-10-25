@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-backend",
-  "version": "2.3.40",
+  "version": "2.3.41",
   "description": "Murphy's Laws API Server",
   "type": "module",
   "main": "src/server/api-server.ts",
@@ -46,11 +46,11 @@
     "@eslint/js": "^10.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.10.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^10.0.0",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }
