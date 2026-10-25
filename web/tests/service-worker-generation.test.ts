@@ -106,6 +106,47 @@ describe("service worker generation", () => {
     expect(sameOriginFallback).toBeGreaterThan(apiBypass);
   });
 
+  it("lets /admin navigations pass through to the backend-served moderation page", () => {
+    const source = renderServiceWorker({
+      revision: "test-revision",
+      urls: ["/", "/index.html"],
+    });
+    let fetchHandler: ((event: unknown) => void) | undefined;
+    const fakeSelf = {
+      location: { hostname: "murphys-laws.com", origin: "https://murphys-laws.com" },
+      addEventListener: (type: string, handler: (event: unknown) => void) => {
+        if (type === "fetch") fetchHandler = handler;
+      },
+    };
+    new Function("self", "caches", "fetch", source)(
+      fakeSelf,
+      { match: async () => undefined, open: async () => ({ put: async () => undefined }) },
+      async () => new Response("ok"),
+    );
+
+    const handled = (path: string): boolean => {
+      let responded = false;
+      fetchHandler?.({
+        request: {
+          method: "GET",
+          mode: "navigate",
+          url: `https://murphys-laws.com${path}`,
+        },
+        respondWith: () => {
+          responded = true;
+        },
+      });
+      return responded;
+    };
+
+    for (const path of ["/admin", "/admin/", "/admin?x=1"]) {
+      expect(handled(path), path).toBe(false);
+    }
+    for (const path of ["/", "/favorites", "/adminx", "/admin/other"]) {
+      expect(handled(path), path).toBe(true);
+    }
+  });
+
   it("changes the cache revision when an excluded SSG page changes content", () => {
     const directoryEntries = new Map<string, fs.Dirent[]>([
       ["/dist", [entry("index.html", "file"), entry("law", "directory")]],
