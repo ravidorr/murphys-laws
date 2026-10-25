@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Backend coverage no longer prints a `'const' declarations must be initialized` parse error: the
+  type declaration files (`backend/src/admin-ui/*.d.ts`) are now excluded from coverage like other
+  non-runtime files. They hold only types, and the totals are unchanged (100% statements, branches,
+  functions and lines). Backend bumped to `2.3.43`; root to `2.6.89`.
 - The MCP Release workflow now asks the registry for the latest version only
   (`version=latest`). The search endpoint lists every published version, so the first match
   could be an older release, which made the workflow try to re-publish an existing version

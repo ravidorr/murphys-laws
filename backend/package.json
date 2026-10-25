@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-backend",
-  "version": "2.3.42",
+  "version": "2.3.43",
   "description": "Murphy's Laws API Server",
   "type": "module",
   "main": "src/server/api-server.ts",
