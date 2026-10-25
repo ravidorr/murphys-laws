@@ -1,4 +1,4 @@
-import { checkAdminAuth } from '../middleware/admin-auth.ts';
+import { getAdminAccess } from '../middleware/admin-auth.ts';
 import { checkRateLimit } from '../middleware/rate-limit.ts';
 import { ADMIN_LAW_STATUSES, type AdminLawStatus, type AdminLawUpdate } from '../services/admin-laws.service.ts';
 import { getVoterIdentifier, readBody, sendJson, notFound, rateLimitExceeded, PayloadTooLargeError } from '../utils/http-helpers.ts';
@@ -89,14 +89,19 @@ export class AdminController {
   /**
    * Returns true when the request may proceed; otherwise the response has been sent.
    * Only failed logins are rate limited, so wrong-token traffic cannot lock out the real admin.
+   * A valid session without the CSRF header or origin is refused with 403 and is not counted as a failed login.
    */
   private authorize(req: any, res: any): boolean {
-    const auth = checkAdminAuth(req);
-    if (auth === 'disabled') {
+    const access = getAdminAccess(req);
+    if (access.status === 'disabled') {
       notFound(res, req);
       return false;
     }
-    if (auth === 'unauthorized') {
+    if (access.status === 'forbidden') {
+      this.fail(res, 403, 'Forbidden', req);
+      return false;
+    }
+    if (access.status === 'unauthorized') {
       const identifier = getVoterIdentifier(req);
       const rateLimit = checkRateLimit(identifier, 'admin-fail');
       if (!rateLimit.allowed) {

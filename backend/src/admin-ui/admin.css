@@ -114,6 +114,8 @@ main {
 }
 
 .connect,
+.session,
+.signin,
 .search,
 .toolbar,
 .tabs,
@@ -161,6 +163,21 @@ select {
 .tab {
   padding: var(--space-2) var(--space-4);
   cursor: pointer;
+}
+
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.token-fallback summary {
+  cursor: pointer;
+  color: var(--muted-fg);
+}
+
+.token-fallback .connect {
+  margin-top: var(--space-2);
 }
 
 .btn:disabled {

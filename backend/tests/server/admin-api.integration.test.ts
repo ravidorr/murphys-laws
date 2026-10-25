@@ -29,7 +29,7 @@ describe('admin API through the real server and migrated database', () => {
 
   let ip = '';
 
-  const request = (method: string, url: string, { token, body, raw, from }: { token?: string; body?: unknown; raw?: string; from?: string } = {}): Promise<Reply> =>
+  const request = (method: string, url: string, { token, body, raw, from, extra }: { token?: string; body?: unknown; raw?: string; from?: string; extra?: Record<string, string> } = {}): Promise<Reply> =>
     new Promise((resolve) => {
       const stream = new Readable({ read() {} });
       if (raw !== undefined) stream.push(raw);
@@ -37,6 +37,7 @@ describe('admin API through the real server and migrated database', () => {
       stream.push(null);
       const headers: Record<string, string> = { 'content-type': 'application/json', 'x-real-ip': from ?? ip };
       if (token) headers.authorization = `Bearer ${token}`;
+      Object.assign(headers, extra);
       const req = Object.assign(stream, { method, url, headers, socket: { remoteAddress: '127.0.0.1' } }) as unknown as IncomingMessage;
 
       let status = 0;
@@ -168,6 +169,36 @@ describe('admin API through the real server and migrated database', () => {
     process.env.ADMIN_API_TOKEN = TOKEN;
     createApiServer({ db: db as any });
     expect(console.log).toHaveBeenCalledWith('Admin API enabled');
+  });
+
+  it('logs whether GitHub sign-in is enabled, partly configured or off at startup', () => {
+    const oauth = {
+      GITHUB_OAUTH_CLIENT_ID: 'id',
+      GITHUB_OAUTH_CLIENT_SECRET: 'secret',
+      ADMIN_GITHUB_USERS: 'ravidorr',
+      ADMIN_SESSION_SECRET: 'z'.repeat(40),
+      BASE_URL: 'https://murphys-laws.com', // Vitest itself sets BASE_URL to '/'
+    };
+    try {
+      createApiServer({ db: db as any });
+      expect(console.log).not.toHaveBeenCalledWith('Admin GitHub sign-in enabled');
+      expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining('Admin GitHub sign-in disabled'));
+
+      Object.assign(process.env, oauth);
+      createApiServer({ db: db as any });
+      expect(console.log).toHaveBeenCalledWith('Admin GitHub sign-in enabled');
+
+      delete process.env.ADMIN_GITHUB_USERS;
+      createApiServer({ db: db as any });
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Admin GitHub sign-in disabled (incomplete)'));
+
+      process.env.ADMIN_GITHUB_USERS = 'ravidorr';
+      process.env.ADMIN_SESSION_SECRET = 'short';
+      createApiServer({ db: db as any });
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Admin GitHub sign-in disabled (session secret too short)'));
+    } finally {
+      for (const key of Object.keys(oauth)) delete process.env[key];
+    }
   });
 
   it('rejects malformed, empty and oversized request bodies', async () => {
@@ -318,6 +349,145 @@ describe('admin API through the real server and migrated database', () => {
       await vi.waitFor(() => expect(mockSendMail).toHaveBeenCalledTimes(1));
       expect(mockSendMail.mock.calls[0][0].to.address).toBe('zed@example.com');
       expect(mockSendMail.mock.calls[0][0].text).toContain('Hi Zed,');
+    });
+  });
+  describe('GitHub sign-in', () => {
+    const OAUTH = {
+      GITHUB_OAUTH_CLIENT_ID: 'client-id',
+      GITHUB_OAUTH_CLIENT_SECRET: 'client-secret',
+      ADMIN_GITHUB_USERS: 'ravidorr',
+      ADMIN_SESSION_SECRET: 'z'.repeat(40),
+      BASE_URL: 'https://murphys-laws.com',
+    };
+    const csrf = { 'x-admin-request': '1', origin: 'https://murphys-laws.com' };
+    const githubReply = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
+    const cookieOf = (reply: Reply, name: string) => {
+      const setCookie = ([] as string[]).concat(reply.headers['Set-Cookie'] as unknown as string[]);
+      const found = setCookie.find((cookie) => cookie.startsWith(`${name}=`));
+      return found ? found.split(';')[0] : undefined;
+    };
+
+    /** Runs the whole browser flow against the real server with GitHub stubbed, and returns the session cookie. */
+    const signIn = async (login = 'ravidorr') => {
+      const fetchStub = vi.fn(async (url: string) =>
+        githubReply(url.includes('access_token') ? { access_token: 'gho_abc' } : { login, id: 42 }));
+      vi.stubGlobal('fetch', fetchStub);
+      ({ server } = createApiServer({ db: db as any, emailService: smtp() }));
+
+      const start = await request('GET', '/api/v1/admin/auth/github');
+      expect(start.status).toBe(302);
+      const state = new URL(start.headers.Location).searchParams.get('state') as string;
+      const callback = await request('GET', `/api/v1/admin/auth/github/callback?code=abc&state=${state}`, {
+        extra: { cookie: cookieOf(start, 'admin_oauth_state') as string },
+      });
+      return { start, callback, state, fetchStub };
+    };
+
+    beforeEach(() => {
+      delete process.env.ADMIN_API_TOKEN;
+      Object.assign(process.env, OAUTH);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      for (const key of Object.keys(OAUTH)) delete process.env[key];
+    });
+
+    it('lets an allowlisted GitHub user moderate with the session cookie and no token', async () => {
+      const { callback } = await signIn();
+      expect(callback.status).toBe(302);
+      expect(callback.headers.Location).toBe('/admin');
+      const session = cookieOf(callback, 'admin_session') as string;
+      expect(session).toBeTruthy();
+
+      expect((await request('GET', '/api/v1/admin/auth/session', { extra: { cookie: session } })).json()).toEqual({
+        authenticated: true,
+        login: 'ravidorr',
+        oauth: true,
+      });
+
+      const list = await request('GET', '/api/v1/admin/laws?status=in_review', { extra: { cookie: session } });
+      expect(list.status).toBe(200);
+      const [{ updated_at }] = list.json().data;
+
+      const approved = await request('POST', `/api/v1/admin/laws/${lawId}`, {
+        body: { status: 'published', updated_at },
+        extra: { cookie: session, ...csrf },
+      });
+      expect(approved.status).toBe(200);
+      expect((await request('GET', `/api/v1/laws/${lawId}`)).status).toBe(200);
+    });
+
+    it('rejects a cookie-authenticated write that lacks the CSRF header or comes from another origin', async () => {
+      const session = cookieOf((await signIn()).callback, 'admin_session') as string;
+      const write = (extra: Record<string, string>) =>
+        request('POST', `/api/v1/admin/laws/${lawId}`, { body: { status: 'published' }, extra: { cookie: session, ...extra } });
+
+      expect((await write({})).status).toBe(403);
+      expect((await write({ origin: 'https://murphys-laws.com' })).status).toBe(403);
+      expect((await write({ 'x-admin-request': '1', origin: 'https://evil.example.com' })).status).toBe(403);
+      expect((await request('GET', `/api/v1/laws/${lawId}`)).status).toBe(404);
+    });
+
+    it('signs out: logout needs the CSRF header and clears the cookie', async () => {
+      const session = cookieOf((await signIn()).callback, 'admin_session') as string;
+      expect((await request('POST', '/api/v1/admin/auth/logout', { extra: { cookie: session } })).status).toBe(403);
+
+      const out = await request('POST', '/api/v1/admin/auth/logout', { extra: { cookie: session, ...csrf } });
+      expect(out.status).toBe(200);
+      expect(out.headers['Set-Cookie']).toContain('admin_session=; ');
+      expect(out.headers['Set-Cookie']).toContain('Max-Age=0');
+    });
+
+    it('rejects a GitHub user who is not on the allowlist', async () => {
+      const { callback } = await signIn('stranger');
+      expect(callback.status).toBe(403);
+      expect(cookieOf(callback, 'admin_session')).toBeUndefined();
+    });
+
+    it('rejects a callback whose state does not match, or that has no state cookie, without calling GitHub', async () => {
+      const { start, fetchStub } = await signIn();
+      fetchStub.mockClear();
+
+      const wrongState = await request('GET', `/api/v1/admin/auth/github/callback?code=abc&state=${'0'.repeat(32)}`, {
+        extra: { cookie: cookieOf(start, 'admin_oauth_state') as string },
+      });
+      const noCookie = await request('GET', `/api/v1/admin/auth/github/callback?code=abc&state=${'0'.repeat(32)}`);
+      expect(wrongState.status).toBe(400);
+      expect(noCookie.status).toBe(400);
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it('rate limits repeated failed sign-ins', async () => {
+      await signIn();
+      const attempt = () => request('GET', '/api/v1/admin/auth/github/callback?code=abc&state=bad');
+      const statuses: number[] = [];
+      for (let i = 0; i < 12; i += 1) statuses.push((await attempt()).status);
+      expect(statuses.slice(0, 10).every((code) => code === 400)).toBe(true);
+      expect(statuses.slice(10)).toEqual([429, 429]);
+    });
+
+    it('keeps the API token working, with no CSRF header, alongside the sign-in', async () => {
+      process.env.ADMIN_API_TOKEN = TOKEN;
+      const list = await request('GET', '/api/v1/admin/laws', { token: TOKEN });
+      expect(list.status).toBe(200);
+      const approved = await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { status: 'published' } });
+      expect(approved.status).toBe(200);
+    });
+
+    it('serves the admin page when only the sign-in is configured, and offers the sign-in on the session check', async () => {
+      expect((await request('GET', '/admin')).status).toBe(200);
+      const check = await request('GET', '/api/v1/admin/auth/session');
+      expect(check.status).toBe(200);
+      expect(check.json()).toEqual({ authenticated: false, oauth: true });
+    });
+
+    it('hides the sign-in routes when it is not configured', async () => {
+      delete process.env.GITHUB_OAUTH_CLIENT_ID;
+      process.env.ADMIN_API_TOKEN = TOKEN;
+      expect((await request('GET', '/api/v1/admin/auth/github')).status).toBe(404);
+      expect((await request('GET', '/api/v1/admin/auth/github/callback?code=a&state=b')).status).toBe(404);
+      expect((await request('GET', '/api/v1/admin/auth/session')).json()).toEqual({ authenticated: false, oauth: false });
     });
   });
 });
