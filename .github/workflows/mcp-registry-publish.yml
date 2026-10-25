@@ -123,7 +123,7 @@ jobs:
             --connect-timeout 15 \
             --max-time 30 \
             --output "$RESPONSE_FILE" \
-            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}"
+            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}&version=latest"
           LIVE_VERSION=$(jq -r --arg name "$EXPECTED_NAME" \
             'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""' \
             "$RESPONSE_FILE")
@@ -189,7 +189,7 @@ jobs:
             --connect-timeout 15 \
             --max-time 30 \
             --output "$RESPONSE_FILE" \
-            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}"
+            "https://registry.modelcontextprotocol.io/v0/servers?search=${EXPECTED_NAME}&version=latest"
           LIVE_VERSION=$(jq -r --arg name "$EXPECTED_NAME" \
             'first(.servers[]? | select(.server.name == $name)) // empty | .server.version // ""' \
             "$RESPONSE_FILE")
