@@ -49,6 +49,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `health-monitor.sh` is the only sender of production health alerts and no longer depends on SMTP (#198).
+  `health-check.ts` always runs its checks: without SMTP settings or a recipient it warns and skips only the
+  email, and a new `--no-email` mode reports by exit code and output only (exit `2` is now only for an
+  invalid recipient, and `3` means it passed with warnings that were not emailed). `health-monitor.sh` runs
+  it with `--no-email`, so one run sends at most one email, and a missing SMTP setting can no longer stop
+  the monitoring or the restarts. It now emails the outage once (not the runs in between; if that mail
+  could not be sent, the next failing run retries, so an outage that ends before the restart is still
+  reported), the
+  restart and critical mails as before, "could not run" at most once per exit code every 6 hours, and the
+  slow-site warning at most once a day; a healthy run clears those cooldowns and a mail that could not be
+  sent starts none. It still does not ping the dead-man switch when the check could not run.
+  `HEALTH_CHECK_EMAIL_TO` now applies only to `health-check.ts` and `health-check.sh` run by themselves.
+  Backend bumped to `2.3.47`; root to `2.6.95`.
 - No monitoring email goes to a built-in personal address any more; the recipient now comes from
   configuration.
   - Order: `ALERT_EMAIL`, then `EMAIL_TO` (the admin address the server already uses for notices).

@@ -24,7 +24,7 @@ SMTP_PASS=your-app-password
 
 # Where alerts go, first one set wins: HEALTH_CHECK_EMAIL_TO, ALERT_EMAIL (shared by all the monitoring
 # scripts), then EMAIL_TO (the admin address the server already uses). There is no built-in address:
-# health-check.ts stops with an error when none is set, health-check.sh logs a warning and skips the email.
+# with none set, health-check.ts and health-check.sh still run their checks but warn and skip the email.
 EMAIL_TO=admin@example.com
 # ALERT_EMAIL=ops@example.com
 # HEALTH_CHECK_EMAIL_TO=alerts@example.com
@@ -49,18 +49,19 @@ the same order as `health-check.sh` and the daily report.
 
 Which script honors which variable:
 
-- `health-check.ts` and `health-check.sh` use `HEALTH_CHECK_EMAIL_TO`, then `ALERT_EMAIL`, then `EMAIL_TO`.
-  In production, `health-monitor.sh` (the cron job, see Production scheduling) runs `health-check.ts`, so its
-  failure and warning emails follow this order too.
+- `health-check.ts` and `health-check.sh`, when run by themselves, use `HEALTH_CHECK_EMAIL_TO`, then
+  `ALERT_EMAIL`, then `EMAIL_TO`.
 - Every other monitoring script uses `ALERT_EMAIL`, then `EMAIL_TO`, and ignores `HEALTH_CHECK_EMAIL_TO`. That
-  includes the emails `health-monitor.sh` sends itself (restart, check could not run, still failing),
+  includes every email `health-monitor.sh` sends: in production it runs `health-check.ts --no-email` and does
+  all the emailing itself, so `HEALTH_CHECK_EMAIL_TO` does not apply to production alerts. The others are
   `ssl-monitor.sh`, `cost-optimization-report.sh`, `test-backup-restore.sh` and the daily report.
   (`vulnerability-scanner.sh` sends no email; the daily report includes its output.)
 
 Unlike the API, which falls back to `admin@murphys-laws.com` when `EMAIL_TO` is empty, the monitoring scripts
 have no built-in address, so with none of the three set they send nothing. They do not do that quietly:
-`health-check.ts` and the daily report stop with an error (the daily report runs once a day, so that error
-shows up daily), and the shell scripts write the warning to stderr and to syslog (`logger -t
+the daily report stops with an error (it runs once a day, so that error shows up daily), `health-check.ts`
+still runs its checks but prints a warning and `ALERT EMAIL NOT SENT` when a check fails, and the shell
+scripts write the warning to stderr and to syslog (`logger -t
 murphys-alerts`) and log that nothing was sent: `ALERT NOT SENT (reason)` in `health-check.sh`,
 `ssl-monitor.sh` and `health-monitor.sh`, and `Report NOT emailed (reason)` in `test-backup-restore.sh` and
 `cost-optimization-report.sh` (which prints it to stderr only). The shell scripts
@@ -76,13 +77,27 @@ single address.)
 deliver, the message can still queue or bounce after `ALERT SENT` was logged, so check the mail queue
 (`mailq`) if alerts you expect do not arrive.
 
-`health-check.ts` exit codes: `0` healthy, `1` a check failed, `2` misconfigured (no SMTP settings or no
-recipient, which says nothing about the site), `3` only warnings were found and the alert email could not be
-delivered. `health-monitor.sh`, which runs it through `tsx` every few minutes, counts only exit code `1`
-towards a restart. Exit code `2`, and any other code (`126` or `127` when `tsx`, `npx` or `node` cannot be
-started, `137` when the check is killed), mean the check could not run, which says nothing about the site: it
-sends a "Health Check Could Not Run" alert, leaves the failure count alone and restarts nothing. It treats `3`
-as healthy but logs it. Under cron's minimal `PATH`, `tsx` starts with the `node` found on that `PATH`
+`health-check.ts` exit codes: `0` healthy, `1` a check failed, `2` the alert recipient is invalid (nothing was
+checked), `3` it passed with warnings that were not emailed (`--no-email`, or the email could not be sent).
+Missing SMTP settings or a missing recipient no longer stop it: the checks still run and only the email is
+skipped (with a warning).
+
+`health-monitor.sh` runs it through `tsx` every 5 minutes with `--no-email`, and is the only sender in
+production, so a run sends at most one email and SMTP settings cannot stop the monitoring. It counts only exit
+code `1` towards a restart. Exit code `3` is healthy but reported; any other code (`2`, `126` or `127` when
+`tsx`, `npx` or `node` cannot be started, `137` when the check is killed) means the check could not run,
+which says nothing about the site: it leaves the failure count alone, restarts nothing and does not ping the
+dead-man switch. What it emails, and how often:
+
+- First failure: "Health Check Failed (1/3)". If that mail could not be sent, the next failing run tries
+  again (so an outage that ends before the restart is still reported); once it is delivered, further failures
+  before the restart send nothing.
+- Third failure: the restart mail, then "CRITICAL" if the retest still fails.
+- "Health Check Could Not Run": at most once per exit code every 6 hours.
+- "Performance Degraded" (slow responses): at most once a day.
+- A healthy run clears these cooldowns and the "outage already reported" mark, so a new problem is reported
+  at once. A mail that could not be sent
+  does not start a cooldown. The cooldown files are in `/var/tmp/health-monitor-alerts/`. Under cron's minimal `PATH`, `tsx` starts with the `node` found on that `PATH`
 (normally `/usr/bin/node`, not an nvm one), so confirm `/usr/bin/node --version` on the server.
 
 So that cron notices an alert or report that could not be sent, the shell scripts that send mail
@@ -94,9 +109,9 @@ own exit code. A suppressed repeat alert (cooldown or once a day) is not a deliv
 ### Sending production alerts to a different address
 
 To redirect **all** monitoring email, set the repository secret `ALERT_EMAIL`. To redirect only the health
-check's own failure and warning emails (`health-check.ts`, which `health-monitor.sh` runs in production, and
-`health-check.sh`), set `HEALTH_CHECK_EMAIL_TO` instead; the emails `health-monitor.sh` sends itself still go
-to `ALERT_EMAIL`, then `EMAIL_TO`. Either use GitHub (repository **Settings** → **Secrets and variables** →
+check's own emails when `health-check.ts` or `health-check.sh` runs by itself, set `HEALTH_CHECK_EMAIL_TO`
+instead; it does not change the production alerts from `health-monitor.sh`, which go to `ALERT_EMAIL`, then
+`EMAIL_TO`. Either use GitHub (repository **Settings** → **Secrets and variables** →
 **Actions** → **New repository secret**) or the CLI, which prompts for the value so it stays out of your
 shell history:
 
@@ -132,9 +147,11 @@ npx tsx backend/scripts/health-check.ts
 ### Exit Codes
 
 - `0` - All health checks passed
-- `1` - One or more health checks failed (email alert sent)
-- `2` - Misconfigured: the SMTP settings or the alert recipient are missing or invalid, so no check ran
-- `3` - Only warnings were found, and the alert email could not be delivered
+- `1` - One or more health checks failed (email alert sent when SMTP and a recipient are configured)
+- `2` - The alert recipient is invalid, so no check ran
+- `3` - Passed with warnings that were not emailed (`--no-email`, or the email could not be sent)
+
+Add `--no-email` to report by exit code and output only (this is how `health-monitor.sh` runs it).
 
 ## Production scheduling
 
@@ -175,9 +192,11 @@ npx tsx backend/scripts/health-check.ts
 
 ## Troubleshooting
 
-### "SMTP not configured" Error
+### "SMTP not configured" warning
 
-Make sure your `.env` file has `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` set.
+The checks still run, but no alert email is sent. Set `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS` in your `.env`
+file to get emails from `health-check.ts` itself. (`health-monitor.sh` does not need them: it sends its mail
+through the local `mail` command.)
 
 ### Timeouts
 
