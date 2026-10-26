@@ -6,14 +6,15 @@ Monitors the health of both the Murphy's Laws frontend and API servers and sends
 
 - Checks frontend server (HTML response)
 - Checks API server (`/api/health` endpoint)
-- Sends email alerts on failures
-- 10-second timeout per check
+- Sends email alerts on failures (when SMTP and a recipient are configured; `--no-email` turns them off)
+- 10-second timeout per check, including reading the response body (`HEALTH_CHECK_TIMEOUT_MS` changes it)
 - Detailed error reporting
 - HTML email formatting
 
 ## Requirements
 
-SMTP credentials must be configured in your `.env` file:
+To get emails from `health-check.ts` itself (not needed by `health-monitor.sh`, which mails through the local
+`mail` command), SMTP credentials must be configured in your `.env` file:
 
 ```env
 # Required for health check emails
@@ -77,28 +78,40 @@ single address.)
 deliver, the message can still queue or bounce after `ALERT SENT` was logged, so check the mail queue
 (`mailq`) if alerts you expect do not arrive.
 
-`health-check.ts` exit codes: `0` healthy, `1` a check failed, `2` the alert recipient is invalid (nothing was
-checked), `3` it passed with warnings that were not emailed (`--no-email`, or the email could not be sent).
-Missing SMTP settings or a missing recipient no longer stop it: the checks still run and only the email is
-skipped (with a warning).
+`health-check.ts` exit codes: `0` healthy, `1` a check failed (its output then contains the line
+`Health check FAILED`), `2` the alert recipient is invalid (nothing was checked; never with `--no-email`),
+`3` it passed with warnings that were not emailed (`--no-email`, or the email could not be sent), `4` the
+script itself failed unexpectedly. Missing SMTP settings or a missing recipient do not stop it: the checks
+still run and only the email is skipped (with a warning).
 
-`health-monitor.sh` runs it through `tsx` every 5 minutes with `--no-email`, and is the only sender in
-production, so a run sends at most one email and SMTP settings cannot stop the monitoring. It counts only exit
-code `1` towards a restart. Exit code `3` is healthy but reported; any other code (`2`, `126` or `127` when
-`tsx`, `npx` or `node` cannot be started, `137` when the check is killed) means the check could not run,
-which says nothing about the site: it leaves the failure count alone, restarts nothing and does not ping the
-dead-man switch. What it emails, and how often:
+`health-monitor.sh` runs it through `tsx` every 5 minutes with `--no-email`, under `timeout 120` where that
+exists, and is the only sender in production, so a run sends at most one email and SMTP settings cannot stop
+the monitoring. Only one run goes at a time (a lock in `/var/tmp/health-monitor.lock`; a run that finds
+another still in progress skips itself, and a lock older than 15 minutes is taken over), and its temporary
+files are removed when it ends. It counts an exit code `1` with the `Health check FAILED` line towards a
+restart. Exit code `3` is healthy but reported. Anything else means the check could not run, which says
+nothing about the site: exit `1` without that line (a crash or a broken install), `2` or `4` (the check
+script's own errors), `124` (timed out), `126` or `127` (`tsx`, `npx` or `node` cannot be started), `137`
+(killed). Then it leaves the failure count alone, restarts nothing and does not ping the dead-man switch.
+What it emails, and how often:
 
 - First failure: "Health Check Failed (1/3)". If that mail could not be sent, the next failing run tries
   again (so an outage that ends before the restart is still reported); once it is delivered, further failures
-  before the restart send nothing.
-- Third failure: the restart mail, then "CRITICAL" if the retest still fails.
-- "Health Check Could Not Run": at most once per exit code every 6 hours.
+  before the restart send nothing. That mark expires after 6 hours, in case no healthy run ever clears it.
+- Third failure: the restart mail (the subject says "FAILED" if `pm2 restart all` itself failed), then
+  "CRITICAL" if the retest still fails.
+- "Health Check Could Not Run": at most once per exit code every 6 hours. After a restart, "Could Not Run
+  After Restart" has its own cooldown, so an earlier "Could Not Run" mail cannot silence it.
 - "Performance Degraded" (slow responses): at most once a day.
-- A healthy run clears these cooldowns and the "outage already reported" mark, so a new problem is reported
-  at once. A mail that could not be sent
-  does not start a cooldown. The cooldown files are in `/var/tmp/health-monitor-alerts/`. Under cron's minimal `PATH`, `tsx` starts with the `node` found on that `PATH`
-(normally `/usr/bin/node`, not an nvm one), so confirm `/usr/bin/node --version` on the server.
+- "Health Monitor Cannot Save Its State": when the failure-count file cannot be written, because it would
+  then never reach the restart threshold. At most once per 6 hours.
+- A healthy run clears the "outage already reported" mark, so a new outage is reported at once. It does not
+  clear the "could not run" and warning cooldowns, which only expire with time, so a check that flaps does not
+  mail on every flap. A mail that could not be sent does not start a cooldown. The state files are in
+  `/var/tmp/health-monitor-alerts/`; a malformed time in one counts as "due", and so does one in the future.
+
+Under cron's minimal `PATH`, `tsx` starts with the `node` found on that `PATH` (normally `/usr/bin/node`, not
+an nvm one), so confirm `/usr/bin/node --version` on the server.
 
 So that cron notices an alert or report that could not be sent, the shell scripts that send mail
 (`health-check.sh`, `ssl-monitor.sh`, `health-monitor.sh`, `cost-optimization-report.sh`,
@@ -147,9 +160,10 @@ npx tsx backend/scripts/health-check.ts
 ### Exit Codes
 
 - `0` - All health checks passed
-- `1` - One or more health checks failed (email alert sent when SMTP and a recipient are configured)
+- `1` - One or more health checks failed (email alert attempted when SMTP and a recipient are configured; the output says `Health check FAILED`)
 - `2` - The alert recipient is invalid, so no check ran
 - `3` - Passed with warnings that were not emailed (`--no-email`, or the email could not be sent)
+- `4` - The script itself failed unexpectedly
 
 Add `--no-email` to report by exit code and output only (this is how `health-monitor.sh` runs it).
 

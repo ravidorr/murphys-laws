@@ -184,7 +184,7 @@ Unattended-Upgrade::MinimalSteps "true";
 
 Two layers run in parallel:
 
-1. **On-box monitor** (`/usr/local/bin/health-monitor.sh`, source-of-truth at `backend/scripts/health-monitor.sh`). Runs every 5 minutes via cron, hits `/api/health`, and after **3 consecutive failures** runs `pm2 restart all` and emails. Sends a `1/3` informational email on the first failure of any new run.
+1. **On-box monitor** (`/usr/local/bin/health-monitor.sh`, source-of-truth at `backend/scripts/health-monitor.sh`). Runs every 5 minutes via cron, hits `/api/health`, and after **3 consecutive failures** runs `pm2 restart all` and emails. It emails the first failure of an outage (`1/3`, retried on the next run if that mail could not be sent), then the restart, and sends nothing in between. It is the only sender: it runs the health check with `--no-email`, so missing SMTP settings cannot stop the monitoring. See `HEALTH-CHECK.md` for the exit codes, cooldowns and lock.
 2. **External dead-man-switch** (Healthchecks.io). The on-box monitor pings out on every successful check. If pings stop arriving, Healthchecks alerts on its own, catching "the box is dead and can't email" cases the on-box monitor structurally cannot.
 
 The dead-man UUID is treated as a secret and never committed: it lives on the server in `/etc/default/health-monitor`, sourced by the script at startup. Dev environments without the env file behave exactly as before (no ping, no failure).
@@ -208,12 +208,14 @@ ssh murphys-main 'sudo bash -c ". /etc/default/health-monitor && echo \$HEALTHCH
 - **"Down" notification:** the on-box monitor stopped pinging. Either the box itself is down, the cron stopped firing, or the script is failing before it gets to `ping_deadman`. SSH and check `/var/log/health-monitor.log` and `systemctl list-timers cron.service`.
 - **"Back up" notification:** transient outage that auto-resolved by the next cron tick. Worth logging but not investigating unless it repeats.
 
-### Reading the on-box `1/3 / 2/3 / 3/3` email ladder
+### Reading the on-box emails
 
-- **`1/3`:** single transient failure. Auto-recovered the next tick. Informational only; do not act unless followed by 2/3.
-- **`2/3`:** two consecutive failures. Worth a glance but no action yet.
-- **`3/3` ("Services Restarted Due to Health Check Failures"):** auto-restart fired. Look at `/var/log/health-monitor.log` and `pm2 logs murphys-api` to root-cause.
+- **`1/3`:** the first failure of an outage. If nothing follows, it was a transient failure that recovered. Informational only. (There is no `2/3` email: the runs in between are logged, not mailed.)
+- **"Services Restarted Due to Health Check Failures":** three consecutive failures, auto-restart fired. Look at `/var/log/health-monitor.log` and `pm2 logs murphys-api` to root-cause. If the subject says **"Services Restart FAILED"**, `pm2 restart all` itself failed; the services may still be down.
 - **"CRITICAL: Services Still Failing After Restart":** restart did not help. Drop everything; SSH in.
+- **"Health Check Could Not Run" (and "...After Restart"):** the check itself could not run (a crash, `tsx` or `node` missing, a timeout). It says nothing about the site, and nothing was restarted. At most once per exit code every 6 hours. The dead-man switch is not pinged while this lasts, so Healthchecks.io will also report the monitor as down.
+- **"Health Check Warning - Performance Degraded":** the site is up but slow. At most once a day.
+- **"Health Monitor Cannot Save Its State":** `/var/tmp/health-check-failures` cannot be written, so the monitor cannot count failures and will not restart anything until it is fixed.
 
 ## Quick Reference Commands
 
