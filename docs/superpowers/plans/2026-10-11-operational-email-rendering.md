@@ -329,7 +329,7 @@ multipart HTML/text output, the retained daily cron command, and this
 post-deployment validation:
 
 ```bash
-DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+DAILY_REPORT_TEST_RECIPIENT=you@example.com \
   sudo /usr/local/bin/daily-report.sh --test-email
 ```
 
@@ -362,7 +362,7 @@ After the normal deployment completes, run only with the chosen explicit
 recipient:
 
 ```bash
-DAILY_REPORT_TEST_RECIPIENT=ravidor@gmail.com \
+DAILY_REPORT_TEST_RECIPIENT=you@example.com \
   ssh murphys-main 'sudo /usr/local/bin/daily-report.sh --test-email'
 ```
 

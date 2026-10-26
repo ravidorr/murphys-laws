@@ -3,15 +3,23 @@ import { config } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import nodemailer, { type Transporter } from 'nodemailer';
+import { fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from './alert-recipient.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const backendDir = join(__dirname, '..');
+const ALERT_RECIPIENT_KEYS = ['HEALTH_CHECK_EMAIL_TO', 'ALERT_EMAIL', 'EMAIL_TO'] as const;
+// Cron gives this script no environment, so look for the recipient in the same files, in the same order,
+// as health-check.sh does. This runs before config() so that order is respected.
+fillEnvFromFiles(process.env.REPO_ROOT?.trim() || join(backendDir, '..'), process.env, ALERT_RECIPIENT_KEYS);
 config({ path: join(backendDir, '.env') });
+
+/** Exit codes: 1 a check failed, 2 the script is misconfigured (not an outage), 3 only warnings but the alert email was not delivered. */
+const EXIT_CONFIG_ERROR = 2;
+const EXIT_ALERT_NOT_DELIVERED = 3;
 
 const FRONTEND_URL = process.env.HEALTH_CHECK_FRONTEND_URL ?? 'https://murphys-laws.com';
 const API_URL = process.env.HEALTH_CHECK_API_URL ?? 'https://murphys-laws.com/api/health';
-const EMAIL_TO = process.env.HEALTH_CHECK_EMAIL_TO ?? 'ravidor@gmail.com';
 const EMAIL_FROM = process.env.EMAIL_FROM ?? 'noreply@murphys-laws.com';
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
@@ -31,7 +39,20 @@ if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
   });
 } else {
   console.error('SMTP not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS environment variables.');
-  process.exit(1);
+  process.exit(EXIT_CONFIG_ERROR);
+}
+
+const alertRecipient = resolveAlertRecipient(process.env, ALERT_RECIPIENT_KEYS);
+if (!alertRecipient) {
+  console.error('No alert recipient. Set HEALTH_CHECK_EMAIL_TO, ALERT_EMAIL or EMAIL_TO (the admin address used for notices).');
+  process.exit(EXIT_CONFIG_ERROR);
+}
+let EMAIL_TO: string[];
+try {
+  EMAIL_TO = parseRecipientList(alertRecipient);
+} catch (error) {
+  console.error(`Invalid alert recipient: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(EXIT_CONFIG_ERROR);
 }
 
 interface CheckResult {
@@ -42,7 +63,8 @@ interface CheckResult {
   dbQueryTime?: number;
 }
 
-async function sendAlert(subject: string, message: string): Promise<void> {
+/** Returns whether the alert email was accepted by the SMTP server. */
+async function sendAlert(subject: string, message: string): Promise<boolean> {
   try {
     await emailTransporter.sendMail({
       from: EMAIL_FROM,
@@ -71,9 +93,11 @@ async function sendAlert(subject: string, message: string): Promise<void> {
       `,
     });
     console.log(`Alert email sent: ${subject}`);
+    return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Failed to send alert email:', message);
+    return false;
   }
 }
 
@@ -221,17 +245,21 @@ async function runHealthCheck(): Promise<void> {
   if (failures.length > 0) {
     const subject = 'Health Check Failed';
     const message = `The following health checks failed:\n\n${failures.map((f) => `• ${f}`).join('\n')}\n\nPlease investigate immediately.`;
-    await sendAlert(subject, message);
+    const sent = await sendAlert(subject, message);
     console.log('---');
-    console.error('Health check FAILED. Alert email sent.');
+    console.error(`Health check FAILED. ${sent ? 'Alert email sent.' : 'ALERT EMAIL NOT SENT.'}`);
     process.exit(1);
   }
 
   if (warnings.length > 0) {
     const subject = 'Health Check Warning - Performance Degraded';
     const message = `The health checks passed but performance issues were detected:\n\n${warnings.map((w) => `• ${w}`).join('\n')}\n\nConsider investigating to prevent future issues.`;
-    await sendAlert(subject, message);
+    const sent = await sendAlert(subject, message);
     console.log('---');
+    if (!sent) {
+      console.error('Health check passed with WARNINGS. ALERT EMAIL NOT SENT.');
+      process.exit(EXIT_ALERT_NOT_DELIVERED);
+    }
     console.warn('Health check passed with WARNINGS. Alert email sent.');
     process.exit(0);
   }

@@ -292,14 +292,14 @@ Create `/usr/local/bin/verify-backups.sh`:
 LATEST_BACKUP=$(ls -t /root/backups/murphys-*.db 2>/dev/null | head -1)
 
 if [ -z "$LATEST_BACKUP" ]; then
- echo "ERROR: No backups found" | mail -s "[Murphy's Laws] Backup Verification Failed" ravidor@gmail.com
+ echo "ERROR: No backups found" | mail -s "[Murphy's Laws] Backup Verification Failed" <your-email>
  exit 1
 fi
 
 if sqlite3 $LATEST_BACKUP "PRAGMA integrity_check;" | grep -q "ok"; then
  echo "Backup verification passed: $LATEST_BACKUP"
 else
- echo "ERROR: Backup integrity check failed: $LATEST_BACKUP" | mail -s "[Murphy's Laws] Backup Corruption Detected" ravidor@gmail.com
+ echo "ERROR: Backup integrity check failed: $LATEST_BACKUP" | mail -s "[Murphy's Laws] Backup Corruption Detected" <your-email>
  exit 1
 fi
 ```
@@ -366,7 +366,7 @@ scp ravidor@167.99.53.90:/root/backups/.env-$DATE-* $BACKUP_DIR/
 if [ -f $BACKUP_DIR/murphys-$DATE-*.db ]; then
  echo "Backup downloaded successfully"
 else
- echo "Backup download failed" | mail -s "Backup Download Failed" ravidor@gmail.com
+ echo "Backup download failed" | mail -s "Backup Download Failed" <your-email>
 fi
 
 # Delete backups older than 90 days
