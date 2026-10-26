@@ -79,6 +79,33 @@ function startAppServer(dbQueryTime: number): Promise<{ frontend: string; api: s
   });
 }
 
+/** A half-dead site: `/health` answers 200 with its headers and the start of a body, and then stalls. */
+function startStallingServer(): Promise<{ frontend: string; api: string; close: () => Promise<void> }> {
+  const server = http.createServer((request, response) => {
+    if (request.url === '/health') {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.write('{"ok":');
+    } else {
+      response.writeHead(200, { 'content-type': 'text/html' });
+      response.end('<html></html>');
+    }
+  });
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      const base = `http://127.0.0.1:${(server.address() as net.AddressInfo).port}`;
+      resolve({
+        frontend: base,
+        api: `${base}/health`,
+        close: () =>
+          new Promise<void>((done) => {
+            server.closeAllConnections();
+            server.close(() => done());
+          }),
+      });
+    });
+  });
+}
+
 /** A minimal SMTP server that accepts any mail (or rejects every recipient) and records every RCPT TO address. */
 function startSmtpServer({ rejectRecipients = false } = {}): Promise<{ port: number; recipients: string[]; close: () => Promise<void> }> {
   const recipients: string[] = [];
@@ -174,18 +201,48 @@ describe('health-check.ts', () => {
     closeServer = undefined;
   });
 
-  it('stops at startup with exit code 2 (misconfigured, not an outage) and a clear message when there is no recipient, before any check runs', async () => {
+  it('still runs its checks when there is no recipient: warns, and says the alert email was NOT sent', async () => {
     const result = await runScript('health-check.ts', [], { ...noConfig(smtp(9)), ...deadEndpoints });
-    expect(result.status).toBe(2);
-    expect(result.stderr).toContain('No alert recipient. Set HEALTH_CHECK_EMAIL_TO, ALERT_EMAIL or EMAIL_TO');
-    expect(result.stdout).not.toContain('Running health check');
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('Running health check');
+    expect(result.stderr).toContain('no alert recipient (set HEALTH_CHECK_EMAIL_TO, ALERT_EMAIL or EMAIL_TO)');
+    expect(result.stderr).toContain('Health check FAILED. ALERT EMAIL NOT SENT.');
   });
 
-  it('reports missing SMTP settings, also with exit code 2, before it looks at the recipient', async () => {
-    const result = await runScript('health-check.ts', [], { ...noConfig(), ...deadEndpoints });
-    expect(result.status).toBe(2);
+  it('still runs its checks when SMTP is not configured: warns, and says the alert email was NOT sent', async () => {
+    const result = await runScript('health-check.ts', [], { ...noConfig({ EMAIL_TO: 'admin@example.com' }), ...deadEndpoints });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('Running health check');
     expect(result.stderr).toContain('SMTP not configured');
-    expect(result.stderr).not.toContain('No alert recipient');
+    expect(result.stderr).toContain('Health check FAILED. ALERT EMAIL NOT SENT.');
+  });
+
+  describe('with --no-email (as health-monitor.sh runs it)', () => {
+    it('reports a failed check by exit code 1 and output only, sends nothing and needs no email settings', async () => {
+      const server = await startSmtpServer();
+      closeServer = server.close;
+      const result = await runScript('health-check.ts', ['--no-email'], {
+        ...noConfig({ EMAIL_TO: 'admin@example.com' }),
+        ...deadEndpoints,
+        ...smtp(server.port),
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('Health check FAILED.');
+      expect(result.stderr).not.toContain('Alert email');
+      expect(result.stderr).not.toContain('ALERT EMAIL');
+      expect(server.recipients).toEqual([]);
+
+      const bare = await runScript('health-check.ts', ['--no-email'], { ...noConfig(), ...deadEndpoints });
+      expect(bare.status).toBe(1);
+      expect(bare.stderr).not.toContain('SMTP not configured');
+      expect(bare.stderr).not.toContain('no alert recipient');
+    }, 60_000);
+
+    it('does not look at the recipient, so an invalid one cannot stop the checks', async () => {
+      const result = await runScript('health-check.ts', ['--no-email'], { ...noConfig({ EMAIL_TO: 'ops' }), ...deadEndpoints });
+      expect(result.status).toBe(1);
+      expect(result.stderr).not.toContain('Invalid alert recipient');
+    }, 60_000);
   });
 
   it.each([
@@ -230,6 +287,24 @@ describe('health-check.ts', () => {
     expect(result.stdout).not.toContain('Running health check');
   });
 
+  it('times out, and reports a failure, when the API sends its headers and then stalls the body', async () => {
+    const app = await startStallingServer();
+    try {
+      const result = await runScript('health-check.ts', ['--no-email'], {
+        ...noConfig(),
+        HEALTH_CHECK_FRONTEND_URL: app.frontend,
+        HEALTH_CHECK_API_URL: app.api,
+        HEALTH_CHECK_TIMEOUT_MS: '500',
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('API check failed: Request timeout (0.5s)');
+      // The line health-monitor.sh looks for before it treats an exit code 1 as an outage.
+      expect(result.stderr).toContain('Health check FAILED.');
+    } finally {
+      await app.close();
+    }
+  }, 30_000);
+
   describe('when the site is up but slow (warnings only)', () => {
     let app: Awaited<ReturnType<typeof startAppServer>>;
 
@@ -253,6 +328,26 @@ describe('health-check.ts', () => {
       expect(result.stdout).toContain('Alert email sent: Health Check Warning');
       expect(result.stderr).toContain('passed with WARNINGS. Alert email sent.');
       expect(server.recipients).toEqual(['admin@example.com']);
+    }, 60_000);
+
+    it('exits 3 and does not email the warning with --no-email, so the caller can', async () => {
+      const server = await startSmtpServer();
+      closeServer = server.close;
+      const result = await runScript('health-check.ts', ['--no-email'], {
+        ...noConfig({ EMAIL_TO: 'admin@example.com' }),
+        ...slow(),
+        ...smtp(server.port),
+      });
+      expect(result.status).toBe(3);
+      expect(result.stderr).toContain('passed with WARNINGS. Not emailed (--no-email).');
+      expect(result.stdout + result.stderr).toContain('Database query time is slow');
+      expect(server.recipients).toEqual([]);
+    }, 60_000);
+
+    it('exits 3, and says the email was NOT sent, when SMTP is not configured', async () => {
+      const result = await runScript('health-check.ts', [], { ...noConfig({ EMAIL_TO: 'admin@example.com' }), ...slow() });
+      expect(result.status).toBe(3);
+      expect(result.stderr).toContain('passed with WARNINGS. ALERT EMAIL NOT SENT.');
     }, 60_000);
 
     it('exits 3, and says the email was NOT sent, when the SMTP server refuses it', async () => {

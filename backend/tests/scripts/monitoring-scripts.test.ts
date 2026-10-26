@@ -218,19 +218,36 @@ describe('health-monitor.sh as cron runs it', () => {
   interface Run {
     status: number | null;
     box: Sandbox;
+    tsxArgs: string;
     failures: string | null;
     log: string;
     mail: string;
     pm2: string;
     pings: string;
+    timeouts: string;
+  }
+
+  interface MonitorOptions {
+    /** The failure count already on disk. */
+    failures?: number;
+    /** The failure-count file's raw content instead (to test a malformed file). */
+    failuresRaw?: string;
+    /** Put a directory where the failure-count file should be, so that it cannot be written. */
+    failuresUnwritable?: boolean;
+    /** The fake check prints no "Health check FAILED" line when it exits 1 (as a crash would). */
+    noMarker?: boolean;
+    env?: Record<string, string>;
+    box?: Sandbox;
   }
 
   /**
    * `codes` are the exit codes the fake health check returns on its 1st, 2nd, ... run (0 once they run
    * out); `failures` is the failure count already on disk.
    */
-  function monitor(codes: number[], { failures, env = { EMAIL_TO: 'admin@example.com' } }: { failures?: number; env?: Record<string, string> } = {}): Run {
-    const box = sandbox();
+  function monitor(
+    codes: number[],
+    { failures, failuresRaw, failuresUnwritable, noMarker, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
+  ): Run {
     const project = path.join(box.root, 'project');
     const tsx = path.join(project, 'backend/node_modules/.bin/tsx');
     mkdirSync(path.dirname(tsx), { recursive: true });
@@ -238,34 +255,46 @@ describe('health-monitor.sh as cron runs it', () => {
     writeFileSync(queue, codes.map(String).join('\n') + (codes.length ? '\n' : ''));
     writeFileSync(
       tsx,
-      '#!/bin/bash\ncode="$(head -n 1 "$TSX_QUEUE")"\ntail -n +2 "$TSX_QUEUE" > "$TSX_QUEUE.next" && mv "$TSX_QUEUE.next" "$TSX_QUEUE"\necho "fake health check output"\nexit "${code:-0}"\n',
+      '#!/bin/bash\necho "$*" >> "$TSX_ARGS"\ncode="$(head -n 1 "$TSX_QUEUE")"\ntail -n +2 "$TSX_QUEUE" > "$TSX_QUEUE.next" && mv "$TSX_QUEUE.next" "$TSX_QUEUE"\necho "fake health check output"\nif [ "${code:-0}" = "1" ] && [ -z "$TSX_NO_MARKER" ]; then echo "Health check FAILED." >&2; fi\nexit "${code:-0}"\n',
     );
     chmodSync(tsx, 0o755);
     const fake = (name: string, body: string) => {
       writeFileSync(path.join(box.bin, name), `#!/bin/bash\n${body}\n`);
       chmodSync(path.join(box.bin, name), 0o755);
     };
-    fake('pm2', 'if [ "$1" = "jlist" ]; then echo "[]"; else echo "pm2 $*" >> "$PM2_LOG"; fi');
+    // `restart` records the failure count on disk at that moment, and can be made to fail.
+    fake('pm2', 'if [ "$1" = "jlist" ]; then echo "[]"; else echo "pm2 $* count=$(cat "$FAILURES_FILE" 2>/dev/null)" >> "$PM2_LOG"; exit "${PM2_RESTART_EXIT:-0}"; fi');
+    // The real `timeout` is missing on macOS; this one records its arguments and runs the command.
+    fake('timeout', 'echo "timeout $1" >> "$TIMEOUT_LOG"; shift; exec "$@"');
     fake('sleep', 'exit 0');
     fake('curl', 'echo "curl $*" >> "$CURL_LOG"');
-    if (failures !== undefined) {
-      writeFileSync(path.join(box.root, 'health-check-failures'), `${failures}\n`);
+    const failuresFile = path.join(box.root, 'health-check-failures');
+    if (failuresUnwritable) {
+      mkdirSync(failuresFile, { recursive: true });
+    } else if (failuresRaw !== undefined) {
+      writeFileSync(failuresFile, failuresRaw);
+    } else if (failures !== undefined) {
+      writeFileSync(failuresFile, `${failures}\n`);
     }
 
     // Point the script's fixed locations at the sandbox: the project (through an environment variable, so
-    // install()'s /tmp rewrite cannot touch a sandbox that itself lives under /tmp), the output files
-    // under /tmp, and the optional config file. install() redirects the /var/log and /var/tmp ones.
+    // install()'s /tmp rewrite cannot touch a sandbox that itself lives under /tmp) and the optional config
+    // file. install() redirects the /var/log and /var/tmp ones (log, failure count, alert state, lock), and
+    // the temporary files go to $TMPDIR, which is the sandbox.
     const text = source(SCRIPT)
       .replace('PROJECT_DIR="/root/murphys-laws"', 'PROJECT_DIR="$TEST_PROJECT_DIR"')
-      // (not the /var/tmp state file, which install() redirects itself)
-      .replace(/(?<!\/var)\/tmp\/health-check-/g, `${box.root}/health-check-`)
       .replace('/etc/default/health-monitor', `${box.root}/no-such-config`);
     const file = install(box, SCRIPT, text);
     const result = runFile(file, [], box, {
       TEST_PROJECT_DIR: project,
       TSX_QUEUE: queue,
+      TSX_ARGS: path.join(box.root, 'tsx-args.log'),
+      ...(noMarker ? { TSX_NO_MARKER: '1' } : {}),
       PM2_LOG: path.join(box.root, 'pm2.log'),
+      FAILURES_FILE: failuresFile,
+      TIMEOUT_LOG: path.join(box.root, 'timeout.log'),
       CURL_LOG: path.join(box.root, 'curl.log'),
+      TMPDIR: box.root,
       HEALTHCHECKS_PING_URL: 'https://ping.example/uuid',
       ...env,
     });
@@ -274,11 +303,13 @@ describe('health-monitor.sh as cron runs it', () => {
     return {
       status: result.status,
       box,
+      tsxArgs: read('tsx-args.log'),
       failures: failuresOnDisk,
       log: read('health-monitor.log'),
       mail: readLog(box.mailLog),
       pm2: read('pm2.log'),
       pings: read('curl.log'),
+      timeouts: read('timeout.log'),
     };
   }
 
@@ -291,17 +322,42 @@ describe('health-monitor.sh as cron runs it', () => {
     expect(run.pm2).toBe('');
   });
 
-  it('treats exit 3 (only warnings, and the check could not email them) as healthy, but logs it', () => {
-    const run = monitor([3], { failures: 2 });
-    expect(run.status).toBe(0);
-    expect(run.failures).toBe('0');
-    expect(run.pings).toContain('https://ping.example/uuid');
-    expect(run.log).toContain('could not deliver its own alert email');
-    expect(run.pm2).toBe('');
+  it('runs the health check with --no-email, so this script is the only sender', () => {
+    expect(monitor([0]).tsxArgs.trim()).toBe('backend/scripts/health-check.ts --no-email');
+  });
+
+  const mails = (run: Run) => (run.mail.match(/ARGS:/g) ?? []).length;
+  const stateFile = (run: Run, key: string) => path.join(run.box.root, 'health-monitor-alerts', key);
+
+  it('treats exit 3 (healthy, with warnings) as healthy, and emails the warning once a day at most', () => {
+    const first = monitor([3], { failures: 2 });
+    expect(first.status).toBe(0);
+    expect(first.failures).toBe('0');
+    expect(first.pings).toContain('https://ping.example/uuid');
+    expect(first.pm2).toBe('');
+    expect(first.mail).toContain('Health Check Warning - Performance Degraded');
+    expect(first.log).toContain('passed with warnings');
+
+    const again = monitor([3], { box: first.box });
+    expect(mails(again)).toBe(1);
+    expect(again.log).toContain('ALERT SUPPRESSED (cooldown): Health Check Warning');
+
+    // A day later the warning is due again.
+    writeFileSync(stateFile(first, 'warnings'), `${Math.floor(Date.now() / 1000) - 86_500}\n`);
+    expect(mails(monitor([3], { box: first.box }))).toBe(2);
+  });
+
+  it('does not forget the warning cooldown on a fast run, so a site that flaps does not mail every time', () => {
+    const first = monitor([3]);
+    monitor([0], { box: first.box });
+    expect(existsSync(stateFile(first, 'warnings'))).toBe(true);
+    expect(mails(monitor([3], { box: first.box }))).toBe(1);
   });
 
   it.each([
-    ['exit 2 (misconfigured)', 2],
+    ['exit 2 (the check script reported an error)', 2],
+    ['exit 4 (the check script failed unexpectedly)', 4],
+    ['exit 124 (it timed out)', 124],
     ['exit 127 (tsx, npx or node not found)', 127],
     ['exit 137 (killed)', 137],
   ])('on %s the check could not run: no restart, count untouched, no ping, an alert says so', (_name, code) => {
@@ -312,7 +368,61 @@ describe('health-monitor.sh as cron runs it', () => {
     expect(run.pings).toBe('');
     expect(run.mail).toContain('Health Check Could Not Run');
     expect(run.mail).toContain(`exit code ${code}`);
-    expect(run.log).toContain(`could not run (exit code: ${code})`);
+    expect(run.log).toContain(`could not run (exit code: ${code},`);
+  });
+
+  it('emails "could not run" once per cause every 6 hours, not on every run', () => {
+    const first = monitor([2], { failures: 2 });
+    expect(mails(first)).toBe(1);
+
+    const again = monitor([2], { box: first.box });
+    expect(again.status).toBe(2);
+    expect(mails(again)).toBe(1);
+    expect(again.log).toContain('ALERT SUPPRESSED (cooldown): Health Check Could Not Run');
+
+    // A different cause is a different problem, so it is reported at once.
+    expect(mails(monitor([127], { box: first.box }))).toBe(2);
+
+    // Six hours later the same cause is reported again.
+    writeFileSync(stateFile(first, 'could-not-run-2'), `${Math.floor(Date.now() / 1000) - 21_700}\n`);
+    expect(mails(monitor([2], { box: first.box }))).toBe(3);
+  });
+
+  it('does not start the cooldown when the "could not run" mail was not sent, and keeps it across a healthy run', () => {
+    const unsent = monitor([2], { env: {} });
+    expect(unsent.log).toContain('ALERT NOT SENT (no recipient configured)');
+    expect(existsSync(stateFile(unsent, 'could-not-run-2'))).toBe(false);
+
+    const sent = monitor([2]);
+    expect(existsSync(stateFile(sent, 'could-not-run-2'))).toBe(true);
+    // A monitor that flaps (a problem, a healthy run, the same problem) mails once, not on every flap.
+    monitor([0], { box: sent.box });
+    expect(mails(monitor([2], { box: sent.box }))).toBe(1);
+  });
+
+  it('keeps the checks and restarts working when the machine has no SMTP settings at all', () => {
+    // The check runs with --no-email and the mails go through `mail`, so nothing here needs SMTP.
+    const run = monitor([1, 0], { failures: 2, env: { EMAIL_TO: 'admin@example.com', SMTP_HOST: '', SMTP_USER: '', SMTP_PASS: '' } });
+    expect(run.status).toBe(0);
+    expect(run.pm2).toContain('pm2 restart all');
+    expect(run.mail).toContain('Services Restarted Due to Health Check Failures');
+  });
+
+  it('treats exit 1 without a "Health check FAILED" line (a crash or a broken install) as a problem with the check, not an outage', () => {
+    const run = monitor([1], { failures: 2, noMarker: true });
+    expect(run.status).toBe(2);
+    expect(run.failures).toBe('2');
+    expect(run.pm2).toBe('');
+    expect(run.mail).toContain('Health Check Could Not Run');
+    expect(run.mail).toContain('crash or a broken install');
+  });
+
+  it('runs the check under timeout, with a 120 second backstop', () => {
+    expect(monitor([0]).timeouts.trim()).toBe('timeout 120');
+  });
+
+  it('says why the check could not run when it timed out', () => {
+    expect(monitor([124]).mail).toContain('timed out after 120 seconds');
   });
 
   it('counts a real failure (exit 1) and alerts, without restarting before the threshold', () => {
@@ -321,6 +431,46 @@ describe('health-monitor.sh as cron runs it', () => {
     expect(run.failures).toBe('1');
     expect(run.mail).toContain('Health Check Failed (1/3)');
     expect(run.pm2).toBe('');
+  });
+
+  it('retries the outage mail on the next failing run when the first one could not be sent, and still reports an outage that ends before the restart', () => {
+    // 1st failing run: mail is unavailable (no recipient), so nothing is reported and nothing is marked.
+    const first = monitor([1], { env: {} });
+    expect(first.log).toContain('ALERT NOT SENT (no recipient configured): Health Check Failed (1/3)');
+    expect(mails(first)).toBe(0);
+    expect(existsSync(stateFile(first, 'outage-reported'))).toBe(false);
+
+    // 2nd failing run: mail works now, so the outage is reported although failure_count is already 2.
+    const second = monitor([1], { box: first.box });
+    expect(second.failures).toBe('2');
+    expect(mails(second)).toBe(1);
+    expect(second.mail).toContain('Health Check Failed (2/3)');
+    expect(existsSync(stateFile(first, 'outage-reported'))).toBe(true);
+
+    // 3rd run: the site has recovered before the restart. No restart, and the mark is cleared.
+    const third = monitor([0], { box: first.box });
+    expect(third.status).toBe(0);
+    expect(third.pm2).toBe('');
+    expect(mails(third)).toBe(1);
+    expect(existsSync(stateFile(first, 'outage-reported'))).toBe(false);
+
+    // A later outage is reported again.
+    expect(mails(monitor([1], { box: first.box }))).toBe(2);
+  });
+
+  it('emails only the first failure, then the restart, and not the runs in between', () => {
+    const first = monitor([1]);
+    expect(mails(first)).toBe(1);
+
+    const second = monitor([1], { box: first.box });
+    expect(second.failures).toBe('2');
+    expect(mails(second)).toBe(1);
+    expect(second.log).toContain('ALERT SUPPRESSED (this outage was already emailed)');
+
+    const third = monitor([1, 0], { box: first.box });
+    expect(third.pm2).toContain('pm2 restart all');
+    expect(mails(third)).toBe(2);
+    expect(third.mail).toContain('Services Restarted Due to Health Check Failures');
   });
 
   it('restarts services on the third failure, and is healthy again when the retest passes', () => {
@@ -344,6 +494,101 @@ describe('health-monitor.sh as cron runs it', () => {
     expect(run.status).toBe(2);
     expect(run.mail).toContain('Health Check Could Not Run After Restart');
     expect(run.mail).not.toContain('CRITICAL');
+  });
+
+  it('gives the post-restart "could not run" mail its own cooldown, so an earlier "could not run" mail cannot silence it', () => {
+    const first = monitor([2]);
+    const second = monitor([1, 2], { box: first.box, failures: 2 });
+    expect(second.pm2).toContain('pm2 restart all');
+    expect(mails(second)).toBe(3);
+    expect(second.mail).toContain('Health Check Could Not Run After Restart');
+  });
+
+  it('resets the failure count before it restarts, so a run killed during the restart cannot restart again at once', () => {
+    expect(monitor([1, 0], { failures: 2 }).pm2).toContain('pm2 restart all count=0');
+  });
+
+  it('says so, in the log and the mail, when pm2 restart fails', () => {
+    const run = monitor([1, 1], { failures: 2, env: { EMAIL_TO: 'admin@example.com', PM2_RESTART_EXIT: '1' } });
+    expect(run.log).toContain('pm2 restart FAILED (exit code: 1)');
+    expect(run.mail).toContain('Services Restart FAILED After Health Check Failures');
+    expect(run.mail).toContain('the services may still be down');
+  });
+
+  it('mails an outage again when the earlier outage mail is older than its 6 hour window', () => {
+    const first = monitor([1]);
+    expect(mails(monitor([1], { box: first.box }))).toBe(1);
+    // The mark left by an outage whose recovery no run ever saw expires on its own.
+    writeFileSync(stateFile(first, 'outage-reported'), `${Math.floor(Date.now() / 1000) - 21_700}\n`);
+    expect(mails(monitor([1], { box: first.box, failures: 0 }))).toBe(2);
+  });
+
+  describe('state files it cannot trust', () => {
+    it.each([
+      ['a leading zero (an invalid octal number)', '09\n'],
+      ['text', 'not a time\n'],
+      ['a time in the future (the clock went back)', `${Math.floor(Date.now() / 1000) + 86_400}\n`],
+    ])('treats a cooldown file holding %s as due, and finishes normally', (_name, content) => {
+      const first = monitor([0]);
+      mkdirSync(path.dirname(stateFile(first, 'x')), { recursive: true });
+      writeFileSync(stateFile(first, 'could-not-run-2'), content);
+      const run = monitor([2], { box: first.box });
+      expect(run.status).toBe(2);
+      expect(mails(run)).toBe(1);
+      expect(run.mail).toContain('Health Check Could Not Run');
+    });
+
+    it('counts from 0 when the failure-count file holds something that is not a number', () => {
+      expect(monitor([1], { failuresRaw: '1 2\n' }).failures).toBe('1');
+    });
+
+    it('says so, and mails once, when it cannot save the failure count (it could never reach the restart threshold)', () => {
+      const run = monitor([1], { failuresUnwritable: true });
+      expect(run.log).toContain('could not save the failure count');
+      expect(run.mail).toContain('Health Monitor Cannot Save Its State');
+      expect(run.pm2).toBe('');
+    });
+  });
+
+  describe('one run at a time, and no leftovers', () => {
+    const lockDir = (box: Sandbox) => path.join(box.root, 'health-monitor.lock');
+    const holdLock = (box: Sandbox, pid: number, startedSecondsAgo: number) => {
+      mkdirSync(lockDir(box), { recursive: true });
+      writeFileSync(path.join(lockDir(box), 'pid'), `${pid}\n`);
+      writeFileSync(path.join(lockDir(box), 'started'), `${Math.floor(Date.now() / 1000) - startedSecondsAgo}\n`);
+    };
+
+    it('skips the run, without checking anything, while another run is still in progress', () => {
+      const box = sandbox();
+      holdLock(box, process.pid, 5); // this test process is alive
+      const run = monitor([1], { box });
+      expect(run.status).toBe(0);
+      expect(run.log).toContain(`Another health monitor run (pid ${process.pid}) is still in progress`);
+      expect(run.tsxArgs).toBe('');
+      expect(existsSync(lockDir(box))).toBe(true);
+    });
+
+    it.each([
+      ['its owner is gone', 2_147_483_646, 5],
+      ['it is older than 15 minutes, even if its owner exists', process.pid, 2_000],
+    ])('takes over a lock when %s, and releases it afterwards', (_name, pid, age) => {
+      const box = sandbox();
+      holdLock(box, pid, age);
+      const run = monitor([0], { box });
+      expect(run.status).toBe(0);
+      expect(run.log).toContain('Taking over a stale health monitor lock');
+      expect(run.tsxArgs).not.toBe('');
+      expect(existsSync(lockDir(box))).toBe(false);
+    });
+
+    it('leaves no lock and no temporary file behind, however the run ends', () => {
+      for (const codes of [[0], [3], [2], [1], [1, 0]]) {
+        const box = sandbox();
+        monitor(codes, { box, failures: codes.length > 1 ? 2 : undefined });
+        expect(existsSync(lockDir(box)), `lock after ${codes}`).toBe(false);
+        expect(readdirSync(box.root).filter((name) => /^health-monitor\.[A-Za-z0-9]{6}$/.test(name)), `temp files after ${codes}`).toEqual([]);
+      }
+    });
   });
 
   it('exits 2, so cron notices, when the restart alert could not be delivered although the retest passed', () => {
@@ -395,7 +640,7 @@ describe('scripts run end to end with a fake mail', () => {
     const failed = run(failing, [], { EMAIL_TO: 'admin@example.com', MAIL_EXIT: '1' });
     expect(failed.status).toBe(2);
     expect(failed.stderr).toContain('Report NOT emailed (mail exited with status 1)');
-  });
+  }, 60_000); // runs the whole script four times
 
   it('test-backup-restore.sh emails its report, and says so when it could not', () => {
     const run = (box: Sandbox, env: Record<string, string> = {}) => {
@@ -595,7 +840,7 @@ describe('the scripts themselves', () => {
   // Structure checks. The behavior itself is tested above (the state, exit-code and flow tests); these only
   // catch a script that grows an exit path which would skip the delivery check.
   // `exit 0` before any mail can have been sent is fine: --json mode in the cost report, the healthy path
-  // in health-monitor.sh (it only mails on failures).
+  // (health-monitor.sh's is skipping a run because another one holds the lock).
   it.each([
     ['cost-optimization-report.sh', 1],
     ['health-check.sh', 0],

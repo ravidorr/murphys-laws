@@ -49,6 +49,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `health-monitor.sh` is the only sender of production health alerts and no longer depends on SMTP (#198).
+  - `health-check.ts` always runs its checks: without SMTP settings or a recipient it warns and skips only
+    the email. A new `--no-email` mode reports by exit code and output only. Exit codes: `2` only for an
+    invalid recipient, `3` passed with warnings that were not emailed, `4` the script failed unexpectedly;
+    an exit `1` now always comes with a `Health check FAILED` line. Each check's timeout now covers reading
+    the response body (an API that sent its headers and then stalled used to hang the run);
+    `HEALTH_CHECK_TIMEOUT_MS` changes the 10 seconds.
+  - `health-monitor.sh` runs it with `--no-email`, so one run sends at most one email and a missing SMTP
+    setting can no longer stop the monitoring or the restarts. Only an exit `1` with that line counts
+    towards a restart; a check that could not run (a crash, `tsx` or `node` missing, a timeout, being
+    killed) sends a "could not run" alert and restarts nothing.
+  - Mail is rate-limited. The outage is emailed once (retried on the next failing run if that mail could
+    not be sent, and the mark expires after 6 hours), then the restart mail (its subject says so if
+    `pm2 restart all` failed) and the critical mail as before. "Could not run" is sent at most once per
+    exit code every 6 hours, "could not run after restart" has its own cooldown, and the slow-site warning
+    is sent at most once a day. A healthy run clears only the outage mark, so a check that flaps does not
+    mail on every flap, and a mail that could not be sent starts no cooldown. Malformed or future times in
+    the state files count as due, and the monitor warns (and mails once) when it cannot save the failure
+    count.
+  - The run is bounded and cleaned up: one run at a time (a lock directory, taken over when stale), a
+    `timeout 120` backstop where `timeout` exists, private temporary files removed on exit, state written
+    atomically, and the failure count reset before a restart so a run killed during it cannot restart again
+    at once. There is still no dead-man ping when the check could not run.
+  - `HEALTH_CHECK_EMAIL_TO` now applies only to `health-check.ts` and `health-check.sh` run by themselves.
+    Docs updated (`HEALTH-CHECK.md`, `SERVER_MAINTENANCE.md`, `.env.example`).
+    Backend bumped to `2.3.48`; root to `2.6.96` (the numbers skip because the branch carried two commits
+    that each bumped before they were squashed).
 - No monitoring email goes to a built-in personal address any more; the recipient now comes from
   configuration.
   - Order: `ALERT_EMAIL`, then `EMAIL_TO` (the admin address the server already uses for notices).
