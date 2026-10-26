@@ -10,6 +10,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="/root/murphys-laws"  # Hardcoded for cron execution
 LOG_FILE="/var/log/health-monitor.log"
 HEALTH_CHECK_FAILURES="/var/tmp/health-check-failures"
+ALERT_STATE_DIR="/var/tmp/health-monitor-alerts"
+COULD_NOT_RUN_COOLDOWN=21600  # at most one "could not run" mail per cause every 6 hours
+WARNING_COOLDOWN=86400        # at most one slow-site warning mail a day
 
 # Configuration
 MAX_FAILURES=3  # Restart after 3 consecutive failures
@@ -73,6 +76,29 @@ reset_failure_count() {
     echo "0" > "$HEALTH_CHECK_FAILURES"
 }
 
+# Cooldowns for mails that would otherwise repeat on every 5-minute run. A state file holds the time the
+# last mail for a key was accepted; it is written only after that, so a mail that could not be sent does
+# not hide the next attempt.
+alert_due() {
+    local file="$ALERT_STATE_DIR/$1" last now
+    [ -f "$file" ] || return 0
+    last="$(cat "$file" 2>/dev/null)"
+    [[ "$last" =~ ^[0-9]+$ ]] || return 0
+    now="$(date +%s)"
+    [ $((now - last)) -ge "$2" ]
+}
+
+record_alert_sent() {
+    mkdir -p "$ALERT_STATE_DIR" && date +%s > "$ALERT_STATE_DIR/$1" \
+        || log "Warning: could not record the alert time in $ALERT_STATE_DIR (it may repeat on every run)"
+}
+
+# Forgets the cooldown of every key starting with $1, so the next occurrence is reported straight away.
+clear_alert_state() {
+    rm -f "$ALERT_STATE_DIR/$1"* 2>/dev/null
+    return 0
+}
+
 # Send alert email
 send_alert() {
     local subject="$1"
@@ -88,17 +114,31 @@ send_alert() {
     return "$mail_status"
 }
 
+# send_alert, but at most once per $2 seconds for the key $1 (arguments: key, seconds, subject, body).
+send_alert_limited() {
+    local key="$1" seconds="$2" subject="$3" body="$4" mail_status=0
+    if ! alert_due "$key" "$seconds"; then
+        log "ALERT SUPPRESSED (cooldown): $subject"
+        return 0
+    fi
+    send_alert "$subject" "$body" || mail_status=$?
+    if [ "$mail_status" -eq 0 ]; then
+        record_alert_sent "$key"
+    fi
+    return "$mail_status"
+}
+
 # Runs the TypeScript health check, preferring the locally installed tsx (deploys run `npm ci` in backend/).
-# Exit codes: 0 healthy, 1 a check failed, 2 the check is misconfigured (not an outage), 3 only warnings
-# and the check's own alert email was not delivered. Anything else (126/127 when tsx, npx or node cannot be
-# started, 137 when it is killed, ...) means the check itself could not run, which says nothing about the
-# site.
+# It runs with --no-email: this script is the only sender, so one run sends at most one mail and SMTP
+# settings cannot stop the checks. Exit codes: 0 healthy, 1 a check failed, 3 healthy but with warnings
+# (slow responses). Anything else (2, 126/127 when tsx, npx or node cannot be started, 137 when it is killed,
+# ...) means the check itself could not run, which says nothing about the site.
 run_health_check() {
     local tsx_bin="$PROJECT_DIR/backend/node_modules/.bin/tsx"
     if [ -x "$tsx_bin" ]; then
-        "$tsx_bin" backend/scripts/health-check.ts
+        "$tsx_bin" backend/scripts/health-check.ts --no-email
     else
-        npx --yes tsx backend/scripts/health-check.ts
+        npx --yes tsx backend/scripts/health-check.ts --no-email
     fi
 }
 
@@ -125,25 +165,41 @@ health_check_class="$(classify_health_exit "$health_check_exit_code")"
 
 if [ "$health_check_class" = "healthy" ]; then
     log "Health check passed"
-    if [ "$health_check_exit_code" -eq 3 ]; then
-        log "Warning: the health check could not deliver its own alert email: $(cat /tmp/health-check-output.txt)"
-    fi
     reset_failure_count
+    clear_alert_state could-not-run
+    clear_alert_state outage-reported
+    if [ "$health_check_exit_code" -eq 3 ]; then
+        health_check_output=$(cat /tmp/health-check-output.txt)
+        log "Health check passed with warnings: $health_check_output"
+        send_alert_limited warnings "$WARNING_COOLDOWN" "Health Check Warning - Performance Degraded" \
+"The site is up, but the health check reported slow responses.
+
+Output:
+$health_check_output
+
+Time: $(date)
+
+This is sent at most once a day." || true
+    else
+        clear_alert_state warnings
+    fi
     ping_deadman
-    exit 0
+    exit "$(delivery_exit_code 0)"
 elif [ "$health_check_class" = "monitor-problem" ]; then
     # The check is misconfigured (exit 2) or could not be started at all (for example tsx or node is
     # missing). That says nothing about the site, so it must not count towards a restart. Report it and
     # leave the failure count alone.
     health_check_output=$(cat /tmp/health-check-output.txt)
     log "Health check could not run (exit code: $health_check_exit_code): $health_check_output"
-    send_alert "Health Check Could Not Run" \
+    send_alert_limited "could-not-run-$health_check_exit_code" "$COULD_NOT_RUN_COOLDOWN" "Health Check Could Not Run" \
 "The health check could not run (exit code $health_check_exit_code), either because it is misconfigured or because tsx or node could not be started. This says nothing about the site, so services were not restarted.
 
 Output:
 $health_check_output
 
-Time: $(date)" || true
+Time: $(date)
+
+This is sent at most once every 6 hours for the same exit code." || true
     exit 2
 else
     health_check_output=$(cat /tmp/health-check-output.txt)
@@ -198,13 +254,14 @@ Please investigate the root cause of the failures."
         retest_class="$(classify_health_exit "$retest_exit_code")"
         if [ "$retest_class" = "healthy" ]; then
             log "Health check passed after restart"
+            clear_alert_state outage-reported
             ping_deadman
             exit "$(delivery_exit_code 0)"
         elif [ "$retest_class" = "monitor-problem" ]; then
             retest_output=$(cat /tmp/health-check-retest.txt)
             log "Health check could not run after restart (exit code: $retest_exit_code)"
 
-            send_alert "Health Check Could Not Run After Restart" \
+            send_alert_limited "could-not-run-$retest_exit_code" "$COULD_NOT_RUN_COOLDOWN" "Health Check Could Not Run After Restart" \
 "Services were restarted, but the health check could not run afterwards (exit code $retest_exit_code), so it is not known whether the site recovered.
 
 Output:
@@ -229,14 +286,28 @@ IMMEDIATE INVESTIGATION REQUIRED."
             exit 1
         fi
     else
-        # Not at threshold yet, just log and alert
-        send_alert "Health Check Failed ($failure_count/$MAX_FAILURES)" \
+        # Not at threshold yet. Email the outage once; the restart mail (and, if the restart does not help,
+        # the critical one) cover the rest, so the runs in between would only repeat it. "Once" means once
+        # delivered: the mark is written only after mail accepted the message, so if the first mail could
+        # not be sent, the next failing run tries again instead of staying silent (and an outage that ends
+        # before the restart is still reported).
+        if [ -f "$ALERT_STATE_DIR/outage-reported" ]; then
+            log "ALERT SUPPRESSED (this outage was already emailed): Health Check Failed ($failure_count/$MAX_FAILURES)"
+        else
+            outage_mail_status=0
+            send_alert "Health Check Failed ($failure_count/$MAX_FAILURES)" \
 "Health check has failed $failure_count time(s). Services will be automatically restarted after $MAX_FAILURES consecutive failures.
 
 Health Check Output:
 $health_check_output
 
-Time: $(date)"
+Time: $(date)
+
+No further email is sent until the restart, if the failures continue." || outage_mail_status=$?
+            if [ "$outage_mail_status" -eq 0 ]; then
+                record_alert_sent outage-reported
+            fi
+        fi
 
         exit 1
     fi

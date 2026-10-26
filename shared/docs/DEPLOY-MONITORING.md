@@ -80,7 +80,7 @@ The scripts have no built-in alert address. They email `ALERT_EMAIL`, or `EMAIL_
 server already uses for notices) when that is not set, looking in the environment first and then in the
 `.env` files (`$ALERT_ENV_FILE` if set, then `/root/murphys-laws/.env`, then
 `/root/murphys-laws/backend/.env`; the deploy writes only `backend/.env`, from the repository secrets, and the
-deploy stops if neither `ALERT_EMAIL` nor `EMAIL_TO` is set). `health-check` also honors `HEALTH_CHECK_EMAIL_TO` first. Unlike the API, they do not
+deploy stops if neither `ALERT_EMAIL` nor `EMAIL_TO` is set). `health-check` also honors `HEALTH_CHECK_EMAIL_TO` first when run by itself (not through `health-monitor.sh`). Unlike the API, they do not
 fall back to `admin@murphys-laws.com`: with no address configured a script logs `ALERT NOT SENT` (or `Report NOT emailed`), warns on
 stderr and in syslog (`logger -t murphys-alerts`), and skips the email instead of failing. To use a different
 address, set the repository secret `ALERT_EMAIL` and deploy (a value typed into `backend/.env` by hand is

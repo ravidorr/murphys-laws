@@ -58,7 +58,7 @@ An optional secret that is not set is left out of the server's `.env` (an empty 
 
 ### HEALTH_CHECK_EMAIL_TO
 - **Value**: An address for health-check alerts only
-- **Description**: Overrides `ALERT_EMAIL` and `EMAIL_TO` for the health check's own failure and warning emails (`health-check.ts`, which production's `health-monitor.sh` runs, and `health-check.sh`). The emails `health-monitor.sh` sends itself still follow `ALERT_EMAIL`, then `EMAIL_TO`. See `HEALTH-CHECK.md` for how to add and remove it.
+- **Description**: Overrides `ALERT_EMAIL` and `EMAIL_TO` for `health-check.ts` and `health-check.sh` when they run by themselves. It does not change production alerts: `health-monitor.sh` runs the check with `--no-email` and sends its own mail to `ALERT_EMAIL`, then `EMAIL_TO`. See `HEALTH-CHECK.md` for how to add and remove it.
 
 ## How to Add/Update Secrets
 
