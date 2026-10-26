@@ -21,11 +21,17 @@ config({ path: join(backendDir, '.env') });
 const NO_EMAIL = process.argv.includes('--no-email');
 
 /**
- * Exit codes: 0 healthy; 1 a check failed; 2 the alert recipient is invalid (nothing was checked);
- * 3 passed with warnings that were not emailed (--no-email, or the email could not be sent).
+ * Exit codes: 0 healthy; 1 a check failed (the output then contains the line "Health check FAILED", which
+ * health-monitor.sh looks for, because a crash that exits 1 before any check ran must not look like an
+ * outage); 2 the alert recipient is invalid (nothing was checked); 3 passed with warnings that were not
+ * emailed (--no-email, or the email could not be sent); 4 the script itself failed unexpectedly.
  */
 const EXIT_CONFIG_ERROR = 2;
 const EXIT_WARNINGS_NOT_EMAILED = 3;
+const EXIT_INTERNAL_ERROR = 4;
+
+/** How long each check may take, body included (a response that sends its headers and then stalls counts). */
+const TIMEOUT_MS = Number(process.env.HEALTH_CHECK_TIMEOUT_MS) || 10000;
 
 const FRONTEND_URL = process.env.HEALTH_CHECK_FRONTEND_URL ?? 'https://murphys-laws.com';
 const API_URL = process.env.HEALTH_CHECK_API_URL ?? 'https://murphys-laws.com/api/health';
@@ -76,7 +82,10 @@ interface CheckResult {
 
 type Delivery = 'sent' | 'not-sent' | 'skipped';
 
-/** Whether the alert email was accepted by the SMTP server, or not attempted at all (`--no-email`). */
+/**
+ * 'sent': the SMTP server accepted the email. 'not-sent': it was attempted and failed, or email is not
+ * configured. 'skipped': not attempted because of `--no-email`.
+ */
 async function sendAlert(subject: string, message: string): Promise<Delivery> {
   if (NO_EMAIL) {
     return 'skipped';
@@ -122,17 +131,15 @@ async function sendAlert(subject: string, message: string): Promise<Delivery> {
 }
 
 async function checkFrontend(): Promise<CheckResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const startTime = Date.now();
     const response = await fetch(FRONTEND_URL, {
       signal: controller.signal,
       headers: { 'User-Agent': 'MurphysLaws-HealthCheck/1.0' }
     });
     const responseTime = Date.now() - startTime;
-    clearTimeout(timeoutId);
 
     if (response.status !== 200) {
       return {
@@ -158,25 +165,26 @@ async function checkFrontend(): Promise<CheckResult> {
     const err = error as Error & { name?: string };
     return {
       success: false,
-      error: err.name === 'AbortError' ? 'Request timeout (10s)' : err.message,
+      error: err.name === 'AbortError' ? `Request timeout (${TIMEOUT_MS / 1000}s)` : err.message,
       url: FRONTEND_URL,
-      responseTime: err.name === 'AbortError' ? 10000 : null
+      responseTime: err.name === 'AbortError' ? TIMEOUT_MS : null
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 async function checkAPI(): Promise<CheckResult> {
+  const controller = new AbortController();
+  // Kept running until the body has been read: an API that sends its headers and then stalls must time out too.
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const startTime = Date.now();
     const response = await fetch(API_URL, {
       signal: controller.signal,
       headers: { 'User-Agent': 'MurphysLaws-HealthCheck/1.0' }
     });
     const responseTime = Date.now() - startTime;
-    clearTimeout(timeoutId);
 
     if (response.status !== 200) {
       return {
@@ -202,10 +210,12 @@ async function checkAPI(): Promise<CheckResult> {
     const err = error as Error & { name?: string };
     return {
       success: false,
-      error: err.name === 'AbortError' ? 'Request timeout (10s)' : err.message,
+      error: err.name === 'AbortError' ? `Request timeout (${TIMEOUT_MS / 1000}s)` : err.message,
       url: API_URL,
-      responseTime: err.name === 'AbortError' ? 10000 : null
+      responseTime: err.name === 'AbortError' ? TIMEOUT_MS : null
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -291,5 +301,5 @@ async function runHealthCheck(): Promise<void> {
 
 runHealthCheck().catch((error) => {
   console.error('Health check script error:', error);
-  process.exit(1);
+  process.exit(EXIT_INTERNAL_ERROR);
 });

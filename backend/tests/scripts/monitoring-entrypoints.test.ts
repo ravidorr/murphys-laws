@@ -79,6 +79,33 @@ function startAppServer(dbQueryTime: number): Promise<{ frontend: string; api: s
   });
 }
 
+/** A half-dead site: `/health` answers 200 with its headers and the start of a body, and then stalls. */
+function startStallingServer(): Promise<{ frontend: string; api: string; close: () => Promise<void> }> {
+  const server = http.createServer((request, response) => {
+    if (request.url === '/health') {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.write('{"ok":');
+    } else {
+      response.writeHead(200, { 'content-type': 'text/html' });
+      response.end('<html></html>');
+    }
+  });
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      const base = `http://127.0.0.1:${(server.address() as net.AddressInfo).port}`;
+      resolve({
+        frontend: base,
+        api: `${base}/health`,
+        close: () =>
+          new Promise<void>((done) => {
+            server.closeAllConnections();
+            server.close(() => done());
+          }),
+      });
+    });
+  });
+}
+
 /** A minimal SMTP server that accepts any mail (or rejects every recipient) and records every RCPT TO address. */
 function startSmtpServer({ rejectRecipients = false } = {}): Promise<{ port: number; recipients: string[]; close: () => Promise<void> }> {
   const recipients: string[] = [];
@@ -259,6 +286,24 @@ describe('health-check.ts', () => {
     expect(result.stderr).toContain('Invalid alert recipient');
     expect(result.stdout).not.toContain('Running health check');
   });
+
+  it('times out, and reports a failure, when the API sends its headers and then stalls the body', async () => {
+    const app = await startStallingServer();
+    try {
+      const result = await runScript('health-check.ts', ['--no-email'], {
+        ...noConfig(),
+        HEALTH_CHECK_FRONTEND_URL: app.frontend,
+        HEALTH_CHECK_API_URL: app.api,
+        HEALTH_CHECK_TIMEOUT_MS: '500',
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('API check failed: Request timeout (0.5s)');
+      // The line health-monitor.sh looks for before it treats an exit code 1 as an outage.
+      expect(result.stderr).toContain('Health check FAILED.');
+    } finally {
+      await app.close();
+    }
+  }, 30_000);
 
   describe('when the site is up but slow (warnings only)', () => {
     let app: Awaited<ReturnType<typeof startAppServer>>;
