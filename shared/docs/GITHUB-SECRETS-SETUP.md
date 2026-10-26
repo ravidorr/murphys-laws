@@ -44,6 +44,22 @@ Navigate to: **GitHub Repository -> Settings -> Secrets and variables -> Actions
 - **Value**: `alerts@murphys-laws.com` (or your preferred from address)
 - **Description**: From address for system emails
 
+### 9. EMAIL_TO
+- **Value**: The admin address that should receive notices and monitoring email
+- **Description**: Receives new-submission notices (the API falls back to `admin@murphys-laws.com` when it is empty). The monitoring scripts and the daily report also use it when `ALERT_EMAIL` is not set, and have no built-in fallback. The deploy therefore stops, before anything reaches the server, unless `ALERT_EMAIL` or `EMAIL_TO` is set (a blank or whitespace-only value counts as not set).
+
+## Optional Secrets
+
+An optional secret that is not set is left out of the server's `.env` (an empty value counts as not set everywhere).
+
+### ALERT_EMAIL
+- **Value**: An address for all monitoring email (health monitor, SSL monitor, cost report, backup restore test, daily report, health check). The shell scripts and the health check also accept several addresses as a comma-separated list.
+- **Description**: Overrides `EMAIL_TO` for those scripts only
+
+### HEALTH_CHECK_EMAIL_TO
+- **Value**: An address for health-check alerts only
+- **Description**: Overrides `ALERT_EMAIL` and `EMAIL_TO` for the health check's own failure and warning emails (`health-check.ts`, which production's `health-monitor.sh` runs, and `health-check.sh`). The emails `health-monitor.sh` sends itself still follow `ALERT_EMAIL`, then `EMAIL_TO`. See `HEALTH-CHECK.md` for how to add and remove it.
+
 ## How to Add/Update Secrets
 
 1. Go to your GitHub repository

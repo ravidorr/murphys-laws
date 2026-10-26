@@ -12,7 +12,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-/root/murphys-laws}"
 CAPACITY_ANALYZER="${CAPACITY_ANALYZER:-$REPO_ROOT/backend/scripts/analyze-capacity-metrics.ts}"
 REPORT_FILE="/tmp/cost-optimization-report-$(date +%Y-%m).txt"
-ALERT_EMAIL="ravidor@gmail.com"
+# Load the shared alert helper from beside this script (following symlinks), else from the repo copy;
+# if neither exists, stop rather than carry on and lose every alert silently.
+_alert_self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+_alert_helper="$(dirname "$_alert_self")/alert-email.sh"
+[ -f "$_alert_helper" ] || _alert_helper="${REPO_ROOT:-/root/murphys-laws}/backend/scripts/alert-email.sh"
+# The helper's existence is tested before sourcing it so a missing file is always handled here, whatever
+# shell options are set (a POSIX-mode shell exits as soon as `source` fails).
+# shellcheck source=alert-email.sh
+if [ ! -f "$_alert_helper" ] || ! source "$_alert_helper"; then
+    echo "FATAL: cannot load alert-email.sh (looked beside $0 and under \${REPO_ROOT:-/root/murphys-laws}); alerts would be lost" >&2
+    logger -t murphys-alerts -p user.err -- "FATAL: $(basename "$0") cannot load alert-email.sh" 2>/dev/null || true
+    exit 1
+fi
+ALERT_EMAIL="$(resolve_alert_email)"
 SEND_EMAIL=true
 OUTPUT_FORMAT="text"
 METRICS_DIR="${METRICS_DIR:-/var/log/performance-metrics}"
@@ -276,7 +289,13 @@ fi
 echo -e "$REPORT"
 
 if [ "$SEND_EMAIL" = true ]; then
-    echo -e "$REPORT" | mail -s "[Murphy's Laws] Monthly Cost Optimization Report" "$ALERT_EMAIL"
     echo "Report saved to $REPORT_FILE" >&2
-    echo "Report emailed to $ALERT_EMAIL" >&2
+    if echo -e "$REPORT" | send_alert_mail "[Murphy's Laws] Monthly Cost Optimization Report"; then
+        echo "Report emailed to $ALERT_EMAIL" >&2
+    else
+        echo "Report NOT emailed ($(describe_alert_mail_status "$?"))" >&2
+        ALERT_UNDELIVERED=1
+    fi
 fi
+
+exit "$(delivery_exit_code 0)"

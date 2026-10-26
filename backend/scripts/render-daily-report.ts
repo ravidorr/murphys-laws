@@ -6,7 +6,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
+import { fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from './alert-recipient.ts';
 import { SITE_URL } from '../src/utils/constants.ts';
 
 export type ReportItemKind =
@@ -60,7 +60,6 @@ export interface MessageOptions {
 }
 
 const DEFAULT_FROM = "Murphy's Laws Server <alerts@murphys-laws.com>";
-const DEFAULT_ALERT_EMAIL = 'ravidor@gmail.com';
 const SECTION_RULE = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
 const PENDING_COUNT_TIMEOUT_MS = 15_000;
@@ -1498,6 +1497,14 @@ export function collectDailyReport(options: CollectOptions = {}): DailyReport {
   return collectLiveReport(now, repoRoot);
 }
 
+/**
+ * Who gets the report: the test recipient for `--test-email` (which never falls back to the alert
+ * address), otherwise ALERT_EMAIL, then EMAIL_TO.
+ */
+export function reportRecipient(env: NodeJS.ProcessEnv, testEmail: boolean): string | null {
+  return testEmail ? env.DAILY_REPORT_TEST_RECIPIENT?.trim() || null : resolveAlertRecipient(env);
+}
+
 export interface RunCliOptions {
   env?: NodeJS.ProcessEnv;
   sendmailPath?: string;
@@ -1506,47 +1513,54 @@ export interface RunCliOptions {
 export function runCli(args: string[], options: RunCliOptions = {}): void {
   const env = options.env ?? process.env;
   const testEmail = args.includes('--test-email');
+
+  // Decide who gets it before collecting anything, so a missing recipient fails fast and loudly.
+  const recipient = reportRecipient(env, testEmail);
+  if (!recipient) {
+    throw new Error(
+      testEmail
+        ? 'DAILY_REPORT_TEST_RECIPIENT must be set for --test-email'
+        : 'No alert recipient. Set ALERT_EMAIL or EMAIL_TO (the admin address used for notices).',
+    );
+  }
+
+  // One address or a comma-separated list; each is checked before anything is collected, so nothing odd
+  // reaches sendmail's arguments.
+  const recipients = parseRecipientList(recipient);
+
   const report = collectDailyReport({
     mode: testEmail ? 'test-email' : 'live',
     now: new Date(),
   });
 
-  const recipient = testEmail
-    ? env.DAILY_REPORT_TEST_RECIPIENT
-    : (env.ALERT_EMAIL ?? DEFAULT_ALERT_EMAIL);
-
-  if (!recipient) {
-    throw new Error('DAILY_REPORT_TEST_RECIPIENT must be set for --test-email');
-  }
-
   const from = env.FROM_EMAIL ?? DEFAULT_FROM;
-  const { message } = buildMultipartMessage(report, { from, to: recipient });
+  const { message } = buildMultipartMessage(report, { from, to: recipients.join(', ') });
   const sendmailPath = options.sendmailPath ?? 'sendmail';
 
-  const result = spawnSync(sendmailPath, ['-t', recipient], {
+  const result = spawnSync(sendmailPath, ['-t', ...recipients], {
     input: message,
     encoding: 'utf8',
     env,
   });
+  if (result.error) {
+    // sendmail could not be started at all (for example it is not installed): say why.
+    throw new Error(`Could not run ${sendmailPath}: ${result.error.message} (PATH: ${env.PATH ?? 'not set'})`);
+  }
   if (result.status !== 0) {
-    throw new Error(result.stderr || `sendmail exited with code ${result.status ?? 'unknown'}`);
+    throw new Error(result.stderr || `sendmail exited with code ${result.status ?? `signal ${result.signal}`}`);
   }
 }
 
+/** Settings the report needs from the server's `.env` files, because the cron launcher does not load them. */
+const ENV_FILE_KEYS = ['BASE_URL', 'ALERT_EMAIL', 'EMAIL_TO'] as const;
+
 /**
- * The cron launcher does not load `.env`, so read `BASE_URL` from the same files the API
- * server uses (root `.env`, then `backend/.env`). A value already in `env` always wins.
+ * Reads `BASE_URL`, `ALERT_EMAIL` and `EMAIL_TO` from the files alert-email.sh reads: `$ALERT_ENV_FILE`
+ * when set, then the root `.env` and `backend/.env` the API server uses. A non-blank value already in
+ * `env` always wins, and earlier files win over later ones.
  */
-export function loadBaseUrlFromEnvFiles(repoRoot: string, env: NodeJS.ProcessEnv = process.env): void {
-  for (const envFile of [path.join(repoRoot, '.env'), path.join(repoRoot, 'backend/.env')]) {
-    if (env.BASE_URL?.trim() || !existsSync(envFile)) {
-      continue;
-    }
-    const baseUrl = dotenv.parse(readFileSync(envFile))['BASE_URL'];
-    if (baseUrl?.trim()) {
-      env.BASE_URL = baseUrl;
-    }
-  }
+export function loadConfigFromEnvFiles(repoRoot: string, env: NodeJS.ProcessEnv = process.env): void {
+  fillEnvFromFiles(repoRoot, env, ENV_FILE_KEYS);
 }
 
 const isMain =
@@ -1554,6 +1568,6 @@ const isMain =
   fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMain) {
-  loadBaseUrlFromEnvFiles(repoRootFromEnv(process.env.REPO_ROOT));
+  loadConfigFromEnvFiles(repoRootFromEnv(process.env.REPO_ROOT));
   runCli(process.argv.slice(2));
 }

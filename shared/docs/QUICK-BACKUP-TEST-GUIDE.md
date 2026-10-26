@@ -10,14 +10,16 @@ Execute these commands directly on each droplet to test backup restore procedure
 
 ```bash
 # On your local machine
-scp scripts/test-backup-restore.sh root@167.99.53.90:/tmp/
+scp backend/scripts/test-backup-restore.sh root@167.99.53.90:/tmp/
+scp backend/scripts/alert-email.sh root@167.99.53.90:/tmp/
 
 # SSH into main droplet
 ssh root@167.99.53.90
 
-# Install the test script
+# Install the test script and the helper it sources to find the alert address
+sudo cp /tmp/alert-email.sh /usr/local/bin/
 sudo cp /tmp/test-backup-restore.sh /usr/local/bin/
-sudo chmod +x /usr/local/bin/test-backup-restore.sh
+sudo chmod +x /usr/local/bin/alert-email.sh /usr/local/bin/test-backup-restore.sh
 ```
 
 ### Step 2: Run Automated Test
@@ -41,7 +43,7 @@ Failed: 0
 # View the detailed test report
 cat /tmp/backup-restore-test-$(date +%Y-%m-%d).txt
 
-# Check your email (ravidor@gmail.com) for the full report
+# Check your email (ALERT_EMAIL, or EMAIL_TO when that is not set) for the full report
 ```
 
 ### Step 4: Verify Specific Backups (Optional)

@@ -49,6 +49,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- No monitoring email goes to a built-in personal address any more; the recipient now comes from
+  configuration.
+  - Order: `ALERT_EMAIL`, then `EMAIL_TO` (the admin address the server already uses for notices).
+    `health-check.ts` and `health-check.sh` also honor `HEALTH_CHECK_EMAIL_TO` first. Blank values count
+    as unset. A recipient setting may be a comma-separated list; the shell scripts and `health-check.ts`
+    send to each address and reject a list that contains an invalid one.
+  - TypeScript (`health-check.ts` and the daily report) share one resolver and one list parser in
+    `scripts/alert-recipient.ts`, and stop with an error when no recipient is configured or one is invalid
+    (the daily report checks before it collects anything). Because cron has no environment, both read the
+    recipient from the server's `.env` files, as the shell scripts do, skipping a file that cannot be read.
+  - The five shell scripts that send mail (`health-check.sh`, `health-monitor.sh`, `ssl-monitor.sh`,
+    `cost-optimization-report.sh`, `test-backup-restore.sh`) share a new `alert-email.sh`. It looks in the
+    environment and then in `$ALERT_ENV_FILE`, the root `.env` and `backend/.env`, parsing the usual forms
+    the way dotenv does and never executing the files. It checks the address, calls `mail` with `--`, and
+    reports a distinct status for sent, no recipient, invalid recipient and mail failure. A script that
+    cannot find the helper (beside itself, or under `$REPO_ROOT`) stops with
+    `FATAL: cannot load alert-email.sh` instead of losing every alert. `vulnerability-scanner.sh` sends no
+    email (the daily report includes its output), so its hard-coded address and unused `send_report` are
+    simply removed.
+  - With no address, the shell scripts warn on stderr and in syslog (`logger -t murphys-alerts`), skip the
+    email, and exit with code `2` when the run would otherwise have succeeded, so cron notices. A run that
+    failed for its own reasons keeps its own exit code, and a suppressed repeat alert is not a failure.
+  - Alert logs and state are honest. `ALERT SENT` and the cooldown (`health-check.sh`) or once-a-day
+    (`ssl-monitor.sh`) state are recorded only after `mail` accepted the message, so a dropped alert can no
+    longer hide the next one. Failures log `ALERT NOT SENT (reason)` (`Report NOT emailed (reason)` in the
+    report scripts), and `health-monitor.sh` no longer claims "Alert sent." regardless of the result. `mail`
+    exiting 0 only means the local mail system accepted the message (documented).
+  - `health-check.ts` no longer says "Alert email sent" when the email failed (it prints
+    `ALERT EMAIL NOT SENT`) and uses distinct exit codes: `1` a check failed, `2` misconfigured (no SMTP
+    settings, or a missing or invalid recipient), `3` only warnings and the alert could not be delivered.
+  - `health-monitor.sh` ran `backend/scripts/health-check.mjs`, which no longer exists, so every run counted
+    as a failed check. It now runs `health-check.ts` through `tsx`. Only a real failure (exit `1`) counts
+    towards a restart; a check that could not run (exit `2`, or `126`/`127`/`137` when `tsx` or `node`
+    cannot be started) sends a "could not run" alert and restarts nothing, and exit `3` counts as healthy.
+  - Deploy: the workflow checks, in its own step before anything is uploaded, that `ALERT_EMAIL` or
+    `EMAIL_TO` is set (a blank or whitespace-only secret counts as unset), and the server script checks that
+    the monitoring scripts arrived before it changes anything live. `npm run deploy` makes the same file
+    check before its first sync. The helper and the scripts that load it are installed with failures not
+    ignored, and the cause is shown; `npm run deploy` now also installs `health-monitor.sh` and
+    `ssl-monitor.sh`. The optional `ALERT_EMAIL` and `HEALTH_CHECK_EMAIL_TO` are left out of the server
+    `.env` when their secrets are not set.
+  - Docs: `shared/docs/HEALTH-CHECK.md` (which script honors which variable, exit codes, how to add or
+    remove the secrets), `DEPLOY-MONITORING.md`, the backup-test guides, `DISASTER-RECOVERY.md` (the rebuilt
+    `.env` now has a recipient), `GITHUB-SECRETS-SETUP.md`, `backend/README.md` and `.env.example`. Runbook
+    examples use a `<your-email>` placeholder (the Emergency Contacts entry is kept), and the unused
+    address in `log-analyzer.sh` is gone. In `render-daily-report.ts` the sendmail error now says why
+    `sendmail` could not be started.
+  - Tests run the monitoring scripts in a sandbox with a fake `mail` that records each argument, a local
+    SMTP server and site for `health-check.ts`, the whole of `health-monitor.sh` with a fake `tsx` and
+    `pm2`, the daily report's cron entry point with no environment, and the extracted alert functions of the
+    other scripts.
+  - In production, monitoring email now goes to the `EMAIL_TO` secret's address unless `ALERT_EMAIL` (or,
+    for the health check, `HEALTH_CHECK_EMAIL_TO`) is set. Backend bumped to `2.3.45`; root to `2.6.93`.
 - `.env.example` reorganized into sections with a header explaining where to copy it and that every
   variable is optional, a default noted for each variable, and a single `BASE_URL` entry that now
   covers the admin GitHub sign-in as well as the daily report. Added the variables the code
