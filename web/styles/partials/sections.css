@@ -352,7 +352,7 @@
 }
 
 .content-figure figcaption {
-  max-width: 38rem;
+  max-width: 37.75rem;
   margin-inline: auto;
   color: var(--muted-fg);
   text-align: center;
