@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import { externalLinkRenderer } from './markdown-links.ts';
+import { insertContentFigure } from './content-figures.ts';
 
 // Import markdown files from shared content
 import aboutMd from '../../../shared/content/about.md?raw';
@@ -296,7 +297,7 @@ export function getPageContent(page: ContentPage): string {
   output += html;
   output += '\n  </div>\n</article>';
 
-  return output;
+  return insertContentFigure(page, output);
 }
 
 /**

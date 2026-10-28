@@ -14,6 +14,7 @@ import {
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
+import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
@@ -1220,7 +1221,7 @@ ${categoryCardsHtml.trim()}
       }
 
       // Build the static content wrapper using card-header/card-body structure
-      const cardHtml = wrapInCardStructure(htmlContent, { lastUpdated });
+      const cardHtml = insertContentFigure(page.slug, wrapInCardStructure(htmlContent, { lastUpdated }));
       // Article pages also get the archive button row and featured laws
       const articleArchive = buildStaticArticleArchive(page.slug, laws);
       const staticContent = `
