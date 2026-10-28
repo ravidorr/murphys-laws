@@ -65,6 +65,18 @@ describe('SSG Utilities', () => {
     ]));
   });
 
+  it('requires the article photo on pages that should have one', () => {
+    const withFigure = metadataTemplate.replace(
+      '</body>',
+      '<figure class="content-figure"><img src="/img/sledtrk.jpg" alt="Sled"></figure></body>'
+    );
+
+    expect(validateGeneratedPage(metadataTemplate, { canonicalPath: '/', requireContentFigure: true }))
+      .toContain('missing article photo');
+    expect(validateGeneratedPage(withFigure, { canonicalPath: '/', requireContentFigure: true }))
+      .not.toContain('missing article photo');
+  });
+
   describe('wrapFirstWordWithAccent', () => {
     it('wraps first word with accent-text span for multi-word text', () => {
       const result = wrapFirstWordWithAccent('About Murphy\'s Law');

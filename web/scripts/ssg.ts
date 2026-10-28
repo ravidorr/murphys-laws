@@ -553,6 +553,7 @@ interface GeneratedPageExpectations {
   canonicalPath: string;
   forbidMailto?: boolean;
   requireCategoryLink?: boolean;
+  requireContentFigure?: boolean;
 }
 
 function validateGeneratedPage(html: string, expectations: GeneratedPageExpectations): string[] {
@@ -568,6 +569,9 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   if (expectations.requireCategoryLink && !/href="\/category\/[^"/]+"/i.test(html)) {
     failures.push('missing navigable category link');
   }
+  if (expectations.requireContentFigure && !/<figure class="content-figure">[\s\S]*?<img [^>]*src="\/img\/[^"]+"/i.test(html)) {
+    failures.push('missing article photo');
+  }
   return failures;
 }
 
@@ -576,6 +580,7 @@ async function validateGeneratedOutput(): Promise<void> {
     { file: 'browse/index.html', expectations: { canonicalPath: '/browse' } },
     { file: 'categories/index.html', expectations: { canonicalPath: '/categories', requireCategoryLink: true } },
     { file: 'submit/index.html', expectations: { canonicalPath: '/submit' } },
+    { file: 'origin-story/index.html', expectations: { canonicalPath: '/origin-story', requireContentFigure: true } },
     { file: 'calculator/sods-law/index.html', expectations: { canonicalPath: '/calculator/sods-law' } },
     { file: 'calculator/buttered-toast/index.html', expectations: { canonicalPath: '/calculator/buttered-toast' } }
   ];
@@ -584,6 +589,12 @@ async function validateGeneratedOutput(): Promise<void> {
     const html = await fs.readFile(path.join(DIST_DIR, file), 'utf-8');
     const failures = validateGeneratedPage(html, expectations);
     if (failures.length > 0) throw new Error(`Invalid generated page ${file}: ${failures.join('; ')}`);
+    if (expectations.requireContentFigure) {
+      const figureSrc = html.match(/<figure class="content-figure">[\s\S]*?<img [^>]*src="(\/img\/[^"]+)"/i)![1]!;
+      await fs.access(path.join(DIST_DIR, figureSrc)).catch(() => {
+        throw new Error(`Invalid generated page ${file}: article photo ${figureSrc} is missing from the build output`);
+      });
+    }
   }
 
   for (const routeName of ['category', 'law']) {
