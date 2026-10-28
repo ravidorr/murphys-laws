@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Origin Story page shows the rocket sled photo with alt text and a caption, served at
+  `/img/sledtrk.jpg` (the path the old site used, so old emails and pages that still embed it keep
+  working). The figure is added by the web app and the static prerender, not the shared markdown, so the
+  mobile apps are unaffected. The build now fails if the prerendered Origin Story page loses its photo
+  or the image is missing from the output. Web bumped to `3.4.26`; root to `2.6.99`.
 - Added `.github/FUNDING.yml` so the repository shows a GitHub Sponsors button for `ravidorr`
   (the button is driven by this file, not by `package.json`). Root bumped to `2.6.91`.
 - Admin "Sign in with GitHub" (#186). The admin page shows a sign-in button; an allowlisted GitHub
