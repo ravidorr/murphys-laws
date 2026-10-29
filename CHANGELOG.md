@@ -54,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Added an npm `overrides` entry that pins `re2js` to `2.9.1` under `markdownlint`, fixing the quadratic-time
+  lookbehind denial-of-service advisory GHSA-gg6h-894w-4m9c that failed the dependency audit.
+  `markdownlint-cli2` and `markdownlint` are already at their latest releases and pin `re2js` `2.8.6`, so
+  the override can be removed once `markdownlint` ships a patched `re2js`. Root bumped to `2.6.101`.
 - iOS: the `Int: Identifiable` extension used for sheets is now `@retroactive`, which silences the Swift
   compiler warning that it could clash if Apple adds the conformance. All workflows use
   `actions/checkout@v7` and `actions/setup-node@v7` (already used by `dependency-audit.yml`), ending the
