@@ -145,7 +145,7 @@ extension View {
 }
 
 // MARK: - Make Int Identifiable for Sheet
-extension Int: Identifiable {
+extension Int: @retroactive Identifiable {
     public var id: Int { self }
 }
 
