@@ -54,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- iOS: the `Int: Identifiable` extension used for sheets is now `@retroactive`, which silences the Swift
+  compiler warning that it could clash if Apple adds the conformance. All workflows use
+  `actions/checkout@v7` and `actions/setup-node@v7` (already used by `dependency-audit.yml`), ending the
+  Node.js 20 deprecation warning. iOS bumped to `1.2.6` / build `22`; root to `2.6.100`.
 - `health-monitor.sh` is the only sender of production health alerts and no longer depends on SMTP (#198).
   - `health-check.ts` always runs its checks: without SMTP settings or a recipient it warns and skips only
     the email. A new `--no-email` mode reports by exit code and output only. Exit codes: `2` only for an
