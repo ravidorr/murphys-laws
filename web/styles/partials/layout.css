@@ -565,10 +565,19 @@ header form[role="search"] input {
   display: none;
 }
 
-.legacy-display header.sticky .header-search input {
-  flex: none;
-  width: 11rem;
-  min-width: 0;
+/* Explicit spacing because the Kindle browser ignores flex gap */
+.legacy-display header.sticky .header-search .btn {
+  margin-left: .5rem;
+}
+
+/* Wider than the mobile breakpoint the search sits in the brand row, so keep the input short;
+   at 600px and below it already takes a full-width row of its own. */
+@media (width > 600px) {
+  .legacy-display header.sticky .header-search input {
+    flex: none;
+    width: 11rem;
+    min-width: 0;
+  }
 }
 
 .legacy-display .brand-name {
