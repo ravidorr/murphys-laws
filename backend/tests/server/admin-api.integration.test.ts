@@ -179,6 +179,13 @@ describe('admin API through the real server and migrated database', () => {
       ADMIN_SESSION_SECRET: 'z'.repeat(40),
       BASE_URL: 'https://murphys-laws.com', // Vitest itself sets BASE_URL to '/'
     };
+    // createApiServer loads a developer's local .env, which dotenv only applies to variables that are
+    // not already defined, so blank them (empty counts as unset) instead of deleting them.
+    const saved = Object.fromEntries(Object.keys(oauth).map((key) => [key, process.env[key]]));
+    for (const key of Object.keys(oauth)) process.env[key] = '';
+    // The server built in beforeEach already logged using those local values.
+    vi.mocked(console.log).mockClear();
+    vi.mocked(console.warn).mockClear();
     try {
       createApiServer({ db: db as any });
       expect(console.log).not.toHaveBeenCalledWith('Admin GitHub sign-in enabled');
@@ -188,7 +195,7 @@ describe('admin API through the real server and migrated database', () => {
       createApiServer({ db: db as any });
       expect(console.log).toHaveBeenCalledWith('Admin GitHub sign-in enabled');
 
-      delete process.env.ADMIN_GITHUB_USERS;
+      process.env.ADMIN_GITHUB_USERS = '';
       createApiServer({ db: db as any });
       expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Admin GitHub sign-in disabled (incomplete)'));
 
@@ -197,7 +204,10 @@ describe('admin API through the real server and migrated database', () => {
       createApiServer({ db: db as any });
       expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Admin GitHub sign-in disabled (session secret too short)'));
     } finally {
-      for (const key of Object.keys(oauth)) delete process.env[key];
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
     }
   });
 
