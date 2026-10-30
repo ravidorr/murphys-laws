@@ -88,9 +88,20 @@ mark {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 1rem;
   z-index: 9999;
   font-size: var(--text-sm);
+}
+
+/* Temporary Kindle diagnostic line (error-diagnostics.ts): full width, wraps, capped height */
+.error-boundary-diagnostic {
+  flex-basis: 100%;
+  margin: 0;
+  max-height: 6em;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: var(--text-xs);
 }
 
 /* Creative Commons license icons */
