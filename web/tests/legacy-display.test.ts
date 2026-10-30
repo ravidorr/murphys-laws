@@ -2,9 +2,14 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { applyLegacyDisplayClass, isKindleBrowser } from '../src/utils/legacy-display.ts';
 
 describe('isKindleBrowser', () => {
-  it('matches Kindle and Silk user agents', () => {
+  it('matches the e-ink Kindle user agent', () => {
+    expect(isKindleBrowser('Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+')).toBe(true);
     expect(isKindleBrowser('Mozilla/5.0 (Linux; Android) Kindle/3.0')).toBe(true);
-    expect(isKindleBrowser('Mozilla/5.0 Silk/120.0')).toBe(true);
+  });
+
+  it('does not match Fire tablets (Silk)', () => {
+    expect(isKindleBrowser('Mozilla/5.0 (Linux; Android 9; KFMAWI) AppleWebKit/537.36 (KHTML, like Gecko) Silk/120.0 like Chrome/120.0 Safari/537.36')).toBe(false);
+    expect(isKindleBrowser('Mozilla/5.0 (Linux; U; Android 2.3.4; en-us; Kindle Fire Build/GINGERBREAD) AppleWebKit/533.1')).toBe(false);
   });
 
   it('does not match other browsers', () => {
@@ -31,7 +36,7 @@ describe('applyLegacyDisplayClass', () => {
   });
 
   it('adds the class on Kindle', () => {
-    applyLegacyDisplayClass(document, 'Mozilla/5.0 Kindle');
+    applyLegacyDisplayClass(document, 'Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) Kindle/3.0+');
     expect(document.documentElement.classList.contains('legacy-display')).toBe(true);
   });
 
