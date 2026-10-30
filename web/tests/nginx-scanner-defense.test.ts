@@ -165,3 +165,25 @@ describe('nginx legacy URL redirects', () => {
     expect(block).toContain('return 200');
   });
 });
+
+// This only pins the intended pattern with a hand-made stand-in for fail2ban's <HOST> and its
+// timestamp removal. The real check is `fail2ban-regex` on the server (see the filter's header).
+describe('fail2ban scanner filter', () => {
+  const filter = readFileSync(resolve(root, 'config', 'fail2ban', 'filter.d-nginx-scanner.conf'), 'utf8');
+  const failregex = (/^failregex = (.*)$/m.exec(filter)?.[1] ?? '').replace('<HOST>', '(?<host>\\S+)');
+
+  it('does not depend on the bracketed timestamp that fail2ban strips before matching', () => {
+    expect(failregex).not.toContain('\\[');
+  });
+
+  it('counts 444 lines, with or without the timestamp, and ignores other statuses', () => {
+    const regex = new RegExp(failregex);
+    const request = '"GET /.env HTTP/1.1"';
+    const agent = '0 "-" "Mozilla/5.0"';
+
+    expect(regex.exec(`66.132.195.44 - - [30/Oct/2026:20:54:41 +0000] ${request} 444 ${agent}`)?.groups?.host).toBe('66.132.195.44');
+    expect(regex.exec(`66.132.195.44 - - [] ${request} 444 ${agent}`)?.groups?.host).toBe('66.132.195.44');
+    expect(regex.test(`66.132.195.44 - - [30/Oct/2026:20:53:32 +0000] ${request} 400 264 "-" "Mozilla/5.0"`)).toBe(false);
+    expect(regex.test(`66.132.195.44 - - [] ${request} 4441 ${agent}`)).toBe(false);
+  });
+});
