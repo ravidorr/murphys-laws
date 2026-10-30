@@ -20,10 +20,11 @@ import {
   safeEqual,
   serializeCookie,
 } from '../utils/admin-session.ts';
+import { ADMIN_PAGE_PATH } from '../utils/constants.ts';
 import { getVoterIdentifier, notFound, rateLimitExceeded, sendJson } from '../utils/http-helpers.ts';
 
 const AUTH_PATH = '/api/v1/admin/auth';
-const ADMIN_PAGE = '/admin';
+const ADMIN_PAGE = ADMIN_PAGE_PATH;
 const GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize';
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const GITHUB_USER_URL = 'https://api.github.com/user';

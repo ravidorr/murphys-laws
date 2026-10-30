@@ -90,6 +90,12 @@ describe('collectDailyReport collector failures', () => {
 });
 
 describe('buildAdminUrl', () => {
+  it('links to the /admin page', () => {
+    expect(ADMIN_UI_PATH).toBe('/admin');
+    expect(buildAdminUrl({ BASE_URL: 'https://staging.example.com' })).toBe('https://staging.example.com/admin');
+    expect(buildAdminUrl({})).toBe('https://murphys-laws.com/admin');
+  });
+
   it('uses the configured base URL and trims trailing slashes', () => {
     expect(buildAdminUrl({ BASE_URL: 'https://staging.example.com//' })).toBe(
       `https://staging.example.com${ADMIN_UI_PATH}`,
@@ -253,7 +259,7 @@ describe('daily report pending approvals', () => {
   it('escapes the admin link in HTML', () => {
     const { report } = liveReport('2', 'https://example.com/a&b');
     const html = renderHtmlReport(report);
-    expect(html).toContain('href="https://example.com/a&amp;b/api/v1/admin/ui"');
+    expect(html).toContain('href="https://example.com/a&amp;b/admin"');
   });
 
   it('flags the count as unavailable and logs when the database file is missing', () => {
