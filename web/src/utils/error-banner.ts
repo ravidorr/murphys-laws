@@ -25,7 +25,11 @@ export function showErrorBanner(): void {
   dismissButton.type = 'button';
   dismissButton.className = 'btn outline btn-sm';
   dismissButton.textContent = 'Dismiss';
-  dismissButton.addEventListener('click', () => banner.remove());
+  dismissButton.addEventListener('click', () => {
+    banner.remove();
+    // Let a later, different failure show the banner again.
+    errorBannerShown = false;
+  });
 
   banner.append(message, refreshButton, dismissButton);
   document.body.appendChild(banner);
