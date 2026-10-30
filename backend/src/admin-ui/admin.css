@@ -10,6 +10,8 @@
   --muted-fg: #4b5563;
   --surface: #fff;
   --surface-border: #d1d5db;
+  --border: #00000040;
+  --shadow-light: #00000026;
   --btn-primary-bg: #0d5ea1;
   --btn-primary-fg: #fff;
   --success-bg: #dcfce7;
@@ -31,6 +33,7 @@
   --dark-muted-fg: #9ca3af;
   --dark-surface: #15151d;
   --dark-surface-border: #4b5563;
+  --dark-border: #ffffff40;
   --dark-link: #9ecbff;
   --dark-error: #f87171;
   --dark-success-bg: #103424;
@@ -50,6 +53,7 @@
     --muted-fg: var(--dark-muted-fg);
     --surface: var(--dark-surface);
     --surface-border: var(--dark-surface-border);
+    --border: var(--dark-border);
     --btn-primary-bg: var(--dark-link);
     --btn-primary-fg: var(--dark-bg-primary);
     --success-bg: var(--dark-success-bg);
@@ -69,6 +73,7 @@
   --muted-fg: var(--dark-muted-fg);
   --surface: var(--dark-surface);
   --surface-border: var(--dark-surface-border);
+  --border: var(--dark-border);
   --btn-primary-bg: var(--dark-link);
   --btn-primary-fg: var(--dark-bg-primary);
   --success-bg: var(--dark-success-bg);
@@ -113,9 +118,7 @@ main {
   gap: var(--space-3);
 }
 
-.connect,
 .session,
-.signin,
 .search,
 .toolbar,
 .tabs,
@@ -153,7 +156,6 @@ select {
   padding: var(--space-2) var(--space-3);
 }
 
-.connect input,
 .search input {
   width: 14rem;
   max-width: 100%;
@@ -171,13 +173,109 @@ a.btn {
   text-decoration: none;
 }
 
-.token-fallback summary {
-  cursor: pointer;
-  color: var(--muted-fg);
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-xl);
+  background: var(--surface);
 }
 
-.token-fallback .connect {
-  margin-top: var(--space-2);
+.card--section {
+  border-width: 2px;
+  box-shadow: 0 20px 40px var(--shadow-light), 0 2px 6px var(--shadow-light);
+}
+
+.card-header,
+.card-body,
+.card-footer {
+  padding: var(--space-4);
+}
+
+.card-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.375;
+}
+
+.card-body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+}
+
+.signin-card {
+  max-width: 26rem;
+  margin: var(--space-6) auto;
+}
+
+.signin-note {
+  margin: 0;
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+}
+
+.btn-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.btn .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentcolor;
+  flex-shrink: 0;
+}
+
+.divider {
+  display: flex;
+  margin: 0;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+.token-fallback summary {
+  list-style: none;
+}
+
+.token-fallback summary::-webkit-details-marker {
+  display: none;
+}
+
+.connect {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* Without GitHub sign-in the token form is the only path, so its toggle and the "or" divider go away. */
+.signin-card.is-token-only .divider,
+.signin-card.is-token-only .token-fallback summary {
+  display: none;
+}
+
+.signin-card.is-token-only .connect {
+  margin-top: 0;
 }
 
 .btn:disabled {
