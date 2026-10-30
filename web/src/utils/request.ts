@@ -2,6 +2,7 @@
 // Eliminates ~325 lines of duplicate fetch logic across voting, submissions, etc.
 
 import { API_BASE_URL, FETCH_TIMEOUT_MS } from './constants.ts';
+import { createTimeoutSignal } from './timeout-signal.ts';
 
 /**
  * Generic API request handler with error handling
@@ -58,7 +59,7 @@ async function fetchWithErrorHandling(url: string, options: RequestInit): Promis
   try {
     response = await fetch(url, {
       ...options,
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: createTimeoutSignal(FETCH_TIMEOUT_MS),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'TimeoutError') {
