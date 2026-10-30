@@ -18,6 +18,8 @@ import {
 const state = { token: '', login: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
 // Whether the server offers GitHub sign-in; learned from the session check when the page opens.
 let oauthAvailable = false;
+// Until the session check answers, the sign-in card stays hidden so it never shows a guess about GitHub sign-in.
+let sessionChecked = false;
 let loadSeq = 0;
 let inFlightLoads = 0;
 const INITIAL_STATE = { ...state };
@@ -82,9 +84,12 @@ async function api(path, options = {}) {
 /** Shows the signed-in bar or the sign-in controls, depending on how the admin is connected. */
 function renderAuth() {
   const signedIn = Boolean(state.login);
+  // A connected API token has no login name, but the list it loaded means the admin is in.
+  const connected = signedIn || !$('toolbar').hidden;
   $('session').hidden = !signedIn;
   $('session-login').textContent = state.login;
-  $('signin').hidden = signedIn;
+  $('signin').hidden = connected || !sessionChecked;
+  $('signin').classList.toggle('is-token-only', !oauthAvailable);
   $('signin-intro').hidden = !oauthAvailable;
   $('signin-footer').hidden = oauthAvailable;
   $('github-signin').hidden = !oauthAvailable;
@@ -356,6 +361,7 @@ async function load(patch = {}, announce = true) {
     const cards = data.data.map((item) => renderLaw(item, categories));
     Object.assign(state, next, { total: data.total, counts: data.counts, categories });
     $('toolbar').hidden = false;
+    renderAuth();
     $('token').value = '';
     renderTabs();
     lawsEl.replaceChildren(...cards);
@@ -388,6 +394,7 @@ async function checkSession() {
     // Without an answer the page stays on the token form, which always works.
   }
   oauthAvailable = data.oauth === true;
+  sessionChecked = true;
   if (response && response.ok && data.authenticated === true && typeof data.login === 'string' && !state.token) {
     state.login = data.login;
     renderAuth();

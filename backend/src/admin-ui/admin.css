@@ -240,6 +240,7 @@ a.btn {
 
 .divider {
   display: flex;
+  margin: 0;
   align-items: center;
   gap: var(--space-3);
   color: var(--muted-fg);
@@ -268,12 +269,12 @@ a.btn {
 }
 
 /* Without GitHub sign-in the token form is the only path, so its toggle and the "or" divider go away. */
-#github-signin[hidden] ~ .divider,
-#github-signin[hidden] ~ .token-fallback summary {
+.signin-card.is-token-only .divider,
+.signin-card.is-token-only .token-fallback summary {
   display: none;
 }
 
-#github-signin[hidden] ~ .token-fallback .connect {
+.signin-card.is-token-only .connect {
   margin-top: 0;
 }
 
