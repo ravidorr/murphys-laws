@@ -9,9 +9,13 @@ function mapPatterns(mapHeader: string): RegExp[] {
   const start = conf.indexOf(mapHeader);
   expect(start).toBeGreaterThan(-1);
   const body = conf.slice(start, conf.indexOf('\n}', start));
-  return [...body.matchAll(/^\s*"~\*(.+)" 1;$|^\s*~\*(.+) 1;$/gm)].map(
+  const patterns = [...body.matchAll(/^\s*"~\*(.+)" 1;$|^\s*~\*(.+) 1;$/gm)].map(
     (match) => new RegExp(match[1] ?? match[2] ?? '', 'i'),
   );
+  // Every regex key in the map must have been parsed, so none is silently left untested.
+  const regexKeys = body.split('\n').filter((line) => /^\s*"?~\*/.test(line));
+  expect(patterns).toHaveLength(regexKeys.length);
+  return patterns;
 }
 
 const pathPatterns = mapPatterns('map $request_uri $scanner_path {');
@@ -72,6 +76,11 @@ describe('nginx scanner defense', () => {
     '/api/v1/laws?limit=5&q=%E2%9C%93',
     '/browse?q=env',
     '/browse?q=a%20b%20c',
+    '/browse?q=error.log',
+    '/browse?q=backup.zip',
+    '/search?q=.env',
+    '/browse?q=a/.hidden',
+    '/browse?page=2&sort=config.json',
     '/search?q=wp-login',
     '/calculator/sods-law',
     '/origin-story',
@@ -95,6 +104,12 @@ describe('nginx scanner defense', () => {
     expect(isScannerAgent('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')).toBe(false);
   });
 
+  it('applies the same drop and log split in all three server blocks', () => {
+    expect(conf.match(/if \(\$block_request\) \{\s+return 444;\s+\}/g)).toHaveLength(3);
+    expect(conf.match(/access_log \/var\/log\/nginx\/scanner\.log combined if=\$block_request;/g)).toHaveLength(3);
+    expect(conf.match(/access_log \/var\/log\/nginx\/access\.log combined if=\$log_normal;/g)).toHaveLength(3);
+  });
+
   it('drops blocked requests with 444 before the trailing-slash rewrite', () => {
     const drop = conf.indexOf('if ($block_request) {');
     expect(drop).toBeGreaterThan(-1);
@@ -103,8 +118,9 @@ describe('nginx scanner defense', () => {
   });
 
   it('keeps blocked hits out of the main access log and in scanner.log', () => {
-    expect(conf).toContain('access_log /var/log/nginx/access.log combined if=$log_normal;');
-    expect(conf).toContain('access_log /var/log/nginx/scanner.log combined if=$block_request;');
+    const main = conf.slice(conf.indexOf('server_name murphys-laws.com;'));
+    expect(main).toContain('access_log /var/log/nginx/access.log combined if=$log_normal;');
+    expect(main).toContain('access_log /var/log/nginx/scanner.log combined if=$block_request;');
   });
 
   it('only blocks when both the agent and path maps are clear', () => {
