@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The backend admin GitHub sign-in startup test no longer fails on machines whose local `.env` sets some
+  of the admin or OAuth variables (it blanks them first). Backend bumped to `2.3.51`.
+
 ### Changed
 
 - Tracked the remaining Kindle follow-ups in `TODO.md` (browser baseline docs, old-engine regression
