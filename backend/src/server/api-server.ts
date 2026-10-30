@@ -30,6 +30,7 @@ import { SpaController } from '../controllers/spa.controller.ts';
 
 import { Router } from '../routes/router.ts';
 import { OPENAPI_SPEC } from '../openapi.ts';
+import { ADMIN_PAGE_PATH } from '../utils/constants.ts';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 type Db = InstanceType<typeof Database>;
@@ -172,7 +173,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.get('/api/v1/admin/auth/github/callback', (req, res, parsed) => adminAuthController.callback(req, res, parsed));
   router.get('/api/v1/admin/auth/session', (req, res) => adminAuthController.session(req, res));
   router.post('/api/v1/admin/auth/logout', (req, res) => adminAuthController.logout(req, res));
-  router.get('/admin', (req, res) => adminUiController.serve(req, res));
+  router.get(ADMIN_PAGE_PATH, (req, res) => adminUiController.serve(req, res));
   router.get('/api/v1/admin/ui', (req, res) => adminUiController.serve(req, res));
   router.get('/api/v1/admin/ui/:file', (req, res, file) => adminUiController.serve(req, res, file));
   router.get('/api/v1/admin/laws', (req, res, parsed) => adminController.list(req, res, parsed));
