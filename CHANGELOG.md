@@ -29,10 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Kindle (e-ink) browser header keeps the search box, now shorter, and hides only the download and
+  theme buttons. Web bumped to `3.4.30`; root to `2.6.108`.
 - Kindle (e-ink) browser: no Google ads or analytics load (the ad script covered the top of the screen
   and threw opaque "Script error." events), the footer ad shell is hidden, the "M" badge no longer
-  animates (the pulse ghosted on e-ink), its "Menu" tooltip is hidden, and the header is static with
-  only the logo and menu (the search, download and theme buttons were squashed and wrapped the title).
+  animates (the pulse ghosted on e-ink), its "Menu" tooltip is hidden, and the header is static (it was
+  drawn over the page while scrolling) and no longer wraps the title.
   The "Something went wrong" banner now ignores opaque cross-origin "Script error." events, has a
   Refresh button that actually reloads the page (a link to the current URL did nothing on Kindle) and
   a Dismiss button. Removes the temporary on-screen error diagnostic. Web bumped to `3.4.29`; root to
