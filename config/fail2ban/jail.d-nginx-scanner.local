@@ -1,0 +1,11 @@
+# Install on the droplet as /etc/fail2ban/jail.d/nginx-scanner.local, then
+# `sudo fail2ban-client reload`. Add your own address to ignoreip first.
+[nginx-scanner]
+enabled  = true
+port     = http,https
+filter   = nginx-scanner
+logpath  = /var/log/nginx/scanner.log
+maxretry = 5
+findtime = 600
+bantime  = 86400
+ignoreip = 127.0.0.1/8 ::1
