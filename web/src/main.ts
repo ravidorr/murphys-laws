@@ -1,13 +1,15 @@
 // Initialize Sentry first to capture all errors on the production origin only.
 import * as Sentry from '@sentry/browser';
 import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
-import { isServiceWorkerTransientError } from './utils/error-handler.ts';
+import { isOpaqueScriptError, isServiceWorkerTransientError } from './utils/error-handler.ts';
 import { initializeNovusAgent, isCanonicalRuntime } from './utils/novus-agent.ts';
 import { installLegacyPolyfills } from './utils/legacy-polyfills.ts';
-import { createDiagnosticLog, describeError, isDiagnosticEnabled } from './utils/error-diagnostics.ts';
+import { showErrorBanner } from './utils/error-banner.ts';
+import { applyLegacyDisplayClass } from './utils/legacy-display.ts';
 
 // Older browsers (Kindle) lack some DOM methods the views use; install them before anything renders.
 installLegacyPolyfills();
+applyLegacyDisplayClass();
 
 // Initialize Sentry for production error tracking. Metrics are automatically
 // enabled (SDK 10.25+); use the metrics API for count/gauge/distribution.
@@ -505,49 +507,14 @@ import { setupAdSense } from './utils/ads.ts';
 setupAdSense();
 
 // User-visible error boundary for unhandled errors (hydration failures, etc.)
-let errorBannerShown = false;
-// TEMPORARY (Kindle diagnosis): see utils/error-diagnostics.ts. Remove once the root cause is fixed.
-const diagnosticEnabled = typeof window !== 'undefined' && isDiagnosticEnabled(navigator.userAgent, location.search);
-const diagnosticLog = createDiagnosticLog();
-let diagnosticElement: HTMLElement | null = null;
-function recordDiagnostic(kind: string, value: unknown, filename?: string, lineno?: number): void {
-  if (!diagnosticEnabled) return;
-  const text = diagnosticLog.add(describeError(kind, value, filename, lineno));
-  if (diagnosticElement) diagnosticElement.textContent = text;
-}
-function showErrorBanner(): void {
-  if (errorBannerShown || !document.body) return;
-  errorBannerShown = true;
-  const banner = document.createElement('div');
-  banner.className = 'error-boundary-banner';
-  const message = document.createElement('p');
-  // The live region is the message only, so the diagnostic text below stays readable by assistive
-  // technology without being announced as an alert.
-  message.setAttribute('role', 'alert');
-  message.setAttribute('aria-live', 'assertive');
-  message.className = 'error-boundary-text';
-  message.textContent = 'Something went wrong. Try refreshing the page.';
-  const refreshLink = document.createElement('a');
-  refreshLink.href = `${location.pathname}${location.search}`;
-  refreshLink.className = 'btn outline btn-sm';
-  refreshLink.textContent = 'Refresh';
-  banner.append(message, refreshLink);
-  if (diagnosticEnabled) {
-    diagnosticElement = document.createElement('p');
-    diagnosticElement.className = 'error-boundary-diagnostic';
-    diagnosticElement.textContent = diagnosticLog.text();
-    banner.append(diagnosticElement);
-  }
-  document.body.appendChild(banner);
-}
-
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
     if (isCanonicalTelemetryRuntime && typeof Sentry !== 'undefined') {
       Sentry.captureException(event.error || new Error(event.message), { extra: { filename: event.filename, lineno: event.lineno } });
     }
-    if (!isServiceWorkerTransientError(event.error || event.message)) {
-      recordDiagnostic('E', event.error || event.message, event.filename, event.lineno);
+    // Opaque "Script error." events come from cross-origin scripts (ads, analytics) we do not own,
+    // so they are reported above but never shown to the user.
+    if (!isServiceWorkerTransientError(event.error || event.message) && !isOpaqueScriptError(event.message, event.filename)) {
       showErrorBanner();
     }
   });
@@ -556,7 +523,6 @@ if (typeof window !== 'undefined') {
     // calling captureException here too would create a duplicate "handled: yes" event.
     // We only need to decide whether to show the user-facing error banner.
     if (event.reason != null && !isServiceWorkerTransientError(event.reason)) {
-      recordDiagnostic('R', event.reason);
       showErrorBanner();
     }
   });

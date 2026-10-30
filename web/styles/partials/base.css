@@ -94,16 +94,6 @@ mark {
   font-size: var(--text-sm);
 }
 
-/* Temporary Kindle diagnostic line (error-diagnostics.ts): full width, wraps, capped height */
-.error-boundary-diagnostic {
-  flex-basis: 100%;
-  margin: 0;
-  max-height: 6em;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  font-size: var(--text-xs);
-}
-
 /* Creative Commons license icons */
 .cc-icon {
   max-width: 1em;

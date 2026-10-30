@@ -29,10 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Temporary Kindle diagnostic: on Kindle/Silk browsers, or any browser with `?diag=1`, the
-  "Something went wrong" banner also prints the underlying error message and location, because the
-  Kindle browser has no dev tools. To be removed once the root cause is fixed. Web bumped to
-  `3.4.28`; root to `2.6.106`.
+- Kindle (e-ink) browser: no Google ads or analytics load (the ad script covered the top of the screen
+  and threw opaque "Script error." events), the footer ad shell is hidden, the "M" badge no longer
+  animates (the pulse ghosted on e-ink), its "Menu" tooltip is hidden, and the header is static with
+  only the logo and menu (the search, download and theme buttons were squashed and wrapped the title).
+  The "Something went wrong" banner now ignores opaque cross-origin "Script error." events, has a
+  Refresh button that actually reloads the page (a link to the current URL did nothing on Kindle) and
+  a Dismiss button. Removes the temporary on-screen error diagnostic. Web bumped to `3.4.29`; root to
+  `2.6.107`.
 
 ### Added
 
