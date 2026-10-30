@@ -16,6 +16,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Pull requests only run the Kotlin and Swift analyses when they touch code those builds read.
+  # Pushes to main and the weekly schedule always run everything, so the default-branch results stay complete.
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+      ios: ${{ steps.filter.outputs.ios }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            android:
+              - 'android/**'
+              - 'shared/**'
+              - 'web/DESIGN.md'
+              - 'web/styles/partials/variables.css'
+              - '.github/workflows/codeql.yml'
+            ios:
+              - 'ios/**'
+              - 'shared/**'
+              - 'web/DESIGN.md'
+              - 'web/styles/partials/variables.css'
+              - '.github/workflows/codeql.yml'
+
   interpreted:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
@@ -45,6 +75,8 @@ jobs:
 
   kotlin:
     name: Analyze (java-kotlin)
+    needs: changes
+    if: ${{ always() && (github.event_name != 'pull_request' || needs.changes.outputs.android == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -99,6 +131,8 @@ jobs:
 
   swift:
     name: Analyze (swift)
+    needs: changes
+    if: ${{ always() && (github.event_name != 'pull_request' || needs.changes.outputs.ios == 'true') }}
     runs-on: macos-15
     timeout-minutes: 90
 
