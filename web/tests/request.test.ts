@@ -135,6 +135,16 @@ describe('request utilities', () => {
       });
     });
 
+    it('treats the AbortError from the legacy timeout fallback as a timeout', async () => {
+      const abortErr = new DOMException('The operation was aborted.', 'AbortError');
+      fetchSpy.mockRejectedValue(abortErr);
+
+      await expect(apiRequest('/api/test')).rejects.toMatchObject({
+        message: 'The request timed out. Please try again.',
+        cause: abortErr,
+      });
+    });
+
     it('injects an AbortSignal so stalled requests fail fast', async () => {
       fetchSpy.mockResolvedValueOnce(asResponse({
         ok: true,

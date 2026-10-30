@@ -868,7 +868,11 @@ function buildStaticSubmitContent(): string {
     </div>`;
 }
 
-function buildStaticHomeContent(): string {
+function buildStaticHomeContent(featuredLaw?: Law): string {
+  const lawOfDayBody = featuredLaw
+    ? `${renderStaticLawCards([featuredLaw], '')}
+          <p class="text-muted-fg small">A featured law from the archive; the daily rotating law loads with JavaScript. <a href="/browse">Browse the full archive</a> for more.</p>`
+    : '<p>Today\'s rotating law could not be loaded. <a href="/browse">Browse the full archive</a> instead.</p>';
   return `
     <div class="container page pt-0">
       <section class="section card card--section section-card mb-12" data-home-zone="archive-search">
@@ -885,10 +889,10 @@ function buildStaticHomeContent(): string {
             <button type="submit" class="btn primary">Search the Archive</button>
           </form>
           <div class="home-proof-points" aria-label="Archive facts">
-            <span class="home-proof-point"><strong>Complete</strong><span>archive</span></span>
-            <span class="home-proof-point"><strong>55+</strong><span>categories</span></span>
-            <span class="home-proof-point"><strong>Human-reviewed</strong><span>submissions</span></span>
-            <span class="home-proof-point"><strong>Curated</strong><span>since 1998</span></span>
+            <span class="home-proof-point"><strong>Complete</strong> <span>archive</span></span>
+            <span class="home-proof-point"><strong>55+</strong> <span>categories</span></span>
+            <span class="home-proof-point"><strong>Human-reviewed</strong> <span>submissions</span></span>
+            <span class="home-proof-point"><strong>Curated</strong> <span>since 1998</span></span>
           </div>
           <div class="not-found-actions">
             <a href="/browse" class="btn">Browse All Laws</a>
@@ -901,7 +905,7 @@ function buildStaticHomeContent(): string {
           <h2 class="section-title"><span class="accent-text">Law</span> of the Day</h2>
         </div>
         <div class="section-body">
-          <p>Enable JavaScript for today's rotating law, or browse the full archive now.</p>
+          ${lawOfDayBody}
         </div>
       </section>
       <section class="section card card--section section-card mb-12" data-home-zone="category-discovery">
@@ -1400,7 +1404,7 @@ ${articleArchive.featuredLaws}
   
   let homeHtml = template;
   
-  const homeContent = buildStaticHomeContent();
+  const homeContent = buildStaticHomeContent(browseLaws[0]);
 
   // Inject into main
   homeHtml = homeHtml.replace(

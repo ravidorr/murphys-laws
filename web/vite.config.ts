@@ -2,14 +2,22 @@ import { defineConfig } from 'vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import legacy from '@vitejs/plugin-legacy';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   build: {
     sourcemap: true, // Required for Sentry source maps
+    // Emit CSS as a file in every pass; the legacy (SystemJS) pass otherwise injects it at runtime
+    cssCodeSplit: false,
   },
   plugins: [
+    // Older embedded browsers (Kindle) cannot run the modern module bundle; emit a
+    // transpiled nomodule bundle with polyfills for them. Modern browsers are unaffected.
+    legacy({
+      targets: ['defaults', 'chrome >= 49', 'safari >= 10', 'android >= 5'],
+    }),
     // Sentry plugin for source map uploads (only when all required env vars are set)
     // If any of org/project/authToken are missing, the plugin can throw in normalizeIncludeEntry (reading 'ignore' of undefined)
     (process.env.SENTRY_UPLOAD === 'true' && process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT)

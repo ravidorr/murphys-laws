@@ -35,10 +35,10 @@ const ARCHIVE_SEARCH_HTML = `
         </button>
       </form>
       <div class="home-proof-points" aria-label="Archive facts">
-        <span class="home-proof-point"><strong>Complete</strong><span>archive</span></span>
-        <span class="home-proof-point"><strong>55+</strong><span>categories</span></span>
-        <span class="home-proof-point"><strong>Human-reviewed</strong><span>submissions</span></span>
-        <span class="home-proof-point"><strong>Curated</strong><span>since 1998</span></span>
+        <span class="home-proof-point"><strong>Complete</strong> <span>archive</span></span>
+        <span class="home-proof-point"><strong>55+</strong> <span>categories</span></span>
+        <span class="home-proof-point"><strong>Human-reviewed</strong> <span>submissions</span></span>
+        <span class="home-proof-point"><strong>Curated</strong> <span>since 1998</span></span>
       </div>
       <a href="/browse" class="btn primary" data-nav="browse">
         <span class="btn-text">Browse All Laws</span>

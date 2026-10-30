@@ -107,6 +107,12 @@ export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn |
   migrateLegacyHashRoute();
   normalizeTrailingSlash();
 
+  // Static (prerendered) markup that is in the page before the app takes over. If the first render
+  // throws, for example on an old browser missing an API, put it back so the page is not blank.
+  // Without prerendered markup (dev server) there is nothing to restore, so the error propagates.
+  const staticShellHtml = rootEl.innerHTML;
+  let isInitialRender = true;
+
   function render() {
     normalizeTrailingSlash();
     // Call cleanup functions from previous render
@@ -129,8 +135,20 @@ export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn |
       return;
     }
 
+    const keepStaticShell = isInitialRender;
+    isInitialRender = false;
+
     rootEl.innerHTML = '';
-    const newContent = fn({ param });
+    let newContent: HTMLElement;
+    try {
+      newContent = fn({ param });
+    } catch (error) {
+      if (!keepStaticShell || !staticShellHtml.trim()) throw error;
+      rootEl.innerHTML = staticShellHtml;
+      console.error('Initial render failed; keeping the static page', error);
+      Sentry.captureException(error);
+      return;
+    }
     rootEl.appendChild(newContent);
 
     // Collect cleanup functions from the new content
