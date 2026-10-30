@@ -505,6 +505,20 @@ setupAdSense();
 
 // User-visible error boundary for unhandled errors (hydration failures, etc.)
 let errorBannerShown = false;
+// TEMPORARY (Kindle diagnosis): the Kindle browser has no dev tools, so the banner also prints
+// the underlying error. Remove once the root cause is fixed.
+const diagnosticDetails: string[] = [];
+let diagnosticElement: HTMLElement | null = null;
+function recordDiagnostic(detail: string): void {
+  if (diagnosticDetails.length >= 5) return;
+  diagnosticDetails.push(detail.slice(0, 200));
+  if (diagnosticElement) diagnosticElement.textContent = diagnosticDetails.join(' | ');
+}
+function describeError(kind: string, value: unknown, filename?: string, lineno?: number): string {
+  const msg = value instanceof Error ? `${value.name}: ${value.message}` : String(value);
+  const where = filename ? ` @${filename.split('/').slice(-2).join('/')}:${lineno ?? '?'}` : '';
+  return `${kind} ${msg}${where}`;
+}
 function showErrorBanner(): void {
   if (errorBannerShown || !document.body) return;
   errorBannerShown = true;
@@ -519,7 +533,10 @@ function showErrorBanner(): void {
   refreshLink.href = `${location.pathname}${location.search}`;
   refreshLink.className = 'btn outline btn-sm';
   refreshLink.textContent = 'Refresh';
-  banner.append(message, refreshLink);
+  diagnosticElement = document.createElement('p');
+  diagnosticElement.className = 'error-boundary-text';
+  diagnosticElement.textContent = diagnosticDetails.join(' | ');
+  banner.append(message, refreshLink, diagnosticElement);
   document.body.appendChild(banner);
 }
 
@@ -529,6 +546,7 @@ if (typeof window !== 'undefined') {
       Sentry.captureException(event.error || new Error(event.message), { extra: { filename: event.filename, lineno: event.lineno } });
     }
     if (!isServiceWorkerTransientError(event.error || event.message)) {
+      recordDiagnostic(describeError('E', event.error || event.message, event.filename, event.lineno));
       showErrorBanner();
     }
   });
@@ -537,6 +555,7 @@ if (typeof window !== 'undefined') {
     // calling captureException here too would create a duplicate "handled: yes" event.
     // We only need to decide whether to show the user-facing error banner.
     if (event.reason != null && !isServiceWorkerTransientError(event.reason)) {
+      recordDiagnostic(describeError('R', event.reason));
       showErrorBanner();
     }
   });
