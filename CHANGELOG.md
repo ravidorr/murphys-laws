@@ -34,8 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   user agents such as `libredtail-http` now get `444` (connection closed, no response) before any other
   handling. Blocked hits are logged to `/var/log/nginx/scanner.log` instead of the main access log, so the
   daily log report's 404 count reflects real traffic. Added fail2ban filter and jail files under
-  `config/fail2ban/` that ban repeat offenders for 24 hours (installed by hand on the droplet). Web bumped
-  to `3.4.31`; root to `2.6.110`.
+  `config/fail2ban/` that ban repeat offenders for 24 hours (installed by hand on the droplet). The patterns
+  match the URL path only, so searches such as `/browse?q=error.log` are never blocked, and the `www` and
+  port 80 servers drop and log scanners the same way. Web bumped to `3.4.32`; root to `2.6.111`.
 - Permanent redirects for old-site URLs that still get backlinks and bot traffic: `/murphy/*.html` pages go to
   the matching category, `/examples` or `/contact` (anything else under `/murphy/` goes home), `/old/index.htm`
   goes home, and `/apple-touch-icon-precomposed.png` goes to `/apple-touch-icon.png`.
