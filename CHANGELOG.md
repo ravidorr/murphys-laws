@@ -27,6 +27,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Scanner defense in `nginx.conf`. Requests for secrets, source control, CMS and PHP exploit paths
+  (`/.env*`, `/.git/*`, `/wp-login.php`, PHPUnit `eval-stdin.php`, percent-encoded variants) and exploit-kit
+  user agents such as `libredtail-http` now get `444` (connection closed, no response) before any other
+  handling. Blocked hits are logged to `/var/log/nginx/scanner.log` instead of the main access log, so the
+  daily log report's 404 count reflects real traffic. Added fail2ban filter and jail files under
+  `config/fail2ban/` that ban repeat offenders for 24 hours (installed by hand on the droplet). Web bumped
+  to `3.4.31`; root to `2.6.110`.
+- Permanent redirects for old-site URLs that still get backlinks and bot traffic: `/murphy/*.html` pages go to
+  the matching category, `/examples` or `/contact` (anything else under `/murphy/` goes home), `/old/index.htm`
+  goes home, and `/apple-touch-icon-precomposed.png` goes to `/apple-touch-icon.png`.
+- `/.well-known/traffic-advice` answers Google's prefetch proxy with a 200 instead of a 404.
+
 ### Fixed
 
 - The backend admin GitHub sign-in startup test no longer fails on machines whose local `.env` sets some
