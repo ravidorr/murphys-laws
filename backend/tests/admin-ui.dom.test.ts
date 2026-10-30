@@ -611,6 +611,8 @@ describe('admin page', () => {
       expect(($('github-signin') as HTMLElement).hidden).toBe(true);
       expect(($('token-fallback') as HTMLDetailsElement).open).toBe(true);
       expect(($('session') as HTMLElement).hidden).toBe(true);
+      expect(($('signin-intro') as HTMLElement).hidden).toBe(true);
+      expect(($('signin-footer') as HTMLElement).hidden).toBe(false);
     });
 
     it('offers the GitHub link with the token form tucked away when the server offers sign-in', async () => {
@@ -619,7 +621,9 @@ describe('admin page', () => {
       expect(link.hidden).toBe(false);
       expect(link.getAttribute('href')).toBe('/api/v1/admin/auth/github');
       expect(($('token-fallback') as HTMLDetailsElement).open).toBe(false);
-      expect(document.querySelector('#token-fallback summary')?.textContent).toBe('Use an API token instead');
+      expect(document.querySelector('#token-fallback summary')?.textContent).toBe('Use an API token');
+      expect(($('signin-intro') as HTMLElement).hidden).toBe(false);
+      expect(($('signin-footer') as HTMLElement).hidden).toBe(true);
     });
 
     it('keeps the token form working next to the GitHub link', async () => {
@@ -717,6 +721,34 @@ describe('admin page', () => {
 
       expect(($('github-signin') as HTMLElement).hidden).toBe(true);
       expect(($('token-fallback') as HTMLDetailsElement).open).toBe(true);
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+    });
+
+    it('keeps the sign-in card hidden until the session check has answered', async () => {
+      let answer: (reply: unknown) => void = () => {};
+      fetchMock.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+      await import('../src/admin-ui/admin.js');
+      expect(($('signin') as HTMLElement).hidden).toBe(true);
+
+      answer(signedOut(true));
+      await flush();
+      expect(($('signin') as HTMLElement).hidden).toBe(false);
+    });
+
+    it('marks the card as token-only exactly when GitHub sign-in is not offered', async () => {
+      await boot();
+      expect($('signin').classList.contains('is-token-only')).toBe(true);
+      document.body.innerHTML = body;
+      vi.resetModules();
+      await bootWith(signedOut(true));
+      expect($('signin').classList.contains('is-token-only')).toBe(false);
+    });
+
+    it('hides the sign-in card once a token connection has loaded the laws', async () => {
+      await bootWith(signedOut(true), jsonResponse(listReply([law()])));
+      expect(($('signin') as HTMLElement).hidden).toBe(false);
+      await connect();
+      expect(($('signin') as HTMLElement).hidden).toBe(true);
       expect(($('session') as HTMLElement).hidden).toBe(true);
     });
 
