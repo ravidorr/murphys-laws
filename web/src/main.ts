@@ -520,9 +520,11 @@ function showErrorBanner(): void {
   errorBannerShown = true;
   const banner = document.createElement('div');
   banner.className = 'error-boundary-banner';
-  banner.setAttribute('role', 'alert');
-  banner.setAttribute('aria-live', 'assertive');
   const message = document.createElement('p');
+  // The live region is the message only, so the diagnostic text below stays readable by assistive
+  // technology without being announced as an alert.
+  message.setAttribute('role', 'alert');
+  message.setAttribute('aria-live', 'assertive');
   message.className = 'error-boundary-text';
   message.textContent = 'Something went wrong. Try refreshing the page.';
   const refreshLink = document.createElement('a');
@@ -533,8 +535,6 @@ function showErrorBanner(): void {
   if (diagnosticEnabled) {
     diagnosticElement = document.createElement('p');
     diagnosticElement.className = 'error-boundary-diagnostic';
-    // Keep raw technical text out of the assertive live region.
-    diagnosticElement.setAttribute('aria-hidden', 'true');
     diagnosticElement.textContent = diagnosticLog.text();
     banner.append(diagnosticElement);
   }
