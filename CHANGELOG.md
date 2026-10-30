@@ -29,9 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Temporary Kindle diagnostic: the "Something went wrong" banner now also prints the underlying
-  error message and location, because the Kindle browser has no dev tools. To be removed once the
-  root cause is fixed. Web bumped to `3.4.28`; root to `2.6.106`.
+- Temporary Kindle diagnostic: on Kindle/Silk browsers, or any browser with `?diag=1`, the
+  "Something went wrong" banner also prints the underlying error message and location, because the
+  Kindle browser has no dev tools. To be removed once the root cause is fixed. Web bumped to
+  `3.4.28`; root to `2.6.106`.
 
 ### Added
 
