@@ -136,6 +136,16 @@ function addMatches(
   }
 }
 
+/**
+ * Vendored core-js output emitted by @vitejs/plugin-legacy for the nomodule bundle. It is generated
+ * third-party code (its iframe helper sets `.style.display`), not authored UI, so the inline-CSS
+ * scan skips it. The legacy entry chunk (`index-legacy-*.js`), which holds application code, is
+ * still scanned in full.
+ */
+export function isGeneratedLegacyPolyfill(file: string): boolean {
+  return /^web\/dist\/assets\/polyfills-legacy-[\w-]+\.js$/.test(file);
+}
+
 export function scanInlineCss(file: string, text: string): ConformanceViolation[] {
   const violations: ConformanceViolation[] = [];
   addMatches(
@@ -593,7 +603,9 @@ export function runConformance(root: string): ConformanceViolation[] {
   for (const absolute of walkFiles(distRoot)) {
     const file = relative(root, absolute);
     if (!['.html', '.js'].includes(path.extname(file))) continue;
-    violations.push(...scanInlineCss(file, fs.readFileSync(absolute, 'utf8')));
+    if (!isGeneratedLegacyPolyfill(file)) {
+      violations.push(...scanInlineCss(file, fs.readFileSync(absolute, 'utf8')));
+    }
     violations.push(
       ...scanReactSource(file, fs.readFileSync(absolute, 'utf8')),
     );
