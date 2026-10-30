@@ -345,6 +345,29 @@ describe('SSG Static Route Content', () => {
     expect(html).not.toMatch(/Loading/i);
   });
 
+  it('keeps words separated without relying on flex gap in static home markup', () => {
+    const html = buildStaticHomeContent();
+
+    expect(html).toContain('<strong>Complete</strong> <span>archive</span>');
+    expect(html).toContain('<strong>Human-reviewed</strong> <span>submissions</span>');
+  });
+
+  it('renders a featured law in the static Law of the Day zone', () => {
+    const html = buildStaticHomeContent({ id: 7, text: 'Everything takes longer.', upvotes: 1, downvotes: 0 });
+
+    expect(html).toContain('/law/7');
+    expect(html).toContain('Everything takes longer.');
+    expect(html).toContain('Browse the full archive');
+    expect(html).not.toContain('Enable JavaScript');
+  });
+
+  it('shows an accurate fallback when no law is available for the static Law of the Day zone', () => {
+    const html = buildStaticHomeContent();
+
+    expect(html).toContain('could not be loaded');
+    expect(html).not.toContain('Enable JavaScript');
+  });
+
   it('renders the article archive row and the top three laws from the featured category', () => {
     const laws = [
       { id: 1, text: 'Low scorer', upvotes: 1, downvotes: 1, category_slug: 'murphys-laws' },

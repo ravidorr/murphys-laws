@@ -13,7 +13,6 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: .4rem;
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
@@ -49,6 +48,17 @@ button > svg.icon {
   height: var(--component-icon-size);
 }
 
+
+/* Margins instead of flex gap, which older e-ink browsers ignore */
+.btn .btn-text + .icon,
+button .btn-text + .icon {
+  margin-left: .4rem;
+}
+
+.btn .icon + .btn-text,
+button .icon + .btn-text {
+  margin-left: .4rem;
+}
 
 .btn .btn-text,
 button .btn-text {
