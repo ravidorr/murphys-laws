@@ -548,6 +548,33 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
+  it('restores the static page when the initial render throws', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<main id="static">Prerendered</main>';
+    const error = new Error('replaceChildren is not a function');
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    defineRoute('home', () => { throw error; });
+
+    startRouter(root);
+
+    expect(root.innerHTML).toBe('<main id="static">Prerendered</main>');
+    expect(Sentry.captureException).toHaveBeenCalledWith(error);
+    errorSpy.mockRestore();
+  });
+
+  it('rethrows render errors after the initial render', () => {
+    const root = document.createElement('div');
+    let shouldThrow = false;
+    defineRoute('home', () => {
+      if (shouldThrow) throw new Error('later failure');
+      return document.createElement('div');
+    });
+    startRouter(root);
+
+    shouldThrow = true;
+    expect(() => forceRender()).toThrow('later failure');
+  });
+
   it('handles missing render function when route and home are undefined', () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);
