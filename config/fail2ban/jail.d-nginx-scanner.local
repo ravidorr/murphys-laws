@@ -1,0 +1,15 @@
+# Install on the droplet as /etc/fail2ban/jail.d/nginx-scanner.local, then
+# `sudo fail2ban-client reload`.
+#
+# BEFORE enabling, add your own address and any uptime monitor or health-check
+# addresses to ignoreip (space separated), otherwise a false positive bans them
+# from SSH and HTTP for 24 hours.
+[nginx-scanner]
+enabled  = true
+port     = http,https
+filter   = nginx-scanner
+logpath  = /var/log/nginx/scanner.log
+maxretry = 5
+findtime = 600
+bantime  = 86400
+ignoreip = 127.0.0.1/8 ::1
