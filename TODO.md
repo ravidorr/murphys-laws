@@ -98,6 +98,12 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [x] **Error Tracking:** ~~Integrate Sentry or similar service for production error monitoring.~~ Done - integrated Sentry for both frontend (@sentry/browser) and backend (@sentry/node). Errors are captured via Sentry.captureException/captureMessage. Source maps uploaded during build for better stack traces. See `.env.example` for configuration.
 - [x] **Export to PDF/CSV:** ~~Allow users to export search results or collections.~~ Done - added universal page export feature accessible from the header. Supports PDF, CSV, Markdown, and plain text formats. PDF generation is dependency-free and does not inject runtime styles. Export is available on law pages, categories, and content pages; calculators and 404 are excluded. See `web/src/utils/export.ts` and `web/src/utils/export-context.ts`.
 
+## Kindle / E-ink Browser
+- [ ] **Document the Kindle browser baseline:** Record the supported baseline for the Kindle browser (engine, user agent, unsupported CSS and JS features such as flex `gap`) in `web/DESIGN.md`. From #203.
+- [ ] **Old-engine regression check:** Add a regression check for old engines, for example a stylelint or browserslist compatibility rule or a Playwright run on an old engine, so layouts that rely only on flex `gap` or other modern CSS are caught. From #203.
+- [ ] **Narrow the Silk match:** `isKindleBrowser()` in `web/src/utils/legacy-display.ts` matches `Kindle|Silk`, and Silk is also the browser on colour Fire tablets, which therefore lose ads and the header search extras. Narrow it to e-ink Kindles once the device user agent is known.
+- [ ] **Revisit hidden "Script error." events:** The error banner (`web/src/utils/error-banner.ts`, `web/src/main.ts`) ignores opaque cross-origin "Script error." events. Revisit if a real first-party error ever turns up behind one.
+
 ## Completed
 
 ### UX Improvements

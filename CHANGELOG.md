@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tracked the remaining Kindle follow-ups in `TODO.md` (browser baseline docs, old-engine regression
+  check, narrowing the Silk match, revisiting hidden "Script error." events). Root bumped to `2.6.109`.
 - Kindle (e-ink) browser header keeps the search box, now shorter, and hides only the download and
   theme buttons. Web bumped to `3.4.30`; root to `2.6.108`.
 - Kindle (e-ink) browser: no Google ads or analytics load (the ad script covered the top of the screen
