@@ -15,6 +15,9 @@ The conformance gate intentionally excludes only these narrow sources:
 - `Constants.Performance` and equivalent non-visual timing or cache limits.
 - `backend/scripts/render-daily-report.ts`: multipart operational email HTML
   (inline `style` on table cells only; no external stylesheets).
+- `web/dist/assets/polyfills-legacy-*.js`: generated core-js output from the legacy (nomodule)
+  build for older browsers such as the Kindle browser. It is skipped for the inline CSS scan only;
+  the legacy entry chunk with application code is scanned in full.
 
 No application source is allowlisted for React, JSX/TSX, inline CSS, stylesheet
 injection, raw component sizing, or UI emoji.

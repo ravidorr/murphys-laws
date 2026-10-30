@@ -162,7 +162,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pills, and action buttons keep their spacing (#203); the static header now includes primary
   navigation links, so it works without JavaScript (#204); the build now emits a transpiled legacy
   bundle with polyfills, and the static Law of the Day shows a real law instead of an "Enable
-  JavaScript" message (#205). Web bumped to `3.4.27`; root to `2.6.102`.
+  JavaScript" message (#205). The legacy build emits its CSS as a file instead of injecting it at
+  runtime, and the design conformance scan skips only the generated core-js polyfill bundle. Web
+  bumped to `3.4.27`; root to `2.6.102`.
 
 - Backend coverage no longer prints a `'const' declarations must be initialized` parse error: the
   type declaration files (`backend/src/admin-ui/*.d.ts`) are now excluded from coverage like other

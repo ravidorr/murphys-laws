@@ -9,6 +9,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   build: {
     sourcemap: true, // Required for Sentry source maps
+    // Emit CSS as a file in every pass; the legacy (SystemJS) pass otherwise injects it at runtime
+    cssCodeSplit: false,
   },
   plugins: [
     // Older embedded browsers (Kindle) cannot run the modern module bundle; emit a

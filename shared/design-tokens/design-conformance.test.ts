@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isGeneratedLegacyPolyfill,
   scanCssTokens,
   scanDesignSystemWiring,
   scanInlineCss,
@@ -11,6 +12,13 @@ import {
 } from './design-conformance.ts';
 
 describe('design conformance scanners', () => {
+  it('skips only the generated legacy polyfill bundle in the inline CSS scan', () => {
+    expect(isGeneratedLegacyPolyfill('web/dist/assets/polyfills-legacy-CZ23HXkY.js')).toBe(true);
+    expect(isGeneratedLegacyPolyfill('web/dist/assets/index-legacy-BHA5ZbTg.js')).toBe(false);
+    expect(isGeneratedLegacyPolyfill('web/dist/assets/index-wn0mkytB.js')).toBe(false);
+    expect(isGeneratedLegacyPolyfill('web/src/polyfills-legacy-x.js')).toBe(false);
+  });
+
   it('rejects every inline CSS mechanism', () => {
     const html =
       '<style>.x{color:red}</style><p style="color:red"><link rel="stylesheet" href="data:text/css,.x{}">';
