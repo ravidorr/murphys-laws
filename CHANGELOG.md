@@ -54,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CodeQL no longer runs the Kotlin and Swift analyses on pull requests that do not touch `android/`, `ios/`,
+  `shared/` or the design token sources (`web/DESIGN.md`, `web/styles/partials/variables.css`). The macOS Swift
+  build was the slowest check on unrelated pull requests. Pushes to `main` and the weekly schedule still run every
+  language. Root bumped to `2.6.105`.
+
 - The daily report's "Pending approvals" link now points to `/admin` instead of `/api/v1/admin/ui`.
   `/admin` is the canonical page URL and `/api/v1/admin/ui` is the original alias; both serve the same
   page. The link now needs the host in `BASE_URL` to route `/admin` to the API (nginx and the Vite
