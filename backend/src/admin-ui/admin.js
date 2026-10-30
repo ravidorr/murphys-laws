@@ -85,6 +85,8 @@ function renderAuth() {
   $('session').hidden = !signedIn;
   $('session-login').textContent = state.login;
   $('signin').hidden = signedIn;
+  $('signin-intro').hidden = !oauthAvailable;
+  $('signin-footer').hidden = oauthAvailable;
   $('github-signin').hidden = !oauthAvailable;
   $('token-fallback').open = !oauthAvailable;
 }

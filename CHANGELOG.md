@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Admin sign-in redesign. The signed-out `/admin` page now shows one centered "Admin sign-in" card with a
+  primary "Sign in with GitHub" button and an outline "Use an API token" toggle that opens the token form
+  inline, replacing the two controls crammed into the page header. When GitHub sign-in is not configured
+  the card shows the token form directly with a note saying why. The card uses the `card card--section`
+  shell from `web/DESIGN.md`. Backend bumped to `2.3.50`; root to `2.6.104`.
+
 ### Added
 
 - Origin Story page shows the rocket sled photo with alt text and a caption, served at
