@@ -30,7 +30,7 @@ describe('third-party utilities', () => {
       value: { hostname: 'murphys-laws.com' },
       writable: true
     });
-    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android) Silk/120.0 Kindle');
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+');
 
     try {
       expect(shouldLoadThirdParty()).toBe(false);
