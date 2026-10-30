@@ -59,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   build was the slowest check on unrelated pull requests. Pushes to `main` and the weekly schedule still run every
   language. Root bumped to `2.6.105`.
 
+- Admin sign-in redesign. The signed-out `/admin` page now shows one centered "Admin sign-in" card with a
+  primary "Sign in with GitHub" button and an outline "Use an API token" toggle that opens the token form
+  inline, replacing the two controls crammed into the page header. When GitHub sign-in is not configured
+  the card shows the token form directly with a note saying why. The card uses the `card card--section`
+  shell from `web/DESIGN.md`. Backend bumped to `2.3.50`; root to `2.6.104`.
+
 - The daily report's "Pending approvals" link now points to `/admin` instead of `/api/v1/admin/ui`.
   `/admin` is the canonical page URL and `/api/v1/admin/ui` is the original alias; both serve the same
   page. The link now needs the host in `BASE_URL` to route `/admin` to the API (nginx and the Vite
