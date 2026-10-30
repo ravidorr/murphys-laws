@@ -540,6 +540,34 @@ header form[role="search"] input {
 
 }
 
+/* Kindle / e-ink (html.legacy-display, set in main.ts): e-ink ghosts on animation and redraws, and the
+   browser ignores flex gap, so keep the header static with explicit spacing and only brand + menu. */
+.legacy-display .brand-badge,
+.legacy-display .brand-badge:hover {
+  animation: none;
+  transition: none;
+  box-shadow: none;
+  background: var(--primary);
+  margin-right: .75rem;
+}
+
+.legacy-display .brand-badge::before {
+  display: none;
+}
+
+.legacy-display header.sticky {
+  position: static;
+  backdrop-filter: none;
+}
+
+.legacy-display header.sticky .header-actions {
+  display: none;
+}
+
+.legacy-display .brand-name {
+  white-space: nowrap;
+}
+
 /* Ensure touch targets meet 44px minimum */
 .brand-badge,
 .vote-btn,

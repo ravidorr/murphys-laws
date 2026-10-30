@@ -3,6 +3,7 @@ import { APP_VERSION } from '@utils/app-version.ts';
 import { ensureAdsense } from '@utils/third-party.ts';
 import { hasMinimumContent } from '@utils/ads.ts';
 import { hydrateIcons } from '@utils/icons.ts';
+import { isKindleBrowser } from '@utils/legacy-display.ts';
 import type { OnNavigate } from '../types/app.d.ts';
 
 export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate; hideAds?: boolean }) {
@@ -18,13 +19,14 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
   hydrateIcons(footer);
 
   const adHost = footer.querySelector('[data-ad-slot]') as HTMLElement | null;
+  const adsDisabled = hideAds || isKindleBrowser();
 
-  if (adHost && hideAds) {
+  if (adHost && adsDisabled) {
     adHost.classList.add('hidden');
   }
 
   // Don't load ads if explicitly disabled (e.g., 404 pages)
-  if (adHost && !hideAds) {
+  if (adHost && !adsDisabled) {
     let observer: IntersectionObserver | undefined;
 
     const showShellAndLoadAd = () => {

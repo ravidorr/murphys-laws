@@ -84,6 +84,14 @@ export function isServiceWorkerTransientError(value: unknown): boolean {
 }
 
 /**
+ * Browsers report errors thrown by cross-origin scripts (AdSense, analytics) as a bare
+ * "Script error." with no file or line. They are not ours to fix and carry no usable detail.
+ */
+export function isOpaqueScriptError(message: unknown, filename: unknown): boolean {
+  return !filename && /^Script error\.?$/i.test(String(message ?? '').trim());
+}
+
+/**
  * Calculate delay with exponential backoff and jitter
  * @param {number} attempt - Current attempt number (0-based)
  * @param {number} baseDelay - Base delay in ms
