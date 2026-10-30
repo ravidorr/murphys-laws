@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-web",
-  "version": "3.4.26",
+  "version": "3.4.27",
   "description": "Murphy's Laws Web Application",
   "type": "module",
   "scripts": {
@@ -40,6 +40,7 @@
     "@playwright/test": "^1.58.2",
     "@sentry/vite-plugin": "^5.4.0",
     "@types/node": "^25.3.0",
+    "@vitejs/plugin-legacy": "^7.2.1",
     "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^10.0.0",
     "eslint-plugin-no-emoji": "^2.0.2",
@@ -51,6 +52,7 @@
     "sharp": "^0.35.5",
     "stylelint": "^17.16.0",
     "stylelint-config-standard": "^40.0.0",
+    "terser": "^5.51.2",
     "tsx": "^4.20.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "8.65.0",

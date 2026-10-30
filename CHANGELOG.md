@@ -158,6 +158,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kindle and other older e-ink browsers: removed reliance on flex `gap` so headings, proof-point
+  pills, and action buttons keep their spacing (#203); the static header now includes primary
+  navigation links, so it works without JavaScript (#204); the build now emits a transpiled legacy
+  bundle with polyfills, and the static Law of the Day shows a real law instead of an "Enable
+  JavaScript" message (#205). The legacy build emits its CSS as a file instead of injecting it at
+  runtime, and the design conformance scan skips only the generated core-js polyfill bundle. Older
+  browsers also get small DOM polyfills (`replaceChildren`, `replaceWith`, `after`, `toggleAttribute`)
+  and a timeout-signal fallback for `AbortSignal.timeout`, so views no longer throw and leave a blank
+  page. If the first render still throws, the router restores the prerendered page and reports the
+  error to Sentry instead of leaving a blank page. The service worker does not precache the legacy
+  bundles. Web bumped to `3.4.27`; root to `2.6.102`.
+
 - Backend coverage no longer prints a `'const' declarations must be initialized` parse error: the
   type declaration files (`backend/src/admin-ui/*.d.ts`) are now excluded from coverage like other
   non-runtime files. They hold only types, and the totals are unchanged (100% statements, branches,

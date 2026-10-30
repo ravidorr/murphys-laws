@@ -3,6 +3,10 @@ import * as Sentry from '@sentry/browser';
 import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
 import { isServiceWorkerTransientError } from './utils/error-handler.ts';
 import { initializeNovusAgent, isCanonicalRuntime } from './utils/novus-agent.ts';
+import { installLegacyPolyfills } from './utils/legacy-polyfills.ts';
+
+// Older browsers (Kindle) lack some DOM methods the views use; install them before anything renders.
+installLegacyPolyfills();
 
 // Initialize Sentry for production error tracking. Metrics are automatically
 // enabled (SDK 10.25+); use the metrics API for count/gauge/distribution.
