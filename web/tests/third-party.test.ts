@@ -22,6 +22,25 @@ describe('third-party utilities', () => {
     vi.unstubAllEnvs();
   });
 
+  it('never loads third parties on Kindle, even on the canonical production host', () => {
+    const originalLocation = window.location;
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('PROD', true);
+    Object.defineProperty(window, 'location', {
+      value: { hostname: 'murphys-laws.com' },
+      writable: true
+    });
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android) Silk/120.0 Kindle');
+
+    try {
+      expect(shouldLoadThirdParty()).toBe(false);
+    } finally {
+      vi.restoreAllMocks();
+      Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('does not load third parties without a browser window', () => {
     vi.stubEnv('MODE', 'production');
     vi.stubEnv('PROD', true);

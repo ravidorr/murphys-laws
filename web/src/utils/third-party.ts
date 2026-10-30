@@ -1,3 +1,5 @@
+import { isKindleBrowser } from './legacy-display.ts';
+
 const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E';
 
 let analyticsBootstrapStarted: boolean = false;
@@ -9,6 +11,8 @@ const loadedScripts = new Set<string>();
 
 export function shouldLoadThirdParty(): boolean {
   if (typeof window === 'undefined') return false;
+  // No ads or analytics on Kindle: ad overlays cover the e-ink screen and the scripts throw opaque errors.
+  if (isKindleBrowser()) return false;
   if (import.meta.env.MODE === 'test') return true;
   return import.meta.env.PROD && window.location.hostname === 'murphys-laws.com';
 }

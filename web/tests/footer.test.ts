@@ -958,6 +958,23 @@ describe('Footer component', () => {
     expect(adSlot!.dataset.loaded).not.toBe('true');
   });
 
+  it('hides the ad shell and never loads an ad on Kindle', () => {
+    window.adsbygoogle = [];
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android) Kindle/3.0');
+
+    try {
+      const el = Footer({ onNavigate: () => { } });
+      const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
+      expect(adSlot!.classList.contains('hidden')).toBe(true);
+
+      el.dispatchEvent(new Event('adslot:init'));
+      expect(adSlot!.dataset.loaded).not.toBe('true');
+      expect(el.querySelector('ins.adsbygoogle')).toBeNull();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+
   it('hides footer-ad-shell until ad load is triggered (sufficient content, ads enabled)', () => {
     window.adsbygoogle = [];
     Object.defineProperty(document, 'readyState', {
