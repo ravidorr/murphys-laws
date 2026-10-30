@@ -9,7 +9,7 @@ const protos: Array<[string, Proto]> = [
   ['DocumentFragment', DocumentFragment.prototype as unknown as Proto],
   ['CharacterData', CharacterData.prototype as unknown as Proto],
 ];
-const names = ['replaceChildren', 'replaceWith', 'after', 'toggleAttribute'];
+const names = ['replaceChildren', 'append', 'replaceWith', 'after', 'toggleAttribute'];
 
 const saved = protos.flatMap(([label, proto]) => names
   .filter((name) => Object.prototype.hasOwnProperty.call(proto, name))
@@ -52,6 +52,24 @@ describe('legacy polyfills', () => {
 
     const doc = document.implementation.createHTMLDocument('x');
     doc.replaceChildren(doc.createElement('html'));
+    expect(doc.documentElement.tagName).toBe('HTML');
+  });
+
+  it('polyfills append on elements, fragments, and documents', () => {
+    removeNative();
+    installLegacyPolyfills();
+
+    const el = document.createElement('div');
+    el.append(document.createElement('b'), 'tail');
+    expect(el.innerHTML).toBe('<b></b>tail');
+
+    const fragment = document.createDocumentFragment();
+    fragment.append('x');
+    expect(fragment.textContent).toBe('x');
+
+    const doc = document.implementation.createHTMLDocument('x');
+    doc.documentElement.remove();
+    doc.append(doc.createElement('html'));
     expect(doc.documentElement.tagName).toBe('HTML');
   });
 

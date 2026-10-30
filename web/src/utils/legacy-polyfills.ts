@@ -28,6 +28,13 @@ export function installLegacyPolyfills(): void {
     defineIfMissing(proto, 'replaceChildren', replaceChildren);
   });
 
+  function append(this: Node, ...items: NodeOrText[]): void {
+    this.appendChild(toFragment(this.ownerDocument ?? (this as Document), items));
+  }
+  [Element.prototype, Document.prototype, DocumentFragment.prototype].forEach((proto) => {
+    defineIfMissing(proto, 'append', append);
+  });
+
   function replaceWith(this: ChildNode, ...items: NodeOrText[]): void {
     const parent = this.parentNode;
     if (!parent) return;

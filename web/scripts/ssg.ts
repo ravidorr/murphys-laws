@@ -871,7 +871,7 @@ function buildStaticSubmitContent(): string {
 function buildStaticHomeContent(featuredLaw?: Law): string {
   const lawOfDayBody = featuredLaw
     ? `${renderStaticLawCards([featuredLaw], '')}
-          <p class="text-muted-fg small">Today's rotating law loads with JavaScript. <a href="/browse">Browse the full archive</a> for more.</p>`
+          <p class="text-muted-fg small">A featured law from the archive; the daily rotating law loads with JavaScript. <a href="/browse">Browse the full archive</a> for more.</p>`
     : '<p>Today\'s rotating law could not be loaded. <a href="/browse">Browse the full archive</a> instead.</p>';
   return `
     <div class="container page pt-0">

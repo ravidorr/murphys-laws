@@ -1111,10 +1111,13 @@
   margin-right: 0.5rem;
 }
 
+/* Child margins plus the negative container margin equal a 0.75rem gap, without relying on flex
+   gap (ignored by older e-ink browsers). */
 .not-found-actions {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
+  margin: -0.375rem;
 }
 
 .not-found-actions > * {
@@ -1179,7 +1182,7 @@
 }
 
 .empty-state .not-found-actions {
-  margin-top: 0.5rem;
+  margin-top: 0.125rem;
 }
 
 /* Mini Law Cards (for Top Voted, Trending, Recently Added) */

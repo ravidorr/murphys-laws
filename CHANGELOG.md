@@ -167,7 +167,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   browsers also get small DOM polyfills (`replaceChildren`, `replaceWith`, `after`, `toggleAttribute`)
   and a timeout-signal fallback for `AbortSignal.timeout`, so views no longer throw and leave a blank
   page. If the first render still throws, the router restores the prerendered page and reports the
-  error to Sentry instead of leaving a blank page. Web bumped to `3.4.27`; root to `2.6.102`.
+  error to Sentry instead of leaving a blank page. The service worker does not precache the legacy
+  bundles. Web bumped to `3.4.27`; root to `2.6.102`.
 
 - Backend coverage no longer prints a `'const' declarations must be initialized` parse error: the
   type declaration files (`backend/src/admin-ui/*.d.ts`) are now excluded from coverage like other
