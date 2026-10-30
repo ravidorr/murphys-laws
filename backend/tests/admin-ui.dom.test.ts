@@ -724,6 +724,34 @@ describe('admin page', () => {
       expect(($('session') as HTMLElement).hidden).toBe(true);
     });
 
+    it('keeps the sign-in card hidden until the session check has answered', async () => {
+      let answer: (reply: unknown) => void = () => {};
+      fetchMock.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
+      await import('../src/admin-ui/admin.js');
+      expect(($('signin') as HTMLElement).hidden).toBe(true);
+
+      answer(signedOut(true));
+      await flush();
+      expect(($('signin') as HTMLElement).hidden).toBe(false);
+    });
+
+    it('marks the card as token-only exactly when GitHub sign-in is not offered', async () => {
+      await boot();
+      expect($('signin').classList.contains('is-token-only')).toBe(true);
+      document.body.innerHTML = body;
+      vi.resetModules();
+      await bootWith(signedOut(true));
+      expect($('signin').classList.contains('is-token-only')).toBe(false);
+    });
+
+    it('hides the sign-in card once a token connection has loaded the laws', async () => {
+      await bootWith(signedOut(true), jsonResponse(listReply([law()])));
+      expect(($('signin') as HTMLElement).hidden).toBe(false);
+      await connect();
+      expect(($('signin') as HTMLElement).hidden).toBe(true);
+      expect(($('session') as HTMLElement).hidden).toBe(true);
+    });
+
     it('does not take over a token connection when the session check answers late', async () => {
       let answer: (reply: unknown) => void = () => {};
       fetchMock.mockReturnValueOnce(new Promise((resolve) => { answer = resolve; }));
