@@ -611,6 +611,8 @@ describe('admin page', () => {
       expect(($('github-signin') as HTMLElement).hidden).toBe(true);
       expect(($('token-fallback') as HTMLDetailsElement).open).toBe(true);
       expect(($('session') as HTMLElement).hidden).toBe(true);
+      expect(($('signin-intro') as HTMLElement).hidden).toBe(true);
+      expect(($('signin-footer') as HTMLElement).hidden).toBe(false);
     });
 
     it('offers the GitHub link with the token form tucked away when the server offers sign-in', async () => {
@@ -619,7 +621,9 @@ describe('admin page', () => {
       expect(link.hidden).toBe(false);
       expect(link.getAttribute('href')).toBe('/api/v1/admin/auth/github');
       expect(($('token-fallback') as HTMLDetailsElement).open).toBe(false);
-      expect(document.querySelector('#token-fallback summary')?.textContent).toBe('Use an API token instead');
+      expect(document.querySelector('#token-fallback summary')?.textContent).toBe('Use an API token');
+      expect(($('signin-intro') as HTMLElement).hidden).toBe(false);
+      expect(($('signin-footer') as HTMLElement).hidden).toBe(true);
     });
 
     it('keeps the token form working next to the GitHub link', async () => {
