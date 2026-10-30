@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   isTransientError,
+  isOpaqueScriptError,
   isServiceWorkerTransientError,
   calculateBackoff,
   withRetry,
@@ -81,6 +82,19 @@ describe('Error Handler Utilities', () => {
       expect(isTransientError(null)).toBe(false);
       expect(isTransientError(undefined)).toBe(false);
       expect(isTransientError({})).toBe(false);
+    });
+  });
+
+  describe('isOpaqueScriptError', () => {
+    it('matches a bare cross-origin "Script error." with no filename', () => {
+      expect(isOpaqueScriptError('Script error.', '')).toBe(true);
+      expect(isOpaqueScriptError('Script error', undefined)).toBe(true);
+    });
+
+    it('does not match errors with a filename or a real message', () => {
+      expect(isOpaqueScriptError('Script error.', 'https://murphys-laws.com/app.js')).toBe(false);
+      expect(isOpaqueScriptError('x is not a function', '')).toBe(false);
+      expect(isOpaqueScriptError(undefined, '')).toBe(false);
     });
   });
 
