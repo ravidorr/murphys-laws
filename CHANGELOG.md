@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The daily report's "Pending approvals" link now points to `/admin` instead of `/api/v1/admin/ui`.
   `/admin` is the canonical page URL and `/api/v1/admin/ui` is the original alias; both serve the same
   page. The link now needs the host in `BASE_URL` to route `/admin` to the API (nginx and the Vite
-  proxies already do). The admin page path now lives in one constant, `ADMIN_PAGE_PATH`. Backend bumped to `2.3.49`; root to `2.6.103`.
+  proxies already do). The admin page path now lives in one constant, `ADMIN_PAGE_PATH`, used by the router, the sign-in redirects and the report. Backend bumped to `2.3.49`; root to `2.6.103`.
 - Added an npm `overrides` entry that pins `re2js` to `2.9.1` under `markdownlint`, fixing the quadratic-time
   lookbehind denial-of-service advisory GHSA-gg6h-894w-4m9c that failed the dependency audit.
   `markdownlint-cli2` and `markdownlint` are already at their latest releases and pin `re2js` `2.8.6`, so
