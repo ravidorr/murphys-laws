@@ -6,6 +6,8 @@ export const DEFAULT_LAWS_PER_REQUEST = 50; // Default number of laws if not spe
 
 // Site metadata for feeds
 export const SITE_URL = 'https://murphys-laws.com';
+// Path of the admin moderation page (served by the API; nginx and the Vite proxies forward it)
+export const ADMIN_PAGE_PATH = '/admin';
 export const SITE_NAME = "Murphy's Law Archive";
 export const SITE_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";
 

@@ -7,7 +7,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from './alert-recipient.ts';
-import { SITE_URL } from '../src/utils/constants.ts';
+import { ADMIN_PAGE_PATH, SITE_URL } from '../src/utils/constants.ts';
 
 export type ReportItemKind =
   | 'row'
@@ -65,7 +65,7 @@ const SECTION_RULE = '━━━━━━━━━━━━━━━━━━━�
 const PENDING_COUNT_TIMEOUT_MS = 15_000;
 
 /** Path of the admin moderation page, appended to the configured base URL. */
-export const ADMIN_UI_PATH = '/admin';
+export const ADMIN_UI_PATH = ADMIN_PAGE_PATH;
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 

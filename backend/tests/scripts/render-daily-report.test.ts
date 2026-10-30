@@ -90,6 +90,12 @@ describe('collectDailyReport collector failures', () => {
 });
 
 describe('buildAdminUrl', () => {
+  it('links to the /admin page', () => {
+    expect(ADMIN_UI_PATH).toBe('/admin');
+    expect(buildAdminUrl({ BASE_URL: 'https://staging.example.com' })).toBe('https://staging.example.com/admin');
+    expect(buildAdminUrl({})).toBe('https://murphys-laws.com/admin');
+  });
+
   it('uses the configured base URL and trims trailing slashes', () => {
     expect(buildAdminUrl({ BASE_URL: 'https://staging.example.com//' })).toBe(
       `https://staging.example.com${ADMIN_UI_PATH}`,
