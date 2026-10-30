@@ -109,6 +109,7 @@ export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn |
 
   // Static (prerendered) markup that is in the page before the app takes over. If the first render
   // throws, for example on an old browser missing an API, put it back so the page is not blank.
+  // Without prerendered markup (dev server) there is nothing to restore, so the error propagates.
   const staticShellHtml = rootEl.innerHTML;
   let isInitialRender = true;
 
@@ -142,7 +143,7 @@ export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn |
     try {
       newContent = fn({ param });
     } catch (error) {
-      if (!keepStaticShell) throw error;
+      if (!keepStaticShell || !staticShellHtml.trim()) throw error;
       rootEl.innerHTML = staticShellHtml;
       console.error('Initial render failed; keeping the static page', error);
       Sentry.captureException(error);

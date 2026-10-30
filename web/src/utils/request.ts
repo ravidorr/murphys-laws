@@ -62,7 +62,7 @@ async function fetchWithErrorHandling(url: string, options: RequestInit): Promis
       signal: createTimeoutSignal(FETCH_TIMEOUT_MS),
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'TimeoutError') {
+    if (error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
       throw new Error('The request timed out. Please try again.', {
         cause: error,
       });

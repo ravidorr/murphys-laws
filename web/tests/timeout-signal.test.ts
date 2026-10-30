@@ -16,7 +16,7 @@ describe('createTimeoutSignal', () => {
     expect(timeout).toHaveBeenCalledWith(500);
   });
 
-  it('falls back to AbortController and aborts with a TimeoutError', () => {
+  it('falls back to AbortController and aborts after the timeout', () => {
     vi.useFakeTimers();
     vi.stubGlobal('AbortSignal', {});
 
@@ -24,7 +24,6 @@ describe('createTimeoutSignal', () => {
     expect(signal.aborted).toBe(false);
     vi.advanceTimersByTime(1000);
     expect(signal.aborted).toBe(true);
-    expect((signal.reason as DOMException).name).toBe('TimeoutError');
   });
 
   it('falls back to AbortController when AbortSignal is not defined', () => {

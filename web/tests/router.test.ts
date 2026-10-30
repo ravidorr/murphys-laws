@@ -562,6 +562,13 @@ describe('Router', () => {
     errorSpy.mockRestore();
   });
 
+  it('rethrows an initial render error when there is no prerendered page to restore', () => {
+    const root = document.createElement('div');
+    defineRoute('home', () => { throw new Error('first render failure'); });
+
+    expect(() => startRouter(root)).toThrow('first render failure');
+  });
+
   it('rethrows render errors after the initial render', () => {
     const root = document.createElement('div');
     let shouldThrow = false;

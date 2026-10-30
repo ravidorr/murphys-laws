@@ -50,6 +50,8 @@ function collectPrecacheEntries(
     .map((file) => path.relative(distRoot, file).split(path.sep).join("/"))
     .filter((file) => file !== "404.html" && file !== "sw.js")
     .filter((file) => PRECACHE_EXTENSIONS.has(path.extname(file)))
+    // Legacy (nomodule) bundles are only used by browsers that cannot run the modern build
+    .filter((file) => !/-legacy-[^/]*\.js$/.test(file))
     .map((file) => {
       let url: string;
       if (file === "index.html") {
