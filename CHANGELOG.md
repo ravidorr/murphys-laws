@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The fail2ban filter for scanner hits (`config/fail2ban/filter.d-nginx-scanner.conf`) matched nothing on
   fail2ban 1.0.2, which strips the timestamp from each line before matching, so the jail would never have
-  banned anyone. It now matches the `444` lines on the client address alone, and a test pins that.
-  Web bumped to `3.4.33`; root to `2.6.112`.
+  banned anyone. It now matches the `444` lines on the client address alone (ending in `\s`, since fail2ban
+  trims a trailing space), documents the `fail2ban-regex` check to run after installing it, and a test pins
+  the pattern. Web bumped to `3.4.34`; root to `2.6.113`.
 
 ### Added
 
