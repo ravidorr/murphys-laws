@@ -39,12 +39,12 @@ describe('showErrorBanner', () => {
     }
   });
 
-  it('removes the banner when Dismiss is clicked and does not bring it back', () => {
+  it('removes the banner when Dismiss is clicked and lets a later error show it again', () => {
     showErrorBanner();
     (document.querySelectorAll('.error-boundary-banner button')[1] as HTMLButtonElement).click();
     expect(document.querySelector('.error-boundary-banner')).toBeNull();
     showErrorBanner();
-    expect(document.querySelector('.error-boundary-banner')).toBeNull();
+    expect(document.querySelectorAll('.error-boundary-banner')).toHaveLength(1);
   });
 
   it('does nothing without a document body', () => {

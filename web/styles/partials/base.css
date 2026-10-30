@@ -94,6 +94,11 @@ mark {
   font-size: var(--text-sm);
 }
 
+/* Explicit margins because the Kindle browser ignores flex gap */
+.error-boundary-banner .btn {
+  margin: 0 0.25rem;
+}
+
 /* Creative Commons license icons */
 .cc-icon {
   max-width: 1em;
