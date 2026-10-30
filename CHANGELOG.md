@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The fail2ban filter for scanner hits (`config/fail2ban/filter.d-nginx-scanner.conf`) matched nothing on
+  fail2ban 1.0.2, which strips the timestamp from each line before matching, so the jail would never have
+  banned anyone. It now matches the `444` lines on the client address alone, and a test pins that.
+  Web bumped to `3.4.33`; root to `2.6.112`.
+
 ### Added
 
 - Scanner defense in `nginx.conf`. Requests for secrets, source control, CMS and PHP exploit paths
