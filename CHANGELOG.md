@@ -54,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CodeQL no longer runs the Kotlin and Swift analyses on pull requests that do not touch `android/`, `ios/`,
+  `shared/` or the design token sources (`web/DESIGN.md`, `web/styles/partials/variables.css`). The macOS Swift
+  build was the slowest check on unrelated pull requests. Pushes to `main` and the weekly schedule still run every
+  language. Root bumped to `2.6.105`.
+
 - Admin sign-in redesign. The signed-out `/admin` page now shows one centered "Admin sign-in" card with a
   primary "Sign in with GitHub" button and an outline "Use an API token" toggle that opens the token form
   inline, replacing the two controls crammed into the page header. When GitHub sign-in is not configured
