@@ -65,7 +65,7 @@ const SECTION_RULE = '━━━━━━━━━━━━━━━━━━━�
 const PENDING_COUNT_TIMEOUT_MS = 15_000;
 
 /** Path of the admin moderation page, appended to the configured base URL. */
-export const ADMIN_UI_PATH = '/api/v1/admin/ui';
+export const ADMIN_UI_PATH = '/admin';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 

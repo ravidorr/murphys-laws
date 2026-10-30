@@ -253,7 +253,7 @@ describe('daily report pending approvals', () => {
   it('escapes the admin link in HTML', () => {
     const { report } = liveReport('2', 'https://example.com/a&b');
     const html = renderHtmlReport(report);
-    expect(html).toContain('href="https://example.com/a&amp;b/api/v1/admin/ui"');
+    expect(html).toContain('href="https://example.com/a&amp;b/admin"');
   });
 
   it('flags the count as unavailable and logs when the database file is missing', () => {

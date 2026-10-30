@@ -54,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The daily report's "Pending approvals" link now points to `/admin` instead of `/api/v1/admin/ui`.
+  Both URLs serve the same page. Backend bumped to `2.3.49`; root to `2.6.103`.
 - Added an npm `overrides` entry that pins `re2js` to `2.9.1` under `markdownlint`, fixing the quadratic-time
   lookbehind denial-of-service advisory GHSA-gg6h-894w-4m9c that failed the dependency audit.
   `markdownlint-cli2` and `markdownlint` are already at their latest releases and pin `re2js` `2.8.6`, so
