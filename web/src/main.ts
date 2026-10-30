@@ -4,6 +4,7 @@ import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
 import { isServiceWorkerTransientError } from './utils/error-handler.ts';
 import { initializeNovusAgent, isCanonicalRuntime } from './utils/novus-agent.ts';
 import { installLegacyPolyfills } from './utils/legacy-polyfills.ts';
+import { createDiagnosticLog, describeError, isDiagnosticEnabled } from './utils/error-diagnostics.ts';
 
 // Older browsers (Kindle) lack some DOM methods the views use; install them before anything renders.
 installLegacyPolyfills();
@@ -505,14 +506,25 @@ setupAdSense();
 
 // User-visible error boundary for unhandled errors (hydration failures, etc.)
 let errorBannerShown = false;
+// TEMPORARY (Kindle diagnosis): see utils/error-diagnostics.ts. Remove once the root cause is fixed.
+const diagnosticEnabled = typeof window !== 'undefined' && isDiagnosticEnabled(navigator.userAgent, location.search);
+const diagnosticLog = createDiagnosticLog();
+let diagnosticElement: HTMLElement | null = null;
+function recordDiagnostic(kind: string, value: unknown, filename?: string, lineno?: number): void {
+  if (!diagnosticEnabled) return;
+  const text = diagnosticLog.add(describeError(kind, value, filename, lineno));
+  if (diagnosticElement) diagnosticElement.textContent = text;
+}
 function showErrorBanner(): void {
   if (errorBannerShown || !document.body) return;
   errorBannerShown = true;
   const banner = document.createElement('div');
   banner.className = 'error-boundary-banner';
-  banner.setAttribute('role', 'alert');
-  banner.setAttribute('aria-live', 'assertive');
   const message = document.createElement('p');
+  // The live region is the message only, so the diagnostic text below stays readable by assistive
+  // technology without being announced as an alert.
+  message.setAttribute('role', 'alert');
+  message.setAttribute('aria-live', 'assertive');
   message.className = 'error-boundary-text';
   message.textContent = 'Something went wrong. Try refreshing the page.';
   const refreshLink = document.createElement('a');
@@ -520,6 +532,12 @@ function showErrorBanner(): void {
   refreshLink.className = 'btn outline btn-sm';
   refreshLink.textContent = 'Refresh';
   banner.append(message, refreshLink);
+  if (diagnosticEnabled) {
+    diagnosticElement = document.createElement('p');
+    diagnosticElement.className = 'error-boundary-diagnostic';
+    diagnosticElement.textContent = diagnosticLog.text();
+    banner.append(diagnosticElement);
+  }
   document.body.appendChild(banner);
 }
 
@@ -529,6 +547,7 @@ if (typeof window !== 'undefined') {
       Sentry.captureException(event.error || new Error(event.message), { extra: { filename: event.filename, lineno: event.lineno } });
     }
     if (!isServiceWorkerTransientError(event.error || event.message)) {
+      recordDiagnostic('E', event.error || event.message, event.filename, event.lineno);
       showErrorBanner();
     }
   });
@@ -537,6 +556,7 @@ if (typeof window !== 'undefined') {
     // calling captureException here too would create a duplicate "handled: yes" event.
     // We only need to decide whether to show the user-facing error banner.
     if (event.reason != null && !isServiceWorkerTransientError(event.reason)) {
+      recordDiagnostic('R', event.reason);
       showErrorBanner();
     }
   });

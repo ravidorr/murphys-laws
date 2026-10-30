@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Temporary Kindle diagnostic: on Kindle/Silk browsers, or any browser with `?diag=1`, the
+  "Something went wrong" banner also prints the underlying error message and location, because the
+  Kindle browser has no dev tools. To be removed once the root cause is fixed. Web bumped to
+  `3.4.28`; root to `2.6.106`.
+
 ### Added
 
 - Origin Story page shows the rocket sled photo with alt text and a caption, served at
