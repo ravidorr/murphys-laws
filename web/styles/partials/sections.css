@@ -28,20 +28,19 @@
   line-height: 1.7;
 }
 
+/* Inline-block with margins and markup whitespace instead of flex gap: older
+   e-ink browsers (Kindle) ignore flex gap and collapse the words together. */
 .home-proof-points {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
   margin: var(--space-3) 0 var(--space-4);
 }
 
 .home-proof-point {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-1);
+  display: inline-block;
+  margin: 0 var(--space-2) var(--space-2) 0;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--rounded-lg);
+  background: var(--bg);
   background: color-mix(in oklab, var(--bg) 96%, var(--muted-fg) 4%);
   color: var(--muted-fg);
   font-size: var(--text-sm);
@@ -204,9 +203,12 @@
 .section-title {
   font-size: var(--text-xl);
   margin: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
+  display: inline-block;
+}
+
+.section-title > .icon {
+  margin-right: .5rem;
+  vertical-align: middle;
 }
 
 .section-date {
@@ -1102,18 +1104,21 @@
 
 .not-found-search-form {
   display: flex;
-  gap: 0.5rem;
 }
 
 .not-found-search-form input {
   flex: 1;
+  margin-right: 0.5rem;
 }
 
 .not-found-actions {
   display: flex;
-  gap: 0.75rem;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.not-found-actions > * {
+  margin: 0.375rem;
 }
 
 .not-found-categories {

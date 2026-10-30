@@ -59,7 +59,7 @@ declare module '@scripts/ssg' {
   }): string[];
   export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
   export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string };
-  export function buildStaticHomeContent(): string;
+  export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
   export function fetchAllCategories(fetchRequest?: (url: string) => Promise<{
     ok: boolean;
     status: number;
