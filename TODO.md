@@ -102,7 +102,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [ ] **Document the Kindle browser baseline:** Record the supported baseline for the Kindle browser (engine, user agent, unsupported CSS and JS features such as flex `gap`) in `web/DESIGN.md`. From #203.
 - [ ] **Old-engine regression check:** Add a regression check for old engines, for example a stylelint or browserslist compatibility rule or a Playwright run on an old engine, so layouts that rely only on flex `gap` or other modern CSS are caught. From #203.
 - [ ] **Narrow the Silk match:** `isKindleBrowser()` in `web/src/utils/legacy-display.ts` matches `Kindle|Silk`, and Silk is also the browser on colour Fire tablets, which therefore lose ads and the header search extras. Narrow it to e-ink Kindles once the device user agent is known.
-- [ ] **Revisit hidden "Script error." events:** The error banner (`web/src/utils/error-banner.ts`, `web/src/main.ts`) ignores opaque cross-origin "Script error." events. Revisit if a real first-party error ever turns up behind one.
+- [ ] **Revisit hidden "Script error." events:** The window `error` handler in `web/src/main.ts` skips the banner for opaque cross-origin "Script error." events (`isOpaqueScriptError()` in `web/src/utils/error-handler.ts`). Revisit if a real first-party error ever turns up behind one.
 
 ## Completed
 
