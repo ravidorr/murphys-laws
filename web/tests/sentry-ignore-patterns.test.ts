@@ -1,4 +1,4 @@
-import { isSentryErrorIgnored, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
+import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
 
 describe('sentry-ignore-patterns', () => {
   describe('isSentryErrorIgnored', () => {
@@ -56,9 +56,53 @@ describe('sentry-ignore-patterns', () => {
     });
   });
 
+  describe('browsing context teardown', () => {
+    it('drops the iOS Safari AbortError raised while the page is going away', () => {
+      expect(isSentryErrorIgnored('Promise was rejected because the browsing context is going away')).toBe(true);
+    });
+
+    it('keeps other AbortErrors', () => {
+      expect(isSentryErrorIgnored('The operation was aborted.')).toBe(false);
+    });
+  });
+
+  describe('isInjectedScriptStackOverflow', () => {
+    const documentFrames = [{ filename: '/examples' }, { filename: '/examples' }];
+
+    it('returns true when every frame comes from the HTML document', () => {
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', documentFrames)).toBe(true);
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded', documentFrames)).toBe(true);
+    });
+
+    it('treats frames without a filename as document frames', () => {
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [{}])).toBe(true);
+    });
+
+    it('returns false when a bundled script frame is present', () => {
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [
+        { filename: '/examples' },
+        { filename: '/assets/index-abc123.js' },
+      ])).toBe(false);
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [
+        { filename: '../../src/router.ts' },
+      ])).toBe(false);
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [
+        { filename: 'https://murphys-laws.com/assets/app.mjs?v=2' },
+      ])).toBe(false);
+    });
+
+    it('returns false when there are no frames', () => {
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [])).toBe(false);
+    });
+
+    it('returns false for other errors', () => {
+      expect(isInjectedScriptStackOverflow('Cannot read properties of undefined', documentFrames)).toBe(false);
+    });
+  });
+
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(14);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(15);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
