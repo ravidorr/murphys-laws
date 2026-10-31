@@ -13,14 +13,16 @@ const VALID_THEMES: Theme[] = ['light', 'dark', 'auto'];
  * @returns {'light' | 'dark' | 'auto'} The stored theme or 'auto' if not set
  */
 export function getTheme(): Theme {
-  if (typeof localStorage === 'undefined') {
-    return 'auto';
-  }
   try {
+    // Safari throws a SecurityError on any access to `localStorage` (even `typeof`)
+    // when site data is blocked, so the existence check must live inside the try.
+    if (typeof localStorage === 'undefined') {
+      return 'auto';
+    }
     const stored = localStorage.getItem(THEME_KEY);
     return VALID_THEMES.includes(stored as Theme) ? stored as Theme : 'auto';
   } catch {
-    // localStorage may be unavailable (private mode, etc.)
+    // localStorage may be unavailable (private mode, blocked site data, etc.)
     return 'auto';
   }
 }
@@ -34,12 +36,12 @@ export function setTheme(theme: Theme): void {
     return;
   }
   
-  if (typeof localStorage !== 'undefined') {
-    try {
+  try {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      // localStorage may be unavailable (private mode, quota exceeded, etc.)
     }
+  } catch {
+    // localStorage may be unavailable (private mode, blocked site data, quota exceeded, etc.)
   }
   
   applyTheme(theme);

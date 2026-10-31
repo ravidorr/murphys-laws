@@ -1,4 +1,4 @@
-import { isSentryErrorIgnored, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
+import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
 
 describe('sentry-ignore-patterns', () => {
   describe('isSentryErrorIgnored', () => {
@@ -56,9 +56,60 @@ describe('sentry-ignore-patterns', () => {
     });
   });
 
+  describe('browsing context teardown', () => {
+    it('drops the iOS Safari AbortError raised while the page is going away', () => {
+      expect(isSentryErrorIgnored('Promise was rejected because the browsing context is going away')).toBe(true);
+    });
+
+    it('keeps other AbortErrors', () => {
+      expect(isSentryErrorIgnored('The operation was aborted.')).toBe(false);
+    });
+  });
+
+  describe('isInjectedScriptStackOverflow', () => {
+    const overflow = 'Maximum call stack size exceeded.';
+    const documents = ['/examples', 'https://murphys-laws.com/examples'];
+    const documentFrames = [{ filename: '/examples' }, { filename: '/examples' }];
+
+    it('returns true when every frame is the current HTML document', () => {
+      expect(isInjectedScriptStackOverflow(overflow, documentFrames, documents)).toBe(true);
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded', documentFrames, documents)).toBe(true);
+    });
+
+    it('matches the document by full URL and ignores query and hash', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [
+        { filename: 'https://murphys-laws.com/examples?utm=x#top' },
+        { filename: '/examples?utm=x' },
+      ], documents)).toBe(true);
+    });
+
+    it('returns false when a frame has no filename', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [{}], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: '/examples' }, { filename: '' }], documents)).toBe(false);
+    });
+
+    it('returns false when a frame comes from any other URL', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [
+        { filename: '/examples' },
+        { filename: '/assets/index-abc123.js' },
+      ], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: '../../src/router.ts' }], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: 'https://murphys-laws.com/bundle' }], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: '/browse' }], documents)).toBe(false);
+    });
+
+    it('returns false when there are no frames', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [], documents)).toBe(false);
+    });
+
+    it('returns false for other errors', () => {
+      expect(isInjectedScriptStackOverflow('Cannot read properties of undefined', documentFrames, documents)).toBe(false);
+    });
+  });
+
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(14);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(15);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
