@@ -42,20 +42,24 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
 ];
 
 /**
- * True for a "Maximum call stack size exceeded" RangeError whose frames all come from
- * the HTML document itself (e.g. `/examples:228:409`) and none from a bundled script.
- * That shape comes from code the Google app's iOS in-app browser injects into the page
- * and runs recursively over the DOM; the app's own bundle never appears in these stacks,
- * so a genuine recursion bug in our code is still reported.
+ * True for a "Maximum call stack size exceeded" RangeError whose frames all name the
+ * current HTML document itself (e.g. `/examples:228:409`), given as its path or URL in
+ * `documentLocations`. That shape comes from code the Google app's iOS in-app browser
+ * injects into the page and runs recursively over the DOM. A frame with no filename, or
+ * one from any other URL (our bundle, an extensionless script), keeps the event so a
+ * genuine recursion bug in our code is still reported.
  */
 export function isInjectedScriptStackOverflow(
   errorMessage: string,
   frames: ReadonlyArray<{ filename?: string }>,
+  documentLocations: ReadonlyArray<string>,
 ): boolean {
   if (!/^Maximum call stack size exceeded\.?$/i.test(errorMessage) || frames.length === 0) {
     return false;
   }
-  return frames.every((frame) => !/\.(?:m?js|ts)(?:[?#]|$)/i.test(frame.filename || ''));
+  const stripQueryAndHash = (url: string): string => url.replace(/[?#].*$/, '');
+  const documents = new Set(documentLocations.map(stripQueryAndHash));
+  return frames.every((frame) => !!frame.filename && documents.has(stripQueryAndHash(frame.filename)));
 }
 
 /**
