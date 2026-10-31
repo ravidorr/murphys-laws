@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Resolved the production Sentry issues on `thcom`. Safari with blocked site data threw a `SecurityError`
+  from `typeof localStorage` before the `try` in `getTheme` and `setTheme` could catch it, which broke the
+  first render (JAVASCRIPT-11); the check now sits inside the `try`. Sentry now drops the iOS
+  "browsing context is going away" `AbortError` (JAVASCRIPT-14) and the "Maximum call stack size exceeded"
+  `RangeError` whose frames all come from the HTML document, which is the Google iOS app's injected script
+  and never our bundle (JAVASCRIPT-15 to 18); a recursion bug in our own scripts is still reported.
+  JAVASCRIPT-19 was a development-only `c.name` query fixed earlier (`c.title AS name`). Web bumped to
+  `3.4.35`; root to `2.6.114`.
 - The fail2ban filter for scanner hits (`config/fail2ban/filter.d-nginx-scanner.conf`) matched nothing on
   fail2ban 1.0.2, which strips the timestamp from each line before matching, so the jail would never have
   banned anyone. It now matches the `444` lines on the client address alone (ending in `\s`, since fail2ban

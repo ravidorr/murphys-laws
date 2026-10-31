@@ -56,6 +56,17 @@ describe('Theme utilities', () => {
       localStorage.setItem('murphys_theme', '');
       expect(getTheme()).toBe('auto');
     });
+
+    it('returns "auto" when merely accessing localStorage throws a SecurityError (Safari with blocked site data)', () => {
+      const accessSpy = vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(() => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      });
+
+      expect(() => getTheme()).not.toThrow();
+      expect(getTheme()).toBe('auto');
+
+      accessSpy.mockRestore();
+    });
   });
 
   describe('setTheme', () => {
@@ -99,6 +110,17 @@ describe('Theme utilities', () => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 
       setItemSpy.mockRestore();
+    });
+
+    it('handles localStorage access throwing a SecurityError gracefully', () => {
+      const accessSpy = vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(() => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      });
+
+      expect(() => setTheme('dark')).not.toThrow();
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+      accessSpy.mockRestore();
     });
   });
 
