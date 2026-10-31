@@ -67,36 +67,43 @@ describe('sentry-ignore-patterns', () => {
   });
 
   describe('isInjectedScriptStackOverflow', () => {
+    const overflow = 'Maximum call stack size exceeded.';
+    const documents = ['/examples', 'https://murphys-laws.com/examples'];
     const documentFrames = [{ filename: '/examples' }, { filename: '/examples' }];
 
-    it('returns true when every frame comes from the HTML document', () => {
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', documentFrames)).toBe(true);
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded', documentFrames)).toBe(true);
+    it('returns true when every frame is the current HTML document', () => {
+      expect(isInjectedScriptStackOverflow(overflow, documentFrames, documents)).toBe(true);
+      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded', documentFrames, documents)).toBe(true);
     });
 
-    it('treats frames without a filename as document frames', () => {
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [{}])).toBe(true);
+    it('matches the document by full URL and ignores query and hash', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [
+        { filename: 'https://murphys-laws.com/examples?utm=x#top' },
+        { filename: '/examples?utm=x' },
+      ], documents)).toBe(true);
     });
 
-    it('returns false when a bundled script frame is present', () => {
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [
+    it('returns false when a frame has no filename', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [{}], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: '/examples' }, { filename: '' }], documents)).toBe(false);
+    });
+
+    it('returns false when a frame comes from any other URL', () => {
+      expect(isInjectedScriptStackOverflow(overflow, [
         { filename: '/examples' },
         { filename: '/assets/index-abc123.js' },
-      ])).toBe(false);
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [
-        { filename: '../../src/router.ts' },
-      ])).toBe(false);
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [
-        { filename: 'https://murphys-laws.com/assets/app.mjs?v=2' },
-      ])).toBe(false);
+      ], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: '../../src/router.ts' }], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: 'https://murphys-laws.com/bundle' }], documents)).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [{ filename: '/browse' }], documents)).toBe(false);
     });
 
     it('returns false when there are no frames', () => {
-      expect(isInjectedScriptStackOverflow('Maximum call stack size exceeded.', [])).toBe(false);
+      expect(isInjectedScriptStackOverflow(overflow, [], documents)).toBe(false);
     });
 
     it('returns false for other errors', () => {
-      expect(isInjectedScriptStackOverflow('Cannot read properties of undefined', documentFrames)).toBe(false);
+      expect(isInjectedScriptStackOverflow('Cannot read properties of undefined', documentFrames, documents)).toBe(false);
     });
   });
 

@@ -37,7 +37,10 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
       const errorMessage = event.exception?.values?.[0]?.value || '';
       const stackTrace = event.exception?.values?.[0]?.stacktrace?.frames || [];
 
-      if (isSentryErrorIgnored(errorMessage) || isInjectedScriptStackOverflow(errorMessage, stackTrace)) {
+      if (
+        isSentryErrorIgnored(errorMessage) ||
+        isInjectedScriptStackOverflow(errorMessage, stackTrace, [window.location.pathname, window.location.href])
+      ) {
         return null;
       }
 
