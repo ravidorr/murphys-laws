@@ -1,6 +1,6 @@
 // Initialize Sentry first to capture all errors on the production origin only.
 import * as Sentry from '@sentry/browser';
-import { isSentryErrorIgnored } from './utils/sentry-ignore-patterns.ts';
+import { isSentryErrorIgnored, isInjectedScriptStackOverflow } from './utils/sentry-ignore-patterns.ts';
 import { isOpaqueScriptError, isServiceWorkerTransientError } from './utils/error-handler.ts';
 import { initializeNovusAgent, isCanonicalRuntime } from './utils/novus-agent.ts';
 import { installLegacyPolyfills } from './utils/legacy-polyfills.ts';
@@ -37,10 +37,13 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
       const errorMessage = event.exception?.values?.[0]?.value || '';
       const stackTrace = event.exception?.values?.[0]?.stacktrace?.frames || [];
 
-      if (isSentryErrorIgnored(errorMessage)) {
+      if (
+        isSentryErrorIgnored(errorMessage) ||
+        isInjectedScriptStackOverflow(errorMessage, stackTrace, [window.location.pathname, window.location.href])
+      ) {
         return null;
       }
-      
+
       // Check if stack trace contains browser extension URLs
       for (const frame of stackTrace) {
         const filename = frame.filename || '';
