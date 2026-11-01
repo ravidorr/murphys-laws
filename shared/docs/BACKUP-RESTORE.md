@@ -30,11 +30,12 @@ n8n workflow automation was retired; no separate automation host is backed up.
 |-------------|-----------|-----------|----------|
 | Database (`murphys_db_*.db`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
 | Environment (`env_*.bak`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
+| Encrypted database and env copies (`*.gpg`) | Daily 4 AM UTC | 30 days | Backblaze B2 bucket (off-site) |
 | Application code | Git (not tarred on server) | N/A | GitHub |
 
 ### Backup Scripts
 
-- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy). The script exits non-zero if SQLite backup or `PRAGMA integrity_check` fails. Success logs distinguish local integrity from off-site copies (off-site not configured by default).
+- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy). The script exits non-zero if SQLite backup or `PRAGMA integrity_check` fails. With off-site configured it also encrypts and uploads both backups and fails the run if that does not work (see [Off-Site Backup Strategy](#off-site-backup-strategy)). The installed helper `backup-offsite.sh` is sourced by it and by the restore test.
 
 ---
 
@@ -317,71 +318,114 @@ Before relying on a backup, verify:
 - [ ] Backup contains expected number of records
 - [ ] Environment file exists and contains required keys
 - [ ] Application archive can be extracted
+- [ ] Latest off-site copy exists, is under 30 hours old, and decrypts and restores (`test-backup-restore.sh`, test 9)
 
 ---
 
 ## Off-Site Backup Strategy
 
-### Current Limitations
+The daily backup (`backup-murphys.sh`) sends an encrypted copy of the database backup and of the `.env` backup to a Backblaze B2 bucket. B2 is a different provider from the droplet (DigitalOcean) on purpose: an incident at the hosting account, such as a compromised login or a billing lock, must not also take the backups.
 
-**Current backups are only on the same server as the application.**
+- **Encryption**: each file is encrypted on the droplet with GPG (symmetric, AES-256, authenticated) before it leaves it. The bucket only ever holds `*.gpg` objects, so the SMTP credentials in `.env` are never stored in plain text off the server.
+- **Transport**: `rclone` with its native `b2` backend. B2 is the supported target because it has file versioning and Object Lock. Cloudflare R2 would work through rclone's S3 backend (the scripts only know an rclone remote name) but has neither versioning nor Object Lock, so it is not supported here.
+- **Layout**: `<remote>/db/murphys_db_YYYYMMDD_HHMMSS.db.gpg` and `<remote>/env/env_YYYYMMDD_HHMMSS.bak.gpg`. Names carry a timestamp to the second, so each run uploads a new name; a rare same-second rerun would add a new version of the same name, and versioning keeps the earlier one.
+- **Retention**: 30 days, the same as the local copies, enforced by a B2 lifecycle rule (see below). The default `OFFSITE_PRUNE=lifecycle` means the server never deletes anything from the bucket.
+- **Failure handling**: if off-site is configured and any step fails, the backup run exits non-zero, logs `ERROR: Off-site copy: FAILED (...)` to `/var/log/backup-murphys.log`, and emails the alert recipient. The local backup is kept. The last `Off-site copy:` line of that log is shown in the daily report, with a warning (also in its summary) unless it is an `ok` under 30 hours old from the latest backup run (one missed or interrupted run shows at the next report). With no off-site configuration the run succeeds and logs `Off-site copy: not configured (local integrity only)`, and the monthly restore test fails until it is set up.
+- **Monthly check**: `test-backup-restore.sh` (test 9) confirms the newest off-site database and env copies exist and are under 30 hours old, downloads and decrypts them, runs `PRAGMA integrity_check` and a `laws` query on the database, and checks the SMTP keys in the env copy. It lists only current versions, so hidden or locked old versions do not affect it. It also fails if copies older than 35 days are still listed, which means the lifecycle rule is missing (the server cannot see the rule, so this is how a missing rule is noticed). It uses the passphrase file on the droplet, so it does not prove your stored copy of the passphrase is right; the restore drill below does.
 
-If the entire droplet is lost, backups may be inaccessible.
+### Threat model and the three protections
 
-### Recommended Improvements
+The droplet holds the B2 key and the passphrase file, so assume an attacker who owns the droplet can use both. The setup limits what that gets them:
 
-#### Option 1: DigitalOcean Spaces (S3-compatible)
+1. **A key restricted to one bucket with the fewest capabilities.** A compromised droplet cannot reach other buckets or account settings (see step 3 of the setup).
+2. **No delete right on that key.** With `OFFSITE_PRUNE=lifecycle` (the default) the scripts only list, read and upload. `rclone delete` on B2 would also only hide a version unless `hard_delete` is set, so client-side pruning does not even reclaim space; the lifecycle rule does the real expiry. `OFFSITE_PRUNE=server` is only for a bucket without Object Lock: it needs `deleteFiles`, and on B2 it reclaims space only if the rclone remote also sets `hard_delete = true`. It is not part of the B2 setup below; leave it off.
+3. **Versioning plus Object Lock.** B2 keeps every version by default. Object Lock with a 30-day default retention stops any version from being deleted or overwritten for 30 days, even by a key that has `deleteFiles`. The retention applies to files uploaded after it is set, so set it before the first backup.
+
+Governance or compliance mode (B2 Object Lock docs: <https://www.backblaze.com/docs/cloud-storage-object-lock>):
+
+| Mode | Who can shorten or remove the retention | Cost of choosing it |
+|------|------------------------------------------|---------------------|
+| Governance (recommended) | Only a key that has the `bypassGovernance` capability, or the owner signed in to the web console. The droplet key never gets it, so the droplet cannot undo the lock, while you can still fix a mistake. | None beyond storage. |
+| Compliance | Nobody, including you and Backblaze, until each version's retention ends. | A wrong upload (for example a huge file) is billed until it expires, and the bucket cannot be emptied or deleted early. Object Lock cannot be turned off once enabled. |
+
+Governance is the default recommendation because it protects against the droplet (the stated threat) and stays reversible by the owner. Choose compliance only if you also want protection against a stolen owner login, and accept the lock-in. Object Lock cannot be disabled after it is enabled, in either mode.
+
+Lifecycle rule to set on the bucket (B2 lifecycle docs: <https://www.backblaze.com/docs/cloud-storage-lifecycle-rules>): custom rule with `fileNamePrefix` empty (all files), `daysFromUploadingToHiding` = 30, `daysFromHidingToDeleting` = 1. Each version is locked for 30 days from upload, hidden at day 30, and deleted a day later, so nothing is removed while locked. Per the B2 docs an empty prefix applies to the whole bucket, so use this bucket only for these backups. (If you pick a longer lock than 30 days, raise `daysFromUploadingToHiding` to match.)
+
+### One-time setup
+
+Names and values used by the scripts (nothing here is secret):
+
+1. Create a B2 account and a private bucket named `murphys-laws-backups`. Enable Object Lock when creating the bucket and set the default retention (governance, 30 days). B2 docs: <https://www.backblaze.com/docs/cloud-storage-create-and-manage-buckets>.
+2. Set the lifecycle rule above.
+3. Create an application key restricted to that one bucket (<https://www.backblaze.com/docs/cloud-storage-application-keys>) with the capabilities `listBuckets`, `listFiles`, `readFiles` and `writeFiles` only. Not `deleteFiles`, `bypassGovernance`, `writeFileRetentions`, any `*Bucket*` write capability or `listAllBucketNames`. This is the expected minimum, not a verified-by-Backblaze list (their docs do not say which capabilities rclone needs), so step 4's `rclone lsf` check and the first backup are the test. Each backup uploads a new object name, so no delete right is needed. If rclone reports a missing list or read capability, add only that one. Never add `deleteFiles` or `bypassGovernance` to the droplet's key to silence an error; ask first. Do not use the master application key.
+4. On the droplet: `sudo apt install -y rclone gnupg`, then `sudo rclone config` and create a remote named `murphys-b2` of type `b2` (rclone docs: <https://rclone.org/b2/>). The `account` field takes the application key ID (the keyID), not the account ID. Check with `sudo rclone lsf murphys-b2:murphys-laws-backups`.
+5. Create the passphrase file and store a copy off the droplet **before** the first backup:
+
+   ```bash
+   sudo install -d -m 755 /etc/murphys-laws
+   sudo sh -c 'umask 077; openssl rand -base64 36 > /etc/murphys-laws/offsite-backup.passphrase'
+   ```
+
+   Read it once on your own terminal (`sudo cat /etc/murphys-laws/offsite-backup.passphrase`), paste it into a password manager entry, and never put it in a ticket, chat or the repo. **Without a copy off the droplet, losing the droplet loses every off-site backup, because they cannot be decrypted.**
+6. Write the config file (no secrets in it):
+
+   ```bash
+   sudo sh -c 'umask 077; cat > /etc/murphys-laws/offsite-backup.env <<EOF
+   OFFSITE_REMOTE=murphys-b2:murphys-laws-backups
+   OFFSITE_PASSPHRASE_FILE=/etc/murphys-laws/offsite-backup.passphrase
+   OFFSITE_PRUNE=lifecycle
+   EOF'
+   ```
+
+7. Run `sudo /usr/local/bin/backup-murphys.sh` and look for `Off-site copy: ok`, then `sudo /usr/local/bin/test-backup-restore.sh` and confirm the off-site checks pass.
+8. Do the restore drill below from a clean machine.
+
+The deploy installs `backup-offsite.sh` next to the scripts; it is not run on its own.
+
+### Restore drill (clean machine, stored passphrase)
+
+Do this once after setup and after any passphrase or key change. It proves the backups can be recovered with only what exists off the droplet: the bucket and the passphrase from your password manager. Use a laptop or VM that has never held the droplet's files, and a separate read-only B2 application key (restricted to the bucket, capabilities `listBuckets`, `listFiles`, `readFiles`), not the droplet's key.
 
 ```bash
-# Install s3cmd
-apt install -y s3cmd
+# Install rclone and gnupg, then create a remote with the read-only key (interactive, nothing is printed back)
+rclone config            # remote name: murphys-b2-restore, type: b2
 
-# Configure s3cmd
-s3cmd --configure
+# List the copies and take the newest names
+rclone lsf murphys-b2-restore:murphys-laws-backups/db/  | sort | tail -3
+rclone lsf murphys-b2-restore:murphys-laws-backups/env/ | sort | tail -3
 
-# Add to backup script
-s3cmd put /root/backups/murphys-$(date +%Y-%m-%d-*)db s3://murphys-laws-backups/
-s3cmd put /root/backups/.env-$(date +%Y-%m-%d-*) s3://murphys-laws-backups/
+# Download, then decrypt: gpg prompts, so TYPE the passphrase from the password manager.
+# Do not copy it from the droplet, or the drill proves nothing about the stored copy.
+rclone copyto murphys-b2-restore:murphys-laws-backups/db/murphys_db_YYYYMMDD_HHMMSS.db.gpg ./restore.db.gpg
+gpg --output ./restore.db --decrypt ./restore.db.gpg
+sqlite3 ./restore.db "PRAGMA integrity_check;"       # must print: ok
+sqlite3 ./restore.db "SELECT COUNT(*) FROM laws;"    # must be close to production
+
+# The env copy: confirm it decrypts and has the expected key names, without printing values
+rclone copyto murphys-b2-restore:murphys-laws-backups/env/env_YYYYMMDD_HHMMSS.bak.gpg ./env.bak.gpg
+gpg --output ./env.bak --decrypt ./env.bak.gpg
+grep -c '^SMTP_HOST=' ./env.bak                       # must print: 1
+
+# Remove everything, then delete the restore key if you do not keep it
+shred -u ./restore.db ./env.bak 2>/dev/null || rm -f ./restore.db ./env.bak
+rm -f ./restore.db.gpg ./env.bak.gpg
 ```
 
-**Cost**: ~$5/month for 250GB
+A wrong passphrase makes `gpg` fail with "decryption failed"; if that happens, stop and fix the stored copy before relying on any backup. Record the drill date in your own notes.
 
-#### Option 2: Automated Download to Local Machine
+### Restoring from the off-site copy after losing the droplet
 
-```bash
-# On local machine, create daily backup download script
-# ~/scripts/download-murphys-backups.sh
+Use the same commands as the drill, with a key that has read access, then continue with "Scenario 1" above using `restore.db`. Put the decrypted env file at `/root/murphys-laws/backend/.env` with `chmod 600`. Recreate `/etc/murphys-laws/offsite-backup.env` and the passphrase file from the password manager on the new droplet.
 
-#!/bin/bash
+### Rotating the passphrase
 
-DATE=$(date +%Y-%m-%d)
-BACKUP_DIR=~/murphys-backups/$DATE
-mkdir -p $BACKUP_DIR
+Copies keep the passphrase they were encrypted with. To rotate, keep the old passphrase until the last old copy has aged out (30 days), put the new one in the passphrase file, update the password manager with both until then, and repeat the restore drill.
 
-# Download latest backups
-scp ravidor@167.99.53.90:/root/backups/murphys-$DATE-*.db $BACKUP_DIR/
-scp ravidor@167.99.53.90:/root/backups/.env-$DATE-* $BACKUP_DIR/
+### Other options (not implemented)
 
-# Verify download
-if [ -f $BACKUP_DIR/murphys-$DATE-*.db ]; then
- echo "Backup downloaded successfully"
-else
- echo "Backup download failed" | mail -s "Backup Download Failed" <your-email>
-fi
-
-# Delete backups older than 90 days
-find ~/murphys-backups/ -type d -mtime +90 -exec rm -rf {} \;
-```
-
-Add to local crontab:
-```cron
-0 4 * * * ~/scripts/download-murphys-backups.sh
-```
-
-#### Option 3: rsync to another host
-
-Copy `/root/backups/` to a second machine or object storage you control. The retired
-n8n droplet is not used for off-site copies.
+- Scheduled pull to a local machine over `scp` (needs a machine that is always on, and the `.env` copy would need the same encryption).
+- `rsync` to another host you control. The retired n8n droplet is not used for off-site copies.
 
 ---
 

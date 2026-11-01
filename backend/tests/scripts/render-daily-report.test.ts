@@ -13,6 +13,8 @@ import {
   reportRecipient,
   runCli,
   logCollectorError,
+  offsiteBackupItem,
+  parseOffsiteBackupStatus,
   parsePm2Jlist,
   renderHtmlReport,
   renderPlainTextReport,
@@ -443,5 +445,86 @@ describe('runCli', () => {
         sendmailPath: missing,
       }),
     ).toThrow(/Could not run .*no-such-sendmail: .*\(PATH: /);
+  });
+});
+
+describe('off-site backup status in the report', () => {
+  const ok = 'ok (encrypted, off:bucket, retention 30 days)';
+  const log = [
+    '[2026-10-31 04:00:09] Backup complete. Total: 41 files, Size: 120M',
+    '[2026-10-31 04:00:10] Off-site copy: not configured (local integrity only)',
+    '[2026-11-01 04:00:09] Backup complete. Total: 42 files, Size: 121M',
+    `[2026-11-01 04:00:14] Off-site copy: ${ok}`,
+  ].join('\n');
+  const now = new Date('2026-11-01T10:00:00Z');
+
+  it('takes the text and time stamp of the last Off-site copy line', () => {
+    expect(parseOffsiteBackupStatus(log)).toEqual({ status: ok, loggedAt: '2026-11-01 04:00:14', interrupted: false });
+  });
+
+  it('keeps a line that has no time stamp, and returns null when the log has no Off-site copy line', () => {
+    expect(parseOffsiteBackupStatus('Off-site copy: ok\n')).toEqual({ status: 'ok', loggedAt: null, interrupted: false });
+    expect(parseOffsiteBackupStatus('[2026-11-01 04:00:09] Backup complete.\n')).toBeNull();
+  });
+
+  const logFile = (text: string) => {
+    const file = path.join(scratchDir('offsite-report-'), 'backup.log');
+    writeFileSync(file, text);
+    return file;
+  };
+
+  it('shows a recent successful copy without a warning', () => {
+    expect(offsiteBackupItem(logFile(log), now)).toEqual({
+      label: 'Off-site copy',
+      value: `${ok} (logged 2026-11-01 04:00:14 UTC)`,
+    });
+  });
+
+  it('warns when the last run was not configured', () => {
+    const item = offsiteBackupItem(logFile('[2026-11-01 04:00:10] Off-site copy: not configured (local integrity only)\n'), now);
+    expect(item).toMatchObject({ tone: 'warning', value: expect.stringContaining('not configured') });
+  });
+
+  it('warns when the last run failed, so a failure is not hidden behind an older ok line', () => {
+    const failed = `${log}\n[2026-11-02 04:00:20] ERROR: Off-site copy: FAILED (upload of murphys_db_x.db failed)\n`;
+    const item = offsiteBackupItem(logFile(failed), new Date('2026-11-02T10:00:00Z'));
+    expect(item.tone).toBe('warning');
+    expect(item.value).toContain('FAILED (upload of murphys_db_x.db failed)');
+  });
+
+  it('warns when the last result is older than 30 hours, so one missed daily run shows at the next report', () => {
+    expect(offsiteBackupItem(logFile(log), new Date('2026-11-02T05:00:00Z')).tone).toBeUndefined();
+    const item = offsiteBackupItem(logFile(log), new Date('2026-11-02T11:00:00Z'));
+    expect(item.tone).toBe('warning');
+    expect(item.value).toContain('no newer result for over 30 hours');
+  });
+
+  it('warns on the first run that dies before the off-site step, even though yesterday is under 30 hours old', () => {
+    const died = `${log}\n[2026-11-02 04:00:01] Starting backup...\n[2026-11-02 04:00:02] ERROR: SQLite backup failed for x\n`;
+    const item = offsiteBackupItem(logFile(died), new Date('2026-11-02T05:00:00Z'));
+    expect(item.tone).toBe('warning');
+    expect(item.value).toContain('did not reach the off-site step');
+    expect(item.value).toContain(ok);
+  });
+
+  it('does not warn when the off-site result follows the latest start', () => {
+    const complete = `${log}\n[2026-11-02 04:00:01] Starting backup...\n[2026-11-02 04:00:20] Off-site copy: ${ok}\n`;
+    expect(offsiteBackupItem(logFile(complete), new Date('2026-11-02T05:00:00Z')).tone).toBeUndefined();
+  });
+
+  it('does not treat a line without a time stamp as stale', () => {
+    expect(offsiteBackupItem(logFile('Off-site copy: ok\n'), now)).toEqual({ label: 'Off-site copy', value: 'ok' });
+  });
+
+  it('reads only the end of a large log', () => {
+    const filler = '[2026-01-01 04:00:00] Backup complete.\n'.repeat(20000);
+    expect(offsiteBackupItem(logFile(`[2025-12-31 04:00:00] Off-site copy: ok\n${filler}${log}\n`), now).value).toContain('logged 2026-11-01');
+  });
+
+  it('warns when the log has no result, and when it cannot be read', () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    expect(offsiteBackupItem(logFile('nothing here\n'), now)).toMatchObject({ tone: 'warning', value: 'no result in the backup log' });
+    expect(offsiteBackupItem('/nonexistent/backup.log', now)).toMatchObject({ tone: 'warning', value: 'no result in the backup log' });
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('off-site backup status failed'));
   });
 });

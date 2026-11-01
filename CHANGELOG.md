@@ -66,6 +66,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Encrypted off-site backups (issue #219), to a Backblaze B2 bucket at a different provider than the droplet.
+  `backup-murphys.sh` encrypts the database and `.env` backups with GPG (AES-256, symmetric) on the droplet and
+  uploads them with `rclone`'s native `b2` backend, naming each object with a timestamp so every run adds a new object (B2 versioning keeps any same-name rerun). Retention
+  (30 days, like the local copies) is enforced by a B2 lifecycle rule: `OFFSITE_PRUNE=lifecycle` is the default, so
+  the server never deletes from the bucket and its application key needs only list, read and write on the one
+  bucket (`OFFSITE_PRUNE=server` remains for a bucket without Object Lock and needs `deleteFiles`). The docs set
+  out a threat model for a compromised droplet: a single-bucket key without delete or governance-bypass rights,
+  B2 versioning, Object Lock with a 30-day default retention (governance recommended, compliance explained), and
+  the exact lifecycle rule. Cloudflare R2 is not supported because it has no versioning or Object Lock. When
+  off-site is configured and any step fails, the run exits non-zero, logs `ERROR: Off-site copy: FAILED (...)` and
+  emails the alert recipient; the local backup is kept. A config file that exists but gives no remote counts as
+  misconfigured, not as "not configured". The setup is a root-only file on the server
+  (`/etc/murphys-laws/offsite-backup.env` plus a passphrase file), so nothing secret is in the repo, and without it
+  the run still logs `Off-site copy: not configured`. The logic is in the new `backend/scripts/backup-offsite.sh`,
+  which the deploy installs beside the other scripts; the deploy now installs `backup-murphys.sh` strictly too, so
+  an old copy can never keep running without the off-site step. The monthly `test-backup-restore.sh` gains test 9:
+  the newest off-site database and env copies must exist, be under 30 hours old, download, decrypt, and pass
+  `integrity_check`, a `laws` query and the SMTP key check, and no copy older than 35 days may be listed (that
+  means the lifecycle rule is missing); an unconfigured off-site copy now fails that test. The
+  daily report shows the last off-site result from the backup log (a warning, also in its summary, unless it is an
+  `ok` under 30 hours old from the latest backup run, so one missed or interrupted run shows at the next report),
+  and the reminder and cost reports no longer claim a "20/20" run or "off-site not configured".
+  `BACKUP-RESTORE.md` documents the setup, a restore drill from a clean machine that uses only the bucket and the
+  passphrase stored in a password manager (the passphrase must also live off the droplet), restoring from the
+  bucket and passphrase rotation. Tests run the real scripts against a directory-backed fake `rclone` with the
+  real `gpg` and `sqlite3`. Backend bumped to `2.3.55`; root to `2.6.118`.
+
 - Scanner defense in `nginx.conf`. Requests for secrets, source control, CMS and PHP exploit paths
   (`/.env*`, `/.git/*`, `/wp-login.php`, PHPUnit `eval-stdin.php`, percent-encoded variants) and exploit-kit
   user agents such as `libredtail-http` now get `444` (connection closed, no response) before any other

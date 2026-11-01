@@ -271,7 +271,7 @@ test('renderHtmlReport renders section bullets as full-width list lines', () => 
   );
   assert.match(
     html,
-    /colspan="2"[^>]*>[\s\S]*&bull;[\s\S]*All tests should pass \(20\/20 for the main droplet\)/,
+    /colspan="2"[^>]*>[\s\S]*&bull;[\s\S]*All tests should pass, including the encrypted off-site copy checks/,
   );
 });
 

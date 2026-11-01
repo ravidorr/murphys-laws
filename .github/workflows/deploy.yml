@@ -126,7 +126,7 @@ jobs:
 
             # The monitoring scripts below are installed with failures not ignored, so make sure they all
             # arrived before the live site is touched; failing later would leave a half-applied release.
-            for script in alert-email health-monitor ssl-monitor cost-optimization-report test-backup-restore; do
+            for script in alert-email backup-murphys backup-offsite health-monitor ssl-monitor cost-optimization-report test-backup-restore; do
               [ -f "$STAGING_DIR/backend/scripts/$script.sh" ] \
                 || { echo "ERROR: $script.sh is missing from the uploaded release; nothing was changed on the server" >&2; exit 1; }
             done
@@ -233,7 +233,6 @@ jobs:
             npm run migrate
 
             # Update server maintenance scripts
-            sudo cp "$TARGET_DIR/backend/scripts/backup-murphys.sh" /usr/local/bin/backup-murphys.sh 2>/dev/null || true
             # Sourced by the monitoring scripts below to resolve the alert address. They fall back to the repo
             # copy, but the installed one is preferred, so a failure here fails the deploy instead of being
             # ignored
@@ -244,7 +243,7 @@ jobs:
             # These scripts also load that helper, so a copy that fails would leave an old script running with
             # the old behavior. Fail the deploy and show the cause instead of hiding it. (The other copies
             # below do not load the helper and keep ignoring errors.)
-            for script in health-monitor ssl-monitor cost-optimization-report test-backup-restore; do
+            for script in backup-murphys backup-offsite health-monitor ssl-monitor cost-optimization-report test-backup-restore; do
               sudo cp "$TARGET_DIR/backend/scripts/$script.sh" "/usr/local/bin/$script.sh" \
                 && sudo chmod +x "/usr/local/bin/$script.sh" \
                 || { echo "ERROR: could not install /usr/local/bin/$script.sh" >&2; exit 1; }

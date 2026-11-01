@@ -49,6 +49,8 @@ function exec(cmd: string, description: string): void {
 // Installed on the server without ignoring errors, because they load the shared alert helper.
 const STRICT_MONITORING_SCRIPTS = [
   'alert-email.sh',
+  'backup-murphys.sh',
+  'backup-offsite.sh',
   'health-monitor.sh',
   'ssl-monitor.sh',
   'cost-optimization-report.sh',
@@ -132,6 +134,11 @@ async function deploy(): Promise<void> {
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/alert-email.sh /usr/local/bin/alert-email.sh && sudo chmod +x /usr/local/bin/alert-email.sh"`,
     'Updating alert email helper'
   );
+  // Sourced by the backup and the backup restore test for the encrypted off-site copy
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-offsite.sh /usr/local/bin/backup-offsite.sh && sudo chmod +x /usr/local/bin/backup-offsite.sh"`,
+    'Updating off-site backup helper'
+  );
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/health-monitor.sh /usr/local/bin/health-monitor.sh && sudo chmod +x /usr/local/bin/health-monitor.sh"`,
     'Updating health monitor script'
@@ -144,8 +151,10 @@ async function deploy(): Promise<void> {
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
     'Updating daily report script'
   );
+  // Strict like the helper it sources: a failed copy would leave cron running an old backup that never
+  // makes the off-site copy
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-murphys.sh /usr/local/bin/backup-murphys.sh 2>/dev/null && sudo chmod +x /usr/local/bin/backup-murphys.sh || true"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-murphys.sh /usr/local/bin/backup-murphys.sh && sudo chmod +x /usr/local/bin/backup-murphys.sh"`,
     'Updating backup script'
   );
   exec(
