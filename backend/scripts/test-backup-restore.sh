@@ -118,8 +118,9 @@ log "TEST 3: Testing restore to temporary location..."
 
 TEST_DIR="/tmp/backup-restore-test-$$"
 mkdir -p "$TEST_DIR"
-# Restored copies (including the decrypted env file) are private to this script
+# Restored copies (including the decrypted env file) are private to this script and removed on any exit
 chmod 700 "$TEST_DIR"
+trap 'rm -rf "$TEST_DIR"' EXIT
 
 if [ -n "$LATEST_DB_BACKUP" ]; then
     # Restore database to temp location

@@ -196,6 +196,8 @@ describe('backup-murphys.sh off-site copy', () => {
     expect(result.status, result.stderr).toBe(0);
     expect(files(path.join(d.bucket, 'db'))).toHaveLength(1);
     expect(files(path.join(d.bucket, 'env'))).toEqual([]);
+    // The env prefix does not exist, so it is neither pruned nor allowed to fail the run
+    expect(readLog(d.rcloneLog)).not.toContain('off:bucket/env/');
   });
 
   it('prunes off-site copies older than the 30-day retention and keeps newer ones', () => {
@@ -219,7 +221,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d, { FAKE_RCLONE_FAIL: 'copyto' });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain('ERROR: Off-site copy FAILED: upload of murphys_db_');
+    expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (upload of murphys_db_');
     expect(readLog(d.box.mailLog)).toContain("-s [Murphy's Laws] Off-site backup FAILED");
     expect(readLog(d.box.mailLog)).toContain('The local backup');
     expect(files(path.join(d.box.root, 'backups')).filter((name) => name.startsWith('murphys_db_'))).toHaveLength(1);
@@ -232,7 +234,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d, { FAKE_RCLONE_FAIL: 'delete' });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain('ERROR: Off-site copy FAILED: pruning old database copies failed');
+    expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (pruning old database copies failed)');
   });
 
   it('fails the run when an uploaded object is not listed afterwards', () => {
@@ -240,7 +242,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d, { FAKE_RCLONE_FAIL: 'lsf' });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain('ERROR: Off-site copy FAILED: upload of murphys_db_');
+    expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (upload of murphys_db_');
   });
 
   it('still fails, and logs it, when no alert can be emailed', () => {
@@ -257,7 +259,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d);
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain('ERROR: Off-site copy FAILED: passphrase file');
+    expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (passphrase file');
     expect(files(path.join(d.bucket, 'db'))).toEqual([]);
   });
 
@@ -267,6 +269,7 @@ describe('backup-murphys.sh off-site copy', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('cannot load backup-offsite.sh');
+    expect(result.stdout).toContain('ERROR: Off-site copy: FAILED');
     expect(files(path.join(d.box.root, 'backups')).filter((name) => name.startsWith('murphys_db_'))).toHaveLength(1);
   });
 });
@@ -289,6 +292,14 @@ describe('backup-offsite.sh configuration', () => {
     );
   });
 
+  it('drops trailing comments from quoted and unquoted values', () => {
+    const d = droplet();
+    expect(load(d, 'OFFSITE_REMOTE=off:bucket   # the Spaces bucket\nOFFSITE_PASSPHRASE_FILE="/etc/x pass" # secret\n')).toContain(
+      'rc=2 remote=off:bucket pass=/etc/x pass err=passphrase file /etc/x pass is missing',
+    );
+    expect(load(d, "OFFSITE_REMOTE='off:bucket' # c\n")).toContain('remote=off:bucket pass=');
+  });
+
   it('lets the environment override the config file', () => {
     const d = droplet();
     expect(load(d, 'OFFSITE_REMOTE=other:bucket\n', { OFFSITE_REMOTE: 'off:bucket' })).toContain('remote=off:bucket');
@@ -296,7 +307,10 @@ describe('backup-offsite.sh configuration', () => {
 
   it('reports not configured (1) with no remote, and misconfigured (2) for a bad remote or missing tools', () => {
     const d = droplet();
-    expect(load(d, '# nothing\n')).toContain('rc=1');
+    expect(load(d, 'OFFSITE_REMOTE=off:bucket\n', { OFFSITE_BACKUP_ENV_FILE: path.join(d.box.root, 'absent.env') })).toContain('rc=1');
+    // A file that gives no remote (typo, blank value) is a mistake, not "never set up"
+    expect(load(d, '# nothing\nOFFSITE_REMOT=off:bucket\n')).toMatch(/rc=2 .*gives no OFFSITE_REMOTE/);
+    expect(load(d, 'OFFSITE_REMOTE=\n')).toContain('rc=2');
     expect(load(d, 'OFFSITE_REMOTE=just-a-bucket\n')).toContain('rc=2');
     expect(load(d, 'OFFSITE_REMOTE=off:bucket\n')).toContain('passphrase file');
     expect(load(d, `OFFSITE_REMOTE=off:bucket\nOFFSITE_PASSPHRASE_FILE=${d.box.root}/offsite.passphrase\n`, { PATH: '/usr/bin:/bin' })).toContain('rclone is not installed');
