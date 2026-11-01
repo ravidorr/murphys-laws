@@ -135,7 +135,7 @@ if [ -n "$LATEST_DB_BACKUP" ]; then
         fi
 
         # Test queries on restored database
-        TEST_QUERY=$(sqlite3 "$TEST_DIR/test-restore.db" "SELECT COALESCE(title, text) FROM laws ORDER BY id LIMIT 1;" 2>&1)
+        TEST_QUERY=$(sqlite3 "$TEST_DIR/test-restore.db" "SELECT substr(COALESCE(NULLIF(title, ''), text), 1, 120) FROM laws ORDER BY id LIMIT 1;" 2>&1)
         if [ $? -eq 0 ]; then
             test_pass "Can query restored database"
             log "  Sample law: $TEST_QUERY"
