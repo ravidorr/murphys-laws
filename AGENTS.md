@@ -21,11 +21,12 @@ Murphy's Laws is a monorepo for a web PWA, Node.js API, iOS and Android apps, a 
 - Never commit with `--no-verify`, push with `--no-verify`, force-push, or use an environment variable that bypasses a hook. Fix the cause when a safeguard fails.
 - This repository uses GitHub issues for ticketing. Do not require an issue for every change.
 - Keep changes focused, use descriptive semantic commit messages, and open pull requests as drafts.
+- Review your own change before opening a pull request (for example `/pr-review-toolkit:review-pr`) and fix what it finds. A bot reviewer such as Codex comes after your review, never instead of it, and asking for one means doing your own as well.
 - Linters are strict. Do not weaken ESLint, Stylelint, html-validate, markdownlint, TypeScript, tests, or coverage thresholds to pass.
 - Add or update tests for code changes. Use `/* v8 ignore */` only for genuinely untestable code paths.
 - UI work uses `web/DESIGN.md` as the authoritative design contract and `web/styles/partials/variables.css` as the authoritative token values. `shared/DESIGN.md` is a generated cross-platform mirror. `design-system/` is a documentation wrapper and showcase. Do not add a competing token source or use inline styles.
 - Pin Node with `.nvmrc`; the package manager is npm. Keep `package-lock.json` committed.
-- Update `CHANGELOG.md` and run `npm run check:versions` before committing. Root-level source, configuration, and documentation changes may require a root version bump; package documentation-only changes do not. `check:versions` also fails when a `package.json` version differs from `package-lock.json` or `backend/package-lock.json`; the hook prints the command that regenerates each.
+- Update `CHANGELOG.md` and run `npm run check:versions` before committing. Root-level source, configuration, and documentation changes may require a root version bump; package documentation-only changes do not. `check:versions` also fails when a `package.json` version differs from `package-lock.json` or `backend/package-lock.json`; the pre-commit hook, the pre-push hook and the `Lockfile sync` CI check all enforce it. Bump versions with `npm version patch --no-git-tag-version` (add `-w <workspace>` for a workspace), not by editing the file, so the lockfiles move with it.
 - Track open work in `TODO.md`.
 
 ## Structure

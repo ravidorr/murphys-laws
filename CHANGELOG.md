@@ -29,26 +29,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- A `package.json` version that disagrees with its lockfile is now blocked at commit. `check:versions` (run by
-  the pre-commit hook) compares each `package.json` version in the index with every lockfile entry that records
-  it: the root and `backend/` lockfiles' own version lines, and the root lockfile's workspace entries for
-  `backend`, `web`, `mcp`, `sdk` and `cli`. It fails closed: a missing file, a lockfile that is not a JSON object
-  (merge conflict markers, say) or one without the expected entry blocks the commit instead of being skipped, and
-  `git` output is read with a large buffer so a big lockfile cannot silently switch the check off. The hook
-  names the right fix for each lockfile: `npm install --package-lock-only` at the repository root, and
-  `(cd backend && npm install --package-lock-only --no-workspaces)` for `backend/package-lock.json`, because
-  inside a workspace plain `npm install` rewrites only the root lockfile. This is the drift that left
-  `packages.backend.version` at `2.3.52` in the root lockfile after the backend bump to `2.3.53` (Codex review
-  on #220). The block is a separate `npm run check:lockfiles` step in `.husky/pre-commit` that ends in
-  `|| exit 1`: git runs that file directly (`core.hooksPath` points at `.husky/` and it has no shebang), so
-  it does not run under `sh -e`, and a bare `npm run check:versions` that fails has never stopped a commit.
-  Tests cover each lockfile entry, the failure cases, a guard that the check has a row for every root
-  workspace, the command itself in a temporary git repository, and the hook wiring.
+- A `package.json` version that disagrees with its lockfile is now blocked at commit, at push and in CI. The check
+  (`check:versions`, or `check:lockfiles` for just this part) compares each `package.json` version with every
+  lockfile entry that records it: the root and `backend/` lockfiles' own version lines, and the root lockfile's
+  workspace entries, taking the workspaces from the `workspaces` array of the root `package.json` so adding or
+  removing one needs no edit. It fails closed: a missing file, a lockfile that is not a JSON object (merge
+  conflict markers, say), a `package.json` without a string version, or a lockfile without the expected entry is
+  a problem instead of a skip, and `git` output is read with a large buffer so a big lockfile cannot silently
+  switch the check off. It prints the right fix for each lockfile: `npm install --package-lock-only` at the
+  repository root, and `(cd backend && npm install --package-lock-only --no-workspaces)` for
+  `backend/package-lock.json`, because inside a workspace plain `npm install` rewrites only the root lockfile.
+  This is the drift that left `packages.backend.version` at `2.3.52` in the root lockfile after the backend bump
+  to `2.3.53` (Codex review on #220), and nothing caught it: git runs `.husky/pre-commit` directly
+  (`core.hooksPath` points at `.husky/` and the file has no shebang), so it does not run under `sh -e`, and a
+  bare `npm run check:versions` that failed never stopped a commit. The hook now ends that line in
+  `|| exit 1`, which also makes the version-bump rules block for the first time, so a commit that touches a
+  package needs that package's bump relative to `HEAD`. `.husky/pre-push` runs `check:lockfiles --ref=HEAD`, and
+  a new `Lockfile sync` workflow runs the check on every pull request (add it to the required status checks),
+  runs this check's tests, and fails if regenerating the root lockfile with npm changes it. The ship skill and
+  `AGENTS.md` now say to bump with `npm version patch --no-git-tag-version` (`-w <workspace>` for a workspace)
+  so the lockfiles move with the version, and to review your own change before opening a pull request. Tests
+  cover each lockfile entry, the failure cases, the workspace derivation, the command in a temporary git
+  repository, and the hook, pre-push and workflow wiring. Root bumped to `2.6.118`.
 - The backup restore test's sample line now replaces CR and LF in a law's title or text with spaces before
   cutting it to 120 characters, so a law with a line break no longer spreads the emailed report's sample over
   several lines. A restored database with no laws now fails the test instead of passing with a blank sample, and
-  a failed integrity check or query reports sqlite3's own error text. Backend bumped to `2.3.54`; root to
-  `2.6.117`.
+  a failed integrity check or query reports sqlite3's own error text. Backend bumped to `2.3.54`.
 - The monthly backup restore test (`backend/scripts/test-backup-restore.sh`) printed an empty `Sample law:` line
   because its query, `SELECT title FROM laws LIMIT 1`, had no ordering and `title` is optional (most laws are
   single-line quotes with no title). It now selects the first law by `id`, showing its title, or its text when

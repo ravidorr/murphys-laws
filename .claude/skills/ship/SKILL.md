@@ -81,11 +81,24 @@ touches files that compile into, configure, or bundle the app.
 The pre-commit hook runs `npm run check:versions` against staged files. If it fails, bump the
 listed version files and stage them; do not bypass the check.
 
-It also fails when a `package.json` version differs from the lockfile entries that record it. After
-bumping a version by hand, regenerate the lockfiles and stage them: `npm install --package-lock-only`
-at the repository root for `package-lock.json` (it holds the root and every workspace version), and
-`(cd backend && npm install --package-lock-only --no-workspaces)` for `backend/package-lock.json`.
-Plain `npm install` inside `backend/` rewrites only the root lockfile.
+It also fails when a `package.json` version differs from the lockfile entries that record it, and the
+hook, `.husky/pre-push` and the `Lockfile sync` CI check all enforce that. **Bump with npm, not by editing
+the version by hand**, so the lockfiles move with it. From the repository root:
+
+```bash
+npm version patch --no-git-tag-version              # root package.json + package-lock.json
+npm version patch --no-git-tag-version -w backend   # backend/package.json, the root lockfile's backend entry,
+                                                    # and backend/package-lock.json
+npm version patch --no-git-tag-version -w web       # likewise for web, mcp, sdk and cli
+```
+
+Do not run `npm version` inside `backend/` with `--no-workspaces`: it updates `backend/package-lock.json` but
+leaves the root lockfile's `backend` entry stale. If the lockfiles already disagree with a `package.json`,
+regenerate the one that is out of date: `npm install --package-lock-only` at the repository root for
+`package-lock.json` (it holds the root and every workspace version), and
+`(cd backend && npm install --package-lock-only --no-workspaces)` for `backend/package-lock.json`. Plain
+`npm install` inside `backend/` rewrites only the root lockfile. `ios/` and `android/` versions are not npm
+packages, so those are still edited by hand.
 
 If `ios/project.yml` `sources:` or `android/app/build.gradle.kts` `copySharedContent` (or the equivalent build glue) ever expands to consume more `shared/` paths, update this skill so the probes match the new reality.
 
@@ -196,6 +209,11 @@ If the hook fails for another reason (lint, typecheck, test), fix the underlying
 
 ## 7. Open a PR
 
+**Review your own change first.** Before `gh pr create`, run `/pr-review-toolkit:review-pr` on the branch and
+fix what it finds (and re-run it after substantial fixes). Do this before the PR exists: a bot reviewer such as
+Codex comes after your own review, never instead of it. When you do ask Codex for a review on a PR
+(`@codex review`), run your own review on that PR as well.
+
 ```bash
 gh pr create \
   --title "<prefix>: <same short description as commit subject>" \
@@ -220,9 +238,9 @@ Return the PR URL to the user.
 
 ```
 [ ] Read the diff - understand what changed AND which platform binaries it lands in
-[ ] Bump root package.json (always)
+[ ] Bump root package.json (always) with `npm version patch --no-git-tag-version`, not by hand
 [ ] If user-facing web/ code OR shared/content/ changed: bump web/package.json
-[ ] If backend/ code changed: bump backend/package.json
+[ ] If backend/ code changed: `npm version patch --no-git-tag-version -w backend`
 [ ] If cli/ code changed: bump cli/package.json
 [ ] If mcp/ code changed: bump mcp/package.json
 [ ] If sdk/ code changed: bump sdk/package.json
@@ -236,6 +254,7 @@ Return the PR URL to the user.
 [ ] git add <files>
 [ ] git commit (no JIRA, conventional prefix, body ≤100 cols)
 [ ] git push -u origin <branch>
+[ ] /pr-review-toolkit:review-pr on the branch, fix what it finds
 [ ] gh pr create
 [ ] Return PR URL
 ```

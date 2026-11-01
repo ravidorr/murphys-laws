@@ -8,7 +8,6 @@ import { after, describe, it } from 'node:test';
 import {
   findLockfileProblems,
   findMissingVersionBumps,
-  lockfileChecks,
   isMcpManifestSynchronizationRepair,
   parseStagedFiles,
 } from './check-version-bumps';
@@ -238,8 +237,10 @@ describe('findLockfileProblems', () => {
   const workspaceVersions = { backend: '3.0.0', web: '4.0.0', mcp: '1.0.0', sdk: '0.2.0', cli: '0.1.0' };
 
   /** A tree where every package.json matches every lockfile entry. */
+  const rootPackageJson = (workspaces: unknown = Object.keys(workspaceVersions)) =>
+    JSON.stringify({ version: '2.0.0', workspaces });
   const inSync = (): Record<string, string | null> => ({
-    'package.json': packageJson('2.0.0'),
+    'package.json': rootPackageJson(),
     'package-lock.json': rootLockfile(workspaceVersions),
     'backend/package.json': packageJson('3.0.0'),
     'backend/package-lock.json': ownLockfile('3.0.0'),
@@ -312,10 +313,10 @@ describe('findLockfileProblems', () => {
     ]);
   });
 
-  it('fails when a required file is missing from the index, and reports it once', () => {
-    assert.deepEqual(problemsFor({ 'package-lock.json': null }), ['package-lock.json is missing from the index']);
-    assert.deepEqual(problemsFor({ 'backend/package-lock.json': null }), ['backend/package-lock.json is missing from the index']);
-    assert.deepEqual(problemsFor({ 'web/package.json': null }), ['web/package.json is missing from the index']);
+  it('fails when a required file is missing, and reports it once', () => {
+    assert.deepEqual(problemsFor({ 'package-lock.json': null }), ['package-lock.json is missing']);
+    assert.deepEqual(problemsFor({ 'backend/package-lock.json': null }), ['backend/package-lock.json is missing']);
+    assert.deepEqual(problemsFor({ 'web/package.json': null }), ['web/package.json is missing']);
   });
 
   it('keeps checking the other pairs when one file is missing', () => {
@@ -324,7 +325,7 @@ describe('findLockfileProblems', () => {
       'backend/package.json is 3.0.1 but backend/package-lock.json version is 3.0.0',
       'backend/package.json is 3.0.1 but backend/package-lock.json packages[""].version is 3.0.0',
       'backend/package.json is 3.0.1 but package-lock.json packages["backend"].version is 3.0.0',
-      'web/package.json is missing from the index',
+      'web/package.json is missing',
     ]);
   });
 
@@ -339,9 +340,16 @@ describe('findLockfileProblems', () => {
     assert.deepEqual(problemsFor({ 'web/package.json': '{ invalid' }), ['web/package.json is not a valid JSON object']);
   });
 
-  it('skips a package.json that parses but has no string version', () => {
-    assert.deepEqual(problemsFor({ 'web/package.json': '{ "name": "web" }' }), []);
-    assert.deepEqual(problemsFor({ 'web/package.json': '{ "version": 4 }' }), []);
+  it('fails on a package.json whose version is missing or not a string, instead of skipping it', () => {
+    for (const content of ['{ "name": "web" }', '{ "version": 4 }', '{ "version": null }', '{ "version": ["4.0.0"] }']) {
+      assert.deepEqual(problemsFor({ 'web/package.json': content }), ['web/package.json has no string version'], content);
+    }
+  });
+
+  it('fails when the root package.json loses its version, even though the lockfile still records one', () => {
+    assert.deepEqual(problemsFor({ 'package.json': JSON.stringify({ workspaces: Object.keys(workspaceVersions) }) }), [
+      'package.json has no string version',
+    ]);
   });
 
   it('fails when the lockfile lacks an entry or has a non-string version for it', () => {
@@ -376,15 +384,44 @@ describe('findLockfileProblems', () => {
     ]);
   });
 
-  it('has a row for every workspace in the root package.json, so a new workspace is not skipped', () => {
-    const root = JSON.parse(readFileSync(path.resolve(__dirname, '../package.json'), 'utf8')) as { workspaces: string[] };
+  it('takes the workspaces to compare from the root package.json, so removing one is not an error', () => {
+    // cli is no longer a workspace: its package.json is gone and the root lockfile still lists a stale version.
+    const lock = rootLockfile({ ...workspaceVersions, cli: '9.9.9' });
 
-    for (const workspace of root.workspaces) {
-      assert.ok(
-        lockfileChecks.some((check) => check.packageJson === `${workspace}/package.json` && check.lockfile === 'package-lock.json'),
-        `${workspace} has no lockfile check`,
+    assert.deepEqual(
+      problemsFor({
+        'package.json': rootPackageJson(['backend', 'web', 'mcp', 'sdk']),
+        'package-lock.json': lock,
+        'cli/package.json': null,
+      }),
+      [],
+    );
+  });
+
+  it('checks a workspace that is added to the root package.json', () => {
+    assert.deepEqual(problemsFor({ 'package.json': rootPackageJson([...Object.keys(workspaceVersions), 'extra']) }), [
+      'extra/package.json is missing',
+    ]);
+  });
+
+  it('fails when the root package.json has no workspaces array of names', () => {
+    for (const workspaces of [null, 'backend', ['backend', 7], { backend: true }]) {
+      assert.deepEqual(
+        problemsFor({ 'package.json': rootPackageJson(workspaces) }).filter((problem) => problem.startsWith('package.json has')),
+        ['package.json has no workspaces array of names'],
+        JSON.stringify(workspaces),
       );
     }
+  });
+
+  it('still compares the root and backend pairs when the workspaces are unusable', () => {
+    assert.deepEqual(
+      problemsFor({ 'package.json': rootPackageJson(null), 'backend/package-lock.json': ownLockfile('2.9.9', '3.0.0') }),
+      [
+        'package.json has no workspaces array of names',
+        'backend/package.json is 3.0.0 but backend/package-lock.json version is 2.9.9',
+      ],
+    );
   });
 });
 
@@ -425,7 +462,8 @@ describe('check-version-bumps command', () => {
     write(repo, 'backend/package-lock.json', { version: '3.0.0', packages: { '': { version: '3.0.0' } } });
     git(repo, 'init', '-q');
     git(repo, 'add', '-A');
-    git(repo, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'init');
+    // Ignore the developer's global git config (commit signing, a global hooks path) in these throwaway repos.
+    git(repo, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', 'commit', '-q', '-m', 'init');
     return repo;
   };
 
@@ -514,24 +552,66 @@ describe('check-version-bumps command', () => {
     assert.match(drifted.stderr, /web\/package\.json is 4\.0\.1 but package-lock\.json packages\["web"\]\.version is 4\.0\.0/);
     assert.doesNotMatch(drifted.stderr, /require version bumps/);
   });
+
+  it('lets a workspace be removed in the same commit as its lockfile entry', () => {
+    const repo = repoInSync();
+    git(repo, 'rm', '-rq', 'cli');
+    write(repo, 'package.json', { name: 'root', version: '2.0.0', workspaces: ['backend', 'web', 'mcp', 'sdk'] });
+    write(repo, 'package-lock.json', {
+      version: '2.0.0',
+      packages: { '': { version: '2.0.0' }, backend: { version: '3.0.0' }, web: { version: '4.0.0' }, mcp: { version: '1.0.0' }, sdk: { version: '0.2.0' } },
+    });
+    git(repo, 'add', '-A');
+
+    const result = run(repo, '--lockfiles');
+
+    assert.equal(result.status, 0, result.stderr);
+  });
+
+  it('with --ref reads that commit instead of the index', () => {
+    const repo = repoInSync();
+    write(repo, 'web/package.json', { name: 'web', version: '4.0.1' });
+    git(repo, 'add', '-A');
+
+    assert.equal(run(repo, '--lockfiles').status, 1, 'the staged drift is seen through the index');
+
+    const committed = run(repo, '--lockfiles', '--ref=HEAD');
+    assert.equal(committed.status, 0, committed.stderr);
+
+    const unknown = run(repo, '--lockfiles', '--ref=no-such-commit');
+    assert.equal(unknown.status, 1);
+    assert.match(unknown.stderr, /package\.json is missing/);
+  });
 });
 
-describe('pre-commit hook wiring', () => {
+describe('hook and CI wiring', () => {
   const root = path.resolve(__dirname, '..');
-  const hook = readFileSync(path.join(root, '.husky/pre-commit'), 'utf8');
+  const read = (file: string) => readFileSync(path.join(root, file), 'utf8');
+  const lines = (file: string) => read(file).split('\n').map((line) => line.trim());
 
-  // git runs .husky/pre-commit directly (core.hooksPath, no shebang), so without `sh -e` a bare failing
-  // command lets the commit through. The lockfile check therefore has to exit explicitly.
-  it('blocks the commit when the lockfile check fails', () => {
-    assert.ok(
-      hook.split('\n').some((line) => line.trim() === 'npm run check:lockfiles || exit 1'),
-      'the hook must run `npm run check:lockfiles || exit 1`',
-    );
+  // git can run .husky/pre-commit directly (core.hooksPath, no shebang), so without `sh -e` a bare failing
+  // command lets the commit through. The check therefore has to exit explicitly.
+  it('has the pre-commit hook stop the commit when the version or lockfile check fails', () => {
+    assert.ok(lines('.husky/pre-commit').includes('npm run check:versions || exit 1'));
+  });
+
+  it('has the pre-push hook stop the push when a lockfile is out of sync', () => {
+    assert.ok(read('.husky/pre-push').includes('npm run check:lockfiles -- --ref=HEAD'));
+    assert.ok(lines('.husky/pre-push').includes('exit 1'));
   });
 
   it('has an npm script that runs the lockfile-only check', () => {
-    const scripts = (JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
+    const scripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts;
 
     assert.equal(scripts['check:lockfiles'], 'tsx scripts/check-version-bumps.ts --lockfiles');
+  });
+
+  it('runs the lockfile check in CI on every pull request, so it can be a required status check', () => {
+    const workflow = read('.github/workflows/lockfile-sync.yml');
+
+    assert.match(workflow, /^on:\n(?:.*\n)*?\s+pull_request:/m);
+    assert.doesNotMatch(workflow, /^\s+paths:/m, 'a path filter would leave the check missing on some pull requests');
+    assert.ok(lines('.github/workflows/lockfile-sync.yml').includes('run: npm run check:lockfiles'));
+    assert.match(workflow, /git diff --exit-code -- package-lock\.json/);
   });
 });
