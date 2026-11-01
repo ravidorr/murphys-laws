@@ -29,15 +29,15 @@ Complete restore simulation on a test environment.
 ```bash
 # From your local machine
 scp backend/scripts/test-backup-restore.sh ravidor@167.99.53.90:/tmp/
-scp backend/scripts/alert-email.sh ravidor@167.99.53.90:/tmp/
+scp backend/scripts/alert-email.sh backend/scripts/backup-offsite.sh ravidor@167.99.53.90:/tmp/
 
 # SSH into server
 ssh ravidor@167.99.53.90
 
-# Install the script and the helper it sources to find the alert address (ALERT_EMAIL, then EMAIL_TO)
-sudo cp /tmp/alert-email.sh /usr/local/bin/
+# Install the script and the helpers it sources: the alert address (ALERT_EMAIL, then EMAIL_TO) and the off-site copy
+sudo cp /tmp/alert-email.sh /tmp/backup-offsite.sh /usr/local/bin/
 sudo cp /tmp/test-backup-restore.sh /usr/local/bin/
-sudo chmod +x /usr/local/bin/alert-email.sh /usr/local/bin/test-backup-restore.sh
+sudo chmod +x /usr/local/bin/alert-email.sh /usr/local/bin/backup-offsite.sh /usr/local/bin/test-backup-restore.sh
 ```
 
 #### Step 2: Run Test

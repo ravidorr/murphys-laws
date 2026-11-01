@@ -1039,6 +1039,29 @@ function mapCostSection(cost: CostJson): ReportSection {
   return section('MONTHLY COST OPTIMIZATION REPORT', items);
 }
 
+const BACKUP_LOG_PATH = '/var/log/backup-murphys.log';
+
+/** The text of the last `Off-site copy:` line the backup script logged, or null when the log has none. */
+export function parseOffsiteBackupStatus(logText: string): string | null {
+  const lines = logText.split('\n').filter((line) => line.includes('Off-site copy:'));
+  const last = lines[lines.length - 1];
+  return last ? last.slice(last.indexOf('Off-site copy:') + 'Off-site copy:'.length).trim() : null;
+}
+
+/** The report row for the latest off-site backup result, warning unless the last run copied off-site. */
+export function offsiteBackupItem(logPath: string): ReportItem {
+  let status: string | null = null;
+  try {
+    status = parseOffsiteBackupStatus(readFileSync(logPath, 'utf8'));
+  } catch (error) {
+    logCollectorError('off-site backup status', error);
+  }
+  if (status === null) {
+    return { label: 'Off-site copy', value: 'no result in the backup log', tone: 'warning' };
+  }
+  return { label: 'Off-site copy', value: status, ...(status.startsWith('ok') ? {} : { tone: 'warning' as const }) };
+}
+
 function backupReminderSection(): ReportSection {
   return section('MONTHLY BACKUP TEST REMINDER', [
     {
@@ -1055,9 +1078,10 @@ function backupReminderSection(): ReportSection {
       kind: 'row',
     },
     { kind: 'command', value: 'sudo /usr/local/bin/test-backup-restore.sh' },
-    { value: 'All tests should pass (20/20 for the main droplet)', kind: 'bullet' },
+    { value: 'All tests should pass, including the encrypted off-site copy checks', kind: 'bullet' },
     { value: 'Backup age < 30 hours', kind: 'bullet' },
     { value: 'Database integrity checks pass', kind: 'bullet' },
+    { value: 'Off-site copy is fresh and restores (database and env)', kind: 'bullet' },
   ]);
 }
 
@@ -1115,9 +1139,9 @@ function buildTestEmailReport(now: Date): DailyReport {
         },
         recommendations: [
           'Infrastructure: single application droplet (n8n automation retired).',
-          'Backup storage: Local retention 30 days; off-site copy not configured.',
+          'Backup storage: Local retention 30 days, and the same for the encrypted off-site copy when configured (see the backup status above).',
         ],
-        actionItems: ['Run monthly test-backup-restore.sh (local integrity)'],
+        actionItems: ['Run monthly test-backup-restore.sh (local and off-site restore)'],
         nextReview: '2026-11-11',
       }),
       backupReminderSection(),
@@ -1406,7 +1430,7 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       label: 'Total backup size',
       value: tryCommand('du', ['-sh', '/root/backups']).split('\t')[0] ?? 'Unknown',
     });
-    backupItems.push({ label: 'Off-site copy', value: 'not configured (local integrity only)' });
+    backupItems.push(offsiteBackupItem(BACKUP_LOG_PATH));
     sections.push(section('BACKUP STATUS', backupItems));
   }
 
