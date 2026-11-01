@@ -81,6 +81,12 @@ touches files that compile into, configure, or bundle the app.
 The pre-commit hook runs `npm run check:versions` against staged files. If it fails, bump the
 listed version files and stage them; do not bypass the check.
 
+Edit the version in `package.json` as usual. The pre-commit hook then copies it into `package-lock.json` and
+`backend/package-lock.json` and stages those files, so there is nothing to regenerate. To do it by hand, or if
+the hook was skipped, run `npm run lockfiles:sync`. The `Lockfile sync` CI check runs
+`npm run lockfiles:sync -- --check` and fails a pull request whose lockfiles still disagree. `ios/` and
+`android/` versions are not npm packages and are unaffected.
+
 If `ios/project.yml` `sources:` or `android/app/build.gradle.kts` `copySharedContent` (or the equivalent build glue) ever expands to consume more `shared/` paths, update this skill so the probes match the new reality.
 
 ### iOS specifics
@@ -190,6 +196,11 @@ If the hook fails for another reason (lint, typecheck, test), fix the underlying
 
 ## 7. Open a PR
 
+**Review your own change first.** Before `gh pr create`, run `/pr-review-toolkit:review-pr` on the branch and
+fix what it finds (and re-run it after substantial fixes). Do this before the PR exists: a bot reviewer such as
+Codex comes after your own review, never instead of it. When you do ask Codex for a review on a PR
+(`@codex review`), run your own review on that PR as well.
+
 ```bash
 gh pr create \
   --title "<prefix>: <same short description as commit subject>" \
@@ -230,6 +241,7 @@ Return the PR URL to the user.
 [ ] git add <files>
 [ ] git commit (no JIRA, conventional prefix, body ≤100 cols)
 [ ] git push -u origin <branch>
+[ ] /pr-review-toolkit:review-pr on the branch, fix what it finds
 [ ] gh pr create
 [ ] Return PR URL
 ```

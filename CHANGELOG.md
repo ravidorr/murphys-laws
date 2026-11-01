@@ -29,6 +29,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Lockfile versions no longer drift from `package.json`. `npm run lockfiles:sync`
+  (`scripts/sync-lockfile-versions.ts`) copies each `package.json` version into the lockfile fields that record
+  it: the root and `backend/` lockfiles' own version lines, and the root lockfile's workspace entries, with the
+  workspaces taken from the root `package.json`. It changes only those fields, so nothing is reformatted. The
+  pre-commit hook runs it with `--stage` whenever a `package.json` is staged, so the lockfiles are fixed and
+  staged instead of the commit being blocked, and a new `Lockfile sync` workflow runs it with `--check` on every
+  pull request (add it to the required status checks). This is the drift that left `packages.backend.version` at
+  `2.3.52` in the root lockfile after the backend bump to `2.3.53` (Codex review on #220). The ship skill and
+  `AGENTS.md` also now say to review your own change before opening a pull request. Root bumped to `2.6.117`.
+- The backup restore test's sample line now replaces CR and LF in a law's title or text with spaces before
+  cutting it to 120 characters, so a law with a line break no longer spreads the emailed report's sample over
+  several lines. A restored database with no laws now fails the test instead of passing with a blank sample, and
+  a failed integrity check or query reports sqlite3's own error text. Backend bumped to `2.3.54`.
 - The monthly backup restore test (`backend/scripts/test-backup-restore.sh`) printed an empty `Sample law:` line
   because its query, `SELECT title FROM laws LIMIT 1`, had no ordering and `title` is optional (most laws are
   single-line quotes with no title). It now selects the first law by `id`, showing its title, or its text when
