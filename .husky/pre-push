@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# Block push when a package.json version and its lockfile disagree in the commit being pushed from.
+echo "Checking package.json versions against the lockfiles..."
+if ! npm run check:lockfiles -- --ref=HEAD; then
+  echo ""
+  echo "A package.json version does not match its lockfile. Fix it before pushing."
+  exit 1
+fi
+
 # Block push if high/critical production vulnerabilities exist.
 echo "Running production dependency audit (high/critical)..."
 if ! npm audit --omit=dev --audit-level=high; then

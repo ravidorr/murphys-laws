@@ -301,16 +301,21 @@ function workspaceEntries(workspace: string): (lock: JsonObject) => LockfileEntr
   return (lock) => [{ label: `packages["${workspace}"].version`, version: versionAt(lock, workspace) }];
 }
 
-/** Keep the workspace rows in step with the `workspaces` array of the root package.json. */
-export const lockfileChecks: LockfileCheck[] = [
-  { packageJson: 'package.json', lockfile: 'package-lock.json', entries: ownEntries },
-  { packageJson: 'backend/package.json', lockfile: 'backend/package-lock.json', entries: ownEntries },
-  ...['backend', 'web', 'mcp', 'sdk', 'cli'].map((workspace) => ({
-    packageJson: `${workspace}/package.json`,
-    lockfile: 'package-lock.json',
-    entries: workspaceEntries(workspace),
-  })),
-];
+/**
+ * The pairs to compare: the root package and `backend/`, which has a lockfile of its own, plus one row per
+ * workspace the root package.json declares, so adding or removing a workspace needs no edit here.
+ */
+export function lockfileChecksFor(workspaces: readonly string[]): LockfileCheck[] {
+  return [
+    { packageJson: 'package.json', lockfile: 'package-lock.json', entries: ownEntries },
+    { packageJson: 'backend/package.json', lockfile: 'backend/package-lock.json', entries: ownEntries },
+    ...workspaces.map((workspace) => ({
+      packageJson: `${workspace}/package.json`,
+      lockfile: 'package-lock.json',
+      entries: workspaceEntries(workspace),
+    })),
+  ];
+}
 
 function parseJsonObject(content: string): JsonObject | null {
   try {
@@ -322,26 +327,35 @@ function parseJsonObject(content: string): JsonObject | null {
 }
 
 /**
- * Everything wrong with how package.json versions and lockfiles line up, read from the index.
+ * Everything wrong with how package.json versions and lockfiles line up, as seen by `readAfter` (the index, or
+ * a commit with `--ref`).
  *
  * A package.json version must equal every place a lockfile records it, otherwise the next
  * `npm install` rewrites the lockfile and leaves a dirty worktree. This is a commit gate, so it fails
- * closed: a file that is missing from the index, is not a JSON object (a merge conflict left in a
- * lockfile, say), or lacks the lockfile entry it should have is a problem, not something to skip. The
- * only silent skip is a package.json that parses but has no version, which a private package may omit.
+ * closed: a file that is missing, is not a JSON object (a merge conflict left in a
+ * lockfile, say), has no string version, or lacks the lockfile entry it should have is a problem, not
+ * something to skip.
  */
 export function findLockfileProblems(readAfter: (filePath: string) => string | null): string[] {
   const problems = new Set<string>();
 
-  for (const { packageJson, lockfile, entries } of lockfileChecks) {
+  const rootText = readAfter('package.json');
+  const root = rootText === null ? null : parseJsonObject(rootText);
+  const declared = root?.workspaces;
+  if (root !== null && !(Array.isArray(declared) && declared.every((name) => typeof name === 'string'))) {
+    problems.add('package.json has no workspaces array of names');
+  }
+  const workspaces = Array.isArray(declared) ? declared.filter((name): name is string => typeof name === 'string') : [];
+
+  for (const { packageJson, lockfile, entries } of lockfileChecksFor(workspaces)) {
     const packageText = readAfter(packageJson);
     const lockText = readAfter(lockfile);
 
     if (packageText === null) {
-      problems.add(`${packageJson} is missing from the index`);
+      problems.add(`${packageJson} is missing`);
     }
     if (lockText === null) {
-      problems.add(`${lockfile} is missing from the index`);
+      problems.add(`${lockfile} is missing`);
     }
     if (packageText === null || lockText === null) {
       continue;
@@ -355,6 +369,9 @@ export function findLockfileProblems(readAfter: (filePath: string) => string | n
     }
     if (lock === null) {
       problems.add(`${lockfile} is not a valid JSON object`);
+    }
+    if (pkg !== null && typeof pkg.version !== 'string') {
+      problems.add(`${packageJson} has no string version`);
     }
     if (pkg === null || lock === null || typeof pkg.version !== 'string') {
       continue;
@@ -377,28 +394,38 @@ function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
 }
 
-function readFromHead(filePath: string): string | null {
+function readFromRevision(revision: string, filePath: string): string | null {
   try {
-    git(['rev-parse', '--verify', '--quiet', 'HEAD']);
+    git(['rev-parse', '--verify', '--quiet', `${revision}^{commit}`]);
   } catch {
-    return null; // no commits yet
+    return null; // no such commit, such as HEAD in a repository with no commits yet
   }
 
-  return git(['ls-tree', 'HEAD', '--', filePath]).trim() === '' ? null : git(['show', `HEAD:${filePath}`]);
+  return git(['ls-tree', revision, '--', filePath]).trim() === '' ? null : git(['show', `${revision}:${filePath}`]);
+}
+
+function readFromHead(filePath: string): string | null {
+  return readFromRevision('HEAD', filePath);
 }
 
 function readFromIndex(filePath: string): string | null {
   return git(['ls-files', '--stage', '--', filePath]).trim() === '' ? null : git(['show', `:${filePath}`]);
 }
 
-/** `--lockfiles` checks only that package.json versions match the lockfiles, skipping the version-bump rules. */
+/**
+ * `--lockfiles` checks only that package.json versions match the lockfiles, skipping the version-bump rules.
+ * `--ref=<commit>` reads the lockfile check's files from that commit instead of the index, for pre-push and CI.
+ */
 function main(args: string[]): void {
   const lockfilesOnly = args.includes('--lockfiles');
+  const revision = args.find((arg) => arg.startsWith('--ref='))?.slice('--ref='.length);
   const stagedFiles = lockfilesOnly
     ? []
     : parseStagedFiles(git(['diff', '--cached', '--name-status', '--diff-filter=ACMRTD']));
   const missing = lockfilesOnly ? [] : findMissingVersionBumps(stagedFiles, readFromHead, readFromIndex);
-  const lockfileProblems = findLockfileProblems(readFromIndex);
+  const lockfileProblems = findLockfileProblems(
+    revision === undefined ? readFromIndex : (filePath) => readFromRevision(revision, filePath),
+  );
 
   if (missing.length === 0 && lockfileProblems.length === 0) {
     return;
