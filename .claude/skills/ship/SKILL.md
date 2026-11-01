@@ -81,24 +81,11 @@ touches files that compile into, configure, or bundle the app.
 The pre-commit hook runs `npm run check:versions` against staged files. If it fails, bump the
 listed version files and stage them; do not bypass the check.
 
-It also fails when a `package.json` version differs from the lockfile entries that record it, and the
-hook, `.husky/pre-push` and the `Lockfile sync` CI check all enforce that. **Bump with npm, not by editing
-the version by hand**, so the lockfiles move with it. From the repository root:
-
-```bash
-npm version patch --no-git-tag-version              # root package.json + package-lock.json
-npm version patch --no-git-tag-version -w backend   # backend/package.json, the root lockfile's backend entry,
-                                                    # and backend/package-lock.json
-npm version patch --no-git-tag-version -w web       # likewise for web, mcp, sdk and cli
-```
-
-Do not run `npm version` inside `backend/` with `--no-workspaces`: it updates `backend/package-lock.json` but
-leaves the root lockfile's `backend` entry stale. If the lockfiles already disagree with a `package.json`,
-regenerate the one that is out of date: `npm install --package-lock-only` at the repository root for
-`package-lock.json` (it holds the root and every workspace version), and
-`(cd backend && npm install --package-lock-only --no-workspaces)` for `backend/package-lock.json`. Plain
-`npm install` inside `backend/` rewrites only the root lockfile. `ios/` and `android/` versions are not npm
-packages, so those are still edited by hand.
+Edit the version in `package.json` as usual. The pre-commit hook then copies it into `package-lock.json` and
+`backend/package-lock.json` and stages those files, so there is nothing to regenerate. To do it by hand, or if
+the hook was skipped, run `npm run lockfiles:sync`. The `Lockfile sync` CI check runs
+`npm run lockfiles:sync -- --check` and fails a pull request whose lockfiles still disagree. `ios/` and
+`android/` versions are not npm packages and are unaffected.
 
 If `ios/project.yml` `sources:` or `android/app/build.gradle.kts` `copySharedContent` (or the equivalent build glue) ever expands to consume more `shared/` paths, update this skill so the probes match the new reality.
 
@@ -238,9 +225,9 @@ Return the PR URL to the user.
 
 ```
 [ ] Read the diff - understand what changed AND which platform binaries it lands in
-[ ] Bump root package.json (always) with `npm version patch --no-git-tag-version`, not by hand
+[ ] Bump root package.json (always)
 [ ] If user-facing web/ code OR shared/content/ changed: bump web/package.json
-[ ] If backend/ code changed: `npm version patch --no-git-tag-version -w backend`
+[ ] If backend/ code changed: bump backend/package.json
 [ ] If cli/ code changed: bump cli/package.json
 [ ] If mcp/ code changed: bump mcp/package.json
 [ ] If sdk/ code changed: bump sdk/package.json

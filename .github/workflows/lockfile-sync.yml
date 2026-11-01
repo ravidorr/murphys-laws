@@ -1,8 +1,8 @@
 name: Lockfile sync
 
-# Fails a pull request when a package.json version disagrees with the lockfiles that record it. It runs on
-# every pull request (no path filter) so it can be a required status check. The pre-commit and pre-push hooks
-# run the same check locally, but hooks can be skipped, so this is the one that cannot.
+# Fails a pull request when a lockfile records a different version than the package.json it belongs to. The
+# pre-commit hook fixes this automatically (npm run lockfiles:sync), but hooks can be skipped, so this is the
+# check that cannot be. It runs on every pull request (no path filter) so it can be a required status check.
 
 on:
   push:
@@ -35,16 +35,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Check package.json versions against every lockfile entry
-        run: npm run check:lockfiles
+      - name: Lockfile versions match package.json
+        run: npm run lockfiles:sync -- --check
 
-      - name: Test the version and lockfile checks
-        run: node --import tsx --test scripts/check-version-bumps.test.ts
-
-      # npm itself is the authority for the root lockfile: regenerating it must change nothing. This is not
-      # done for backend/package-lock.json because npm 10 (bundled with this Node) and npm 11 write it
-      # differently (libc fields), so the exact-version comparison above covers that file.
-      - name: Regenerating the root lockfile changes nothing
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          git diff --exit-code -- package-lock.json
+      - name: Test the lockfile sync script
+        run: node --import tsx --test scripts/sync-lockfile-versions.test.ts
