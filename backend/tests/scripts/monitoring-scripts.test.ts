@@ -669,15 +669,29 @@ describe('scripts run end to end with a fake mail', () => {
     expect(noRecipient.status).toBe(1);
   });
 
-  it('test-backup-restore.sh names a sample law by its text when the first law has no title', () => {
+  // The first law (lowest id) is what the sample line shows. A second, titled law is inserted first so the
+  // test also fails if the ORDER BY or the COALESCE arguments are removed or swapped.
+  it.each([
+    ['has no title', null, 'Radio clocks never go off.', 'Radio clocks never go off.'],
+    ['has an empty title', '', 'Radio clocks never go off.', 'Radio clocks never go off.'],
+    ['has a title', 'Elevator law', 'The last man in goes to the lowest floor.', 'Elevator law'],
+    ['has very long text and no title', null, 'x'.repeat(300), 'x'.repeat(120)],
+  ])('test-backup-restore.sh names a sample law when the first law %s', (_case, title, lawText, expected) => {
+    // The script shells out to the real sqlite3 CLI; fail with a clear reason if a machine lacks it.
+    expect(existsSync('/usr/bin/sqlite3'), 'the sqlite3 CLI must be installed at /usr/bin/sqlite3').toBe(true);
+
     const box = sandbox();
     mkdirSync(path.join(box.root, 'backups'));
     const backup = path.join(box.root, 'backups', 'murphys_db_20260101_000000.db');
     const db = new Database(backup);
-    db.exec('CREATE TABLE laws (id INTEGER PRIMARY KEY, title TEXT, text TEXT NOT NULL)');
-    db.prepare('INSERT INTO laws (id, title, text) VALUES (?, ?, ?)').run(2, 'Titled law', 'Second law text');
-    db.prepare('INSERT INTO laws (id, title, text) VALUES (?, ?, ?)').run(1, null, 'Radio clocks never go off.');
-    db.close();
+    try {
+      db.exec('CREATE TABLE laws (id INTEGER PRIMARY KEY, title TEXT, text TEXT NOT NULL)');
+      db.prepare('INSERT INTO laws (id, title, text) VALUES (?, ?, ?)').run(2, 'Second law', 'Second law text');
+      db.prepare('INSERT INTO laws (id, title, text) VALUES (?, ?, ?)').run(1, title, lawText);
+    } finally {
+      db.close();
+    }
+    // The script compares the backup's row count with the production database's, so give it one.
     copyFileSync(backup, path.join(box.root, 'murphys.db'));
 
     const text = source('test-backup-restore.sh')
@@ -685,8 +699,9 @@ describe('scripts run end to end with a fake mail', () => {
       .replaceAll('/root/murphys-laws/backend/murphys.db', `${box.root}/murphys.db`);
     const result = runFile(install(box, 'test-backup-restore.sh', text), [], box, { EMAIL_TO: 'admin@example.com' });
 
+    expect(result.stdout).not.toContain('FAIL: Cannot query');
     expect(result.stdout).toContain('PASS: Can query restored database');
-    expect(result.stdout).toContain('Sample law: Radio clocks never go off.');
+    expect(result.stdout).toContain(`Sample law: ${expected}\n`);
   });
 });
 
