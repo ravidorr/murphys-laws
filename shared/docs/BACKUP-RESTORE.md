@@ -329,7 +329,7 @@ The daily backup (`backup-murphys.sh`) sends an encrypted copy of the database b
 - **Encryption**: each file is encrypted on the droplet with GPG (symmetric, AES-256, authenticated) before it leaves it. The bucket only ever holds `*.gpg` objects, so the SMTP credentials in `.env` are never stored in plain text off the server.
 - **Transport**: `rclone` to any S3-compatible bucket (DigitalOcean Spaces, about $5/month, is the default choice; Cloudflare R2 and Backblaze B2 work with no code change). The script only knows an rclone remote name.
 - **Layout**: `<remote>/db/murphys_db_YYYYMMDD_HHMMSS.db.gpg` and `<remote>/env/env_YYYYMMDD_HHMMSS.bak.gpg`.
-- **Retention**: the same 30 days as the local copies. Old objects are deleted only after a successful upload, so an outage never empties the bucket.
+- **Retention**: the same 30 days as the local copies. Old objects are deleted only after a successful upload, so an outage never empties the bucket (or set `OFFSITE_PRUNE=lifecycle` to leave expiry to a bucket rule, see below).
 - **Failure handling**: if off-site is configured and any step fails, the backup run exits non-zero, logs `ERROR: Off-site copy: FAILED (...)` to `/var/log/backup-murphys.log`, and emails the alert recipient. The local backup is kept. The last `Off-site copy:` line of that log is shown in the daily report, with a warning (also in its summary) unless it is a recent `ok`. With no off-site configuration the run succeeds and logs `Off-site copy: not configured (local integrity only)`, and the monthly restore test fails until it is set up.
 - **Monthly check**: `test-backup-restore.sh` (test 9) confirms the newest off-site database and env copies exist and are under 30 hours old, downloads and decrypts them, runs `PRAGMA integrity_check` and a `laws` query on the database, and checks the SMTP keys in the env copy.
 
@@ -358,6 +358,16 @@ The daily backup (`backup-murphys.sh`) sends an encrypted copy of the database b
 6. Run `sudo /usr/local/bin/backup-murphys.sh` and look for `Off-site copy: ok`, then `sudo /usr/local/bin/test-backup-restore.sh` and confirm the off-site checks pass.
 
 The deploy installs `backup-offsite.sh` next to the scripts; it is not run on its own.
+
+### Protection against a compromised droplet
+
+The encryption stops anyone who reaches the bucket from reading the copies, but the access key stored on the droplet can also delete objects (the default pruning needs that). An attacker who takes over the droplet could therefore delete the off-site copies too. To close that gap, make the bucket enforce the retention itself and take delete rights away from the droplet's key:
+
+1. Turn on object versioning or object lock (Backblaze B2 and AWS S3 support object lock; Spaces and R2 support lifecycle rules) and add a lifecycle rule that expires objects after 30 days.
+2. Add `OFFSITE_PRUNE=lifecycle` to `/etc/murphys-laws/offsite-backup.env`. The backup then never deletes from the bucket, and the 30-day expiry is the bucket's job.
+3. Where the provider allows it, give the droplet's key write and list rights only (no delete), and keep a separate admin key off the server.
+
+Until then the default (`OFFSITE_PRUNE=server`) protects against losing the droplet, not against an attacker who is on it.
 
 ### Restoring from the off-site copy
 

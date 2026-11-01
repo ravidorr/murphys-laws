@@ -69,11 +69,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Encrypted off-site backups (issue #219). `backup-murphys.sh` now encrypts the database and `.env` backups with GPG
   (AES-256, symmetric) on the droplet and uploads them with `rclone` to any S3-compatible bucket (DigitalOcean
   Spaces, Cloudflare R2, Backblaze B2), then deletes off-site copies older than the same 30-day retention, only
-  after a successful upload. When off-site is configured and any step fails, the run exits non-zero, logs
+  after a successful upload (or never, with `OFFSITE_PRUNE=lifecycle`, so the droplet's key needs no delete right and
+  a bucket lifecycle or object-lock rule enforces the retention). When off-site is configured and any step fails, the run exits non-zero, logs
   `ERROR: Off-site copy: FAILED (...)` and emails the alert recipient; the local backup is kept. A config file that exists but gives no remote counts as misconfigured, not as "not configured". The setup is a
   root-only file on the server (`/etc/murphys-laws/offsite-backup.env` plus a passphrase file), so nothing secret
   is in the repo, and without it the run still logs `Off-site copy: not configured`. The logic is in the new
-  `backend/scripts/backup-offsite.sh`, which the deploy installs beside the other scripts. The monthly
+  `backend/scripts/backup-offsite.sh`, which the deploy installs beside the other scripts; the deploy now installs `backup-murphys.sh` strictly too, so an old
+  copy can never keep running without the off-site step. The monthly
   `test-backup-restore.sh` gains test 9: the newest off-site database and env copies must exist, be under 30
   hours old, download, decrypt, and pass `integrity_check`, a `laws` query and the SMTP key check; an
   unconfigured off-site copy now fails that test. The daily report shows the last off-site result from the backup

@@ -8,6 +8,8 @@
 #
 #   OFFSITE_REMOTE=murphys-offsite:murphys-laws-backups   # an rclone remote and bucket, no trailing slash
 #   OFFSITE_PASSPHRASE_FILE=/etc/murphys-laws/offsite-backup.passphrase   # optional, this is the default
+#   OFFSITE_PRUNE=server   # optional: "server" (default) deletes copies older than the retention after each upload;
+#                          # "lifecycle" never deletes from this server and leaves expiry to a bucket rule
 #
 # The file is $OFFSITE_BACKUP_ENV_FILE, default /etc/murphys-laws/offsite-backup.env. A value already in the
 # environment wins over the file. The rclone remote's credentials live in rclone's own config
@@ -24,6 +26,7 @@
 OFFSITE_BACKUP_ENV_FILE="${OFFSITE_BACKUP_ENV_FILE:-/etc/murphys-laws/offsite-backup.env}"
 OFFSITE_REMOTE="${OFFSITE_REMOTE:-}"
 OFFSITE_PASSPHRASE_FILE="${OFFSITE_PASSPHRASE_FILE:-}"
+OFFSITE_PRUNE="${OFFSITE_PRUNE:-}"
 OFFSITE_ERROR=""
 
 # Prints the value of KEY from a KEY=VALUE file: the last assignment wins, a leading `export` and one pair of
@@ -58,6 +61,10 @@ offsite_load_config() {
     OFFSITE_PASSPHRASE_FILE="$(_offsite_file_value "$OFFSITE_BACKUP_ENV_FILE" OFFSITE_PASSPHRASE_FILE)"
   fi
   OFFSITE_PASSPHRASE_FILE="${OFFSITE_PASSPHRASE_FILE:-/etc/murphys-laws/offsite-backup.passphrase}"
+  if [ -z "$OFFSITE_PRUNE" ]; then
+    OFFSITE_PRUNE="$(_offsite_file_value "$OFFSITE_BACKUP_ENV_FILE" OFFSITE_PRUNE)"
+  fi
+  OFFSITE_PRUNE="${OFFSITE_PRUNE:-server}"
   OFFSITE_REMOTE="${OFFSITE_REMOTE%/}"
 
   if [ -z "$OFFSITE_REMOTE" ]; then
@@ -73,6 +80,10 @@ offsite_load_config() {
   case "$OFFSITE_REMOTE" in
     *:*) ;;
     *) OFFSITE_ERROR="OFFSITE_REMOTE '$OFFSITE_REMOTE' is not an rclone remote (expected name:bucket)"; return 2 ;;
+  esac
+  case "$OFFSITE_PRUNE" in
+    server | lifecycle) ;;
+    *) OFFSITE_ERROR="OFFSITE_PRUNE '$OFFSITE_PRUNE' must be server or lifecycle"; return 2 ;;
   esac
   if ! command -v rclone >/dev/null 2>&1; then
     OFFSITE_ERROR="rclone is not installed"
@@ -120,8 +131,17 @@ offsite_upload() {
 }
 
 # offsite_prune KIND DAYS: deletes off-site objects older than DAYS, so the off-site retention matches the
-# local one. Call it only after a successful upload, so an outage never empties the bucket.
+# local one. Call it only after a successful upload, so an outage never empties the bucket. Nothing is done when
+# OFFSITE_PRUNE=lifecycle, which leaves expiry to a lifecycle or object-lock rule on the bucket so that the
+# credentials on this server never need permission to delete (see BACKUP-RESTORE.md). A directory that does not
+# exist yet (rclone status 3) has nothing to prune.
 offsite_prune() {
+  local listing rc=0
+  [ "$OFFSITE_PRUNE" = "lifecycle" ] && return 0
+  listing="$(rclone lsf --files-only "$OFFSITE_REMOTE/$1/")" || rc=$?
+  [ "$rc" -eq 3 ] && return 0
+  [ "$rc" -eq 0 ] || return "$rc"
+  [ -n "$listing" ] || return 0
   rclone delete --min-age "${2}d" "$OFFSITE_REMOTE/$1/"
 }
 

@@ -42,14 +42,14 @@ case "$cmd" in
   copyto)
     dest="$(path_of "\${args[1]}")"; mkdir -p "$(dirname "$dest")"; cp "$(path_of "\${args[0]}")" "$dest" ;;
   lsf)
-    dir="$(path_of "\${args[0]}")"; [ -d "$dir" ] || exit 0
+    dir="$(path_of "\${args[0]}")"; [ -d "$dir" ] || { echo "directory not found" >&2; exit 3; }
     if [ -n "$max_age" ]; then
       find "$dir" -maxdepth 1 -type f -mmin "-$(( \${max_age%h} * 60 ))" -exec basename {} \\;
     else
       find "$dir" -maxdepth 1 -type f -exec basename {} \\;
     fi ;;
   delete)
-    dir="$(path_of "\${args[0]}")"; [ -d "$dir" ] || exit 0
+    dir="$(path_of "\${args[0]}")"; [ -d "$dir" ] || { echo "directory not found" >&2; exit 3; }
     find "$dir" -maxdepth 1 -type f -mmin "+$(( \${min_age%d} * 1440 ))" -delete ;;
   *) echo "fake rclone: unsupported $cmd" >&2; exit 2 ;;
 esac
@@ -115,8 +115,19 @@ function droplet({ withEnvFile = true, offsite = true }: { withEnvFile?: boolean
 const retarget = (text: string, box: Sandbox) =>
   text.replaceAll('/root/murphys-laws', box.root).replaceAll('/root/backups', `${box.root}/backups`);
 
+/**
+ * Installs a script like the deploy does (install() redirects /var/log and quoted /tmp into the sandbox), and only
+ * then points the hard-coded server paths at the sandbox, so a sandbox that itself lives under /tmp (as on Linux)
+ * is never rewritten twice.
+ */
+const installRetargeted = (d: Offsite, name: string) => {
+  const file = install(d.box, name, source(name));
+  writeFileSync(file, retarget(readFileSync(file, 'utf8'), d.box));
+  return file;
+};
+
 const installBackup = (d: Offsite, { withHelper = true } = {}) => {
-  const file = install(d.box, 'backup-murphys.sh', retarget(source('backup-murphys.sh'), d.box));
+  const file = installRetargeted(d, 'backup-murphys.sh');
   if (withHelper) {
     writeFileSync(path.join(path.dirname(file), 'backup-offsite.sh'), source('backup-offsite.sh'));
   }
@@ -127,7 +138,7 @@ const runBackup = (d: Offsite, env: Record<string, string> = {}, options = {}) =
   runFile(installBackup(d, options), [], d.box, { ...d.env, ...env });
 
 const runRestoreTest = (d: Offsite, env: Record<string, string> = {}) => {
-  const file = install(d.box, 'test-backup-restore.sh', retarget(source('test-backup-restore.sh'), d.box));
+  const file = installRetargeted(d, 'test-backup-restore.sh');
   writeFileSync(path.join(path.dirname(file), 'backup-offsite.sh'), source('backup-offsite.sh'));
   return runFile(file, [], d.box, { ...d.env, ...env });
 };
@@ -164,7 +175,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d);
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain('Off-site copy: ok (encrypted, off:bucket, retention 30 days)');
+    expect(result.stdout).toContain('Off-site copy: ok (encrypted, off:bucket, retention 30 days, pruning by server)');
     const [dbObject] = files(path.join(d.bucket, 'db'));
     const [envObject] = files(path.join(d.bucket, 'env'));
     expect(dbObject).toMatch(/^murphys_db_\d{8}_\d{6}\.db\.gpg$/);
@@ -196,8 +207,9 @@ describe('backup-murphys.sh off-site copy', () => {
     expect(result.status, result.stderr).toBe(0);
     expect(files(path.join(d.bucket, 'db'))).toHaveLength(1);
     expect(files(path.join(d.bucket, 'env'))).toEqual([]);
-    // The env prefix does not exist, so it is neither pruned nor allowed to fail the run
-    expect(readLog(d.rcloneLog)).not.toContain('off:bucket/env/');
+    // The env prefix does not exist (rclone status 3), which is nothing to prune and not a failure
+    expect(readLog(d.rcloneLog)).toContain('lsf --files-only off:bucket/env/');
+    expect(readLog(d.rcloneLog)).not.toContain('delete --min-age 30d off:bucket/env/');
   });
 
   it('prunes off-site copies older than the 30-day retention and keeps newer ones', () => {
@@ -235,6 +247,36 @@ describe('backup-murphys.sh off-site copy', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (pruning old database copies failed)');
+  });
+
+  it('prunes old env copies even when this run has no .env to upload', () => {
+    const d = droplet({ withEnvFile: false });
+    seed(path.join(d.bucket, 'env'), 'env_20250101_040000.bak.gpg', 31 * 24);
+    const result = runBackup(d);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(files(path.join(d.bucket, 'env'))).toEqual([]);
+  });
+
+  it('never deletes from the bucket when OFFSITE_PRUNE=lifecycle leaves expiry to the bucket', () => {
+    const d = droplet();
+    writeFileSync(path.join(d.box.root, 'offsite.env'), `${readFileSync(path.join(d.box.root, 'offsite.env'), 'utf8')}OFFSITE_PRUNE=lifecycle\n`);
+    seed(path.join(d.bucket, 'db'), 'murphys_db_20250101_040000.db.gpg', 31 * 24);
+    const result = runBackup(d);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('pruning by lifecycle');
+    expect(files(path.join(d.bucket, 'db'))).toContain('murphys_db_20250101_040000.db.gpg');
+    expect(readLog(d.rcloneLog)).not.toMatch(/^delete /m);
+  });
+
+  it('fails the run for an unknown OFFSITE_PRUNE value instead of guessing', () => {
+    const d = droplet();
+    writeFileSync(path.join(d.box.root, 'offsite.env'), `${readFileSync(path.join(d.box.root, 'offsite.env'), 'utf8')}OFFSITE_PRUNE=sometimes\n`);
+    const result = runBackup(d);
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("OFFSITE_PRUNE 'sometimes' must be server or lifecycle");
   });
 
   it('fails the run when an uploaded object is not listed afterwards', () => {
@@ -314,8 +356,14 @@ describe('backup-offsite.sh configuration', () => {
     expect(load(d, 'OFFSITE_REMOTE=just-a-bucket\n')).toContain('rc=2');
     expect(load(d, 'OFFSITE_REMOTE=off:bucket\n')).toContain('passphrase file');
     expect(load(d, `OFFSITE_REMOTE=off:bucket\nOFFSITE_PASSPHRASE_FILE=${d.box.root}/offsite.passphrase\n`, { PATH: '/usr/bin:/bin' })).toContain('rclone is not installed');
-    execFileSync('rm', [path.join(d.box.bin, 'gpg')]);
-    expect(load(d, `OFFSITE_REMOTE=off:bucket\nOFFSITE_PASSPHRASE_FILE=${d.box.root}/offsite.passphrase\n`)).toContain('gpg is not installed');
+    // A PATH with rclone and the few tools the helper uses, but no gpg (the host's /usr/bin has one on Linux)
+    const noGpg = path.join(d.box.root, 'no-gpg-bin');
+    mkdirSync(noGpg);
+    for (const tool of ['bash', 'grep', 'sed', 'tail']) {
+      symlinkSync(hostTool(tool), path.join(noGpg, tool));
+    }
+    symlinkSync(path.join(d.box.bin, 'rclone'), path.join(noGpg, 'rclone'));
+    expect(load(d, `OFFSITE_REMOTE=off:bucket\nOFFSITE_PASSPHRASE_FILE=${d.box.root}/offsite.passphrase\n`, { PATH: noGpg })).toContain('gpg is not installed');
   });
 
   it('never runs the config file', () => {
@@ -440,14 +488,17 @@ describe('test-backup-restore.sh off-site checks', () => {
 });
 
 describe('off-site helper deploy wiring', () => {
-  it('npm run deploy and the workflow install backup-offsite.sh and refuse to continue without it', () => {
+  it('npm run deploy and the workflow install backup-murphys.sh and backup-offsite.sh and refuse to continue without it', () => {
     const deployTs = readFileSync(path.join(scriptsDir, 'deploy.ts'), 'utf8');
     const workflow = readFileSync(path.resolve(__dirname, '../../../.github/workflows/deploy.yml'), 'utf8');
 
-    expect(deployTs).toMatch(/STRICT_MONITORING_SCRIPTS = \[[^\]]*'backup-offsite\.sh'/);
+    expect(deployTs).toMatch(/STRICT_MONITORING_SCRIPTS = \[[^\]]*'backup-murphys\.sh'[^\]]*'backup-offsite\.sh'/);
+    // The backup script itself is installed strictly too: an old copy would never make the off-site copy
+    expect(deployTs).not.toMatch(/backup-murphys\.sh[^\n]*\|\| true/);
+    expect(workflow).not.toMatch(/backup-murphys\.sh[^\n]*\|\| true/);
     expect(deployTs).toContain('backup-offsite.sh /usr/local/bin/backup-offsite.sh && sudo chmod +x');
-    expect(workflow).toMatch(/for script in alert-email backup-offsite /);
-    expect(workflow).toMatch(/for script in backup-offsite health-monitor /);
+    expect(workflow).toMatch(/for script in alert-email backup-murphys backup-offsite /);
+    expect(workflow).toMatch(/for script in backup-murphys backup-offsite health-monitor /);
   });
 
   it('every script has valid syntax', () => {
