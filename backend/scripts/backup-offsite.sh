@@ -1,15 +1,18 @@
 #!/bin/bash
 # Shared by backup-murphys.sh and test-backup-restore.sh. Source it; do not run it.
 #
-# Off-site copies are encrypted on the server with GPG (AES-256, symmetric, authenticated) and sent to any
-# S3-compatible bucket (DigitalOcean Spaces, Cloudflare R2, Backblaze B2, ...) with rclone. Nothing leaves
+# Off-site copies are encrypted on the server with GPG (AES-256, symmetric, authenticated) and sent with rclone
+# to a Backblaze B2 bucket, deliberately at a different provider than the droplet (rclone's native "b2" backend;
+# the code only talks to rclone, so any rclone remote works, but B2 is the supported target because it has
+# versioning and Object Lock, which Cloudflare R2 does not). Nothing leaves
 # the server unencrypted, and nothing secret is kept in the repo. The setup is read from a root-only file
 # on the server (never sourced, only parsed for the two keys below):
 #
-#   OFFSITE_REMOTE=murphys-offsite:murphys-laws-backups   # an rclone remote and bucket, no trailing slash
+#   OFFSITE_REMOTE=murphys-b2:murphys-laws-backups   # an rclone remote and bucket, no trailing slash
 #   OFFSITE_PASSPHRASE_FILE=/etc/murphys-laws/offsite-backup.passphrase   # optional, this is the default
-#   OFFSITE_PRUNE=server   # optional: "server" (default) deletes copies older than the retention after each upload;
-#                          # "lifecycle" never deletes from this server and leaves expiry to a bucket rule
+#   OFFSITE_PRUNE=lifecycle   # optional: "lifecycle" (default) never deletes from this server and leaves expiry to
+#                             # a B2 lifecycle rule, so the server's key needs no delete right; "server" runs
+#                             # rclone delete after each upload and needs the deleteFiles capability
 #
 # The file is $OFFSITE_BACKUP_ENV_FILE, default /etc/murphys-laws/offsite-backup.env. A value already in the
 # environment wins over the file. The rclone remote's credentials live in rclone's own config
@@ -64,7 +67,7 @@ offsite_load_config() {
   if [ -z "$OFFSITE_PRUNE" ]; then
     OFFSITE_PRUNE="$(_offsite_file_value "$OFFSITE_BACKUP_ENV_FILE" OFFSITE_PRUNE)"
   fi
-  OFFSITE_PRUNE="${OFFSITE_PRUNE:-server}"
+  OFFSITE_PRUNE="${OFFSITE_PRUNE:-lifecycle}"
   OFFSITE_REMOTE="${OFFSITE_REMOTE%/}"
 
   if [ -z "$OFFSITE_REMOTE" ]; then
@@ -132,8 +135,9 @@ offsite_upload() {
 
 # offsite_prune KIND DAYS: deletes off-site objects older than DAYS, so the off-site retention matches the
 # local one. Call it only after a successful upload, so an outage never empties the bucket. Nothing is done when
-# OFFSITE_PRUNE=lifecycle, which leaves expiry to a lifecycle or object-lock rule on the bucket so that the
-# credentials on this server never need permission to delete (see BACKUP-RESTORE.md). A directory that does not
+# OFFSITE_PRUNE=lifecycle (the default), which leaves expiry to the bucket's lifecycle rule so that the
+# credentials on this server never need permission to delete (see BACKUP-RESTORE.md). On B2, rclone delete only
+# hides a version unless hard_delete is set, and a version under Object Lock cannot be removed early anyway. A directory that does not
 # exist yet (rclone status 3) has nothing to prune.
 offsite_prune() {
   local listing rc=0

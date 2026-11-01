@@ -41,7 +41,7 @@ This document provides step-by-step procedures for recovering from various disas
 
 **Backup Script**: `/usr/local/bin/backup-murphys.sh`
 
-**Off-site copy**: encrypted database and env copies are kept in an S3-compatible bucket for 30 days. If the droplet is lost, restore from there with the passphrase (see "Restoring from the off-site copy" in `BACKUP-RESTORE.md`).
+**Off-site copy**: encrypted database and env copies are kept in a Backblaze B2 bucket for 30 days. If the droplet is lost, restore from there with the passphrase kept in your password manager (see "Restore drill" and "Restoring from the off-site copy after losing the droplet" in `BACKUP-RESTORE.md`).
 
 n8n automation was retired; recovery procedures cover the main application droplet only.
 
