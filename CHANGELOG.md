@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A `package.json` version that disagrees with its lockfile is now blocked at commit. `check:versions` (run by
+  the pre-commit hook) compares each staged `package.json` version with every lockfile entry that records it: the
+  root and `backend/` lockfiles' own version lines, and the root lockfile's workspace entries for `backend`, `web`,
+  `mcp`, `sdk` and `cli`, and tells you to run `npm install --package-lock-only`. This is the drift that left
+  `packages.backend.version` at `2.3.52` in the root lockfile after the backend bump to `2.3.53` (Codex review
+  on #220). The backup restore test's sample line also now replaces CR and LF in a law's title or text with spaces
+  before cutting it to 120 characters, so a law with a line break no longer spreads the emailed report's sample
+  over several lines. Backend bumped to `2.3.54`; root to `2.6.117`.
 - The monthly backup restore test (`backend/scripts/test-backup-restore.sh`) printed an empty `Sample law:` line
   because its query, `SELECT title FROM laws LIMIT 1`, had no ordering and `title` is optional (most laws are
   single-line quotes with no title). It now selects the first law by `id`, showing its title, or its text when

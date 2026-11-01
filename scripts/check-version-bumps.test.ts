@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  findLockfileVersionMismatches,
   findMissingVersionBumps,
   isMcpManifestSynchronizationRepair,
   parseStagedFiles,
@@ -214,5 +215,104 @@ describe('check-version-bumps', () => {
       ),
       false,
     );
+  });
+});
+
+describe('findLockfileVersionMismatches', () => {
+  const packageJson = (version: string) => JSON.stringify({ version });
+  const ownLockfile = (version: string, packagesVersion = version) =>
+    JSON.stringify({ version, packages: { '': { version: packagesVersion } } });
+  const rootLockfile = (workspaces: Record<string, string>, version = '2.0.0') =>
+    JSON.stringify({
+      version,
+      packages: {
+        '': { version },
+        ...Object.fromEntries(Object.entries(workspaces).map(([name, v]) => [name, { version: v }])),
+      },
+    });
+
+  /** A tree where every package.json matches every lockfile entry. */
+  const inSync = (): Record<string, string | null> => ({
+    'package.json': packageJson('2.0.0'),
+    'package-lock.json': rootLockfile({ backend: '3.0.0', web: '4.0.0', mcp: '1.0.0', sdk: '0.2.0', cli: '0.1.0' }),
+    'backend/package.json': packageJson('3.0.0'),
+    'backend/package-lock.json': ownLockfile('3.0.0'),
+    'web/package.json': packageJson('4.0.0'),
+    'mcp/package.json': packageJson('1.0.0'),
+    'sdk/package.json': packageJson('0.2.0'),
+    'cli/package.json': packageJson('0.1.0'),
+  });
+
+  const mismatchesFor = (overrides: Record<string, string | null> = {}) => {
+    const files = { ...inSync(), ...overrides };
+    return findLockfileVersionMismatches((filePath) => files[filePath] ?? null);
+  };
+
+  it('passes when every package.json matches its lockfiles', () => {
+    assert.deepEqual(mismatchesFor(), []);
+  });
+
+  it('flags a workspace version the root lockfile still records at the old number', () => {
+    const lock = rootLockfile({ backend: '2.9.9', web: '4.0.0', mcp: '1.0.0', sdk: '0.2.0', cli: '0.1.0' });
+
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': lock }), [
+      'backend/package.json is 3.0.0 but package-lock.json packages["backend"].version is 2.9.9',
+    ]);
+  });
+
+  it('flags every workspace the root lockfile records wrongly', () => {
+    const lock = rootLockfile({ backend: '3.0.0', web: '4.0.1', mcp: '1.0.1', sdk: '0.2.1', cli: '0.1.1' });
+
+    assert.equal(mismatchesFor({ 'package-lock.json': lock }).length, 4);
+  });
+
+  it("flags the root lockfile's own top-level version", () => {
+    const lock = rootLockfile({ backend: '3.0.0', web: '4.0.0', mcp: '1.0.0', sdk: '0.2.0', cli: '0.1.0' }, '1.9.9');
+
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': lock }), [
+      'package.json is 2.0.0 but package-lock.json version is 1.9.9',
+      'package.json is 2.0.0 but package-lock.json packages[""].version is 1.9.9',
+    ]);
+  });
+
+  it("flags the root lockfile's own packages entry when only that one is stale", () => {
+    const lock = JSON.stringify({
+      version: '2.0.0',
+      packages: { '': { version: '1.9.9' }, backend: { version: '3.0.0' } },
+    });
+
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': lock }), [
+      'package.json is 2.0.0 but package-lock.json packages[""].version is 1.9.9',
+    ]);
+  });
+
+  it("flags backend's own lockfile", () => {
+    assert.deepEqual(mismatchesFor({ 'backend/package-lock.json': ownLockfile('2.9.9', '2.9.8') }), [
+      'backend/package.json is 3.0.0 but backend/package-lock.json version is 2.9.9',
+      'backend/package.json is 3.0.0 but backend/package-lock.json packages[""].version is 2.9.8',
+    ]);
+  });
+
+  it('flags a package.json bumped without regenerating the lockfile', () => {
+    assert.deepEqual(mismatchesFor({ 'backend/package.json': packageJson('3.0.1') }), [
+      'backend/package.json is 3.0.1 but backend/package-lock.json version is 3.0.0',
+      'backend/package.json is 3.0.1 but backend/package-lock.json packages[""].version is 3.0.0',
+      'backend/package.json is 3.0.1 but package-lock.json packages["backend"].version is 3.0.0',
+    ]);
+  });
+
+  it('skips a package or lockfile that is missing', () => {
+    assert.deepEqual(mismatchesFor({ 'backend/package-lock.json': null, 'web/package.json': null }), []);
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': null }), []);
+  });
+
+  it('skips a lockfile that is not valid JSON or not an object', () => {
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': '{ invalid json' }), []);
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': 'null' }), []);
+  });
+
+  it('skips a package.json with no version and a lockfile entry that does not exist', () => {
+    assert.deepEqual(mismatchesFor({ 'web/package.json': '{ "name": "web" }' }), []);
+    assert.deepEqual(mismatchesFor({ 'package-lock.json': JSON.stringify({ version: '2.0.0' }) }), []);
   });
 });

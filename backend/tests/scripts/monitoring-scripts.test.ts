@@ -676,6 +676,9 @@ describe('scripts run end to end with a fake mail', () => {
     ['has an empty title', '', 'Radio clocks never go off.', 'Radio clocks never go off.'],
     ['has a title', 'Elevator law', 'The last man in goes to the lowest floor.', 'Elevator law'],
     ['has very long text and no title', null, 'x'.repeat(300), 'x'.repeat(120)],
+    ['has a newline in its text', null, 'First line\nsecond line', 'First line second line'],
+    ['has a carriage return and newline in its title', 'Title\r\nsplit', 'Unused text', 'Title  split'],
+    ['has a newline just before the 120-character cut', null, `${'y'.repeat(119)}\nz`, `${'y'.repeat(119)} `],
   ])('test-backup-restore.sh names a sample law when the first law %s', (_case, title, lawText, expected) => {
     // The script shells out to the real sqlite3 CLI; fail with a clear reason if a machine lacks it.
     expect(existsSync('/usr/bin/sqlite3'), 'the sqlite3 CLI must be installed at /usr/bin/sqlite3').toBe(true);
