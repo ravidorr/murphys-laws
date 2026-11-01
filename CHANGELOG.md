@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `BACKUP-RESTORE.md` now says the B2 bucket's 30-day Object Lock default is applied in compliance mode, which is
+  what the console produced on the first backup, instead of recommending governance. It explains why compliance
+  also covers a droplet key that holds `bypassGovernance` or `deleteFiles`, and tells the operator to confirm
+  `Compliance Mode - Expires On` in one object's details after the first backup.
 - Lockfile versions no longer drift from `package.json`. `npm run lockfiles:sync`
   (`scripts/sync-lockfile-versions.ts`) copies each `package.json` version into the lockfile fields that record
   it: the root and `backend/` lockfiles' own version lines, and the root lockfile's workspace entries, with the
