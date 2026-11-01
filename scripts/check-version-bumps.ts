@@ -268,6 +268,81 @@ export function findMissingVersionBumps(
   return missing;
 }
 
+type LockfileContents = {
+  version?: unknown;
+  packages?: Record<string, { version?: unknown } | undefined>;
+};
+
+type LockfileEntry = { label: string; version: unknown };
+
+type LockfileCheck = {
+  packageJson: string;
+  lockfile: string;
+  entries: (lock: LockfileContents) => LockfileEntry[];
+};
+
+/** The two places an npm lockfile records the version of the package it belongs to. */
+function ownEntries(lock: LockfileContents): LockfileEntry[] {
+  return [
+    { label: 'version', version: lock.version },
+    { label: 'packages[""].version', version: lock.packages?.['']?.version },
+  ];
+}
+
+/** The place the root lockfile records the version of one of its workspaces. */
+function workspaceEntries(workspace: string): (lock: LockfileContents) => LockfileEntry[] {
+  return (lock) => [{ label: `packages["${workspace}"].version`, version: lock.packages?.[workspace]?.version }];
+}
+
+export const lockfileChecks: LockfileCheck[] = [
+  { packageJson: 'package.json', lockfile: 'package-lock.json', entries: ownEntries },
+  { packageJson: 'backend/package.json', lockfile: 'backend/package-lock.json', entries: ownEntries },
+  ...['backend', 'web', 'mcp', 'sdk', 'cli'].map((workspace) => ({
+    packageJson: `${workspace}/package.json`,
+    lockfile: 'package-lock.json',
+    entries: workspaceEntries(workspace),
+  })),
+];
+
+function parseLockfile(content: string | null): LockfileContents | null {
+  if (content === null) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(content);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as LockfileContents) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A package.json version must match every place a lockfile records it, otherwise the next
+ * `npm install` rewrites the lockfile and leaves a dirty worktree. A package or lockfile that is
+ * missing or unreadable is skipped, and so is a lockfile entry that does not exist.
+ */
+export function findLockfileVersionMismatches(readAfter: (filePath: string) => string | null): string[] {
+  const mismatches: string[] = [];
+
+  for (const { packageJson, lockfile, entries } of lockfileChecks) {
+    const packageVersion = parseJsonVersion(readAfter(packageJson));
+    const lock = parseLockfile(readAfter(lockfile));
+
+    if (packageVersion === null || lock === null) {
+      continue;
+    }
+
+    for (const { label, version } of entries(lock)) {
+      if (typeof version === 'string' && version !== packageVersion) {
+        mismatches.push(`${packageJson} is ${packageVersion} but ${lockfile} ${label} is ${version}`);
+      }
+    }
+  }
+
+  return mismatches;
+}
+
 function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' });
 }
@@ -291,19 +366,34 @@ function readFromIndex(filePath: string): string | null {
 function main(): void {
   const stagedFiles = parseStagedFiles(git(['diff', '--cached', '--name-status', '--diff-filter=ACMRTD']));
   const missing = findMissingVersionBumps(stagedFiles, readFromHead, readFromIndex);
+  const mismatches = findLockfileVersionMismatches(readFromIndex);
 
-  if (missing.length === 0) {
+  if (missing.length === 0 && mismatches.length === 0) {
     return;
   }
 
-  console.error('');
-  console.error('ERROR: Staged changes require version bumps.');
-  console.error('');
-  for (const item of missing) {
-    console.error(`- ${item}`);
+  if (missing.length > 0) {
+    console.error('');
+    console.error('ERROR: Staged changes require version bumps.');
+    console.error('');
+    for (const item of missing) {
+      console.error(`- ${item}`);
+    }
+    console.error('');
+    console.error('Update the listed version files, stage them, and retry the commit.');
   }
-  console.error('');
-  console.error('Update the listed version files, stage them, and retry the commit.');
+
+  if (mismatches.length > 0) {
+    console.error('');
+    console.error('ERROR: A package.json version does not match its lockfile.');
+    console.error('');
+    for (const item of mismatches) {
+      console.error(`- ${item}`);
+    }
+    console.error('');
+    console.error('Run `npm install --package-lock-only` (in backend/ for its own lockfile), stage the lockfile, and retry the commit.');
+  }
+
   process.exit(1);
 }
 
