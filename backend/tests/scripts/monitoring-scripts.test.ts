@@ -670,7 +670,9 @@ describe('scripts run end to end with a fake mail', () => {
   });
 
   // The first law (lowest id) is what the sample line shows. A second, titled law is inserted first so the
-  // test also fails if the ORDER BY or the COALESCE arguments are removed or swapped.
+  // test also fails if the ORDER BY or the COALESCE arguments are removed or swapped. The newline rows pin
+  // that line breaks are replaced before the 120-character cut, and the expected values keep the spaces
+  // that replacement leaves behind (a CRLF becomes two).
   it.each([
     ['has no title', null, 'Radio clocks never go off.', 'Radio clocks never go off.'],
     ['has an empty title', '', 'Radio clocks never go off.', 'Radio clocks never go off.'],
@@ -705,6 +707,44 @@ describe('scripts run end to end with a fake mail', () => {
     expect(result.stdout).not.toContain('FAIL: Cannot query');
     expect(result.stdout).toContain('PASS: Can query restored database');
     expect(result.stdout).toContain(`Sample law: ${expected}\n`);
+  });
+
+  /** Runs the whole script against a backup built by `build`, and returns its output. */
+  const runAgainstBackup = (build: (db: Database.Database) => void) => {
+    const box = sandbox();
+    mkdirSync(path.join(box.root, 'backups'));
+    const backup = path.join(box.root, 'backups', 'murphys_db_20260101_000000.db');
+    const db = new Database(backup);
+    try {
+      build(db);
+    } finally {
+      db.close();
+    }
+    copyFileSync(backup, path.join(box.root, 'murphys.db'));
+    const text = source('test-backup-restore.sh')
+      .replaceAll('/root/backups/', `${box.root}/backups/`)
+      .replaceAll('/root/murphys-laws/backend/murphys.db', `${box.root}/murphys.db`);
+    return runFile(install(box, 'test-backup-restore.sh', text), [], box, { EMAIL_TO: 'admin@example.com' });
+  };
+
+  it('test-backup-restore.sh fails a restore whose laws table is empty instead of showing a blank sample', () => {
+    const result = runAgainstBackup((db) => {
+      db.exec('CREATE TABLE laws (id INTEGER PRIMARY KEY, title TEXT, text TEXT NOT NULL)');
+    });
+
+    expect(result.stdout).toContain('FAIL: Restored database has no laws to sample');
+    expect(result.stdout).not.toContain('PASS: Can query restored database');
+    expect(result.status).toBe(1);
+  });
+
+  it("test-backup-restore.sh reports sqlite3's own error when the restored database cannot be queried", () => {
+    const result = runAgainstBackup((db) => {
+      db.exec('CREATE TABLE not_laws (id INTEGER PRIMARY KEY)');
+    });
+
+    expect(result.stdout).toContain('FAIL: Cannot query restored database: ');
+    expect(result.stdout).toMatch(/Cannot query restored database: .*no such table: laws/);
+    expect(result.status).toBe(1);
   });
 });
 

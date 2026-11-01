@@ -16,6 +16,11 @@ fi
 
 npm run check:versions
 
+# Git runs this file without `sh -e` (core.hooksPath points here and there is no shebang), so a failing
+# command does not stop the commit on its own. Block explicitly when a package.json version and its
+# lockfile disagree.
+npm run check:lockfiles || exit 1
+
 # Reminders (only in interactive terminals)
 if [ -t 0 ]; then
   echo ""

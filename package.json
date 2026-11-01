@@ -49,6 +49,7 @@
     "validate-ports": "npx tsx backend/scripts/validate-ports.ts",
     "cleanup-ports": "npx tsx backend/scripts/cleanup-ports.ts",
     "check:versions": "tsx scripts/check-version-bumps.ts",
+    "check:lockfiles": "tsx scripts/check-version-bumps.ts --lockfiles",
     "audit:full": "tsx scripts/check-audit-exceptions.ts",
     "check:staged-coverage": "tsx scripts/run-coverage-guards.ts",
     "smoke:production": "node scripts/smoke-production.mjs",

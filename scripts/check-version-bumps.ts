@@ -268,32 +268,40 @@ export function findMissingVersionBumps(
   return missing;
 }
 
-type LockfileContents = {
-  version?: unknown;
-  packages?: Record<string, { version?: unknown } | undefined>;
-};
+type JsonObject = Record<string, unknown>;
 
 type LockfileEntry = { label: string; version: unknown };
 
 type LockfileCheck = {
   packageJson: string;
   lockfile: string;
-  entries: (lock: LockfileContents) => LockfileEntry[];
+  entries: (lock: JsonObject) => LockfileEntry[];
 };
 
+function versionAt(lock: JsonObject, key: string): unknown {
+  const packages = lock.packages;
+  if (typeof packages !== 'object' || packages === null) {
+    return undefined;
+  }
+
+  const entry = (packages as Record<string, unknown>)[key];
+  return typeof entry === 'object' && entry !== null ? (entry as JsonObject).version : undefined;
+}
+
 /** The two places an npm lockfile records the version of the package it belongs to. */
-function ownEntries(lock: LockfileContents): LockfileEntry[] {
+function ownEntries(lock: JsonObject): LockfileEntry[] {
   return [
     { label: 'version', version: lock.version },
-    { label: 'packages[""].version', version: lock.packages?.['']?.version },
+    { label: 'packages[""].version', version: versionAt(lock, '') },
   ];
 }
 
 /** The place the root lockfile records the version of one of its workspaces. */
-function workspaceEntries(workspace: string): (lock: LockfileContents) => LockfileEntry[] {
-  return (lock) => [{ label: `packages["${workspace}"].version`, version: lock.packages?.[workspace]?.version }];
+function workspaceEntries(workspace: string): (lock: JsonObject) => LockfileEntry[] {
+  return (lock) => [{ label: `packages["${workspace}"].version`, version: versionAt(lock, workspace) }];
 }
 
+/** Keep the workspace rows in step with the `workspaces` array of the root package.json. */
 export const lockfileChecks: LockfileCheck[] = [
   { packageJson: 'package.json', lockfile: 'package-lock.json', entries: ownEntries },
   { packageJson: 'backend/package.json', lockfile: 'backend/package-lock.json', entries: ownEntries },
@@ -304,71 +312,95 @@ export const lockfileChecks: LockfileCheck[] = [
   })),
 ];
 
-function parseLockfile(content: string | null): LockfileContents | null {
-  if (content === null) {
-    return null;
-  }
-
+function parseJsonObject(content: string): JsonObject | null {
   try {
     const parsed: unknown = JSON.parse(content);
-    return typeof parsed === 'object' && parsed !== null ? (parsed as LockfileContents) : null;
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? (parsed as JsonObject) : null;
   } catch {
     return null;
   }
 }
 
 /**
- * A package.json version must match every place a lockfile records it, otherwise the next
- * `npm install` rewrites the lockfile and leaves a dirty worktree. A package or lockfile that is
- * missing or unreadable is skipped, and so is a lockfile entry that does not exist.
+ * Everything wrong with how package.json versions and lockfiles line up, read from the index.
+ *
+ * A package.json version must equal every place a lockfile records it, otherwise the next
+ * `npm install` rewrites the lockfile and leaves a dirty worktree. This is a commit gate, so it fails
+ * closed: a file that is missing from the index, is not a JSON object (a merge conflict left in a
+ * lockfile, say), or lacks the lockfile entry it should have is a problem, not something to skip. The
+ * only silent skip is a package.json that parses but has no version, which a private package may omit.
  */
-export function findLockfileVersionMismatches(readAfter: (filePath: string) => string | null): string[] {
-  const mismatches: string[] = [];
+export function findLockfileProblems(readAfter: (filePath: string) => string | null): string[] {
+  const problems = new Set<string>();
 
   for (const { packageJson, lockfile, entries } of lockfileChecks) {
-    const packageVersion = parseJsonVersion(readAfter(packageJson));
-    const lock = parseLockfile(readAfter(lockfile));
+    const packageText = readAfter(packageJson);
+    const lockText = readAfter(lockfile);
 
-    if (packageVersion === null || lock === null) {
+    if (packageText === null) {
+      problems.add(`${packageJson} is missing from the index`);
+    }
+    if (lockText === null) {
+      problems.add(`${lockfile} is missing from the index`);
+    }
+    if (packageText === null || lockText === null) {
+      continue;
+    }
+
+    const pkg = parseJsonObject(packageText);
+    const lock = parseJsonObject(lockText);
+
+    if (pkg === null) {
+      problems.add(`${packageJson} is not a valid JSON object`);
+    }
+    if (lock === null) {
+      problems.add(`${lockfile} is not a valid JSON object`);
+    }
+    if (pkg === null || lock === null || typeof pkg.version !== 'string') {
       continue;
     }
 
     for (const { label, version } of entries(lock)) {
-      if (typeof version === 'string' && version !== packageVersion) {
-        mismatches.push(`${packageJson} is ${packageVersion} but ${lockfile} ${label} is ${version}`);
+      if (typeof version !== 'string') {
+        problems.add(`${packageJson} is ${pkg.version} but ${lockfile} has no ${label}`);
+      } else if (version !== pkg.version) {
+        problems.add(`${packageJson} is ${pkg.version} but ${lockfile} ${label} is ${version}`);
       }
     }
   }
 
-  return mismatches;
+  return [...problems];
 }
 
 function git(args: string[]): string {
-  return execFileSync('git', args, { encoding: 'utf8' });
+  // Lockfiles can pass the 1 MiB default, and a truncated read must not look like a missing file.
+  return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
 }
 
 function readFromHead(filePath: string): string | null {
   try {
-    return git(['show', `HEAD:${filePath}`]);
+    git(['rev-parse', '--verify', '--quiet', 'HEAD']);
   } catch {
-    return null;
+    return null; // no commits yet
   }
+
+  return git(['ls-tree', 'HEAD', '--', filePath]).trim() === '' ? null : git(['show', `HEAD:${filePath}`]);
 }
 
 function readFromIndex(filePath: string): string | null {
-  try {
-    return git(['show', `:${filePath}`]);
-  } catch {
-    return null;
-  }
+  return git(['ls-files', '--stage', '--', filePath]).trim() === '' ? null : git(['show', `:${filePath}`]);
 }
 
-function main(): void {
-  const stagedFiles = parseStagedFiles(git(['diff', '--cached', '--name-status', '--diff-filter=ACMRTD']));
-  const missing = findMissingVersionBumps(stagedFiles, readFromHead, readFromIndex);
-  const mismatches = findLockfileVersionMismatches(readFromIndex);
+/** `--lockfiles` checks only that package.json versions match the lockfiles, skipping the version-bump rules. */
+function main(args: string[]): void {
+  const lockfilesOnly = args.includes('--lockfiles');
+  const stagedFiles = lockfilesOnly
+    ? []
+    : parseStagedFiles(git(['diff', '--cached', '--name-status', '--diff-filter=ACMRTD']));
+  const missing = lockfilesOnly ? [] : findMissingVersionBumps(stagedFiles, readFromHead, readFromIndex);
+  const lockfileProblems = findLockfileProblems(readFromIndex);
 
-  if (missing.length === 0 && mismatches.length === 0) {
+  if (missing.length === 0 && lockfileProblems.length === 0) {
     return;
   }
 
@@ -383,20 +415,23 @@ function main(): void {
     console.error('Update the listed version files, stage them, and retry the commit.');
   }
 
-  if (mismatches.length > 0) {
+  if (lockfileProblems.length > 0) {
     console.error('');
-    console.error('ERROR: A package.json version does not match its lockfile.');
+    console.error('ERROR: package.json versions and lockfiles are out of sync.');
     console.error('');
-    for (const item of mismatches) {
+    for (const item of lockfileProblems) {
       console.error(`- ${item}`);
     }
     console.error('');
-    console.error('Run `npm install --package-lock-only` (in backend/ for its own lockfile), stage the lockfile, and retry the commit.');
+    console.error('Regenerate the lockfile that is out of date, stage it, and retry the commit:');
+    console.error('  package-lock.json          npm install --package-lock-only          (run at the repository root)');
+    console.error('  backend/package-lock.json  (cd backend && npm install --package-lock-only --no-workspaces)');
+    console.error('A file that is missing or not valid JSON has to be restored first.');
   }
 
   process.exit(1);
 }
 
 if (process.argv[1]?.endsWith('check-version-bumps.ts')) {
-  main();
+  main(process.argv.slice(2));
 }
