@@ -105,11 +105,8 @@ case "$OFFSITE_STATUS" in
             offsite_upload env "$ENV_BACKUP" || offsite_fail "upload of $(basename "$ENV_BACKUP") failed"
         fi
         offsite_prune db "$RETENTION_DAYS" || offsite_fail "pruning old database copies failed"
-        # The env directory only exists once an env copy has been uploaded
-        if [ -f "$ENV_BACKUP" ]; then
-            offsite_prune env "$RETENTION_DAYS" || offsite_fail "pruning old env copies failed"
-        fi
-        log "Off-site copy: ok (encrypted, $OFFSITE_REMOTE, retention $RETENTION_DAYS days)"
+        offsite_prune env "$RETENTION_DAYS" || offsite_fail "pruning old env copies failed"
+        log "Off-site copy: ok (encrypted, $OFFSITE_REMOTE, retention $RETENTION_DAYS days, pruning by $OFFSITE_PRUNE)"
         ;;
     1)
         log "Off-site copy: not configured (local integrity only)"

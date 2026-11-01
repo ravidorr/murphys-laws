@@ -49,6 +49,7 @@ function exec(cmd: string, description: string): void {
 // Installed on the server without ignoring errors, because they load the shared alert helper.
 const STRICT_MONITORING_SCRIPTS = [
   'alert-email.sh',
+  'backup-murphys.sh',
   'backup-offsite.sh',
   'health-monitor.sh',
   'ssl-monitor.sh',
@@ -150,8 +151,10 @@ async function deploy(): Promise<void> {
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh 2>/dev/null && sudo chmod +x /usr/local/bin/daily-report.sh || true"`,
     'Updating daily report script'
   );
+  // Strict like the helper it sources: a failed copy would leave cron running an old backup that never
+  // makes the off-site copy
   exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-murphys.sh /usr/local/bin/backup-murphys.sh 2>/dev/null && sudo chmod +x /usr/local/bin/backup-murphys.sh || true"`,
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-murphys.sh /usr/local/bin/backup-murphys.sh && sudo chmod +x /usr/local/bin/backup-murphys.sh"`,
     'Updating backup script'
   );
   exec(
