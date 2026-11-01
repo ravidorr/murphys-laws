@@ -131,16 +131,18 @@ if [ -n "$LATEST_DB_BACKUP" ]; then
         if [ "$TEST_INTEGRITY" = "ok" ]; then
             test_pass "Restored database integrity verified"
         else
-            test_fail "Restored database integrity check failed"
+            test_fail "Restored database integrity check failed: $TEST_INTEGRITY"
         fi
 
         # Test queries on restored database
         TEST_QUERY=$(sqlite3 "$TEST_DIR/test-restore.db" "SELECT substr(replace(replace(COALESCE(NULLIF(title, ''), text), char(13), ' '), char(10), ' '), 1, 120) FROM laws ORDER BY id LIMIT 1;" 2>&1)
-        if [ $? -eq 0 ]; then
+        if [ $? -ne 0 ]; then
+            test_fail "Cannot query restored database: $TEST_QUERY"
+        elif [ -z "$TEST_QUERY" ]; then
+            test_fail "Restored database has no laws to sample"
+        else
             test_pass "Can query restored database"
             log "  Sample law: $TEST_QUERY"
-        else
-            test_fail "Cannot query restored database"
         fi
     else
         test_fail "Failed to copy database to temp location"

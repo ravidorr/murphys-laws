@@ -25,7 +25,7 @@ Murphy's Laws is a monorepo for a web PWA, Node.js API, iOS and Android apps, a 
 - Add or update tests for code changes. Use `/* v8 ignore */` only for genuinely untestable code paths.
 - UI work uses `web/DESIGN.md` as the authoritative design contract and `web/styles/partials/variables.css` as the authoritative token values. `shared/DESIGN.md` is a generated cross-platform mirror. `design-system/` is a documentation wrapper and showcase. Do not add a competing token source or use inline styles.
 - Pin Node with `.nvmrc`; the package manager is npm. Keep `package-lock.json` committed.
-- Update `CHANGELOG.md` and run `npm run check:versions` before committing. Root-level source, configuration, and documentation changes may require a root version bump; package documentation-only changes do not.
+- Update `CHANGELOG.md` and run `npm run check:versions` before committing. Root-level source, configuration, and documentation changes may require a root version bump; package documentation-only changes do not. `check:versions` also fails when a `package.json` version differs from `package-lock.json` or `backend/package-lock.json`; the hook prints the command that regenerates each.
 - Track open work in `TODO.md`.
 
 ## Structure
