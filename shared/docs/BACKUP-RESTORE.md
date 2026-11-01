@@ -30,11 +30,12 @@ n8n workflow automation was retired; no separate automation host is backed up.
 |-------------|-----------|-----------|----------|
 | Database (`murphys_db_*.db`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
 | Environment (`env_*.bak`) | Daily 4 AM UTC | 30 days | `/root/backups/` |
+| Encrypted database and env copies (`*.gpg`) | Daily 4 AM UTC | 30 days | S3-compatible bucket (off-site) |
 | Application code | Git (not tarred on server) | N/A | GitHub |
 
 ### Backup Scripts
 
-- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy). The script exits non-zero if SQLite backup or `PRAGMA integrity_check` fails. Success logs distinguish local integrity from off-site copies (off-site not configured by default).
+- **Main App**: `/usr/local/bin/backup-murphys.sh` (source: `backend/scripts/backup-murphys.sh`, installed on deploy). The script exits non-zero if SQLite backup or `PRAGMA integrity_check` fails. With off-site configured it also encrypts and uploads both backups and fails the run if that does not work (see [Off-Site Backup Strategy](#off-site-backup-strategy)). The installed helper `backup-offsite.sh` is sourced by it and by the restore test.
 
 ---
 
@@ -317,71 +318,77 @@ Before relying on a backup, verify:
 - [ ] Backup contains expected number of records
 - [ ] Environment file exists and contains required keys
 - [ ] Application archive can be extracted
+- [ ] Latest off-site copy exists, is under 30 hours old, and decrypts and restores (`test-backup-restore.sh`, test 9)
 
 ---
 
 ## Off-Site Backup Strategy
 
-### Current Limitations
+The daily backup (`backup-murphys.sh`) sends an encrypted copy of the database backup and of the `.env` backup to an S3-compatible bucket, so the backups survive the loss or compromise of the droplet.
 
-**Current backups are only on the same server as the application.**
+- **Encryption**: each file is encrypted on the droplet with GPG (symmetric, AES-256, authenticated) before it leaves it. The bucket only ever holds `*.gpg` objects, so the SMTP credentials in `.env` are never stored in plain text off the server.
+- **Transport**: `rclone` to any S3-compatible bucket (DigitalOcean Spaces, about $5/month, is the default choice; Cloudflare R2 and Backblaze B2 work with no code change). The script only knows an rclone remote name.
+- **Layout**: `<remote>/db/murphys_db_YYYYMMDD_HHMMSS.db.gpg` and `<remote>/env/env_YYYYMMDD_HHMMSS.bak.gpg`.
+- **Retention**: the same 30 days as the local copies. Old objects are deleted only after a successful upload, so an outage never empties the bucket.
+- **Failure handling**: if off-site is configured and any step fails, the backup run exits non-zero, logs `ERROR: Off-site copy FAILED: ...` to `/var/log/backup-murphys.log`, and emails the alert recipient. The local backup is kept. The last `Off-site copy:` line of that log is shown in the daily report. With no off-site configuration the run succeeds and logs `Off-site copy: not configured (local integrity only)`, and the monthly restore test fails until it is set up.
+- **Monthly check**: `test-backup-restore.sh` (test 9) confirms the newest off-site database and env copies exist and are under 30 hours old, downloads and decrypts them, runs `PRAGMA integrity_check` and a `laws` query on the database, and checks the SMTP keys in the env copy.
 
-If the entire droplet is lost, backups may be inaccessible.
+### One-time setup on the droplet
 
-### Recommended Improvements
+1. Create a private bucket and an access key limited to it (for Spaces: Control Panel, Spaces Object Storage, Create, then API, Spaces Keys, Generate New Key). Use a bucket name such as `murphys-laws-backups`.
+2. Install the tools: `sudo apt install -y rclone gnupg`.
+3. Create the rclone remote as root (`sudo rclone config`): type `s3`, provider `DigitalOcean` (or your provider), the key and secret from step 1, and the region endpoint (for example `nyc3.digitaloceanspaces.com`). Name it `murphys-offsite`. Check it with `sudo rclone lsd murphys-offsite:`.
+4. Create the passphrase file and keep a copy in your password manager. **Without this passphrase the off-site copies cannot be restored.**
 
-#### Option 1: DigitalOcean Spaces (S3-compatible)
+   ```bash
+   sudo install -d -m 755 /etc/murphys-laws
+   sudo sh -c 'umask 077; openssl rand -base64 36 > /etc/murphys-laws/offsite-backup.passphrase'
+   sudo cat /etc/murphys-laws/offsite-backup.passphrase   # copy into the password manager
+   ```
+
+5. Write the config file (root only, no secrets in it, only the remote name and the passphrase file path):
+
+   ```bash
+   sudo sh -c 'umask 077; cat > /etc/murphys-laws/offsite-backup.env <<EOF
+   OFFSITE_REMOTE=murphys-offsite:murphys-laws-backups
+   OFFSITE_PASSPHRASE_FILE=/etc/murphys-laws/offsite-backup.passphrase
+   EOF'
+   ```
+
+6. Run `sudo /usr/local/bin/backup-murphys.sh` and look for `Off-site copy: ok`, then `sudo /usr/local/bin/test-backup-restore.sh` and confirm the off-site checks pass.
+
+The deploy installs `backup-offsite.sh` next to the scripts; it is not run on its own.
+
+### Restoring from the off-site copy
+
+Use this when the droplet (and `/root/backups`) is gone. You need the passphrase, the rclone remote (a new key for the same bucket is fine) and `gnupg`.
 
 ```bash
-# Install s3cmd
-apt install -y s3cmd
+# List the copies and pick one (names sort by time)
+rclone lsf murphys-offsite:murphys-laws-backups/db/ | sort | tail -5
 
-# Configure s3cmd
-s3cmd --configure
+# Download and decrypt the database copy (gpg asks for the passphrase)
+rclone copyto murphys-offsite:murphys-laws-backups/db/murphys_db_YYYYMMDD_HHMMSS.db.gpg /tmp/restore.db.gpg
+gpg --output /tmp/restore.db --decrypt /tmp/restore.db.gpg
+sqlite3 /tmp/restore.db "PRAGMA integrity_check;"   # must print: ok
 
-# Add to backup script
-s3cmd put /root/backups/murphys-$(date +%Y-%m-%d-*)db s3://murphys-laws-backups/
-s3cmd put /root/backups/.env-$(date +%Y-%m-%d-*) s3://murphys-laws-backups/
+# The .env copy works the same way, from the env/ directory
+rclone copyto murphys-offsite:murphys-laws-backups/env/env_YYYYMMDD_HHMMSS.bak.gpg /tmp/env.bak.gpg
+gpg --output /root/murphys-laws/backend/.env --decrypt /tmp/env.bak.gpg
+chmod 600 /root/murphys-laws/backend/.env
+
+# Remove the temporary files, then continue with "Scenario 1" above using /tmp/restore.db
+rm -f /tmp/restore.db /tmp/restore.db.gpg /tmp/env.bak.gpg
 ```
 
-**Cost**: ~$5/month for 250GB
+### Rotating the passphrase
 
-#### Option 2: Automated Download to Local Machine
+Copies keep the passphrase they were encrypted with. To rotate, keep the old passphrase until the last old copy has aged out (30 days), put the new one in the passphrase file, and update the password manager with both until then.
 
-```bash
-# On local machine, create daily backup download script
-# ~/scripts/download-murphys-backups.sh
+### Other options (not implemented)
 
-#!/bin/bash
-
-DATE=$(date +%Y-%m-%d)
-BACKUP_DIR=~/murphys-backups/$DATE
-mkdir -p $BACKUP_DIR
-
-# Download latest backups
-scp ravidor@167.99.53.90:/root/backups/murphys-$DATE-*.db $BACKUP_DIR/
-scp ravidor@167.99.53.90:/root/backups/.env-$DATE-* $BACKUP_DIR/
-
-# Verify download
-if [ -f $BACKUP_DIR/murphys-$DATE-*.db ]; then
- echo "Backup downloaded successfully"
-else
- echo "Backup download failed" | mail -s "Backup Download Failed" <your-email>
-fi
-
-# Delete backups older than 90 days
-find ~/murphys-backups/ -type d -mtime +90 -exec rm -rf {} \;
-```
-
-Add to local crontab:
-```cron
-0 4 * * * ~/scripts/download-murphys-backups.sh
-```
-
-#### Option 3: rsync to another host
-
-Copy `/root/backups/` to a second machine or object storage you control. The retired
-n8n droplet is not used for off-site copies.
+- Scheduled pull to a local machine over `scp` (needs a machine that is always on, and the `.env` copy would need the same encryption).
+- `rsync` to another host you control. The retired n8n droplet is not used for off-site copies.
 
 ---
 

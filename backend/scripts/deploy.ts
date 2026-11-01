@@ -49,6 +49,7 @@ function exec(cmd: string, description: string): void {
 // Installed on the server without ignoring errors, because they load the shared alert helper.
 const STRICT_MONITORING_SCRIPTS = [
   'alert-email.sh',
+  'backup-offsite.sh',
   'health-monitor.sh',
   'ssl-monitor.sh',
   'cost-optimization-report.sh',
@@ -131,6 +132,11 @@ async function deploy(): Promise<void> {
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/alert-email.sh /usr/local/bin/alert-email.sh && sudo chmod +x /usr/local/bin/alert-email.sh"`,
     'Updating alert email helper'
+  );
+  // Sourced by the backup and the backup restore test for the encrypted off-site copy
+  exec(
+    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/backup-offsite.sh /usr/local/bin/backup-offsite.sh && sudo chmod +x /usr/local/bin/backup-offsite.sh"`,
+    'Updating off-site backup helper'
   );
   exec(
     `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/backend/scripts/health-monitor.sh /usr/local/bin/health-monitor.sh && sudo chmod +x /usr/local/bin/health-monitor.sh"`,

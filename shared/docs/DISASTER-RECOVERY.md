@@ -41,6 +41,8 @@ This document provides step-by-step procedures for recovering from various disas
 
 **Backup Script**: `/usr/local/bin/backup-murphys.sh`
 
+**Off-site copy**: encrypted database and env copies are kept in an S3-compatible bucket for 30 days. If the droplet is lost, restore from there with the passphrase (see "Restoring from the off-site copy" in `BACKUP-RESTORE.md`).
+
 n8n automation was retired; recovery procedures cover the main application droplet only.
 
 ### Testing Backups
@@ -258,6 +260,7 @@ EOF
  ```bash
  # Copy scripts
  cp backend/scripts/alert-email.sh /usr/local/bin/alert-email.sh
+ cp backend/scripts/backup-offsite.sh /usr/local/bin/backup-offsite.sh
  cp backend/scripts/daily-report.sh /usr/local/bin/daily-report.sh
  cp backend/scripts/health-monitor.sh /usr/local/bin/health-monitor.sh
  cp backend/scripts/performance-tracker.sh /usr/local/bin/performance-tracker.sh

@@ -229,12 +229,12 @@ emit_cost_json() {
                 "Infrastructure: single application droplet (n8n automation retired).",
                 "Droplet downsizing: Only via manual review after capacity decision above.",
                 "512MB plans remain blocked due to prior OOM on 1GB with swap.",
-                "Backup storage: Local retention 30 days; off-site copy not configured."
+                "Backup storage: Local retention 30 days, and the same for the encrypted off-site copy when configured (see the daily report for its last result)."
             ],
             actionItems: [
                 "Ensure hourly performance-tracker cron is active on the main application host",
                 "Keep droplet topology unchanged during baseline collection",
-                "Run monthly test-backup-restore.sh (local integrity)"
+                "Run monthly test-backup-restore.sh (local and off-site restore)"
             ],
             nextReview: $nextReview
         }'
@@ -249,8 +249,8 @@ append "Infrastructure: single application droplet (n8n automation retired)."
 append "Droplet downsizing: Only via manual review after capacity decision above;"
 append " 512MB plans remain blocked due to prior OOM on 1GB with swap."
 append ""
-append "Backup storage: Local retention 30 days; off-site copy not configured."
-append "  Do not reduce retention until encrypted off-site restore is tested."
+append "Backup storage: Local retention 30 days, and the same for the encrypted off-site copy when configured (see the daily report for its last result)."
+append "  Do not reduce retention until the monthly test-backup-restore.sh passes its off-site checks."
 append ""
 append "Performance:"
 append "  • Static assets: long-lived browser cache configured in nginx.conf"

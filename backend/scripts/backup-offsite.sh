@@ -1,0 +1,138 @@
+#!/bin/bash
+# Shared by backup-murphys.sh and test-backup-restore.sh. Source it; do not run it.
+#
+# Off-site copies are encrypted on the server with GPG (AES-256, symmetric, authenticated) and sent to any
+# S3-compatible bucket (DigitalOcean Spaces, Cloudflare R2, Backblaze B2, ...) with rclone. Nothing leaves
+# the server unencrypted, and nothing secret is kept in the repo. The setup is read from a root-only file
+# on the server (never sourced, only parsed for the two keys below):
+#
+#   OFFSITE_REMOTE=murphys-offsite:murphys-laws-backups   # an rclone remote and bucket, no trailing slash
+#   OFFSITE_PASSPHRASE_FILE=/etc/murphys-laws/offsite-backup.passphrase   # optional, this is the default
+#
+# The file is $OFFSITE_BACKUP_ENV_FILE, default /etc/murphys-laws/offsite-backup.env. A value already in the
+# environment wins over the file. The rclone remote's credentials live in rclone's own config
+# (/root/.config/rclone/rclone.conf, or $RCLONE_CONFIG).
+#
+# Layout in the bucket: <remote>/db/<name>.gpg and <remote>/env/<name>.gpg, named like the local backups so
+# the names sort by time.
+#
+# offsite_load_config returns 0 when off-site is configured and usable, 1 when it is not configured, and 2
+# when it is configured but cannot work (the reason is in OFFSITE_ERROR). Every other function returns
+# non-zero on failure and writes the reason to stderr.
+
+OFFSITE_BACKUP_ENV_FILE="${OFFSITE_BACKUP_ENV_FILE:-/etc/murphys-laws/offsite-backup.env}"
+OFFSITE_REMOTE="${OFFSITE_REMOTE:-}"
+OFFSITE_PASSPHRASE_FILE="${OFFSITE_PASSPHRASE_FILE:-}"
+OFFSITE_ERROR=""
+
+# Prints the value of KEY from a KEY=VALUE file: the last assignment wins, a leading `export` and one pair of
+# quotes are removed. The file is parsed, never sourced, so its content cannot run anything.
+_offsite_file_value() {
+  local file="$1" key="$2" value
+  [ -r "$file" ] || return 0
+  value="$(grep -E "^[[:space:]]*(export[[:space:]]+)?${key}=" "$file" 2>/dev/null | tail -n 1)" || true
+  value="${value#*=}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  case "$value" in
+    \"*\") value="${value#\"}"; value="${value%\"}" ;;
+    \'*\') value="${value#\'}"; value="${value%\'}" ;;
+  esac
+  printf '%s' "$value"
+}
+
+offsite_load_config() {
+  OFFSITE_ERROR=""
+  if [ -z "$OFFSITE_REMOTE" ]; then
+    OFFSITE_REMOTE="$(_offsite_file_value "$OFFSITE_BACKUP_ENV_FILE" OFFSITE_REMOTE)"
+  fi
+  if [ -z "$OFFSITE_PASSPHRASE_FILE" ]; then
+    OFFSITE_PASSPHRASE_FILE="$(_offsite_file_value "$OFFSITE_BACKUP_ENV_FILE" OFFSITE_PASSPHRASE_FILE)"
+  fi
+  OFFSITE_PASSPHRASE_FILE="${OFFSITE_PASSPHRASE_FILE:-/etc/murphys-laws/offsite-backup.passphrase}"
+  OFFSITE_REMOTE="${OFFSITE_REMOTE%/}"
+
+  if [ -z "$OFFSITE_REMOTE" ]; then
+    return 1
+  fi
+  case "$OFFSITE_REMOTE" in
+    *:*) ;;
+    *) OFFSITE_ERROR="OFFSITE_REMOTE '$OFFSITE_REMOTE' is not an rclone remote (expected name:bucket)"; return 2 ;;
+  esac
+  if ! command -v rclone >/dev/null 2>&1; then
+    OFFSITE_ERROR="rclone is not installed"
+    return 2
+  fi
+  if ! command -v gpg >/dev/null 2>&1; then
+    OFFSITE_ERROR="gpg is not installed"
+    return 2
+  fi
+  if [ ! -r "$OFFSITE_PASSPHRASE_FILE" ] || [ ! -s "$OFFSITE_PASSPHRASE_FILE" ]; then
+    OFFSITE_ERROR="passphrase file $OFFSITE_PASSPHRASE_FILE is missing, empty or unreadable"
+    return 2
+  fi
+  return 0
+}
+
+# offsite_encrypt PLAIN_FILE ENCRYPTED_FILE
+offsite_encrypt() {
+  gpg --batch --yes --quiet --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+    --passphrase-file "$OFFSITE_PASSPHRASE_FILE" --output "$2" "$1"
+}
+
+# offsite_decrypt ENCRYPTED_FILE PLAIN_FILE
+offsite_decrypt() {
+  gpg --batch --yes --quiet --pinentry-mode loopback \
+    --passphrase-file "$OFFSITE_PASSPHRASE_FILE" --output "$2" --decrypt "$1"
+}
+
+# offsite_upload KIND LOCAL_FILE: encrypts LOCAL_FILE (the plain copy never leaves the server), uploads it to
+# <remote>/<KIND>/<name>.gpg, and checks the object is listed there. rclone also verifies size and checksum.
+offsite_upload() {
+  local kind="$1" file="$2" name tmpdir rc=0
+  name="$(basename "$file").gpg"
+  tmpdir="$(umask 077 && mktemp -d "${TMPDIR:-/tmp}/offsite-upload.XXXXXX")" || return 1
+  if offsite_encrypt "$file" "$tmpdir/$name" \
+    && rclone copyto "$tmpdir/$name" "$OFFSITE_REMOTE/$kind/$name" \
+    && rclone lsf --files-only "$OFFSITE_REMOTE/$kind/" | grep -Fxq -- "$name"; then
+    rc=0
+  else
+    rc=1
+  fi
+  rm -rf "$tmpdir"
+  return "$rc"
+}
+
+# offsite_prune KIND DAYS: deletes off-site objects older than DAYS, so the off-site retention matches the
+# local one. Call it only after a successful upload, so an outage never empties the bucket.
+offsite_prune() {
+  rclone delete --min-age "${2}d" "$OFFSITE_REMOTE/$1/"
+}
+
+# offsite_latest KIND: prints the name of the newest object (names sort by time), nothing when there is none.
+offsite_latest() {
+  local listing
+  listing="$(rclone lsf --files-only "$OFFSITE_REMOTE/$1/")" || return 1
+  printf '%s\n' "$listing" | grep -v '^$' | sort | tail -n 1
+}
+
+# offsite_is_fresh KIND NAME HOURS: succeeds when NAME was modified within the last HOURS hours.
+offsite_is_fresh() {
+  local listing
+  listing="$(rclone lsf --files-only --max-age "${3}h" "$OFFSITE_REMOTE/$1/")" || return 1
+  printf '%s\n' "$listing" | grep -Fxq -- "$2"
+}
+
+# offsite_fetch KIND NAME DEST_FILE: downloads <remote>/<KIND>/<NAME> and decrypts it to DEST_FILE.
+offsite_fetch() {
+  local kind="$1" name="$2" dest="$3" tmpdir rc=0
+  tmpdir="$(umask 077 && mktemp -d "${TMPDIR:-/tmp}/offsite-fetch.XXXXXX")" || return 1
+  if rclone copyto "$OFFSITE_REMOTE/$kind/$name" "$tmpdir/$name" \
+    && offsite_decrypt "$tmpdir/$name" "$dest"; then
+    rc=0
+  else
+    rc=1
+  fi
+  rm -rf "$tmpdir"
+  return "$rc"
+}
