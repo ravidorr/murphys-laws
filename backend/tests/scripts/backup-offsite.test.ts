@@ -17,6 +17,8 @@ import {
 // `rclone` that keeps each remote in a directory, and the real gpg and sqlite3. Nothing leaves the sandbox.
 
 const source = (name: string) => readFileSync(path.join(scriptsDir, name), 'utf8');
+/** The default is lifecycle (the key has no delete right); these tests opt in to client-side pruning. */
+const SERVER_PRUNE = { OFFSITE_PRUNE: 'server' };
 const PASSPHRASE = 'correct horse battery staple';
 const SECRET_MARKER = 'SMTP_PASS=do-not-leak-this-value';
 
@@ -175,7 +177,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d);
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain('Off-site copy: ok (encrypted, off:bucket, retention 30 days, pruning by server)');
+    expect(result.stdout).toContain('Off-site copy: ok (encrypted, off:bucket, retention 30 days, pruning by lifecycle)');
     const [dbObject] = files(path.join(d.bucket, 'db'));
     const [envObject] = files(path.join(d.bucket, 'env'));
     expect(dbObject).toMatch(/^murphys_db_\d{8}_\d{6}\.db\.gpg$/);
@@ -200,9 +202,9 @@ describe('backup-murphys.sh off-site copy', () => {
     }
   });
 
-  it('uploads no env copy when the server has no .env', () => {
+  it('uploads no env copy when the server has no .env, and a missing env prefix is not a prune failure', () => {
     const d = droplet({ withEnvFile: false });
-    const result = runBackup(d);
+    const result = runBackup(d, SERVER_PRUNE);
 
     expect(result.status, result.stderr).toBe(0);
     expect(files(path.join(d.bucket, 'db'))).toHaveLength(1);
@@ -212,12 +214,12 @@ describe('backup-murphys.sh off-site copy', () => {
     expect(readLog(d.rcloneLog)).not.toContain('delete --min-age 30d off:bucket/env/');
   });
 
-  it('prunes off-site copies older than the 30-day retention and keeps newer ones', () => {
+  it('prunes off-site copies older than the 30-day retention and keeps newer ones when OFFSITE_PRUNE=server', () => {
     const d = droplet();
     seed(path.join(d.bucket, 'db'), 'murphys_db_20250101_040000.db.gpg', 31 * 24);
     seed(path.join(d.bucket, 'db'), 'murphys_db_20251020_040000.db.gpg', 10 * 24);
     seed(path.join(d.bucket, 'env'), 'env_20250101_040000.bak.gpg', 31 * 24);
-    const result = runBackup(d);
+    const result = runBackup(d, SERVER_PRUNE);
 
     expect(result.status, result.stderr).toBe(0);
     expect(files(path.join(d.bucket, 'db'))).toContain('murphys_db_20251020_040000.db.gpg');
@@ -243,7 +245,7 @@ describe('backup-murphys.sh off-site copy', () => {
 
   it('fails the run when the pruning step fails after a good upload', () => {
     const d = droplet();
-    const result = runBackup(d, { FAKE_RCLONE_FAIL: 'delete' });
+    const result = runBackup(d, { ...SERVER_PRUNE, FAKE_RCLONE_FAIL: 'delete' });
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (pruning old database copies failed)');
@@ -252,15 +254,14 @@ describe('backup-murphys.sh off-site copy', () => {
   it('prunes old env copies even when this run has no .env to upload', () => {
     const d = droplet({ withEnvFile: false });
     seed(path.join(d.bucket, 'env'), 'env_20250101_040000.bak.gpg', 31 * 24);
-    const result = runBackup(d);
+    const result = runBackup(d, SERVER_PRUNE);
 
     expect(result.status, result.stderr).toBe(0);
     expect(files(path.join(d.bucket, 'env'))).toEqual([]);
   });
 
-  it('never deletes from the bucket when OFFSITE_PRUNE=lifecycle leaves expiry to the bucket', () => {
+  it('never deletes from the bucket by default: expiry is left to the B2 lifecycle rule', () => {
     const d = droplet();
-    writeFileSync(path.join(d.box.root, 'offsite.env'), `${readFileSync(path.join(d.box.root, 'offsite.env'), 'utf8')}OFFSITE_PRUNE=lifecycle\n`);
     seed(path.join(d.bucket, 'db'), 'murphys_db_20250101_040000.db.gpg', 31 * 24);
     const result = runBackup(d);
 
@@ -268,6 +269,13 @@ describe('backup-murphys.sh off-site copy', () => {
     expect(result.stdout).toContain('pruning by lifecycle');
     expect(files(path.join(d.bucket, 'db'))).toContain('murphys_db_20250101_040000.db.gpg');
     expect(readLog(d.rcloneLog)).not.toMatch(/^delete /m);
+  });
+
+  it('reads OFFSITE_PRUNE=server from the config file', () => {
+    const d = droplet();
+    writeFileSync(path.join(d.box.root, 'offsite.env'), `${readFileSync(path.join(d.box.root, 'offsite.env'), 'utf8')}OFFSITE_PRUNE=server\n`);
+
+    expect(runBackup(d).stdout).toContain('pruning by server');
   });
 
   it('fails the run for an unknown OFFSITE_PRUNE value instead of guessing', () => {
@@ -336,7 +344,7 @@ describe('backup-offsite.sh configuration', () => {
 
   it('drops trailing comments from quoted and unquoted values', () => {
     const d = droplet();
-    expect(load(d, 'OFFSITE_REMOTE=off:bucket   # the Spaces bucket\nOFFSITE_PASSPHRASE_FILE="/etc/x pass" # secret\n')).toContain(
+    expect(load(d, 'OFFSITE_REMOTE=off:bucket   # the B2 bucket\nOFFSITE_PASSPHRASE_FILE="/etc/x pass" # secret\n')).toContain(
       'rc=2 remote=off:bucket pass=/etc/x pass err=passphrase file /etc/x pass is missing',
     );
     expect(load(d, "OFFSITE_REMOTE='off:bucket' # c\n")).toContain('remote=off:bucket pass=');

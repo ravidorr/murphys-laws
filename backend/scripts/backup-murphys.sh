@@ -58,7 +58,7 @@ if [ -f "$ENV_BACKUP" ]; then
 fi
 
 #############################################################################
-# Off-site copy: encrypted with GPG and sent to an S3-compatible bucket (see backup-offsite.sh and
+# Off-site copy: encrypted with GPG and sent to a Backblaze B2 bucket (see backup-offsite.sh and
 # shared/docs/BACKUP-RESTORE.md). The local backup above is already done, so a failure here fails the run
 # and sends an alert without losing it.
 #############################################################################
