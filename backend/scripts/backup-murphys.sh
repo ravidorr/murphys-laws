@@ -106,7 +106,7 @@ case "$OFFSITE_STATUS" in
         fi
         offsite_prune db "$RETENTION_DAYS" || offsite_fail "pruning old database copies failed"
         offsite_prune env "$RETENTION_DAYS" || offsite_fail "pruning old env copies failed"
-        log "Off-site copy: ok (encrypted, $OFFSITE_REMOTE, retention $RETENTION_DAYS days, pruning by $OFFSITE_PRUNE)"
+        log "Off-site copy: ok (encrypted, $OFFSITE_REMOTE, retention $RETENTION_DAYS days, pruning by $OFFSITE_PRUNE; the restore test checks it is enforced)"
         ;;
     1)
         log "Off-site copy: not configured (local integrity only)"

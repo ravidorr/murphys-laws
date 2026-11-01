@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Encrypted off-site backups (issue #219), to a Backblaze B2 bucket at a different provider than the droplet.
   `backup-murphys.sh` encrypts the database and `.env` backups with GPG (AES-256, symmetric) on the droplet and
-  uploads them with `rclone`'s native `b2` backend, naming each object uniquely so nothing is overwritten. Retention
+  uploads them with `rclone`'s native `b2` backend, naming each object with a timestamp so every run adds a new object (B2 versioning keeps any same-name rerun). Retention
   (30 days, like the local copies) is enforced by a B2 lifecycle rule: `OFFSITE_PRUNE=lifecycle` is the default, so
   the server never deletes from the bucket and its application key needs only list, read and write on the one
   bucket (`OFFSITE_PRUNE=server` remains for a bucket without Object Lock and needs `deleteFiles`). The docs set
@@ -83,7 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which the deploy installs beside the other scripts; the deploy now installs `backup-murphys.sh` strictly too, so
   an old copy can never keep running without the off-site step. The monthly `test-backup-restore.sh` gains test 9:
   the newest off-site database and env copies must exist, be under 30 hours old, download, decrypt, and pass
-  `integrity_check`, a `laws` query and the SMTP key check; an unconfigured off-site copy now fails that test. The
+  `integrity_check`, a `laws` query and the SMTP key check, and no copy older than 35 days may be listed (that
+  means the lifecycle rule is missing); an unconfigured off-site copy now fails that test. The
   daily report shows the last off-site result from the backup log (a warning, also in its summary, unless it is an
   `ok` under 30 hours old from the latest backup run, so one missed or interrupted run shows at the next report),
   and the reminder and cost reports no longer claim a "20/20" run or "off-site not configured".

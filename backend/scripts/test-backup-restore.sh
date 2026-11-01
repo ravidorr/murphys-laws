@@ -344,6 +344,17 @@ else
                 fi
             fi
 
+            # The bucket's lifecycle rule is what expires old copies (the server's key cannot delete). Copies well past
+            # the retention mean the rule is missing or not working, so the bucket would grow without limit.
+            OFFSITE_EXPIRY_DAYS=35
+            for OFFSITE_KIND in db env; do
+                if offsite_has_older "$OFFSITE_KIND" "$OFFSITE_EXPIRY_DAYS"; then
+                    test_fail "Off-site $OFFSITE_KIND copies older than $OFFSITE_EXPIRY_DAYS days exist: the bucket lifecycle rule is missing or not working"
+                else
+                    test_pass "No off-site $OFFSITE_KIND copies older than $OFFSITE_EXPIRY_DAYS days (retention is being enforced)"
+                fi
+            done
+
             if [ -n "$LATEST_ENV_BACKUP" ]; then
                 OFFSITE_ENV=$(offsite_latest env 2>/dev/null) || OFFSITE_ENV=""
                 if [ -z "$OFFSITE_ENV" ]; then

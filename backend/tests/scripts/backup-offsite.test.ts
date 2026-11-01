@@ -45,7 +45,9 @@ case "$cmd" in
     dest="$(path_of "\${args[1]}")"; mkdir -p "$(dirname "$dest")"; cp "$(path_of "\${args[0]}")" "$dest" ;;
   lsf)
     dir="$(path_of "\${args[0]}")"; [ -d "$dir" ] || { echo "directory not found" >&2; exit 3; }
-    if [ -n "$max_age" ]; then
+    if [ -n "$min_age" ]; then
+      find "$dir" -maxdepth 1 -type f -mmin "+$(( \${min_age%d} * 1440 ))" -exec basename {} \\;
+    elif [ -n "$max_age" ]; then
       find "$dir" -maxdepth 1 -type f -mmin "-$(( \${max_age%h} * 60 ))" -exec basename {} \\;
     else
       find "$dir" -maxdepth 1 -type f -exec basename {} \\;
@@ -177,7 +179,7 @@ describe('backup-murphys.sh off-site copy', () => {
     const result = runBackup(d);
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain('Off-site copy: ok (encrypted, off:bucket, retention 30 days, pruning by lifecycle)');
+    expect(result.stdout).toContain('Off-site copy: ok (encrypted, off:bucket, retention 30 days, pruning by lifecycle; the restore test checks it is enforced)');
     const [dbObject] = files(path.join(d.bucket, 'db'));
     const [envObject] = files(path.join(d.bucket, 'env'));
     expect(dbObject).toMatch(/^murphys_db_\d{8}_\d{6}\.db\.gpg$/);
@@ -232,7 +234,7 @@ describe('backup-murphys.sh off-site copy', () => {
   it('fails the run, alerts, keeps the local backup and prunes nothing when the upload fails', () => {
     const d = droplet();
     seed(path.join(d.bucket, 'db'), 'murphys_db_20250101_040000.db.gpg', 31 * 24);
-    const result = runBackup(d, { FAKE_RCLONE_FAIL: 'copyto' });
+    const result = runBackup(d, { ...SERVER_PRUNE, FAKE_RCLONE_FAIL: 'copyto' });
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('ERROR: Off-site copy: FAILED (upload of murphys_db_');
@@ -434,6 +436,23 @@ describe('test-backup-restore.sh off-site checks', () => {
     const result = runRestoreTest(d);
 
     expect(result.stdout).toContain('FAIL: No off-site database copy found in off:bucket/db/');
+  });
+
+  it('passes the retention check with no copies past 35 days', () => {
+    const result = runRestoreTest(backedUp());
+
+    expect(result.stdout).toContain('PASS: No off-site db copies older than 35 days (retention is being enforced)');
+    expect(result.stdout).toContain('PASS: No off-site env copies older than 35 days (retention is being enforced)');
+  });
+
+  it('fails when copies older than 35 days are still listed, meaning the lifecycle rule is missing', () => {
+    const d = backedUp();
+    seed(path.join(d.bucket, 'db'), 'murphys_db_20250101_040000.db.gpg', 40 * 24);
+    seed(path.join(d.bucket, 'env'), 'env_20250101_040000.bak.gpg', 40 * 24);
+    const result = runRestoreTest(d);
+
+    expect(result.stdout).toContain('FAIL: Off-site db copies older than 35 days exist: the bucket lifecycle rule is missing or not working');
+    expect(result.stdout).toContain('FAIL: Off-site env copies older than 35 days exist');
   });
 
   it('fails when the server has an env backup but the bucket has no env copy', () => {

@@ -2,10 +2,10 @@
 # Shared by backup-murphys.sh and test-backup-restore.sh. Source it; do not run it.
 #
 # Off-site copies are encrypted on the server with GPG (AES-256, symmetric, authenticated) and sent with rclone
-# to a Backblaze B2 bucket, deliberately at a different provider than the droplet (rclone's native "b2" backend;
-# the code only talks to rclone, so any rclone remote works, but B2 is the supported target because it has
-# versioning and Object Lock, which Cloudflare R2 does not). Nothing leaves
-# the server unencrypted, and nothing secret is kept in the repo. The setup is read from a root-only file
+# to a Backblaze B2 bucket, deliberately at a different provider than the droplet (rclone's native "b2"
+# backend). The code only talks to rclone, so any rclone remote works, but B2 is the supported target because
+# it has versioning and Object Lock, which Cloudflare R2 does not. Nothing leaves the server unencrypted, and
+# nothing secret is kept in the repo. The setup is read from a root-only file
 # on the server (never sourced, only parsed for the two keys below):
 #
 #   OFFSITE_REMOTE=murphys-b2:murphys-laws-backups   # an rclone remote and bucket, no trailing slash
@@ -134,11 +134,14 @@ offsite_upload() {
 }
 
 # offsite_prune KIND DAYS: deletes off-site objects older than DAYS, so the off-site retention matches the
-# local one. Call it only after a successful upload, so an outage never empties the bucket. Nothing is done when
-# OFFSITE_PRUNE=lifecycle (the default), which leaves expiry to the bucket's lifecycle rule so that the
-# credentials on this server never need permission to delete (see BACKUP-RESTORE.md). On B2, rclone delete only
-# hides a version unless hard_delete is set, and a version under Object Lock cannot be removed early anyway. A directory that does not
-# exist yet (rclone status 3) has nothing to prune.
+# local one. Call it only after a successful upload, so an outage never empties the bucket.
+#
+# With OFFSITE_PRUNE=lifecycle (the default) nothing is deleted from here: expiry is left to the bucket's
+# lifecycle rule, so the credentials on this server never need permission to delete (see BACKUP-RESTORE.md).
+# On B2, rclone delete only hides a version unless hard_delete is set, and a version under Object Lock cannot
+# be removed early anyway, so "server" is for a bucket without Object Lock.
+#
+# A directory that does not exist yet (rclone status 3) has nothing to prune.
 offsite_prune() {
   local listing rc=0
   [ "$OFFSITE_PRUNE" = "lifecycle" ] && return 0
@@ -161,6 +164,14 @@ offsite_is_fresh() {
   local listing
   listing="$(rclone lsf --files-only --max-age "${3}h" "$OFFSITE_REMOTE/$1/")" || return 1
   printf '%s\n' "$listing" | grep -Fxq -- "$2"
+}
+
+# offsite_has_older KIND DAYS: succeeds when a current (not hidden) object older than DAYS is listed. With the
+# lifecycle rule in place there is none, so the restore test uses it to notice a missing or broken rule.
+offsite_has_older() {
+  local listing
+  listing="$(rclone lsf --files-only --min-age "${2}d" "$OFFSITE_REMOTE/$1/")" || return 1
+  [ -n "$listing" ]
 }
 
 # offsite_fetch KIND NAME DEST_FILE: downloads <remote>/<KIND>/<NAME> and decrypts it to DEST_FILE.
