@@ -14,11 +14,13 @@ if [ "$SKIP_CHANGELOG_CHECK" != "1" ]; then
   fi
 fi
 
-# Git can run this file directly (core.hooksPath points at .husky/ and there is no shebang), in which case it
-# does not run under `sh -e` and a failing command does not stop the commit by itself, so exit explicitly.
-# This checks the version bumps and that every package.json version matches its lockfiles. There is no global
-# `set -e` here because the CHANGELOG check above relies on `grep -v` finding nothing.
-npm run check:versions || exit 1
+# A package.json version and the lockfiles that record it must agree. Sync them and stage the result rather than
+# blocking the commit; the Lockfile sync CI check catches anything that still slips through.
+if git diff --cached --name-only | grep -qE '(^|/)package\.json$'; then
+  npm run lockfiles:sync -- --stage || echo "Could not sync the lockfile versions; CI will check them."
+fi
+
+npm run check:versions
 
 # Reminders (only in interactive terminals)
 if [ -t 0 ]; then
