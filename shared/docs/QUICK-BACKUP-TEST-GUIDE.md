@@ -73,7 +73,7 @@ sqlite3 /root/murphys-laws/backend/murphys.db "SELECT COUNT(*) FROM laws;"
 ## Success Criteria
 
 ### Main Droplet Success
-- All automated tests pass (20/20)
+- All automated tests pass, including the off-site copy checks (test 9)
 - Database integrity check returns "ok"
 - Backup age < 30 hours
 - Data difference between backup and production < 10 rows

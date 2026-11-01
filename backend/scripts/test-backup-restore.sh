@@ -118,6 +118,9 @@ log "TEST 3: Testing restore to temporary location..."
 
 TEST_DIR="/tmp/backup-restore-test-$$"
 mkdir -p "$TEST_DIR"
+# Restored copies (including the decrypted env file) are private to this script and removed on any exit
+chmod 700 "$TEST_DIR"
+trap 'rm -rf "$TEST_DIR"' EXIT
 
 if [ -n "$LATEST_DB_BACKUP" ]; then
     # Restore database to temp location
@@ -283,6 +286,97 @@ if [ -f /var/log/backup-murphys.log ]; then
     fi
 else
     test_fail "Backup log file not found"
+fi
+
+log ""
+
+#############################################################################
+# TEST 9: Encrypted Off-Site Copy
+#############################################################################
+
+log "TEST 9: Checking the encrypted off-site copy..."
+
+OFFSITE_MAX_AGE_HOURS=30
+_offsite_helper="$(dirname "$_alert_self")/backup-offsite.sh"
+[ -f "$_offsite_helper" ] || _offsite_helper="${REPO_ROOT:-/root/murphys-laws}/backend/scripts/backup-offsite.sh"
+
+OFFSITE_STATUS=0
+if [ ! -f "$_offsite_helper" ] || ! source "$_offsite_helper"; then
+    test_fail "Cannot load backup-offsite.sh (looked beside $0 and under \${REPO_ROOT:-/root/murphys-laws})"
+else
+    offsite_load_config || OFFSITE_STATUS=$?
+    case "$OFFSITE_STATUS" in
+        1)
+            test_fail "Off-site backup is not configured (see shared/docs/BACKUP-RESTORE.md, Off-Site Backup Strategy)"
+            ;;
+        0)
+            # Decrypted files stay inside the private $TEST_DIR, which is removed at the end
+            OFFSITE_DB=$(offsite_latest db 2>/dev/null) || OFFSITE_DB=""
+            if [ -z "$OFFSITE_DB" ]; then
+                test_fail "No off-site database copy found in $OFFSITE_REMOTE/db/"
+            else
+                test_pass "Off-site database copy exists: $OFFSITE_DB"
+
+                if offsite_is_fresh db "$OFFSITE_DB" "$OFFSITE_MAX_AGE_HOURS"; then
+                    test_pass "Off-site database copy is fresh (< $OFFSITE_MAX_AGE_HOURS hours old)"
+                else
+                    test_fail "Off-site database copy is older than $OFFSITE_MAX_AGE_HOURS hours ($OFFSITE_DB)"
+                fi
+
+                if (umask 077; offsite_fetch db "$OFFSITE_DB" "$TEST_DIR/offsite-restore.db") 2>/dev/null; then
+                    test_pass "Off-site database copy downloaded and decrypted"
+
+                    OFFSITE_INTEGRITY=$(sqlite3 "$TEST_DIR/offsite-restore.db" "PRAGMA integrity_check;" 2>&1)
+                    if [ "$OFFSITE_INTEGRITY" = "ok" ]; then
+                        test_pass "Off-site database integrity check passed"
+                    else
+                        test_fail "Off-site database integrity check failed: $OFFSITE_INTEGRITY"
+                    fi
+
+                    OFFSITE_ROWS=$(sqlite3 "$TEST_DIR/offsite-restore.db" "SELECT COUNT(*) FROM laws;" 2>&1)
+                    if [ $? -eq 0 ] && [ "${OFFSITE_ROWS:-0}" -gt 0 ] 2>/dev/null; then
+                        test_pass "Can query data from the off-site copy ($OFFSITE_ROWS laws)"
+                    else
+                        test_fail "Cannot query laws from the off-site copy: $OFFSITE_ROWS"
+                    fi
+                else
+                    test_fail "Could not download and decrypt the off-site database copy (wrong passphrase or damaged object)"
+                fi
+            fi
+
+            # The bucket's lifecycle rule is what expires old copies (the server's key cannot delete). Copies well past
+            # the retention mean the rule is missing or not working, so the bucket would grow without limit.
+            OFFSITE_EXPIRY_DAYS=35
+            for OFFSITE_KIND in db env; do
+                if offsite_has_older "$OFFSITE_KIND" "$OFFSITE_EXPIRY_DAYS"; then
+                    test_fail "Off-site $OFFSITE_KIND copies older than $OFFSITE_EXPIRY_DAYS days exist: the bucket lifecycle rule is missing or not working"
+                else
+                    test_pass "No off-site $OFFSITE_KIND copies older than $OFFSITE_EXPIRY_DAYS days (retention is being enforced)"
+                fi
+            done
+
+            if [ -n "$LATEST_ENV_BACKUP" ]; then
+                OFFSITE_ENV=$(offsite_latest env 2>/dev/null) || OFFSITE_ENV=""
+                if [ -z "$OFFSITE_ENV" ]; then
+                    test_fail "No off-site env copy found in $OFFSITE_REMOTE/env/"
+                elif ! offsite_is_fresh env "$OFFSITE_ENV" "$OFFSITE_MAX_AGE_HOURS"; then
+                    test_fail "Off-site env copy is older than $OFFSITE_MAX_AGE_HOURS hours ($OFFSITE_ENV)"
+                elif (umask 077; offsite_fetch env "$OFFSITE_ENV" "$TEST_DIR/offsite-env") 2>/dev/null; then
+                    if grep -q "SMTP_HOST" "$TEST_DIR/offsite-env" && grep -q "SMTP_USER" "$TEST_DIR/offsite-env" \
+                        && grep -q "SMTP_PASS" "$TEST_DIR/offsite-env"; then
+                        test_pass "Off-site env copy is fresh, decrypts, and has the SMTP keys"
+                    else
+                        test_fail "Off-site env copy decrypted but is missing SMTP keys"
+                    fi
+                else
+                    test_fail "Could not download and decrypt the off-site env copy"
+                fi
+            fi
+            ;;
+        *)
+            test_fail "Off-site backup is misconfigured: $OFFSITE_ERROR"
+            ;;
+    esac
 fi
 
 log ""

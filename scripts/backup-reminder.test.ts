@@ -33,7 +33,7 @@ test('monthly backup reminder targets the main droplet only', () => {
 
   assert.match(reminder, /MAIN DROPLET \(murphys-laws\.com\)/);
   assert.match(reminder, /ssh murphys-main/);
-  assert.match(reminder, /All tests should pass \(20\/20 for the main droplet\)/);
+  assert.match(reminder, /All tests should pass, including the encrypted off-site copy checks/);
   assert.doesNotMatch(reminder, /n8n|45\.55\.74\.28/i);
   assert.match(dailyReportLauncher, /render-daily-report\.ts/);
 });
