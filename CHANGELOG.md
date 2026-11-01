@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Pinned `minimatch` to `^11.0.1` through npm `overrides` in the root and `backend/` `package.json`, because `eslint`, `@eslint/config-array`, `@typescript-eslint/typescript-estree` and `glob` all cap it at `^10.x`, so Dependabot could not reach a non-vulnerable release and its security update run failed with `security_update_not_possible`. Both lockfiles now resolve `minimatch` to `11.0.3`; lint and all test suites pass against it. Remove the overrides once those packages ship releases that allow `minimatch` 11. Backend bumped to `2.3.52`; root to `2.6.115`.
 - Resolved the production Sentry issues on `thcom`. Safari with blocked site data threw a `SecurityError`
   from `typeof localStorage` before the `try` in `getTheme` and `setTheme` could catch it, which broke the
   first render (JAVASCRIPT-11); the check now sits inside the `try`. Sentry now drops the iOS
