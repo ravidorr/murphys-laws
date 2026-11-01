@@ -17,7 +17,8 @@
 # the names sort by time.
 #
 # offsite_load_config returns 0 when off-site is configured and usable, 1 when it is not configured, and 2
-# when it is configured but cannot work (the reason is in OFFSITE_ERROR). Every other function returns
+# when it is configured but cannot work (the reason is in OFFSITE_ERROR). A config file that exists but gives
+# no remote counts as the second case, so a typo cannot silently turn off-site backups off. Every other function returns
 # non-zero on failure and writes the reason to stderr.
 
 OFFSITE_BACKUP_ENV_FILE="${OFFSITE_BACKUP_ENV_FILE:-/etc/murphys-laws/offsite-backup.env}"
@@ -28,15 +29,22 @@ OFFSITE_ERROR=""
 # Prints the value of KEY from a KEY=VALUE file: the last assignment wins, a leading `export` and one pair of
 # quotes are removed. The file is parsed, never sourced, so its content cannot run anything.
 _offsite_file_value() {
-  local file="$1" key="$2" value
+  local file="$1" key="$2" value quote
   [ -r "$file" ] || return 0
   value="$(grep -E "^[[:space:]]*(export[[:space:]]+)?${key}=" "$file" 2>/dev/null | tail -n 1)" || true
   value="${value#*=}"
   value="${value#"${value%%[![:space:]]*}"}"
-  value="${value%"${value##*[![:space:]]}"}"
   case "$value" in
-    \"*\") value="${value#\"}"; value="${value%\"}" ;;
-    \'*\') value="${value#\'}"; value="${value%\'}" ;;
+    \"* | \'*)
+      # Quoted: the text up to the closing quote; anything after it (such as a comment) is dropped
+      quote="${value:0:1}"
+      value="${value:1}"
+      value="${value%%"$quote"*}"
+      ;;
+    *)
+      # Unquoted: a trailing comment starts at whitespace followed by #
+      value="$(printf '%s' "$value" | sed -E 's/[[:space:]]+#.*$//; s/[[:space:]]+$//')"
+      ;;
   esac
   printf '%s' "$value"
 }
@@ -53,6 +61,13 @@ offsite_load_config() {
   OFFSITE_REMOTE="${OFFSITE_REMOTE%/}"
 
   if [ -z "$OFFSITE_REMOTE" ]; then
+    # No file at all means off-site was never set up. A file that is there but gives no remote (a typo in the
+    # key, a blank value, or no permission to read it) must not pass for "not configured": the backups would
+    # silently stay on the droplet.
+    if [ -e "$OFFSITE_BACKUP_ENV_FILE" ]; then
+      OFFSITE_ERROR="$OFFSITE_BACKUP_ENV_FILE exists but gives no OFFSITE_REMOTE (check the key name and that it is readable by root)"
+      return 2
+    fi
     return 1
   fi
   case "$OFFSITE_REMOTE" in
@@ -89,12 +104,13 @@ offsite_decrypt() {
 # offsite_upload KIND LOCAL_FILE: encrypts LOCAL_FILE (the plain copy never leaves the server), uploads it to
 # <remote>/<KIND>/<name>.gpg, and checks the object is listed there. rclone also verifies size and checksum.
 offsite_upload() {
-  local kind="$1" file="$2" name tmpdir rc=0
+  local kind="$1" file="$2" name tmpdir listing rc=0
   name="$(basename "$file").gpg"
   tmpdir="$(umask 077 && mktemp -d "${TMPDIR:-/tmp}/offsite-upload.XXXXXX")" || return 1
   if offsite_encrypt "$file" "$tmpdir/$name" \
     && rclone copyto "$tmpdir/$name" "$OFFSITE_REMOTE/$kind/$name" \
-    && rclone lsf --files-only "$OFFSITE_REMOTE/$kind/" | grep -Fxq -- "$name"; then
+    && listing="$(rclone lsf --files-only "$OFFSITE_REMOTE/$kind/")" \
+    && printf '%s\n' "$listing" | grep -Fxq -- "$name"; then
     rc=0
   else
     rc=1

@@ -65,23 +65,27 @@ fi
 
 _self="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
 
-# Best effort: emails the failure when the shared alert helper and a recipient are available.
+# Best effort: emails the failure when the shared alert helper and a recipient are available. It runs in a
+# subshell, so nothing the helper does can end this script before offsite_fail has logged and exited.
 alert_offsite_failure() {
     local message="$1" alert_helper
     alert_helper="$(dirname "$_self")/alert-email.sh"
     [ -f "$alert_helper" ] || alert_helper="$APP_DIR/backend/scripts/alert-email.sh"
-    if [ -f "$alert_helper" ] && source "$alert_helper"; then
-        ALERT_EMAIL="$(resolve_alert_email)"
-        if ! echo "$message" | send_alert_mail "[Murphy's Laws] Off-site backup FAILED"; then
-            log "Alert email was not sent"
-        fi
-    else
+    if [ ! -f "$alert_helper" ]; then
         log "Alert email was not sent (alert-email.sh not found)"
+        return 0
+    fi
+    if ! (
+        source "$alert_helper"
+        ALERT_EMAIL="$(resolve_alert_email)"
+        echo "$message" | send_alert_mail "[Murphy's Laws] Off-site backup FAILED"
+    ); then
+        log "Alert email was not sent"
     fi
 }
 
 offsite_fail() {
-    log "ERROR: Off-site copy FAILED: $1"
+    log "ERROR: Off-site copy: FAILED ($1)"
     alert_offsite_failure "The local backup $DATE succeeded, but the off-site copy failed: $1. Check /var/log/backup-murphys.log on the main droplet."
     exit 1
 }
@@ -101,7 +105,10 @@ case "$OFFSITE_STATUS" in
             offsite_upload env "$ENV_BACKUP" || offsite_fail "upload of $(basename "$ENV_BACKUP") failed"
         fi
         offsite_prune db "$RETENTION_DAYS" || offsite_fail "pruning old database copies failed"
-        offsite_prune env "$RETENTION_DAYS" || offsite_fail "pruning old env copies failed"
+        # The env directory only exists once an env copy has been uploaded
+        if [ -f "$ENV_BACKUP" ]; then
+            offsite_prune env "$RETENTION_DAYS" || offsite_fail "pruning old env copies failed"
+        fi
         log "Off-site copy: ok (encrypted, $OFFSITE_REMOTE, retention $RETENTION_DAYS days)"
         ;;
     1)

@@ -3,7 +3,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fillEnvFromFiles, parseRecipientList, resolveAlertRecipient } from './alert-recipient.ts';
@@ -1040,26 +1040,63 @@ function mapCostSection(cost: CostJson): ReportSection {
 }
 
 const BACKUP_LOG_PATH = '/var/log/backup-murphys.log';
+/** The log is appended to forever, so only its end is read: the last off-site result is always recent. */
+const BACKUP_LOG_TAIL_BYTES = 256 * 1024;
+const OFFSITE_STALE_HOURS = 48;
 
-/** The text of the last `Off-site copy:` line the backup script logged, or null when the log has none. */
-export function parseOffsiteBackupStatus(logText: string): string | null {
-  const lines = logText.split('\n').filter((line) => line.includes('Off-site copy:'));
-  const last = lines[lines.length - 1];
-  return last ? last.slice(last.indexOf('Off-site copy:') + 'Off-site copy:'.length).trim() : null;
+export interface OffsiteBackupStatus {
+  /** The text after `Off-site copy:` on the last such line, for example `ok (encrypted, ...)`. */
+  status: string;
+  /** The `[YYYY-MM-DD HH:MM:SS]` stamp the backup script put on that line (server time, UTC), or null. */
+  loggedAt: string | null;
 }
 
-/** The report row for the latest off-site backup result, warning unless the last run copied off-site. */
-export function offsiteBackupItem(logPath: string): ReportItem {
-  let status: string | null = null;
+/** The last `Off-site copy:` line the backup script logged (ok, not configured or FAILED), or null. */
+export function parseOffsiteBackupStatus(logText: string): OffsiteBackupStatus | null {
+  const marker = 'Off-site copy:';
+  const lines = logText.split('\n').filter((line) => line.includes(marker));
+  const last = lines[lines.length - 1];
+  if (!last) {
+    return null;
+  }
+  const stamp = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/.exec(last);
+  return { status: last.slice(last.indexOf(marker) + marker.length).trim(), loggedAt: stamp ? stamp[1] : null };
+}
+
+function readTail(file: string, bytes: number): string {
+  const size = statSync(file).size;
+  const fd = openSync(file, 'r');
   try {
-    status = parseOffsiteBackupStatus(readFileSync(logPath, 'utf8'));
+    const length = Math.min(size, bytes);
+    const buffer = Buffer.alloc(length);
+    readSync(fd, buffer, 0, length, size - length);
+    return buffer.toString('utf8');
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * The report row for the latest off-site backup result. It warns unless the last run copied off-site and did so
+ * recently, because a run that dies before the off-site step leaves an old "ok" line behind.
+ */
+export function offsiteBackupItem(logPath: string, now: Date = new Date()): ReportItem {
+  let found: OffsiteBackupStatus | null = null;
+  try {
+    found = parseOffsiteBackupStatus(readTail(logPath, BACKUP_LOG_TAIL_BYTES));
   } catch (error) {
     logCollectorError('off-site backup status', error);
   }
-  if (status === null) {
+  if (found === null) {
     return { label: 'Off-site copy', value: 'no result in the backup log', tone: 'warning' };
   }
-  return { label: 'Off-site copy', value: status, ...(status.startsWith('ok') ? {} : { tone: 'warning' as const }) };
+  const value = found.loggedAt ? `${found.status} (logged ${found.loggedAt} UTC)` : found.status;
+  const loggedMs = found.loggedAt ? Date.parse(`${found.loggedAt.replace(' ', 'T')}Z`) : Number.NaN;
+  const stale = Number.isFinite(loggedMs) && now.getTime() - loggedMs > OFFSITE_STALE_HOURS * 3600 * 1000;
+  if (stale) {
+    return { label: 'Off-site copy', value: `${value}; no newer result for over ${OFFSITE_STALE_HOURS} hours`, tone: 'warning' };
+  }
+  return found.status.startsWith('ok') ? { label: 'Off-site copy', value } : { label: 'Off-site copy', value, tone: 'warning' };
 }
 
 function backupReminderSection(): ReportSection {
@@ -1430,7 +1467,11 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       label: 'Total backup size',
       value: tryCommand('du', ['-sh', '/root/backups']).split('\t')[0] ?? 'Unknown',
     });
-    backupItems.push(offsiteBackupItem(BACKUP_LOG_PATH));
+    const offsiteItem = offsiteBackupItem(BACKUP_LOG_PATH);
+    backupItems.push(offsiteItem);
+    if (offsiteItem.tone === 'warning') {
+      summary.push({ label: 'Off-site backup', value: offsiteItem.value, tone: 'warning' });
+    }
     sections.push(section('BACKUP STATUS', backupItems));
   }
 
