@@ -1042,25 +1042,42 @@ function mapCostSection(cost: CostJson): ReportSection {
 const BACKUP_LOG_PATH = '/var/log/backup-murphys.log';
 /** The log is appended to forever, so only its end is read: the last off-site result is always recent. */
 const BACKUP_LOG_TAIL_BYTES = 256 * 1024;
-const OFFSITE_STALE_HOURS = 48;
+/** One missed daily run: the 04:00 backup is about 25 hours old at the next 05:00 report, so 30 leaves slack. */
+const OFFSITE_STALE_HOURS = 30;
 
 export interface OffsiteBackupStatus {
   /** The text after `Off-site copy:` on the last such line, for example `ok (encrypted, ...)`. */
   status: string;
   /** The `[YYYY-MM-DD HH:MM:SS]` stamp the backup script put on that line (server time, UTC), or null. */
   loggedAt: string | null;
+  /** True when a backup run started after that line and never logged an off-site result (it died or is running). */
+  interrupted: boolean;
+}
+
+function lastLineIndex(lines: string[], text: string): number {
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (lines[index].includes(text)) {
+      return index;
+    }
+  }
+  return -1;
 }
 
 /** The last `Off-site copy:` line the backup script logged (ok, not configured or FAILED), or null. */
 export function parseOffsiteBackupStatus(logText: string): OffsiteBackupStatus | null {
   const marker = 'Off-site copy:';
-  const lines = logText.split('\n').filter((line) => line.includes(marker));
-  const last = lines[lines.length - 1];
-  if (!last) {
+  const lines = logText.split('\n');
+  const lastOffsite = lastLineIndex(lines, marker);
+  if (lastOffsite === -1) {
     return null;
   }
+  const last = lines[lastOffsite];
   const stamp = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/.exec(last);
-  return { status: last.slice(last.indexOf(marker) + marker.length).trim(), loggedAt: stamp ? stamp[1] : null };
+  return {
+    status: last.slice(last.indexOf(marker) + marker.length).trim(),
+    loggedAt: stamp ? stamp[1] : null,
+    interrupted: lastLineIndex(lines, 'Starting backup...') > lastOffsite,
+  };
 }
 
 function readTail(file: string, bytes: number): string {
@@ -1091,6 +1108,13 @@ export function offsiteBackupItem(logPath: string, now: Date = new Date()): Repo
     return { label: 'Off-site copy', value: 'no result in the backup log', tone: 'warning' };
   }
   const value = found.loggedAt ? `${found.status} (logged ${found.loggedAt} UTC)` : found.status;
+  if (found.interrupted) {
+    return {
+      label: 'Off-site copy',
+      value: `the latest backup run did not reach the off-site step; previous result: ${value}`,
+      tone: 'warning',
+    };
+  }
   const loggedMs = found.loggedAt ? Date.parse(`${found.loggedAt.replace(' ', 'T')}Z`) : Number.NaN;
   const stale = Number.isFinite(loggedMs) && now.getTime() - loggedMs > OFFSITE_STALE_HOURS * 3600 * 1000;
   if (stale) {

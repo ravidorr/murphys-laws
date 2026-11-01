@@ -79,7 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `test-backup-restore.sh` gains test 9: the newest off-site database and env copies must exist, be under 30
   hours old, download, decrypt, and pass `integrity_check`, a `laws` query and the SMTP key check; an
   unconfigured off-site copy now fails that test. The daily report shows the last off-site result from the backup
-  log (warning in its summary unless it is a recent `ok`) instead of a fixed "not configured", and the reminder and cost reports no longer claim a "20/20" run or
+  log (a warning, also in its summary, unless it is an `ok` under 30 hours old from the latest backup run, so one
+  missed or interrupted run shows at the next report) instead of a fixed "not configured", and the reminder and cost reports no longer claim a "20/20" run or
   "off-site not configured". `BACKUP-RESTORE.md` documents the setup, restoring from the bucket and passphrase
   rotation. Tests run the real scripts against a directory-backed fake `rclone` with the real `gpg` and `sqlite3`.
   Backend bumped to `2.3.55`; root to `2.6.118`.
