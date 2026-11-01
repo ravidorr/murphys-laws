@@ -459,11 +459,11 @@ describe('off-site backup status in the report', () => {
   const now = new Date('2026-11-01T10:00:00Z');
 
   it('takes the text and time stamp of the last Off-site copy line', () => {
-    expect(parseOffsiteBackupStatus(log)).toEqual({ status: ok, loggedAt: '2026-11-01 04:00:14' });
+    expect(parseOffsiteBackupStatus(log)).toEqual({ status: ok, loggedAt: '2026-11-01 04:00:14', interrupted: false });
   });
 
   it('keeps a line that has no time stamp, and returns null when the log has no Off-site copy line', () => {
-    expect(parseOffsiteBackupStatus('Off-site copy: ok\n')).toEqual({ status: 'ok', loggedAt: null });
+    expect(parseOffsiteBackupStatus('Off-site copy: ok\n')).toEqual({ status: 'ok', loggedAt: null, interrupted: false });
     expect(parseOffsiteBackupStatus('[2026-11-01 04:00:09] Backup complete.\n')).toBeNull();
   });
 
@@ -492,10 +492,24 @@ describe('off-site backup status in the report', () => {
     expect(item.value).toContain('FAILED (upload of murphys_db_x.db failed)');
   });
 
-  it('warns when the last result is older than 48 hours, as when a run dies before the off-site step', () => {
-    const item = offsiteBackupItem(logFile(log), new Date('2026-11-04T10:00:00Z'));
+  it('warns when the last result is older than 30 hours, so one missed daily run shows at the next report', () => {
+    expect(offsiteBackupItem(logFile(log), new Date('2026-11-02T05:00:00Z')).tone).toBeUndefined();
+    const item = offsiteBackupItem(logFile(log), new Date('2026-11-02T11:00:00Z'));
     expect(item.tone).toBe('warning');
-    expect(item.value).toContain('no newer result for over 48 hours');
+    expect(item.value).toContain('no newer result for over 30 hours');
+  });
+
+  it('warns on the first run that dies before the off-site step, even though yesterday is under 30 hours old', () => {
+    const died = `${log}\n[2026-11-02 04:00:01] Starting backup...\n[2026-11-02 04:00:02] ERROR: SQLite backup failed for x\n`;
+    const item = offsiteBackupItem(logFile(died), new Date('2026-11-02T05:00:00Z'));
+    expect(item.tone).toBe('warning');
+    expect(item.value).toContain('did not reach the off-site step');
+    expect(item.value).toContain(ok);
+  });
+
+  it('does not warn when the off-site result follows the latest start', () => {
+    const complete = `${log}\n[2026-11-02 04:00:01] Starting backup...\n[2026-11-02 04:00:20] Off-site copy: ${ok}\n`;
+    expect(offsiteBackupItem(logFile(complete), new Date('2026-11-02T05:00:00Z')).tone).toBeUndefined();
   });
 
   it('does not treat a line without a time stamp as stale', () => {
@@ -503,7 +517,7 @@ describe('off-site backup status in the report', () => {
   });
 
   it('reads only the end of a large log', () => {
-    const filler = `${'[2026-01-01 04:00:00] Backup complete.\n'.repeat(20000)}`;
+    const filler = '[2026-01-01 04:00:00] Backup complete.\n'.repeat(20000);
     expect(offsiteBackupItem(logFile(`[2025-12-31 04:00:00] Off-site copy: ok\n${filler}${log}\n`), now).value).toContain('logged 2026-11-01');
   });
 
