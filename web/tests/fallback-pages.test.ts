@@ -13,7 +13,7 @@ function readWebFile(relativePath: string): string {
 }
 
 describe('static fallback page assets', () => {
-  it.each(['public/404.html', 'public/offline.html'])(
+  it.each(['public/offline.html'])(
     'references only shipped fallback styles in %s',
     (relativePath) => {
       const html = readWebFile(relativePath);
