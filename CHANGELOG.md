@@ -27,6 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Daily Law of the Day email. Visitors subscribe from the home page, confirm from the first email (double
+  opt-in), and get the day's law each morning with an unsubscribe link and one-click `List-Unsubscribe` headers.
+  New `email_subscriptions` table (migration 020), `POST /api/v1/subscriptions`, `/subscription/confirm` and
+  `/subscription/unsubscribe` pages (nginx and the service worker pass them through), and a
+  `npm run email:daily` job for cron (see `shared/docs/DEPLOYMENT.md`). Confirmation emails are rate limited
+  per client and per address, and the daily send is recorded per subscriber so a re-run never mails anyone
+  twice. Confirm and unsubscribe links only show a button; the POST does the change, so mail scanners cannot
+  opt anyone in or out, and an old confirmation email cannot undo an unsubscribe. `npm run deploy` now runs the
+  database migrations before restarting the API. The privacy policy describes the stored data. Web bumped to `3.4.46`; backend to `2.3.59`; root to
+  `2.6.129`; iOS to `1.2.11 (27)`; Android to `1.2.12 (19)`.
+
 ### Changed
 
 - The 404 page is funny again and no longer looks like a modal. Unknown URLs now get a generated

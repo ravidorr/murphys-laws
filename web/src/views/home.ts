@@ -3,6 +3,7 @@
 import { LawOfTheDay } from '@components/law-of-day.ts';
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.ts';
 import { Trending } from '@components/trending.ts';
+import { DailyEmailSignup } from '@components/daily-email-signup.ts';
 import { fetchLawOfTheDay } from '../utils/api.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
@@ -186,6 +187,7 @@ export function renderHome(
   submitWrap.innerHTML = SUBMIT_CTA_HTML;
   const submitCta = submitWrap.firstElementChild!;
   toolsZone.appendChild(submitCta);
+  toolsZone.appendChild(DailyEmailSignup());
   hydrateIcons(toolsZone);
   el.appendChild(toolsZone);
 

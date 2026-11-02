@@ -29,6 +29,8 @@ import { OgImageController } from '../controllers/og-image.controller.ts';
 import { SpaController } from '../controllers/spa.controller.ts';
 import { EmbedController } from '../controllers/embed.controller.ts';
 import { EmbedService } from '../services/embed.service.ts';
+import { SubscriptionService } from '../services/subscriptions.service.ts';
+import { SubscriptionController } from '../controllers/subscriptions.controller.ts';
 
 import { Router } from '../routes/router.ts';
 import { OPENAPI_SPEC } from '../openapi.ts';
@@ -112,6 +114,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   const htmlInjection = new HtmlInjectionService({ lawService, categoryService });
   const spaController = new SpaController(htmlInjection);
   const embedController = new EmbedController(new EmbedService(lawService));
+  const subscriptionController = new SubscriptionController(new SubscriptionService(db), emailService);
 
   const adminState = getAdminApiState();
   if (adminState === 'enabled') {
@@ -140,6 +143,14 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.get(/^\/embed\/law\/(\d+)\/?$/, (req, res, lawId) => embedController.serveLaw(req, res, lawId));
   router.get(/^\/embed\/law-of-day\/?$/, (req, res) => embedController.serveLawOfDay(req, res));
   router.get(/^\/api\/v1\/oembed\/?$/, (req, res, parsed) => embedController.oembed(req, res, parsed));
+
+  // Daily Law of the Day email: the subscribe call is a regex route like the embed ones, so it stays outside
+  // the documented /api/v1 contract; confirm and unsubscribe are the pages the emails link to.
+  router.post(/^\/api\/v1\/subscriptions\/?$/, (req, res) => subscriptionController.subscribe(req, res));
+  router.get(/^\/subscription\/confirm\/?$/, (req, res, parsed) => subscriptionController.confirmForm(req, res, parsed));
+  router.post(/^\/subscription\/confirm\/?$/, (req, res, parsed) => subscriptionController.confirm(req, res, parsed));
+  router.get(/^\/subscription\/unsubscribe\/?$/, (req, res, parsed) => subscriptionController.unsubscribeForm(req, res, parsed));
+  router.post(/^\/subscription\/unsubscribe\/?$/, (req, res, parsed) => subscriptionController.unsubscribe(req, res, parsed));
 
   router.registerPublicRoute('GET', '/api/health', '/api/health', (req, res) => healthController.check(req, res));
 
