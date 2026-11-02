@@ -401,7 +401,7 @@ export function setCategoryItemListSchema({ categoryTitle, categorySlug, laws }:
     'position': index + 1,
     'item': {
       '@type': 'Quotation',
-      'name': law.title || `Murphy's Law #${law.id}`,
+      'name': buildLawSeo(law).headline,
       'text': law.text,
       'url': `${SITE_URL}/law/${law.id}`
     }

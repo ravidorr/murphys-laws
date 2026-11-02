@@ -11,7 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-interface PageInfo {
+export interface PageInfo {
   url: string;
   title: string;
   description: string;
@@ -28,7 +28,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ENTITIES: Record<string, string> = { '#039': "'", '#39': "'", apos: "'", quot: '"', lt: '<', gt: '>', amp: '&' };
 
 /** Decode the few entities the generator emits in a single pass, so nothing is decoded twice. */
-function decodeEntities(value: string): string {
+export function decodeEntities(value: string): string {
   return value.replace(/&(#0?39|apos|quot|lt|gt|amp);/g, (whole, name: string) => ENTITIES[name] ?? whole);
 }
 
@@ -36,7 +36,7 @@ function decodeEntities(value: string): string {
  * Visible text of an HTML document for word counting. Walks the markup instead of stripping it with
  * regular expressions, and skips the contents of script and style elements.
  */
-function visibleText(html: string): string {
+export function visibleText(html: string): string {
   const lower = html.toLowerCase();
   let text = '';
   let index = 0;
@@ -62,7 +62,7 @@ function match(html: string, pattern: RegExp): string {
   return decodeEntities((pattern.exec(html)?.[1] || '').trim());
 }
 
-function parsePage(url: string, html: string): PageInfo {
+export function parsePage(url: string, html: string): PageInfo {
   const jsonLdTypes: string[] = [];
   for (const block of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
     try {
@@ -84,7 +84,7 @@ function parsePage(url: string, html: string): PageInfo {
   };
 }
 
-function duplicates(pages: PageInfo[], field: 'title' | 'description'): Array<[string, number]> {
+export function duplicates(pages: PageInfo[], field: 'title' | 'description'): Array<[string, number]> {
   const counts = new Map<string, number>();
   for (const page of pages) counts.set(page[field], (counts.get(page[field]) || 0) + 1);
   return [...counts].filter(([value, count]) => value && count > 1);
@@ -100,20 +100,19 @@ async function readPage(distDir: string, url: string): Promise<PageInfo | null> 
   }
 }
 
-async function main(): Promise<void> {
-  const distDir = path.resolve(process.argv[2] || path.join(__dirname, '../dist'));
-  const sitemap = await fs.readFile(path.join(distDir, 'sitemap.xml'), 'utf-8');
-  const entries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => m[1] as string);
-  const urls = entries.map((entry) => /<loc>(.*?)<\/loc>/.exec(entry)?.[1] || '');
+export interface AuditResult {
+  pageCount: number;
+  lawCount: number;
+  uniqueLawTitles: number;
+  blocking: string[];
+  warnings: string[];
+}
 
-  const pages: PageInfo[] = [];
-  const missingFiles: string[] = [];
-  for (const url of urls) {
-    const page = await readPage(distDir, url);
-    if (page) pages.push(page);
-    else missingFiles.push(url);
-  }
-
+/**
+ * Check parsed pages and raw sitemap entries. Blocking problems make the CLI exit non-zero.
+ */
+export function auditSite(input: { entries: string[]; pages: PageInfo[]; missingFiles: string[] }): AuditResult {
+  const { entries, pages, missingFiles } = input;
   const isLaw = (page: PageInfo) => page.url.includes('/law/');
   const laws = pages.filter(isLaw);
   const blocking: string[] = [];
@@ -150,16 +149,43 @@ async function main(): Promise<void> {
   if (noBreadcrumbs.length) warnings.push(`${noBreadcrumbs.length} browse, category and law pages with no BreadcrumbList`);
   if (thin.length) warnings.push(`${thin.length} non-law pages under 150 words: ${thin.map((page) => page.url.replace(SITE_ORIGIN, '')).join(', ')}`);
 
-  console.log(`Audited ${pages.length} of ${urls.length} sitemap URLs in ${distDir}`);
-  console.log(`Law pages: ${laws.length}, unique titles: ${new Set(laws.map((page) => page.title)).size}`);
-  for (const message of blocking.slice(0, 25)) console.log(`ERROR   ${message}`);
-  if (blocking.length > 25) console.log(`ERROR   ... and ${blocking.length - 25} more`);
-  for (const message of warnings) console.log(`WARNING ${message}`);
-  if (!blocking.length && !warnings.length) console.log('No problems found.');
-  if (blocking.length) process.exitCode = 1;
+  return {
+    pageCount: pages.length,
+    lawCount: laws.length,
+    uniqueLawTitles: new Set(laws.map((page) => page.title)).size,
+    blocking,
+    warnings
+  };
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+async function main(): Promise<void> {
+  const distDir = path.resolve(process.argv[2] || path.join(__dirname, '../dist'));
+  const sitemap = await fs.readFile(path.join(distDir, 'sitemap.xml'), 'utf-8');
+  const entries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => m[1] as string);
+  const urls = entries.map((entry) => /<loc>(.*?)<\/loc>/.exec(entry)?.[1] || '');
+
+  const pages: PageInfo[] = [];
+  const missingFiles: string[] = [];
+  for (const url of urls) {
+    const page = await readPage(distDir, url);
+    if (page) pages.push(page);
+    else missingFiles.push(url);
+  }
+
+  const result = auditSite({ entries, pages, missingFiles });
+  console.log(`Audited ${result.pageCount} of ${urls.length} sitemap URLs in ${distDir}`);
+  console.log(`Law pages: ${result.lawCount}, unique titles: ${result.uniqueLawTitles}`);
+  for (const message of result.blocking.slice(0, 25)) console.log(`ERROR   ${message}`);
+  if (result.blocking.length > 25) console.log(`ERROR   ... and ${result.blocking.length - 25} more`);
+  for (const message of result.warnings) console.log(`WARNING ${message}`);
+  if (!result.blocking.length && !result.warnings.length) console.log('No problems found.');
+  if (result.blocking.length) process.exitCode = 1;
+}
+
+// Run only when executed directly, so tests can import the helpers
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

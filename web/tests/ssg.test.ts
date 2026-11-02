@@ -467,9 +467,14 @@ describe('SSG SEO output', () => {
       expect(xml).toContain('<loc>https://murphys-laws.com/about</loc>\n    <lastmod>2025-03-09</lastmod>');
       expect(xml).toContain('<loc>https://murphys-laws.com/law/1</loc>\n    <lastmod>2026-05-01</lastmod>');
       expect(xml).toContain('<loc>https://murphys-laws.com/category/tech</loc>\n    <lastmod>2026-05-01</lastmod>');
-      expect(xml).toContain('<loc>https://murphys-laws.com/category/empty</loc>\n    <lastmod>2026-05-01</lastmod>');
-      expect(xml).toContain('<loc>https://murphys-laws.com/law/3</loc>\n    <lastmod>2026-05-01</lastmod>');
-      expect(xml).toContain('<loc>https://murphys-laws.com/calculator/sods-law</loc>\n    <lastmod>2025-03-09</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/</loc>\n    <lastmod>2026-05-01</lastmod>');
+    });
+
+    it('does not invent dates for URLs with no known date', () => {
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/empty</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/3</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/calculator/sods-law</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/examples</loc>\n  </url>');
     });
 
     it('leaves lastmod out of an entry only when no date is known', () => {

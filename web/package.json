@@ -1,11 +1,11 @@
 {
   "name": "murphys-laws-web",
-  "version": "3.4.38",
+  "version": "3.4.39",
   "description": "Murphy's Laws Web Application",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npm run ssg && tsx scripts/generate-fallback-tokens.ts && tsx scripts/generate-service-worker.ts",
+    "build": "vite build && npm run ssg && npm run seo:audit && tsx scripts/generate-fallback-tokens.ts && tsx scripts/generate-service-worker.ts",
     "ssg": "tsx scripts/ssg.ts",
     "seo:audit": "tsx scripts/seo-audit.ts",
     "preview": "vite preview",
