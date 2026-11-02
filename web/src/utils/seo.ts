@@ -15,23 +15,33 @@ export function buildCanonicalUrl(pathOrUrl: string): string {
   return input.toString().replace(/\/$/, input.pathname === '/' ? '/' : '');
 }
 
+export {
+  buildLawSeo,
+  buildUniqueLawSeo,
+  cutAtWord,
+  isGenericLawTitle,
+  truncateTitle
+} from '../../../shared/modules/law-seo.ts';
+export type { LawSeo, LawSeoInput, LawSeoOptions } from '../../../shared/modules/law-seo.ts';
+
+export interface BreadcrumbItem {
+  name: string;
+  /** Site-relative path such as `/categories`; use `/` for the home page. */
+  path: string;
+}
+
 /**
- * Truncate title to fit within 60 character limit for SEO
- * Accounts for the " - Murphy's Law Archive" suffix (24 chars)
+ * Build a schema.org BreadcrumbList for the given trail (home first).
  */
-export function truncateTitle(title: string, suffix = " - Murphy's Law Archive"): string {
-  const maxLength = 60;
-  const maxTitleLength = maxLength - suffix.length;
-
-  if (title.length <= maxTitleLength) {
-    return title;
-  }
-
-  // Truncate and add ellipsis, ensuring we don't cut mid-word
-  let truncated = title.substring(0, maxTitleLength - 3);
-  const lastSpace = truncated.lastIndexOf(' ');
-  if (lastSpace > 0 && lastSpace > maxTitleLength / 2) {
-    truncated = truncated.substring(0, lastSpace);
-  }
-  return truncated + '...';
+export function buildBreadcrumbList(items: BreadcrumbItem[]): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': items.map((item, index) => ({
+      '@type': 'ListItem',
+      'position': index + 1,
+      'name': item.name,
+      'item': item.path === '/' ? SITE_URL : `${SITE_URL}${item.path}`
+    }))
+  };
 }

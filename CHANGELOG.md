@@ -35,6 +35,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Law pages no longer share generic titles. 2,112 of 2,465 law pages were titled "Murphy's Law" or "Corollary", so
+  search engines saw them as near-duplicates. Generic titles are now derived from the law text, descriptions are
+  padded to a useful length and cut at word boundaries, and any remaining collisions get the law id. The static
+  site and the client router build them with the same helper (`buildLawSeo`). The law schema `headline` and
+  breadcrumb name follow the same rule.
+- `/favorites` is `noindex, follow` and is no longer listed in `sitemap.xml`, since its content is per-user.
+- `sitemap.xml` has a real `lastmod` on every URL and no longer emits `changefreq` or `priority`, which search
+  engines ignore. Category dates come from their newest law. `shared/content/metadata.json` gained entries for the
+  content pages that lacked a date.
+- `/browse`, `/categories` and every category page now ship `BreadcrumbList` (and `CollectionPage` for the first
+  two) in the static HTML instead of only after client-side rendering.
+- Expanded the thin `/best-murphys-laws`, `/funniest-murphys-laws`, `/murphys-laws-about-technology` and
+  `/calculator/buttered-toast` pages with sourced explanations and internal links.
+
+- Added `npm run seo:audit` (`web/scripts/seo-audit.ts`) audits a built `dist/`: duplicate titles and descriptions,
+  canonical and noindex mismatches, length limits, missing JSON-LD and sitemap hygiene. It exits non-zero on
+  blocking problems. It reads the built HTML without regex tag stripping and decodes entities in a single pass.
+  `npm run build` now runs it after the static build and fails on blocking problems.
+- Review fixes: the client no longer rewrites the head of a prerendered law page, so titles the static build made
+  unique stay unique; category list entries are named after the law text; `/favorites` sets `noindex` itself and the
+  router resets the robots tag on client navigation; `lastmod` is left out when no real date is known; disambiguated
+  titles and descriptions no longer put an ellipsis before the id. The Buttered Toast page now describes the
+  calculator's actual inputs (Height of Fall, Gravity, Push Force, Butter Factor, Air Friction, Toast Density) and the
+  funniest-laws page names the benign violation theory's authors. Web bumped to `3.4.39`; root to `2.6.122`; iOS to
+  `1.2.8 (24)`; Android to `1.2.9 (16)`.
+- Laws published after the last static build are served by the backend fallback, which now uses the same title,
+  description and headline logic as the static site. The logic lives in `shared/modules/law-seo.ts`, imported by the
+  web build, the web client and the backend. The fallback's JSON-LD now escapes every `<` as `\u003c`. Backend
+  bumped to `2.3.56`; web to `3.4.41`; root to `2.6.124`.
 - nginx now drops `docker-compose*.yml`, `Dockerfile*`, `readme.html` and `license.txt` probes with a
   444 so fail2ban counts them, instead of logging them as 404s.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
