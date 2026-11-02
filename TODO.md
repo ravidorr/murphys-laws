@@ -79,7 +79,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 
 ## User Engagement (Require Backend Work)
 - [x] **RSS Feed:** ~~Provide RSS/Atom feed for new laws and Law of the Day.~~ Done - added `/api/v1/feed.rss` (RSS 2.0) and `/api/v1/feed.atom` (Atom 1.0) endpoints. Feeds include Law of the Day plus 10 most recent laws. Added autodiscovery links to `index.html`.
-- [ ] **Email Notifications:** Allow users to subscribe to new laws in specific categories.
+- [ ] **Email Notifications:** Allow users to subscribe to new laws in specific categories. (The daily Law of the Day email shipped; per-category subscriptions have not.)
 - [ ] **Comments/Discussions:** Allow users to comment on laws (requires moderation system).
 - [ ] **Law Collections:** Create curated "featured collections" (e.g., "Top 10 for Developers", "Classic Murphy's Laws").
 

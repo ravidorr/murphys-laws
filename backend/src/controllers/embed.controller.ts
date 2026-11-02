@@ -28,7 +28,7 @@ export class EmbedController {
   async oembed(_req: IncomingMessage, res: ServerResponse, parsed: ParsedQuery): Promise<void> {
     try {
       const result = await this.embedService.getOEmbed(parsed.query ?? {});
-      if (!result.ok) {
+      if (result.ok === false) {
         res.writeHead(result.status, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: result.message }));
         return;

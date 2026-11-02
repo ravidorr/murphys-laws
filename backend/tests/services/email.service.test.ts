@@ -293,4 +293,42 @@ describe('EmailService', () => {
       errorSpy.mockRestore();
     });
   });
+
+  describe('daily subscription emails', () => {
+    const configured = () => new EmailService({ host: 'h', port: 587, user: 'u', pass: 'p', from: 'from@example.com', to: 'to@example.com' });
+    const unconfigured = () => new EmailService({});
+
+    it('sends the confirmation to the subscriber', async () => {
+      expect(await configured().sendSubscriptionConfirmationEmail('ann@example.com', 'https://x/c?token=1')).toBe(true);
+      expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({ from: 'from@example.com', to: { name: '', address: 'ann@example.com' } }));
+      expect(mockSendMail.mock.calls[0][0].text).toContain('https://x/c?token=1');
+    });
+
+    it('sends the daily law with one-click unsubscribe headers', async () => {
+      expect(await configured().sendDailyLawEmail('ann@example.com', { id: 3, title: 'T', text: 'Law' }, 'https://x/u?token=1')).toBe(true);
+      const mail = mockSendMail.mock.calls[0][0];
+      expect(mail.subject).toBe('Law of the Day: T');
+      expect(mail.headers).toEqual({ 'List-Unsubscribe': '<https://x/u?token=1>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' });
+      expect(mail.html).toContain('/law/3');
+    });
+
+    it('returns false without sending when SMTP is not configured', async () => {
+      expect(await unconfigured().sendSubscriptionConfirmationEmail('a@example.com', 'u')).toBe(false);
+      expect(await unconfigured().sendDailyLawEmail('a@example.com', { id: 1, text: 'x' }, 'u')).toBe(false);
+      expect(mockSendMail).not.toHaveBeenCalled();
+    });
+
+    it('returns false and logs only error codes, never the address, when sending fails', async () => {
+      const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      mockSendMail.mockRejectedValueOnce(Object.assign(new Error('550 ann@example.com rejected'), { code: 'EENVELOPE', responseCode: 550 }));
+      expect(await configured().sendSubscriptionConfirmationEmail('ann@example.com', 'u')).toBe(false);
+      mockSendMail.mockRejectedValueOnce(undefined);
+      expect(await configured().sendDailyLawEmail('ann@example.com', { id: 1, text: 'x' }, 'u')).toBe(false);
+      const output = logged.mock.calls.map((call) => call.join(' ')).join('\n');
+      expect(output).toContain('code: EENVELOPE, response: 550');
+      expect(output).toContain('code: unknown, response: none');
+      expect(output).not.toContain('ann@example.com');
+      logged.mockRestore();
+    });
+  });
 });

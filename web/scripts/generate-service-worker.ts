@@ -227,7 +227,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate' && sameOrigin) {
     // /admin and /embed/ are backend-rendered pages, not SPA routes: never cache them or fall back to index.html.
-    if (isApi || /^\\/admin\\/?$/.test(url.pathname) || /^\\/embed\\/(law\\/\\d+|law-of-day)\\/?$/.test(url.pathname) || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
+    if (isApi || /^\\/admin\\/?$/.test(url.pathname) || /^\\/embed\\/(law\\/\\d+|law-of-day)\\/?$/.test(url.pathname) || /^\\/subscription\\/(confirm|unsubscribe)\\/?$/.test(url.pathname) || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
     event.respondWith(
       networkFirst(request, RUNTIME, '/index.html')
         .catch(() => caches.match('/offline.html'))

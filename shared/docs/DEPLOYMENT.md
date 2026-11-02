@@ -256,6 +256,19 @@ tail -20 /root/murphys-laws/logs/law-of-day.log
 cd /root/murphys-laws && sudo /usr/bin/node backend/scripts/select-law-of-day.mjs
 ```
 
+### Daily Law of the Day Email
+
+Subscribers who confirmed their address get the day's law by email. Run this after the selection job (SMTP must be configured in the backend `.env`):
+
+```cron
+15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> ../logs/daily-email.log 2>&1
+```
+
+**What it does:**
+- Sends today's Law of the Day to every confirmed subscriber who has not had it yet
+- Records each send, so running it twice (or after a partial failure) never mails anyone twice
+- Exits non-zero if any send failed; the next run retries those subscribers
+
 ---
 
 ## Node.js Version Management
