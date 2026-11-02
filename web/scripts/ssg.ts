@@ -13,6 +13,7 @@ import {
   renderArticleNextSteps,
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
+import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
@@ -575,6 +576,15 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   return failures;
 }
 
+function validateNotFoundPage(html: string): string[] {
+  const failures: string[] = [];
+  if (!html.includes('<meta name="robots" content="noindex">')) failures.push('missing noindex');
+  if (/rel="canonical"/.test(html)) failures.push('must not have a canonical link');
+  if (!html.includes('class="not-found-code"')) failures.push('missing 404 content');
+  if ((html.match(/<h1\b/gi) || []).length !== 1) failures.push('expected one h1');
+  return failures;
+}
+
 async function validateGeneratedOutput(): Promise<void> {
   const checks: Array<{ file: string; expectations: GeneratedPageExpectations }> = [
     { file: 'browse/index.html', expectations: { canonicalPath: '/browse' } },
@@ -596,6 +606,9 @@ async function validateGeneratedOutput(): Promise<void> {
       });
     }
   }
+
+  const notFoundFailures = validateNotFoundPage(await fs.readFile(path.join(DIST_DIR, '404.html'), 'utf-8'));
+  if (notFoundFailures.length > 0) throw new Error(`Invalid generated page 404.html: ${notFoundFailures.join('; ')}`);
 
   for (const routeName of ['category', 'law']) {
     const routeDir = path.join(DIST_DIR, routeName);
@@ -989,6 +1002,28 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
         </div>
       </article>
     </div>`;
+}
+
+/**
+ * Build the standalone 404 page (dist/404.html) inside the full site shell.
+ * Served by nginx for unknown URLs; the app bundle then takes over client-side.
+ */
+function buildNotFoundPage(template: string, laws: Law[]): string {
+  let html = applyPageMetadata(template, {
+    title: "Page Not Found - Murphy's Laws",
+    description: 'The page you requested could not be found or may have moved.',
+    canonicalPath: '/404'
+  });
+  html = html
+    .replace(/<meta name="robots" content=".*?">/, '<meta name="robots" content="noindex">')
+    .replace(/\s*<link rel="canonical" href=".*?">/, '')
+    .replace(/\s*<link rel="alternate" hreflang=".*?" href=".*?">/g, '')
+    .replace(/\s*<meta property="(?:og|twitter):url" content=".*?">/g, '');
+  const content = renderNotFoundContent({ lawsHtml: renderNotFoundLaws(laws) });
+  return html.replace(
+    /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
+    `<main id="main-content" class="flex-1 container page"><div class="container page pt-0">${content}</div></main>`
+  );
 }
 
 async function main(): Promise<void> {
@@ -1436,6 +1471,10 @@ ${articleArchive.featuredLaws}
   await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
   console.log('Updated index.html with static content.');
 
+  // 4b. Generate the 404 page (dist/404.html)
+  await fs.writeFile(path.join(DIST_DIR, '404.html'), buildNotFoundPage(template, browseLaws));
+  console.log('Generated 404.html.');
+
   // 5. Generate Sitemap
   console.log('Generating sitemap.xml...');
   const baseUrl = SITE_URL;
@@ -1588,6 +1627,8 @@ export {
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
   buildStaticArticleArchive,
+  buildNotFoundPage,
+  validateNotFoundPage,
   applyPageMetadata,
   validateGeneratedPage,
   fetchAllCategories,
