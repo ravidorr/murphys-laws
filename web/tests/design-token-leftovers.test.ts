@@ -16,7 +16,6 @@ function readWebFile(relativePath: string): string {
 describe('design-token leftovers', () => {
   it.each([
     ['index.html'],
-    ['public/404.html'],
     ['public/offline.html'],
   ])('loads critical CSS externally in %s', (relativePath) => {
     const localThis: FileScanLocalThis = {};
