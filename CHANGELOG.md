@@ -45,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `npm run seo:audit` (`web/scripts/seo-audit.ts`) audits a built `dist/`: duplicate titles and descriptions,
   canonical and noindex mismatches, length limits, missing JSON-LD and sitemap hygiene. It exits non-zero on
-  blocking problems. Web bumped to `3.4.37`; root to `2.6.120`; iOS to `1.2.7 (23)`; Android to `1.2.8 (15)`.
+  blocking problems. It reads the built HTML without regex tag stripping and decodes entities in a single pass.
+  Web bumped to `3.4.38`; root to `2.6.121`; iOS to `1.2.7 (23)`; Android to `1.2.8 (15)`.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
   Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
   Sentry SDK calls when the page is hidden; it is not our code. Web bumped to `3.4.36`; root to `2.6.119`.

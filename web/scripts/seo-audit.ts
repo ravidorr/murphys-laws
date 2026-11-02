@@ -25,13 +25,37 @@ interface PageInfo {
 const SITE_ORIGIN = 'https://murphys-laws.com';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const ENTITIES: Record<string, string> = { '#039': "'", '#39': "'", apos: "'", quot: '"', lt: '<', gt: '>', amp: '&' };
+
+/** Decode the few entities the generator emits in a single pass, so nothing is decoded twice. */
 function decodeEntities(value: string): string {
-  return value
-    .replace(/&#0?39;|&apos;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  return value.replace(/&(#0?39|apos|quot|lt|gt|amp);/g, (whole, name: string) => ENTITIES[name] ?? whole);
+}
+
+/**
+ * Visible text of an HTML document for word counting. Walks the markup instead of stripping it with
+ * regular expressions, and skips the contents of script and style elements.
+ */
+function visibleText(html: string): string {
+  const lower = html.toLowerCase();
+  let text = '';
+  let index = 0;
+  while (index < html.length) {
+    const open = html.indexOf('<', index);
+    if (open === -1) {
+      text += html.slice(index);
+      break;
+    }
+    text += `${html.slice(index, open)} `;
+    const skipped = ['script', 'style'].find((tag) => lower.startsWith(`<${tag}`, open));
+    if (skipped) {
+      const close = lower.indexOf(`</${skipped}`, open);
+      index = close === -1 ? html.length : close;
+    }
+    const end = html.indexOf('>', index === open ? open : index);
+    index = end === -1 ? html.length : end + 1;
+  }
+  return text;
 }
 
 function match(html: string, pattern: RegExp): string {
@@ -48,7 +72,6 @@ function parsePage(url: string, html: string): PageInfo {
       jsonLdTypes.push('INVALID');
     }
   }
-  const body = html.replace(/<(script|style)[\s\S]*?<\/\1>/g, '').replace(/<[^>]+>/g, ' ');
   return {
     url,
     title: match(html, /<title>([\s\S]*?)<\/title>/),
@@ -57,7 +80,7 @@ function parsePage(url: string, html: string): PageInfo {
     robots: match(html, /<meta name="robots" content="(.*?)"/),
     h1Count: (html.match(/<h1[\s>]/g) || []).length,
     jsonLdTypes,
-    words: body.split(/\s+/).filter(Boolean).length
+    words: visibleText(html).split(/\s+/).filter(Boolean).length
   };
 }
 
