@@ -16,7 +16,8 @@ import {
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
-import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
+import { buildBreadcrumbList, buildCanonicalUrl, buildUniqueLawSeo, buildLawSeo, truncateTitle } from '../src/utils/seo.ts';
+import type { LawSeo } from '../src/utils/seo.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
 
 // External citations open in a new tab, matching the client renderer
@@ -75,6 +76,7 @@ interface PageMetadata {
   canonicalPath: string;
   image?: string;
   type?: 'website' | 'article';
+  robots?: string;
 }
 
 interface ContentMetadataEntry {
@@ -527,6 +529,9 @@ function applyPageMetadata(html: string, metadata: PageMetadata): string {
   result = replaceMetaContent(result, 'property', 'twitter:title', metadata.title);
   result = replaceMetaContent(result, 'property', 'twitter:description', metadata.description);
   result = replaceMetaContent(result, 'property', 'twitter:image', image);
+  if (metadata.robots) {
+    result = replaceMetaContent(result, 'name', 'robots', metadata.robots);
+  }
   return result;
 }
 
@@ -616,16 +621,16 @@ async function validateGeneratedOutput(): Promise<void> {
 /**
  * Generate HTML page for a single law with correct OG meta tags
  */
-function generateLawPage(law: Law, template: string, relatedLaws: Law[] = []): string {
+function generateLawPage(law: Law, template: string, relatedLaws: Law[] = [], seo: LawSeo = buildLawSeo(law)): string {
   let pageHtml = template;
   
-  const title = law.title || "Murphy's Law";
-  const description = (law.text || '').substring(0, 160);
+  const title = seo.headline;
+  const description = seo.description;
   const lawUrl = `${SITE_URL}/law/${law.id}`;
   const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
   
   pageHtml = applyPageMetadata(pageHtml, {
-    title: `${title} - Murphy's Law Archive`,
+    title: seo.title,
     description,
     canonicalPath: `/law/${law.id}`,
     image: ogImageUrl,
@@ -711,6 +716,62 @@ function generateLawPage(law: Law, template: string, relatedLaws: Law[] = []): s
   pageHtml = injectJsonLd(pageHtml, breadcrumbJsonLd);
   
   return pageHtml;
+}
+
+interface SitemapInput {
+  baseUrl: string;
+  laws: Law[];
+  categories: Category[];
+  contentPages: ContentPageMeta[];
+  contentMetadata: Record<string, ContentMetadataEntry>;
+  staticRoutePaths: string[];
+}
+
+function toDateOnly(value?: string | null): string | undefined {
+  return value ? value.split('T')[0] : undefined;
+}
+
+function latestDate(dates: Array<string | undefined>): string | undefined {
+  const valid = dates.filter((date): date is string => Boolean(date));
+  return valid.length > 0 ? valid.reduce((a, b) => (a > b ? a : b)) : undefined;
+}
+
+/**
+ * Build sitemap.xml. Every URL carries a lastmod derived from real content dates;
+ * changefreq and priority are omitted because search engines ignore them.
+ */
+function buildSitemapXml({ baseUrl, laws, categories, contentPages, contentMetadata, staticRoutePaths }: SitemapInput): string {
+  const lawDate = (law: Law) => toDateOnly(law.updated_at || law.created_at);
+  const siteDate = latestDate(laws.map(lawDate));
+  const contentDate = latestDate(Object.values(contentMetadata).map((entry) => entry.lastUpdated));
+
+  const lawDatesByCategory = new Map<string, string[]>();
+  for (const law of laws) {
+    const date = lawDate(law);
+    if (!law.category_slug || !date) continue;
+    lawDatesByCategory.set(law.category_slug, [...(lawDatesByCategory.get(law.category_slug) || []), date]);
+  }
+
+  const entries: Array<{ loc: string; lastmod?: string }> = [
+    { loc: `${baseUrl}/`, lastmod: siteDate },
+    { loc: `${baseUrl}/browse`, lastmod: siteDate },
+    { loc: `${baseUrl}/categories`, lastmod: siteDate },
+    ...contentPages.map((page) => ({
+      loc: `${baseUrl}/${page.slug}`,
+      lastmod: contentMetadata[page.slug]?.lastUpdated
+    })),
+    ...staticRoutePaths.map((routePath) => ({ loc: `${baseUrl}/${routePath}`, lastmod: contentDate })),
+    ...categorySitemapPaths(categories).map((categoryPath) => ({
+      loc: `${baseUrl}${categoryPath}`,
+      lastmod: latestDate(lawDatesByCategory.get(categoryPath.replace('/category/', '')) || []) || siteDate
+    })),
+    ...laws.map((law) => ({ loc: `${baseUrl}/law/${law.id}`, lastmod: lawDate(law) || siteDate }))
+  ];
+
+  const urls = entries
+    .map(({ loc, lastmod }) => `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`)
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 }
 
 /**
@@ -983,6 +1044,16 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
             <h3>Assumptions</h3>
             <p>The simulator treats table height, rotation, butter coverage, and launch angle as playful inputs that influence the final landing side.</p>
             <p>Enable JavaScript for the live controls, or read the explanation here to understand the joke behind the physics.</p>
+            <h3>The physics behind the joke</h3>
+            <p>Toast falls off a plate and starts to rotate as it slides over the edge. At a typical table height of about 75 centimeters it has time to turn roughly half a revolution before it hits the floor, so a slice that started butter-side up usually lands butter-side down.</p>
+            <p>Physicist Robert Matthews of Aston University worked through this in a 1995 paper and later won the 1996 Ig Nobel Prize in Physics for it. His result is a useful reminder: the toast is not out to get you, the geometry of a kitchen simply favors the bad outcome.</p>
+            <h3>What each input changes</h3>
+            <ul>
+              <li><strong>Table height:</strong> a taller drop gives the toast time to finish a full turn and land butter-side up.</li>
+              <li><strong>Rotation:</strong> a faster spin changes how far it turns before landing.</li>
+              <li><strong>Launch angle:</strong> a harder push off the edge adds rotation.</li>
+              <li><strong>Butter coverage:</strong> in the real world butter barely changes the flight, but it decides how bad the landing looks.</li>
+            </ul>
             <p class="small">This simplified model is for entertainment, not engineering, safety, or scientific prediction.</p>
             ${renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'))}
           </section>
@@ -1087,6 +1158,11 @@ async function main(): Promise<void> {
     });
     
     pageHtml = injectJsonLd(pageHtml, categoryJsonLd);
+    pageHtml = injectJsonLd(pageHtml, generateJsonLd(buildBreadcrumbList([
+      { name: 'Home', path: '/' },
+      { name: 'Categories', path: '/categories' },
+      { name: `${title} Laws`, path: `/category/${slug}` }
+    ])));
 
     await fs.writeFile(path.join(outDir, 'index.html'), pageHtml);
     // console.log(`Generated category/${slug}/index.html`);
@@ -1130,6 +1206,19 @@ async function main(): Promise<void> {
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
     `<main id="main-content" class="flex-1 container page">${browseContent}</main>`
   );
+
+  browseHtml = injectJsonLd(browseHtml, generateJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    'name': "Browse All Murphy's Laws",
+    'url': `${SITE_URL}/browse`,
+    'description': "Search and filter the complete collection of Murphy's Laws, corollaries, and field observations.",
+    'isPartOf': { '@type': 'WebSite', 'name': "Murphy's Law Archive", 'url': SITE_URL }
+  }));
+  browseHtml = injectJsonLd(browseHtml, generateJsonLd(buildBreadcrumbList([
+    { name: 'Home', path: '/' },
+    { name: "Browse Murphy's Laws", path: '/browse' }
+  ])));
 
   await fs.writeFile(path.join(browseDir, 'index.html'), browseHtml);
 
@@ -1189,6 +1278,19 @@ ${categoryCardsHtml.trim()}
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
     `<main id="main-content" class="flex-1 container page">${categoriesContent}</main>`
   );
+
+  categoriesHtml = injectJsonLd(categoriesHtml, generateJsonLd({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    'name': "Browse Murphy's Laws by Category",
+    'url': `${SITE_URL}/categories`,
+    'description': `Explore all ${categories.length} categories of Murphy's Laws, from technology and work to travel and everyday life.`,
+    'isPartOf': { '@type': 'WebSite', 'name': "Murphy's Law Archive", 'url': SITE_URL }
+  }));
+  categoriesHtml = injectJsonLd(categoriesHtml, generateJsonLd(buildBreadcrumbList([
+    { name: 'Home', path: '/' },
+    { name: 'Categories', path: '/categories' }
+  ])));
 
   await fs.writeFile(path.join(categoriesDir, 'index.html'), categoriesHtml);
   console.log('Generated categories page.');
@@ -1338,6 +1440,7 @@ ${articleArchive.featuredLaws}
     },
     {
       pathParts: ['favorites'],
+      indexable: false,
       title: 'My Favorites - Murphy\'s Law Archive',
       description: 'Save favorite Murphy\'s Laws in your browser and revisit them quickly.',
       content: buildStaticFavoritesContent(),
@@ -1359,7 +1462,8 @@ ${articleArchive.featuredLaws}
     let routeHtml = applyPageMetadata(template, {
       title: route.title,
       description: route.description,
-      canonicalPath: `/${routePath}`
+      canonicalPath: `/${routePath}`,
+      robots: route.indexable === false ? 'noindex, follow' : undefined
     });
     routeHtml = routeHtml.replace(
       /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/,
@@ -1375,6 +1479,7 @@ ${articleArchive.featuredLaws}
   if (laws.length > 0) {
     const lawDir = path.join(DIST_DIR, 'law');
     await fs.mkdir(lawDir, { recursive: true });
+    const lawSeoById = buildUniqueLawSeo(laws);
     const lawsByCategory = new Map<string, Law[]>();
     for (const law of laws) {
       if (!law.category_slug) continue;
@@ -1390,7 +1495,7 @@ ${articleArchive.featuredLaws}
       const relatedLaws = law.category_slug
         ? (lawsByCategory.get(law.category_slug) || []).filter((candidate) => candidate.id !== law.id).slice(0, 3)
         : [];
-      const lawPageHtml = generateLawPage(law, template, relatedLaws);
+      const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)));
       await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
     }
     console.log(`Generated ${laws.length} law detail pages.`);
@@ -1438,77 +1543,21 @@ ${articleArchive.featuredLaws}
 
   // 5. Generate Sitemap
   console.log('Generating sitemap.xml...');
-  const baseUrl = SITE_URL;
-  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/browse</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/categories</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-
-  // Add content pages
-  for (const page of CONTENT_PAGES) {
-    const lastmod = contentMetadata[page.slug]?.lastUpdated;
-    sitemap += `
-  <url>
-    <loc>${baseUrl}/${page.slug}</loc>
-    ${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>`;
-  }
-
-  // Add static app routes (calculators, submit, favorites)
-  for (const route of staticAppRoutes) {
-    const routePath = route.pathParts.join('/');
-    sitemap += `
-  <url>
-    <loc>${baseUrl}/${routePath}</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>`;
-  }
-
-  // Add category routes
-  for (const categoryPath of categorySitemapPaths(categories)) {
-    sitemap += `
-  <url>
-    <loc>${baseUrl}${categoryPath}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-  }
-
-  // Add law detail routes
-  for (const law of laws) {
-    const lastmod = law.updated_at || law.created_at;
-    sitemap += `
-  <url>
-    <loc>${baseUrl}/law/${law.id}</loc>
-    ${lastmod ? `<lastmod>${lastmod.split('T')[0]}</lastmod>` : ''}
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>`;
-  }
-
-  sitemap += '\n</urlset>';
+  const sitemap = buildSitemapXml({
+    baseUrl: SITE_URL,
+    laws,
+    categories,
+    contentPages: CONTENT_PAGES,
+    contentMetadata,
+    staticRoutePaths: staticAppRoutes.filter((route) => route.indexable !== false).map((route) => route.pathParts.join('/'))
+  });
 
   await fs.writeFile(path.join(DIST_DIR, 'sitemap.xml'), sitemap);
   console.log('Generated sitemap.xml');
 
   // 6. Generate Image Sitemap
   console.log('Generating image-sitemap.xml...');
+  const baseUrl = SITE_URL;
   
   let imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -1589,6 +1638,8 @@ export {
   buildStaticLawDetailContent,
   buildStaticArticleArchive,
   applyPageMetadata,
+  generateLawPage,
+  buildSitemapXml,
   validateGeneratedPage,
   fetchAllCategories,
   categorySitemapPaths

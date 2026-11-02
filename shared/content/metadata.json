@@ -39,6 +39,56 @@
     "lastUpdated": "2026-04-08",
     "description": "Developer documentation - REST API, MCP server, feeds, and machine-readable resources"
   },
+  "examples": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Real-life Murphy's Law examples organized by technology, work, travel, and everyday life"
+  },
+  "best-murphys-laws": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Curated starting point for the best Murphy's Laws"
+  },
+  "funniest-murphys-laws": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Funny Murphy's Laws that capture familiar failures"
+  },
+  "murphys-laws-about-work": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Murphy's Laws for work, offices, meetings, and projects"
+  },
+  "murphys-laws-about-technology": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Murphy's Laws about technology, software, and systems"
+  },
+  "murphys-law-vs-sods-law": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "The difference between Murphy's Law and Sod's Law"
+  },
+  "examples/work": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Workplace Murphy's Law examples with linked laws"
+  },
+  "examples/travel": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Travel Murphy's Law examples with linked laws"
+  },
+  "examples/tech": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Technology Murphy's Law examples with linked laws"
+  },
+  "examples/everyday-life": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-10-12",
+    "description": "Everyday life Murphy's Law examples with linked laws"
+  },
   "schema": {
     "version": "1.0.0",
     "description": "This metadata tracks versions and last-updated dates for all legal content files. Update the lastUpdated field whenever content changes to ensure consistency across all platforms."
