@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
+  Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
+  Sentry SDK calls when the page is hidden; it is not our code. Web bumped to `3.4.36`; root to `2.6.119`.
 - `BACKUP-RESTORE.md` now says the B2 bucket's 30-day Object Lock default is applied in compliance mode, which is
   what the console produced on the first backup, instead of recommending governance. It explains why compliance
   also covers a droplet key that holds `bypassGovernance` or `deleteFiles`, and tells the operator to confirm

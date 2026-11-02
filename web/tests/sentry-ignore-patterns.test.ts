@@ -56,6 +56,16 @@ describe('sentry-ignore-patterns', () => {
     });
   });
 
+  describe('headless crawler environment', () => {
+    it('drops the queueMicrotask ReferenceError thrown by the SDK in stripped-down crawlers', () => {
+      expect(isSentryErrorIgnored('queueMicrotask is not defined')).toBe(true);
+    });
+
+    it('keeps other undefined-identifier ReferenceErrors', () => {
+      expect(isSentryErrorIgnored('fetchLaw is not defined')).toBe(false);
+    });
+  });
+
   describe('browsing context teardown', () => {
     it('drops the iOS Safari AbortError raised while the page is going away', () => {
       expect(isSentryErrorIgnored('Promise was rejected because the browsing context is going away')).toBe(true);
@@ -109,7 +119,7 @@ describe('sentry-ignore-patterns', () => {
 
   describe('SENTRY_IGNORED_ERROR_PATTERNS', () => {
     it('has the expected number of patterns', () => {
-      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(15);
+      expect(SENTRY_IGNORED_ERROR_PATTERNS.length).toBe(16);
       expect(SENTRY_IGNORED_ERROR_PATTERNS.some((p) => p.test('chrome-extension://x'))).toBe(true);
     });
   });
