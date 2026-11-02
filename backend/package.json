@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-backend",
-  "version": "2.3.58",
+  "version": "2.3.59",
   "description": "Murphy's Laws API Server",
   "type": "module",
   "main": "src/server/api-server.ts",
@@ -16,6 +16,7 @@
     "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "build:db": "tsx scripts/build-sqlite.ts",
     "migrate": "tsx scripts/migrate.ts",
+    "email:daily": "tsx scripts/send-daily-law-email.ts",
     "cleanup-ports": "tsx scripts/cleanup-ports.ts",
     "validate:node": "tsx scripts/validate-node-version.ts",
     "validate:node-server": "tsx scripts/validate-node-version.ts --server",

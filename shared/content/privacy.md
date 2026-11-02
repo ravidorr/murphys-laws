@@ -12,6 +12,10 @@ When you submit a law, send feedback, or subscribe to updates, you may share you
 
 Our servers automatically receive technical basics like IP address, device and browser details, pages visited, and time on page. These signals help us keep the site reliable and understand what content resonates.
 
+### Daily Law Email
+
+If you subscribe to the daily Law of the Day email, we store your email address, the time you confirmed it, and the date of the last email we sent. We send nothing until you confirm from the first message, every email has an unsubscribe link, and unsubscribing stops the emails at once. We use the address only for this email and share it only with the email delivery provider that sends it.
+
 ## How We Use Data
 
 - **Operate the archive:** Render pages, route navigation, and surface the laws you love.
