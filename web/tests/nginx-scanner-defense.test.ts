@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -62,6 +62,13 @@ describe('nginx scanner defense', () => {
     '/latest/meta-data/iam/security-credentials',
     '/api/v1/%2eenv?v=MEnS9',
     '/storage/logs/laravel.log',
+    '/docker-compose.prod.yml',
+    '/docker-compose.yaml',
+    '/Dockerfile',
+    '/Dockerfile.prod',
+    '/.dockerignore',
+    '/readme.html',
+    '/license.txt',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -93,6 +100,10 @@ describe('nginx scanner defense', () => {
     '/assets/index-1a2b3c.js',
     '/.well-known/acme-challenge/abc123',
     '/.well-known/traffic-advice',
+    '/.well-known/tdmrep.json',
+    '/img/Murphys-law-book.gif',
+    '/browse?q=readme.html',
+    '/browse?q=docker-compose.yml',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -131,6 +142,14 @@ describe('nginx scanner defense', () => {
   });
 });
 
+describe('book cover image', () => {
+  it('is a real GIF, not another format renamed to .gif', () => {
+    const file = resolve(root, 'web', 'public', 'img', 'Murphys-law-book.gif');
+    expect(existsSync(file)).toBe(true);
+    expect(['GIF87a', 'GIF89a']).toContain(readFileSync(file).subarray(0, 6).toString('ascii'));
+  });
+});
+
 describe('nginx legacy URL redirects', () => {
   it.each([
     ['/murphy/murphy-true.html', '/examples'],
@@ -163,6 +182,14 @@ describe('nginx legacy URL redirects', () => {
     const block = conf.slice(start, conf.indexOf('\n    }', start));
     expect(block).toContain('default_type application/trafficadvice+json;');
     expect(block).toContain('return 200');
+  });
+
+  it('serves the TDM reservation file with AI crawling not reserved', () => {
+    const start = conf.indexOf('location = /.well-known/tdmrep.json {');
+    expect(start).toBeGreaterThan(-1);
+    const block = conf.slice(start, conf.indexOf('\n    }', start));
+    expect(block).toContain('default_type application/json;');
+    expect(block).toContain(`return 200 '[{"location":"/*","tdm-reservation":0}]';`);
   });
 });
 

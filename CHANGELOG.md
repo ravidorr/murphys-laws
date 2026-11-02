@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
+  requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
+  not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
+
 ### Fixed
 
 - Law pages no longer share generic titles. 2,112 of 2,465 law pages were titled "Murphy's Law" or "Corollary", so
@@ -57,7 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Laws published after the last static build are served by the backend fallback, which now uses the same title,
   description and headline logic as the static site. The logic lives in `shared/modules/law-seo.ts`, imported by the
   web build, the web client and the backend. The fallback's JSON-LD now escapes every `<` as `\u003c`. Backend
-  bumped to `2.3.56`; web to `3.4.40`; root to `2.6.123`.
+  bumped to `2.3.56`; web to `3.4.41`; root to `2.6.124`.
+- nginx now drops `docker-compose*.yml`, `Dockerfile*`, `readme.html` and `license.txt` probes with a
+  444 so fail2ban counts them, instead of logging them as 404s.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
   Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
   Sentry SDK calls when the page is hidden; it is not our code. Web bumped to `3.4.36`; root to `2.6.119`.
