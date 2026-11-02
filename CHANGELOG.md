@@ -54,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   calculator's actual inputs (Height of Fall, Gravity, Push Force, Butter Factor, Air Friction, Toast Density) and the
   funniest-laws page names the benign violation theory's authors. Web bumped to `3.4.39`; root to `2.6.122`; iOS to
   `1.2.8 (24)`; Android to `1.2.9 (16)`.
+- Laws published after the last static build are served by the backend fallback, which now uses the same title,
+  description and headline logic as the static site. The logic lives in `shared/modules/law-seo.ts`, imported by the
+  web build, the web client and the backend. The fallback's JSON-LD now escapes every `<` as `\u003c`. Backend
+  bumped to `2.3.56`; web to `3.4.40`; root to `2.6.123`.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
   Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
   Sentry SDK calls when the page is hidden; it is not our code. Web bumped to `3.4.36`; root to `2.6.119`.
