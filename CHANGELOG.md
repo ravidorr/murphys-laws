@@ -35,7 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/subscription/unsubscribe` pages (nginx and the service worker pass them through), and a
   `npm run email:daily` job for cron (see `shared/docs/DEPLOYMENT.md`). Confirmation emails are rate limited
   per client and per address, and the daily send is recorded per subscriber so a re-run never mails anyone
-  twice. The privacy policy describes the stored data. Web bumped to `3.4.46`; backend to `2.3.59`; root to
+  twice. Confirm and unsubscribe links only show a button; the POST does the change, so mail scanners cannot
+  opt anyone in or out, and an old confirmation email cannot undo an unsubscribe. `npm run deploy` now runs the
+  database migrations before restarting the API. The privacy policy describes the stored data. Web bumped to `3.4.46`; backend to `2.3.59`; root to
   `2.6.129`; iOS to `1.2.11 (27)`; Android to `1.2.12 (19)`.
 
 ### Changed

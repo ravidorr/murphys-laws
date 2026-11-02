@@ -75,6 +75,15 @@ describe('SubscriptionService', () => {
     expect(service.subscribe('ann@example.com', t0 + 5 * CONFIRMATION_COOLDOWN_MS)).toEqual({ status: 'already_confirmed' });
   });
 
+  it('does not let an old confirmation email undo an unsubscribe', () => {
+    const token = tokenOf(service.subscribe('ann@example.com', t0));
+    service.confirm(token);
+    service.unsubscribe(token);
+    expect(service.confirm(token)).toBe(false);
+    expect(db.prepare('SELECT status FROM email_subscriptions').get()).toEqual({ status: 'unsubscribed' });
+    expect(service.listDue('2026-11-02')).toEqual([]);
+  });
+
   it('unsubscribes by token, repeatably, and lets the address subscribe again', () => {
     const token = tokenOf(service.subscribe('ann@example.com', t0));
     service.confirm(token);

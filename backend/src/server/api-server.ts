@@ -149,7 +149,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.post(/^\/api\/v1\/subscriptions\/?$/, (req, res) => subscriptionController.subscribe(req, res));
   router.get(/^\/subscription\/confirm\/?$/, (req, res, parsed) => subscriptionController.confirmForm(req, res, parsed));
   router.post(/^\/subscription\/confirm\/?$/, (req, res, parsed) => subscriptionController.confirm(req, res, parsed));
-  router.get(/^\/subscription\/unsubscribe\/?$/, (req, res, parsed) => subscriptionController.unsubscribe(req, res, parsed));
+  router.get(/^\/subscription\/unsubscribe\/?$/, (req, res, parsed) => subscriptionController.unsubscribeForm(req, res, parsed));
   router.post(/^\/subscription\/unsubscribe\/?$/, (req, res, parsed) => subscriptionController.unsubscribe(req, res, parsed));
 
   router.registerPublicRoute('GET', '/api/health', '/api/health', (req, res) => healthController.check(req, res));
