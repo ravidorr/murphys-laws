@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Share popover caps its height (`min(30rem, 100vh - 2rem)`) and scrolls, and the flip-above check uses that height,
   so the longer menu cannot be cut off on a short screen or near the bottom of a page (Novus review). Web bumped to
   `3.4.44`; root to `2.6.127`.
+- oEmbed honors a `maxwidth` below 240 instead of returning a wider card, and Enter or Space on Save as image in a
+  Favorites card no longer opens the law instead of downloading (Codex review). Web bumped to `3.4.45`; backend to
+  `2.3.58`; root to `2.6.128`.
 - `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
   requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
   not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
