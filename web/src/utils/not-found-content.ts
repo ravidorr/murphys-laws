@@ -48,12 +48,18 @@ export function renderNotFoundContent(options: {
 } = {}): string {
   const { line = DEFAULT_NOT_FOUND_LINE, lawsHtml = '' } = options;
   return `
-      <p class="not-found-code" aria-hidden="true">404</p>
-      <h1 class="not-found-title"><span class="accent-text">Page</span> Not Found</h1>
-      <blockquote class="not-found-quote" data-not-found-line>${escapeHtml(line)}</blockquote>
-      <p class="not-found-description">The page you requested could not be found or may have moved. Try a search, or pick a way back into the archive.</p>
-      <section class="not-found-laws-section" aria-labelledby="not-found-laws-title"${lawsHtml ? '' : ' hidden'}>
-        <h2 id="not-found-laws-title" class="not-found-laws-title"><span class="accent-text">Try</span> one of these laws instead</h2>
-        <div class="not-found-laws" data-not-found-laws>${lawsHtml}</div>
-      </section>`;
+      <div class="card card--empty">
+        <header class="card-header">
+          <p class="not-found-code" aria-hidden="true">404</p>
+          <h1 class="card-title not-found-title"><span class="accent-text">Page</span> Not Found</h1>
+          <blockquote class="not-found-quote" data-not-found-line>${escapeHtml(line)}</blockquote>
+          <p class="not-found-description">The page you requested could not be found or may have moved. Try a search, or pick a way back into the archive.</p>
+        </header>
+        <div class="card-body">
+          <section class="not-found-laws-section" aria-labelledby="not-found-laws-title"${lawsHtml ? '' : ' hidden'}>
+            <h2 id="not-found-laws-title" class="not-found-laws-title"><span class="accent-text">Try</span> one of these laws instead</h2>
+            <div class="not-found-laws" data-not-found-laws>${lawsHtml}</div>
+          </section>
+        </div>
+      </div>`;
 }

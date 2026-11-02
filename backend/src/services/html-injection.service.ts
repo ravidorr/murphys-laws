@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { LawService } from './laws.service.ts';
 import type { CategoryService } from './categories.service.ts';
+import { buildLawSeo } from '../../../shared/modules/law-seo.ts';
 
 const SITE_URL = 'https://murphys-laws.com';
 
@@ -62,12 +63,20 @@ export class HtmlInjectionService {
 
     const template = await this.readTemplate();
     const title = (law.title ?? law.text ?? "Murphy's Law").toString();
-    const description = (law.text ?? '').toString().substring(0, 160);
+    // Same title, description and headline as the static site build, so a law published after the
+    // last build is not served with the generic "Murphy's Law" title
+    const seo = buildLawSeo({
+      id: law.id,
+      title: law.title,
+      text: law.text,
+      category_name: typeof law.category_name === 'string' ? law.category_name : null
+    });
+    const description = seo.description;
     const lawUrl = `${SITE_URL}/law/${law.id}/`;
     const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
 
     let html = template;
-    const pageTitle = `${escapeHtml(title)} - Murphy's Law Archive`;
+    const pageTitle = escapeHtml(seo.title);
     html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
     html = html.replace(
       /<meta name="description" content=".*?">/,
@@ -83,7 +92,7 @@ export class HtmlInjectionService {
     );
     html = html.replace(
       /<meta property="og:title" content=".*?">/,
-      `<meta property="og:title" content="${escapeHtml(title)} - Murphy's Laws">`
+      `<meta property="og:title" content="${pageTitle}">`
     );
     html = html.replace(
       /<meta property="og:description"[\s\S]*?content="[\s\S]*?">/,
@@ -99,7 +108,7 @@ export class HtmlInjectionService {
     );
     html = html.replace(
       /<meta property="twitter:title" content=".*?">/,
-      `<meta property="twitter:title" content="${escapeHtml(title)} - Murphy's Laws">`
+      `<meta property="twitter:title" content="${pageTitle}">`
     );
     html = html.replace(
       /<meta property="twitter:description"[\s\S]*?content="[\s\S]*?">/,
@@ -140,11 +149,11 @@ export class HtmlInjectionService {
       `<main id="main-content" class="flex-1 container page" aria-label="Main content">${staticContent}</main>`
     );
 
-    // Escape </ sequences so law text can never close the <script> tag early (stored XSS guard)
+    // Escape every < so law text can never close or open a tag inside the <script> block (stored XSS guard)
     const jsonLd = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': ['Article', 'Quotation'],
-      'headline': escapeHtml(title).substring(0, 120),
+      'headline': seo.headline,
       'text': law.text,
       'description': description,
       'url': lawUrl,
@@ -157,7 +166,7 @@ export class HtmlInjectionService {
         '@type': 'SpeakableSpecification',
         'cssSelector': ['.law-text', '.card-title', '.attribution'],
       },
-    }).replaceAll('</', '<\\/');
+    }).replaceAll('<', '\\u003c');
     html = html.replace('</head>', `<script type="application/ld+json">${jsonLd}</script>\n</head>`);
 
     return html;
