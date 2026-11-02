@@ -436,6 +436,11 @@ describe('SSG SEO output', () => {
     expect(html).toContain('"@type": "BreadcrumbList"');
   });
 
+  it('advertises the oEmbed endpoint on every law page', () => {
+    const html = generateLawPage({ id: 31, title: 'Hofstadter', text: 'It takes longer.' }, lawTemplate);
+    expect(html).toContain('<link rel="alternate" type="application/json+oembed" href="https://murphys-laws.com/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F31"');
+  });
+
   describe('buildSitemapXml', () => {
     const xml = buildSitemapXml({
       baseUrl: 'https://murphys-laws.com',

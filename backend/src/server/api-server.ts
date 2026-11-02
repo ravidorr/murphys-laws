@@ -27,6 +27,8 @@ import { HealthController } from '../controllers/health.controller.ts';
 import { FeedController } from '../controllers/feed.controller.ts';
 import { OgImageController } from '../controllers/og-image.controller.ts';
 import { SpaController } from '../controllers/spa.controller.ts';
+import { EmbedController } from '../controllers/embed.controller.ts';
+import { EmbedService } from '../services/embed.service.ts';
 
 import { Router } from '../routes/router.ts';
 import { OPENAPI_SPEC } from '../openapi.ts';
@@ -109,6 +111,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   const ogImageController = new OgImageController(ogImageService);
   const htmlInjection = new HtmlInjectionService({ lawService, categoryService });
   const spaController = new SpaController(htmlInjection);
+  const embedController = new EmbedController(new EmbedService(lawService));
 
   const adminState = getAdminApiState();
   if (adminState === 'enabled') {
@@ -132,6 +135,11 @@ export function createApiServer(options?: CreateApiServerOptions) {
 
   router.get(/^\/law\/(\d+)\/?$/, (req, res, lawId) => spaController.serveLaw(req, res, lawId));
   router.get(/^\/category\/([^/]+)\/?$/, (req, res, slug) => spaController.serveCategory(req, res, slug));
+  // Embeddable law cards and the oEmbed endpoint that points at them (regex routes, so they stay
+  // outside the documented /api/v1 contract; the developers page describes them)
+  router.get(/^\/embed\/law\/(\d+)\/?$/, (req, res, lawId) => embedController.serveLaw(req, res, lawId));
+  router.get(/^\/embed\/law-of-day\/?$/, (req, res) => embedController.serveLawOfDay(req, res));
+  router.get(/^\/api\/v1\/oembed\/?$/, (req, res, parsed) => embedController.oembed(req, res, parsed));
 
   router.registerPublicRoute('GET', '/api/health', '/api/health', (req, res) => healthController.check(req, res));
 
