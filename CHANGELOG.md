@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The 404 page is funny again and no longer looks like a modal. Unknown URLs now get a generated
   `404.html` inside the full site shell, with a large 404, a rotating Murphy-style line, and a few
-  suggested laws. The in-app 404 view uses the same markup and lines. Web bumped to `3.4.39`; root to `2.6.123`.
+  suggested laws. The in-app 404 view uses the same markup and lines. Web bumped to `3.4.40`; root to `2.6.124`.
 
 ### Added
 

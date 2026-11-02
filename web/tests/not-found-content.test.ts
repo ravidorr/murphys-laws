@@ -54,7 +54,7 @@ describe('renderNotFoundContent', () => {
   it('renders the default line and hides the laws section without laws', () => {
     const html = renderNotFoundContent();
     expect(html).toContain('Page</span> Not Found');
-    expect(html).toContain(DEFAULT_NOT_FOUND_LINE.replace("'", '&#39;'));
+    expect(html).toContain(DEFAULT_NOT_FOUND_LINE.replaceAll("'", '&#39;'));
     expect(html).toMatch(/not-found-laws-section"[^>]*hidden/);
   });
 
