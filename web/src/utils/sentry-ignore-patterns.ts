@@ -39,6 +39,10 @@ export const SENTRY_IGNORED_ERROR_PATTERNS: RegExp[] = [
   // down (navigating away after an ad tap, closing the tab). It has no stack frames and
   // nothing the app can catch.
   /^Promise was rejected because the browsing context is going away$/,
+  // Headless crawlers that spoof an iPhone user agent run with a stripped-down JS environment that
+  // lacks queueMicrotask, which the Sentry SDK calls when the page is hidden. Every real browser
+  // we support has it, and the error is thrown inside the SDK, not our code (JAVASCRIPT-1A).
+  /^queueMicrotask is not defined$/,
 ];
 
 /**
