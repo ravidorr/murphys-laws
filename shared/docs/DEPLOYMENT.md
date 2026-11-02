@@ -271,7 +271,7 @@ Subscribers who confirmed their address get the day's law by email. Run this aft
 
 ### Daily Law of the Day Browser Notification
 
-Browsers subscribed to the notification get the day's law as a push message. Generate the VAPID key pair once and put it in the backend `.env` (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, see `.env.example`):
+Browsers subscribed to the notification get the day's law as a push message. Generate the VAPID key pair once and add it as the GitHub Actions secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (a `mailto:` address). The deploy workflow writes them into `backend/.env` on every deploy, so a hand edit of that file would be overwritten. For a local run they go in `.env` (see `.env.example`):
 
 ```bash
 cd /root/murphys-laws/backend && npx web-push generate-vapid-keys
