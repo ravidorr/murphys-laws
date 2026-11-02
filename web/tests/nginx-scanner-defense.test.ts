@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -65,6 +65,8 @@ describe('nginx scanner defense', () => {
     '/docker-compose.prod.yml',
     '/docker-compose.yaml',
     '/Dockerfile',
+    '/Dockerfile.prod',
+    '/.dockerignore',
     '/readme.html',
     '/license.txt',
   ])('flags %s as a scanner path', (uri) => {
@@ -137,6 +139,14 @@ describe('nginx scanner defense', () => {
     const block = conf.slice(start, conf.indexOf('\n}', start));
     expect(block).toContain('default 1;');
     expect(block).toContain('"00" 0;');
+  });
+});
+
+describe('book cover image', () => {
+  it('is a real GIF, not another format renamed to .gif', () => {
+    const file = resolve(root, 'web', 'public', 'img', 'Murphys-law-book.gif');
+    expect(existsSync(file)).toBe(true);
+    expect(['GIF87a', 'GIF89a']).toContain(readFileSync(file).subarray(0, 6).toString('ascii'));
   });
 });
 

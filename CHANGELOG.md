@@ -31,11 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
   requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
-  not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.120`.
+  not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
 
 ### Fixed
 
-- nginx now drops `docker-compose*.yml`, `Dockerfile`, `.dockerignore`, `readme.html` and `license.txt` probes with a
+- nginx now drops `docker-compose*.yml`, `Dockerfile*`, `readme.html` and `license.txt` probes with a
   444 so fail2ban counts them, instead of logging them as 404s.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
   Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
