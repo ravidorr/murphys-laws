@@ -412,15 +412,15 @@ describe('SocialShare component', () => {
       // Mock getBoundingClientRect to simulate trigger near bottom of viewport
       const originalGetBoundingClientRect = trigger.getBoundingClientRect.bind(trigger);
       trigger.getBoundingClientRect = () =>
-        ({ top: 400, bottom: 420, left: 0, right: 100, width: 100, height: 20, x: 0, y: 400, toJSON: () => ({}) } as DOMRect);
+        ({ top: 600, bottom: 620, left: 0, right: 100, width: 100, height: 20, x: 0, y: 600, toJSON: () => ({}) } as DOMRect);
       
       // Mock window.innerHeight to be small
       const originalInnerHeight = window.innerHeight;
-      Object.defineProperty(window, 'innerHeight', { value: 450, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 650, writable: true });
       
       trigger.click();
       
-      // Should add popover-above class since space below (450-420=30) < 320
+      // Should add popover-above class since space below (650-620=30) < 480 and there is room above
       expect(popover.classList.contains('popover-above')).toBe(true);
       
       // Restore mocks
@@ -2158,5 +2158,17 @@ describe('share menu: system share, image and embed', () => {
     document.removeEventListener('click', reached);
     delete window.pendo;
     vi.useRealTimers();
+  });
+});
+
+describe('share popover height', () => {
+  it('caps the popover height and scrolls so the longer menu is never cut off', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const css = readFileSync(resolve(__dirname, '../styles/partials/components.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.share-popover {'), css.indexOf('}', css.indexOf('.share-popover {')));
+    expect(rule).toContain('max-height: min(30rem, calc(100vh - 2rem));');
+    // Horizontal hidden, vertical auto
+    expect(rule).toContain('overflow: hidden auto;');
   });
 });
