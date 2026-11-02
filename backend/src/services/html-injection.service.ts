@@ -3,18 +3,10 @@ import path from 'node:path';
 import type { LawService } from './laws.service.ts';
 import type { CategoryService } from './categories.service.ts';
 import { buildLawSeo } from '../../../shared/modules/law-seo.ts';
+import { oembedDiscoveryLink } from '../../../shared/modules/law-embed.ts';
+import { escapeHtml } from '../../../shared/modules/html-escape.ts';
 
 const SITE_URL = 'https://murphys-laws.com';
-
-function escapeHtml(text: string): string {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function getDistPath(): string {
   if (process.env.WEB_DIST_PATH) {
@@ -167,7 +159,7 @@ export class HtmlInjectionService {
         'cssSelector': ['.law-text', '.card-title', '.attribution'],
       },
     }).replaceAll('<', '\\u003c');
-    html = html.replace('</head>', `<script type="application/ld+json">${jsonLd}</script>\n</head>`);
+    html = html.replace('</head>', `<script type="application/ld+json">${jsonLd}</script>\n${oembedDiscoveryLink(law.id)}\n</head>`);
 
     return html;
   }

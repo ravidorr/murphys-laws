@@ -67,4 +67,26 @@ describe('Home view - Coverage', () => {
     // Should not call onNavigate
     expect(Home).toBeDefined(); // Just ensure it didn't throw
   });
+
+  it('navigates when a law host is clicked, but not when the click lands on a link inside it', () => {
+    const onNavigate = vi.fn();
+    const el = Home({ onNavigate });
+    container.appendChild(el);
+
+    const host = document.createElement('div');
+    host.setAttribute('data-law-id', '42');
+    const text = document.createElement('p');
+    const link = document.createElement('a');
+    link.href = '#';
+    link.addEventListener('click', (e) => e.preventDefault());
+    host.append(text, link);
+    el.appendChild(host);
+
+    text.click();
+    expect(onNavigate).toHaveBeenCalledWith('law', '42');
+
+    onNavigate.mockClear();
+    link.click();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
 });

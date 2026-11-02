@@ -18,6 +18,7 @@ import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { buildBreadcrumbList, buildCanonicalUrl, buildUniqueLawSeo, buildLawSeo, truncateTitle } from '../src/utils/seo.ts';
 import type { LawSeo } from '../src/utils/seo.ts';
+import { oembedDiscoveryLink } from '../../shared/modules/law-embed.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
 
 // External citations open in a new tab, matching the client renderer
@@ -714,6 +715,7 @@ function generateLawPage(law: Law, template: string, relatedLaws: Law[] = [], se
   });
 
   pageHtml = injectJsonLd(pageHtml, breadcrumbJsonLd);
+  pageHtml = pageHtml.replace('</head>', `${oembedDiscoveryLink(law.id)}\n</head>`);
   
   return pageHtml;
 }
