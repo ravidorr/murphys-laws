@@ -214,3 +214,13 @@ describe('fail2ban scanner filter', () => {
     expect(regex.test(`66.132.195.44 - - [] ${request} 4441 ${agent}`)).toBe(false);
   });
 });
+
+describe('embed routes', () => {
+  it('proxies embeddable law cards to the backend and never blocks framing', () => {
+    expect(conf).toContain('location ~ ^/embed/(law/\\d+|law-of-day)/?$ {');
+    const start = conf.indexOf('location ~ ^/embed/');
+    const block = conf.slice(start, conf.indexOf('\n    }', start));
+    expect(block).toContain('proxy_pass http://127.0.0.1:8787;');
+    expect(conf).not.toMatch(/add_header\s+(X-Frame-Options|Content-Security-Policy)/i);
+  });
+});

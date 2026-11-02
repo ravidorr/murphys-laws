@@ -10,6 +10,8 @@ import { copyToClipboard } from '../utils/clipboard.ts';
 import { recordQualifyingUserAction } from './install-prompt.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { trackPendoEvent, getPagePath, type PendoTrackProperties } from '@utils/pendo.ts';
+import { canNativeShare, buildEmbedSnippet } from '../utils/share-actions.ts';
+import { lawImagePath } from '@shared/modules/law-embed.ts';
 
 interface BuildShareUrlsOptions {
   url?: string;
@@ -72,6 +74,12 @@ export const SHARE_PLATFORMS = {
   ],
 };
 
+/** Tallest the popover gets in px: matches `max-height: 30rem` on .share-popover, past which it scrolls. */
+const POPOVER_MAX_HEIGHT = 480;
+
+/** Menu buttons whose clicks must reach the document-level and per-view handlers. */
+const BUBBLING_ACTIONS = '[data-action="copy-text"], [data-action="copy-link"], [data-action="copy-embed"], [data-action="native-share"]';
+
 /**
  * Normalize URL for sharing: trim, strip invisible chars, canonical form (no fragment).
  */
@@ -93,6 +101,7 @@ export function normalizeShareUrl(url: string): string {
  */
 function getSharePlatform(link: Element): string {
   const iconCircle = link.querySelector('.icon-circle');
+  if (iconCircle?.classList.contains('image')) return 'save_image';
   const platform = SHARE_PLATFORMS.social.find(({ id }) => iconCircle?.classList.contains(id));
   return platform ? platform.id : 'other';
 }
@@ -142,6 +151,31 @@ export function buildShareUrls({ url, title, description = '', lawText, emailSub
 }
 
 /**
+ * Build a popover menu entry: an icon circle plus a label, as a button or, with `href`, a link.
+ */
+function createMenuItem({ tag, iconClass, iconName, label, attributes }: {
+  tag: 'button' | 'a';
+  iconClass: string;
+  iconName: string;
+  label: string;
+  attributes: Record<string, string>;
+}): HTMLElement {
+  const item = document.createElement(tag);
+  item.className = 'share-popover-item';
+  item.setAttribute('role', 'menuitem');
+  if (tag === 'button') (item as HTMLButtonElement).type = 'button';
+  Object.entries(attributes).forEach(([name, value]) => item.setAttribute(name, value));
+
+  const iconCircle = document.createElement('span');
+  iconCircle.className = `icon-circle ${iconClass}`;
+  const icon = createIcon(iconName, { classNames: [] });
+  if (icon) iconCircle.appendChild(icon);
+  item.appendChild(iconCircle);
+  item.appendChild(document.createTextNode(label));
+  return item;
+}
+
+/**
  * Create social share popover component
  * @param {Object} options - Configuration options
  * @param {string} options.url - URL to share (defaults to current page URL)
@@ -186,6 +220,24 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
   const popover = document.createElement('div');
   popover.className = 'share-popover';
   popover.setAttribute('role', 'menu');
+
+  // System share sheet, only where the browser has one (mostly phones)
+  if (canNativeShare()) {
+    popover.appendChild(createMenuItem({
+      tag: 'button',
+      iconClass: 'native',
+      iconName: 'share',
+      label: 'Share with your device',
+      attributes: {
+        'data-action': 'native-share',
+        'data-share-url': shareUrl,
+        'data-share-title': shareTitle,
+        'data-share-text': textToCopy,
+        'data-surface': surface,
+        ...(lawId ? { 'data-law-id': lawId } : {}),
+      },
+    }));
+  }
 
   // Copy link (first item)
   const copyLinkBtn = document.createElement('button');
@@ -243,6 +295,29 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
   copyTextBtn.appendChild(document.createTextNode('Copy text'));
   popover.appendChild(copyTextBtn);
 
+  // Law image and embed code only make sense for a single law
+  if (lawId) {
+    popover.appendChild(createMenuItem({
+      tag: 'a',
+      iconClass: 'image',
+      iconName: 'download',
+      label: 'Save as image',
+      attributes: { href: lawImagePath(lawId), download: `murphys-law-${lawId}.png` },
+    }));
+    popover.appendChild(createMenuItem({
+      tag: 'button',
+      iconClass: 'embed',
+      iconName: 'copy',
+      label: 'Copy embed code',
+      attributes: {
+        'data-action': 'copy-embed',
+        'data-copy-value': buildEmbedSnippet(lawId, textToCopy),
+        'data-law-id': lawId,
+        'data-surface': surface,
+      },
+    }));
+  }
+
   // Add copy feedback element
   const feedback = document.createElement('div');
   feedback.className = 'share-copy-feedback';
@@ -277,7 +352,7 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
     } else {
       // Check if popover would overflow viewport bottom
       const triggerRect = trigger.getBoundingClientRect();
-      const popoverHeight = 320; // Approximate height of popover
+      const popoverHeight = POPOVER_MAX_HEIGHT;
       const spaceBelow = window.innerHeight - triggerRect.bottom;
       
       if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {
@@ -306,7 +381,7 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
       return;
     }
     // Don't stop propagation for copy buttons - let them bubble to parent handlers
-    if (target.closest('[data-action="copy-text"]') || target.closest('[data-action="copy-link"]')) {
+    if (target.closest(BUBBLING_ACTIONS)) {
       // Close popover after clicking a copy button
       setTimeout(() => {
         popover.classList.remove('open');
@@ -352,6 +427,23 @@ export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButto
           Copy text
         </button>`;
 
+  const escapeAttribute = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const nativeShareButton = canNativeShare()
+    ? `<button type="button" class="share-popover-item" role="menuitem" data-action="native-share" data-share-url="${escapeAttribute(shareUrl)}" data-share-text="${safeText}" data-law-id="${lawId}">
+          <span class="icon-circle native"><span class="icon" data-icon="share" aria-hidden="true"></span></span>
+          Share with your device
+        </button>`
+    : '';
+  // Law image and embed code only make sense for a single law
+  const saveImageLink = !lawId ? '' : `<a class="share-popover-item" role="menuitem" href="${lawImagePath(lawId)}" download="murphys-law-${lawId}.png">
+          <span class="icon-circle image"><span class="icon" data-icon="download" aria-hidden="true"></span></span>
+          Save as image
+        </a>`;
+  const copyEmbedButton = !lawId ? '' : `<button type="button" class="share-popover-item" role="menuitem" data-action="copy-embed" data-copy-value="${escapeAttribute(buildEmbedSnippet(lawId, lawText))}" data-law-id="${lawId}">
+          <span class="icon-circle embed"><span class="icon" data-icon="copy" aria-hidden="true"></span></span>
+          Copy embed code
+        </button>`;
+
   return `
     <div class="share-wrapper">
       <button type="button" class="share-trigger" aria-expanded="false" aria-haspopup="true" aria-label="Share options">
@@ -359,10 +451,13 @@ export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButto
         Share
       </button>
       <div class="share-popover" role="menu">
+        ${nativeShareButton}
         ${copyLinkButton}
         ${shareLinkItems}
         <div class="share-popover-divider"></div>
         ${copyTextButton}
+        ${saveImageLink}
+        ${copyEmbedButton}
         <div class="share-copy-feedback">
           <span class="icon" data-icon="checkCircle" aria-hidden="true"></span>
           Copied!
@@ -410,7 +505,7 @@ export function initSharePopovers(container: Document | HTMLElement = document) 
       } else {
         // Check if popover would overflow viewport bottom
         const triggerRect = trigger.getBoundingClientRect();
-        const popoverHeight = 320; // Approximate height of popover
+        const popoverHeight = POPOVER_MAX_HEIGHT;
         const spaceBelow = window.innerHeight - triggerRect.bottom;
 
         if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {
@@ -439,7 +534,7 @@ export function initSharePopovers(container: Document | HTMLElement = document) 
         return;
       }
       // Let copy buttons bubble to parent handlers, then close
-      if (target.closest('[data-action="copy-text"]') || target.closest('[data-action="copy-link"]')) {
+      if (target.closest(BUBBLING_ACTIONS)) {
         setTimeout(() => {
           popover.classList.remove('open');
           trigger.setAttribute('aria-expanded', 'false');

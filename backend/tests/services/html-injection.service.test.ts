@@ -145,6 +145,14 @@ describe('HtmlInjectionService', () => {
       expect(html).toContain("<title>Hofstadter&#39;s Law - Murphy&#39;s Law Archive</title>");
     });
 
+    it('advertises the oEmbed endpoint for the law', async () => {
+      mockLawService.getLaw.mockResolvedValue({ id: 11, title: 'Test Law', text: 'Test text.', attributions: [] });
+
+      const html = await service.getLawHtml('11');
+
+      expect(html).toContain('<link rel="alternate" type="application/json+oembed" href="https://murphys-laws.com/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F11"');
+    });
+
     it('includes attribution when present', async () => {
       mockLawService.getLaw.mockResolvedValue({
         id: 2,

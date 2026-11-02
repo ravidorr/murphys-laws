@@ -139,10 +139,10 @@ describe("service worker generation", () => {
       return responded;
     };
 
-    for (const path of ["/admin", "/admin/", "/admin?x=1"]) {
+    for (const path of ["/admin", "/admin/", "/admin?x=1", "/embed/law/12", "/embed/law-of-day", "/embed/law-of-day/"]) {
       expect(handled(path), path).toBe(false);
     }
-    for (const path of ["/", "/favorites", "/adminx", "/admin/other"]) {
+    for (const path of ["/", "/favorites", "/adminx", "/admin/other", "/embed/law/abc", "/embed"]) {
       expect(handled(path), path).toBe(true);
     }
   });

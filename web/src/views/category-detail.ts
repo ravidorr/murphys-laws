@@ -429,7 +429,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
-      if (t.closest('button')) return;
+      if (t.closest('button, a')) return;
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }

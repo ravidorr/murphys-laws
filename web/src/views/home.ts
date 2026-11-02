@@ -266,7 +266,7 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
     const lawHost = t.closest('[data-law-id]');
     if (lawHost) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
-      if (t.closest('button')) return;
+      if (t.closest('button, a')) return;
       const id = lawHost.getAttribute('data-law-id');
       if (id) onNavigate('law', id);
     }

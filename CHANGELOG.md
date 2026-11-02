@@ -36,6 +36,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Embeddable law cards. `/embed/law/:id` and `/embed/law-of-day` are standalone, noindexed pages meant for an
+  iframe, and every law page advertises an oEmbed endpoint, `GET /api/v1/oembed?url=<law URL>`, so WordPress,
+  Notion, Slack and similar sites can unfurl a law URL into the same card. The backend renders both (new
+  `EmbedService`, nginx route, service-worker bypass), keep rendered cards for five minutes, and size the oEmbed
+  and copied iframe height to the law text. The card styles live in `web/public/styles/embed.css` and use the
+  shared tokens. The developers page documents the snippet and the endpoint.
+- The Share menu on a law has "Copy embed code" and "Save as image" (the existing law image endpoint), plus "Share
+  with your device" where the browser has the system share sheet. Embed copies and system shares are reported as
+  `law_shared` with `share_method` `copy_embed` and `native_share`; image saves as `save_image`. If the system
+  share sheet fails to open, the link is copied instead. Clicking a link inside a law card no longer also opens
+  the law. The iframe
+  and law-image helpers live in `shared/modules/law-embed.ts`. Web bumped to `3.4.42`; backend to `2.3.57`; root
+  to `2.6.125`; iOS to `1.2.9 (25)`; Android to `1.2.10 (17)`.
+- The copied iframe no longer uses an inline `style` attribute, which `design:conformance` forbids; it uses
+  `frameborder="0"` and the card caps its own width. Web bumped to `3.4.43`; root to `2.6.126`; iOS to `1.2.10 (26)`;
+  Android to `1.2.11 (18)`.
+- The Share popover caps its height (`min(30rem, 100vh - 2rem)`) and scrolls, and the flip-above check uses that height,
+  so the longer menu cannot be cut off on a short screen or near the bottom of a page (Novus review). Web bumped to
+  `3.4.44`; root to `2.6.127`.
+- oEmbed honors a `maxwidth` below 240 instead of returning a wider card, and Enter or Space on Save as image in a
+  Favorites card no longer opens the law instead of downloading (Codex review). Web bumped to `3.4.45`; backend to
+  `2.3.58`; root to `2.6.128`.
 - `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
   requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
   not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
