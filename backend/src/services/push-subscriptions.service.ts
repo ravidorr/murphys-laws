@@ -1,3 +1,4 @@
+import { createECDH } from 'node:crypto';
 import type Database from 'better-sqlite3';
 
 type Db = InstanceType<typeof Database>;
@@ -51,12 +52,27 @@ export function isAllowedPushEndpoint(value: unknown): value is string {
   return PUSH_HOST_SUFFIXES.some((suffix) => url.hostname === suffix || url.hostname.endsWith(`.${suffix}`));
 }
 
+/** True when the bytes are an actual point on the P-256 curve (web-push throws on anything else). */
+function isP256Point(key: Buffer): boolean {
+  try {
+    const ecdh = createECDH('prime256v1');
+    ecdh.generateKeys();
+    ecdh.computeSecret(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function isKey(value: unknown, bytes: number): value is string {
   if (typeof value !== 'string' || !BASE64URL.test(value)) {
     return false;
   }
   const decoded = Buffer.from(value, 'base64url');
-  return decoded.length === bytes && (bytes !== P256DH_BYTES || decoded[0] === 0x04);
+  if (decoded.length !== bytes) {
+    return false;
+  }
+  return bytes !== P256DH_BYTES || (decoded[0] === 0x04 && isP256Point(decoded));
 }
 
 /** Validated subscription from a request body, or null when anything is missing or malformed. */

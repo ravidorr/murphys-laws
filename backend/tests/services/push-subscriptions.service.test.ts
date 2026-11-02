@@ -64,6 +64,7 @@ describe('parsePushSubscription', () => {
     { endpoint: FCM, keys: { p256dh: keys.p256dh, auth: 'not base64url!' } },
     { endpoint: FCM, keys: { p256dh: 'a'.repeat(300), auth: keys.auth } },
     { endpoint: FCM, keys: { p256dh: 'AQID', auth: keys.auth } },
+    { endpoint: FCM, keys: { p256dh: Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 1)]).toString('base64url'), auth: keys.auth } },
     { endpoint: FCM, keys: { p256dh: `A${keys.p256dh.slice(1)}`, auth: keys.auth } },
     { endpoint: FCM, keys: { p256dh: keys.p256dh, auth: 'AQID' } },
     { endpoint: 'https://evil.example.com/x', keys },
