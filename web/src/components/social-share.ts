@@ -74,6 +74,9 @@ export const SHARE_PLATFORMS = {
   ],
 };
 
+/** Tallest the popover gets in px: matches `max-height: 30rem` on .share-popover, past which it scrolls. */
+const POPOVER_MAX_HEIGHT = 480;
+
 /** Menu buttons whose clicks must reach the document-level and per-view handlers. */
 const BUBBLING_ACTIONS = '[data-action="copy-text"], [data-action="copy-link"], [data-action="copy-embed"], [data-action="native-share"]';
 
@@ -349,7 +352,7 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
     } else {
       // Check if popover would overflow viewport bottom
       const triggerRect = trigger.getBoundingClientRect();
-      const popoverHeight = 320; // Approximate height of popover
+      const popoverHeight = POPOVER_MAX_HEIGHT;
       const spaceBelow = window.innerHeight - triggerRect.bottom;
       
       if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {
@@ -502,7 +505,7 @@ export function initSharePopovers(container: Document | HTMLElement = document) 
       } else {
         // Check if popover would overflow viewport bottom
         const triggerRect = trigger.getBoundingClientRect();
-        const popoverHeight = 320; // Approximate height of popover
+        const popoverHeight = POPOVER_MAX_HEIGHT;
         const spaceBelow = window.innerHeight - triggerRect.bottom;
 
         if (spaceBelow < popoverHeight && triggerRect.top > popoverHeight) {

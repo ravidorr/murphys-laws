@@ -901,7 +901,10 @@ textarea.form-control,
   visibility: hidden;
   transform: translateY(-4px);
   transition: opacity 0.15s ease, visibility 0.15s ease, transform 0.15s ease;
-  overflow: hidden;
+
+  /* Up to 12 entries: cap the height and scroll so none can be cut off on a short screen */
+  max-height: min(30rem, calc(100vh - 2rem));
+  overflow: hidden auto;
 }
 
 .share-popover.open {
