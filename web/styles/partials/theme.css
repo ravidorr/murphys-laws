@@ -453,6 +453,10 @@
     color: var(--dark-link-hover);
   }
 
+  :root:not([data-theme="light"]) .not-found-code {
+    color: var(--dark-link);
+  }
+
   /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
   :root:not([data-theme="light"]) .calc-slider-value {
     color: var(--dark-accent);
@@ -486,6 +490,10 @@
 
 :root[data-theme="dark"] .sod-simple-value {
   color: var(--dark-link-hover);
+}
+
+:root[data-theme="dark"] .not-found-code {
+  color: var(--dark-link);
 }
 
 /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
