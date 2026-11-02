@@ -1,6 +1,7 @@
 // Simple History API router
 // Routes map path -> render function
 import * as Sentry from '@sentry/browser';
+import { setRobotsMeta } from './utils/dom.ts';
 import type { CleanableElement, RouteInfo, RouteRenderFn } from './types/app.d.ts';
 
 export const routes: Record<string, RouteRenderFn> = {};
@@ -137,6 +138,9 @@ export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn |
 
     const keepStaticShell = isInitialRender;
     isInitialRender = false;
+
+    // The prerendered head is authoritative on first load; later routes start from the default
+    if (!keepStaticShell) setRobotsMeta('index, follow');
 
     rootEl.innerHTML = '';
     let newContent: HTMLElement;

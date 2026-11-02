@@ -81,6 +81,13 @@ describe('Favorites View Component', () => {
       expect(document.title).toBe("Browse My Favorites Laws | Murphy's Law Archive");
     });
 
+    it('marks the page noindex because its content is per-user', () => {
+      document.head.innerHTML = '<meta name="robots" content="index, follow">';
+      Favorites({ onNavigate: localThis.mockNavigate });
+      expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, follow');
+      document.head.innerHTML = '';
+    });
+
     it('creates a container with correct classes', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       expect(el.className).toBe('container page');
