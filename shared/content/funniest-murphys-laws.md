@@ -23,7 +23,7 @@ Some of the funniest laws are about small, universal moments.
 
 ## Why we laugh at failure
 
-Humor researchers describe a mechanism called benign violation: something is wrong, but safe enough to laugh at. Murphy's Laws fit it well. The mishap is real and recognizable, but it is happening to someone else's toast, or to you in the past tense.
+The benign violation theory, proposed by researchers Peter McGraw and Caleb Warren, says we laugh when something is wrong but also safe. Murphy's Laws fit it well. The mishap is real and recognizable, but it is happening to someone else's toast, or to you in the past tense.
 
 There is also relief in the shared experience. Reading a law that describes your Monday exactly makes the failure feel ordinary rather than personal. The [psychology behind the feeling](/why-murphys-law-feels-true) covers why we notice these failures more than the times things go right.
 

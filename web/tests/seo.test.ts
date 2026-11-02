@@ -121,6 +121,10 @@ describe('law SEO helpers', () => {
       expect(result).toBe('The quick brown fox jumps...');
     });
 
+    it('can cut without an ellipsis', () => {
+      expect(cutAtWord('The quick brown fox jumps over the lazy dog', 20, false)).toBe('The quick brown fox');
+    });
+
     it('cuts mid-word when no usable space exists', () => {
       expect(cutAtWord('Supercalifragilisticexpialidocious', 12)).toBe('Supercali...');
     });
@@ -202,9 +206,12 @@ describe('law SEO helpers', () => {
         { id: 9, title: 'Corollary', text: 'Same text for two laws that is quite long enough to avoid any padding at all, honestly.' },
         { disambiguateTitle: true, disambiguateDescription: true }
       );
-      expect(seo.title).toBe("Same text for two laws that is... #9 - Murphy's Law Archive");
+      expect(seo.title).toBe("Same text for two laws that is #9 - Murphy's Law Archive");
+      expect(seo.title.length).toBeLessThanOrEqual(60);
+      expect(seo.title).not.toContain('...');
       expect(seo.description.endsWith('(Law #9)')).toBe(true);
       expect(seo.description.length).toBeLessThanOrEqual(160);
+      expect(seo.description).not.toContain('... (Law');
     });
   });
 

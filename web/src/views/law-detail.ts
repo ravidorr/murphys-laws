@@ -3,7 +3,7 @@ import { fetchLaw, fetchLaws, fetchRelatedLaws as fetchRelatedLawsAPI } from '..
 import { renderAttributionsList, submittedByLabel } from '../utils/attribution.ts';
 import { escapeHtml } from '../utils/sanitize.ts';
 import { toggleVote, getUserVote } from '../utils/voting.ts';
-import { getRandomLoadingMessage } from '../utils/constants.ts';
+import { getRandomLoadingMessage, SITE_URL } from '../utils/constants.ts';
 import { SocialShare, initSharePopovers } from '../components/social-share.ts';
 import { updatePageMetadata } from '../utils/dom.ts';
 import { buildLawSeo } from '../utils/seo.ts';
@@ -281,14 +281,20 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     const lawText = law.text || '';
     const ogImageUrl = `${window.location.origin}/api/v1/og/law/${law.id}.png`;
 
-    const lawSeo = buildLawSeo(law);
-    updatePageMetadata({
-      title: lawSeo.title,
-      description: lawSeo.description,
-      path: `/law/${law.id}`,
-      image: ogImageUrl,
-      type: 'article'
-    });
+    // A prerendered page already carries this law's head, including titles the static build made
+    // unique across laws with identical text. Rewriting it here would undo that, so only update the
+    // head when arriving through client-side navigation.
+    const prerenderedHead = document.querySelector('link[rel="canonical"]')?.getAttribute('href') === `${SITE_URL}/law/${law.id}`;
+    if (!prerenderedHead) {
+      const lawSeo = buildLawSeo(law);
+      updatePageMetadata({
+        title: lawSeo.title,
+        description: lawSeo.description,
+        path: `/law/${law.id}`,
+        image: ogImageUrl,
+        type: 'article'
+      });
+    }
 
     // Register export content for this law
     setExportContent({

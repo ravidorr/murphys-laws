@@ -188,6 +188,22 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
+  it('resets the robots meta on client navigation but keeps the prerendered value on first load', () => {
+    document.head.innerHTML = '<meta name="robots" content="noindex, follow">';
+    const rootEl = document.createElement('div');
+    document.body.appendChild(rootEl);
+    defineRoute('home', () => document.createElement('div'));
+
+    startRouter(rootEl);
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, follow');
+
+    forceRender();
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('index, follow');
+
+    document.body.removeChild(rootEl);
+    document.head.innerHTML = '';
+  });
+
   it('calls cleanup functions when navigating away', async () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);

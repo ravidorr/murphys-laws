@@ -737,13 +737,13 @@ function latestDate(dates: Array<string | undefined>): string | undefined {
 }
 
 /**
- * Build sitemap.xml. Every URL carries a lastmod derived from real content dates;
- * changefreq and priority are omitted because search engines ignore them.
+ * Build sitemap.xml. A URL carries a lastmod only when a real content date is known (the newest
+ * law for the home, browse, categories and category pages); changefreq and priority are omitted
+ * because search engines ignore them.
  */
 function buildSitemapXml({ baseUrl, laws, categories, contentPages, contentMetadata, staticRoutePaths }: SitemapInput): string {
   const lawDate = (law: Law) => toDateOnly(law.updated_at || law.created_at);
   const siteDate = latestDate(laws.map(lawDate));
-  const contentDate = latestDate(Object.values(contentMetadata).map((entry) => entry.lastUpdated));
 
   const lawDatesByCategory = new Map<string, string[]>();
   for (const law of laws) {
@@ -760,12 +760,12 @@ function buildSitemapXml({ baseUrl, laws, categories, contentPages, contentMetad
       loc: `${baseUrl}/${page.slug}`,
       lastmod: contentMetadata[page.slug]?.lastUpdated
     })),
-    ...staticRoutePaths.map((routePath) => ({ loc: `${baseUrl}/${routePath}`, lastmod: contentDate })),
+    ...staticRoutePaths.map((routePath) => ({ loc: `${baseUrl}/${routePath}`, lastmod: contentMetadata[routePath]?.lastUpdated })),
     ...categorySitemapPaths(categories).map((categoryPath) => ({
       loc: `${baseUrl}${categoryPath}`,
-      lastmod: latestDate(lawDatesByCategory.get(categoryPath.replace('/category/', '')) || []) || siteDate
+      lastmod: latestDate(lawDatesByCategory.get(categoryPath.replace('/category/', '')) || [])
     })),
-    ...laws.map((law) => ({ loc: `${baseUrl}/law/${law.id}`, lastmod: lawDate(law) || siteDate }))
+    ...laws.map((law) => ({ loc: `${baseUrl}/law/${law.id}`, lastmod: lawDate(law) }))
   ];
 
   const urls = entries
@@ -1045,14 +1045,16 @@ function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): stri
             <p>The simulator treats table height, rotation, butter coverage, and launch angle as playful inputs that influence the final landing side.</p>
             <p>Enable JavaScript for the live controls, or read the explanation here to understand the joke behind the physics.</p>
             <h3>The physics behind the joke</h3>
-            <p>Toast falls off a plate and starts to rotate as it slides over the edge. At a typical table height of about 75 centimeters it has time to turn roughly half a revolution before it hits the floor, so a slice that started butter-side up usually lands butter-side down.</p>
-            <p>Physicist Robert Matthews of Aston University worked through this in a 1995 paper and later won the 1996 Ig Nobel Prize in Physics for it. His result is a useful reminder: the toast is not out to get you, the geometry of a kitchen simply favors the bad outcome.</p>
+            <p>Toast that slides off a plate starts to rotate as it goes over the edge. In his analysis of a typical table height of about 75 centimeters, the toast has time to turn only about half a revolution before it hits the floor, so a slice that started butter-side up usually lands butter-side down.</p>
+            <p>Physicist Robert Matthews of Aston University worked through this in a 1995 paper and later won the 1996 Ig Nobel Prize in Physics for it. His point is a useful reminder: the toast is not out to get you, the geometry of a kitchen simply favors the bad outcome.</p>
             <h3>What each input changes</h3>
+            <p>The calculator turns six inputs into a rotation factor. Only the fractional part of that factor matters: a landing close to half a turn means butter-side down.</p>
             <ul>
-              <li><strong>Table height:</strong> a taller drop gives the toast time to finish a full turn and land butter-side up.</li>
-              <li><strong>Rotation:</strong> a faster spin changes how far it turns before landing.</li>
-              <li><strong>Launch angle:</strong> a harder push off the edge adds rotation.</li>
-              <li><strong>Butter coverage:</strong> in the real world butter barely changes the flight, but it decides how bad the landing looks.</li>
+              <li><strong>Height of Fall:</strong> a longer drop gives the toast more time to rotate.</li>
+              <li><strong>Gravity:</strong> stronger gravity shortens the fall, so there is less rotation.</li>
+              <li><strong>Push Force:</strong> how far the toast is pushed over the edge, which sets how much spin it gets.</li>
+              <li><strong>Butter Factor:</strong> in this model, more butter means more rotation.</li>
+              <li><strong>Air Friction and Toast Density:</strong> both resist rotation, so a higher value slows the spin.</li>
             </ul>
             <p class="small">This simplified model is for entertainment, not engineering, safety, or scientific prediction.</p>
             ${renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'))}

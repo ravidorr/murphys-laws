@@ -39,6 +39,7 @@ export function truncateTitle(title: string, suffix = " - Murphy's Law Archive")
 const SITE_TITLE_SUFFIX = " - Murphy's Law Archive";
 const MAX_DESCRIPTION_LENGTH = 155;
 const HARD_DESCRIPTION_LIMIT = 160;
+const MAX_TITLE_LENGTH = 60;
 const MIN_DESCRIPTION_LENGTH = 110;
 const MAX_HEADLINE_LENGTH = 110;
 const GENERIC_LAW_TITLES = new Set([
@@ -80,14 +81,14 @@ function collapseWhitespace(value: string): string {
 /**
  * Shorten text to at most `max` characters, cutting at a word boundary and appending an ellipsis.
  */
-export function cutAtWord(value: string, max: number): string {
+export function cutAtWord(value: string, max: number, ellipsis = true): string {
   const text = collapseWhitespace(value);
   if (text.length <= max) return text;
-  const room = max - 3;
+  const room = ellipsis ? max - 3 : max;
   let cut = text.substring(0, room);
   const lastSpace = cut.lastIndexOf(' ');
   if (lastSpace > room / 2) cut = cut.substring(0, lastSpace);
-  return `${cut.replace(/[\s.,;:!?-]+$/, '')}...`;
+  return `${cut.replace(/[\s.,;:!?-]+$/, '')}${ellipsis ? '...' : ''}`;
 }
 
 /**
@@ -124,7 +125,7 @@ function buildLawDescription(law: LawSeoInput, disambiguate: boolean): string {
 
   if (disambiguate) {
     const tag = ` (Law #${law.id})`;
-    description = `${cutAtWord(description, HARD_DESCRIPTION_LIMIT - tag.length)}${tag}`;
+    description = `${cutAtWord(description, HARD_DESCRIPTION_LIMIT - tag.length, false)}${tag}`;
   }
   return description;
 }
@@ -137,8 +138,10 @@ export function buildLawSeo(law: LawSeoInput, options: LawSeoOptions = {}): LawS
   const base = lawBaseName(law);
   const tag = options.disambiguateTitle ? ` #${law.id}` : '';
   const suffix = `${tag}${SITE_TITLE_SUFFIX}`;
+  // A disambiguated title ends in the id, so cut the text cleanly instead of adding an ellipsis before it
+  const shownBase = tag ? cutAtWord(base, MAX_TITLE_LENGTH - suffix.length, false) : truncateTitle(base, suffix);
   return {
-    title: `${truncateTitle(base, suffix)}${suffix}`,
+    title: `${shownBase}${suffix}`,
     description: buildLawDescription(law, Boolean(options.disambiguateDescription)),
     headline: cutAtWord(base, MAX_HEADLINE_LENGTH)
   };
