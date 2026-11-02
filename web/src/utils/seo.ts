@@ -21,8 +21,8 @@ export {
   cutAtWord,
   isGenericLawTitle,
   truncateTitle
-} from '../../../shared/modules/law-seo.ts';
-export type { LawSeo, LawSeoInput, LawSeoOptions } from '../../../shared/modules/law-seo.ts';
+} from '@shared/modules/law-seo.ts';
+export type { LawSeo, LawSeoInput, LawSeoOptions } from '@shared/modules/law-seo.ts';
 
 export interface BreadcrumbItem {
   name: string;

@@ -38,7 +38,7 @@ export function handleLawCardKeydown(e: KeyboardEvent, onNavigate: OnNavigate, o
   const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
   if (lawCard && lawCard.dataset.lawId) {
     // Don't navigate if focus is on a button inside the card
-    if (t.closest('button')) return false;
+    if (t.closest('button, a')) return false;
     e.preventDefault();
     onLawCardOpen?.(lawCard);
     onNavigate('law', lawCard.dataset.lawId);

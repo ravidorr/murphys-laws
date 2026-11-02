@@ -643,7 +643,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
-      if (t.closest('button')) return;
+      if (t.closest('button, a')) return;
       trackProductEvent('law.related_click', { surface: 'law_detail' });
       onNavigate('law', lawCard.dataset.lawId);
       return;

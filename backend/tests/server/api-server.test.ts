@@ -286,6 +286,9 @@ describe('api-server', () => {
       await emitRequest('DELETE', '/api/v1/laws/1/vote');
       await emitRequest('GET', '/law/1');
       await emitRequest('GET', '/category/c');
+      const embedResponse = await emitRequest('GET', '/embed/law/1');
+      const dayEmbedResponse = await emitRequest('GET', '/embed/law-of-day');
+      const oembedResponse = await emitRequest('GET', '/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F1');
       // Admin routes are disabled (404) when ADMIN_API_TOKEN is unset
       await emitRequest('GET', '/api/v1/admin/laws');
       await emitRequest('POST', '/api/v1/admin/laws/1', { status: 'published' });
@@ -293,6 +296,9 @@ describe('api-server', () => {
       await emitRequest('GET', '/api/v1/admin/ui');
       await emitRequest('GET', '/api/v1/admin/ui/admin.css');
 
+      expect(embedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
+      expect(dayEmbedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
+      expect(oembedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'application/json; charset=utf-8' }));
       expect(mockLawService.listLaws).toHaveBeenCalled();
       expect(mockLawService.getLaw).toHaveBeenCalled();
       expect(mockFeedService.generateRss).toHaveBeenCalled();

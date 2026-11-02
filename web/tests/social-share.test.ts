@@ -412,15 +412,15 @@ describe('SocialShare component', () => {
       // Mock getBoundingClientRect to simulate trigger near bottom of viewport
       const originalGetBoundingClientRect = trigger.getBoundingClientRect.bind(trigger);
       trigger.getBoundingClientRect = () =>
-        ({ top: 400, bottom: 420, left: 0, right: 100, width: 100, height: 20, x: 0, y: 400, toJSON: () => ({}) } as DOMRect);
+        ({ top: 600, bottom: 620, left: 0, right: 100, width: 100, height: 20, x: 0, y: 600, toJSON: () => ({}) } as DOMRect);
       
       // Mock window.innerHeight to be small
       const originalInnerHeight = window.innerHeight;
-      Object.defineProperty(window, 'innerHeight', { value: 450, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 650, writable: true });
       
       trigger.click();
       
-      // Should add popover-above class since space below (450-420=30) < 320
+      // Should add popover-above class since space below (650-620=30) < 480 and there is room above
       expect(popover.classList.contains('popover-above')).toBe(true);
       
       // Restore mocks
@@ -2035,5 +2035,140 @@ describe('Pendo tracking', () => {
       expect(track).toHaveBeenCalledWith('calculator_result_shared', { calculator: 'buttered-toast', share_method: 'twitter' });
       teardown();
     });
+  });
+});
+
+describe('share menu: system share, image and embed', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+    delete (navigator as { share?: unknown }).share;
+  });
+
+  it('SocialShare offers Save as image and Copy embed code for a law', () => {
+    const el = SocialShare({ url: 'https://test.com/law/5', lawText: 'Law', lawId: '5', surface: 'law_detail' });
+
+    const image = el.querySelector('a[download]') as HTMLAnchorElement;
+    // Relative, so the download attribute works (it is ignored for cross-origin links)
+    expect(image.getAttribute('href')).toBe('/api/v1/og/law/5.png');
+    expect(image.getAttribute('download')).toBe('murphys-law-5.png');
+    expect(image.textContent).toContain('Save as image');
+
+    const embed = el.querySelector('[data-action="copy-embed"]') as HTMLElement;
+    expect(embed.getAttribute('data-copy-value')).toContain('https://murphys-laws.com/embed/law/5');
+    expect(embed.getAttribute('data-copy-value')).toContain('height="220"');
+    expect(embed.getAttribute('data-law-id')).toBe('5');
+    expect(embed.getAttribute('data-surface')).toBe('law_detail');
+  });
+
+  it('sizes the embed code to the law text', () => {
+    const long = 'word '.repeat(40);
+    const el = SocialShare({ url: 'https://test.com/law/5', lawText: long, lawId: '5' });
+    expect(el.querySelector('[data-action="copy-embed"]')!.getAttribute('data-copy-value')).toContain('height="300"');
+    expect(renderShareButtonsHTML({ lawId: '5', lawText: 'x'.repeat(300) })).toContain('height=&quot;380&quot;');
+  });
+
+  it('SocialShare leaves out the image and embed items when there is no law', () => {
+    const el = SocialShare({ url: 'https://test.com/page' });
+    expect(el.querySelector('a[download]')).toBeNull();
+    expect(el.querySelector('[data-action="copy-embed"]')).toBeNull();
+  });
+
+  it('SocialShare shows the system share item only where the browser supports it', () => {
+    expect(SocialShare({ url: 'https://test.com/law/5', lawId: '5' }).querySelector('[data-action="native-share"]')).toBeNull();
+
+    Object.assign(navigator, { share: vi.fn() });
+    const el = SocialShare({ url: 'https://test.com/law/5', title: 'Title', lawText: 'Law text', lawId: '5', surface: 'law_detail' });
+    const native = el.querySelector('[data-action="native-share"]') as HTMLElement;
+    expect(native.getAttribute('data-share-url')).toBe('https://test.com/law/5');
+    expect(native.getAttribute('data-share-title')).toBe('Title');
+    expect(native.getAttribute('data-share-text')).toBe('Law text');
+    expect(native.getAttribute('data-law-id')).toBe('5');
+    expect(el.querySelector('.share-popover')!.firstElementChild).toBe(native);
+  });
+
+  it('SocialShare shows the system share item without a law id when supported', () => {
+    Object.assign(navigator, { share: vi.fn() });
+    const native = SocialShare({ url: 'https://test.com/page' }).querySelector('[data-action="native-share"]') as HTMLElement;
+    expect(native.hasAttribute('data-law-id')).toBe(false);
+  });
+
+  it('lets embed and system share clicks reach document-level handlers, then closes the popover', () => {
+    vi.useFakeTimers();
+    Object.assign(navigator, { share: vi.fn() });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    container.appendChild(SocialShare({ url: 'https://test.com/law/5', lawId: '5' }));
+    const popover = container.querySelector('.share-popover') as HTMLElement;
+    popover.classList.add('open');
+    const reached = vi.fn();
+    document.addEventListener('click', reached);
+
+    (container.querySelector('[data-action="copy-embed"]') as HTMLElement).click();
+    (container.querySelector('[data-action="native-share"]') as HTMLElement).click();
+    vi.advanceTimersByTime(150);
+
+    expect(reached).toHaveBeenCalledTimes(2);
+    expect(popover.classList.contains('open')).toBe(false);
+    document.removeEventListener('click', reached);
+    vi.useRealTimers();
+  });
+
+  it('renderShareButtonsHTML adds image and embed items for a law and escapes the snippet', () => {
+    const html = renderShareButtonsHTML({ lawId: '7', lawText: 'Test law' });
+    expect(html).toContain('download="murphys-law-7.png"');
+    expect(html).toContain('data-action="copy-embed"');
+    expect(html).toContain('title=&quot;Murphy\'s Law&quot;');
+    expect(html).not.toContain('data-copy-value="<iframe src="');
+    expect(html).not.toContain('native-share');
+  });
+
+  it('renderShareButtonsHTML leaves out law-only items without a law id and adds system share when supported', () => {
+    const none = renderShareButtonsHTML({ lawText: 'x', url: 'https://test.com/x' });
+    expect(none).not.toContain('copy-embed');
+    expect(none).not.toContain('download=');
+
+    Object.assign(navigator, { share: vi.fn() });
+    const html = renderShareButtonsHTML({ lawId: '7', lawText: 'Say "hi" & bye', url: 'https://test.com/law/7?a=1&b=2' });
+    expect(html).toContain('data-action="native-share"');
+    expect(html).toContain('data-share-url="https://test.com/law/7?a=1&amp;b=2"');
+  });
+
+  it('initSharePopovers lets the new actions bubble and reports Save as image', () => {
+    vi.useFakeTimers();
+    Object.assign(navigator, { share: vi.fn() });
+    const track = vi.fn();
+    window.pendo = { track };
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    container.addEventListener('click', (e) => e.preventDefault());
+    container.innerHTML = renderShareButtonsHTML({ lawId: '9', lawText: 'Law' });
+    initSharePopovers(container);
+    const popover = container.querySelector('.share-popover') as HTMLElement;
+    popover.classList.add('open');
+    const reached = vi.fn();
+    document.addEventListener('click', reached);
+
+    (container.querySelector('[data-action="copy-embed"]') as HTMLElement).click();
+    (container.querySelector('[data-action="native-share"]') as HTMLElement).click();
+    (container.querySelector('a[download] .icon-circle') as HTMLElement).click();
+    vi.advanceTimersByTime(150);
+
+    expect(reached).toHaveBeenCalledTimes(3);
+    expect(track).toHaveBeenCalledWith('law_shared', expect.objectContaining({ law_id: '9', share_method: 'save_image' }));
+    document.removeEventListener('click', reached);
+    delete window.pendo;
+    vi.useRealTimers();
+  });
+});
+
+describe('share popover height', () => {
+  it('caps the popover height and scrolls so the longer menu is never cut off', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const css = readFileSync(resolve(__dirname, '../styles/partials/components.css'), 'utf8');
+    const rule = css.slice(css.indexOf('.share-popover {'), css.indexOf('}', css.indexOf('.share-popover {')));
+    expect(rule).toContain('max-height: min(30rem, calc(100vh - 2rem));');
+    // Horizontal hidden, vertical auto
+    expect(rule).toContain('overflow: hidden auto;');
   });
 });

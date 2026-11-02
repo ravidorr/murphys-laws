@@ -378,6 +378,21 @@ describe('Favorites View Component', () => {
       expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
     });
 
+    it('keydown Enter on a link or button inside the card does not open the law', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const card = el.querySelector('.law-card-mini')!;
+      const link = document.createElement('a');
+      link.href = '#';
+      const button = document.createElement('button');
+      card.append(link, button);
+
+      link.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(localThis.mockNavigate).not.toHaveBeenCalled();
+    });
+
     it('L283 B1: keydown handler uses lawId when present', () => {
       vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
       const el = Favorites({ onNavigate: localThis.mockNavigate });
