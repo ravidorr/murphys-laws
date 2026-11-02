@@ -32,6 +32,7 @@ export type ProductEventName =
   | 'calculator.complete'
   | 'submit.start'
   | 'submit.complete'
+  | 'subscribe.email'
   | 'experiment.exposure'
   | 'experiment.conversion';
 
