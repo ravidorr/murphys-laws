@@ -112,7 +112,18 @@ export class SubscriptionController {
     this.sendPage(res, 404, messagePage('Link not recognized', 'This confirmation link is not valid. Subscribe again from the home page to get a new one.'));
   }
 
-  /** GET or POST /subscription/unsubscribe?token=... (POST is the one-click request mail clients send). */
+  /** GET /subscription/unsubscribe?token=... only shows a button; scanners and previews must not unsubscribe anyone. */
+  unsubscribeForm(_req: IncomingMessage, res: ServerResponse, parsed: ParsedQuery): void {
+    const token = readToken(parsed);
+    if (!token) {
+      this.sendPage(res, 404, messagePage('Link not recognized', 'This unsubscribe link is not valid.'));
+      return;
+    }
+    const form = `<form method="post" action="/subscription/unsubscribe?token=${token}"><button type="submit">Unsubscribe</button></form>\n`;
+    this.sendPage(res, 200, messagePage('Unsubscribe', 'Press the button to stop the daily Murphy\'s Law email.', form));
+  }
+
+  /** POST /subscription/unsubscribe?token=... (the button above, and the one-click request mail clients send). */
   unsubscribe(_req: IncomingMessage, res: ServerResponse, parsed: ParsedQuery): void {
     const token = readToken(parsed);
     if (token && this.subscriptions.unsubscribe(token)) {

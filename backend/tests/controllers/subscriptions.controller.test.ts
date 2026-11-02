@@ -142,6 +142,20 @@ describe('SubscriptionController', () => {
     });
   });
 
+  describe('unsubscribeForm', () => {
+    it('shows a POST button and does not unsubscribe', () => {
+      controller.unsubscribeForm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      expect(status()).toBe(200);
+      expect((res.end as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain(`<form method="post" action="/subscription/unsubscribe?token=${TOKEN}">`);
+      expect(subscriptions.unsubscribe).not.toHaveBeenCalled();
+    });
+
+    it('answers 404 for a missing or malformed token', () => {
+      controller.unsubscribeForm({} as IncomingMessage, res, {});
+      expect(status()).toBe(404);
+    });
+  });
+
   describe('unsubscribe', () => {
     it('unsubscribes a valid token', () => {
       subscriptions.unsubscribe.mockReturnValue(true);

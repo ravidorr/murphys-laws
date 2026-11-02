@@ -96,15 +96,19 @@ export class SubscriptionService {
     this.db.prepare('UPDATE email_subscriptions SET confirmation_sent_at = NULL WHERE token = ?').run(token);
   }
 
-  /** Confirms the address behind a token. False for an unknown token. Safe to repeat. */
+  /**
+   * Confirms a pending address by token. Repeating it on a confirmed address succeeds. False for an
+   * unknown token and for an unsubscribed address: an old confirmation email must not undo an unsubscribe,
+   * so that address has to subscribe again.
+   */
   confirm(token: string): boolean {
     const row = this.db.prepare('SELECT id, status FROM email_subscriptions WHERE token = ?').get(token) as Pick<SubscriptionRow, 'id' | 'status'> | undefined;
-    if (!row) {
+    if (!row || row.status === 'unsubscribed') {
       return false;
     }
-    if (row.status !== 'confirmed') {
+    if (row.status === 'pending') {
       this.db.prepare(
-        'UPDATE email_subscriptions SET status = \'confirmed\', confirmed_at = CURRENT_TIMESTAMP, unsubscribed_at = NULL WHERE id = ?'
+        'UPDATE email_subscriptions SET status = \'confirmed\', confirmed_at = CURRENT_TIMESTAMP WHERE id = ?'
       ).run(row.id);
     }
     return true;
