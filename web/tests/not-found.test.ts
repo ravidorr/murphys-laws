@@ -1,211 +1,68 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+
+const fetchTopVoted = vi.fn();
+vi.mock('../src/utils/api.ts', () => ({ fetchTopVoted: (n: number) => fetchTopVoted(n) }));
+
 import { NotFound } from '../src/views/not-found.js';
+import { NOT_FOUND_LINES } from '../src/utils/not-found-lines.ts';
+
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('NotFound view', () => {
-  let el: HTMLElement | null;
-
-  afterEach(() => {
-    if (el?.parentNode) {
-      el.parentNode.removeChild(el);
-    }
-    el = null;
-    sessionStorage.clear();
+  beforeEach(() => {
+    fetchTopVoted.mockReset();
   });
 
-  it('renders heading and message', () => {
-    el = NotFound({ onNavigate: () => {} });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-    expect(el.textContent).toMatch(/Page Not Found/i);
+  it('renders the code, heading, and description', () => {
+    fetchTopVoted.mockReturnValue(new Promise(() => undefined));
+    const el = NotFound();
+
+    expect(el.querySelector('.not-found-code')?.textContent).toBe('404');
+    expect(el.querySelector('h1')?.textContent).toMatch(/Page Not Found/);
     expect(el.textContent).toMatch(/could not be found/i);
   });
 
-  it('renders Murphy quote', () => {
-    el = NotFound({ onNavigate: () => {} });
+  it('shows one of the shared funny lines', () => {
+    fetchTopVoted.mockReturnValue(new Promise(() => undefined));
+    const el = NotFound();
 
-    expect(el.querySelector('.not-found-quote')).toBeTruthy();
-    expect(el.textContent).toMatch(/Murphy/i);
+    expect(NOT_FOUND_LINES).toContain(el.querySelector('.not-found-quote')!.textContent);
   });
 
-  it('ignores click when target is not HTMLElement', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
+  it('keeps the law section hidden until laws load', () => {
+    fetchTopVoted.mockReturnValue(new Promise(() => undefined));
+    const el = NotFound();
 
-    const event = new Event('click', { bubbles: true });
-    Object.defineProperty(event, 'target', { value: document.createTextNode('x'), writable: false });
-    el.dispatchEvent(event);
-
-    expect(onNavigate).not.toHaveBeenCalled();
+    expect(el.querySelector('.not-found-laws-section')!.hasAttribute('hidden')).toBe(true);
   });
 
-  it('navigates back home when button is clicked', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
+  it('shows suggested laws once loaded', async () => {
+    fetchTopVoted.mockResolvedValue({ data: [{ id: 3, text: 'Anything can fail.' }] });
+    const el = NotFound();
+    await flush();
 
-    const btn = el.querySelector('[data-nav="home"]');
-    btn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    expect(onNavigate).toHaveBeenCalledWith('home', undefined);
+    expect(fetchTopVoted).toHaveBeenCalledWith(3);
+    expect(el.querySelector('.not-found-laws-section')!.hasAttribute('hidden')).toBe(false);
+    expect(el.querySelector('.not-found-law a')!.getAttribute('href')).toBe('/law/3');
   });
 
-  it('navigates to browse when Browse All Laws button is clicked', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
+  it('keeps the section hidden when the API returns no laws', async () => {
+    fetchTopVoted.mockResolvedValue({ data: [] });
+    const el = NotFound();
+    await flush();
 
-    const btn = el.querySelector('[data-nav="browse"]');
-    btn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    expect(onNavigate).toHaveBeenCalledWith('browse', undefined);
+    expect(el.querySelector('.not-found-laws-section')!.hasAttribute('hidden')).toBe(true);
   });
 
-  it('navigates to category with param when category button is clicked', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
+  it('keeps the section hidden when the API fails', async () => {
+    fetchTopVoted.mockRejectedValue(new Error('down'));
+    const el = NotFound();
+    await flush();
 
-    const categoryBtn = el.querySelector('[data-nav="category"]');
-    categoryBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    expect(onNavigate).toHaveBeenCalledWith('category', expect.any(String));
-  });
-
-  it('L30 B1: navTarget truthy so onNavigate called with param', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-    const categoryBtn = el.querySelector('[data-nav="category"]') as HTMLElement;
-    expect(categoryBtn).toBeTruthy();
-    categoryBtn.click();
-    expect(onNavigate).toHaveBeenCalledWith('category', expect.any(String));
-  });
-
-  it('click on element with data-nav calls onNavigate with navTarget (L30)', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    const homeBtn = el.querySelector('[data-nav="home"]') as HTMLElement;
-    expect(homeBtn).toBeTruthy();
-    homeBtn.click();
-
-    expect(onNavigate).toHaveBeenCalledWith('home', undefined);
-  });
-
-  it('calls onNavigate with navTarget and navParam when nav has data-param (L30 L33)', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    const categoryBtn = el.querySelector('[data-nav="category"]') as HTMLElement;
-    expect(categoryBtn).toBeTruthy();
-    const param = categoryBtn.getAttribute('data-param');
-    categoryBtn.click();
-
-    expect(onNavigate).toHaveBeenCalledWith('category', param || undefined);
-  });
-
-  it('has search form', () => {
-    el = NotFound({ onNavigate: () => {} });
-
-    const searchForm = el.querySelector('#not-found-search-form');
-    const searchInput = el.querySelector('#not-found-search-input');
-
-    expect(searchForm).toBeTruthy();
-    expect(searchInput).toBeTruthy();
-  });
-
-  it('does not navigate for empty search query', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-    const searchForm = el.querySelector('#not-found-search-form');
-    const searchInput = el.querySelector('#not-found-search-input') as HTMLInputElement;
-    searchInput.value = '   ';
-
-    searchForm?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it('does not navigate when data-nav is empty', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-    const btn = document.createElement('button');
-    btn.setAttribute('data-nav', '');
-    el.appendChild(btn);
-
-    btn.click();
-
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it('ignores clicks on ordinary elements', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    el.querySelector('h1')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it('stores search query in sessionStorage and navigates to browse on search', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    expect(el).toBeTruthy();
-    const searchForm = el.querySelector('#not-found-search-form');
-    const searchInput = el.querySelector('#not-found-search-input');
-    expect(searchForm).toBeTruthy();
-    expect(searchInput).toBeTruthy();
-    (searchInput as HTMLInputElement).value = 'test query';
-    (searchForm as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true }));
-
-    expect(sessionStorage.getItem('searchQuery')).toBe('test query');
-    expect(onNavigate).toHaveBeenCalledWith('browse');
-  });
-
-  it('does not navigate on empty search query', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    expect(el).toBeTruthy();
-    const searchForm = el.querySelector('#not-found-search-form');
-    const searchInput = el.querySelector('#not-found-search-input');
-    expect(searchForm).toBeTruthy();
-    expect(searchInput).toBeTruthy();
-    (searchInput as HTMLInputElement).value = '   ';
-    (searchForm as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true }));
-
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it('does not trigger onNavigate when clicking non-HTMLElement target', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    // Create a mock event with a non-HTMLElement target
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
-    Object.defineProperty(event, 'target', {
-      value: { notAnHTMLElement: true },
-      writable: true
-    });
-
-    el.dispatchEvent(event);
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it('does not trigger onNavigate when navTarget is empty', () => {
-    const onNavigate = vi.fn();
-    el = NotFound({ onNavigate });
-
-    // Create a nav button with empty data-nav attribute
-    const navBtn = document.createElement('button');
-    navBtn.setAttribute('data-nav', '');
-    el.appendChild(navBtn);
-
-    navBtn.click();
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it('renders popular category links', () => {
-    el = NotFound({ onNavigate: () => {} });
-
-    const categoryLinks = el.querySelectorAll('.not-found-category-links button');
-    expect(categoryLinks.length).toBeGreaterThan(0);
-    expect(categoryLinks[0]?.getAttribute('data-param')).toBe('murphys-computer-laws');
+    expect(el.querySelector('.not-found-laws-section')!.hasAttribute('hidden')).toBe(true);
   });
 });
