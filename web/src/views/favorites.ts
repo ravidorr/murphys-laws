@@ -316,7 +316,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
         if (!(target instanceof HTMLElement)) return;
 
         const lawCard = target.closest('.law-card-mini');
-        if (lawCard && !target.closest('button')) {
+        if (lawCard && !target.closest('button, a')) {
           e.preventDefault();
           const lawId = lawCard.getAttribute('data-law-id');
           if (lawId) {

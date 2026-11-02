@@ -195,14 +195,14 @@ describe('EmbedService', () => {
       expect((await body('x'.repeat(300), { maxheight: '250' })).height).toBe(250);
     });
 
-    it('honors maxwidth and maxheight but never grows past the defaults or below the minimum', async () => {
+    it('honors maxwidth and maxheight and never grows past the defaults', async () => {
       lawService.getLaw.mockResolvedValue(law);
       const body = async (extra: object) =>
         ((await service.getOEmbed({ url: 'https://murphys-laws.com/law/5', ...extra })) as unknown as { body: { width: number; height: number } }).body;
 
       expect(await body({ maxwidth: '400', maxheight: '150' })).toMatchObject({ width: 400, height: 150 });
       expect(await body({ maxwidth: '9999', maxheight: '9999' })).toMatchObject({ width: 600, height: 220 });
-      expect(await body({ maxwidth: '100' })).toMatchObject({ width: 240 });
+      expect(await body({ maxwidth: '100' })).toMatchObject({ width: 100 });
       expect(await body({ maxwidth: 'abc', maxheight: '-5' })).toMatchObject({ width: 600, height: 220 });
       expect(await body({ maxwidth: ['450', '300'] })).toMatchObject({ width: 450 });
     });

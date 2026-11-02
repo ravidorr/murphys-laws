@@ -11,7 +11,6 @@ import { buildLawSeo, isGenericLawTitle } from '../../../shared/modules/law-seo.
 
 const OEMBED_HOSTS = new Set(['murphys-laws.com', 'www.murphys-laws.com']);
 const LAW_PATH = /^\/law\/(\d+)\/?$/;
-const MIN_EMBED_WIDTH = 240;
 const CARD_CACHE_TTL_MS = 5 * 60 * 1000;
 const CARD_CACHE_MAX_ENTRIES = 500;
 
@@ -121,7 +120,8 @@ export class EmbedService {
 
     const maxWidth = positiveInteger(request.maxwidth);
     const maxHeight = positiveInteger(request.maxheight);
-    const width = Math.max(MIN_EMBED_WIDTH, Math.min(EMBED_DEFAULT_WIDTH, maxWidth ?? EMBED_DEFAULT_WIDTH));
+    // maxwidth is a ceiling the consumer set for its layout, so it is honored even for very narrow slots
+    const width = Math.min(EMBED_DEFAULT_WIDTH, maxWidth ?? EMBED_DEFAULT_WIDTH);
     const fittingHeight = embedHeightForText(String(law.text ?? ''));
     const height = Math.min(fittingHeight, maxHeight ?? fittingHeight);
     const title = buildLawSeo({ id: law.id, title: law.title, text: law.text }).headline;
