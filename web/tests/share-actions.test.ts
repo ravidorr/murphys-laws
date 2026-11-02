@@ -36,7 +36,7 @@ describe('share actions', () => {
   it('builds a responsive iframe snippet for a law', () => {
     expect(buildEmbedSnippet(5, 'x'.repeat(200))).toContain('height="300"');
     expect(buildEmbedSnippet(5)).toBe(
-      `<iframe src="https://murphys-laws.com/embed/law/5" title="Murphy's Law" width="100%" height="220" style="border:0;width:100%;max-width:600px" loading="lazy"></iframe>`
+      `<iframe src="https://murphys-laws.com/embed/law/5" title="Murphy's Law" width="100%" height="220" frameborder="0" loading="lazy"></iframe>`
     );
   });
 

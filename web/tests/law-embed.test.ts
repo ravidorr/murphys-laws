@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   EMBED_DEFAULT_HEIGHT,
-  EMBED_DEFAULT_WIDTH,
   buildEmbedIframe,
   embedHeightForText,
   lawEmbedPath,
@@ -38,7 +37,6 @@ describe('law embed helpers', () => {
     expect(html).toContain('src="https://murphys-laws.com/embed/law/3"');
     expect(html).toContain('width="100%"');
     expect(html).toContain(`height="${EMBED_DEFAULT_HEIGHT}"`);
-    expect(html).toContain(`max-width:${EMBED_DEFAULT_WIDTH}px`);
     expect(html).toContain('loading="lazy"');
   });
 
@@ -46,7 +44,8 @@ describe('law embed helpers', () => {
     const html = buildEmbedIframe({ target: 'today', width: 480, height: 200, title: 'A "quoted" <law> & more' });
     expect(html).toContain('src="https://murphys-laws.com/embed/law-of-day"');
     expect(html).toContain('width="480"');
-    expect(html).toContain('style="border:0"');
+    expect(html).toContain('frameborder="0"');
+    expect(html).not.toContain('style=');
     expect(html).toContain('title="A &quot;quoted&quot; &lt;law&gt; &amp; more"');
   });
 

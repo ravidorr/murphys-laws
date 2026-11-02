@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the law. The iframe
   and law-image helpers live in `shared/modules/law-embed.ts`. Web bumped to `3.4.42`; backend to `2.3.57`; root
   to `2.6.125`; iOS to `1.2.9 (25)`; Android to `1.2.10 (17)`.
+- The copied iframe no longer uses an inline `style` attribute, which `design:conformance` forbids; it uses
+  `frameborder="0"` and the card caps its own width. Web bumped to `3.4.43`; root to `2.6.126`; iOS to `1.2.10 (26)`;
+  Android to `1.2.11 (18)`.
 - `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
   requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
   not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.

@@ -46,8 +46,8 @@ export interface EmbedIframeOptions {
 }
 
 /**
- * Build the iframe that shows a law card. A '100%' width is capped at the default width so the
- * card stays readable in wide columns.
+ * Build the iframe that shows a law card. The card caps its own width, so a '100%' iframe stays
+ * readable in wide columns.
  */
 export function buildEmbedIframe({
   target,
@@ -57,8 +57,8 @@ export function buildEmbedIframe({
   title = "Murphy's Law"
 }: EmbedIframeOptions): string {
   const src = `${EMBED_ORIGIN}${lawEmbedPath(target)}`;
-  const style = width === '100%' ? `border:0;width:100%;max-width:${EMBED_DEFAULT_WIDTH}px` : 'border:0';
-  return `<iframe src="${src}" title="${escapeAttribute(title)}" width="${width}" height="${height}" style="${style}" loading="lazy"></iframe>`;
+  // frameborder keeps the snippet free of inline styles; the card caps its own width in embed.css
+  return `<iframe src="${src}" title="${escapeAttribute(title)}" width="${width}" height="${height}" frameborder="0" loading="lazy"></iframe>`;
 }
 
 /**
