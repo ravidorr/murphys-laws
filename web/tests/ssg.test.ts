@@ -12,6 +12,8 @@ import {
   buildStaticArticleArchive,
   buildStaticHomeContent,
   applyPageMetadata,
+  generateLawPage,
+  buildSitemapXml,
   validateGeneratedPage,
   fetchAllCategories,
   categorySitemapPaths
@@ -409,5 +411,78 @@ describe('SSG Static Route Content', () => {
 
     expect(html).toContain('<a href="https://en.wikipedia.org/wiki/Murphy%27s_law" target="_blank" rel="noopener noreferrer">Wikipedia<span class="visually-hidden"> (opens in a new tab)</span></a>');
     expect(html).toContain('<a href="/browse">the archive</a>');
+  });
+});
+
+describe('SSG SEO output', () => {
+  const lawTemplate = metadataTemplate
+    .replace('<head>', '<head><meta name="robots" content="index, follow">')
+    .replace('<body>', '<body><main class="flex-1 container page"><p>Loading</p></main>');
+
+  it('applies a robots override only when requested', () => {
+    const indexable = applyPageMetadata(lawTemplate, { title: 'A', description: 'B', canonicalPath: '/a' });
+    expect(indexable).toContain('<meta name="robots" content="index, follow">');
+    const hidden = applyPageMetadata(lawTemplate, { title: 'A', description: 'B', canonicalPath: '/a', robots: 'noindex, follow' });
+    expect(hidden).toContain('<meta name="robots" content="noindex, follow">');
+    expect(hidden).not.toContain('<meta name="robots" content="index, follow">');
+  });
+
+  it('gives generic-title laws a unique title and description from their text', () => {
+    const law = { id: 2464, title: "Murphy's Law", text: "Night vision - isn't.", category_name: 'Military', category_slug: 'military' };
+    const html = generateLawPage(law, lawTemplate);
+    expect(html).toContain("<title>Night vision - isn&#039;t - Murphy&#039;s Law Archive</title>");
+    expect(html).toContain('A Murphy&#039;s Law from the Military category.');
+    expect(html).toContain('"headline": "Night vision - isn\'t"');
+    expect(html).toContain('"@type": "BreadcrumbList"');
+  });
+
+  describe('buildSitemapXml', () => {
+    const xml = buildSitemapXml({
+      baseUrl: 'https://murphys-laws.com',
+      laws: [
+        { id: 1, category_slug: 'tech', updated_at: '2026-05-01T10:00:00Z', created_at: '2026-01-01T00:00:00Z' },
+        { id: 2, category_slug: 'tech', created_at: '2026-03-01T00:00:00Z' },
+        { id: 3 }
+      ],
+      categories: [{ slug: 'tech', title: 'Technology', law_count: 2 }, { slug: 'empty', title: 'Empty', law_count: 0 }],
+      contentPages: [
+        { slug: 'about', file: 'about.md', title: 'About', description: 'About' },
+        { slug: 'examples', file: 'examples.md', title: 'Examples', description: 'Examples' }
+      ],
+      contentMetadata: { about: { lastUpdated: '2025-03-09' }, examples: {} },
+      staticRoutePaths: ['calculator/sods-law']
+    });
+
+    it('omits changefreq and priority', () => {
+      expect(xml).not.toContain('changefreq');
+      expect(xml).not.toContain('priority');
+    });
+
+    it('does not list non-indexable routes', () => {
+      expect(xml).not.toContain('/favorites');
+      expect(xml).toContain('https://murphys-laws.com/calculator/sods-law');
+    });
+
+    it('derives lastmod from real dates', () => {
+      expect(xml).toContain('<loc>https://murphys-laws.com/about</loc>\n    <lastmod>2025-03-09</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/1</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/tech</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/empty</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/3</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/calculator/sods-law</loc>\n    <lastmod>2025-03-09</lastmod>');
+    });
+
+    it('leaves lastmod out of an entry only when no date is known', () => {
+      const bare = buildSitemapXml({
+        baseUrl: 'https://murphys-laws.com',
+        laws: [],
+        categories: [],
+        contentPages: [{ slug: 'about', file: 'about.md', title: 'About', description: 'About' }],
+        contentMetadata: {},
+        staticRoutePaths: []
+      });
+      expect(bare).not.toContain('lastmod');
+      expect(bare).toContain('<loc>https://murphys-laws.com/about</loc>');
+    });
   });
 });

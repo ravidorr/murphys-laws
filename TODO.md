@@ -55,7 +55,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 ## SEO Recommendations (Content & Technical)
 - [x] **"Murphy's Law vs Sod's Law" Comparison Page:** ~~Create a dedicated page explaining the differences between Murphy's Law and Sod's Law. This is a high-volume search query with no dedicated content currently.~~ Done - dedicated `/murphys-law-vs-sods-law` content page compares the two maxims and links to related content.
 - [x] **"Murphy's Law Examples" Page:** ~~Create a curated page targeting "Murphy's Law examples" keyword cluster with real-world scenarios organized by category.~~ Done - `/examples` organizes real-world scenarios by technology, work, everyday life, and travel, with dedicated subpages for each.
-- [ ] **Breadcrumb Schema on All Pages:** Add BreadcrumbList structured data to law detail pages, calculator pages, and content pages (currently only on browse and category pages).
+- [x] **Breadcrumb Schema on All Pages:** Add BreadcrumbList structured data to law detail pages, calculator pages, and content pages (currently only on browse and category pages).
 - [ ] **Internal Linking Improvements:** Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.
 - [ ] **Visual Content:** Add historical photos (Edward Murphy, Dr. John Stapp, rocket sled experiments), infographics showing Murphy's Law variations, and embedded video explaining the origin story.
 - [ ] **Glossary/Index Page:** Create a page listing all law authors/attributions with links, targeting long-tail "who said [law name]" queries.

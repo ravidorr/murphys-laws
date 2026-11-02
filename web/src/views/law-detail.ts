@@ -6,6 +6,7 @@ import { toggleVote, getUserVote } from '../utils/voting.ts';
 import { getRandomLoadingMessage } from '../utils/constants.ts';
 import { SocialShare, initSharePopovers } from '../components/social-share.ts';
 import { updatePageMetadata } from '../utils/dom.ts';
+import { buildLawSeo } from '../utils/seo.ts';
 // Note: law-detail uses template-based loading with getRandomLoadingMessage()
 // for text replacement, which is compatible with the unified loading approach
 import { hydrateIcons, createIcon } from '@utils/icons.ts';
@@ -280,9 +281,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     const lawText = law.text || '';
     const ogImageUrl = `${window.location.origin}/api/v1/og/law/${law.id}.png`;
 
+    const lawSeo = buildLawSeo(law);
     updatePageMetadata({
-      title: `${lawTitle} - Murphy's Laws`,
-      description: lawText,
+      title: lawSeo.title,
+      description: lawSeo.description,
       path: `/law/${law.id}`,
       image: ogImageUrl,
       type: 'article'

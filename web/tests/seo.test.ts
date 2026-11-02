@@ -1,4 +1,12 @@
-import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
+import {
+  buildBreadcrumbList,
+  buildCanonicalUrl,
+  buildLawSeo,
+  buildUniqueLawSeo,
+  cutAtWord,
+  isGenericLawTitle,
+  truncateTitle
+} from '../src/utils/seo.ts';
 
 describe('SEO utilities', () => {
   describe('truncateTitle', () => {
@@ -97,5 +105,134 @@ describe('SEO utilities', () => {
     it('keeps root canonical URL slash', () => {
       expect(buildCanonicalUrl('/')).toBe('https://murphys-laws.com/');
     });
+  });
+});
+
+describe('law SEO helpers', () => {
+  describe('cutAtWord', () => {
+    it('returns short text with collapsed whitespace', () => {
+      expect(cutAtWord('  a   b  ', 20)).toBe('a b');
+    });
+
+    it('cuts at a word boundary and adds an ellipsis', () => {
+      const result = cutAtWord('The quick brown fox jumps over the lazy dog again', 30);
+      expect(result.length).toBeLessThanOrEqual(30);
+      expect(result.endsWith('...')).toBe(true);
+      expect(result).toBe('The quick brown fox jumps...');
+    });
+
+    it('cuts mid-word when no usable space exists', () => {
+      expect(cutAtWord('Supercalifragilisticexpialidocious', 12)).toBe('Supercali...');
+    });
+  });
+
+  describe('isGenericLawTitle', () => {
+    it.each([undefined, null, '', '  ', "Murphy's Law", 'corollary', 'LAW'])('treats %j as generic', (title) => {
+      expect(isGenericLawTitle(title as string | null | undefined)).toBe(true);
+    });
+
+    it('keeps meaningful titles', () => {
+      expect(isGenericLawTitle("Hofstadter's Law")).toBe(false);
+    });
+  });
+
+  describe('buildLawSeo', () => {
+    it('keeps a meaningful law title', () => {
+      const seo = buildLawSeo({ id: 1, title: "Hofstadter's Law", text: 'It always takes longer than you expect, even when you take into account Hofstadter\'s Law.' });
+      expect(seo.title).toBe("Hofstadter's Law - Murphy's Law Archive");
+      expect(seo.headline).toBe("Hofstadter's Law");
+    });
+
+    it('derives the title from the text for generic titles', () => {
+      const seo = buildLawSeo({ id: 2, title: "Murphy's Law", text: "Night vision - isn't." });
+      expect(seo.title).toBe("Night vision - isn't - Murphy's Law Archive");
+      expect(seo.headline).toBe("Night vision - isn't");
+    });
+
+    it('keeps derived titles within 60 characters', () => {
+      const seo = buildLawSeo({ id: 3, title: 'Corollary', text: 'Every instructor assumes that you have nothing else to do except study for that course.' });
+      expect(seo.title.length).toBeLessThanOrEqual(60);
+      expect(seo.title.endsWith("... - Murphy's Law Archive")).toBe(true);
+    });
+
+    it('falls back to the id when title and text are both empty', () => {
+      const seo = buildLawSeo({ id: 4, title: '', text: '' });
+      expect(seo.title).toBe("Murphy's Law #4 - Murphy's Law Archive");
+      expect(seo.description).toBe("A Murphy's Law from the Murphy's Law Archive.");
+    });
+
+    it('pads short descriptions with the category', () => {
+      const seo = buildLawSeo({ id: 5, text: 'Anything that can go wrong will', category_name: 'General' });
+      expect(seo.description).toBe("Anything that can go wrong will. A Murphy's Law from the General category.");
+    });
+
+    it('drops a trailing colon from derived titles and padded descriptions', () => {
+      const seo = buildLawSeo({ id: 10, title: 'Law', text: "Lackland's Laws:", category_name: 'War' });
+      expect(seo.title).toBe("Lackland's Laws - Murphy's Law Archive");
+      expect(seo.description).toBe("Lackland's Laws. A Murphy's Law from the War category.");
+    });
+
+    it('does not double a final period when padding', () => {
+      const seo = buildLawSeo({ id: 5, text: 'Anything that can go wrong will go wrong.' });
+      expect(seo.description).toBe("Anything that can go wrong will go wrong. From the Murphy's Law Archive.");
+    });
+
+    it('uses the generic context when the category makes the description too long', () => {
+      const category = 'An Extremely Long Category Name '.repeat(3).trim();
+      const text = 'Short law text that is long enough to be near the minimum but below it for sure here';
+      const seo = buildLawSeo({ id: 6, text, category_name: category });
+      expect(seo.description.length).toBeLessThanOrEqual(160);
+      expect(seo.description.endsWith("From the Murphy's Law Archive.")).toBe(true);
+    });
+
+    it('leaves mid-length descriptions untouched', () => {
+      const text = 'A'.repeat(120);
+      expect(buildLawSeo({ id: 7, text }).description).toBe(text);
+    });
+
+    it('truncates long descriptions at a word boundary', () => {
+      const text = 'word '.repeat(60);
+      const { description } = buildLawSeo({ id: 8, text });
+      expect(description.length).toBeLessThanOrEqual(155);
+      expect(description.endsWith('...')).toBe(true);
+    });
+
+    it('can disambiguate title and description with the law id', () => {
+      const seo = buildLawSeo(
+        { id: 9, title: 'Corollary', text: 'Same text for two laws that is quite long enough to avoid any padding at all, honestly.' },
+        { disambiguateTitle: true, disambiguateDescription: true }
+      );
+      expect(seo.title).toBe("Same text for two laws that is... #9 - Murphy's Law Archive");
+      expect(seo.description.endsWith('(Law #9)')).toBe(true);
+      expect(seo.description.length).toBeLessThanOrEqual(160);
+    });
+  });
+
+  describe('buildUniqueLawSeo', () => {
+    it('keeps unique laws unchanged and disambiguates collisions', () => {
+      const laws = [
+        { id: 1, title: 'Law', text: 'Identical text that is long enough to need no padding whatsoever in this fixture, really yes.' },
+        { id: 2, title: 'Corollary', text: 'Identical text that is long enough to need no padding whatsoever in this fixture, really yes.' },
+        { id: 3, title: "Hofstadter's Law", text: 'It always takes longer than you expect, even when you take into account Hofstadter\'s Law.' }
+      ];
+      const result = buildUniqueLawSeo(laws);
+      expect(result.get('3')?.title).toBe("Hofstadter's Law - Murphy's Law Archive");
+      expect(result.get('1')?.title).not.toBe(result.get('2')?.title);
+      expect(result.get('1')?.description).not.toBe(result.get('2')?.description);
+      expect(new Set([...result.values()].map((seo) => seo.title)).size).toBe(3);
+    });
+  });
+});
+
+describe('buildBreadcrumbList', () => {
+  it('numbers items and resolves paths against the site url', () => {
+    const list = buildBreadcrumbList([
+      { name: 'Home', path: '/' },
+      { name: 'Categories', path: '/categories' }
+    ]) as { itemListElement: Array<{ position: number; item: string }> };
+    expect(list.itemListElement).toEqual([
+      expect.objectContaining({ position: 1, item: 'https://murphys-laws.com' }),
+      expect.objectContaining({ position: 2, item: 'https://murphys-laws.com/categories' })
+    ]);
   });
 });

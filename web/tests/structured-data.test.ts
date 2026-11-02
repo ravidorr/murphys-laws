@@ -338,7 +338,8 @@ describe('Structured Data module', () => {
 
       const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toEqual(['Article', 'Quotation']);
-      expect(data.headline).toBe('Murphy\'s Law');
+      // Generic titles are replaced by the law text so the headline is unique
+      expect(data.headline).toBe('Anything that can go wrong, will');
       expect(data.description).toBe('Anything that can go wrong, will.');
     });
 
@@ -369,7 +370,9 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-law-article');
       const data = JSON.parse(el!.textContent!);
 
-      expect(data.headline).toBe(law.text.slice(0, 120));
+      expect(data.headline.length).toBeLessThanOrEqual(110);
+      expect(data.headline.endsWith('...')).toBe(true);
+      expect(law.text.startsWith(data.headline.slice(0, -3))).toBe(true);
     });
 
     it('includes author if provided', () => {

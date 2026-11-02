@@ -29,6 +29,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Law pages no longer share generic titles. 2,112 of 2,465 law pages were titled "Murphy's Law" or "Corollary", so
+  search engines saw them as near-duplicates. Generic titles are now derived from the law text, descriptions are
+  padded to a useful length and cut at word boundaries, and any remaining collisions get the law id. The static
+  site and the client router build them with the same helper (`buildLawSeo`). The law schema `headline` and
+  breadcrumb name follow the same rule.
+- `/favorites` is `noindex, follow` and is no longer listed in `sitemap.xml`, since its content is per-user.
+- `sitemap.xml` has a real `lastmod` on every URL and no longer emits `changefreq` or `priority`, which search
+  engines ignore. Category dates come from their newest law. `shared/content/metadata.json` gained entries for the
+  content pages that lacked a date.
+- `/browse`, `/categories` and every category page now ship `BreadcrumbList` (and `CollectionPage` for the first
+  two) in the static HTML instead of only after client-side rendering.
+- Expanded the thin `/best-murphys-laws`, `/funniest-murphys-laws`, `/murphys-laws-about-technology` and
+  `/calculator/buttered-toast` pages with sourced explanations and internal links.
+
+- Added `npm run seo:audit` (`web/scripts/seo-audit.ts`) audits a built `dist/`: duplicate titles and descriptions,
+  canonical and noindex mismatches, length limits, missing JSON-LD and sitemap hygiene. It exits non-zero on
+  blocking problems. Web bumped to `3.4.37`; root to `2.6.120`; iOS to `1.2.7 (23)`; Android to `1.2.8 (15)`.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
   Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
   Sentry SDK calls when the page is hidden; it is not our code. Web bumped to `3.4.36`; root to `2.6.119`.
