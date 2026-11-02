@@ -60,6 +60,8 @@ declare module '@scripts/ssg' {
   export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
   export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string };
   export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
+  export function buildNotFoundPage(template: string, laws: StaticLaw[]): string;
+  export function validateNotFoundPage(html: string): string[];
   export function fetchAllCategories(fetchRequest?: (url: string) => Promise<{
     ok: boolean;
     status: number;

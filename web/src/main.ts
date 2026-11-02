@@ -420,7 +420,7 @@ Object.entries(routesMap).forEach(([name, render]) => {
 
 const notFoundRoute = () => {
   clearPageStructuredData();
-  return layout(NotFound({ onNavigate }), { hideAds: true });
+  return layout(NotFound(), { hideAds: true });
 };
 
 startRouter(app, notFoundRoute);

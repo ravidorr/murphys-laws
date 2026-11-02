@@ -11,6 +11,8 @@ import {
   buildStaticLawDetailContent,
   buildStaticArticleArchive,
   buildStaticHomeContent,
+  buildNotFoundPage,
+  validateNotFoundPage,
   applyPageMetadata,
   validateGeneratedPage,
   fetchAllCategories,
@@ -409,5 +411,60 @@ describe('SSG Static Route Content', () => {
 
     expect(html).toContain('<a href="https://en.wikipedia.org/wiki/Murphy%27s_law" target="_blank" rel="noopener noreferrer">Wikipedia<span class="visually-hidden"> (opens in a new tab)</span></a>');
     expect(html).toContain('<a href="/browse">the archive</a>');
+  });
+});
+
+describe('buildNotFoundPage', () => {
+  const shell = `<!doctype html><html><head>
+<title>Home</title>
+<meta name="description" content="Home description">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://murphys-laws.com/">
+<link rel="alternate" hreflang="en" href="https://murphys-laws.com/">
+<link rel="alternate" hreflang="x-default" href="https://murphys-laws.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://murphys-laws.com/">
+<meta property="og:title" content="Home">
+<meta property="og:description" content="Home description">
+<meta property="og:image" content="https://murphys-laws.com/social/home.png">
+<meta property="twitter:url" content="https://murphys-laws.com/">
+<meta property="twitter:title" content="Home">
+<meta property="twitter:description" content="Home description">
+<meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
+</head><body><header class="site-header">Header</header>
+<main id="main-content" class="flex-1 container page" aria-label="Main content"><p>Loading</p></main>
+</body></html>`;
+
+  it('keeps the site shell, is noindex, and has no canonical or hreflang links', () => {
+    const html = buildNotFoundPage(shell, []);
+    expect(html).toContain('<header class="site-header">Header</header>');
+    expect(html).toContain('<title>Page Not Found - Murphy&#039;s Laws</title>');
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).not.toContain('rel="canonical"');
+    expect(html).not.toContain('hreflang');
+    expect(html).not.toContain('Loading');
+  });
+
+  it('drops og:url and twitter:url so nothing points at /404', () => {
+    const html = buildNotFoundPage(shell, []);
+    expect(html).not.toContain('og:url');
+    expect(html).not.toContain('twitter:url');
+  });
+
+  it('passes validation for its own output and flags a bad page', () => {
+    expect(validateNotFoundPage(buildNotFoundPage(shell, []))).toEqual([]);
+    expect(validateNotFoundPage('<html><link rel="canonical" href="x"><h1>a</h1><h1>b</h1></html>')).toEqual([
+      'missing noindex',
+      'must not have a canonical link',
+      'missing 404 content',
+      'expected one h1',
+    ]);
+  });
+
+  it('renders the 404 content with suggested laws', () => {
+    const html = buildNotFoundPage(shell, [{ id: 5, text: 'Anything can fail.' } as never]);
+    expect(html).toContain('class="not-found-code"');
+    expect(html).toContain('href="/law/5"');
+    expect((html.match(/<h1\b/g) || []).length).toBe(1);
   });
 });
