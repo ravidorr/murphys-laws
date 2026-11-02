@@ -35,6 +35,7 @@ declare module '@scripts/ssg' {
     canonicalPath: string;
     type?: 'website' | 'article';
     image?: string;
+    robots?: string;
   }
 
   export interface StaticCategory {
@@ -51,6 +52,15 @@ declare module '@scripts/ssg' {
   export function buildStaticSubmitContent(): string;
   export function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): string;
   export function applyPageMetadata(html: string, metadata: PageMetadata): string;
+  export function generateLawPage(law: StaticLaw, template: string, relatedLaws?: StaticLaw[], seo?: { title: string; description: string; headline: string }): string;
+  export function buildSitemapXml(input: {
+    baseUrl: string;
+    laws: StaticLaw[];
+    categories: StaticCategory[];
+    contentPages: ContentPageMeta[];
+    contentMetadata: Record<string, { lastUpdated?: string }>;
+    staticRoutePaths: string[];
+  }): string;
   export function validateGeneratedPage(html: string, options: {
     canonicalPath: string;
     forbidMailto?: boolean;

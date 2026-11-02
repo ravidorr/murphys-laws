@@ -1149,7 +1149,8 @@
   line-height: 1;
 }
 
-.not-found-title {
+.card--empty .not-found-title {
+  justify-content: center;
   margin: 0 0 1rem;
   font-size: var(--text-4xl);
   font-weight: var(--font-bold);
@@ -1158,12 +1159,12 @@
 
 .not-found-title ~ .not-found-quote {
   max-width: 40rem;
-  margin: 0 0 1rem;
+  margin: 0 auto 1rem;
 }
 
 .not-found-description {
   max-width: 40rem;
-  margin: 0 0 3.5rem;
+  margin: 0 auto;
   color: var(--muted-fg);
 }
 
@@ -1185,6 +1186,7 @@
 
 .not-found-law {
   padding: 1.25rem;
+  text-align: left;
   border: 1px solid var(--border);
   border-radius: var(--rounded-xl);
   background: color-mix(in oklab, var(--bg) 96%, white 4%);
@@ -1217,7 +1219,7 @@
     font-size: calc(var(--text-5xl) * 1.5);
   }
 
-  .not-found-title {
+  .card--empty .not-found-title {
     font-size: var(--text-3xl);
   }
 }

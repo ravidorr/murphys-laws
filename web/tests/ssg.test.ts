@@ -14,6 +14,8 @@ import {
   buildNotFoundPage,
   validateNotFoundPage,
   applyPageMetadata,
+  generateLawPage,
+  buildSitemapXml,
   validateGeneratedPage,
   fetchAllCategories,
   categorySitemapPaths
@@ -435,27 +437,27 @@ describe('buildNotFoundPage', () => {
 <main id="main-content" class="flex-1 container page" aria-label="Main content"><p>Loading</p></main>
 </body></html>`;
 
-  it('keeps the site shell, is noindex, and has no canonical or hreflang links', () => {
+  it('keeps the site shell and is noindex', () => {
     const html = buildNotFoundPage(shell, []);
     expect(html).toContain('<header class="site-header">Header</header>');
     expect(html).toContain('<title>Page Not Found - Murphy&#039;s Laws</title>');
     expect(html).toContain('<meta name="robots" content="noindex">');
-    expect(html).not.toContain('rel="canonical"');
-    expect(html).not.toContain('hreflang');
     expect(html).not.toContain('Loading');
   });
 
-  it('drops og:url and twitter:url so nothing points at /404', () => {
+  it('keeps the canonical, hreflang, og:url and twitter:url tags so the app can update them', () => {
     const html = buildNotFoundPage(shell, []);
-    expect(html).not.toContain('og:url');
-    expect(html).not.toContain('twitter:url');
+    expect(html).toContain('rel="canonical"');
+    expect(html).toContain('hreflang="en"');
+    expect(html).toContain('hreflang="x-default"');
+    expect(html).toContain('property="og:url"');
+    expect(html).toContain('property="twitter:url"');
   });
 
   it('passes validation for its own output and flags a bad page', () => {
     expect(validateNotFoundPage(buildNotFoundPage(shell, []))).toEqual([]);
-    expect(validateNotFoundPage('<html><link rel="canonical" href="x"><h1>a</h1><h1>b</h1></html>')).toEqual([
+    expect(validateNotFoundPage('<html><h1>a</h1><h1>b</h1></html>')).toEqual([
       'missing noindex',
-      'must not have a canonical link',
       'missing 404 content',
       'expected one h1',
     ]);
@@ -466,5 +468,83 @@ describe('buildNotFoundPage', () => {
     expect(html).toContain('class="not-found-code"');
     expect(html).toContain('href="/law/5"');
     expect((html.match(/<h1\b/g) || []).length).toBe(1);
+  });
+});
+
+describe('SSG SEO output', () => {
+  const lawTemplate = metadataTemplate
+    .replace('<head>', '<head><meta name="robots" content="index, follow">')
+    .replace('<body>', '<body><main class="flex-1 container page"><p>Loading</p></main>');
+
+  it('applies a robots override only when requested', () => {
+    const indexable = applyPageMetadata(lawTemplate, { title: 'A', description: 'B', canonicalPath: '/a' });
+    expect(indexable).toContain('<meta name="robots" content="index, follow">');
+    const hidden = applyPageMetadata(lawTemplate, { title: 'A', description: 'B', canonicalPath: '/a', robots: 'noindex, follow' });
+    expect(hidden).toContain('<meta name="robots" content="noindex, follow">');
+    expect(hidden).not.toContain('<meta name="robots" content="index, follow">');
+  });
+
+  it('gives generic-title laws a unique title and description from their text', () => {
+    const law = { id: 2464, title: "Murphy's Law", text: "Night vision - isn't.", category_name: 'Military', category_slug: 'military' };
+    const html = generateLawPage(law, lawTemplate);
+    expect(html).toContain("<title>Night vision - isn&#039;t - Murphy&#039;s Law Archive</title>");
+    expect(html).toContain('A Murphy&#039;s Law from the Military category.');
+    expect(html).toContain('"headline": "Night vision - isn\'t"');
+    expect(html).toContain('"@type": "BreadcrumbList"');
+  });
+
+  describe('buildSitemapXml', () => {
+    const xml = buildSitemapXml({
+      baseUrl: 'https://murphys-laws.com',
+      laws: [
+        { id: 1, category_slug: 'tech', updated_at: '2026-05-01T10:00:00Z', created_at: '2026-01-01T00:00:00Z' },
+        { id: 2, category_slug: 'tech', created_at: '2026-03-01T00:00:00Z' },
+        { id: 3 }
+      ],
+      categories: [{ slug: 'tech', title: 'Technology', law_count: 2 }, { slug: 'empty', title: 'Empty', law_count: 0 }],
+      contentPages: [
+        { slug: 'about', file: 'about.md', title: 'About', description: 'About' },
+        { slug: 'examples', file: 'examples.md', title: 'Examples', description: 'Examples' }
+      ],
+      contentMetadata: { about: { lastUpdated: '2025-03-09' }, examples: {} },
+      staticRoutePaths: ['calculator/sods-law']
+    });
+
+    it('omits changefreq and priority', () => {
+      expect(xml).not.toContain('changefreq');
+      expect(xml).not.toContain('priority');
+    });
+
+    it('does not list non-indexable routes', () => {
+      expect(xml).not.toContain('/favorites');
+      expect(xml).toContain('https://murphys-laws.com/calculator/sods-law');
+    });
+
+    it('derives lastmod from real dates', () => {
+      expect(xml).toContain('<loc>https://murphys-laws.com/about</loc>\n    <lastmod>2025-03-09</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/1</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/tech</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/</loc>\n    <lastmod>2026-05-01</lastmod>');
+    });
+
+    it('does not invent dates for URLs with no known date', () => {
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/empty</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/3</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/calculator/sods-law</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/examples</loc>\n  </url>');
+    });
+
+    it('leaves lastmod out of an entry only when no date is known', () => {
+      const bare = buildSitemapXml({
+        baseUrl: 'https://murphys-laws.com',
+        laws: [],
+        categories: [],
+        contentPages: [{ slug: 'about', file: 'about.md', title: 'About', description: 'About' }],
+        contentMetadata: {},
+        staticRoutePaths: []
+      });
+      expect(bare).not.toContain('lastmod');
+      expect(bare).toContain('<loc>https://murphys-laws.com/about</loc>');
+    });
   });
 });

@@ -51,6 +51,14 @@ describe('renderNotFoundLaws', () => {
 });
 
 describe('renderNotFoundContent', () => {
+  it('uses the canonical empty-state card shell', () => {
+    const html = renderNotFoundContent();
+    expect(html).toContain('class="card card--empty"');
+    expect(html).toContain('<header class="card-header">');
+    expect(html).toContain('<div class="card-body">');
+    expect(html).toContain('class="card-title not-found-title"');
+  });
+
   it('renders the default line and hides the laws section without laws', () => {
     const html = renderNotFoundContent();
     expect(html).toContain('Page</span> Not Found');

@@ -338,7 +338,8 @@ describe('Structured Data module', () => {
 
       const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toEqual(['Article', 'Quotation']);
-      expect(data.headline).toBe('Murphy\'s Law');
+      // Generic titles are replaced by the law text so the headline is unique
+      expect(data.headline).toBe('Anything that can go wrong, will');
       expect(data.description).toBe('Anything that can go wrong, will.');
     });
 
@@ -369,7 +370,9 @@ describe('Structured Data module', () => {
       const el = document.head.querySelector('#jsonld-law-article');
       const data = JSON.parse(el!.textContent!);
 
-      expect(data.headline).toBe(law.text.slice(0, 120));
+      expect(data.headline.length).toBeLessThanOrEqual(110);
+      expect(data.headline.endsWith('...')).toBe(true);
+      expect(law.text.startsWith(data.headline.slice(0, -3))).toBe(true);
     });
 
     it('includes author if provided', () => {
@@ -499,6 +502,24 @@ describe('Structured Data module', () => {
     });
   });
 
+  describe('setCategoryItemListSchema item names', () => {
+    it('names generic-title laws after their text so list entries are distinguishable', () => {
+      setCategoryItemListSchema({
+        categoryTitle: 'Test',
+        categorySlug: 'test',
+        laws: [
+          { id: 1, title: "Murphy's Law", text: "Night vision - isn't." },
+          { id: 2, title: "Hofstadter's Law", text: 'It always takes longer than you expect.' }
+        ] as never
+      });
+      const data = JSON.parse(document.head.querySelector('#jsonld-category-detail-itemlist')!.textContent!);
+      expect(data.itemListElement.map((item: { item: { name: string } }) => item.item.name)).toEqual([
+        "Night vision - isn't",
+        "Hofstadter's Law"
+      ]);
+    });
+  });
+
   describe('setCategoryItemListSchema', () => {
     it('clears page structured data when laws is empty', () => {
       setJsonLd('category-detail-itemlist', { name: 'Existing' });
@@ -525,7 +546,7 @@ describe('Structured Data module', () => {
       expect(data.itemListElement[1].item.name).toBe('Law Two');
     });
 
-    it('uses fallback title for law without title', () => {
+    it('uses the law text as the name when the law has no title', () => {
       const laws = [
         { id: 1, text: 'Text only' }
       ];
@@ -533,7 +554,13 @@ describe('Structured Data module', () => {
 
       const el = document.head.querySelector('#jsonld-category-detail-itemlist');
       const data = JSON.parse((el as HTMLScriptElement).textContent!);
-      expect(data.itemListElement[0].item.name).toMatch(/Murphy's Law #1/);
+      expect(data.itemListElement[0].item.name).toBe('Text only');
+    });
+
+    it('falls back to the law id when the law has no title and no text', () => {
+      setCategoryItemListSchema({ categoryTitle: 'Test', categorySlug: 'test', laws: [{ id: 1, text: '' }] });
+      const data = JSON.parse(document.head.querySelector('#jsonld-category-detail-itemlist')!.textContent!);
+      expect(data.itemListElement[0].item.name).toBe("Murphy's Law #1");
     });
   });
 
