@@ -1,5 +1,5 @@
 import type fs from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   collectPrecacheUrls,
   collectPrecacheManifest,
@@ -104,6 +104,49 @@ describe("service worker generation", () => {
     );
     expect(apiBypass).toBeGreaterThan(-1);
     expect(sameOriginFallback).toBeGreaterThan(apiBypass);
+  });
+
+  it("shows the daily law notification and opens only a path on this site when it is clicked", () => {
+    const source = renderServiceWorker({ revision: "test-revision", urls: ["/", "/index.html"] });
+    const handlers: Record<string, (event: unknown) => void> = {};
+    const showNotification = vi.fn().mockResolvedValue(undefined);
+    const openWindow = vi.fn().mockResolvedValue(undefined);
+    const fakeSelf = {
+      location: { hostname: "murphys-laws.com", origin: "https://murphys-laws.com" },
+      registration: { showNotification },
+      clients: { openWindow },
+      addEventListener: (type: string, handler: (event: unknown) => void) => {
+        handlers[type] = handler;
+      },
+    };
+    new Function("self", "caches", "fetch", source)(fakeSelf, {}, async () => new Response("ok"));
+
+    const push = (data: unknown) => handlers.push!({ data, waitUntil: vi.fn() });
+    push({ json: () => ({ title: "Sod's Law", body: "Toast lands butter side down", url: "https://murphys-laws.com/law/7" }) });
+    expect(showNotification).toHaveBeenLastCalledWith("Sod's Law", expect.objectContaining({
+      body: "Toast lands butter side down",
+      tag: "law-of-the-day",
+      data: { url: "https://murphys-laws.com/law/7" },
+    }));
+
+    push(undefined);
+    expect(showNotification).toHaveBeenLastCalledWith("Murphy's Law of the Day", expect.objectContaining({ body: "", data: { url: "/" } }));
+    push({ json: () => { throw new Error("not json"); } });
+    expect(showNotification).toHaveBeenLastCalledWith("Murphy's Law of the Day", expect.objectContaining({ data: { url: "/" } }));
+
+    const click = (url: unknown) => {
+      const close = vi.fn();
+      handlers.notificationclick!({ notification: { close, data: url === undefined ? undefined : { url } }, waitUntil: vi.fn() });
+      expect(close).toHaveBeenCalled();
+    };
+    click("https://murphys-laws.com/law/7?utm=1");
+    expect(openWindow).toHaveBeenLastCalledWith("/law/7?utm=1");
+    click("https://evil.example.com/phish");
+    expect(openWindow).toHaveBeenLastCalledWith("/phish");
+    click(undefined);
+    expect(openWindow).toHaveBeenLastCalledWith("/");
+    click("http://[bad");
+    expect(openWindow).toHaveBeenLastCalledWith("/");
   });
 
   it("lets /admin navigations pass through to the backend-served moderation page", () => {
