@@ -32,6 +32,7 @@ html {
 .law-embed__card {
   display: flex;
   min-height: calc(100vh - var(--space-4));
+  max-width: 37.5rem;
   margin: 0;
   padding: var(--space-4);
   flex-direction: column;

@@ -120,7 +120,7 @@ build the snippet yourself:
 
 ```html
 <iframe src="https://murphys-laws.com/embed/law/1" title="Murphy's Law" width="100%" height="220"
-  style="border:0;max-width:600px" loading="lazy"></iframe>
+  frameborder="0" loading="lazy"></iframe>
 ```
 
 Use `https://murphys-laws.com/embed/law-of-day` to show today's law, which changes every day. The card
