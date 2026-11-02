@@ -8,7 +8,12 @@ import {
 } from '../../src/services/push-subscriptions.service.ts';
 
 const FCM = 'https://fcm.googleapis.com/fcm/send/abc123';
-const keys = { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' };
+import { createECDH, randomBytes } from 'node:crypto';
+
+// Generated per run: a real-looking P-256 public key and auth secret, with no literals in the source.
+const ecdh = createECDH('prime256v1');
+ecdh.generateKeys();
+const keys = { p256dh: ecdh.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') };
 
 describe('isAllowedPushEndpoint', () => {
   it.each([

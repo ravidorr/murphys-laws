@@ -44,7 +44,8 @@ export function isAllowedPushEndpoint(value: unknown): value is string {
   } catch {
     return false;
   }
-  if (url.protocol !== 'https:' || url.username || url.password || url.port) {
+  // Plain https on the default port, and no user:pass@ section in front of the host.
+  if (url.protocol !== 'https:' || url.port || !value.startsWith(`https://${url.host}`)) {
     return false;
   }
   return PUSH_HOST_SUFFIXES.some((suffix) => url.hostname === suffix || url.hostname.endsWith(`.${suffix}`));
