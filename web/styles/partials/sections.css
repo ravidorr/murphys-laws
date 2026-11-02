@@ -1144,7 +1144,7 @@
 .not-found-code {
   margin: 0 0 0.5rem;
   color: var(--link);
-  font-size: 6rem;
+  font-size: calc(var(--text-5xl) * 2);
   font-weight: var(--font-bold);
   line-height: 1;
 }
@@ -1214,7 +1214,7 @@
 
 @media (width <= 40rem) {
   .not-found-code {
-    font-size: 4.5rem;
+    font-size: calc(var(--text-5xl) * 1.5);
   }
 
   .not-found-title {
