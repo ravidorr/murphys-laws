@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The 404 page is funny again and no longer looks like a modal. Unknown URLs now get a generated
+  `404.html` inside the full site shell, with a large 404, a rotating Murphy-style line, and a few
+  suggested laws, in the standard empty-state card. The in-app 404 view uses the same markup and lines.
+  Web bumped to `3.4.42`; root to `2.6.125`.
+
 ### Added
 
 - Embeddable law cards. `/embed/law/:id` and `/embed/law-of-day` are standalone, noindexed pages meant for an
