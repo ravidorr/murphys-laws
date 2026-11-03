@@ -503,6 +503,70 @@ Use a variant class with `card` so the surface intent is explicit:
 - Dark mode, high-contrast mode, and print styles should target the canonical
   variants first, with legacy aliases only for compatibility.
 
+## Kindle browser baseline
+
+The e-ink Kindle browser is a supported legacy target. The page must stay readable and usable
+there, without animation and without ads. This section records what the repository and issue #203
+establish; nothing here is a measured engine version.
+
+### Engine and user agents
+
+- No browser engine version has been identified or verified on a device (issue #203 lists this as
+  open). Do not assume a Chromium or WebKit version for Kindle. The only version signals in the
+  repository are the user agent samples below.
+- `isKindleBrowser()` in `web/src/utils/legacy-display.ts` matches `/Kindle(\/| Build\/)/i`:
+  - `Kindle/` is the older e-ink Kindle browser, whose user agent ends in `Kindle/3.0+`.
+  - `Kindle Build/` is the newer Silk-based e-ink Kindle such as the Scribe, with a user agent like
+    `Android 9; Kindle Build/1.0 ... Silk/80`.
+- Colour Fire tablets (`KF<model> Build/` with `Silk`) are deliberately not matched, so they keep
+  ads, analytics and the full header.
+- The `@vitejs/plugin-legacy` build targets in `web/vite.config.ts` (`defaults`, `chrome >= 49`,
+  `safari >= 10`, `android >= 5`) only decide how much the legacy bundle is transpiled. They are not
+  the Kindle baseline and say nothing about the Kindle engine.
+
+### Unsupported or unreliable features
+
+- Flex `gap` is ignored (issue #203). Spacing that depends only on `gap` disappears and adjacent
+  words, pills and buttons collide.
+- Range media queries such as `(width > 600px)` are not safe: per the comment in
+  `web/styles/partials/layout.css`, the build turns a `width >` range into `not (max-width)`, which
+  old Kindle browsers drop. That rewrite was not re-verified here.
+- Modern JavaScript syntax and built-ins are not available natively; the transpiled legacy bundle
+  and core-js polyfills cover them.
+- Several DOM methods are missing (`replaceChildren`, `append`, `replaceWith`, `after`,
+  `toggleAttribute`); `web/src/utils/legacy-polyfills.ts` installs fallbacks before anything renders.
+- `AbortSignal.timeout` is missing; request code must use `createTimeoutSignal()` from
+  `web/src/utils/timeout-signal.ts` instead of calling it directly.
+- Not verified: issue #203 flags `color-mix()`, `:is()`, `:where()`, `:has()`, `@layer`,
+  `@container`, `inset`, `aspect-ratio` and CSS nesting as possibly unsupported. `color-mix()` is
+  still used outside the proof-point pills, for example in `web/styles/partials/calculator.css`.
+  Treat these as unsupported until checked on a device.
+- Opaque cross-origin "Script error." events occurred on Kindle and are ignored by the error
+  banner.
+
+### How the code handles it
+
+- `applyLegacyDisplayClass()` adds `legacy-display` to `<html>` at startup in `web/src/main.ts`.
+  CSS keyed on `.legacy-display` stops the "M" badge animation and its shadow, makes the header
+  static instead of sticky, hides the header download and theme buttons, and keeps a short search
+  box (`web/styles/partials/layout.css`, `theme.css`).
+- Layout uses explicit margins instead of flex `gap` (for example `.not-found-actions`, the header
+  search button and headings), so spacing holds where `gap` is ignored (#203).
+- Google ads and Google analytics are not loaded on Kindle (`shouldLoadThirdParty()` in
+  `web/src/utils/third-party.ts`) and the footer ad shell is hidden (`web/src/components/footer.ts`).
+  The Novus by Pendo agent is not guarded by `isKindleBrowser()`, so it still loads on Kindle.
+- The static header includes primary navigation links so it works without JavaScript, and the
+  prerendered Law of the Day is a real law. If the first render throws, the router restores the
+  prerendered page and reports the error to Sentry.
+- The service worker does not precache the legacy bundles.
+
+### Rules for new UI
+
+- Do not rely on flex `gap` alone for spacing that must hold on Kindle; add margins or whitespace.
+- Do not use range media queries inside `.legacy-display` rules.
+- Do not add a new DOM method or modern CSS feature to a core layout without a fallback.
+- An automated old-engine regression check does not exist yet; it is tracked in `TODO.md`.
+
 ## Performance targets
 
 Product-facing Web Vitals goals for the public PWA (home and browse):
