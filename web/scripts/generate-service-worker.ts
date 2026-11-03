@@ -261,6 +261,37 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(cacheFirst(request));
   }
 });
+
+// Daily Law of the Day notification (Web Push). The server sends { title, body, url }.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (error) {
+    data = {};
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Murphy\\'s Law of the Day', {
+      body: data.body || '',
+      icon: '/android-chrome-192x192.png',
+      tag: 'law-of-the-day',
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  // Only a path on this site is opened, whatever the payload carried.
+  let path = '/';
+  try {
+    const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+    path = target.pathname + target.search;
+  } catch (error) {
+    path = '/';
+  }
+  event.waitUntil(self.clients.openWindow(path));
+});
 `;
 }
 
