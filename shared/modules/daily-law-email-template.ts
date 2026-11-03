@@ -1,15 +1,24 @@
 /**
  * Emails for the daily Law of the Day subscription: the double opt-in confirmation and the daily message.
- * Plain and unstyled like the other email templates: the repository prohibits inline CSS and email clients
- * cannot load app CSS.
+ * Both use the shared branded layout in email-layout.ts (table layout, inline styles, dark mode) and send a
+ * plain-text alternative alongside the HTML.
  */
 import { escapeHtml } from './html-escape.ts';
+import { EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout } from './email-layout.ts';
 
 export interface DailyLawEmailData {
   id: number | string;
   title?: string | null;
   text: string;
+  /** Primary category, when the law has one. Anything but a non-empty string is ignored. */
+  category_name?: unknown;
+  category_slug?: unknown;
+  /** Who the law is attributed to, as stored: `{ name, note }` entries. Anything else is ignored. */
+  attributions?: unknown;
 }
+
+const MAX_ATTRIBUTION_NAMES = 3;
+const PREHEADER_LENGTH = 110;
 
 export function createSubscriptionConfirmationSubject(): string {
   return 'Confirm your daily Murphy\'s Law email';
@@ -25,11 +34,22 @@ If this wasn't you, ignore this message. Nothing is sent until you confirm.
 `;
 }
 
-export function createSubscriptionConfirmationHtml(confirmUrl: string): string {
-  const url = escapeHtml(confirmUrl);
-  return `<p>Someone asked for the Murphy's Law of the Day to be emailed to this address.</p>
-<p><a href="${url}">Confirm and start the daily email</a></p>
-<p>If this wasn't you, ignore this message. Nothing is sent until you confirm.</p>`;
+export function createSubscriptionConfirmationHtml(confirmUrl: string, siteUrl: string): string {
+  const body = [
+    emailRow(`<h1 style="margin:0;${EMAIL_STYLES.heading}">Confirm your daily Murphy's Law email</h1>`, 'padding-top:32px;'),
+    emailRow(
+      `<p class="em-fg" style="margin:0;${EMAIL_STYLES.body}">Someone asked for the Murphy's Law of the Day to be emailed to this address. Confirm to start the daily email.</p>`,
+      'padding-top:16px;',
+    ),
+    emailRow(emailButton('Confirm and start the daily email', confirmUrl), 'padding-top:28px;padding-bottom:32px;'),
+  ].join('\n');
+  return renderEmailLayout({
+    title: createSubscriptionConfirmationSubject(),
+    preheader: 'Confirm to start the daily Murphy\'s Law email. Nothing is sent until you do.',
+    siteUrl,
+    bodyRows: body,
+    footerHtml: 'If this wasn\'t you, ignore this message. Nothing is sent until you confirm.',
+  });
 }
 
 export function createDailyLawSubject(law: DailyLawEmailData): string {
@@ -41,22 +61,83 @@ function lawUrl(id: number | string, siteUrl: string): string {
   return `${siteUrl.replace(/\/+$/, '')}/law/${encodeURIComponent(String(id))}`;
 }
 
+function cleanString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/** Up to three attribution names, in stored order; ignores entries that are not `{ name: string }`. */
+function attributionNames(attributions: unknown): string[] {
+  if (!Array.isArray(attributions)) return [];
+  const names: string[] = [];
+  for (const entry of attributions) {
+    const name = cleanString((entry as { name?: unknown } | null)?.name);
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names.slice(0, MAX_ATTRIBUTION_NAMES);
+}
+
+function categoryUrl(slug: string, siteUrl: string): string {
+  return `${siteUrl.replace(/\/+$/, '')}/category/${encodeURIComponent(slug)}`;
+}
+
+function preheaderFor(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > PREHEADER_LENGTH ? `${flat.slice(0, PREHEADER_LENGTH - 1).trimEnd()}\u2026` : flat;
+}
+
 export function createDailyLawText(law: DailyLawEmailData, siteUrl: string, unsubscribeUrl: string): string {
   const heading = law.title ? `${law.title}\n` : '';
+  const names = attributionNames(law.attributions);
+  const category = cleanString(law.category_name);
+  const details = [
+    names.length ? `Attributed to: ${names.join(', ')}` : '',
+    category ? `Category: ${category}` : '',
+  ].filter(Boolean).join('\n');
   return `Murphy's Law of the Day
 
 ${heading}${law.text}
-
-Read it, vote on it and share it: ${lawUrl(law.id, siteUrl)}
+${details ? `\n${details}\n` : ''}
+Read, vote and share: ${lawUrl(law.id, siteUrl)}
 
 Unsubscribe: ${unsubscribeUrl}
 `;
 }
 
 export function createDailyLawHtml(law: DailyLawEmailData, siteUrl: string, unsubscribeUrl: string): string {
-  const heading = law.title ? `<h2>${escapeHtml(law.title)}</h2>\n` : '';
-  return `<h1>Murphy's Law of the Day</h1>
-${heading}<p>${escapeHtml(law.text)}</p>
-<p><a href="${escapeHtml(lawUrl(law.id, siteUrl))}">Read it, vote on it and share it</a></p>
-<p><a href="${escapeHtml(unsubscribeUrl)}">Unsubscribe</a></p>`;
+  const names = attributionNames(law.attributions);
+  const category = cleanString(law.category_name);
+  const slug = cleanString(law.category_slug);
+  const categoryHtml = category
+    ? slug
+      ? `<a class="em-link" href="${escapeHtml(categoryUrl(slug, siteUrl))}" style="${EMAIL_STYLES.link}">${escapeHtml(category)}</a>`
+      : escapeHtml(category)
+    : '';
+  const details = [
+    names.length ? `Attributed to ${escapeHtml(names.join(', '))}` : '',
+    categoryHtml ? `Category: ${categoryHtml}` : '',
+  ].filter(Boolean).join('&nbsp;&nbsp;&middot;&nbsp;&nbsp;');
+
+  const rows = [
+    emailRow(
+      `<p class="em-muted" style="margin:0;${EMAIL_STYLES.eyebrow}">Murphy's Law of the Day</p>`,
+      'padding-top:32px;',
+    ),
+    law.title
+      ? emailRow(`<h1 class="em-fg" style="margin:0;${EMAIL_STYLES.heading}">${escapeHtml(law.title)}</h1>`, 'padding-top:8px;')
+      : '',
+    emailRow(
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="em-quote" style="padding:4px 0 4px 20px;border-left:4px solid ${EMAIL_TOKENS['btn-primary-bg']};"><p class="em-law em-fg" style="margin:0;${EMAIL_STYLES.law}">${escapeHtml(law.text)}</p></td></tr></table>`,
+      'padding-top:20px;',
+    ),
+    details ? emailRow(`<p class="em-muted" style="margin:0;${EMAIL_STYLES.muted}">${details}</p>`, 'padding-top:16px;') : '',
+    emailRow(emailButton('Read, vote and share', lawUrl(law.id, siteUrl)), 'padding-top:28px;padding-bottom:32px;'),
+  ].filter(Boolean).join('\n');
+
+  return renderEmailLayout({
+    title: createDailyLawSubject(law),
+    preheader: preheaderFor(law.text),
+    siteUrl,
+    bodyRows: rows,
+    footerHtml: `You get this email because you subscribed to the Murphy's Law of the Day.<br><a class="em-link" href="${escapeHtml(unsubscribeUrl)}" style="${EMAIL_STYLES.link}">Unsubscribe</a>`,
+  });
 }

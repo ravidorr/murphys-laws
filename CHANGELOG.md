@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The daily Law of the Day email and the subscription confirmation email now look like Murphy's Law Archive: the
+  site header (the "M" badge, wordmark and tagline), the site colours and type, the law as large quote-style text
+  with its category and attribution when it has them, a real "Read, vote and share" or "Confirm and start the
+  daily email" button, and a clearly visible Unsubscribe link in the footer. Both use a shared 600px table layout
+  (`shared/modules/email-layout.ts`) that holds up on a phone and has dark-mode styles, and both still send a
+  plain-text alternative; the `List-Unsubscribe` headers are unchanged. Email clients ignore stylesheets, so the
+  design tokens are written out as inline values and a test fails when one stops matching
+  `web/styles/partials/variables.css`. Backend bumped to `2.3.61`; root to `2.6.133`.
+
 - The Deploy to Production workflow can now be started by hand (`workflow_dispatch`), so changed repository
   secrets such as the SMTP settings can reach the server without an unrelated merge. A manual run does nothing
   unless it starts from `main`, and it skips the daily email template smoke test, which compares against the
