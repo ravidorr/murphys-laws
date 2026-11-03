@@ -160,6 +160,8 @@ describe('nginx legacy URL redirects', () => {
     ['/murphy/murphy-cas.htm', '/category/murphys-cowboy-action-shooting-cas-laws'],
     ['/murphy/murphy-cars.htm', '/category/murphys-cars-laws'],
     ['/murphy/contact.html', '/contact'],
+    ['/about-us', '/about'],
+    ['/contact-us', '/contact'],
     ['/old/index.htm', '/'],
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
   ])('redirects %s to %s', (from, to) => {
