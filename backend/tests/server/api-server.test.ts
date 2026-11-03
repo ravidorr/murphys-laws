@@ -295,6 +295,9 @@ describe('api-server', () => {
       const confirmPostResponse = await emitRequest('POST', '/subscription/confirm?token=bad', {});
       const unsubscribeResponse = await emitRequest('GET', '/subscription/unsubscribe?token=bad');
       const oneClickResponse = await emitRequest('POST', '/subscription/unsubscribe?token=bad', {});
+      const pushKeyResponse = await emitRequest('GET', '/api/v1/push/public-key');
+      const pushSubscribeResponse = await emitRequest('POST', '/api/v1/push/subscriptions', { endpoint: 'https://evil.example.com/x' });
+      const pushUnsubscribeResponse = await emitRequest('DELETE', '/api/v1/push/subscriptions', { endpoint: 'nope' });
       // Admin routes are disabled (404) when ADMIN_API_TOKEN is unset
       await emitRequest('GET', '/api/v1/admin/laws');
       await emitRequest('POST', '/api/v1/admin/laws/1', { status: 'published' });
@@ -310,6 +313,9 @@ describe('api-server', () => {
       expect(confirmPostResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
       expect(unsubscribeResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
       expect(oneClickResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+      expect(pushKeyResponse.writeHead).toHaveBeenCalledWith(503, expect.any(Object));
+      expect(pushSubscribeResponse.writeHead).toHaveBeenCalledWith(503, expect.any(Object));
+      expect(pushUnsubscribeResponse.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
       expect(mockLawService.listLaws).toHaveBeenCalled();
       expect(mockLawService.getLaw).toHaveBeenCalled();
       expect(mockFeedService.generateRss).toHaveBeenCalled();

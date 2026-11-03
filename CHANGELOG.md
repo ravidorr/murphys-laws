@@ -29,6 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Daily Law of the Day browser notification (Web Push). The home page signup card has a "Notify me in this browser"
+  button where the browser supports push; the service worker shows the notification and opens the law when it is
+  clicked. New `push_subscriptions` table (migration 021), `GET /api/v1/push/public-key`,
+  `POST` and `DELETE /api/v1/push/subscriptions`, and a `npm run push:daily` cron job that records each send,
+  deletes subscriptions the push service reports gone (404, 410), and sends nothing until `VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are set (`.env.example`, `shared/docs/DEPLOYMENT.md`). Subscription
+  endpoints are limited to the real push services (FCM, Mozilla, Apple, Windows), so the job cannot be aimed at an
+  arbitrary URL. Adds the `web-push` dependency. The privacy policy describes the stored data. Web bumped to
+  `3.4.47`; backend to `2.3.60`; root to `2.6.130`; iOS to `1.2.12 (28)`; Android to `1.2.13 (20)`.
+
+### Added
+
 - Daily Law of the Day email. Visitors subscribe from the home page, confirm from the first email (double
   opt-in), and get the day's law each morning with an unsubscribe link and one-click `List-Unsubscribe` headers.
   New `email_subscriptions` table (migration 020), `POST /api/v1/subscriptions`, `/subscription/confirm` and
