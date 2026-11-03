@@ -673,7 +673,7 @@ export function renderShareLinkHTML(options: ShareLinkOptions): string {
   const attrs: string[] = [];
   attrs.push('class="share-popover-item share-popover-item--social"');
   attrs.push(`href="${href}"`);
-  attrs.push(`title="${text}"`);
+  attrs.push(`title="${text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}"`);
   attrs.push('role="menuitem"');
 
   if (target) {
