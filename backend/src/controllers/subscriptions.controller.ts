@@ -31,6 +31,8 @@ const FOOTER_LINKS: ReadonlyArray<[string, string]> = [
   ['/contact', 'Contact'],
 ];
 
+const FOOTER_LINKS_HTML = FOOTER_LINKS.map(([path, label]) => `<li><a href="${SITE_URL}${path}">${label}</a></li>`).join('');
+
 interface PageOptions {
   tone?: PageTone;
   /** Form markup shown under the message; its button is the only way to act without JavaScript. */
@@ -44,7 +46,6 @@ interface PageOptions {
  */
 function messagePage(heading: string, message: string, { tone = 'neutral', form = '' }: PageOptions = {}): string {
   const statusBadge = tone === 'neutral' ? '' : `<span class="subscription-page__status subscription-page__status--${tone}" aria-hidden="true">${STATUS_MARKS[tone]}</span>\n`;
-  const footerLinks = FOOTER_LINKS.map(([path, label]) => `<li><a href="${SITE_URL}${path}">${label}</a></li>`).join('');
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,7 +78,7 @@ ${form}<a class="subscription-page__home" href="${SITE_URL}/">Back to Murphy's L
 </main>
 <footer class="subscription-page__footer">
 <nav aria-label="Utility">
-<ul class="subscription-page__footer-nav">${footerLinks}</ul>
+<ul class="subscription-page__footer-nav">${FOOTER_LINKS_HTML}</ul>
 </nav>
 </footer>
 </body>
