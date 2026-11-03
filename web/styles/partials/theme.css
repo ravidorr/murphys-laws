@@ -222,7 +222,7 @@
   :root:not([data-theme="light"]) .form-control,
   :root:not([data-theme="light"]) .share-form-container .form-group textarea,
   :root:not([data-theme="light"]) .share-form-container .form-group input {
-    background: color-mix(in oklab, var(--bg) 92%, white 8%);
+    background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
     color: var(--fg);
     border: 1.5px solid var(--dark-border);
   }
@@ -250,7 +250,7 @@
 :root[data-theme="dark"] .form-control,
 :root[data-theme="dark"] .share-form-container .form-group textarea,
 :root[data-theme="dark"] .share-form-container .form-group input {
-  background: color-mix(in oklab, var(--bg) 92%, white 8%);
+  background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
   color: var(--fg);
   border: 1.5px solid var(--dark-border);
 }
