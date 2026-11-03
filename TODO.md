@@ -20,7 +20,6 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 
 ### Accessibility Improvements
 - [x] **Investigate Slider Readonly State:** Calculator sliders show as "readonly" in accessibility tree. Fixed by adding explicit ARIA attributes (role="slider", aria-valuenow, aria-valuetext, aria-readonly="false") and keeping them in sync via JavaScript.
-- [ ] **Rename Footer Navigation:** Footer nav has `aria-label="Utility"` which is vague. Change to "Footer navigation" or "Site links" for clarity.
 - [ ] **Add Skip Links for Calculator Sections:** Long home page could benefit from skip links to jump to specific calculators.
 
 ### SEO Improvements
