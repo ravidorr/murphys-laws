@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { marked } from 'marked';
+import { CALCULATOR_META_DESCRIPTIONS } from '../src/utils/constants.ts';
 import {
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
@@ -71,6 +72,36 @@ describe('SSG Utilities', () => {
       'contains a public mailto link',
       'missing navigable category link'
     ]));
+  });
+
+  it('keeps calculator meta descriptions unique, sized for search results, and plain text', () => {
+    const descriptions = Object.values(CALCULATOR_META_DESCRIPTIONS);
+
+    expect(new Set(descriptions).size).toBe(descriptions.length);
+    for (const description of descriptions) {
+      expect(description.length).toBeGreaterThanOrEqual(150);
+      expect(description.length).toBeLessThanOrEqual(160);
+      expect(description).not.toMatch(/[–—]/);
+      expect(description).not.toMatch(/\p{Extended_Pictographic}/u);
+    }
+  });
+
+  it('requires route description, og:description, and twitter:description to match', () => {
+    const description = CALCULATOR_META_DESCRIPTIONS.sodsLaw;
+    const matching = applyPageMetadata(metadataTemplate, {
+      title: 'Calculator',
+      description,
+      canonicalPath: '/calculator/sods-law'
+    });
+
+    expect(validateGeneratedPage(matching, { canonicalPath: '/calculator/sods-law', description }))
+      .not.toContain('og:description does not match the route description');
+    expect(validateGeneratedPage(metadataTemplate, { canonicalPath: '/', description }))
+      .toEqual(expect.arrayContaining([
+        'description does not match the route description',
+        'og:description does not match the route description',
+        'twitter:description does not match the route description'
+      ]));
   });
 
   it('requires the article photo on pages that should have one', () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { CALCULATOR_META_DESCRIPTIONS } from '@utils/constants.ts';
 import {
   setJsonLd,
   removeJsonLd,
@@ -585,7 +586,7 @@ describe('Structured Data module', () => {
       const data = JSON.parse(el!.textContent!);
 
       expect(data.description).toBeTruthy();
-      expect(data.description).toMatch(/probability/);
+      expect(data.description).toBe(CALCULATOR_META_DESCRIPTIONS.sodsLaw);
     });
 
     it('clears previous page data', () => {
