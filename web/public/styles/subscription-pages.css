@@ -224,6 +224,12 @@ html {
   filter: brightness(1.1);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .subscription-page__button {
+    transition: none;
+  }
+}
+
 .subscription-page__home {
   display: inline-flex;
   min-height: var(--component-control-min-size);
