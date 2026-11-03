@@ -501,6 +501,17 @@ select.sort-select {
   text-overflow: ellipsis;
 }
 
+/* Forced colors drop background images, so fall back to the native select indicator */
+@media (forced-colors: active) {
+  select,
+  select.form-control,
+  select.sort-select {
+    appearance: auto;
+    padding-right: 0.75rem;
+    background-image: none;
+  }
+}
+
 /* ==========================
    Components
    ========================== */
