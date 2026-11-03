@@ -2083,7 +2083,48 @@ describe('share menu: system share, image and embed', () => {
     expect(native.getAttribute('data-share-title')).toBe('Title');
     expect(native.getAttribute('data-share-text')).toBe('Law text');
     expect(native.getAttribute('data-law-id')).toBe('5');
-    expect(el.querySelector('.share-popover')!.firstElementChild).toBe(native);
+    expect(el.querySelector('.share-popover')!.lastElementChild!.previousElementSibling).toBe(native);
+  });
+
+  it('SocialShare orders the menu: Share to row, Copy link, Copy text, Save as image, Copy embed, system share', () => {
+    Object.assign(navigator, { share: vi.fn() });
+    const el = SocialShare({ url: 'https://test.com/law/5', lawText: 'Law text', lawId: '5' });
+    const popover = el.querySelector('.share-popover') as HTMLElement;
+    const order = Array.from(popover.children).map((child) => {
+      if (child.classList.contains('share-popover-label')) return 'label';
+      if (child.classList.contains('share-popover-social')) return 'social';
+      if (child.classList.contains('share-popover-divider')) return 'divider';
+      if (child.classList.contains('share-copy-feedback')) return 'feedback';
+      if (child.hasAttribute('download')) return 'image';
+      return child.getAttribute('data-action');
+    });
+    expect(order).toEqual([
+      'label', 'social', 'divider', 'copy-link', 'copy-text', 'image', 'copy-embed', 'native-share', 'feedback',
+    ]);
+  });
+
+  it('SocialShare renders the social links as an icon-only row with accessible labels', () => {
+    const el = SocialShare({ url: 'https://test.com/law/5', lawId: '5' });
+    const group = el.querySelector('.share-popover-social') as HTMLElement;
+    expect(group.getAttribute('role')).toBe('group');
+    expect(group.getAttribute('aria-label')).toBe('Share to');
+    const links = group.querySelectorAll('a.share-popover-item--social');
+    expect(links).toHaveLength(6);
+    const x = links[0] as HTMLAnchorElement;
+    expect(x.title).toBe('Share on X');
+    expect(x.querySelector('.sr-only')!.textContent).toBe('Share on X');
+    expect(links[5]!.getAttribute('target')).toBe('_self');
+  });
+
+  it('renderShareButtonsHTML uses the same order, with system share last', () => {
+    Object.assign(navigator, { share: vi.fn() });
+    const html = renderShareButtonsHTML({ lawId: '7', lawText: 'Test law' });
+    const positions = [
+      'share-popover-label', 'share-popover-social', 'share-popover-divider', 'data-action="copy-link"',
+      'data-action="copy-text"', 'download="murphys-law-7.png"', 'data-action="copy-embed"', 'data-action="native-share"',
+    ].map((needle) => html.indexOf(needle));
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });
 
   it('SocialShare shows the system share item without a law id when supported', () => {

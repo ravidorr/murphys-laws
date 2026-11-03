@@ -615,7 +615,7 @@ export function renderLinkButtonHTML(options: LinkButtonOptions): string {
 
 /**
  * Generate share popover link HTML string
- * Use this for social share links with the icon-circle pattern
+ * Use this for icon-only social share links with the icon-circle pattern
  * Uses icon placeholder syntax that requires hydrateIcons() to be called after DOM insertion
  *
  * @param {Object} options - Share link configuration options
@@ -671,8 +671,9 @@ export function renderShareLinkHTML(options: ShareLinkOptions): string {
 
   // Build attributes array
   const attrs: string[] = [];
-  attrs.push('class="share-popover-item"');
+  attrs.push('class="share-popover-item share-popover-item--social"');
   attrs.push(`href="${href}"`);
+  attrs.push(`title="${text}"`);
   attrs.push('role="menuitem"');
 
   if (target) {
@@ -685,5 +686,6 @@ export function renderShareLinkHTML(options: ShareLinkOptions): string {
   // Build icon-circle with icon inside
   const iconCircleHTML = `<span class="icon-circle ${platform}"><span class="icon" data-icon="${icon}" aria-hidden="true"></span></span>`;
 
-  return `<a ${attrs.join(' ')}>${iconCircleHTML}${text}</a>`;
+  // Icon-only: the text stays for screen readers and as the hover title
+  return `<a ${attrs.join(' ')}>${iconCircleHTML}<span class="sr-only">${text}</span></a>`;
 }
