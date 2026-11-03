@@ -1,6 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { EMAIL_FONT, EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout, siteLink } from './email-layout.ts';
+import {
+  EMAIL_FONT,
+  EMAIL_TOKENS,
+  emailButton,
+  emailDetails,
+  emailEyebrow,
+  emailHeading,
+  emailLink,
+  emailParagraph,
+  emailQuote,
+  emailRow,
+  renderEmailLayout,
+  siteLink,
+} from './email-layout.ts';
 
 const variablesCss = readFileSync(resolve(import.meta.dirname, '../../web/styles/partials/variables.css'), 'utf8');
 
@@ -46,10 +59,19 @@ describe('email layout', () => {
     expect(html).toContain('>Go &lt;now&gt;</a>');
   });
 
-  it('exposes shared text styles that use the site font', () => {
+  it('builds escaped content blocks that carry the dark-mode classes', () => {
     expect(EMAIL_FONT).toContain('Work Sans');
-    expect(EMAIL_STYLES.law).toContain('font-size:26px');
-    expect(EMAIL_STYLES.link).toContain('#0d5ea1');
+    expect(emailHeading('A <b>')).toContain('>A &lt;b&gt;</h1>');
+    expect(emailHeading('x')).toContain('class="em-fg"');
+    expect(emailParagraph('<i>x</i>')).toContain('<i>x</i></p>');
+    expect(emailDetails('d')).toContain('class="em-muted"');
+    expect(emailEyebrow('A & B')).toContain('>A &amp; B</p>');
+    expect(emailLink('https://example.com/?a=1&b=2', 'Go')).toContain('href="https://example.com/?a=1&amp;b=2"');
+    expect(emailLink('https://example.com', 'Go')).toContain('class="em-link"');
+    const quote = emailQuote('If <it> can');
+    expect(quote).toContain('font-size:26px');
+    expect(quote).toContain('If &lt;it&gt; can');
+    expect(quote).toContain('border-left:4px solid #0d5ea1');
   });
 
   it('joins a site path with or without a trailing slash on the site URL', () => {

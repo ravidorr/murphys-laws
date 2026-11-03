@@ -57,13 +57,12 @@ const CSS_TOKEN_DEFINITION = 'web/styles/partials/variables.css';
 const CSS_PRINT_ALLOWLIST = 'web/styles/partials/print.css';
 /**
  * Email HTML requires inline style attributes on table cells (Gmail and Outlook ignore stylesheets). The
- * subscription emails take their colors from the design tokens; email-layout.test.ts fails when one drifts
- * from variables.css, so this is not a second token source.
+ * subscription emails confine them to one module, whose colors are generated from variables.css by
+ * export-email-tokens.ts; the templates call its helpers. See conformance-allowlist.md.
  */
 const INLINE_CSS_ALLOWLIST = new Set([
   'backend/scripts/render-daily-report.ts',
   'shared/modules/email-layout.ts',
-  'shared/modules/daily-law-email-template.ts',
 ]);
 const IOS_EXPORT_COMMAND = 'tsx shared/design-tokens/export-ios-tokens.ts';
 const IOS_PROJECT_EXPORT_COMMAND =

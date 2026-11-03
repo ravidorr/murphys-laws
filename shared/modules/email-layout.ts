@@ -1,30 +1,16 @@
 /**
  * Shared frame for the subscription emails: the site header and wordmark, a content area, a footer, and the
  * primary button. Email clients ignore stylesheets and CSS variables, so the values are written out
- * (inline, in a 600px table layout) instead of read from web/styles/partials/variables.css.
- * email-layout.test.ts fails when a value here stops matching variables.css, so the tokens keep one source.
- * A small <style> block only adds what inline styles cannot express: dark mode and the phone layout.
+ * (inline, in a 600px table layout). The colors come from email-tokens.generated.ts, which
+ * shared/design-tokens/export-email-tokens.ts generates from web/styles/partials/variables.css, so there is
+ * no second token source. This is the only module with inline styles (see conformance-allowlist.md); the
+ * templates build their content through the helpers below. A small <style> block only adds what inline
+ * styles cannot express: dark mode and the phone layout.
  */
 import { escapeHtml } from './html-escape.ts';
+import { EMAIL_TOKENS } from './email-tokens.generated.ts';
 
-/** Light and dark values of the web design tokens, by the token name in variables.css. */
-export const EMAIL_TOKENS = {
-  bg: '#ffffff',
-  fg: '#111827',
-  'muted-fg': '#4b5563',
-  primary: '#030213',
-  'surface-border': '#d1d5db',
-  link: '#0d5ea1',
-  'btn-primary-bg': '#0d5ea1',
-  'btn-primary-fg': '#ffffff',
-  white: '#ffffff',
-  'dark-bg-primary': '#0b0b11',
-  'dark-fg-primary': '#e9eaee',
-  'dark-muted-fg': '#9ca3af',
-  'dark-primary': '#6366f1',
-  'dark-surface-border': '#4b5563',
-  'dark-link': '#9ecbff',
-} as const;
+export { EMAIL_TOKENS };
 
 const T = EMAIL_TOKENS;
 
@@ -124,8 +110,7 @@ ${bodyRows}
 </html>`;
 }
 
-/** Style for body text blocks and links, for use in the templates. */
-export const EMAIL_STYLES = {
+const STYLES = {
   heading: `font-family:${EMAIL_FONT};font-size:24px;font-weight:700;line-height:30px;color:${T.fg};`,
   body: `font-family:${EMAIL_FONT};font-size:16px;line-height:24px;color:${T.fg};`,
   muted: `font-family:${EMAIL_FONT};font-size:14px;line-height:21px;color:${T['muted-fg']};`,
@@ -133,3 +118,33 @@ export const EMAIL_STYLES = {
   eyebrow: `font-family:${EMAIL_FONT};font-size:12px;font-weight:600;letter-spacing:0.06em;line-height:16px;text-transform:uppercase;color:${T['muted-fg']};`,
   law: `font-family:${EMAIL_FONT};font-size:26px;font-weight:600;line-height:36px;color:${T.fg};`,
 } as const;
+
+/** Page heading (h1). `text` is plain text. */
+export function emailHeading(text: string): string {
+  return `<h1 class="em-fg" style="margin:0;${STYLES.heading}">${escapeHtml(text)}</h1>`;
+}
+
+/** Body paragraph. `html` must already be escaped. */
+export function emailParagraph(html: string): string {
+  return `<p class="em-fg" style="margin:0;${STYLES.body}">${html}</p>`;
+}
+
+/** Smaller, quieter paragraph for details. `html` must already be escaped. */
+export function emailDetails(html: string): string {
+  return `<p class="em-muted" style="margin:0;${STYLES.muted}">${html}</p>`;
+}
+
+/** Small uppercase label above a heading. `text` is plain text. */
+export function emailEyebrow(text: string): string {
+  return `<p class="em-muted" style="margin:0;${STYLES.eyebrow}">${escapeHtml(text)}</p>`;
+}
+
+/** Underlined text link. `labelHtml` must already be escaped. */
+export function emailLink(url: string, labelHtml: string): string {
+  return `<a class="em-link" href="${escapeHtml(url)}" style="${STYLES.link}">${labelHtml}</a>`;
+}
+
+/** The law, large, in a quote block with the site's accent bar. `text` is plain text. */
+export function emailQuote(text: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="em-quote" style="padding:4px 0 4px 20px;border-left:4px solid ${T['btn-primary-bg']};"><p class="em-law em-fg" style="margin:0;${STYLES.law}">${escapeHtml(text)}</p></td></tr></table>`;
+}
