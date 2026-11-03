@@ -850,7 +850,7 @@ describe('Button component', () => {
         });
         expect(localThis.html!).toContain('<a');
         expect(localThis.html!).toContain('</a>');
-        expect(localThis.html!).toContain('class="share-popover-item"');
+        expect(localThis.html!).toContain('class="share-popover-item share-popover-item--social"');
       });
 
       it('renders icon-circle wrapper with platform class', () => {
@@ -876,7 +876,7 @@ describe('Button component', () => {
         expect(localThis.html!).toContain('aria-hidden="true"');
       });
 
-      it('renders text after icon-circle', () => {
+      it('renders the text as a screen-reader label and hover title after the icon-circle', () => {
         const localThis: ButtonTestLocalThis = {};
         localThis.html = renderShareLinkHTML({
           href: 'https://reddit.com/submit',
@@ -884,7 +884,18 @@ describe('Button component', () => {
           icon: 'reddit',
           platform: 'reddit',
         });
-        expect(localThis.html!).toContain('</span>Share on Reddit</a>');
+        expect(localThis.html!).toContain('</span><span class="sr-only">Share on Reddit</span></a>');
+        expect(localThis.html!).toContain('title="Share on Reddit"');
+      });
+
+      it('escapes the text in the title attribute', () => {
+        const html = renderShareLinkHTML({
+          href: 'https://example.com',
+          text: 'Share "a" & <b>',
+          icon: 'twitter',
+          platform: 'twitter',
+        });
+        expect(html).toContain('title="Share &quot;a&quot; &amp; &lt;b>"');
       });
 
       it('renders role="menuitem" attribute', () => {
@@ -1047,7 +1058,7 @@ describe('Button component', () => {
         localThis.link = localThis.container!.querySelector('a');
 
         expect(localThis.link!.tagName).toBe('A');
-        expect(localThis.link!.className).toBe('share-popover-item');
+        expect(localThis.link!.className).toBe('share-popover-item share-popover-item--social');
         expect(localThis.link!.getAttribute('href')).toBe('https://twitter.com/intent/tweet?url=test');
         expect(localThis.link!.getAttribute('role')).toBe('menuitem');
         expect(localThis.link!.getAttribute('target')).toBe('_blank');
