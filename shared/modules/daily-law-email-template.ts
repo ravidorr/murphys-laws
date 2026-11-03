@@ -4,7 +4,7 @@
  * plain-text alternative alongside the HTML.
  */
 import { escapeHtml } from './html-escape.ts';
-import { EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout } from './email-layout.ts';
+import { EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout, siteLink } from './email-layout.ts';
 
 export interface DailyLawEmailData {
   id: number | string;
@@ -36,7 +36,7 @@ If this wasn't you, ignore this message. Nothing is sent until you confirm.
 
 export function createSubscriptionConfirmationHtml(confirmUrl: string, siteUrl: string): string {
   const body = [
-    emailRow(`<h1 style="margin:0;${EMAIL_STYLES.heading}">Confirm your daily Murphy's Law email</h1>`, 'padding-top:32px;'),
+    emailRow(`<h1 class="em-fg" style="margin:0;${EMAIL_STYLES.heading}">Confirm your daily Murphy's Law email</h1>`, 'padding-top:32px;'),
     emailRow(
       `<p class="em-fg" style="margin:0;${EMAIL_STYLES.body}">Someone asked for the Murphy's Law of the Day to be emailed to this address. Confirm to start the daily email.</p>`,
       'padding-top:16px;',
@@ -58,7 +58,7 @@ export function createDailyLawSubject(law: DailyLawEmailData): string {
 }
 
 function lawUrl(id: number | string, siteUrl: string): string {
-  return `${siteUrl.replace(/\/+$/, '')}/law/${encodeURIComponent(String(id))}`;
+  return siteLink(siteUrl, `/law/${encodeURIComponent(String(id))}`);
 }
 
 function cleanString(value: unknown): string {
@@ -77,16 +77,18 @@ function attributionNames(attributions: unknown): string[] {
 }
 
 function categoryUrl(slug: string, siteUrl: string): string {
-  return `${siteUrl.replace(/\/+$/, '')}/category/${encodeURIComponent(slug)}`;
+  return siteLink(siteUrl, `/category/${encodeURIComponent(slug)}`);
 }
 
 function preheaderFor(text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim();
-  return flat.length > PREHEADER_LENGTH ? `${flat.slice(0, PREHEADER_LENGTH - 1).trimEnd()}\u2026` : flat;
+  const chars = Array.from(flat);
+  return chars.length > PREHEADER_LENGTH ? `${chars.slice(0, PREHEADER_LENGTH - 1).join('').trimEnd()}\u2026` : flat;
 }
 
 export function createDailyLawText(law: DailyLawEmailData, siteUrl: string, unsubscribeUrl: string): string {
-  const heading = law.title ? `${law.title}\n` : '';
+  const title = cleanString(law.title);
+  const heading = title ? `${title}\n` : '';
   const names = attributionNames(law.attributions);
   const category = cleanString(law.category_name);
   const details = [
@@ -104,6 +106,7 @@ Unsubscribe: ${unsubscribeUrl}
 }
 
 export function createDailyLawHtml(law: DailyLawEmailData, siteUrl: string, unsubscribeUrl: string): string {
+  const title = cleanString(law.title);
   const names = attributionNames(law.attributions);
   const category = cleanString(law.category_name);
   const slug = cleanString(law.category_slug);
@@ -122,8 +125,8 @@ export function createDailyLawHtml(law: DailyLawEmailData, siteUrl: string, unsu
       `<p class="em-muted" style="margin:0;${EMAIL_STYLES.eyebrow}">Murphy's Law of the Day</p>`,
       'padding-top:32px;',
     ),
-    law.title
-      ? emailRow(`<h1 class="em-fg" style="margin:0;${EMAIL_STYLES.heading}">${escapeHtml(law.title)}</h1>`, 'padding-top:8px;')
+    title
+      ? emailRow(`<h1 class="em-fg" style="margin:0;${EMAIL_STYLES.heading}">${escapeHtml(title)}</h1>`, 'padding-top:8px;')
       : '',
     emailRow(
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="em-quote" style="padding:4px 0 4px 20px;border-left:4px solid ${EMAIL_TOKENS['btn-primary-bg']};"><p class="em-law em-fg" style="margin:0;${EMAIL_STYLES.law}">${escapeHtml(law.text)}</p></td></tr></table>`,

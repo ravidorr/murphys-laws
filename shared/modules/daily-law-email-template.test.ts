@@ -77,4 +77,13 @@ describe('daily law email template', () => {
     const html = template.createDailyLawHtml({ id: 1, text: long }, 'https://example.com', unsubscribe);
     expect(html).toMatch(/opacity:0;mso-hide:all;">word( word)+\u2026<\/div>/);
   });
+
+  it('ignores a blank title, keeps the confirmation heading readable in dark mode, and cuts the preview on characters', () => {
+    const blank = template.createDailyLawHtml({ id: 1, title: '   ', text: 'Plain' }, 'https://example.com', unsubscribe);
+    expect(blank).not.toContain('<h1');
+    expect(template.createDailyLawText({ id: 1, title: '   ', text: 'Plain' }, 'https://example.com', unsubscribe)).toContain("Murphy's Law of the Day\n\nPlain");
+    expect(template.createSubscriptionConfirmationHtml('https://example.com/c', 'https://example.com')).toContain('<h1 class="em-fg"');
+    const emoji = template.createDailyLawHtml({ id: 1, text: '\u{1F35E}'.repeat(200) }, 'https://example.com', unsubscribe);
+    expect(emoji).toContain(`${'\u{1F35E}'.repeat(109)}\u2026`);
+  });
 });

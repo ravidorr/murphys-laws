@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { EMAIL_FONT, EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout } from './email-layout.ts';
+import { EMAIL_FONT, EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout, siteLink } from './email-layout.ts';
 
 const variablesCss = readFileSync(resolve(import.meta.dirname, '../../web/styles/partials/variables.css'), 'utf8');
 
@@ -50,5 +50,14 @@ describe('email layout', () => {
     expect(EMAIL_FONT).toContain('Work Sans');
     expect(EMAIL_STYLES.law).toContain('font-size:26px');
     expect(EMAIL_STYLES.link).toContain('#0d5ea1');
+  });
+
+  it('joins a site path with or without a trailing slash on the site URL', () => {
+    expect(siteLink('https://example.com/', '/law/1')).toBe('https://example.com/law/1');
+    expect(siteLink('https://example.com', '/law/1')).toBe('https://example.com/law/1');
+  });
+
+  it('lets the button fill the width on a phone', () => {
+    expect(emailButton('Go', 'https://example.com')).toContain('class="em-button-table"');
   });
 });
