@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { SubscriptionController } from '../../src/controllers/subscriptions.controller.ts';
@@ -175,6 +177,19 @@ describe('SubscriptionController', () => {
 
   describe('page styling', () => {
     const html = () => (res.end as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const freshResponse = () => ({ writeHead: vi.fn(), end: vi.fn() }) as unknown as ServerResponse;
+
+    it('links stylesheets that the web build serves', () => {
+      controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      const hrefs = [...html().matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
+      expect(hrefs).toHaveLength(2);
+      const web = resolve(import.meta.dirname, '../../../web');
+      for (const href of hrefs) {
+        // variables.css is copied from styles/ into the build; the rest ships from public/
+        const source = href === '/styles/partials/variables.css' ? `styles/partials/variables.css` : `public${href}`;
+        expect(existsSync(resolve(web, source)), href).toBe(true);
+      }
+    });
 
     it('gives every state the site header, stylesheets, footer and a noindex marker, with no inline styles', () => {
       subscriptions.confirm.mockReturnValue(true);
@@ -188,7 +203,7 @@ describe('SubscriptionController', () => {
         () => controller.unsubscribe({} as IncomingMessage, res, {}),
       ];
       for (const render of renders) {
-        res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+        res = freshResponse();
         render();
         expect(html()).toContain('<link rel="stylesheet" href="/styles/partials/variables.css">');
         expect(html()).toContain('<link rel="stylesheet" href="/styles/subscription-pages.css">');
@@ -204,10 +219,10 @@ describe('SubscriptionController', () => {
       subscriptions.confirm.mockReturnValue(true);
       controller.confirm({} as IncomingMessage, res, { query: { token: TOKEN } });
       expect(html()).toContain('subscription-page__status--success');
-      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      res = freshResponse();
       controller.confirm({} as IncomingMessage, res, {});
       expect(html()).toContain('subscription-page__status--error');
-      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      res = freshResponse();
       controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
       expect(html()).not.toContain('subscription-page__status');
     });
