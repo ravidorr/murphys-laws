@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Deploy to Production workflow can now be started by hand (`workflow_dispatch`), so changed repository
+  secrets such as the SMTP settings can reach the server without an unrelated merge. A manual run does nothing
+  unless it starts from `main`, and it skips the daily email template smoke test, which compares against the
+  previous push. Root bumped to `2.6.132`.
 - Every law page is now linked from other pages in the static HTML. Before, 1,561 of 2,465 law pages (63%) had no
   internal link pointing at them, so search engines could only find them through `sitemap.xml`, and most of the
   rest had one to three. "Related laws" used to be the first three laws of the category for every law in it, so
