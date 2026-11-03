@@ -216,30 +216,53 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
   });
   wrapper.appendChild(trigger);
 
-  // Create popover with all options: Copy link, then social, then Copy text
+  // Create popover: a "Share to" icon row, then Copy link, Copy text, Save as image,
+  // Copy embed code and, where the browser has one, the system share sheet
   const popover = document.createElement('div');
   popover.className = 'share-popover';
   popover.setAttribute('role', 'menu');
 
-  // System share sheet, only where the browser has one (mostly phones)
-  if (canNativeShare()) {
-    popover.appendChild(createMenuItem({
-      tag: 'button',
-      iconClass: 'native',
-      iconName: 'share',
-      label: 'Share with your device',
-      attributes: {
-        'data-action': 'native-share',
-        'data-share-url': shareUrl,
-        'data-share-title': shareTitle,
-        'data-share-text': textToCopy,
-        'data-surface': surface,
-        ...(lawId ? { 'data-law-id': lawId } : {}),
-      },
-    }));
-  }
+  // Social links as an icon-only row (X, Facebook, LinkedIn, Reddit, WhatsApp, Email)
+  const socialLabel = document.createElement('div');
+  socialLabel.className = 'share-popover-label';
+  socialLabel.setAttribute('aria-hidden', 'true');
+  socialLabel.textContent = 'Share to';
+  popover.appendChild(socialLabel);
 
-  // Copy link (first item)
+  const socialGroup = document.createElement('div');
+  socialGroup.className = 'share-popover-social';
+  socialGroup.setAttribute('role', 'group');
+  socialGroup.setAttribute('aria-label', 'Share to');
+  SHARE_PLATFORMS.social.forEach(({ id, label, icon: iconName }) => {
+    const link = document.createElement('a');
+    link.className = 'share-popover-item share-popover-item--social';
+    link.href = shareUrls[id] ?? '';
+    link.title = label;
+    link.setAttribute('role', 'menuitem');
+    link.setAttribute('target', id === 'email' ? '_self' : '_blank');
+    if (id !== 'email') {
+      link.setAttribute('rel', 'noopener noreferrer');
+    }
+
+    const iconCircle = document.createElement('span');
+    iconCircle.className = `icon-circle ${id}`;
+    const icon = createIcon(iconName, { classNames: [] });
+    if (icon) iconCircle.appendChild(icon);
+    link.appendChild(iconCircle);
+
+    const accessibleLabel = document.createElement('span');
+    accessibleLabel.className = 'sr-only';
+    accessibleLabel.textContent = label;
+    link.appendChild(accessibleLabel);
+    socialGroup.appendChild(link);
+  });
+  popover.appendChild(socialGroup);
+
+  const divider = document.createElement('div');
+  divider.className = 'share-popover-divider';
+  popover.appendChild(divider);
+
+  // Copy link
   const copyLinkBtn = document.createElement('button');
   copyLinkBtn.type = 'button';
   copyLinkBtn.className = 'share-popover-item';
@@ -255,31 +278,7 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
   copyLinkBtn.appendChild(document.createTextNode('Copy link'));
   popover.appendChild(copyLinkBtn);
 
-  // Social links (X, Facebook, LinkedIn, Reddit, WhatsApp, Email)
-  SHARE_PLATFORMS.social.forEach(({ id, label, icon: iconName }) => {
-    const link = document.createElement('a');
-    link.className = 'share-popover-item';
-    link.href = shareUrls[id] ?? '';
-    link.setAttribute('role', 'menuitem');
-    link.setAttribute('target', id === 'email' ? '_self' : '_blank');
-    if (id !== 'email') {
-      link.setAttribute('rel', 'noopener noreferrer');
-    }
-
-    const iconCircle = document.createElement('span');
-    iconCircle.className = `icon-circle ${id}`;
-    const icon = createIcon(iconName, { classNames: [] });
-    if (icon) iconCircle.appendChild(icon);
-    link.appendChild(iconCircle);
-    link.appendChild(document.createTextNode(label));
-    popover.appendChild(link);
-  });
-
-  // Divider and Copy text
-  const divider = document.createElement('div');
-  divider.className = 'share-popover-divider';
-  popover.appendChild(divider);
-
+  // Copy text
   const copyTextBtn = document.createElement('button');
   copyTextBtn.type = 'button';
   copyTextBtn.className = 'share-popover-item';
@@ -314,6 +313,24 @@ export function SocialShare({ url, title, description, lawText, lawId, surface =
         'data-copy-value': buildEmbedSnippet(lawId, textToCopy),
         'data-law-id': lawId,
         'data-surface': surface,
+      },
+    }));
+  }
+
+  // System share sheet, last and only where the browser has one (mostly phones)
+  if (canNativeShare()) {
+    popover.appendChild(createMenuItem({
+      tag: 'button',
+      iconClass: 'native',
+      iconName: 'share',
+      label: 'Share with your device',
+      attributes: {
+        'data-action': 'native-share',
+        'data-share-url': shareUrl,
+        'data-share-title': shareTitle,
+        'data-share-text': textToCopy,
+        'data-surface': surface,
+        ...(lawId ? { 'data-law-id': lawId } : {}),
       },
     }));
   }
@@ -451,13 +468,16 @@ export function renderShareButtonsHTML({ lawId, lawText, url }: RenderShareButto
         Share
       </button>
       <div class="share-popover" role="menu">
-        ${nativeShareButton}
-        ${copyLinkButton}
-        ${shareLinkItems}
+        <div class="share-popover-label" aria-hidden="true">Share to</div>
+        <div class="share-popover-social" role="group" aria-label="Share to">
+          ${shareLinkItems}
+        </div>
         <div class="share-popover-divider"></div>
+        ${copyLinkButton}
         ${copyTextButton}
         ${saveImageLink}
         ${copyEmbedButton}
+        ${nativeShareButton}
         <div class="share-copy-feedback">
           <span class="icon" data-icon="checkCircle" aria-hidden="true"></span>
           Copied!

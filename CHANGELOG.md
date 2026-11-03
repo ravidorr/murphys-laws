@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Redesigned the Share menu so it fits without scrolling: a "Share to" row of social icons (X, Facebook,
+  LinkedIn, Reddit, WhatsApp, Email) comes first, then Copy link, Copy text, Save as image, Copy embed code and, on
+  browsers that support it, Share with your device. Action rows use plain gray icons and 44px targets; only the
+  social icons keep brand colors. Web bumped to `3.4.50`; root to `2.6.136`.
 - The daily Law of the Day email and the subscription confirmation email now look like Murphy's Law Archive: the
   site header (the "M" badge, wordmark and tagline), the site colours and type, the law as large quote-style text
   with its category and attribution when it has them, a real "Read, vote and share" or "Confirm and start the
