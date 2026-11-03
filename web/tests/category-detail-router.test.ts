@@ -121,6 +121,7 @@ describe('Category Detail router integration', () => {
     const categorySelect = root.querySelector('#search-category') as HTMLSelectElement;
     categorySelect.value = '2';
     categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    (root.querySelector('#search-btn') as HTMLButtonElement).click();
 
     await vi.waitFor(() => {
       expect(root.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy();

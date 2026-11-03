@@ -12,10 +12,16 @@ import {
   buildStaticLawDetailContent,
   buildStaticArticleArchive,
   buildStaticHomeContent,
+  buildNotFoundPage,
+  validateNotFoundPage,
   applyPageMetadata,
+  generateLawPage,
+  buildSitemapXml,
   validateGeneratedPage,
   fetchAllCategories,
-  categorySitemapPaths
+  categorySitemapPaths,
+  pickRelatedLaws,
+  renderLawLinkList
 } from '@scripts/ssg';
 
 const metadataTemplate = `<!doctype html><html><head>
@@ -440,5 +446,202 @@ describe('SSG Static Route Content', () => {
 
     expect(html).toContain('<a href="https://en.wikipedia.org/wiki/Murphy%27s_law" target="_blank" rel="noopener noreferrer">Wikipedia<span class="visually-hidden"> (opens in a new tab)</span></a>');
     expect(html).toContain('<a href="/browse">the archive</a>');
+  });
+});
+
+describe('buildNotFoundPage', () => {
+  const shell = `<!doctype html><html><head>
+<title>Home</title>
+<meta name="description" content="Home description">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://murphys-laws.com/">
+<link rel="alternate" hreflang="en" href="https://murphys-laws.com/">
+<link rel="alternate" hreflang="x-default" href="https://murphys-laws.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://murphys-laws.com/">
+<meta property="og:title" content="Home">
+<meta property="og:description" content="Home description">
+<meta property="og:image" content="https://murphys-laws.com/social/home.png">
+<meta property="twitter:url" content="https://murphys-laws.com/">
+<meta property="twitter:title" content="Home">
+<meta property="twitter:description" content="Home description">
+<meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
+</head><body><header class="site-header">Header</header>
+<main id="main-content" class="flex-1 container page" aria-label="Main content"><p>Loading</p></main>
+</body></html>`;
+
+  it('keeps the site shell and is noindex', () => {
+    const html = buildNotFoundPage(shell, []);
+    expect(html).toContain('<header class="site-header">Header</header>');
+    expect(html).toContain('<title>Page Not Found - Murphy&#039;s Laws</title>');
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).not.toContain('Loading');
+  });
+
+  it('keeps the canonical, hreflang, og:url and twitter:url tags so the app can update them', () => {
+    const html = buildNotFoundPage(shell, []);
+    expect(html).toContain('rel="canonical"');
+    expect(html).toContain('hreflang="en"');
+    expect(html).toContain('hreflang="x-default"');
+    expect(html).toContain('property="og:url"');
+    expect(html).toContain('property="twitter:url"');
+  });
+
+  it('passes validation for its own output and flags a bad page', () => {
+    expect(validateNotFoundPage(buildNotFoundPage(shell, []))).toEqual([]);
+    expect(validateNotFoundPage('<html><h1>a</h1><h1>b</h1></html>')).toEqual([
+      'missing noindex',
+      'missing 404 content',
+      'expected one h1',
+    ]);
+  });
+
+  it('renders the 404 content with suggested laws', () => {
+    const html = buildNotFoundPage(shell, [{ id: 5, text: 'Anything can fail.' } as never]);
+    expect(html).toContain('class="not-found-code"');
+    expect(html).toContain('href="/law/5"');
+    expect((html.match(/<h1\b/g) || []).length).toBe(1);
+  });
+});
+
+describe('SSG SEO output', () => {
+  const lawTemplate = metadataTemplate
+    .replace('<head>', '<head><meta name="robots" content="index, follow">')
+    .replace('<body>', '<body><main class="flex-1 container page"><p>Loading</p></main>');
+
+  it('applies a robots override only when requested', () => {
+    const indexable = applyPageMetadata(lawTemplate, { title: 'A', description: 'B', canonicalPath: '/a' });
+    expect(indexable).toContain('<meta name="robots" content="index, follow">');
+    const hidden = applyPageMetadata(lawTemplate, { title: 'A', description: 'B', canonicalPath: '/a', robots: 'noindex, follow' });
+    expect(hidden).toContain('<meta name="robots" content="noindex, follow">');
+    expect(hidden).not.toContain('<meta name="robots" content="index, follow">');
+  });
+
+  it('gives generic-title laws a unique title and description from their text', () => {
+    const law = { id: 2464, title: "Murphy's Law", text: "Night vision - isn't.", category_name: 'Military', category_slug: 'military' };
+    const html = generateLawPage(law, lawTemplate);
+    expect(html).toContain("<title>Night vision - isn&#039;t - Murphy&#039;s Law Archive</title>");
+    expect(html).toContain('A Murphy&#039;s Law from the Military category.');
+    expect(html).toContain('"headline": "Night vision - isn\'t"');
+    expect(html).toContain('"@type": "BreadcrumbList"');
+  });
+
+  it('advertises the oEmbed endpoint on every law page', () => {
+    const html = generateLawPage({ id: 31, title: 'Hofstadter', text: 'It takes longer.' }, lawTemplate);
+    expect(html).toContain('<link rel="alternate" type="application/json+oembed" href="https://murphys-laws.com/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F31"');
+  });
+
+  describe('buildSitemapXml', () => {
+    const xml = buildSitemapXml({
+      baseUrl: 'https://murphys-laws.com',
+      laws: [
+        { id: 1, category_slug: 'tech', updated_at: '2026-05-01T10:00:00Z', created_at: '2026-01-01T00:00:00Z' },
+        { id: 2, category_slug: 'tech', created_at: '2026-03-01T00:00:00Z' },
+        { id: 3 }
+      ],
+      categories: [{ slug: 'tech', title: 'Technology', law_count: 2 }, { slug: 'empty', title: 'Empty', law_count: 0 }],
+      contentPages: [
+        { slug: 'about', file: 'about.md', title: 'About', description: 'About' },
+        { slug: 'examples', file: 'examples.md', title: 'Examples', description: 'Examples' }
+      ],
+      contentMetadata: { about: { lastUpdated: '2025-03-09' }, examples: {} },
+      staticRoutePaths: ['calculator/sods-law']
+    });
+
+    it('omits changefreq and priority', () => {
+      expect(xml).not.toContain('changefreq');
+      expect(xml).not.toContain('priority');
+    });
+
+    it('does not list non-indexable routes', () => {
+      expect(xml).not.toContain('/favorites');
+      expect(xml).toContain('https://murphys-laws.com/calculator/sods-law');
+    });
+
+    it('derives lastmod from real dates', () => {
+      expect(xml).toContain('<loc>https://murphys-laws.com/about</loc>\n    <lastmod>2025-03-09</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/1</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/tech</loc>\n    <lastmod>2026-05-01</lastmod>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/</loc>\n    <lastmod>2026-05-01</lastmod>');
+    });
+
+    it('does not invent dates for URLs with no known date', () => {
+      expect(xml).toContain('<loc>https://murphys-laws.com/category/empty</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/law/3</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/calculator/sods-law</loc>\n  </url>');
+      expect(xml).toContain('<loc>https://murphys-laws.com/examples</loc>\n  </url>');
+    });
+
+    it('leaves lastmod out of an entry only when no date is known', () => {
+      const bare = buildSitemapXml({
+        baseUrl: 'https://murphys-laws.com',
+        laws: [],
+        categories: [],
+        contentPages: [{ slug: 'about', file: 'about.md', title: 'About', description: 'About' }],
+        contentMetadata: {},
+        staticRoutePaths: []
+      });
+      expect(bare).not.toContain('lastmod');
+      expect(bare).toContain('<loc>https://murphys-laws.com/about</loc>');
+    });
+  });
+
+  describe('pickRelatedLaws', () => {
+    const ring = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i + 1 }));
+
+    it('never picks the law itself and returns three distinct laws', () => {
+      const laws = ring(50);
+      for (const law of laws) {
+        const related = pickRelatedLaws(law, laws);
+        expect(related).toHaveLength(3);
+        expect(new Set(related.map((r) => r.id)).size).toBe(3);
+        expect(related.map((r) => r.id)).not.toContain(law.id);
+      }
+    });
+
+    it('links every law in a category from exactly three others', () => {
+      const laws = ring(228);
+      const inbound = new Map<number, number>();
+      for (const law of laws) {
+        for (const related of pickRelatedLaws(law, laws)) inbound.set(related.id, (inbound.get(related.id) || 0) + 1);
+      }
+      expect(inbound.size).toBe(228);
+      expect([...inbound.values()].every((count) => count === 3)).toBe(true);
+    });
+
+    it('is deterministic and uses the next law, then strides further on', () => {
+      const laws = ring(100);
+      expect(pickRelatedLaws(laws[0]!, laws).map((r) => r.id)).toEqual([2, 11, 21]);
+      expect(pickRelatedLaws(laws[98]!, laws).map((r) => r.id)).toEqual([100, 9, 19]);
+    });
+
+    it('fills from the following laws in small categories', () => {
+      expect(pickRelatedLaws({ id: 1 }, ring(4)).map((r) => r.id)).toEqual([2, 3, 4]);
+      expect(pickRelatedLaws({ id: 1 }, ring(3)).map((r) => r.id)).toEqual([2, 3]);
+      expect(pickRelatedLaws({ id: 1 }, ring(2)).map((r) => r.id)).toEqual([2]);
+    });
+
+    it('returns nothing for a category of one and falls back to the head of the list for a law not in it', () => {
+      expect(pickRelatedLaws({ id: 1 }, ring(1))).toEqual([]);
+      expect(pickRelatedLaws({ id: 99 }, ring(10)).map((r) => r.id)).toEqual([1, 2, 3]);
+      expect(pickRelatedLaws({ id: 1 }, [])).toEqual([]);
+    });
+  });
+
+  describe('renderLawLinkList', () => {
+    it('renders escaped labels as links, using the unique SEO headline when there is one', () => {
+      const seo = new Map([['5', { title: 't', description: 'd', headline: 'Unique <b> headline' }]]);
+      const html = renderLawLinkList([
+        { id: 5, title: 'Murphy\'s Law', text: 'Anything that can go wrong will.' },
+        { id: 6, title: 'Sod\'s Law', text: 'Toast lands butter side down every single time you drop it.' }
+      ], seo);
+      expect(html).toContain('<li><a href="/law/5">Unique &lt;b&gt; headline</a></li>');
+      expect(html).toContain('<a href="/law/6">');
+      expect(html.match(/<li>/g)).toHaveLength(2);
+    });
+
+    it('renders nothing for no laws', () => {
+      expect(renderLawLinkList([], new Map())).toBe('');
+    });
   });
 });

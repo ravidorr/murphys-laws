@@ -256,6 +256,39 @@ tail -20 /root/murphys-laws/logs/law-of-day.log
 cd /root/murphys-laws && sudo /usr/bin/node backend/scripts/select-law-of-day.mjs
 ```
 
+### Daily Law of the Day Email
+
+Subscribers who confirmed their address get the day's law by email. Run this after the selection job (SMTP must be configured in the backend `.env`):
+
+```cron
+15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> ../logs/daily-email.log 2>&1
+```
+
+**What it does:**
+- Sends today's Law of the Day to every confirmed subscriber who has not had it yet
+- Records each send, so running it twice (or after a partial failure) never mails anyone twice
+- Exits non-zero if any send failed; the next run retries those subscribers
+
+### Daily Law of the Day Browser Notification
+
+Browsers subscribed to the notification get the day's law as a push message. Generate the VAPID key pair once and add it as the GitHub Actions secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (a `mailto:` address). The deploy workflow writes them into `backend/.env` on every deploy, so a hand edit of that file would be overwritten. For a local run they go in `.env` (see `.env.example`):
+
+```bash
+cd /root/murphys-laws/backend && npx web-push generate-vapid-keys
+```
+
+Keep the pair: changing it drops every existing browser subscription. Then schedule the send after the selection job:
+
+```cron
+20 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run push:daily >> ../logs/daily-push.log 2>&1
+```
+
+**What it does:**
+- Sends today's Law of the Day to every subscribed browser that has not had it yet and records each send
+- Deletes subscriptions the push service reports as gone (404 or 410)
+- Does nothing (and says so in the log) until all three VAPID variables are set
+- Exits non-zero if any send failed; the next run retries those subscriptions
+
 ---
 
 ## Node.js Version Management

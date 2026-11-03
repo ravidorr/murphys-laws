@@ -20,7 +20,6 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 
 ### Accessibility Improvements
 - [x] **Investigate Slider Readonly State:** Calculator sliders show as "readonly" in accessibility tree. Fixed by adding explicit ARIA attributes (role="slider", aria-valuenow, aria-valuetext, aria-readonly="false") and keeping them in sync via JavaScript.
-- [ ] **Rename Footer Navigation:** Footer nav has `aria-label="Utility"` which is vague. Change to "Footer navigation" or "Site links" for clarity.
 - [ ] **Add Skip Links for Calculator Sections:** Long home page could benefit from skip links to jump to specific calculators.
 
 ### SEO Improvements
@@ -54,8 +53,11 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 ## SEO Recommendations (Content & Technical)
 - [x] **"Murphy's Law vs Sod's Law" Comparison Page:** ~~Create a dedicated page explaining the differences between Murphy's Law and Sod's Law. This is a high-volume search query with no dedicated content currently.~~ Done - dedicated `/murphys-law-vs-sods-law` content page compares the two maxims and links to related content.
 - [x] **"Murphy's Law Examples" Page:** ~~Create a curated page targeting "Murphy's Law examples" keyword cluster with real-world scenarios organized by category.~~ Done - `/examples` organizes real-world scenarios by technology, work, everyday life, and travel, with dedicated subpages for each.
-- [ ] **Breadcrumb Schema on All Pages:** Add BreadcrumbList structured data to law detail pages, calculator pages, and content pages (currently only on browse and category pages).
-- [ ] **Internal Linking Improvements:** Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.
+- [ ] **Breadcrumb Schema on Calculator and Content Pages:** Law, browse, categories and category pages now ship BreadcrumbList in the static HTML; calculator pages and content pages still need it.
+- [ ] **Law Page H1 for Generic Titles:** About 1,892 laws are titled "Murphy's Law" or "Corollary", so their visible H1 is identical. The head title and schema now come from the law text. Decide whether the H1 should too, or retitle the laws in the database.
+- [ ] **Long Article Titles:** `/why-murphys-law-feels-true` and `/murphys-law-project-management` have titles over 60 characters (editorial pun headlines) that search results will truncate.
+- [ ] **Small Category Pages:** `/category/murphys-marine-corps-laws` and `/category/murphys-sport-laws` stay under 150 words because they hold few laws. Merge or enrich them.
+- [ ] **Internal Linking Improvements:** (Every law page is now linked from other pages in the static HTML; the rest is still open.) Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.
 - [ ] **Visual Content:** Add historical photos (Edward Murphy, Dr. John Stapp, rocket sled experiments), infographics showing Murphy's Law variations, and embedded video explaining the origin story.
 - [ ] **Glossary/Index Page:** Create a page listing all law authors/attributions with links, targeting long-tail "who said [law name]" queries.
 - [x] **Educational Content:** ~~Add articles like "Why does Murphy's Law feel so true?" (psychology/cognitive bias) and "How to use Murphy's Law in project management".~~ Done - added long-form articles "Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)" and "Project Management vs. The Universe: A Survival Guide" in `shared/content/`, with web routes and home page links.
@@ -75,7 +77,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 
 ## User Engagement (Require Backend Work)
 - [x] **RSS Feed:** ~~Provide RSS/Atom feed for new laws and Law of the Day.~~ Done - added `/api/v1/feed.rss` (RSS 2.0) and `/api/v1/feed.atom` (Atom 1.0) endpoints. Feeds include Law of the Day plus 10 most recent laws. Added autodiscovery links to `index.html`.
-- [ ] **Email Notifications:** Allow users to subscribe to new laws in specific categories.
+- [ ] **Email Notifications:** Allow users to subscribe to new laws in specific categories. (The daily Law of the Day email shipped; per-category subscriptions have not.)
 - [ ] **Comments/Discussions:** Allow users to comment on laws (requires moderation system).
 - [ ] **Law Collections:** Create curated "featured collections" (e.g., "Top 10 for Developers", "Classic Murphy's Laws").
 

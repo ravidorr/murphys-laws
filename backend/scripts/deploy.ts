@@ -199,6 +199,12 @@ async function deploy(): Promise<void> {
     'Installing dependencies and rebuilding native modules'
   );
 
+  log('\nApplying database migrations...', 'blue');
+  exec(
+    `ssh ${DROPLET_HOST} "sudo -u root bash -c 'cd ${DROPLET_PATH}/backend && source ~/.nvm/nvm.sh && npm run migrate'"`,
+    'Applying database migrations'
+  );
+
   log('\nRestarting PM2 services...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && pm2 restart ecosystem.config.cjs'"`,

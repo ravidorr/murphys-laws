@@ -1,4 +1,5 @@
 import { CALCULATOR_META_DESCRIPTIONS, SITE_NAME, SITE_URL, SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from '@utils/constants.ts';
+import { buildLawSeo } from '@utils/seo.ts';
 import type { Law } from '../types/app.d.ts';
 
 const JSONLD_PREFIX = 'jsonld-';
@@ -178,7 +179,7 @@ export function setLawStructuredData(law: Law): void {
   setJsonLd('law-article', {
     '@context': 'https://schema.org',
     '@type': ['Article', 'Quotation'],
-    'headline': law.title || law.text.slice(0, 120),
+    'headline': buildLawSeo(law).headline,
     'description': law.text,
     'text': law.text, // For Quotation schema
     'speechToText': law.text, // For Quotation schema
@@ -400,7 +401,7 @@ export function setCategoryItemListSchema({ categoryTitle, categorySlug, laws }:
     'position': index + 1,
     'item': {
       '@type': 'Quotation',
-      'name': law.title || `Murphy's Law #${law.id}`,
+      'name': buildLawSeo(law).headline,
       'text': law.text,
       'url': `${SITE_URL}/law/${law.id}`
     }

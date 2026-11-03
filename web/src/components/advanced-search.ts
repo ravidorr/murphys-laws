@@ -23,7 +23,6 @@ export interface AdvancedSearchOptions {
   onSearch: (filters: AdvancedSearchFilters) => void;
   initialFilters?: AdvancedSearchFilters;
   defaultCategoryId?: number;
-  categoryHint?: string;
   /** Test hook: called with loadFilters so tests can trigger loadFilters(forceReload). */
   _testLoadFiltersRef?: (loadFilters: (forceReload?: boolean) => Promise<void>) => void;
 }
@@ -32,7 +31,6 @@ export function AdvancedSearch({
   onSearch,
   initialFilters = {} as AdvancedSearchFilters,
   defaultCategoryId,
-  categoryHint,
   _testLoadFiltersRef
 }: AdvancedSearchOptions): HTMLElement {
   const el = document.createElement('section');
@@ -46,7 +44,6 @@ export function AdvancedSearch({
   let filtersLoaded = false;
   let submittersDebounceId: ReturnType<typeof setTimeout> | null = null;
   let listboxSelectedIndex = -1;
-  let ignoreCategoryChange = false;
 
   el.innerHTML = templateHtml;
   hydrateIcons(el);
@@ -58,13 +55,6 @@ export function AdvancedSearch({
   const keywordInput = el.querySelector('#search-keyword') as HTMLInputElement;
   const searchBtn = el.querySelector('#search-btn') as HTMLButtonElement;
   const clearBtn = el.querySelector('#clear-btn') as HTMLButtonElement;
-  const categoryHintEl = el.querySelector('#search-category-hint') as HTMLElement;
-
-  if (categoryHint && categoryHintEl) {
-    categoryHintEl.textContent = categoryHint;
-    categoryHintEl.hidden = false;
-    categorySelect.setAttribute('aria-describedby', categoryHintEl.id);
-  }
 
   /* v8 ignore start -- keywordInput is always provided by the component template */
   if (keywordInput) keywordInput.value = searchQuery;
@@ -299,23 +289,12 @@ export function AdvancedSearch({
 
   searchBtn?.addEventListener('click', () => submitFilters());
 
+  // Selecting a category only updates the form; the Search button (or Enter) applies it.
   categorySelect?.addEventListener('change', () => {
     selectedCategory = categorySelect.value;
-    if (ignoreCategoryChange) return;
-    submitFilters();
   });
 
   categorySelect?.addEventListener('keydown', (e: KeyboardEvent) => {
-    // Chromium can emit change for each navigation key on a closed select.
-    // Keep its selection in sync, but wait for Enter before applying filters.
-    if (['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
-      ignoreCategoryChange = true;
-      setTimeout(() => {
-        ignoreCategoryChange = false;
-      }, 0);
-      return;
-    }
-
     if (e.key === 'Enter') submitFilters();
   });
 

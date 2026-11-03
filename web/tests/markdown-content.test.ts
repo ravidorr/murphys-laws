@@ -109,6 +109,33 @@ describe('markdown-content.js', () => {
       }
     });
 
+    it('uses fallback metadata for every optional content entry when metadata is absent', () => {
+      const optionalPages = [
+        'examples',
+        'developers',
+        'best-murphys-laws',
+        'funniest-murphys-laws',
+        'murphys-laws-about-work',
+        'murphys-laws-about-technology',
+        'murphys-law-vs-sods-law',
+        'examples/work',
+        'examples/travel',
+        'examples/tech',
+        'examples/everyday-life'
+      ] as const;
+      const store = metadata as unknown as Record<string, unknown>;
+      const saved = optionalPages.map((page) => [page, store[page]] as const);
+      optionalPages.forEach((page) => delete store[page]);
+
+      try {
+        for (const page of optionalPages) {
+          expect(getPageContent(page)).toContain('<h1');
+        }
+      } finally {
+        saved.forEach(([page, value]) => { store[page] = value; });
+      }
+    });
+
     it('uses concise technology hub intro copy to avoid visual clipping', () => {
       expect(getPageContent('murphys-laws-about-technology')).not.toContain('the one setting nobody remembers changing');
     });

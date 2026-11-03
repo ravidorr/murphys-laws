@@ -18,8 +18,8 @@ android {
         applicationId = "com.murphyslaws"
         minSdk = 26
         targetSdk = 37
-        versionCode = 14
-        versionName = "1.2.7"
+        versionCode = 20
+        versionName = "1.2.13"
 
         testInstrumentationRunner = "com.murphyslaws.CustomTestRunner"
         vectorDrawables {

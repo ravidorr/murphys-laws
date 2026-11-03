@@ -17,7 +17,6 @@ interface MountSearchOptions {
   onSearch?: (filters: SearchFilters) => void;
   initialFilters?: { q?: string; category_id?: string; attribution?: string };
   defaultCategoryId?: number;
-  categoryHint?: string;
   _testLoadFiltersRef?: (loadFilters: (force?: boolean) => Promise<void>) => void;
 }
 
@@ -306,11 +305,11 @@ describe('AdvancedSearch component', () => {
     expect(searchFilters).toEqual({ category_id: 1 });
   });
 
-  it('applies a category change with the current keyword and submitter', async () => {
+  it('does not submit when the category changes; Search applies it with keyword and submitter', async () => {
     const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
     fetchAPISpy.mockResolvedValueOnce({ data: categories });
-    let searchFilters: SearchFilters | null = null;
-    const el = mountSearch({ onSearch: (filters) => { searchFilters = filters; } });
+    const onSearch = vi.fn();
+    const el = mountSearch({ onSearch });
 
     await vi.waitFor(() => {
       expect((el.querySelector('#search-category') as HTMLSelectElement).options.length).toBeGreaterThan(1);
@@ -321,11 +320,13 @@ describe('AdvancedSearch component', () => {
     const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     categorySelect.value = '1';
     categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(onSearch).not.toHaveBeenCalled();
 
-    expect(searchFilters).toEqual({ q: 'alarm clock', category_id: 1, attribution: 'Alice' });
+    (el.querySelector('#search-btn') as HTMLButtonElement).click();
+    expect(onSearch).toHaveBeenCalledWith({ q: 'alarm clock', category_id: 1, attribution: 'Alice' });
   });
 
-  it('waits for Enter after category keyboard navigation before submitting', async () => {
+  it('submits on Enter in the category select', async () => {
     const categories: Category[] = [{ id: 1, title: 'General', slug: 'general' }];
     fetchAPISpy.mockResolvedValueOnce({ data: categories });
     const onSearch = vi.fn();
@@ -338,10 +339,7 @@ describe('AdvancedSearch component', () => {
     const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     categorySelect.value = '1';
     categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
     expect(onSearch).not.toHaveBeenCalled();
-
-    await new Promise(resolve => setTimeout(resolve, 0));
     categorySelect.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(onSearch).toHaveBeenCalledWith({ category_id: 1 });
   });
@@ -395,7 +393,7 @@ describe('AdvancedSearch component', () => {
     (el.querySelector('#search-attribution') as HTMLInputElement).value = 'Alice';
     const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
     categorySelect.value = '';
-    categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    (el.querySelector('#search-btn') as HTMLButtonElement).click();
 
     expect(searchFilters).toEqual({ q: 'alarm clock', attribution: 'Alice' });
   });
@@ -428,16 +426,12 @@ describe('AdvancedSearch component', () => {
     expect(searchFilters).toEqual({ category_id: 1 });
   });
 
-  it('renders a category hint and describes the category select', () => {
-    const hint = 'Choose a category alone to open it. Add search terms to search Browse.';
+  it('does not render a category hint', () => {
     fetchAPISpy.mockResolvedValue({ data: [] });
-    const el = mountSearch({ categoryHint: hint });
+    const el = mountSearch();
 
-    const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
-    const categoryHint = el.querySelector('#search-category-hint') as HTMLElement;
-    expect(categoryHint.textContent).toBe(hint);
-    expect(categoryHint.hidden).toBe(false);
-    expect(categorySelect.getAttribute('aria-describedby')).toBe('search-category-hint');
+    expect(el.querySelector('#search-category-hint')).toBeNull();
+    expect(el.querySelector('#search-category')!.hasAttribute('aria-describedby')).toBe(false);
   });
 
   it('calls onSearch with attribution filter', async () => {
