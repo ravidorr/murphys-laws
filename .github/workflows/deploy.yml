@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   deploy:
+    # A manual run can be started from any branch; only main may reach production.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -213,6 +216,9 @@ jobs:
             GITHUB_OAUTH_CLIENT_SECRET=${{ secrets['ADMIN_GITHUB_OAUTH_CLIENT_SECRET'] }}
             ADMIN_GITHUB_USERS=${{ secrets['ADMIN_GITHUB_USERS'] }}
             ADMIN_SESSION_SECRET=${{ secrets['ADMIN_SESSION_SECRET'] }}
+            VAPID_PUBLIC_KEY=${{ secrets['VAPID_PUBLIC_KEY'] }}
+            VAPID_PRIVATE_KEY=${{ secrets['VAPID_PRIVATE_KEY'] }}
+            VAPID_SUBJECT=${{ secrets['VAPID_SUBJECT'] }}
             __ENV_END__
 
             # The optional recipients are left out when unset instead of being written as empty values
@@ -339,6 +345,11 @@ jobs:
         id: daily_email_template
         run: |
           set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Manual run; skipping template smoke email."
+            exit 0
+          fi
           BEFORE="${{ github.event.before }}"
           AFTER="${{ github.sha }}"
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then

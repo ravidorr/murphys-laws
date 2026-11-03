@@ -55,8 +55,15 @@ const INLINE_SOURCE_ROOTS = [
 const CSS_ROOTS = ['web/styles', 'web/public/styles'];
 const CSS_TOKEN_DEFINITION = 'web/styles/partials/variables.css';
 const CSS_PRINT_ALLOWLIST = 'web/styles/partials/print.css';
-/** Gmail-safe operational email HTML requires inline style attributes on table cells. */
-const INLINE_CSS_ALLOWLIST = new Set(['backend/scripts/render-daily-report.ts']);
+/**
+ * Email HTML requires inline style attributes on table cells (Gmail and Outlook ignore stylesheets). The
+ * subscription emails confine them to one module, whose colors are generated from variables.css by
+ * export-email-tokens.ts; the templates call its helpers. See conformance-allowlist.md.
+ */
+const INLINE_CSS_ALLOWLIST = new Set([
+  'backend/scripts/render-daily-report.ts',
+  'shared/modules/email-layout.ts',
+]);
 const IOS_EXPORT_COMMAND = 'tsx shared/design-tokens/export-ios-tokens.ts';
 const IOS_PROJECT_EXPORT_COMMAND =
   'npm --prefix .. run design:export:ios';

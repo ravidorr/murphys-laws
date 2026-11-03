@@ -1445,3 +1445,34 @@ describe('LawDetail view', () => {
     });
   });
 });
+
+describe('LawDetail head metadata', () => {
+  const law = { id: 7, title: "Murphy's Law", text: "Night vision - isn't.", score: 0, category_name: 'War' };
+
+  function setHead(canonical: string) {
+    document.head.innerHTML = `<title>Original</title><meta name="description" content="Original"><link rel="canonical" href="${canonical}">`;
+  }
+
+  afterEach(() => {
+    document.head.innerHTML = '';
+  });
+
+  it('derives a unique title and description from the text on client-side navigation', async () => {
+    setHead('https://murphys-laws.com/browse');
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-law-card-root]')).toBeTruthy(), { timeout: 500 });
+    expect(document.title).toBe("Night vision - isn't - Murphy's Law Archive");
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain("Night vision - isn't.");
+  });
+
+  it('keeps the prerendered head so titles made unique by the static build are not undone', async () => {
+    setHead('https://murphys-laws.com/law/7');
+    document.title = "Night vision - isn't #7 - Murphy's Law Archive";
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-law-card-root]')).toBeTruthy(), { timeout: 500 });
+    expect(document.title).toBe("Night vision - isn't #7 - Murphy's Law Archive");
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('Original');
+  });
+});

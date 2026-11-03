@@ -1,5 +1,5 @@
 import { SITE_NAME, SITE_URL, SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from '@utils/constants.ts';
-import { buildBreadcrumbList, type BreadcrumbTrailItem } from '@utils/breadcrumb-schema.ts';
+import { buildBreadcrumbList as buildBreadcrumbListFromTrail, buildLawSeo, type BreadcrumbItem } from '@utils/seo.ts';
 import type { Law } from '../types/app.d.ts';
 
 const JSONLD_PREFIX = 'jsonld-';
@@ -84,11 +84,15 @@ export function clearPageStructuredData(): void {
   PAGE_IDS.forEach(removeJsonLd);
 }
 
+function buildBreadcrumbList(trail: BreadcrumbItem[]): Record<string, unknown> {
+  return buildBreadcrumbListFromTrail([{ name: 'Home', path: '/' }, ...trail]);
+}
+
 /**
  * Set BreadcrumbList JSON-LD for a content page (clears previous page data).
  * Home is prepended automatically; paths must start with "/".
  */
-export function setContentBreadcrumbStructuredData(trail: BreadcrumbTrailItem[]): void {
+export function setContentBreadcrumbStructuredData(trail: BreadcrumbItem[]): void {
   clearPageStructuredData();
   setJsonLd('content-page-breadcrumbs', buildBreadcrumbList(trail));
 }
@@ -191,7 +195,7 @@ export function setLawStructuredData(law: Law): void {
   setJsonLd('law-article', {
     '@context': 'https://schema.org',
     '@type': ['Article', 'Quotation'],
-    'headline': law.title || law.text.slice(0, 120),
+    'headline': buildLawSeo(law).headline,
     'description': law.text,
     'text': law.text, // For Quotation schema
     'speechToText': law.text, // For Quotation schema
@@ -419,7 +423,7 @@ export function setCategoryItemListSchema({ categoryTitle, categorySlug, laws }:
     'position': index + 1,
     'item': {
       '@type': 'Quotation',
-      'name': law.title || `Murphy's Law #${law.id}`,
+      'name': buildLawSeo(law).headline,
       'text': law.text,
       'url': `${SITE_URL}/law/${law.id}`
     }

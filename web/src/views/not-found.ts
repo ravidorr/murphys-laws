@@ -1,40 +1,21 @@
-import templateHtml from '@views/templates/not-found.html?raw';
-import { hydrateIcons } from '@utils/icons.ts';
-import type { OnNavigate } from '../types/app.d.ts';
+import { fetchTopVoted } from '@utils/api.ts';
+import { renderNotFoundContent, renderNotFoundLaws, NOT_FOUND_LAW_COUNT } from '@utils/not-found-content.ts';
+import { pickNotFoundLine } from '@utils/not-found-lines.ts';
 
-export function NotFound({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivElement {
+export function NotFound(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page pt-0';
-  el.innerHTML = templateHtml;
-  
-  // Hydrate icons
-  hydrateIcons(el);
+  el.innerHTML = renderNotFoundContent({ line: pickNotFoundLine() });
 
-  // Template always provides search form and input
-  const searchForm = el.querySelector('#not-found-search-form')!;
-  const searchInput = el.querySelector('#not-found-search-input')!;
-  searchForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const query = (searchInput as HTMLInputElement).value.trim();
-    if (query) {
-      onNavigate('browse');
-      sessionStorage.setItem('searchQuery', query);
-    }
-  });
-
-  el.addEventListener('click', (e) => {
-    const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
-
-    const navBtn = t.closest('[data-nav]');
-    if (navBtn) {
-      const navTarget = navBtn.getAttribute('data-nav');
-      const navParam = navBtn.getAttribute('data-param');
-      if (navTarget) {
-        onNavigate(navTarget, navParam || undefined);
-      }
-    }
-  });
+  // Law suggestions are a bonus. If the API is down the section stays hidden.
+  void fetchTopVoted(NOT_FOUND_LAW_COUNT)
+    .then(({ data }) => {
+      const lawsHtml = renderNotFoundLaws(data);
+      if (!lawsHtml) return;
+      el.querySelector('[data-not-found-laws]')!.innerHTML = lawsHtml;
+      el.querySelector('.not-found-laws-section')!.removeAttribute('hidden');
+    })
+    .catch(() => undefined);
 
   return el;
 }
