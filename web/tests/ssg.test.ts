@@ -13,6 +13,8 @@ import {
   buildStaticHomeContent,
   applyPageMetadata,
   validateGeneratedPage,
+  buildBreadcrumbList,
+  buildContentBreadcrumbTrail,
   fetchAllCategories,
   categorySitemapPaths
 } from '@scripts/ssg';
@@ -409,5 +411,29 @@ describe('SSG Static Route Content', () => {
 
     expect(html).toContain('<a href="https://en.wikipedia.org/wiki/Murphy%27s_law" target="_blank" rel="noopener noreferrer">Wikipedia<span class="visually-hidden"> (opens in a new tab)</span></a>');
     expect(html).toContain('<a href="/browse">the archive</a>');
+  });
+  it('builds absolute BreadcrumbList data starting at Home', () => {
+    const data = buildBreadcrumbList([{ name: "Sod's Law Calculator", path: '/calculator/sods-law' }]) as {
+      '@type': string;
+      itemListElement: Array<{ position: number; name: string; item: string }>;
+    };
+
+    expect(data['@type']).toBe('BreadcrumbList');
+    expect(data.itemListElement).toEqual([
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://murphys-laws.com' },
+      { '@type': 'ListItem', position: 2, name: "Sod's Law Calculator", item: 'https://murphys-laws.com/calculator/sods-law' }
+    ]);
+  });
+
+  it('builds content breadcrumb trails with examples subpages nested under Examples', () => {
+    expect(buildContentBreadcrumbTrail({ slug: 'about', title: 'About' })).toEqual([{ name: 'About', path: '/about' }]);
+    expect(buildContentBreadcrumbTrail({ slug: 'examples/work', title: 'Work Examples' })).toEqual([
+      { name: "Murphy's Law Examples", path: '/examples' },
+      { name: 'Work Examples', path: '/examples/work' }
+    ]);
+    for (const page of CONTENT_PAGES) {
+      const trail = buildContentBreadcrumbTrail(page);
+      expect(trail[trail.length - 1]!.path).toBe(`/${page.slug}`);
+    }
   });
 });

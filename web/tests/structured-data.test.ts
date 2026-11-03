@@ -9,7 +9,8 @@ import {
   setLawStructuredData,
   setCategoryItemListSchema,
   setSodCalculatorStructuredData,
-  setToastCalculatorStructuredData
+  setToastCalculatorStructuredData,
+  setContentBreadcrumbStructuredData
 } from '../src/modules/structured-data.js';
 
 describe('Structured Data module', () => {
@@ -668,6 +669,48 @@ describe('Structured Data module', () => {
       const data = JSON.parse(el!.textContent!);
       expect(data['@type']).toBe('FAQPage');
       expect(data.mainEntity[0].acceptedAnswer.text).toMatch(/height/i);
+    });
+  });
+  describe('calculator and content breadcrumbs', () => {
+    const readBreadcrumbs = (id: string) => JSON.parse(document.head.querySelector(`#jsonld-${id}`)!.textContent!);
+
+    it('adds absolute BreadcrumbList data for the Sod calculator', () => {
+      setSodCalculatorStructuredData();
+
+      const data = readBreadcrumbs('calculator-sod-breadcrumbs');
+      expect(data['@type']).toBe('BreadcrumbList');
+      expect(data.itemListElement).toEqual([
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://murphys-laws.com' },
+        { '@type': 'ListItem', position: 2, name: "Sod's Law Calculator", item: 'https://murphys-laws.com/calculator/sods-law' }
+      ]);
+    });
+
+    it('adds absolute BreadcrumbList data for the toast calculator', () => {
+      setToastCalculatorStructuredData();
+
+      const data = readBreadcrumbs('calculator-toast-breadcrumbs');
+      expect(data.itemListElement[1]).toEqual({
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Buttered Toast Calculator',
+        item: 'https://murphys-laws.com/calculator/buttered-toast'
+      });
+    });
+
+    it('adds BreadcrumbList data for a nested content page and clears previous page data', () => {
+      setSodCalculatorStructuredData();
+      setContentBreadcrumbStructuredData([
+        { name: "Murphy's Law Examples", path: '/examples' },
+        { name: "Murphy's Law Work Examples", path: '/examples/work' }
+      ]);
+
+      const data = readBreadcrumbs('content-page-breadcrumbs');
+      expect(data.itemListElement.map((i: { position: number; item: string }) => [i.position, i.item])).toEqual([
+        [1, 'https://murphys-laws.com'],
+        [2, 'https://murphys-laws.com/examples'],
+        [3, 'https://murphys-laws.com/examples/work']
+      ]);
+      expect(document.head.querySelector('#jsonld-calculator-sod-breadcrumbs')).toBeNull();
     });
   });
 });

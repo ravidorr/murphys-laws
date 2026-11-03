@@ -549,6 +549,40 @@ function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
+interface BreadcrumbTrailItem {
+  name: string;
+  path: string;
+}
+
+/**
+ * Build a BreadcrumbList object. Home is always the first item; paths are made absolute.
+ */
+function buildBreadcrumbList(trail: BreadcrumbTrailItem[]): Record<string, unknown> {
+  const items = [{ name: 'Home', path: '' }, ...trail];
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': items.map((item, index) => ({
+      '@type': 'ListItem',
+      'position': index + 1,
+      'name': item.name,
+      'item': `${SITE_URL}${item.path}`
+    }))
+  };
+}
+
+/**
+ * Breadcrumb trail for a content page. Example subpages sit under /examples.
+ */
+function buildContentBreadcrumbTrail(page: { slug: string; title: string }): BreadcrumbTrailItem[] {
+  const trail: BreadcrumbTrailItem[] = [];
+  if (page.slug.startsWith('examples/')) {
+    trail.push({ name: "Murphy's Law Examples", path: '/examples' });
+  }
+  trail.push({ name: page.title, path: `/${page.slug}` });
+  return trail;
+}
+
 interface GeneratedPageExpectations {
   canonicalPath: string;
   forbidMailto?: boolean;
@@ -1282,6 +1316,7 @@ ${articleArchive.featuredLaws}
       });
       
       pageHtml = injectJsonLd(pageHtml, contentJsonLd);
+      pageHtml = injectJsonLd(pageHtml, generateJsonLd(buildBreadcrumbList(buildContentBreadcrumbTrail(page))));
       
       await fs.writeFile(path.join(routeDir, 'index.html'), pageHtml);
     } catch (err) {
@@ -1300,6 +1335,7 @@ ${articleArchive.featuredLaws}
       title: 'Sod\'s Law Calculator - Murphy\'s Law Archive',
       description: 'Estimate how likely a task is to go wrong using urgency, complexity, importance, skill, and frequency.',
       content: buildStaticCalculatorContent('sods-law'),
+      breadcrumbName: "Sod's Law Calculator",
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
@@ -1314,6 +1350,7 @@ ${articleArchive.featuredLaws}
       title: 'Buttered Toast Calculator - Murphy\'s Law Archive',
       description: 'A playful simulator for the classic Murphy\'s Law question: will toast land butter-side down?',
       content: buildStaticCalculatorContent('buttered-toast'),
+      breadcrumbName: 'Buttered Toast Calculator',
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
@@ -1366,6 +1403,11 @@ ${articleArchive.featuredLaws}
       `<main id="main-content" class="flex-1 container page">${route.content}</main>`
     );
     routeHtml = injectJsonLd(routeHtml, generateJsonLd(route.jsonLd));
+    if (route.breadcrumbName) {
+      routeHtml = injectJsonLd(routeHtml, generateJsonLd(buildBreadcrumbList([
+        { name: route.breadcrumbName, path: `/${routePath}` }
+      ])));
+    }
     await fs.writeFile(path.join(routeDir, 'index.html'), routeHtml);
   }
 
@@ -1590,6 +1632,8 @@ export {
   buildStaticArticleArchive,
   applyPageMetadata,
   validateGeneratedPage,
+  buildBreadcrumbList,
+  buildContentBreadcrumbTrail,
   fetchAllCategories,
   categorySitemapPaths
 };

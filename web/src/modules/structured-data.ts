@@ -12,6 +12,9 @@ const PAGE_IDS = new Set([
   'calculator-toast',
   'calculator-toast-howto',
   'calculator-toast-faq',
+  'calculator-sod-breadcrumbs',
+  'calculator-toast-breadcrumbs',
+  'content-page-breadcrumbs',
   'browse-page-breadcrumbs',
   'categories-page',
   'category-detail-page',
@@ -78,6 +81,34 @@ export function removeJsonLd(id: string): void {
 
 export function clearPageStructuredData(): void {
   PAGE_IDS.forEach(removeJsonLd);
+}
+
+export interface BreadcrumbTrailItem {
+  name: string;
+  path: string;
+}
+
+function buildBreadcrumbList(trail: BreadcrumbTrailItem[]): Record<string, unknown> {
+  const items = [{ name: 'Home', path: '' }, ...trail];
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': items.map((item, index) => ({
+      '@type': 'ListItem',
+      'position': index + 1,
+      'name': item.name,
+      'item': `${SITE_URL}${item.path}`
+    }))
+  };
+}
+
+/**
+ * Set BreadcrumbList JSON-LD for a content page (clears previous page data).
+ * Home is prepended automatically; paths must start with "/".
+ */
+export function setContentBreadcrumbStructuredData(trail: BreadcrumbTrailItem[]): void {
+  clearPageStructuredData();
+  setJsonLd('content-page-breadcrumbs', buildBreadcrumbList(trail));
 }
 
 export function setSiteStructuredData(): void {
@@ -206,6 +237,9 @@ export function setLawStructuredData(law: Law): void {
 
 export function setSodCalculatorStructuredData(): void {
   clearPageStructuredData();
+  setJsonLd('calculator-sod-breadcrumbs', buildBreadcrumbList([
+    { name: "Sod's Law Calculator", path: '/calculator/sods-law' }
+  ]));
   setJsonLd('calculator-sod', {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -294,6 +328,9 @@ export function setSodCalculatorStructuredData(): void {
 
 export function setToastCalculatorStructuredData(): void {
   clearPageStructuredData();
+  setJsonLd('calculator-toast-breadcrumbs', buildBreadcrumbList([
+    { name: 'Buttered Toast Calculator', path: '/calculator/buttered-toast' }
+  ]));
   setJsonLd('calculator-toast', {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',

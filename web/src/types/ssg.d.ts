@@ -47,6 +47,8 @@ declare module '@scripts/ssg' {
   export function wrapFirstWordWithAccent(text: string): string;
   export function enhanceMarkdownHtml(html: string): string;
   export function wrapInCardStructure(html: string, options?: { lastUpdated?: string }): string;
+  export function buildBreadcrumbList(trail: Array<{ name: string; path: string }>): Record<string, unknown>;
+  export function buildContentBreadcrumbTrail(page: { slug: string; title: string }): Array<{ name: string; path: string }>;
   export function buildStaticFavoritesContent(): string;
   export function buildStaticSubmitContent(): string;
   export function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): string;

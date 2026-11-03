@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- BreadcrumbList structured data on the calculator pages and every content page (about, privacy, terms, origin
+  story, contact, examples and its subpages, the long-form articles, and the curated lists), in both the prerendered
+  HTML and the client-side route rendering. Names and URLs are absolute and match the page titles.
+  Web bumped to `3.4.37`; root to `2.6.120`.
+
 ### Fixed
 
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
