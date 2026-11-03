@@ -888,6 +888,16 @@ describe('Button component', () => {
         expect(localThis.html!).toContain('title="Share on Reddit"');
       });
 
+      it('escapes the text in the title attribute', () => {
+        const html = renderShareLinkHTML({
+          href: 'https://example.com',
+          text: 'Share "a" & <b>',
+          icon: 'twitter',
+          platform: 'twitter',
+        });
+        expect(html).toContain('title="Share &quot;a&quot; &amp; &lt;b>"');
+      });
+
       it('renders role="menuitem" attribute', () => {
         const localThis: ButtonTestLocalThis = {};
         localThis.html = renderShareLinkHTML({

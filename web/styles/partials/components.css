@@ -1086,6 +1086,17 @@ textarea.form-control,
   background: color-mix(in oklab, var(--dark-bg-primary) 85%, white 15%);
 }
 
+/* Social icons keep a transparent hover in dark mode (ring only) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .share-popover-item--social:hover {
+    background: transparent;
+  }
+}
+
+:root[data-theme="dark"] .share-popover-item--social:hover {
+  background: transparent;
+}
+
 /* ==========================
    Inline Share Buttons (Calculators)
    ========================== */

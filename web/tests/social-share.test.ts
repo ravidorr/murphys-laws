@@ -2083,7 +2083,6 @@ describe('share menu: system share, image and embed', () => {
     expect(native.getAttribute('data-share-title')).toBe('Title');
     expect(native.getAttribute('data-share-text')).toBe('Law text');
     expect(native.getAttribute('data-law-id')).toBe('5');
-    expect(el.querySelector('.share-popover')!.lastElementChild!.previousElementSibling).toBe(native);
   });
 
   it('SocialShare orders the menu: Share to row, Copy link, Copy text, Save as image, Copy embed, system share', () => {
