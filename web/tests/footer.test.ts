@@ -55,6 +55,14 @@ describe('Footer component', () => {
     expect(el.className).toBe('footer');
   });
 
+  it('labels the footer nav landmark distinctly from the other navigation landmarks', () => {
+    const el = Footer({
+      onNavigate: () => { }
+    });
+
+    expect(el.querySelector('nav')?.getAttribute('aria-label')).toBe('Footer navigation');
+  });
+
   it('shows navigation links', () => {
     const el = Footer({
       onNavigate: () => { }
