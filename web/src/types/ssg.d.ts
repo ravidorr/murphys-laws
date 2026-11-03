@@ -65,6 +65,7 @@ declare module '@scripts/ssg' {
   }): string;
   export function validateGeneratedPage(html: string, options: {
     canonicalPath: string;
+    description?: string;
     forbidMailto?: boolean;
     requireCategoryLink?: boolean;
     requireContentFigure?: boolean;

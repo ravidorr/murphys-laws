@@ -50,6 +50,14 @@ export function getEnvVar(
 
 export const SITE_URL = getEnvVar('VITE_SITE_URL', 'SITE_URL', 'https://murphys-laws.com');
 export const SITE_DEFAULT_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";
+/**
+ * Meta descriptions for the calculator pages. Single source for the prerendered
+ * meta tags, the runtime metadata, and the JSON-LD. Keep unique, 150-160 characters.
+ */
+export const CALCULATOR_META_DESCRIPTIONS = {
+  sodsLaw: "Rate urgency, complexity, importance, skill, and frequency to get an instant Sod's Law risk score for any task. Free, no signup needed, and results in seconds.",
+  butteredToast: "Adjust fall height, gravity, overhang, butter, friction, and inertia to see the odds your buttered toast lands butter-side down. Free, instant simulator."
+} as const;
 export const SITE_DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/social/home.png`;
 export const SOCIAL_IMAGE_SOD = `${SITE_URL}/social/sods-calculator.png`;
 export const SOCIAL_IMAGE_TOAST = `${SITE_URL}/social/buttered-toast-calculator.png`;
