@@ -18,7 +18,9 @@ import {
   buildSitemapXml,
   validateGeneratedPage,
   fetchAllCategories,
-  categorySitemapPaths
+  categorySitemapPaths,
+  pickRelatedLaws,
+  renderLawLinkList
 } from '@scripts/ssg';
 
 const metadataTemplate = `<!doctype html><html><head>
@@ -550,6 +552,65 @@ describe('SSG SEO output', () => {
       });
       expect(bare).not.toContain('lastmod');
       expect(bare).toContain('<loc>https://murphys-laws.com/about</loc>');
+    });
+  });
+
+  describe('pickRelatedLaws', () => {
+    const ring = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i + 1 }));
+
+    it('never picks the law itself and returns three distinct laws', () => {
+      const laws = ring(50);
+      for (const law of laws) {
+        const related = pickRelatedLaws(law, laws);
+        expect(related).toHaveLength(3);
+        expect(new Set(related.map((r) => r.id)).size).toBe(3);
+        expect(related.map((r) => r.id)).not.toContain(law.id);
+      }
+    });
+
+    it('links every law in a category from exactly three others', () => {
+      const laws = ring(228);
+      const inbound = new Map<number, number>();
+      for (const law of laws) {
+        for (const related of pickRelatedLaws(law, laws)) inbound.set(related.id, (inbound.get(related.id) || 0) + 1);
+      }
+      expect(inbound.size).toBe(228);
+      expect([...inbound.values()].every((count) => count === 3)).toBe(true);
+    });
+
+    it('is deterministic and uses the next law, then strides further on', () => {
+      const laws = ring(100);
+      expect(pickRelatedLaws(laws[0]!, laws).map((r) => r.id)).toEqual([2, 11, 21]);
+      expect(pickRelatedLaws(laws[98]!, laws).map((r) => r.id)).toEqual([100, 9, 19]);
+    });
+
+    it('fills from the following laws in small categories', () => {
+      expect(pickRelatedLaws({ id: 1 }, ring(4)).map((r) => r.id)).toEqual([2, 3, 4]);
+      expect(pickRelatedLaws({ id: 1 }, ring(3)).map((r) => r.id)).toEqual([2, 3]);
+      expect(pickRelatedLaws({ id: 1 }, ring(2)).map((r) => r.id)).toEqual([2]);
+    });
+
+    it('returns nothing for a category of one and falls back to the head of the list for a law not in it', () => {
+      expect(pickRelatedLaws({ id: 1 }, ring(1))).toEqual([]);
+      expect(pickRelatedLaws({ id: 99 }, ring(10)).map((r) => r.id)).toEqual([1, 2, 3]);
+      expect(pickRelatedLaws({ id: 1 }, [])).toEqual([]);
+    });
+  });
+
+  describe('renderLawLinkList', () => {
+    it('renders escaped labels as links, using the unique SEO headline when there is one', () => {
+      const seo = new Map([['5', { title: 't', description: 'd', headline: 'Unique <b> headline' }]]);
+      const html = renderLawLinkList([
+        { id: 5, title: 'Murphy\'s Law', text: 'Anything that can go wrong will.' },
+        { id: 6, title: 'Sod\'s Law', text: 'Toast lands butter side down every single time you drop it.' }
+      ], seo);
+      expect(html).toContain('<li><a href="/law/5">Unique &lt;b&gt; headline</a></li>');
+      expect(html).toContain('<a href="/law/6">');
+      expect(html.match(/<li>/g)).toHaveLength(2);
+    });
+
+    it('renders nothing for no laws', () => {
+      expect(renderLawLinkList([], new Map())).toBe('');
     });
   });
 });

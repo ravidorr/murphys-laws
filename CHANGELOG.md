@@ -27,6 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Every law page is now linked from other pages in the static HTML. Before, 1,561 of 2,465 law pages (63%) had no
+  internal link pointing at them, so search engines could only find them through `sitemap.xml`, and most of the
+  rest had one to three. "Related laws" used to be the first three laws of the category for every law in it, so
+  only those few laws received links. It now follows the category as a ring (the next law, and the laws one and two
+  strides further on), which gives each law exactly three inbound links and any law within a few hops. Category
+  pages list every law of the category as links (the first page stays as cards), and Browse lists the laws that have
+  no category. After the change no law page is unlinked and the minimum is one inbound link (median four).
+  `npm run seo:audit` now fails the build when a law page has no internal link pointing to it. Web bumped to
+  `3.4.48`; root to `2.6.131`.
+
 ### Added
 
 - Daily Law of the Day browser notification (Web Push). The home page signup card has a "Notify me in this browser"
@@ -51,8 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   opt anyone in or out, and an old confirmation email cannot undo an unsubscribe. `npm run deploy` now runs the
   database migrations before restarting the API. The privacy policy describes the stored data. Web bumped to `3.4.46`; backend to `2.3.59`; root to
   `2.6.129`; iOS to `1.2.11 (27)`; Android to `1.2.12 (19)`.
-
-### Changed
 
 - The 404 page is funny again and no longer looks like a modal. Unknown URLs now get a generated
   `404.html` inside the full site shell, with a large 404, a rotating Murphy-style line, and a few
