@@ -24,7 +24,10 @@ function scrollToTop() {
   // landmark so it is not lost to <body>.
   const main = document.getElementById('main-content');
   if (main) {
-    if (!main.hasAttribute('tabindex')) main.setAttribute('tabindex', '-1');
+    if (!main.hasAttribute('tabindex')) {
+      main.setAttribute('tabindex', '-1');
+      main.addEventListener('blur', () => main.removeAttribute('tabindex'), { once: true });
+    }
     main.focus({ preventScroll: true });
   }
 }
@@ -43,7 +46,8 @@ export function initBackToTop(): HTMLButtonElement | null {
   button.type = 'button';
   button.className = BUTTON_CLASS;
   button.setAttribute('aria-label', 'Back to top');
-  button.appendChild(createIcon('chevronUp')!);
+  const icon = createIcon('chevronUp');
+  if (icon) button.appendChild(icon);
   button.addEventListener('click', scrollToTop);
   document.body.appendChild(button);
 

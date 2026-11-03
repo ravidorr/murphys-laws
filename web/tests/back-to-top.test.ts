@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initBackToTop, BACK_TO_TOP_THRESHOLD } from '../src/components/back-to-top.ts';
 
+vi.mock('@utils/icons.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/utils/icons.ts')>();
+  return { ...actual, createIcon: vi.fn(actual.createIcon) };
+});
+
 const KINDLE_UA = 'Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ Kindle/3.0+';
 
 function setScrollY(value: number) {
@@ -84,6 +89,19 @@ describe('back-to-top', () => {
     document.body.innerHTML = '';
     initBackToTop()!.click();
     expect(scrollTo).toHaveBeenCalled();
+  });
+
+  it('removes the temporary tabindex from main when focus leaves it', () => {
+    initBackToTop()!.click();
+    const main = document.getElementById('main-content')!;
+    main.dispatchEvent(new Event('blur'));
+    expect(main.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('still mounts the button if the icon cannot be created', async () => {
+    const { createIcon } = await import('../src/utils/icons.ts');
+    vi.mocked(createIcon).mockReturnValueOnce(null);
+    expect(initBackToTop()!.querySelector('svg')).toBeNull();
   });
 
   it('is not mounted on Kindle', () => {

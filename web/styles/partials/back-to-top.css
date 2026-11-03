@@ -2,8 +2,8 @@
 
 .back-to-top {
   position: fixed;
-  right: var(--space-4);
-  bottom: var(--space-4);
+  right: calc(var(--space-4) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   z-index: 900; /* above page content and header (<= 100), below the install prompt and update toast (10000) */
   width: var(--component-control-min-size);
   height: var(--component-control-min-size);
@@ -32,7 +32,7 @@
 }
 
 /* Never sit under the install prompt or the update/offline toast, which share the bottom edge. */
-body:has(.install-prompt, .pwa-notification) .back-to-top {
+body:has(.install-prompt-visible, .pwa-notification:not(.pwa-notification--exiting)) .back-to-top {
   opacity: 0;
   visibility: hidden;
 }

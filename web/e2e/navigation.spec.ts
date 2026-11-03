@@ -36,13 +36,12 @@ test('home law click -> law detail and back via button', async ({ page }) => {
 
 test('back to top button appears after scrolling and returns to the top', async ({ page }) => {
   await page.goto('/browse');
+  await page.addStyleTag({ content: '.back-to-top-e2e-tall { min-height: 4000px; }' });
   const button = page.getByRole('button', { name: 'Back to top' });
   await expect(button).toBeHidden();
 
   await page.evaluate(() => {
-    const spacer = document.createElement('div');
-    spacer.setAttribute('style', 'height: 4000px');
-    document.body.appendChild(spacer);
+    document.body.classList.add('back-to-top-e2e-tall');
     window.scrollTo(0, 1500);
   });
   await expect(button).toBeVisible();
