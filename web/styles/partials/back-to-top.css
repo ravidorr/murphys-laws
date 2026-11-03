@@ -2,8 +2,8 @@
 
 .back-to-top {
   position: fixed;
-  right: calc(var(--space-4) + env(safe-area-inset-right, 0px));
-  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  right: var(--space-4);
+  bottom: var(--space-4);
   z-index: 900; /* above page content and header (<= 100), below the install prompt and update toast (10000) */
   width: var(--component-control-min-size);
   height: var(--component-control-min-size);
@@ -17,6 +17,14 @@
   visibility: hidden; /* also removes it from the tab order while off screen */
   transform: translateY(var(--space-2));
   transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+}
+
+/* Keep clear of notches and home indicators. Gated so browsers without env() keep the plain offsets above. */
+@supports (bottom: env(safe-area-inset-bottom)) {
+  .back-to-top {
+    right: calc(var(--space-4) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .back-to-top .icon {
