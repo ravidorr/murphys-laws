@@ -9,7 +9,6 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 ### UX Improvements
 - [x] **Move Submit Form to Dedicated Page:** ~~The submit form on the home page creates cognitive overload. Move to dedicated `/submit` route to simplify home page and improve first-time visitor experience.~~ Done - the full submission form is available at `/submit`; the home page now provides a focused call to action.
 - [ ] **Consolidate Browse Page Sidebars:** "Top Voted", "Trending Now", and "Recently Added" sections show similar laws. Consolidate into single "Popular" section or convert to sort options only.
-- [ ] **Add "Back to Top" Button:** Long pages (browse, categories) need a floating "back to top" button for easier navigation.
 - [ ] **Expand Search Field on Desktop:** Currently collapsed behind icon. Consider showing expanded search input on desktop widths for better discoverability.
 - [ ] **Simplify Home Page:** Home page has Law of Day + 2 calculators + submit form. Consider removing calculators from home page (they have dedicated pages) to focus on content discovery.
 - [x] **Group Categories:** ~~55 flat categories are hard to scan. Add groupings (e.g., "Technology", "Workplace", "Daily Life") or popularity badges.~~ Done - category directory groups categories into Technology, Work, Transport, Relationships, Everyday Life, Historical and Military, and Specialized clusters.

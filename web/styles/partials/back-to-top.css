@@ -1,0 +1,72 @@
+/* Floating "Back to top" button (see components/back-to-top.ts) */
+
+.back-to-top {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 900; /* above page content and header (<= 100), below the install prompt and update toast (10000) */
+  width: var(--component-control-min-size);
+  height: var(--component-control-min-size);
+  min-width: var(--component-control-min-size);
+  min-height: var(--component-control-min-size);
+  padding: 0;
+  justify-content: center;
+  border-radius: var(--rounded-full);
+  box-shadow: 0 4px 12px var(--shadow-medium);
+  opacity: 0;
+  visibility: hidden; /* also removes it from the tab order while off screen */
+  transform: translateY(var(--space-2));
+  transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+}
+
+.back-to-top .icon {
+  width: var(--component-icon-size);
+  height: var(--component-icon-size);
+}
+
+.back-to-top--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity .2s ease, transform .2s ease, visibility 0s;
+}
+
+/* Never sit under the install prompt or the update/offline toast, which share the bottom edge. */
+body:has(.install-prompt, .pwa-notification) .back-to-top {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top,
+  .back-to-top--visible {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* High contrast: solid border and no reliance on the shadow (focus ring comes from theme.css). */
+@media (prefers-contrast: more) {
+  .back-to-top {
+    border: 2px solid var(--fg);
+    box-shadow: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .back-to-top {
+    border: 2px solid ButtonText;
+    box-shadow: none;
+  }
+}
+
+/* Belt and braces for Kindle: the script does not mount it, but hide it if one ever exists. */
+.legacy-display .back-to-top {
+  display: none;
+}
+
+@media print {
+  .back-to-top {
+    display: none !important;
+  }
+}
