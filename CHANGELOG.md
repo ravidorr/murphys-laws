@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- nginx now redirects `/about-us` to `/about` and `/contact-us` to `/contact` (301). A research crawler
+  requested both each day and got a 404 from the daily report. Web bumped to `3.4.51`; root to `2.6.137`.
+
 ### Changed
 
 - Redesigned the Share menu so it fits without scrolling: a "Share to" row of social icons (X, Facebook,
