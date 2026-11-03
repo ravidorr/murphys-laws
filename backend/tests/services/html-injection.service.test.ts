@@ -110,7 +110,47 @@ describe('HtmlInjectionService', () => {
 
       const html = await service.getLawHtml('8');
 
-      expect(html).toContain('Murphy&#39;s Law - Murphy\'s Law Archive');
+      expect(html).toContain('<title>Murphy&#39;s Law #8 - Murphy&#39;s Law Archive</title>');
+    });
+
+    it('gives a generic-title law a unique title and description from its text', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 9,
+        title: "Murphy's Law",
+        text: "Night vision - isn't.",
+        category_name: 'War',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('9');
+
+      expect(html).toContain("<title>Night vision - isn&#39;t - Murphy&#39;s Law Archive</title>");
+      expect(html).toContain('<meta name="description" content="Night vision - isn&#39;t. A Murphy&#39;s Law from the War category.">');
+      expect(html).toContain('<meta property="og:title" content="Night vision - isn&#39;t - Murphy&#39;s Law Archive">');
+      expect(html).toContain('<meta property="twitter:title" content="Night vision - isn&#39;t - Murphy&#39;s Law Archive">');
+      expect(extractJsonLd(html as string)?.headline).toBe("Night vision - isn't");
+    });
+
+    it('keeps a meaningful title and ignores a non-string category name', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 10,
+        title: "Hofstadter's Law",
+        text: 'It always takes longer than you expect, even when you take into account Hofstadter\'s Law.',
+        category_name: 42,
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('10');
+
+      expect(html).toContain("<title>Hofstadter&#39;s Law - Murphy&#39;s Law Archive</title>");
+    });
+
+    it('advertises the oEmbed endpoint for the law', async () => {
+      mockLawService.getLaw.mockResolvedValue({ id: 11, title: 'Test Law', text: 'Test text.', attributions: [] });
+
+      const html = await service.getLawHtml('11');
+
+      expect(html).toContain('<link rel="alternate" type="application/json+oembed" href="https://murphys-laws.com/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F11"');
     });
 
     it('includes attribution when present', async () => {
@@ -277,7 +317,7 @@ describe('HtmlInjectionService', () => {
 
       const html = await service.getLawHtml('13');
       expect(html).not.toContain('</script><script>alert(1)');
-      expect(html).toContain('<\\/script>');
+      expect(html).toContain('\\u003c/script>');
       // Structured data must still be valid JSON after unescaping
       const schema = extractJsonLd(html!);
       expect(schema).not.toBeNull();

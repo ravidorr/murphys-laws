@@ -215,6 +215,7 @@ describe('api-server', () => {
       };
       const mockEmailService = {
         sendNewLawEmail: vi.fn().mockResolvedValue(undefined),
+        isConfigured: vi.fn().mockReturnValue(false),
       };
 
       const { createApiServer } = await import('../../src/server/api-server.ts');
@@ -286,6 +287,17 @@ describe('api-server', () => {
       await emitRequest('DELETE', '/api/v1/laws/1/vote');
       await emitRequest('GET', '/law/1');
       await emitRequest('GET', '/category/c');
+      const embedResponse = await emitRequest('GET', '/embed/law/1');
+      const dayEmbedResponse = await emitRequest('GET', '/embed/law-of-day');
+      const oembedResponse = await emitRequest('GET', '/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F1');
+      const subscribeResponse = await emitRequest('POST', '/api/v1/subscriptions', { email: 'a@example.com' });
+      const confirmResponse = await emitRequest('GET', '/subscription/confirm?token=bad');
+      const confirmPostResponse = await emitRequest('POST', '/subscription/confirm?token=bad', {});
+      const unsubscribeResponse = await emitRequest('GET', '/subscription/unsubscribe?token=bad');
+      const oneClickResponse = await emitRequest('POST', '/subscription/unsubscribe?token=bad', {});
+      const pushKeyResponse = await emitRequest('GET', '/api/v1/push/public-key');
+      const pushSubscribeResponse = await emitRequest('POST', '/api/v1/push/subscriptions', { endpoint: 'https://evil.example.com/x' });
+      const pushUnsubscribeResponse = await emitRequest('DELETE', '/api/v1/push/subscriptions', { endpoint: 'nope' });
       // Admin routes are disabled (404) when ADMIN_API_TOKEN is unset
       await emitRequest('GET', '/api/v1/admin/laws');
       await emitRequest('POST', '/api/v1/admin/laws/1', { status: 'published' });
@@ -293,6 +305,17 @@ describe('api-server', () => {
       await emitRequest('GET', '/api/v1/admin/ui');
       await emitRequest('GET', '/api/v1/admin/ui/admin.css');
 
+      expect(embedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
+      expect(dayEmbedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
+      expect(oembedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'application/json; charset=utf-8' }));
+      expect(subscribeResponse.writeHead).toHaveBeenCalledWith(503, expect.any(Object));
+      expect(confirmResponse.writeHead).toHaveBeenCalledWith(404, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
+      expect(confirmPostResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+      expect(unsubscribeResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+      expect(oneClickResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+      expect(pushKeyResponse.writeHead).toHaveBeenCalledWith(503, expect.any(Object));
+      expect(pushSubscribeResponse.writeHead).toHaveBeenCalledWith(503, expect.any(Object));
+      expect(pushUnsubscribeResponse.writeHead).toHaveBeenCalledWith(400, expect.any(Object));
       expect(mockLawService.listLaws).toHaveBeenCalled();
       expect(mockLawService.getLaw).toHaveBeenCalled();
       expect(mockFeedService.generateRss).toHaveBeenCalled();

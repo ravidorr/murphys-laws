@@ -5,6 +5,18 @@ All notable changes to the Murphy's Laws project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.136] - 2026-11-03
+
+### Changed
+- Advanced Search no longer changes the page when a category is picked; choose a category and press Search.
+- Removed the category helper text under the Category dropdown.
+
+### Fixed
+- Select dropdown carets are now inset from the border in every dropdown.
+  Web bumped to `3.4.50`; root to `2.6.136`.
+
+---
+
 ## [2.6.12] - 2026-08-11
 
 ### Fixed
@@ -29,13 +41,143 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- nginx now redirects `/about-us` to `/about` and `/contact-us` to `/contact` (301). A research crawler
+  requested both each day and got a 404 from the daily report. Web bumped to `3.4.51`; root to `2.6.137`.
 - Floating "Back to top" button on long pages (browse, categories and the rest). It appears after 600 px of scroll,
   is a real 44 px `<button>` with an `aria-label` and a visible focus ring, scrolls smoothly unless
   `prefers-reduced-motion` is set, supports high-contrast and forced-colors modes, hides while the install prompt or
-  update toast is showing, is not mounted on Kindle, and is hidden in print. Web bumped to `3.4.37`; root to `2.6.120`.
+  update toast is showing, is not mounted on Kindle, and is hidden in print. Web bumped to `3.4.53`; root to `2.6.139`.
+
+### Changed
+
+- Redesigned the Share menu so it fits without scrolling: a "Share to" row of social icons (X, Facebook,
+  LinkedIn, Reddit, WhatsApp, Email) comes first, then Copy link, Copy text, Save as image, Copy embed code and, on
+  browsers that support it, Share with your device. Action rows use plain gray icons and 44px targets; only the
+  social icons keep brand colors. Web bumped to `3.4.50`; root to `2.6.136`.
+- The daily Law of the Day email and the subscription confirmation email now look like Murphy's Law Archive: the
+  site header (the "M" badge, wordmark and tagline), the site colours and type, the law as large quote-style text
+  with its category and attribution when it has them, a real "Read, vote and share" or "Confirm and start the
+  daily email" button, and a clearly visible Unsubscribe link in the footer. Both use a shared 600px table layout
+  (`shared/modules/email-layout.ts`) that holds up on a phone and has dark-mode styles, and both still send a
+  plain-text alternative; the `List-Unsubscribe` headers are unchanged. Email clients ignore stylesheets, so the
+  colors are generated from `web/styles/partials/variables.css` into `shared/modules/email-tokens.generated.ts`
+  (`npm run design:export:email`; `design:check` fails when it drifts). Inline styles are confined to
+  `email-layout.ts`, the only new entry in the design conformance allowlist. Backend bumped to `2.3.62`; root to
+  `2.6.135`.
+- The daily email confirm and unsubscribe pages (confirm prompt, subscribed, unsubscribed, link not recognized) now look
+  like part of the site: the site header and wordmark, a centred card, the standard primary button and link styles,
+  the utility footer, light and dark themes, a visible keyboard focus ring, and a phone layout. They load
+  `variables.css` and a new `web/public/styles/subscription-pages.css` from the web build, with no inline styles,
+  and still work with no JavaScript (the buttons are form posts). `noindex` and `Cache-Control: no-store` are
+  unchanged. Web bumped to `3.4.49`; backend to `2.3.61`; root to `2.6.133`.
+- The Deploy to Production workflow can now be started by hand (`workflow_dispatch`), so changed repository
+  secrets such as the SMTP settings can reach the server without an unrelated merge. A manual run does nothing
+  unless it starts from `main`, and it skips the daily email template smoke test, which compares against the
+  previous push. Root bumped to `2.6.132`.
+- Every law page is now linked from other pages in the static HTML. Before, 1,561 of 2,465 law pages (63%) had no
+  internal link pointing at them, so search engines could only find them through `sitemap.xml`, and most of the
+  rest had one to three. "Related laws" used to be the first three laws of the category for every law in it, so
+  only those few laws received links. It now follows the category as a ring (the next law, and the laws one and two
+  strides further on), which gives each law exactly three inbound links and any law within a few hops. Category
+  pages list every law of the category as links (the first page stays as cards), and Browse lists the laws that have
+  no category. After the change no law page is unlinked and the minimum is one inbound link (median four).
+  `npm run seo:audit` now fails the build when a law page has no internal link pointing to it. Web bumped to
+  `3.4.48`; root to `2.6.131`.
+
+### Added
+
+- Daily Law of the Day browser notification (Web Push). The home page signup card has a "Notify me in this browser"
+  button where the browser supports push; the service worker shows the notification and opens the law when it is
+  clicked. New `push_subscriptions` table (migration 021), `GET /api/v1/push/public-key`,
+  `POST` and `DELETE /api/v1/push/subscriptions`, and a `npm run push:daily` cron job that records each send,
+  deletes subscriptions the push service reports gone (404, 410), and sends nothing until `VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are set (`.env.example`, `shared/docs/DEPLOYMENT.md`). Subscription
+  endpoints are limited to the real push services (FCM, Mozilla, Apple, Windows), so the job cannot be aimed at an
+  arbitrary URL. Adds the `web-push` dependency. The privacy policy describes the stored data. Web bumped to
+  `3.4.47`; backend to `2.3.60`; root to `2.6.130`; iOS to `1.2.12 (28)`; Android to `1.2.13 (20)`.
+
+### Added
+
+- Daily Law of the Day email. Visitors subscribe from the home page, confirm from the first email (double
+  opt-in), and get the day's law each morning with an unsubscribe link and one-click `List-Unsubscribe` headers.
+  New `email_subscriptions` table (migration 020), `POST /api/v1/subscriptions`, `/subscription/confirm` and
+  `/subscription/unsubscribe` pages (nginx and the service worker pass them through), and a
+  `npm run email:daily` job for cron (see `shared/docs/DEPLOYMENT.md`). Confirmation emails are rate limited
+  per client and per address, and the daily send is recorded per subscriber so a re-run never mails anyone
+  twice. Confirm and unsubscribe links only show a button; the POST does the change, so mail scanners cannot
+  opt anyone in or out, and an old confirmation email cannot undo an unsubscribe. `npm run deploy` now runs the
+  database migrations before restarting the API. The privacy policy describes the stored data. Web bumped to `3.4.46`; backend to `2.3.59`; root to
+  `2.6.129`; iOS to `1.2.11 (27)`; Android to `1.2.12 (19)`.
+
+- The 404 page is funny again and no longer looks like a modal. Unknown URLs now get a generated
+  `404.html` inside the full site shell, with a large 404, a rotating Murphy-style line, and a few
+  suggested laws, in the standard empty-state card. The in-app 404 view uses the same markup and lines.
+  Web bumped to `3.4.42`; root to `2.6.125`.
+
+### Added
+
+- Embeddable law cards. `/embed/law/:id` and `/embed/law-of-day` are standalone, noindexed pages meant for an
+  iframe, and every law page advertises an oEmbed endpoint, `GET /api/v1/oembed?url=<law URL>`, so WordPress,
+  Notion, Slack and similar sites can unfurl a law URL into the same card. The backend renders both (new
+  `EmbedService`, nginx route, service-worker bypass), keep rendered cards for five minutes, and size the oEmbed
+  and copied iframe height to the law text. The card styles live in `web/public/styles/embed.css` and use the
+  shared tokens. The developers page documents the snippet and the endpoint.
+- The Share menu on a law has "Copy embed code" and "Save as image" (the existing law image endpoint), plus "Share
+  with your device" where the browser has the system share sheet. Embed copies and system shares are reported as
+  `law_shared` with `share_method` `copy_embed` and `native_share`; image saves as `save_image`. If the system
+  share sheet fails to open, the link is copied instead. Clicking a link inside a law card no longer also opens
+  the law. The iframe
+  and law-image helpers live in `shared/modules/law-embed.ts`. Web bumped to `3.4.42`; backend to `2.3.57`; root
+  to `2.6.125`; iOS to `1.2.9 (25)`; Android to `1.2.10 (17)`.
+- The copied iframe no longer uses an inline `style` attribute, which `design:conformance` forbids; it uses
+  `frameborder="0"` and the card caps its own width. Web bumped to `3.4.43`; root to `2.6.126`; iOS to `1.2.10 (26)`;
+  Android to `1.2.11 (18)`.
+- The Share popover caps its height (`min(30rem, 100vh - 2rem)`) and scrolls, and the flip-above check uses that height,
+  so the longer menu cannot be cut off on a short screen or near the bottom of a page (Novus review). Web bumped to
+  `3.4.44`; root to `2.6.127`.
+- oEmbed honors a `maxwidth` below 240 instead of returning a wider card, and Enter or Space on Save as image in a
+  Favorites card no longer opens the law instead of downloading (Codex review). Web bumped to `3.4.45`; backend to
+  `2.3.58`; root to `2.6.128`.
+- `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
+  requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
+  not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
 
 ### Fixed
 
+- The footer `<nav>` landmark is now labelled "Footer navigation" instead of the vague "Utility", so screen
+  reader landmark lists identify it clearly next to the menu and breadcrumb navs. Web bumped to `3.4.52`;
+  root to `2.6.138`.
+- Law pages no longer share generic titles. 2,112 of 2,465 law pages were titled "Murphy's Law" or "Corollary", so
+  search engines saw them as near-duplicates. Generic titles are now derived from the law text, descriptions are
+  padded to a useful length and cut at word boundaries, and any remaining collisions get the law id. The static
+  site and the client router build them with the same helper (`buildLawSeo`). The law schema `headline` and
+  breadcrumb name follow the same rule.
+- `/favorites` is `noindex, follow` and is no longer listed in `sitemap.xml`, since its content is per-user.
+- `sitemap.xml` has a real `lastmod` on every URL and no longer emits `changefreq` or `priority`, which search
+  engines ignore. Category dates come from their newest law. `shared/content/metadata.json` gained entries for the
+  content pages that lacked a date.
+- `/browse`, `/categories` and every category page now ship `BreadcrumbList` (and `CollectionPage` for the first
+  two) in the static HTML instead of only after client-side rendering.
+- Expanded the thin `/best-murphys-laws`, `/funniest-murphys-laws`, `/murphys-laws-about-technology` and
+  `/calculator/buttered-toast` pages with sourced explanations and internal links.
+
+- Added `npm run seo:audit` (`web/scripts/seo-audit.ts`) audits a built `dist/`: duplicate titles and descriptions,
+  canonical and noindex mismatches, length limits, missing JSON-LD and sitemap hygiene. It exits non-zero on
+  blocking problems. It reads the built HTML without regex tag stripping and decodes entities in a single pass.
+  `npm run build` now runs it after the static build and fails on blocking problems.
+- Review fixes: the client no longer rewrites the head of a prerendered law page, so titles the static build made
+  unique stay unique; category list entries are named after the law text; `/favorites` sets `noindex` itself and the
+  router resets the robots tag on client navigation; `lastmod` is left out when no real date is known; disambiguated
+  titles and descriptions no longer put an ellipsis before the id. The Buttered Toast page now describes the
+  calculator's actual inputs (Height of Fall, Gravity, Push Force, Butter Factor, Air Friction, Toast Density) and the
+  funniest-laws page names the benign violation theory's authors. Web bumped to `3.4.39`; root to `2.6.122`; iOS to
+  `1.2.8 (24)`; Android to `1.2.9 (16)`.
+- Laws published after the last static build are served by the backend fallback, which now uses the same title,
+  description and headline logic as the static site. The logic lives in `shared/modules/law-seo.ts`, imported by the
+  web build, the web client and the backend. The fallback's JSON-LD now escapes every `<` as `\u003c`. Backend
+  bumped to `2.3.56`; web to `3.4.41`; root to `2.6.124`.
+- nginx now drops `docker-compose*.yml`, `Dockerfile*`, `readme.html` and `license.txt` probes with a
+  444 so fail2ban counts them, instead of logging them as 404s.
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
   Chrome crawler spoofing an iPhone user agent, whose stripped-down environment lacks `queueMicrotask`, which the
   Sentry SDK calls when the page is hidden; it is not our code. Web bumped to `3.4.36`; root to `2.6.119`.

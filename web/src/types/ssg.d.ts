@@ -35,6 +35,7 @@ declare module '@scripts/ssg' {
     canonicalPath: string;
     type?: 'website' | 'article';
     image?: string;
+    robots?: string;
   }
 
   export interface StaticCategory {
@@ -51,6 +52,15 @@ declare module '@scripts/ssg' {
   export function buildStaticSubmitContent(): string;
   export function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): string;
   export function applyPageMetadata(html: string, metadata: PageMetadata): string;
+  export function generateLawPage(law: StaticLaw, template: string, relatedLaws?: StaticLaw[], seo?: { title: string; description: string; headline: string }): string;
+  export function buildSitemapXml(input: {
+    baseUrl: string;
+    laws: StaticLaw[];
+    categories: StaticCategory[];
+    contentPages: ContentPageMeta[];
+    contentMetadata: Record<string, { lastUpdated?: string }>;
+    staticRoutePaths: string[];
+  }): string;
   export function validateGeneratedPage(html: string, options: {
     canonicalPath: string;
     forbidMailto?: boolean;
@@ -60,10 +70,17 @@ declare module '@scripts/ssg' {
   export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
   export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string };
   export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
+  export function buildNotFoundPage(template: string, laws: StaticLaw[]): string;
+  export function validateNotFoundPage(html: string): string[];
   export function fetchAllCategories(fetchRequest?: (url: string) => Promise<{
     ok: boolean;
     status: number;
     json(): Promise<unknown>;
   }>): Promise<StaticCategory[]>;
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
+  export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];
+  export function renderLawLinkList(
+    laws: StaticLaw[],
+    seoById: Map<string, { title: string; description: string; headline: string }>
+  ): string;
 }

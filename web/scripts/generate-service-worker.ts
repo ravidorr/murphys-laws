@@ -226,8 +226,8 @@ self.addEventListener('fetch', (event) => {
   const isApi = sameOrigin && url.pathname.startsWith('/api/');
 
   if (request.mode === 'navigate' && sameOrigin) {
-    // /admin is the backend-served moderation page, not an SPA route: never cache it or fall back to index.html.
-    if (isApi || /^\\/admin\\/?$/.test(url.pathname) || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
+    // /admin and /embed/ are backend-rendered pages, not SPA routes: never cache them or fall back to index.html.
+    if (isApi || /^\\/admin\\/?$/.test(url.pathname) || /^\\/embed\\/(law\\/\\d+|law-of-day)\\/?$/.test(url.pathname) || /^\\/subscription\\/(confirm|unsubscribe)\\/?$/.test(url.pathname) || STATIC_FILE_PATTERN.test(url.pathname + url.search)) return;
     event.respondWith(
       networkFirst(request, RUNTIME, '/index.html')
         .catch(() => caches.match('/offline.html'))
@@ -260,6 +260,37 @@ self.addEventListener('fetch', (event) => {
   if (sameOrigin) {
     event.respondWith(cacheFirst(request));
   }
+});
+
+// Daily Law of the Day notification (Web Push). The server sends { title, body, url }.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (error) {
+    data = {};
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Murphy\\'s Law of the Day', {
+      body: data.body || '',
+      icon: '/android-chrome-192x192.png',
+      tag: 'law-of-the-day',
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  // Only a path on this site is opened, whatever the payload carried.
+  let path = '/';
+  try {
+    const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+    path = target.pathname + target.search;
+  } catch (error) {
+    path = '/';
+  }
+  event.waitUntil(self.clients.openWindow(path));
 });
 `;
 }

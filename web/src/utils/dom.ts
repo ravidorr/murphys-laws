@@ -26,6 +26,14 @@ export function updateMetaDescription(description: string): void {
   }
 }
 
+/**
+ * Set the robots meta tag. Static pages ship their own value, so client-side navigation must
+ * reset it, otherwise a noindex page (such as /favorites) leaks its directive into later routes.
+ */
+export function setRobotsMeta(content: string): void {
+  document.querySelector('meta[name="robots"]')?.setAttribute('content', content);
+}
+
 export function updatePageMetadata({ title, description, path, image = SITE_DEFAULT_SOCIAL_IMAGE, type = 'website' }: PageMetaOptions): void {
   if (typeof document === 'undefined') return;
   const canonicalUrl = `${SITE_URL}${path === '/' ? '/' : path.replace(/\/$/, '')}`;

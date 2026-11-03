@@ -116,6 +116,7 @@ import { ContentPageView } from './views/content-page.ts';
 import { NotFound } from './views/not-found.ts';
 import { isFavoritesEnabled } from './utils/feature-flags.ts';
 import { toggleFavorite } from './utils/favorites.ts';
+import { initShareActions } from './utils/share-actions.ts';
 import {
   setSiteStructuredData,
   setHomeStructuredData,
@@ -421,7 +422,7 @@ Object.entries(routesMap).forEach(([name, render]) => {
 
 const notFoundRoute = () => {
   clearPageStructuredData();
-  return layout(NotFound({ onNavigate }), { hideAds: true });
+  return layout(NotFound(), { hideAds: true });
 };
 
 startRouter(app, notFoundRoute);
@@ -435,6 +436,9 @@ initAnalyticsBootstrap();
 initKeyboardShortcuts();
 initInstallPrompt();
 initBackToTop();
+
+// Share menu actions (system share sheet, embed code) work on every law card
+initShareActions();
 
 // Global event delegation for favorite buttons
 if (isFavoritesEnabled()) {

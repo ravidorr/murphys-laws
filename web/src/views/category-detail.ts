@@ -298,7 +298,6 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         const searchComponent = AdvancedSearch({
           initialFilters: { category_id: category.id },
           defaultCategoryId: category.id,
-          categoryHint: 'Choose a category alone to open it. Add search terms to search Browse.',
           onSearch: (filters) => {
             const isCurrentCategory = String(filters.category_id) === String(category.id);
             const hasTextFilter = Boolean(filters.q || filters.attribution);
@@ -429,7 +428,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
-      if (t.closest('button')) return;
+      if (t.closest('button, a')) return;
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }

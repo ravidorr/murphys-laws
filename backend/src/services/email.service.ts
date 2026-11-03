@@ -18,6 +18,16 @@ import {
   createLawApprovalEmailHtml,
 } from '../../../shared/modules/law-approval-email-template.ts';
 
+import {
+  type DailyLawEmailData,
+  createDailyLawHtml,
+  createDailyLawSubject,
+  createDailyLawText,
+  createSubscriptionConfirmationHtml,
+  createSubscriptionConfirmationSubject,
+  createSubscriptionConfirmationText,
+} from '../../../shared/modules/daily-law-email-template.ts';
+
 export interface EmailConfig {
   host?: string;
   port?: number;
@@ -84,6 +94,59 @@ export class EmailService {
       console.error(`Failed to send thank-you email for law ID ${lawData.id} (code: ${String(code ?? 'unknown')}, response: ${String(responseCode ?? 'none')})`);
       return { status: 'failed' };
     }
+  }
+
+  /**
+   * Asks the owner of an address to confirm the daily email. Never throws; failures are logged by SMTP
+   * code only because the rest of an SMTP error can contain the address.
+   */
+  async sendSubscriptionConfirmationEmail(to: string, confirmUrl: string): Promise<boolean> {
+    if (!this.transporter) {
+      return false;
+    }
+    try {
+      await this.transporter.sendMail({
+        from: this.config.from,
+        // Address object, not a string, so the address is never parsed as a recipient list.
+        to: { name: '', address: to },
+        subject: createSubscriptionConfirmationSubject(),
+        text: createSubscriptionConfirmationText(confirmUrl),
+        html: createSubscriptionConfirmationHtml(confirmUrl, SITE_URL),
+      });
+      return true;
+    } catch (error: unknown) {
+      this.logSendFailure('subscription confirmation', error);
+      return false;
+    }
+  }
+
+  /** Sends one subscriber the Law of the Day. Never throws; returns whether it was sent. */
+  async sendDailyLawEmail(to: string, law: DailyLawEmailData, unsubscribeUrl: string): Promise<boolean> {
+    if (!this.transporter) {
+      return false;
+    }
+    try {
+      await this.transporter.sendMail({
+        from: this.config.from,
+        to: { name: '', address: to },
+        subject: createDailyLawSubject(law),
+        text: createDailyLawText(law, SITE_URL, unsubscribeUrl),
+        html: createDailyLawHtml(law, SITE_URL, unsubscribeUrl),
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      });
+      return true;
+    } catch (error: unknown) {
+      this.logSendFailure('daily law', error);
+      return false;
+    }
+  }
+
+  private logSendFailure(kind: string, error: unknown): void {
+    const { code, responseCode } = (error ?? {}) as { code?: unknown; responseCode?: unknown };
+    console.error(`Failed to send ${kind} email (code: ${String(code ?? 'unknown')}, response: ${String(responseCode ?? 'none')})`);
   }
 
   async sendNewLawEmail(lawData: LawSubmissionEmailData): Promise<void> {
