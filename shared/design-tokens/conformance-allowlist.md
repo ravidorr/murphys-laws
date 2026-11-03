@@ -15,6 +15,10 @@ The conformance gate intentionally excludes only these narrow sources:
 - `Constants.Performance` and equivalent non-visual timing or cache limits.
 - `backend/scripts/render-daily-report.ts`: multipart operational email HTML
   (inline `style` on table cells only; no external stylesheets).
+- `shared/modules/email-layout.ts`: the subscription emails' shared layout (inline `style` and one
+  `<style>` block for dark mode, because Gmail and Outlook ignore stylesheets). It is the only module with
+  inline styles; the email templates build their content through its helpers. Its colors are generated from
+  `web/styles/partials/variables.css` (`npm run design:export:email`), and `design:check` fails when they drift.
 - `web/dist/assets/polyfills-legacy-*.js`: generated core-js output from the legacy (nomodule)
   build for older browsers such as the Kindle browser. It is skipped for the inline CSS scan only;
   the legacy entry chunk with application code is scanned in full.

@@ -222,7 +222,7 @@
   :root:not([data-theme="light"]) .form-control,
   :root:not([data-theme="light"]) .share-form-container .form-group textarea,
   :root:not([data-theme="light"]) .share-form-container .form-group input {
-    background: color-mix(in oklab, var(--bg) 92%, white 8%);
+    background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
     color: var(--fg);
     border: 1.5px solid var(--dark-border);
   }
@@ -250,7 +250,7 @@
 :root[data-theme="dark"] .form-control,
 :root[data-theme="dark"] .share-form-container .form-group textarea,
 :root[data-theme="dark"] .share-form-container .form-group input {
-  background: color-mix(in oklab, var(--bg) 92%, white 8%);
+  background-color: color-mix(in oklab, var(--bg) 92%, white 8%);
   color: var(--fg);
   border: 1.5px solid var(--dark-border);
 }
@@ -453,6 +453,10 @@
     color: var(--dark-link-hover);
   }
 
+  :root:not([data-theme="light"]) .not-found-code {
+    color: var(--dark-link);
+  }
+
   /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */
   :root:not([data-theme="light"]) .calc-slider-value {
     color: var(--dark-accent);
@@ -486,6 +490,10 @@
 
 :root[data-theme="dark"] .sod-simple-value {
   color: var(--dark-link-hover);
+}
+
+:root[data-theme="dark"] .not-found-code {
+  color: var(--dark-link);
 }
 
 /* Slider values need higher contrast in dark mode (WCAG AA 4.5:1) */

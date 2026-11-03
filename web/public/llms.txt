@@ -21,6 +21,7 @@ Base URL: https://murphys-laws.com
 - [Single category](https://murphys-laws.com/api/v1/categories/1): GET /api/v1/categories/:id — category details
 - [RSS feed](https://murphys-laws.com/api/v1/feed.rss): Standard RSS 2.0 feed of recent laws
 - [Atom feed](https://murphys-laws.com/api/v1/feed.atom): Standard Atom 1.0 feed of recent laws
+- [oEmbed](https://murphys-laws.com/api/v1/oembed?url=https://murphys-laws.com/law/1): GET /api/v1/oembed?url=<law URL> — oEmbed JSON for a law page. Embeddable card: https://murphys-laws.com/embed/law/:id or /embed/law-of-day
 
 Rate limits apply only to writes: 5 law submissions/hour, 60 votes/hour per IP. All reads are unlimited.
 

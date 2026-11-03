@@ -113,6 +113,31 @@ Subscribe to new laws via standard feed formats:
 - [RSS 2.0](/api/v1/feed.rss): Recent laws and law of the day
 - [Atom 1.0](/api/v1/feed.atom): Recent laws and law of the day
 
+## Embed a Law
+
+Show a law on your own site with one iframe. Every law's Share menu has a "Copy embed code" button, or
+build the snippet yourself:
+
+```html
+<iframe src="https://murphys-laws.com/embed/law/1" title="Murphy's Law" width="100%" height="220"
+  frameborder="0" loading="lazy"></iframe>
+```
+
+Use `https://murphys-laws.com/embed/law-of-day` to show today's law, which changes every day. The card
+links back to the archive and is not indexed by search engines.
+
+### oEmbed
+
+Sites that support oEmbed (WordPress, Notion, Slack and others) can unfurl a law URL into the same
+card. Law pages advertise the endpoint, or call it directly:
+
+```text
+GET https://murphys-laws.com/api/v1/oembed?url=https://murphys-laws.com/law/1
+```
+
+The endpoint returns JSON only and accepts `maxwidth` and `maxheight`. It answers `400` for a URL that is
+not a law page, `404` for an unknown law and `501` for `format=xml`.
+
 ## Machine-Readable Resources
 
 These files help AI crawlers, search engines, and developer tools understand
