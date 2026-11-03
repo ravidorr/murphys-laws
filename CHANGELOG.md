@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Floating "Back to top" button on long pages (browse, categories and the rest). It appears after 600 px of scroll,
   is a real 44 px `<button>` with an `aria-label` and a visible focus ring, scrolls smoothly unless
   `prefers-reduced-motion` is set, supports high-contrast and forced-colors modes, hides while the install prompt or
-  update toast is showing, is not mounted on Kindle, and is hidden in print. Web bumped to `3.4.54`; root to `2.6.140`.
+  update toast is showing, is not mounted on Kindle, and is hidden in print. Web bumped to `3.4.55`; root to `2.6.141`.
 
 ### Changed
 
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `CALCULATOR_META_DESCRIPTIONS` constant in `web/src/utils/constants.ts` that feeds the prerendered meta,
   `og:description`, `twitter:description` and `WebApplication` JSON-LD, the runtime `updatePageMetadata` calls, and
   the client JSON-LD, so hydration no longer swaps in different wording. The SSG output validation fails the build
-  if the three description tags drift from it. Web bumped to `3.4.54`; root to `2.6.140`.
+  if the three description tags drift from it. Web bumped to `3.4.55`; root to `2.6.141`.
 - Redesigned the Share menu so it fits without scrolling: a "Share to" row of social icons (X, Facebook,
   LinkedIn, Reddit, WhatsApp, Email) comes first, then Copy link, Copy text, Save as image, Copy embed code and, on
   browsers that support it, Share with your device. Action rows use plain gray icons and 44px targets; only the
