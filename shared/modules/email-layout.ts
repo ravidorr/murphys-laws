@@ -47,9 +47,15 @@ const DARK_MODE_CSS = `
   .em-container { width: 100% !important; }
   .em-pad { padding-left: 20px !important; padding-right: 20px !important; }
   .em-law { font-size: 22px !important; }
+  .em-button-table { width: 100% !important; }
   .em-button-cell { display: block !important; width: 100% !important; }
   .em-button { display: block !important; text-align: center !important; }
 }`;
+
+/** Absolute URL of a site path, tolerating a trailing slash on the site URL. */
+export function siteLink(siteUrl: string, path: string): string {
+  return `${siteUrl.replace(/\/+$/, '')}${path}`;
+}
 
 /** One block of the email: a table row holding one cell, padded like the others. */
 export function emailRow(innerHtml: string, extraStyle = ''): string {
@@ -58,7 +64,7 @@ export function emailRow(innerHtml: string, extraStyle = ''): string {
 
 /** Bulletproof button: a table cell carries the background (Outlook ignores it on links). */
 export function emailButton(label: string, url: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;">
+  return `<table role="presentation" class="em-button-table" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;">
 <tr><td class="em-button-cell" align="center" bgcolor="${T['btn-primary-bg']}" style="border-radius:8px;background-color:${T['btn-primary-bg']};mso-padding-alt:14px 28px;">
 <a class="em-button" href="${escapeHtml(url)}" style="display:inline-block;padding:14px 28px;font-family:${EMAIL_FONT};font-size:16px;font-weight:600;line-height:20px;color:${T['btn-primary-fg']};text-decoration:none;border-radius:8px;">${escapeHtml(label)}</a>
 </td></tr>
@@ -67,17 +73,15 @@ export function emailButton(label: string, url: string): string {
 
 /** The site wordmark as in the web header: the "M" badge, "Murphy's Law" and the tagline. */
 function header(siteUrl: string): string {
-  const home = escapeHtml(`${siteUrl.replace(/\/+$/, '')}/`);
+  const home = escapeHtml(siteLink(siteUrl, '/'));
   return `<tr><td class="em-pad em-border" style="padding:20px 32px;border-bottom:1px solid ${T['surface-border']};">
-<a href="${home}" style="text-decoration:none;" aria-label="Murphy's Law Archive">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td class="em-badge" width="44" height="44" align="center" valign="middle" bgcolor="${T.primary}" style="width:44px;height:44px;border-radius:6px;background-color:${T.primary};font-family:${EMAIL_FONT};font-size:24px;font-weight:800;line-height:44px;color:${T.white};">M</td>
+<td class="em-badge" width="44" height="44" align="center" valign="middle" bgcolor="${T.primary}" style="width:44px;height:44px;border-radius:6px;background-color:${T.primary};font-family:${EMAIL_FONT};font-size:24px;font-weight:800;line-height:44px;color:${T.white};"><a href="${home}" aria-label="Murphy's Law Archive" style="display:block;color:${T.white};text-decoration:none;">M</a></td>
 <td style="padding-left:12px;font-family:${EMAIL_FONT};" valign="middle">
-<div class="em-fg" style="font-size:24px;font-weight:700;line-height:26px;color:${T.fg};"><span class="em-accent" style="color:${T['btn-primary-bg']};">Murphy's</span> Law</div>
+<div class="em-fg" style="font-size:24px;font-weight:700;line-height:26px;color:${T.fg};"><a class="em-fg" href="${home}" style="color:${T.fg};text-decoration:none;"><span class="em-accent" style="color:${T['btn-primary-bg']};">Murphy's</span> Law</a></div>
 <div class="em-muted" style="padding-top:4px;font-size:14px;line-height:16px;color:${T['muted-fg']};">If it can go wrong, it will.</div>
 </td>
 </tr></table>
-</a>
 </td></tr>`;
 }
 
