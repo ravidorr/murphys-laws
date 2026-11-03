@@ -213,3 +213,14 @@ describe('DOM utilities', () => {
     });
   });
 });
+
+describe('setRobotsMeta', () => {
+  it('sets the robots meta content and ignores a missing tag', async () => {
+    const { setRobotsMeta } = await import('../src/utils/dom.ts');
+    setRobotsMeta('noindex, follow');
+    document.head.innerHTML = '<meta name="robots" content="index, follow">';
+    setRobotsMeta('noindex, follow');
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, follow');
+    document.head.innerHTML = '';
+  });
+});

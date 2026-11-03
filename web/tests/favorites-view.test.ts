@@ -81,6 +81,13 @@ describe('Favorites View Component', () => {
       expect(document.title).toBe("Browse My Favorites Laws | Murphy's Law Archive");
     });
 
+    it('marks the page noindex because its content is per-user', () => {
+      document.head.innerHTML = '<meta name="robots" content="index, follow">';
+      Favorites({ onNavigate: localThis.mockNavigate });
+      expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, follow');
+      document.head.innerHTML = '';
+    });
+
     it('creates a container with correct classes', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       expect(el.className).toBe('container page');
@@ -369,6 +376,21 @@ describe('Favorites View Component', () => {
       const el = Favorites({ onNavigate: localThis.mockNavigate });
       el.querySelector('.law-card-mini')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       expect(localThis.mockNavigate).toHaveBeenCalledWith('law', '123');
+    });
+
+    it('keydown Enter on a link or button inside the card does not open the law', () => {
+      vi.mocked(getFavorites).mockReturnValue([localThis.mockLaw1]);
+      const el = Favorites({ onNavigate: localThis.mockNavigate });
+      const card = el.querySelector('.law-card-mini')!;
+      const link = document.createElement('a');
+      link.href = '#';
+      const button = document.createElement('button');
+      card.append(link, button);
+
+      link.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(localThis.mockNavigate).not.toHaveBeenCalled();
     });
 
     it('L283 B1: keydown handler uses lawId when present', () => {

@@ -9,6 +9,7 @@ import { addVotingListeners } from '@utils/voting.ts';
 import { setExportContent, clearExportContent, ContentType } from '@utils/export-context.ts';
 import { fetchLaw } from '@utils/api.ts';
 import { trackPendoEvent } from '@utils/pendo.ts';
+import { setRobotsMeta } from '@utils/dom.ts';
 import type { CleanableElement, OnNavigate, FavoriteLaw, Law } from '../types/app.d.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -25,6 +26,8 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
 
   // Set page title
   document.title = `Browse My Favorites Laws | Murphy's Law Archive`;
+  // Per-user content: keep it out of the index, matching the prerendered page
+  setRobotsMeta('noindex, follow');
 
   // If feature is disabled, show message and redirect option
   if (!isFavoritesEnabled()) {
@@ -313,7 +316,7 @@ export function Favorites({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivEl
         if (!(target instanceof HTMLElement)) return;
 
         const lawCard = target.closest('.law-card-mini');
-        if (lawCard && !target.closest('button')) {
+        if (lawCard && !target.closest('button, a')) {
           e.preventDefault();
           const lawId = lawCard.getAttribute('data-law-id');
           if (lawId) {

@@ -552,8 +552,9 @@ establish; nothing here is a measured engine version.
   box (`web/styles/partials/layout.css`, `theme.css`).
 - Layout uses explicit margins instead of flex `gap` (for example `.not-found-actions`, the header
   search button and headings), so spacing holds where `gap` is ignored (#203).
-- Ads and analytics are not loaded on Kindle (`web/src/utils/third-party.ts`) and the footer ad
-  shell is hidden (`web/src/components/footer.ts`).
+- Google ads and Google analytics are not loaded on Kindle (`shouldLoadThirdParty()` in
+  `web/src/utils/third-party.ts`) and the footer ad shell is hidden (`web/src/components/footer.ts`).
+  The Novus by Pendo agent is not guarded by `isKindleBrowser()`, so it still loads on Kindle.
 - The static header includes primary navigation links so it works without JavaScript, and the
   prerendered Law of the Day is a real law. If the first render throws, the router restores the
   prerendered page and reports the error to Sentry.
