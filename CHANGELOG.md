@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- BreadcrumbList structured data on the calculator pages and every content page (about, privacy, terms, origin
+  story, contact, examples and its subpages, the long-form articles, and the curated lists), in both the prerendered
+  HTML and the client-side route rendering. Names and URLs are absolute and match the page titles.
+  Web bumped to `3.4.53`; root to `2.6.139`.
 - nginx now redirects `/about-us` to `/about` and `/contact-us` to `/contact` (301). A research crawler
   requested both each day and got a 404 from the daily report. Web bumped to `3.4.51`; root to `2.6.137`.
 - Floating "Back to top" button on long pages (browse, categories and the rest). It appears after 600 px of scroll,

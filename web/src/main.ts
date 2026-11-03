@@ -124,6 +124,7 @@ import {
   setLawStructuredData,
   setSodCalculatorStructuredData,
   setToastCalculatorStructuredData,
+  setContentBreadcrumbStructuredData,
   clearPageStructuredData
 } from '@modules/structured-data.ts';
 import { hydrateIcons } from '@utils/icons.ts';
@@ -331,32 +332,31 @@ const routesMap = {
   },
   'origin-story': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "The Origin of Murphy's Law", path: '/origin-story' }]);
     return layout(OriginStory({ onNavigate }));
   },
   about: () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "About Murphy's Law Archive", path: '/about' }]);
     return layout(About({ onNavigate }));
   },
   privacy: () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: 'Privacy Policy', path: '/privacy' }]);
     return layout(Privacy({ onNavigate }));
   },
   terms: () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: 'Terms of Service', path: '/terms' }]);
     return layout(Terms({ onNavigate }));
   },
   contact: () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "Contact Murphy's Law Archive", path: '/contact' }]);
     return layout(Contact({ onNavigate }));
   },
   examples: ({ param }: { param?: string | null }) => {
     trackPageView();
-    clearPageStructuredData();
     if (param === 'work' || param === 'travel' || param === 'tech' || param === 'everyday-life') {
       const titles: Record<string, string> = {
         work: "Murphy's Law Work Examples",
@@ -365,6 +365,10 @@ const routesMap = {
         'everyday-life': "Everyday Murphy's Law Examples"
       };
       const title = titles[param]!;
+      setContentBreadcrumbStructuredData([
+        { name: "Murphy's Law Examples", path: '/examples' },
+        { name: title, path: `/examples/${param}` }
+      ]);
       return layout(ContentPageView({
         page: `examples/${param}` as const,
         title,
@@ -372,46 +376,47 @@ const routesMap = {
         onNavigate
       }));
     }
+    setContentBreadcrumbStructuredData([{ name: "Murphy's Law Examples", path: '/examples' }]);
     return layout(Examples({ onNavigate }));
   },
   'why-murphys-law-feels-true': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: 'Why the Universe Hates Your Toast (And Other Lies We Tell Ourselves)', path: '/why-murphys-law-feels-true' }]);
     return layout(WhyMurphysLawFeelsTrue({ onNavigate }));
   },
   'murphys-law-project-management': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: 'Project Management vs. The Universe: A Survival Guide', path: '/murphys-law-project-management' }]);
     return layout(MurphysLawProjectManagement({ onNavigate }));
   },
   developers: () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: 'Developers', path: '/developers' }]);
     return layout(Developers({ onNavigate }));
   },
   'best-murphys-laws': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "Best Murphy's Laws", path: '/best-murphys-laws' }]);
     return layout(ContentPageView({ page: 'best-murphys-laws', title: "Best Murphy's Laws", description: "A curated starting point for the best Murphy's Laws.", onNavigate }));
   },
   'funniest-murphys-laws': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "Funniest Murphy's Laws", path: '/funniest-murphys-laws' }]);
     return layout(ContentPageView({ page: 'funniest-murphys-laws', title: "Funniest Murphy's Laws", description: "Funny Murphy's Laws that capture familiar failures.", onNavigate }));
   },
   'murphys-laws-about-work': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "Murphy's Laws About Work", path: '/murphys-laws-about-work' }]);
     return layout(ContentPageView({ page: 'murphys-laws-about-work', title: "Murphy's Laws About Work", description: "Murphy's Laws for work, offices, meetings, and projects.", onNavigate }));
   },
   'murphys-laws-about-technology': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "Murphy's Laws About Technology", path: '/murphys-laws-about-technology' }]);
     return layout(ContentPageView({ page: 'murphys-laws-about-technology', title: "Murphy's Laws About Technology", description: "Murphy's Laws about technology, software, and systems.", onNavigate }));
   },
   'murphys-law-vs-sods-law': () => {
     trackPageView();
-    clearPageStructuredData();
+    setContentBreadcrumbStructuredData([{ name: "Murphy's Law vs Sod's Law", path: '/murphys-law-vs-sods-law' }]);
     return layout(ContentPageView({ page: 'murphys-law-vs-sods-law', title: "Murphy's Law vs Sod's Law", description: "The difference between Murphy's Law and Sod's Law.", onNavigate }));
   },
 };
