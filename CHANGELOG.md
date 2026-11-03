@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The daily email confirm and unsubscribe pages (confirm prompt, subscribed, unsubscribed, link not recognized) now look
+  like part of the site: the site header and wordmark, a centred card, the standard primary button and link styles,
+  the utility footer, light and dark themes, a visible keyboard focus ring, and a phone layout. They load
+  `variables.css` and a new `web/public/styles/subscription-pages.css` from the web build, with no inline styles,
+  and still work with no JavaScript (the buttons are form posts). `noindex` and `Cache-Control: no-store` are
+  unchanged. Web bumped to `3.4.49`; backend to `2.3.61`; root to `2.6.133`.
+
 - The Deploy to Production workflow can now be started by hand (`workflow_dispatch`), so changed repository
   secrets such as the SMTP settings can reach the server without an unrelated merge. A manual run does nothing
   unless it starts from `main`, and it skips the daily email template smoke test, which compares against the
