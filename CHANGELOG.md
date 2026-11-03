@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Floating "Back to top" button on long pages (browse, categories and the rest). It appears after 600 px of scroll,
   is a real 44 px `<button>` with an `aria-label` and a visible focus ring, scrolls smoothly unless
   `prefers-reduced-motion` is set, supports high-contrast and forced-colors modes, hides while the install prompt or
-  update toast is showing, is not mounted on Kindle, and is hidden in print. Web bumped to `3.4.53`; root to `2.6.139`.
+  update toast is showing, is not mounted on Kindle, and is hidden in print. Web bumped to `3.4.54`; root to `2.6.140`.
 
 ### Changed
 
