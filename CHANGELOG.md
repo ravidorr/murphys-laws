@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   detects (`Kindle/` and `Kindle Build/`), the unsupported features found so far (flex `gap`, range media
   queries, missing DOM methods), how the code handles them, and which items are still unverified (the engine
   version and the modern CSS listed in #203). Documentation only; no version bump. The old-engine regression
-  check stays open in `TODO.md`.
+  check stays open in `TODO.md`, with a new item to verify the baseline on a device.
 
 ### Fixed
 

@@ -520,21 +520,23 @@ establish; nothing here is a measured engine version.
     `Android 9; Kindle Build/1.0 ... Silk/80`.
 - Colour Fire tablets (`KF<model> Build/` with `Silk`) are deliberately not matched, so they keep
   ads, analytics and the full header.
-- The legacy bundle is built with the `@vitejs/plugin-legacy` targets `defaults`, `chrome >= 49`,
-  `safari >= 10` and `android >= 5` (`web/vite.config.ts`). These are build targets, not a statement
-  of the Kindle engine version.
+- The `@vitejs/plugin-legacy` build targets in `web/vite.config.ts` (`defaults`, `chrome >= 49`,
+  `safari >= 10`, `android >= 5`) only decide how much the legacy bundle is transpiled. They are not
+  the Kindle baseline and say nothing about the Kindle engine.
 
 ### Unsupported or unreliable features
 
 - Flex `gap` is ignored (issue #203). Spacing that depends only on `gap` disappears and adjacent
   words, pills and buttons collide.
-- Range media queries such as `(width > 600px)` are dropped, because the build rewrites them to
-  `not (max-width)`, which old Kindle browsers ignore.
+- Range media queries such as `(width > 600px)` are not safe: per the comment in
+  `web/styles/partials/layout.css`, the build turns a `width >` range into `not (max-width)`, which
+  old Kindle browsers drop. That rewrite was not re-verified here.
 - Modern JavaScript syntax and built-ins are not available natively; the transpiled legacy bundle
   and core-js polyfills cover them.
 - Several DOM methods are missing (`replaceChildren`, `append`, `replaceWith`, `after`,
-  `toggleAttribute`) and `AbortSignal.timeout` is missing; `web/src/utils/legacy-polyfills.ts`
-  installs fallbacks before anything renders.
+  `toggleAttribute`); `web/src/utils/legacy-polyfills.ts` installs fallbacks before anything renders.
+- `AbortSignal.timeout` is missing; request code must use `createTimeoutSignal()` from
+  `web/src/utils/timeout-signal.ts` instead of calling it directly.
 - Not verified: issue #203 flags `color-mix()`, `:is()`, `:where()`, `:has()`, `@layer`,
   `@container`, `inset`, `aspect-ratio` and CSS nesting as possibly unsupported. `color-mix()` is
   still used outside the proof-point pills, for example in `web/styles/partials/calculator.css`.
@@ -545,11 +547,11 @@ establish; nothing here is a measured engine version.
 ### How the code handles it
 
 - `applyLegacyDisplayClass()` adds `legacy-display` to `<html>` at startup in `web/src/main.ts`.
-  CSS keyed on `.legacy-display` removes animation, shadows and the sticky header, hides the
-  header download and theme buttons, and keeps a short search box.
+  CSS keyed on `.legacy-display` stops the "M" badge animation and its shadow, makes the header
+  static instead of sticky, hides the header download and theme buttons, and keeps a short search
+  box (`web/styles/partials/layout.css`, `theme.css`).
 - Layout uses explicit margins instead of flex `gap` (for example `.not-found-actions`, the header
-  search button and the proof-point pills), and static markup keeps whitespace between inline
-  children so words do not run together.
+  search button and headings), so spacing holds where `gap` is ignored (#203).
 - Ads and analytics are not loaded on Kindle (`web/src/utils/third-party.ts`) and the footer ad
   shell is hidden (`web/src/components/footer.ts`).
 - The static header includes primary navigation links so it works without JavaScript, and the
