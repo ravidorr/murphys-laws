@@ -136,7 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2.3.58`; root to `2.6.128`.
 - `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
   requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
-  not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.52`; root to `2.6.121`.
+  not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
 
 ### Fixed
 
