@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { marked } from 'marked';
+import { CALCULATOR_META_DESCRIPTIONS } from '../src/utils/constants.ts';
 import {
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
@@ -13,7 +14,6 @@ import {
   buildStaticHomeContent,
   applyPageMetadata,
   validateGeneratedPage,
-  CALCULATOR_META_DESCRIPTIONS,
   fetchAllCategories,
   categorySitemapPaths
 } from '@scripts/ssg';

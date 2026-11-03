@@ -44,7 +44,6 @@ declare module '@scripts/ssg' {
   }
 
   export const CONTENT_PAGES: ContentPageMeta[];
-  export const CALCULATOR_META_DESCRIPTIONS: { readonly sodsLaw: string; readonly butteredToast: string };
   export function wrapFirstWordWithAccent(text: string): string;
   export function enhanceMarkdownHtml(html: string): string;
   export function wrapInCardStructure(html: string, options?: { lastUpdated?: string }): string;

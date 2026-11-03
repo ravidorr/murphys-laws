@@ -15,7 +15,7 @@ import {
 } from '../src/utils/internal-links.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
-import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
 
@@ -548,16 +548,6 @@ function generateJsonLd(data: object): string {
 function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
-
-/**
- * Meta descriptions for the calculator pages. Also used for og:description,
- * twitter:description and the WebApplication JSON-LD. Keep each unique and
- * within 150-160 characters.
- */
-const CALCULATOR_META_DESCRIPTIONS = {
-  sodsLaw: "Rate urgency, complexity, importance, skill, and frequency to get an instant Sod's Law risk score for any task. Free, no signup needed, and results in seconds.",
-  butteredToast: "Set the fall height and push force to see the odds your buttered toast lands butter-side down. A free Murphy's Law physics simulator with instant results."
-} as const;
 
 interface GeneratedPageExpectations {
   description?: string;
@@ -1598,7 +1588,6 @@ if (isMainModule) {
 // Export functions for testing
 export {
   CONTENT_PAGES,
-  CALCULATOR_META_DESCRIPTIONS,
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
   wrapInCardStructure,
