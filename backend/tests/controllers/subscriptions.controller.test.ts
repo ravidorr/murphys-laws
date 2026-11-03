@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { SubscriptionController } from '../../src/controllers/subscriptions.controller.ts';
@@ -102,7 +104,7 @@ describe('SubscriptionController', () => {
       controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
       expect(status()).toBe(200);
       const html = (res.end as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-      expect(html).toContain(`<form method="post" action="/subscription/confirm?token=${TOKEN}">`);
+      expect(html).toContain(`<form class="subscription-page__form" method="post" action="/subscription/confirm?token=${TOKEN}">`);
       expect(subscriptions.confirm).not.toHaveBeenCalled();
     });
 
@@ -146,7 +148,7 @@ describe('SubscriptionController', () => {
     it('shows a POST button and does not unsubscribe', () => {
       controller.unsubscribeForm({} as IncomingMessage, res, { query: { token: TOKEN } });
       expect(status()).toBe(200);
-      expect((res.end as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain(`<form method="post" action="/subscription/unsubscribe?token=${TOKEN}">`);
+      expect((res.end as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain(`<form class="subscription-page__form" method="post" action="/subscription/unsubscribe?token=${TOKEN}">`);
       expect(subscriptions.unsubscribe).not.toHaveBeenCalled();
     });
 
@@ -170,6 +172,59 @@ describe('SubscriptionController', () => {
       expect(status()).toBe(404);
       controller.unsubscribe({} as IncomingMessage, res, { query: {} });
       expect(subscriptions.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('page styling', () => {
+    const html = () => (res.end as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const freshResponse = () => ({ writeHead: vi.fn(), end: vi.fn() }) as unknown as ServerResponse;
+
+    it('links stylesheets that the web build serves', () => {
+      controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      const hrefs = [...html().matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]);
+      expect(hrefs).toHaveLength(2);
+      const web = resolve(import.meta.dirname, '../../../web');
+      for (const href of hrefs) {
+        // variables.css is copied from styles/ into the build; the rest ships from public/
+        const source = href === '/styles/partials/variables.css' ? `styles/partials/variables.css` : `public${href}`;
+        expect(existsSync(resolve(web, source)), href).toBe(true);
+      }
+    });
+
+    it('gives every state the site header, stylesheets, footer and a noindex marker, with no inline styles', () => {
+      subscriptions.confirm.mockReturnValue(true);
+      subscriptions.unsubscribe.mockReturnValue(true);
+      const renders: Array<() => void> = [
+        () => controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.confirm({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.confirm({} as IncomingMessage, res, {}),
+        () => controller.unsubscribeForm({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.unsubscribe({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.unsubscribe({} as IncomingMessage, res, {}),
+      ];
+      for (const render of renders) {
+        res = freshResponse();
+        render();
+        expect(html()).toContain('<link rel="stylesheet" href="/styles/partials/variables.css">');
+        expect(html()).toContain('<link rel="stylesheet" href="/styles/subscription-pages.css">');
+        expect(html()).toContain('<meta name="robots" content="noindex">');
+        expect(html()).toContain('class="subscription-page__brand"');
+        expect(html()).toContain('href="https://murphys-laws.com/privacy"');
+        expect(html()).not.toContain('style=');
+        expect(writeHead().mock.calls[0][1]).toMatchObject({ 'Cache-Control': 'no-store' });
+      }
+    });
+
+    it('marks success and error states', () => {
+      subscriptions.confirm.mockReturnValue(true);
+      controller.confirm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      expect(html()).toContain('subscription-page__status--success');
+      res = freshResponse();
+      controller.confirm({} as IncomingMessage, res, {});
+      expect(html()).toContain('subscription-page__status--error');
+      res = freshResponse();
+      controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      expect(html()).not.toContain('subscription-page__status');
     });
   });
 });
