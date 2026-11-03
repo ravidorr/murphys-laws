@@ -549,7 +549,18 @@ function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
+/**
+ * Meta descriptions for the calculator pages. Also used for og:description,
+ * twitter:description and the WebApplication JSON-LD. Keep each unique and
+ * within 150-160 characters.
+ */
+const CALCULATOR_META_DESCRIPTIONS = {
+  sodsLaw: "Rate urgency, complexity, importance, skill, and frequency to get an instant Sod's Law risk score for any task. Free, no signup needed, and results in seconds.",
+  butteredToast: "Set the fall height and push force to see the odds your buttered toast lands butter-side down. A free Murphy's Law physics simulator with instant results."
+} as const;
+
 interface GeneratedPageExpectations {
+  description?: string;
   canonicalPath: string;
   forbidMailto?: boolean;
   requireCategoryLink?: boolean;
@@ -564,6 +575,14 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   const expectedCanonical = `rel="canonical" href="${buildCanonicalUrl(expectations.canonicalPath)}"`;
   if (!html.includes(expectedCanonical)) failures.push(`missing canonical ${expectations.canonicalPath}`);
   if (!/<meta name="description" content="[^"].*?">/i.test(html)) failures.push('missing route description');
+  if (expectations.description) {
+    const escapedDescription = escapeHtml(expectations.description);
+    for (const [attribute, key] of [['name', 'description'], ['property', 'og:description'], ['property', 'twitter:description']] as const) {
+      if (!html.includes(`<meta ${attribute}="${key}" content="${escapedDescription}">`)) {
+        failures.push(`${key} does not match the route description`);
+      }
+    }
+  }
   if (!/<meta property="og:title" content="[^"].*?">/i.test(html)) failures.push('missing Open Graph title');
   if (!/<meta property="twitter:title" content="[^"].*?">/i.test(html)) failures.push('missing Twitter title');
   if (expectations.requireCategoryLink && !/href="\/category\/[^"/]+"/i.test(html)) {
@@ -581,8 +600,8 @@ async function validateGeneratedOutput(): Promise<void> {
     { file: 'categories/index.html', expectations: { canonicalPath: '/categories', requireCategoryLink: true } },
     { file: 'submit/index.html', expectations: { canonicalPath: '/submit' } },
     { file: 'origin-story/index.html', expectations: { canonicalPath: '/origin-story', requireContentFigure: true } },
-    { file: 'calculator/sods-law/index.html', expectations: { canonicalPath: '/calculator/sods-law' } },
-    { file: 'calculator/buttered-toast/index.html', expectations: { canonicalPath: '/calculator/buttered-toast' } }
+    { file: 'calculator/sods-law/index.html', expectations: { canonicalPath: '/calculator/sods-law', description: CALCULATOR_META_DESCRIPTIONS.sodsLaw } },
+    { file: 'calculator/buttered-toast/index.html', expectations: { canonicalPath: '/calculator/buttered-toast', description: CALCULATOR_META_DESCRIPTIONS.butteredToast } }
   ];
 
   for (const { file, expectations } of checks) {
@@ -1298,28 +1317,28 @@ ${articleArchive.featuredLaws}
     {
       pathParts: ['calculator', 'sods-law'],
       title: 'Sod\'s Law Calculator - Murphy\'s Law Archive',
-      description: 'Estimate how likely a task is to go wrong using urgency, complexity, importance, skill, and frequency.',
+      description: CALCULATOR_META_DESCRIPTIONS.sodsLaw,
       content: buildStaticCalculatorContent('sods-law'),
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         'name': 'Sod\'s Law Calculator',
         'url': `${SITE_URL}/calculator/sods-law`,
-        'description': 'Estimate how likely a task is to go wrong using urgency, complexity, importance, skill, and frequency.',
+        'description': CALCULATOR_META_DESCRIPTIONS.sodsLaw,
         'applicationCategory': 'EntertainmentApplication'
       }
     },
     {
       pathParts: ['calculator', 'buttered-toast'],
       title: 'Buttered Toast Calculator - Murphy\'s Law Archive',
-      description: 'A playful simulator for the classic Murphy\'s Law question: will toast land butter-side down?',
+      description: CALCULATOR_META_DESCRIPTIONS.butteredToast,
       content: buildStaticCalculatorContent('buttered-toast'),
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         'name': 'Buttered Toast Calculator',
         'url': `${SITE_URL}/calculator/buttered-toast`,
-        'description': 'A playful simulator for the classic Murphy\'s Law question: will toast land butter-side down?',
+        'description': CALCULATOR_META_DESCRIPTIONS.butteredToast,
         'applicationCategory': 'EntertainmentApplication'
       }
     },
@@ -1579,6 +1598,7 @@ if (isMainModule) {
 // Export functions for testing
 export {
   CONTENT_PAGES,
+  CALCULATOR_META_DESCRIPTIONS,
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
   wrapInCardStructure,

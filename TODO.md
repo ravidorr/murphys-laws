@@ -26,7 +26,6 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 ### SEO Improvements
 - [x] **FAQ Structured Data for Calculators:** ~~Add FAQ schema to Sod's Law and Buttered Toast calculators explaining how they work and what they calculate.~~ Done - both calculators publish `FAQPage` JSON-LD with their relevant questions and answers.
 - [ ] **"What is Murphy's Law?" Section:** Add a dedicated section or expand the home page description to target featured snippet for "What is Murphy's Law?" queries.
-- [ ] **Calculator Meta Descriptions:** Current calculator page meta descriptions could be more compelling with specific value propositions.
 
 ### Microcopy Improvements
 - [ ] **Review Error States:** Audit all error messages for consistency and helpfulness. Ensure they follow pattern: What happened + Why + What to do next.

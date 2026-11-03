@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rewrote the Sod's Law and Buttered Toast calculator meta descriptions with specific value propositions (150 to 160
+  characters, unique per page). They now come from one `CALCULATOR_META_DESCRIPTIONS` constant in
+  `web/scripts/ssg.ts` that feeds the meta, `og:description`, `twitter:description` and `WebApplication` JSON-LD, and
+  the SSG output validation fails the build if the three tags drift from it. Web bumped to `3.4.37`; root to `2.6.120`.
+
 ### Fixed
 
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
