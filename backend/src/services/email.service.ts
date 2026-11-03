@@ -111,7 +111,7 @@ export class EmailService {
         to: { name: '', address: to },
         subject: createSubscriptionConfirmationSubject(),
         text: createSubscriptionConfirmationText(confirmUrl),
-        html: createSubscriptionConfirmationHtml(confirmUrl),
+        html: createSubscriptionConfirmationHtml(confirmUrl, SITE_URL),
       });
       return true;
     } catch (error: unknown) {
