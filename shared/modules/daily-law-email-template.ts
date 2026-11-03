@@ -4,7 +4,18 @@
  * plain-text alternative alongside the HTML.
  */
 import { escapeHtml } from './html-escape.ts';
-import { EMAIL_STYLES, EMAIL_TOKENS, emailButton, emailRow, renderEmailLayout, siteLink } from './email-layout.ts';
+import {
+  emailButton,
+  emailDetails,
+  emailEyebrow,
+  emailHeading,
+  emailLink,
+  emailParagraph,
+  emailQuote,
+  emailRow,
+  renderEmailLayout,
+  siteLink,
+} from './email-layout.ts';
 
 export interface DailyLawEmailData {
   id: number | string;
@@ -36,9 +47,9 @@ If this wasn't you, ignore this message. Nothing is sent until you confirm.
 
 export function createSubscriptionConfirmationHtml(confirmUrl: string, siteUrl: string): string {
   const body = [
-    emailRow(`<h1 class="em-fg" style="margin:0;${EMAIL_STYLES.heading}">Confirm your daily Murphy's Law email</h1>`, 'padding-top:32px;'),
+    emailRow(emailHeading('Confirm your daily Murphy\'s Law email'), 'padding-top:32px;'),
     emailRow(
-      `<p class="em-fg" style="margin:0;${EMAIL_STYLES.body}">Someone asked for the Murphy's Law of the Day to be emailed to this address. Confirm to start the daily email.</p>`,
+      emailParagraph('Someone asked for the Murphy\'s Law of the Day to be emailed to this address. Confirm to start the daily email.'),
       'padding-top:16px;',
     ),
     emailRow(emailButton('Confirm and start the daily email', confirmUrl), 'padding-top:28px;padding-bottom:32px;'),
@@ -112,7 +123,7 @@ export function createDailyLawHtml(law: DailyLawEmailData, siteUrl: string, unsu
   const slug = cleanString(law.category_slug);
   const categoryHtml = category
     ? slug
-      ? `<a class="em-link" href="${escapeHtml(categoryUrl(slug, siteUrl))}" style="${EMAIL_STYLES.link}">${escapeHtml(category)}</a>`
+      ? emailLink(categoryUrl(slug, siteUrl), escapeHtml(category))
       : escapeHtml(category)
     : '';
   const details = [
@@ -121,18 +132,12 @@ export function createDailyLawHtml(law: DailyLawEmailData, siteUrl: string, unsu
   ].filter(Boolean).join('&nbsp;&nbsp;&middot;&nbsp;&nbsp;');
 
   const rows = [
-    emailRow(
-      `<p class="em-muted" style="margin:0;${EMAIL_STYLES.eyebrow}">Murphy's Law of the Day</p>`,
-      'padding-top:32px;',
-    ),
+    emailRow(emailEyebrow('Murphy\'s Law of the Day'), 'padding-top:32px;'),
     title
-      ? emailRow(`<h1 class="em-fg" style="margin:0;${EMAIL_STYLES.heading}">${escapeHtml(title)}</h1>`, 'padding-top:8px;')
+      ? emailRow(emailHeading(title), 'padding-top:8px;')
       : '',
-    emailRow(
-      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="em-quote" style="padding:4px 0 4px 20px;border-left:4px solid ${EMAIL_TOKENS['btn-primary-bg']};"><p class="em-law em-fg" style="margin:0;${EMAIL_STYLES.law}">${escapeHtml(law.text)}</p></td></tr></table>`,
-      'padding-top:20px;',
-    ),
-    details ? emailRow(`<p class="em-muted" style="margin:0;${EMAIL_STYLES.muted}">${details}</p>`, 'padding-top:16px;') : '',
+    emailRow(emailQuote(law.text), 'padding-top:20px;'),
+    details ? emailRow(emailDetails(details), 'padding-top:16px;') : '',
     emailRow(emailButton('Read, vote and share', lawUrl(law.id, siteUrl)), 'padding-top:28px;padding-bottom:32px;'),
   ].filter(Boolean).join('\n');
 
@@ -141,6 +146,6 @@ export function createDailyLawHtml(law: DailyLawEmailData, siteUrl: string, unsu
     preheader: preheaderFor(law.text),
     siteUrl,
     bodyRows: rows,
-    footerHtml: `You get this email because you subscribed to the Murphy's Law of the Day.<br><a class="em-link" href="${escapeHtml(unsubscribeUrl)}" style="${EMAIL_STYLES.link}">Unsubscribe</a>`,
+    footerHtml: `You get this email because you subscribed to the Murphy's Law of the Day.<br>${emailLink(unsubscribeUrl, 'Unsubscribe')}`,
   });
 }

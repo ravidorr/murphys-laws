@@ -44,7 +44,7 @@ describe('daily law email template', () => {
     expect(html).toContain('font-size:26px');
     expect(html).toContain('>Read, vote and share</a>');
     expect(html).toContain('>Unsubscribe</a>');
-    expect(html).toContain('>Murphy\'s Law of the Day</p>');
+    expect(html).toContain('>Murphy&#39;s Law of the Day</p>');
   });
 
   it('adds the category and attribution when the law has them, and ignores malformed values', () => {

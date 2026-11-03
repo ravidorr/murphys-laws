@@ -35,8 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   daily email" button, and a clearly visible Unsubscribe link in the footer. Both use a shared 600px table layout
   (`shared/modules/email-layout.ts`) that holds up on a phone and has dark-mode styles, and both still send a
   plain-text alternative; the `List-Unsubscribe` headers are unchanged. Email clients ignore stylesheets, so the
-  design tokens are written out as inline values and a test fails when one stops matching
-  `web/styles/partials/variables.css`. Backend bumped to `2.3.62`; root to `2.6.134`.
+  colors are generated from `web/styles/partials/variables.css` into `shared/modules/email-tokens.generated.ts`
+  (`npm run design:export:email`; `design:check` fails when it drifts). Inline styles are confined to
+  `email-layout.ts`, the only new entry in the design conformance allowlist. Backend bumped to `2.3.62`; root to
+  `2.6.135`.
 - The daily email confirm and unsubscribe pages (confirm prompt, subscribed, unsubscribed, link not recognized) now look
   like part of the site: the site header and wordmark, a centred card, the standard primary button and link styles,
   the utility footer, light and dark themes, a visible keyboard focus ring, and a phone layout. They load
