@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- BreadcrumbList structured data on the calculator pages and every content page (about, privacy, terms, origin
+  story, contact, examples and its subpages, the long-form articles, and the curated lists), in both the prerendered
+  HTML and the client-side route rendering. Names and URLs are absolute and match the page titles.
+  Web bumped to `3.4.53`; root to `2.6.139`.
 - nginx now redirects `/about-us` to `/about` and `/contact-us` to `/contact` (301). A research crawler
   requested both each day and got a 404 from the daily report. Web bumped to `3.4.51`; root to `2.6.137`.
 
@@ -51,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `CALCULATOR_META_DESCRIPTIONS` constant in `web/src/utils/constants.ts` that feeds the prerendered meta,
   `og:description`, `twitter:description` and `WebApplication` JSON-LD, the runtime `updatePageMetadata` calls, and
   the client JSON-LD, so hydration no longer swaps in different wording. The SSG output validation fails the build
-  if the three description tags drift from it. Web bumped to `3.4.53`; root to `2.6.139`.
+  if the three description tags drift from it. Web bumped to `3.4.54`; root to `2.6.140`.
 - Redesigned the Share menu so it fits without scrolling: a "Share to" row of social icons (X, Facebook,
   LinkedIn, Reddit, WhatsApp, Email) comes first, then Copy link, Copy text, Save as image, Copy embed code and, on
   browsers that support it, Share with your device. Action rows use plain gray icons and 44px targets; only the

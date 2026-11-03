@@ -1,5 +1,5 @@
 import { CALCULATOR_META_DESCRIPTIONS, SITE_NAME, SITE_URL, SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from '@utils/constants.ts';
-import { buildLawSeo } from '@utils/seo.ts';
+import { buildBreadcrumbList as buildBreadcrumbListFromTrail, buildLawSeo, type BreadcrumbItem } from '@utils/seo.ts';
 import type { Law } from '../types/app.d.ts';
 
 const JSONLD_PREFIX = 'jsonld-';
@@ -13,6 +13,9 @@ const PAGE_IDS = new Set([
   'calculator-toast',
   'calculator-toast-howto',
   'calculator-toast-faq',
+  'calculator-sod-breadcrumbs',
+  'calculator-toast-breadcrumbs',
+  'content-page-breadcrumbs',
   'browse-page-breadcrumbs',
   'categories-page',
   'category-detail-page',
@@ -79,6 +82,19 @@ export function removeJsonLd(id: string): void {
 
 export function clearPageStructuredData(): void {
   PAGE_IDS.forEach(removeJsonLd);
+}
+
+function buildBreadcrumbList(trail: BreadcrumbItem[]): Record<string, unknown> {
+  return buildBreadcrumbListFromTrail([{ name: 'Home', path: '/' }, ...trail]);
+}
+
+/**
+ * Set BreadcrumbList JSON-LD for a content page (clears previous page data).
+ * Home is prepended automatically; paths must start with "/".
+ */
+export function setContentBreadcrumbStructuredData(trail: BreadcrumbItem[]): void {
+  clearPageStructuredData();
+  setJsonLd('content-page-breadcrumbs', buildBreadcrumbList(trail));
 }
 
 export function setSiteStructuredData(): void {
@@ -207,6 +223,9 @@ export function setLawStructuredData(law: Law): void {
 
 export function setSodCalculatorStructuredData(): void {
   clearPageStructuredData();
+  setJsonLd('calculator-sod-breadcrumbs', buildBreadcrumbList([
+    { name: "Sod's Law Calculator", path: '/calculator/sods-law' }
+  ]));
   setJsonLd('calculator-sod', {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
@@ -295,6 +314,9 @@ export function setSodCalculatorStructuredData(): void {
 
 export function setToastCalculatorStructuredData(): void {
   clearPageStructuredData();
+  setJsonLd('calculator-toast-breadcrumbs', buildBreadcrumbList([
+    { name: 'Buttered Toast Calculator', path: '/calculator/buttered-toast' }
+  ]));
   setJsonLd('calculator-toast', {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',

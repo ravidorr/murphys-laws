@@ -18,7 +18,7 @@ import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { CALCULATOR_META_DESCRIPTIONS, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { buildBreadcrumbList, buildCanonicalUrl, buildUniqueLawSeo, buildLawSeo, truncateTitle } from '../src/utils/seo.ts';
-import type { LawSeo } from '../src/utils/seo.ts';
+import type { BreadcrumbItem, LawSeo } from '../src/utils/seo.ts';
 import { oembedDiscoveryLink } from '../../shared/modules/law-embed.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
 
@@ -578,8 +578,18 @@ function applyPageMetadata(html: string, metadata: PageMetadata): string {
 /**
  * Generate JSON-LD script tag
  */
-function generateJsonLd(data: object): string {
-  return `<script type="application/ld+json">${JSON.stringify(data, null, 2)}</script>`;
+function generateJsonLd(data: object, id?: string): string {
+  const idAttr = id ? ` id="${id}"` : '';
+  return `<script type="application/ld+json"${idAttr}>${JSON.stringify(data, null, 2)}</script>`;
+}
+
+/**
+ * Inject a BreadcrumbList whose script id matches the client-side one (`jsonld-<id>`), so the
+ * router replaces or removes it on navigation instead of leaving a stale duplicate behind.
+ */
+function injectBreadcrumbJsonLd(html: string, id: string, trail: BreadcrumbItem[]): string {
+  const home: BreadcrumbItem = { name: 'Home', path: '/' };
+  return injectJsonLd(html, generateJsonLd(buildBreadcrumbList([home, ...trail]), `jsonld-${id}`));
 }
 
 /**
@@ -587,6 +597,18 @@ function generateJsonLd(data: object): string {
  */
 function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
+}
+
+/**
+ * Breadcrumb trail for a content page. Example subpages sit under /examples.
+ */
+function buildContentBreadcrumbTrail(page: { slug: string; title: string }): BreadcrumbItem[] {
+  const trail: BreadcrumbItem[] = [];
+  if (page.slug.startsWith('examples/')) {
+    trail.push({ name: "Murphy's Law Examples", path: '/examples' });
+  }
+  trail.push({ name: page.title, path: `/${page.slug}` });
+  return trail;
 }
 
 interface GeneratedPageExpectations {
@@ -1491,6 +1513,7 @@ ${articleArchive.featuredLaws}
       });
       
       pageHtml = injectJsonLd(pageHtml, contentJsonLd);
+      pageHtml = injectBreadcrumbJsonLd(pageHtml, 'content-page-breadcrumbs', buildContentBreadcrumbTrail(page));
       
       await fs.writeFile(path.join(routeDir, 'index.html'), pageHtml);
     } catch (err) {
@@ -1509,6 +1532,7 @@ ${articleArchive.featuredLaws}
       title: 'Sod\'s Law Calculator - Murphy\'s Law Archive',
       description: CALCULATOR_META_DESCRIPTIONS.sodsLaw,
       content: buildStaticCalculatorContent('sods-law'),
+      breadcrumb: { id: 'calculator-sod-breadcrumbs', name: "Sod's Law Calculator" },
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
@@ -1523,6 +1547,7 @@ ${articleArchive.featuredLaws}
       title: 'Buttered Toast Calculator - Murphy\'s Law Archive',
       description: CALCULATOR_META_DESCRIPTIONS.butteredToast,
       content: buildStaticCalculatorContent('buttered-toast'),
+      breadcrumb: { id: 'calculator-toast-breadcrumbs', name: 'Buttered Toast Calculator' },
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
@@ -1577,6 +1602,11 @@ ${articleArchive.featuredLaws}
       `<main id="main-content" class="flex-1 container page">${route.content}</main>`
     );
     routeHtml = injectJsonLd(routeHtml, generateJsonLd(route.jsonLd));
+    if (route.breadcrumb) {
+      routeHtml = injectBreadcrumbJsonLd(routeHtml, route.breadcrumb.id, [
+        { name: route.breadcrumb.name, path: `/${routePath}` }
+      ]);
+    }
     await fs.writeFile(path.join(routeDir, 'index.html'), routeHtml);
   }
 
@@ -1746,6 +1776,8 @@ export {
   generateLawPage,
   buildSitemapXml,
   validateGeneratedPage,
+  injectBreadcrumbJsonLd,
+  buildContentBreadcrumbTrail,
   fetchAllCategories,
   categorySitemapPaths,
   pickRelatedLaws,
