@@ -1827,7 +1827,7 @@ describe('Browse view', () => {
       expect(searchEvents()).toHaveLength(1);
     });
 
-    it('applies and tracks a category pick without requiring the Search button', async () => {
+    it('applies and tracks a category pick when the Search button is clicked', async () => {
       vi.spyOn(api, 'fetchAPI').mockImplementation((url: string) => {
         if (url === '/api/v1/categories') {
           return Promise.resolve({ data: [{ id: 1, title: 'Technology', slug: 'technology' }] });
@@ -1844,6 +1844,8 @@ describe('Browse view', () => {
       const categorySelect = el.querySelector('#search-category') as HTMLSelectElement;
       categorySelect.value = '1';
       categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+      expect(fetchLawsSpy).not.toHaveBeenCalled();
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
 
       await vi.waitFor(() => {
         expect(fetchLawsSpy).toHaveBeenCalledWith(expect.objectContaining({ category_id: 1, offset: 0 }));

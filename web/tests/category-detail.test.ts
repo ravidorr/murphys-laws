@@ -59,7 +59,6 @@ interface AdvancedSearchMockState {
   onSearch?: (filters: Record<string, unknown>) => void;
   initialFilters?: Record<string, unknown>;
   defaultCategoryId?: string | number;
-  categoryHint?: string;
 }
 vi.mock('../src/components/advanced-search.js', () => {
   const localThis: AdvancedSearchMockState = {};
@@ -67,18 +66,15 @@ vi.mock('../src/components/advanced-search.js', () => {
     AdvancedSearch: vi.fn(({
       initialFilters,
       defaultCategoryId,
-      categoryHint,
       onSearch
     }: {
       initialFilters: Record<string, unknown>;
       defaultCategoryId?: string | number;
-      categoryHint?: string;
       onSearch: (filters: Record<string, unknown>) => void;
     }) => {
       localThis.onSearch = onSearch;
       localThis.initialFilters = initialFilters;
       localThis.defaultCategoryId = defaultCategoryId;
-      localThis.categoryHint = categoryHint;
       const el = document.createElement('section');
       el.className = 'section section-card mb-12';
       el.innerHTML = '<div class="test-advanced-search">Advanced Search Mock</div>';
@@ -867,8 +863,7 @@ describe('CategoryDetail view', () => {
         initialFilters: expect.objectContaining({
           category_id: 1
         }),
-        defaultCategoryId: 1,
-        categoryHint: 'Choose a category alone to open it. Add search terms to search Browse.'
+        defaultCategoryId: 1
       }));
     });
 
