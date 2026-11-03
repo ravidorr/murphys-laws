@@ -1,4 +1,5 @@
 import { SITE_NAME, SITE_URL, SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from '@utils/constants.ts';
+import { buildBreadcrumbList, type BreadcrumbTrailItem } from '@utils/breadcrumb-schema.ts';
 import type { Law } from '../types/app.d.ts';
 
 const JSONLD_PREFIX = 'jsonld-';
@@ -81,25 +82,6 @@ export function removeJsonLd(id: string): void {
 
 export function clearPageStructuredData(): void {
   PAGE_IDS.forEach(removeJsonLd);
-}
-
-export interface BreadcrumbTrailItem {
-  name: string;
-  path: string;
-}
-
-function buildBreadcrumbList(trail: BreadcrumbTrailItem[]): Record<string, unknown> {
-  const items = [{ name: 'Home', path: '' }, ...trail];
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    'itemListElement': items.map((item, index) => ({
-      '@type': 'ListItem',
-      'position': index + 1,
-      'name': item.name,
-      'item': `${SITE_URL}${item.path}`
-    }))
-  };
 }
 
 /**

@@ -13,7 +13,7 @@ import {
   buildStaticHomeContent,
   applyPageMetadata,
   validateGeneratedPage,
-  buildBreadcrumbList,
+  injectBreadcrumbJsonLd,
   buildContentBreadcrumbTrail,
   fetchAllCategories,
   categorySitemapPaths
@@ -412,17 +412,20 @@ describe('SSG Static Route Content', () => {
     expect(html).toContain('<a href="https://en.wikipedia.org/wiki/Murphy%27s_law" target="_blank" rel="noopener noreferrer">Wikipedia<span class="visually-hidden"> (opens in a new tab)</span></a>');
     expect(html).toContain('<a href="/browse">the archive</a>');
   });
-  it('builds absolute BreadcrumbList data starting at Home', () => {
-    const data = buildBreadcrumbList([{ name: "Sod's Law Calculator", path: '/calculator/sods-law' }]) as {
-      '@type': string;
-      itemListElement: Array<{ position: number; name: string; item: string }>;
-    };
+  it('injects absolute BreadcrumbList data with a client-matching script id', () => {
+    const html = injectBreadcrumbJsonLd('<html><head></head></html>', 'calculator-sod-breadcrumbs', [
+      { name: "Sod's Law Calculator", path: '/calculator/sods-law' }
+    ]);
+    const match = html.match(/<script type="application\/ld\+json" id="jsonld-calculator-sod-breadcrumbs">([\s\S]*?)<\/script>/);
+    expect(match).toBeTruthy();
+    const data = JSON.parse(match![1]!);
 
     expect(data['@type']).toBe('BreadcrumbList');
     expect(data.itemListElement).toEqual([
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://murphys-laws.com' },
       { '@type': 'ListItem', position: 2, name: "Sod's Law Calculator", item: 'https://murphys-laws.com/calculator/sods-law' }
     ]);
+    expect(html.indexOf('</script>')).toBeLessThan(html.indexOf('</head>'));
   });
 
   it('builds content breadcrumb trails with examples subpages nested under Examples', () => {

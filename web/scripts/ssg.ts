@@ -16,6 +16,7 @@ import {
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
+import { buildBreadcrumbList, type BreadcrumbTrailItem } from '../src/utils/breadcrumb-schema.ts';
 import { buildCanonicalUrl, truncateTitle } from '../src/utils/seo.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
 
@@ -538,8 +539,17 @@ function applyPageMetadata(html: string, metadata: PageMetadata): string {
 /**
  * Generate JSON-LD script tag
  */
-function generateJsonLd(data: object): string {
-  return `<script type="application/ld+json">${JSON.stringify(data, null, 2)}</script>`;
+function generateJsonLd(data: object, id?: string): string {
+  const idAttr = id ? ` id="${id}"` : '';
+  return `<script type="application/ld+json"${idAttr}>${JSON.stringify(data, null, 2)}</script>`;
+}
+
+/**
+ * Inject a BreadcrumbList whose script id matches the client-side one (`jsonld-<id>`), so the
+ * router replaces or removes it on navigation instead of leaving a stale duplicate behind.
+ */
+function injectBreadcrumbJsonLd(html: string, id: string, trail: BreadcrumbTrailItem[]): string {
+  return injectJsonLd(html, generateJsonLd(buildBreadcrumbList(trail), `jsonld-${id}`));
 }
 
 /**
@@ -547,28 +557,6 @@ function generateJsonLd(data: object): string {
  */
 function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
-}
-
-interface BreadcrumbTrailItem {
-  name: string;
-  path: string;
-}
-
-/**
- * Build a BreadcrumbList object. Home is always the first item; paths are made absolute.
- */
-function buildBreadcrumbList(trail: BreadcrumbTrailItem[]): Record<string, unknown> {
-  const items = [{ name: 'Home', path: '' }, ...trail];
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    'itemListElement': items.map((item, index) => ({
-      '@type': 'ListItem',
-      'position': index + 1,
-      'name': item.name,
-      'item': `${SITE_URL}${item.path}`
-    }))
-  };
 }
 
 /**
@@ -1316,7 +1304,7 @@ ${articleArchive.featuredLaws}
       });
       
       pageHtml = injectJsonLd(pageHtml, contentJsonLd);
-      pageHtml = injectJsonLd(pageHtml, generateJsonLd(buildBreadcrumbList(buildContentBreadcrumbTrail(page))));
+      pageHtml = injectBreadcrumbJsonLd(pageHtml, 'content-page-breadcrumbs', buildContentBreadcrumbTrail(page));
       
       await fs.writeFile(path.join(routeDir, 'index.html'), pageHtml);
     } catch (err) {
@@ -1335,7 +1323,7 @@ ${articleArchive.featuredLaws}
       title: 'Sod\'s Law Calculator - Murphy\'s Law Archive',
       description: 'Estimate how likely a task is to go wrong using urgency, complexity, importance, skill, and frequency.',
       content: buildStaticCalculatorContent('sods-law'),
-      breadcrumbName: "Sod's Law Calculator",
+      breadcrumb: { id: 'calculator-sod-breadcrumbs', name: "Sod's Law Calculator" },
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
@@ -1350,7 +1338,7 @@ ${articleArchive.featuredLaws}
       title: 'Buttered Toast Calculator - Murphy\'s Law Archive',
       description: 'A playful simulator for the classic Murphy\'s Law question: will toast land butter-side down?',
       content: buildStaticCalculatorContent('buttered-toast'),
-      breadcrumbName: 'Buttered Toast Calculator',
+      breadcrumb: { id: 'calculator-toast-breadcrumbs', name: 'Buttered Toast Calculator' },
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
@@ -1403,10 +1391,10 @@ ${articleArchive.featuredLaws}
       `<main id="main-content" class="flex-1 container page">${route.content}</main>`
     );
     routeHtml = injectJsonLd(routeHtml, generateJsonLd(route.jsonLd));
-    if (route.breadcrumbName) {
-      routeHtml = injectJsonLd(routeHtml, generateJsonLd(buildBreadcrumbList([
-        { name: route.breadcrumbName, path: `/${routePath}` }
-      ])));
+    if (route.breadcrumb) {
+      routeHtml = injectBreadcrumbJsonLd(routeHtml, route.breadcrumb.id, [
+        { name: route.breadcrumb.name, path: `/${routePath}` }
+      ]);
     }
     await fs.writeFile(path.join(routeDir, 'index.html'), routeHtml);
   }
@@ -1632,7 +1620,7 @@ export {
   buildStaticArticleArchive,
   applyPageMetadata,
   validateGeneratedPage,
-  buildBreadcrumbList,
+  injectBreadcrumbJsonLd,
   buildContentBreadcrumbTrail,
   fetchAllCategories,
   categorySitemapPaths
