@@ -20,6 +20,7 @@ function page(overrides: Partial<PageInfo> = {}): PageInfo {
     h1Count: 1,
     jsonLdTypes: ['Article'],
     words: 300,
+    lawLinks: [],
     ...overrides
   };
 }
@@ -63,9 +64,14 @@ describe('seo-audit helpers', () => {
     });
   });
 
+  it('collects distinct law links, relative or absolute, without the page itself', () => {
+    const html = `<body><a href="/law/1">a</a><a href="${ORIGIN}/law/2">b</a><a href="/law/2/">c</a><a href="/law/7">self</a><a href="/lawn/3">x</a><a href="https://other.example/law/9">y</a></body>`;
+    expect(parsePage(`${ORIGIN}/law/7`, html).lawLinks.sort()).toEqual(['/law/1', '/law/2']);
+  });
+
   it('returns empty fields for a page with no head metadata', () => {
     const info = parsePage(`${ORIGIN}/y`, '<body>nothing</body>');
-    expect(info).toMatchObject({ title: '', description: '', canonical: '', robots: '', h1Count: 0, jsonLdTypes: [] });
+    expect(info).toMatchObject({ title: '', description: '', canonical: '', robots: '', h1Count: 0, jsonLdTypes: [], lawLinks: [] });
   });
 
   it('finds duplicate values but ignores empty ones', () => {
@@ -82,7 +88,11 @@ describe('auditSite', () => {
   it('reports a clean site with no problems', () => {
     const result = auditSite({
       entries: ['<loc>a</loc><lastmod>2026-01-01</lastmod>'],
-      pages: [page(), lawPage(1, 'One', longDescription), lawPage(2, 'Two', `${longDescription} More.`)],
+      pages: [
+        page({ lawLinks: ['/law/1'] }),
+        lawPage(1, 'One', longDescription, { lawLinks: ['/law/2'] }),
+        lawPage(2, 'Two', `${longDescription} More.`)
+      ],
       missingFiles: []
     });
     expect(result.blocking).toEqual([]);
@@ -104,6 +114,7 @@ describe('auditSite', () => {
     expect(text).toContain('1 sitemap URLs have no built page (e.g. https://murphys-laws.com/gone)');
     expect(text).toContain('2 law pages share 1 titles (e.g. "Same")');
     expect(text).toContain('2 law pages share 1 descriptions');
+    expect(text).toContain('2 law pages have no internal link pointing to them (e.g. https://murphys-laws.com/law/1)');
     expect(text).toContain('canonical mismatch');
     expect(text).toContain('noindex page in sitemap');
     expect(text).toContain('2 h1 elements');

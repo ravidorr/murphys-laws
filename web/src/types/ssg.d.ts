@@ -78,4 +78,9 @@ declare module '@scripts/ssg' {
     json(): Promise<unknown>;
   }>): Promise<StaticCategory[]>;
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
+  export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];
+  export function renderLawLinkList(
+    laws: StaticLaw[],
+    seoById: Map<string, { title: string; description: string; headline: string }>
+  ): string;
 }

@@ -326,6 +326,39 @@ async function fetchFirstPageOfLaws(params: { limit: number; offset?: number; ca
 }
 
 /**
+ * The laws a law page links to as "related". Plain "first three of the category" gave every law in a category
+ * the same three links, so only those few laws were ever linked to. This walks the category as a ring instead:
+ * the next law, and the laws one and two "strides" further on (a stride is about the square root of the category
+ * size), so every law is linked from exactly three others and any law is reachable in a few hops.
+ */
+function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count: number = 3): T[] {
+  const size = categoryLaws.length;
+  const index = categoryLaws.findIndex((candidate) => candidate.id === law.id);
+  if (index < 0 || size < 2) return categoryLaws.filter((candidate) => candidate.id !== law.id).slice(0, count);
+
+  const stride = Math.max(2, Math.round(Math.sqrt(size)));
+  const picked = new Map<number, T>();
+  const add = (offset: number): void => {
+    const candidate = categoryLaws[(index + offset) % size] as T;
+    if (candidate.id !== law.id) picked.set(candidate.id, candidate);
+  };
+  for (const offset of [1, stride, stride * 2]) add(offset);
+  // Tiny categories can run out of distinct laws; fill with the next ones in order.
+  for (let offset = 2; offset < size && picked.size < Math.min(count, size - 1); offset += 1) add(offset);
+  return [...picked.values()].slice(0, count);
+}
+
+/** Plain list of links to laws (label only), for crawlable indexes that would be too long as cards. */
+function renderLawLinkList(laws: Law[], seoById: Map<string, LawSeo>): string {
+  if (laws.length === 0) return '';
+  const items = laws.map((law) => {
+    const label = seoById.get(String(law.id))?.headline ?? buildLawSeo(law).headline;
+    return `<li><a href="/law/${law.id}">${escapeHtml(label)}</a></li>`;
+  });
+  return `<ul class="internal-link-list">${items.join('')}</ul>`;
+}
+
+/**
  * Render static law cards HTML for SSG (no client JS; same structure as client cards for SEO and no-JS users)
  */
 function renderStaticLawCards(laws: Law[], baseUrl: string = SITE_URL): string {
@@ -1125,6 +1158,21 @@ async function main(): Promise<void> {
     throw new Error('SSG requires a populated laws API; refusing to generate empty archive pages.');
   }
   const categories = await fetchAllCategories();
+  const lawSeoById = buildUniqueLawSeo(laws);
+  const lawsByCategorySlug = new Map<string, Law[]>();
+  const uncategorizedLaws: Law[] = [];
+  for (const law of laws) {
+    if (!law.category_slug) {
+      uncategorizedLaws.push(law);
+      continue;
+    }
+    const bucket = lawsByCategorySlug.get(law.category_slug) || [];
+    bucket.push(law);
+    lawsByCategorySlug.set(law.category_slug, bucket);
+  }
+  // Fixed order (by id), so the related-law links do not reshuffle every time votes change the API's ordering.
+  for (const bucket of lawsByCategorySlug.values()) bucket.sort((left, right) => left.id - right.id);
+  uncategorizedLaws.sort((left, right) => left.id - right.id);
 
   // 1. Generate Category Pages
   console.log('Generating category pages...');
@@ -1151,6 +1199,13 @@ async function main(): Promise<void> {
     const ssgLawCardsSection = categoryLawCardsHtml
       ? `<div class="ssg-law-cards mt-8"><h2 class="text-xl font-semibold mb-4">Laws in this category</h2><section class="card-text">${categoryLawCardsHtml}</section></div>`
       : '';
+    // Every law of the category as a link, so each law page is two clicks from the home page. The cards above only
+    // cover the first page; the client renders the full paginated list after load.
+    const shownIds = new Set(categoryLaws.map((law) => law.id));
+    const moreCategoryLaws = (lawsByCategorySlug.get(slug) || []).filter((law) => !shownIds.has(law.id));
+    const categoryLawIndex = moreCategoryLaws.length > 0
+      ? `<section class="section mt-8" aria-labelledby="category-all-laws-${slug}"><h2 id="category-all-laws-${slug}" class="text-xl font-semibold mb-4">More laws in this category</h2>${renderLawLinkList(moreCategoryLaws, lawSeoById)}</section>`
+      : '';
 
     const staticContent = `
       <div class="container page pt-0">
@@ -1167,6 +1222,7 @@ async function main(): Promise<void> {
           </div>
         </section>
         ${ssgLawCardsSection}
+        ${categoryLawIndex}
       </div>
 `;
     
@@ -1223,6 +1279,11 @@ async function main(): Promise<void> {
     canonicalPath: '/browse'
   });
 
+  // Laws with no category are not on any category page, so list them here to keep them linked from the site.
+  const uncategorizedIndex = uncategorizedLaws.length > 0
+    ? `<section class="section mt-8" aria-labelledby="browse-uncategorized-heading"><h2 id="browse-uncategorized-heading" class="text-xl font-semibold mb-4">Laws without a category</h2>${renderLawLinkList(uncategorizedLaws, lawSeoById)}</section>`
+    : '';
+
   const browseContent = `
     <div class="container page pt-0">
       <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-8 text-primary">
@@ -1235,6 +1296,7 @@ async function main(): Promise<void> {
       <section class="card-text" id="browse-laws-list" aria-live="polite">
         ${staticLawCardsHtml || '<p class="text-muted-fg">No laws available. Enable JavaScript to search and filter.</p>'}
       </section>
+      ${uncategorizedIndex}
     </div>
 `;
 
@@ -1515,21 +1577,13 @@ ${articleArchive.featuredLaws}
   if (laws.length > 0) {
     const lawDir = path.join(DIST_DIR, 'law');
     await fs.mkdir(lawDir, { recursive: true });
-    const lawSeoById = buildUniqueLawSeo(laws);
-    const lawsByCategory = new Map<string, Law[]>();
-    for (const law of laws) {
-      if (!law.category_slug) continue;
-      const categoryLaws = lawsByCategory.get(law.category_slug) || [];
-      categoryLaws.push(law);
-      lawsByCategory.set(law.category_slug, categoryLaws);
-    }
-    
+
     for (const law of laws) {
       const lawPageDir = path.join(lawDir, String(law.id));
       await fs.mkdir(lawPageDir, { recursive: true });
       
       const relatedLaws = law.category_slug
-        ? (lawsByCategory.get(law.category_slug) || []).filter((candidate) => candidate.id !== law.id).slice(0, 3)
+        ? pickRelatedLaws(law, lawsByCategorySlug.get(law.category_slug) || [])
         : [];
       const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)));
       await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
@@ -1684,5 +1738,7 @@ export {
   buildSitemapXml,
   validateGeneratedPage,
   fetchAllCategories,
-  categorySitemapPaths
+  categorySitemapPaths,
+  pickRelatedLaws,
+  renderLawLinkList
 };

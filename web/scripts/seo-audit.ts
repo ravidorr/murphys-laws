@@ -20,6 +20,8 @@ export interface PageInfo {
   h1Count: number;
   jsonLdTypes: string[];
   words: number;
+  /** Law paths (/law/123) this page links to, other than itself. */
+  lawLinks: string[];
 }
 
 const SITE_ORIGIN = 'https://murphys-laws.com';
@@ -62,6 +64,16 @@ function match(html: string, pattern: RegExp): string {
   return decodeEntities((pattern.exec(html)?.[1] || '').trim());
 }
 
+/** Distinct /law/N paths a page links to (relative or absolute), not counting a link to the page itself. */
+function lawLinks(url: string, html: string): string[] {
+  const own = url.replace(SITE_ORIGIN, '');
+  const paths = new Set<string>();
+  for (const found of html.matchAll(/href="(?:https:\/\/murphys-laws\.com)?(\/law\/\d+)\/?"/g)) {
+    if (found[1] !== own) paths.add(found[1] as string);
+  }
+  return [...paths];
+}
+
 export function parsePage(url: string, html: string): PageInfo {
   const jsonLdTypes: string[] = [];
   for (const block of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
@@ -80,7 +92,8 @@ export function parsePage(url: string, html: string): PageInfo {
     robots: match(html, /<meta name="robots" content="(.*?)"/),
     h1Count: (html.match(/<h1[\s>]/g) || []).length,
     jsonLdTypes,
-    words: visibleText(html).split(/\s+/).filter(Boolean).length
+    words: visibleText(html).split(/\s+/).filter(Boolean).length,
+    lawLinks: lawLinks(url, html)
   };
 }
 
@@ -126,6 +139,10 @@ export function auditSite(input: { entries: string[]; pages: PageInfo[]; missing
   if (missingFiles.length) blocking.push(`${missingFiles.length} sitemap URLs have no built page (e.g. ${missingFiles[0]})`);
   if (lawDupTitles.length) blocking.push(`${lawDupTitles.reduce((n, [, c]) => n + c, 0)} law pages share ${lawDupTitles.length} titles (e.g. "${lawDupTitles[0]?.[0]}")`);
   if (lawDupDescriptions.length) blocking.push(`${lawDupDescriptions.reduce((n, [, c]) => n + c, 0)} law pages share ${lawDupDescriptions.length} descriptions`);
+  // A law page nothing links to is found only through the sitemap, which passes it no weight.
+  const linkedTo = new Set(pages.flatMap((page) => page.lawLinks));
+  const orphans = laws.filter((law) => !linkedTo.has(law.url.replace(SITE_ORIGIN, '')));
+  if (orphans.length) blocking.push(`${orphans.length} law pages have no internal link pointing to them (e.g. ${orphans[0]?.url})`);
   for (const page of pages) {
     if (page.canonical !== page.url) blocking.push(`canonical mismatch: ${page.url} -> ${page.canonical}`);
     if (page.robots.includes('noindex')) blocking.push(`noindex page in sitemap: ${page.url}`);
