@@ -1,7 +1,7 @@
 // Buttered Toast Landing Calculator view - full version with formula display
 
 import templateHtml from '@views/templates/buttered-toast-calculator.html?raw';
-import { SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, SOCIAL_IMAGE_TOAST, SITE_NAME } from '@utils/constants.ts';
 import { renderToastFormula } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updatePageMetadata } from '@utils/dom.ts';
@@ -34,7 +34,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   updatePageMetadata({
     title: `Buttered Toast Landing Calculator | ${SITE_NAME}`,
-    description: 'Explore a playful toast-landing simulation using height, overhang, butter, friction, and inertia. For entertainment only.',
+    description: CALCULATOR_META_DESCRIPTIONS.butteredToast,
     path: '/calculator/buttered-toast',
     image: SOCIAL_IMAGE_TOAST
   });

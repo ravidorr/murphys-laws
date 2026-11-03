@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_URL, SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from '@utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, SITE_NAME, SITE_URL, SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from '@utils/constants.ts';
 import { buildBreadcrumbList as buildBreadcrumbListFromTrail, buildLawSeo, type BreadcrumbItem } from '@utils/seo.ts';
 import type { Law } from '../types/app.d.ts';
 
@@ -233,7 +233,7 @@ export function setSodCalculatorStructuredData(): void {
     'operatingSystem': 'Web',
     'name': "Sod's Law Calculator",
     'url': `${SITE_URL}/calculator/sods-law`,
-    'description': 'Quantify the probability of Murphy\'s Law striking by balancing urgency, complexity, skill, and frequency.',
+    'description': CALCULATOR_META_DESCRIPTIONS.sodsLaw,
     'image': SOCIAL_IMAGE_SOD,
     'speakable': {
       '@type': 'SpeakableSpecification',
@@ -324,7 +324,7 @@ export function setToastCalculatorStructuredData(): void {
     'operatingSystem': 'Web',
     'name': 'Buttered Toast Landing Calculator',
     'url': `${SITE_URL}/calculator/buttered-toast`,
-    'description': 'Simulate how height, gravity, and butter factor influence a toast landing butter-side down.',
+    'description': CALCULATOR_META_DESCRIPTIONS.butteredToast,
     'image': SOCIAL_IMAGE_TOAST,
     'speakable': {
       '@type': 'SpeakableSpecification',

@@ -3,7 +3,7 @@
 // Reuses the original formula and interaction, scoped under .calc- classes
 
 import templateHtml from '@views/templates/sods-calculator.html?raw';
-import { SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, SOCIAL_IMAGE_SOD, SITE_NAME } from '@utils/constants.ts';
 import { renderSodsFormula } from '@utils/mathjax.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { updatePageMetadata } from '@utils/dom.ts';
@@ -35,7 +35,7 @@ export function Calculator(): HTMLDivElement {
 
   updatePageMetadata({
     title: `Sod's Law Calculator | ${SITE_NAME}`,
-    description: "Explore a playful task-risk heuristic using urgency, complexity, importance, skill, and frequency. For entertainment and lightweight planning only.",
+    description: CALCULATOR_META_DESCRIPTIONS.sodsLaw,
     path: '/calculator/sods-law',
     image: SOCIAL_IMAGE_SOD
   });
