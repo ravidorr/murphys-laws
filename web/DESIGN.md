@@ -503,6 +503,67 @@ Use a variant class with `card` so the surface intent is explicit:
 - Dark mode, high-contrast mode, and print styles should target the canonical
   variants first, with legacy aliases only for compatibility.
 
+## Kindle browser baseline
+
+The e-ink Kindle browser is a supported legacy target. The page must stay readable and usable
+there, without animation and without ads. This section records what the repository and issue #203
+establish; nothing here is a measured engine version.
+
+### Engine and user agents
+
+- No browser engine version has been identified or verified on a device (issue #203 lists this as
+  open). Do not assume a Chromium or WebKit version for Kindle. The only version signals in the
+  repository are the user agent samples below.
+- `isKindleBrowser()` in `web/src/utils/legacy-display.ts` matches `/Kindle(\/| Build\/)/i`:
+  - `Kindle/` is the older e-ink Kindle browser, whose user agent ends in `Kindle/3.0+`.
+  - `Kindle Build/` is the newer Silk-based e-ink Kindle such as the Scribe, with a user agent like
+    `Android 9; Kindle Build/1.0 ... Silk/80`.
+- Colour Fire tablets (`KF<model> Build/` with `Silk`) are deliberately not matched, so they keep
+  ads, analytics and the full header.
+- The legacy bundle is built with the `@vitejs/plugin-legacy` targets `defaults`, `chrome >= 49`,
+  `safari >= 10` and `android >= 5` (`web/vite.config.ts`). These are build targets, not a statement
+  of the Kindle engine version.
+
+### Unsupported or unreliable features
+
+- Flex `gap` is ignored (issue #203). Spacing that depends only on `gap` disappears and adjacent
+  words, pills and buttons collide.
+- Range media queries such as `(width > 600px)` are dropped, because the build rewrites them to
+  `not (max-width)`, which old Kindle browsers ignore.
+- Modern JavaScript syntax and built-ins are not available natively; the transpiled legacy bundle
+  and core-js polyfills cover them.
+- Several DOM methods are missing (`replaceChildren`, `append`, `replaceWith`, `after`,
+  `toggleAttribute`) and `AbortSignal.timeout` is missing; `web/src/utils/legacy-polyfills.ts`
+  installs fallbacks before anything renders.
+- Not verified: issue #203 flags `color-mix()`, `:is()`, `:where()`, `:has()`, `@layer`,
+  `@container`, `inset`, `aspect-ratio` and CSS nesting as possibly unsupported. `color-mix()` is
+  still used outside the proof-point pills, for example in `web/styles/partials/calculator.css`.
+  Treat these as unsupported until checked on a device.
+- Opaque cross-origin "Script error." events occurred on Kindle and are ignored by the error
+  banner.
+
+### How the code handles it
+
+- `applyLegacyDisplayClass()` adds `legacy-display` to `<html>` at startup in `web/src/main.ts`.
+  CSS keyed on `.legacy-display` removes animation, shadows and the sticky header, hides the
+  header download and theme buttons, and keeps a short search box.
+- Layout uses explicit margins instead of flex `gap` (for example `.not-found-actions`, the header
+  search button and the proof-point pills), and static markup keeps whitespace between inline
+  children so words do not run together.
+- Ads and analytics are not loaded on Kindle (`web/src/utils/third-party.ts`) and the footer ad
+  shell is hidden (`web/src/components/footer.ts`).
+- The static header includes primary navigation links so it works without JavaScript, and the
+  prerendered Law of the Day is a real law. If the first render throws, the router restores the
+  prerendered page and reports the error to Sentry.
+- The service worker does not precache the legacy bundles.
+
+### Rules for new UI
+
+- Do not rely on flex `gap` alone for spacing that must hold on Kindle; add margins or whitespace.
+- Do not use range media queries inside `.legacy-display` rules.
+- Do not add a new DOM method or modern CSS feature to a core layout without a fallback.
+- An automated old-engine regression check does not exist yet; it is tracked in `TODO.md`.
+
 ## Performance targets
 
 Product-facing Web Vitals goals for the public PWA (home and browse):

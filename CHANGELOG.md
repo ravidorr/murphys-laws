@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `web/DESIGN.md` now has a "Kindle browser baseline" section recording the e-ink Kindle user agents the app
+  detects (`Kindle/` and `Kindle Build/`), the unsupported features found so far (flex `gap`, range media
+  queries, missing DOM methods), how the code handles them, and which items are still unverified (the engine
+  version and the modern CSS listed in #203). Documentation only; no version bump. The old-engine regression
+  check stays open in `TODO.md`.
+
 ### Fixed
 
 - Sentry now drops the `queueMicrotask is not defined` `ReferenceError` (JAVASCRIPT-1A). It came from a headless
