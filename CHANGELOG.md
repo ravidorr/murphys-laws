@@ -5,6 +5,18 @@ All notable changes to the Murphy's Laws project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.136] - 2026-11-03
+
+### Changed
+- Advanced Search no longer changes the page when a category is picked; choose a category and press Search.
+- Removed the category helper text under the Category dropdown.
+
+### Fixed
+- Select dropdown carets are now inset from the border in every dropdown.
+  Web bumped to `3.4.50`; root to `2.6.136`.
+
+---
+
 ## [2.6.12] - 2026-08-11
 
 ### Fixed
