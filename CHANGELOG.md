@@ -151,6 +151,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/img/Murphys-law-book.gif` now serves the Murphy's Law 25th Anniversary Edition cover, which crawlers were
   requesting and getting a 404. `/.well-known/tdmrep.json` now answers with the TDM reservation file (AI mining
   not reserved), matching what `robots.txt` already allows. Web bumped to `3.4.37`; root to `2.6.121`.
+- `web/DESIGN.md` now has a "Kindle browser baseline" section recording the e-ink Kindle user agents the app
+  detects (`Kindle/` and `Kindle Build/`), the unsupported features found so far (flex `gap`, range media
+  queries, missing DOM methods), how the code handles them, and which items are still unverified (the engine
+  version and the modern CSS listed in #203). Documentation only; no version bump. The old-engine regression
+  check stays open in `TODO.md`, with a new item to verify the baseline on a device.
 
 ### Fixed
 
