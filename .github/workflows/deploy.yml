@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   deploy:
+    # A manual run can be started from any branch; only main may reach production.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -342,6 +345,11 @@ jobs:
         id: daily_email_template
         run: |
           set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Manual run; skipping template smoke email."
+            exit 0
+          fi
           BEFORE="${{ github.event.before }}"
           AFTER="${{ github.sha }}"
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
