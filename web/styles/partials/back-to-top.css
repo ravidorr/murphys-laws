@@ -31,8 +31,10 @@
   transition: opacity .2s ease, transform .2s ease, visibility 0s;
 }
 
-/* Never sit under the install prompt or the update/offline toast, which share the bottom edge. */
-body:has(.install-prompt-visible, .pwa-notification:not(.pwa-notification--exiting)) .back-to-top {
+/* Never sit under the install prompt or the update/offline toast, which share the bottom edge.
+   The class is set by components/back-to-top.ts (no :has(), for older supported browsers). */
+.back-to-top--suppressed,
+.back-to-top--suppressed.back-to-top--visible {
   opacity: 0;
   visibility: hidden;
 }

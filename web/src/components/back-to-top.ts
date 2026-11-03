@@ -11,6 +11,8 @@ export const BACK_TO_TOP_THRESHOLD = 600;
 
 const BUTTON_CLASS = 'back-to-top';
 const VISIBLE_CLASS = 'back-to-top--visible';
+const SUPPRESSED_CLASS = 'back-to-top--suppressed';
+const BLOCKING_UI_SELECTOR = '.install-prompt-visible, .pwa-notification:not(.pwa-notification--exiting)';
 
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function'
@@ -56,6 +58,20 @@ export function initBackToTop(): HTMLButtonElement | null {
   };
   window.addEventListener('scroll', update, { passive: true });
   update();
+
+  // Hide the button while the install prompt or update/offline toast is shown, since they
+  // share the bottom edge. Done in script rather than with `:has()`, which the older
+  // browsers this app still supports (see the legacy build targets) do not understand.
+  const syncSuppressed = () => {
+    button.classList.toggle(SUPPRESSED_CLASS, button.ownerDocument.querySelector(BLOCKING_UI_SELECTOR) !== null);
+  };
+  new MutationObserver(syncSuppressed).observe(button.ownerDocument.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+  syncSuppressed();
 
   return button;
 }

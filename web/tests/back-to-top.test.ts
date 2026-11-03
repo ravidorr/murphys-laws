@@ -104,6 +104,36 @@ describe('back-to-top', () => {
     expect(initBackToTop()!.querySelector('svg')).toBeNull();
   });
 
+  it('is suppressed while the install prompt or update toast is shown', async () => {
+    const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+    const button = initBackToTop()!;
+    expect(button.classList.contains('back-to-top--suppressed')).toBe(false);
+
+    const prompt = document.createElement('div');
+    prompt.className = 'install-prompt';
+    document.body.appendChild(prompt);
+    prompt.classList.add('install-prompt-visible');
+    await flush();
+    expect(button.classList.contains('back-to-top--suppressed')).toBe(true);
+    prompt.classList.remove('install-prompt-visible');
+    await flush();
+    expect(button.classList.contains('back-to-top--suppressed')).toBe(false);
+
+    const toast = document.createElement('div');
+    toast.className = 'pwa-notification';
+    document.body.appendChild(toast);
+    await flush();
+    expect(button.classList.contains('back-to-top--suppressed')).toBe(true);
+    toast.classList.add('pwa-notification--exiting');
+    await flush();
+    expect(button.classList.contains('back-to-top--suppressed')).toBe(false);
+  });
+
+  it('is suppressed on mount when a prompt is already visible', () => {
+    document.body.insertAdjacentHTML('beforeend', '<div class="install-prompt install-prompt-visible"></div>');
+    expect(initBackToTop()!.classList.contains('back-to-top--suppressed')).toBe(true);
+  });
+
   it('is not mounted on Kindle', () => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(KINDLE_UA);
     expect(initBackToTop()).toBeNull();
