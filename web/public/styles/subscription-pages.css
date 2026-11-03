@@ -1,0 +1,269 @@
+/*
+ * Daily email confirm and unsubscribe pages. The backend renders them (not the web app), so they load
+ * this file and the token file (/styles/partials/variables.css) directly. Values come from the tokens;
+ * the layout mirrors the site header, card and footer.
+ */
+
+.subscription-page *,
+.subscription-page *::before,
+.subscription-page *::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--dark-bg-primary);
+    --fg: var(--dark-fg-primary);
+    --muted-fg: var(--dark-muted-fg);
+    --primary: var(--dark-primary);
+    --surface: var(--dark-surface);
+    --surface-border: var(--dark-surface-border);
+    --link: var(--dark-link);
+    --link-hover: var(--dark-link-hover);
+    --success: var(--dark-success);
+    --success-bg: var(--dark-success-bg);
+    --success-text: var(--dark-success-fg);
+    --error: var(--dark-error);
+    --error-bg: var(--dark-error-bg);
+    --error-text: var(--dark-error-fg);
+    --gradient-blue: var(--dark-accent);
+
+    color-scheme: dark;
+  }
+}
+
+.subscription-page {
+  display: flex;
+  min-height: 100vh;
+  margin: 0;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  line-height: var(--leading-normal);
+}
+
+.subscription-page a {
+  color: var(--link);
+}
+
+.subscription-page a:hover {
+  color: var(--link-hover);
+}
+
+.subscription-page :focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* Header: the same badge and wordmark as the site header */
+.subscription-page__header {
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--bg);
+}
+
+.subscription-page__header-inner {
+  display: flex;
+  max-width: 75rem;
+  height: 4rem;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+  align-items: center;
+}
+
+.subscription-page__brand {
+  display: inline-flex;
+  min-height: var(--component-control-min-size);
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.subscription-page__brand:hover {
+  color: var(--fg);
+}
+
+.subscription-page__badge {
+  display: flex;
+  width: var(--component-brand-badge-size);
+  height: var(--component-brand-badge-size);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rounded-md);
+  background: var(--primary);
+  color: var(--white);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-extrabold);
+  flex-shrink: 0;
+}
+
+.subscription-page__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.subscription-page__brand-name {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-none);
+}
+
+.subscription-page__accent {
+  background: linear-gradient(90deg, var(--btn-primary-bg), var(--gradient-blue));
+  color: transparent;
+  background-clip: text;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-background-clip: text;
+}
+
+.subscription-page__tagline {
+  color: var(--muted-fg);
+  font-size: var(--text-sm);
+  line-height: var(--leading-none);
+}
+
+/* Content card */
+.subscription-page__main {
+  display: flex;
+  width: 100%;
+  max-width: 37.5rem;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-4);
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.subscription-page__card {
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--rounded-xl);
+  background: var(--surface);
+  text-align: center;
+}
+
+.subscription-page__status {
+  display: inline-flex;
+  min-width: var(--component-icon-button-size);
+  min-height: var(--component-icon-button-size);
+  margin-bottom: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rounded-full);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+}
+
+.subscription-page__status--success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.subscription-page__status--error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.subscription-page__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+}
+
+.subscription-page__message {
+  margin: 0 auto var(--space-6);
+  max-width: 28rem;
+  color: var(--muted-fg);
+  font-size: var(--text-lg);
+}
+
+.subscription-page__form {
+  margin: 0 0 var(--space-6);
+}
+
+/* Primary button, as .btn on the site */
+.subscription-page__button {
+  display: inline-flex;
+  min-width: var(--component-control-min-size);
+  min-height: var(--component-control-min-size);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--btn-primary-bg);
+  border-radius: var(--rounded-lg);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-medium);
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.subscription-page__button:hover {
+  filter: brightness(1.1);
+}
+
+.subscription-page__home {
+  display: inline-flex;
+  min-height: var(--component-control-min-size);
+  align-items: center;
+}
+
+/* Footer: the utility links of the site footer */
+.subscription-page__footer {
+  padding: var(--space-6) var(--space-4);
+  color: var(--muted-fg);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.subscription-page__footer-nav {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  list-style: none;
+}
+
+.subscription-page__footer-nav li::after {
+  margin: 0 var(--space-2);
+  color: var(--muted-fg);
+  content: '\2022';
+}
+
+.subscription-page__footer-nav li:last-child::after {
+  content: '';
+  margin: 0;
+}
+
+.subscription-page__footer-nav a {
+  color: var(--muted-fg);
+}
+
+@media (width <= 30rem) {
+  .subscription-page__main {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .subscription-page__card {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .subscription-page__tagline {
+    display: none;
+  }
+
+  .subscription-page__button {
+    width: 100%;
+  }
+}

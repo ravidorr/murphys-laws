@@ -102,7 +102,7 @@ describe('SubscriptionController', () => {
       controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
       expect(status()).toBe(200);
       const html = (res.end as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
-      expect(html).toContain(`<form method="post" action="/subscription/confirm?token=${TOKEN}">`);
+      expect(html).toContain(`<form class="subscription-page__form" method="post" action="/subscription/confirm?token=${TOKEN}">`);
       expect(subscriptions.confirm).not.toHaveBeenCalled();
     });
 
@@ -146,7 +146,7 @@ describe('SubscriptionController', () => {
     it('shows a POST button and does not unsubscribe', () => {
       controller.unsubscribeForm({} as IncomingMessage, res, { query: { token: TOKEN } });
       expect(status()).toBe(200);
-      expect((res.end as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain(`<form method="post" action="/subscription/unsubscribe?token=${TOKEN}">`);
+      expect((res.end as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain(`<form class="subscription-page__form" method="post" action="/subscription/unsubscribe?token=${TOKEN}">`);
       expect(subscriptions.unsubscribe).not.toHaveBeenCalled();
     });
 
@@ -170,6 +170,46 @@ describe('SubscriptionController', () => {
       expect(status()).toBe(404);
       controller.unsubscribe({} as IncomingMessage, res, { query: {} });
       expect(subscriptions.unsubscribe).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('page styling', () => {
+    const html = () => (res.end as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+
+    it('gives every state the site header, stylesheets, footer and a noindex marker, with no inline styles', () => {
+      subscriptions.confirm.mockReturnValue(true);
+      subscriptions.unsubscribe.mockReturnValue(true);
+      const renders: Array<() => void> = [
+        () => controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.confirm({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.confirm({} as IncomingMessage, res, {}),
+        () => controller.unsubscribeForm({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.unsubscribe({} as IncomingMessage, res, { query: { token: TOKEN } }),
+        () => controller.unsubscribe({} as IncomingMessage, res, {}),
+      ];
+      for (const render of renders) {
+        res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+        render();
+        expect(html()).toContain('<link rel="stylesheet" href="/styles/partials/variables.css">');
+        expect(html()).toContain('<link rel="stylesheet" href="/styles/subscription-pages.css">');
+        expect(html()).toContain('<meta name="robots" content="noindex">');
+        expect(html()).toContain('class="subscription-page__brand"');
+        expect(html()).toContain('href="https://murphys-laws.com/privacy"');
+        expect(html()).not.toContain('style=');
+        expect(writeHead().mock.calls[0][1]).toMatchObject({ 'Cache-Control': 'no-store' });
+      }
+    });
+
+    it('marks success and error states', () => {
+      subscriptions.confirm.mockReturnValue(true);
+      controller.confirm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      expect(html()).toContain('subscription-page__status--success');
+      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      controller.confirm({} as IncomingMessage, res, {});
+      expect(html()).toContain('subscription-page__status--error');
+      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      controller.confirmForm({} as IncomingMessage, res, { query: { token: TOKEN } });
+      expect(html()).not.toContain('subscription-page__status');
     });
   });
 });
