@@ -140,6 +140,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The footer `<nav>` landmark is now labelled "Footer navigation" instead of the vague "Utility", so screen
+  reader landmark lists identify it clearly next to the menu and breadcrumb navs. Web bumped to `3.4.52`;
+  root to `2.6.138`.
 - Law pages no longer share generic titles. 2,112 of 2,465 law pages were titled "Murphy's Law" or "Corollary", so
   search engines saw them as near-duplicates. Generic titles are now derived from the law text, descriptions are
   padded to a useful length and cut at word boundaries, and any remaining collisions get the law id. The static
