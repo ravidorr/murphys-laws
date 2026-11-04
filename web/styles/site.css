@@ -14,6 +14,7 @@
   - Notification (notification styles)
   - Install prompt (PWA install banner)
   - Update notification (PWA update/offline toast)
+  - Back to top (floating scroll button)
   - Theme (dark mode overrides)
 
   Fonts:
@@ -32,5 +33,6 @@
 @import url('./partials/notification.css');
 @import url('./partials/install-prompt.css');
 @import url('./partials/update-notification.css');
+@import url('./partials/back-to-top.css');
 @import url('./partials/theme.css');
 @import url('./partials/print.css');
