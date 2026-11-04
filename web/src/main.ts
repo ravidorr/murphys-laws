@@ -91,6 +91,7 @@ const updateSW = registerServiceWorker({
 import { defineRoute, navigate, startRouter, forceRender, currentRoute } from './router.ts';
 import { Header } from './components/header.ts';
 import { Footer } from './components/footer.ts';
+import { initBackToTop } from './components/back-to-top.ts';
 import { SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from './utils/constants.ts';
 import { updatePageMetadata } from './utils/dom.ts';
 import { Home } from './views/home.ts';
@@ -439,6 +440,7 @@ if (loadTimeMs > 0) {
 initAnalyticsBootstrap();
 initKeyboardShortcuts();
 initInstallPrompt();
+initBackToTop();
 
 // Share menu actions (system share sheet, embed code) work on every law card
 initShareActions();

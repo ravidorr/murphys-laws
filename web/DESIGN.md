@@ -439,6 +439,11 @@ typography, and size tokens to the shipped primitives:
 - Cards: card, law-card-mini, category-card, and proof-point.
 - Feedback: calculator result, message, notification, and vote group.
 - Navigation: brand badge, breadcrumb, and pagination.
+- Back to top: a floating 44 px circular icon button (`.back-to-top`, bottom
+  right) that appears after 600 px of scroll. It uses the primary button
+  tokens, scrolls smoothly unless `prefers-reduced-motion: reduce` is set, hides
+  while the install prompt or update toast is shown, and is not mounted on
+  Kindle (e-ink) or printed.
 
 Dark-mode overrides are handled in `theme.css`; every component is
 theme-aware and uses semantic `dark-*` counterparts. Breadcrumb and
