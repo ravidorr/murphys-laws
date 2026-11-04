@@ -88,6 +88,15 @@ describe('nginx scanner defense', () => {
     '/team?ref=1',
     '/api/usage/stats',
     '/v1/auth/me',
+    '/auth/register',
+    '/api/usage/stats?x=1',
+    '/api/usage/stats/',
+    '/v1/auth/me?x=1',
+    '/v1/auth/login',
+    '/v1/auth/token/refresh',
+    '/v1/auth/oauth2',
+    '/Team',
+    '/ACCOUNT/Create',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -124,6 +133,11 @@ describe('nginx scanner defense', () => {
     '/img/10001844.gif',
     '/contact-us',
     '/about-us',
+    '/team/x',
+    '/services/seo',
+    '/law/team',
+    '/category/team',
+    '/api/v1/auth/login',
     '/browse?q=team',
     '/browse?q=services',
     '/search?q=account/create',
