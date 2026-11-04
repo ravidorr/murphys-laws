@@ -56,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- nginx now drops guessed-path sweeps with a 444 and logs them to the scanner log for fail2ban: signup and
+  account forms (`/account/create`, `/auth/signup`, `/create-account`, `/email-signup`, `/footer-signup`,
+  `/contact-form`), generic company-site pages (`/company`, `/services`, `/team`, `/products`, `/vpn`, and the
+  German and Spanish variants), and the `/api/usage/stats` and `/v1/auth/*` probes. They came from two single-IP
+  sweeps and no page or endpoint here uses those names. Web bumped to `3.4.57`; root to `2.6.143`.
 - Rewrote the Sod's Law and Buttered Toast calculator meta descriptions with specific value propositions (150 to 160
   characters, unique per page, matching each calculator's real inputs). They now come from one
   `CALCULATOR_META_DESCRIPTIONS` constant in `web/src/utils/constants.ts` that feeds the prerendered meta,
