@@ -102,6 +102,7 @@ describe('nginx scanner defense', () => {
     '/.well-known/traffic-advice',
     '/.well-known/tdmrep.json',
     '/img/Murphys-law-book.gif',
+    '/img/10001844.gif',
     '/browse?q=readme.html',
     '/browse?q=docker-compose.yml',
   ])('lets %s through', (uri) => {
@@ -142,9 +143,9 @@ describe('nginx scanner defense', () => {
   });
 });
 
-describe('book cover image', () => {
-  it('is a real GIF, not another format renamed to .gif', () => {
-    const file = resolve(root, 'web', 'public', 'img', 'Murphys-law-book.gif');
+describe('legacy images', () => {
+  it.each(['Murphys-law-book.gif', '10001844.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
+    const file = resolve(root, 'web', 'public', 'img', name);
     expect(existsSync(file)).toBe(true);
     expect(['GIF87a', 'GIF89a']).toContain(readFileSync(file).subarray(0, 6).toString('ascii'));
   });
