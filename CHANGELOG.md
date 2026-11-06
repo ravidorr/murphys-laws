@@ -42,8 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `/.well-known/security.txt` (RFC 9116) now answers with the GitHub private reporting link from `SECURITY.md`,
-  so scanners and researchers looking for a security contact find one instead of a 404. Its `Expires` date is
-  2027-11-06 and must be renewed before then. nginx also drops the Jenkins `/crumbIssuer` probe, the
+  so scanners and researchers looking for a security contact find one instead of a 404. It is served as UTF-8 text, as RFC 9116 requires. Its `Expires` date is
+  2027-11-06 and must be renewed before then; a test fails 30 days before it passes, and `TODO.md` tracks it. nginx also drops the Jenkins `/crumbIssuer` probe, the
   `/code/blocks/exec/*` and `/run` code-execution probes (with or without `/api/v1/`), and the root `/health` and
   `/version` fingerprinting requests with a 444 for fail2ban; the real health check is `/api/health`.
   Web bumped to `3.4.58`; root to `2.6.144`.
