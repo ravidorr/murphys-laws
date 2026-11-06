@@ -95,6 +95,16 @@ describe('nginx scanner defense', () => {
     '/v1/auth/login',
     '/v1/auth/token/refresh',
     '/v1/auth/oauth2',
+    '/crumbIssuer/api/json',
+    '/crumbIssuer',
+    '/run',
+    '/RUN/',
+    '/health',
+    '/version?x=1',
+    '/code/blocks/exec/code',
+    '/code/blocks/exec/start',
+    '/api/v1/code/blocks/exec/code',
+    '/api/v1/code/blocks/exec/start',
     '/Team',
     '/ACCOUNT/Create',
   ])('flags %s as a scanner path', (uri) => {
@@ -138,6 +148,13 @@ describe('nginx scanner defense', () => {
     '/law/team',
     '/category/team',
     '/api/v1/auth/login',
+    '/api/health',
+    '/browse?q=run',
+    '/browse?q=health',
+    '/law/run',
+    '/api/v1/laws?q=version',
+    '/running',
+    '/.well-known/security.txt',
     '/browse?q=team',
     '/browse?q=services',
     '/search?q=account/create',
@@ -225,6 +242,15 @@ describe('nginx legacy URL redirects', () => {
     const block = conf.slice(start, conf.indexOf('\n    }', start));
     expect(block).toContain('default_type application/trafficadvice+json;');
     expect(block).toContain('return 200');
+  });
+
+  it('serves an RFC 9116 security.txt that points at the private reporting channel', () => {
+    const start = conf.indexOf('location = /.well-known/security.txt {');
+    expect(start).toBeGreaterThan(-1);
+    const block = conf.slice(start, conf.indexOf('\n    }', start));
+    expect(block).toContain('default_type text/plain;');
+    expect(block).toContain('Contact: https://github.com/ravidorr/murphys-laws/security/advisories/new\\n');
+    expect(block).toMatch(/Expires: \d{4}-\d{2}-\d{2}T00:00:00\.000Z\\n/);
   });
 
   it('serves the TDM reservation file with AI crawling not reserved', () => {
