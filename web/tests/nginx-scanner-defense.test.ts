@@ -101,6 +101,10 @@ describe('nginx scanner defense', () => {
     '/RUN/',
     '/health',
     '/version?x=1',
+    '/health/',
+    '/version/',
+    '/crumbIssuer?x=1',
+    '/run?x',
     '/code/blocks/exec/code',
     '/code/blocks/exec/start',
     '/api/v1/code/blocks/exec/code',
@@ -154,6 +158,10 @@ describe('nginx scanner defense', () => {
     '/law/run',
     '/api/v1/laws?q=version',
     '/running',
+    '/runtime',
+    '/healthz',
+    '/versions',
+    '/api/version',
     '/.well-known/security.txt',
     '/browse?q=team',
     '/browse?q=services',
@@ -249,8 +257,18 @@ describe('nginx legacy URL redirects', () => {
     expect(start).toBeGreaterThan(-1);
     const block = conf.slice(start, conf.indexOf('\n    }', start));
     expect(block).toContain('default_type text/plain;');
+    expect(block).toContain('charset utf-8;');
     expect(block).toContain('Contact: https://github.com/ravidorr/murphys-laws/security/advisories/new\\n');
     expect(block).toMatch(/Expires: \d{4}-\d{2}-\d{2}T00:00:00\.000Z\\n/);
+  });
+
+  // CI is the renewal reminder: this fails 30 days before the Expires date in nginx.conf passes.
+  it('serves a security.txt whose Expires date is more than 30 days away', () => {
+    const start = conf.indexOf('location = /.well-known/security.txt {');
+    const expires = /Expires: (\d{4}-\d{2}-\d{2}T00:00:00\.000Z)/.exec(conf.slice(start))?.[1];
+    expect(expires).toBeDefined();
+    const daysLeft = (Date.parse(expires as string) - Date.now()) / 86_400_000;
+    expect(daysLeft).toBeGreaterThan(30);
   });
 
   it('serves the TDM reservation file with AI crawling not reserved', () => {
