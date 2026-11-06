@@ -2,6 +2,10 @@
 
 This document outlines additional tasks and potential improvements for the Murphy's Laws project.
 
+## Security
+
+- [ ] **Renew `/.well-known/security.txt` before 2027-11-06:** the `Expires` date in `nginx.conf` must be moved forward. A test in `nginx-scanner-defense.test.ts` fails 30 days before it passes.
+
 ## Design Review Findings (Jan 2026)
 
 The following items were identified during comprehensive UX, UI, Accessibility, Microcopy, and SEO skill reviews but not yet implemented.
