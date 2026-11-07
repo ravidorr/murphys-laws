@@ -111,6 +111,16 @@ describe('nginx scanner defense', () => {
     '/api/v1/code/blocks/exec/start',
     '/Team',
     '/ACCOUNT/Create',
+    '/api/sonicos/is-sslvpn-enabled',
+    '/api/sonicos/auth',
+    '/sonicos/auth',
+    '/WebInterface',
+    '/WebInterface/login.html',
+    '/wp',
+    '/wp/',
+    '/health/liveliness',
+    '/health/readiness',
+    '/health/liveliness?probe=1',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -170,6 +180,16 @@ describe('nginx scanner defense', () => {
     '/api/v1/laws?q=vpn',
     '/browse?q=readme.html',
     '/browse?q=docker-compose.yml',
+    '/img/pvtmurphy.gif',
+    '/sitemaps.xml',
+    '/favicon.png',
+    '/browse?q=wp',
+    '/browse?q=sonicos',
+    '/search?q=WebInterface',
+    '/wpa',
+    '/healthcheck',
+    '/law/health',
+    '/browse?q=health/liveliness',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -177,6 +197,7 @@ describe('nginx scanner defense', () => {
   it('flags exploit-kit user agents only', () => {
     expect(isScannerAgent('libredtail-http')).toBe(true);
     expect(isScannerAgent('sqlmap/1.7')).toBe(true);
+    expect(isScannerAgent('rawgrab')).toBe(true);
     expect(isScannerAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15')).toBe(false);
     expect(isScannerAgent('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')).toBe(false);
   });
@@ -251,7 +272,7 @@ describe('plain HTTP sent to a TLS port', () => {
 });
 
 describe('legacy images', () => {
-  it.each(['Murphys-law-book.gif', '10001844.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
+  it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
     const file = resolve(root, 'web', 'public', 'img', name);
     expect(existsSync(file)).toBe(true);
     expect(['GIF87a', 'GIF89a']).toContain(readFileSync(file).subarray(0, 6).toString('ascii'));
@@ -272,12 +293,18 @@ describe('nginx legacy URL redirects', () => {
     ['/contact-us', '/contact'],
     ['/old/index.htm', '/'],
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
+    ['/sitemaps.xml', '/sitemap.xml'],
+    ['/favicon.png', '/favicon-32x32.png'],
   ])('redirects %s to %s', (from, to) => {
     const start = conf.indexOf(`location = ${from} {`);
     expect(start).toBeGreaterThan(-1);
     expect(conf.slice(start, conf.indexOf('}', start))).toContain(
       `return 301 https://murphys-laws.com${to};`,
     );
+  });
+
+  it('redirects /favicon.png to a favicon file that exists', () => {
+    expect(existsSync(resolve(root, 'web', 'public', 'favicon-32x32.png'))).toBe(true);
   });
 
   it('sends any other old /murphy/ page home without letting regex locations win', () => {
