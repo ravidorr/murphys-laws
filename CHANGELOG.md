@@ -39,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A client that sends plain HTTP to the TLS port (443) no longer shows up as a `400` on `GET /favicon.ico`
+  in the daily report. nginx raises error 497 for it and answered "400 The plain HTTP request was sent to HTTPS
+  port" into the main access log; real browsers never do this, scanners do (a forged Firefox 65 user agent from
+  neighboring addresses). Both TLS server blocks now drop it without a response and log it to `scanner.log` as
+  a `444`, like the other scanner hits, so it counts toward the existing fail2ban jail (5 strikes in 10 minutes,
+  banned for a day). Port 80 still redirects to HTTPS and normal HTTPS requests are unchanged. A test requires the
+  rule in every server block that listens for TLS and checks that the fail2ban filter counts the new log line.
+  Web bumped to `3.4.59`; root to `2.6.145`.
+
 ### Added
 
 - `/.well-known/security.txt` (RFC 9116) now answers with the GitHub private reporting link from `SECURITY.md`,

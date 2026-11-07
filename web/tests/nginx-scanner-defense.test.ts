@@ -208,6 +208,48 @@ describe('nginx scanner defense', () => {
   });
 });
 
+describe('plain HTTP sent to a TLS port', () => {
+  // nginx raises error 497 for it and would answer "400 The plain HTTP request was sent to HTTPS port",
+  // which shows up in the main access log and the daily report. It is dropped like any scanner hit.
+  const dropPlainHttp = new RegExp(
+    'error_page 497 =444 @plain_http_on_tls;\\s+' +
+      'location @plain_http_on_tls \\{\\s+' +
+      'access_log /var/log/nginx/scanner\\.log combined;\\s+' +
+      'return 444;\\s+\\}',
+  );
+  const serverBlocks = conf.split(/^server \{$/m).slice(1);
+  const tlsBlocks = serverBlocks.filter((block) => /^\s*listen 443 ssl;/m.test(block));
+
+  it('drops it, logged to scanner.log only, in every server block that listens for TLS', () => {
+    // A new TLS server block that forgets the rule would make this count differ.
+    expect(serverBlocks).toHaveLength(3);
+    expect(tlsBlocks).toHaveLength(2);
+    for (const block of tlsBlocks) {
+      expect(block).toMatch(dropPlainHttp);
+    }
+  });
+
+  it('leaves the plain HTTP server block alone, which redirects instead', () => {
+    const plainBlocks = serverBlocks.filter((block) => !tlsBlocks.includes(block));
+
+    expect(plainBlocks).toHaveLength(1);
+    expect(plainBlocks[0]).toContain('return 301 https://murphys-laws.com$request_uri;');
+    expect(plainBlocks[0]).not.toContain('error_page 497');
+  });
+
+  it('writes a 444 line that the fail2ban filter counts as a strike', () => {
+    const filter = readFileSync(resolve(root, 'config', 'fail2ban', 'filter.d-nginx-scanner.conf'), 'utf8');
+    const failregex = (/^failregex = (.*)$/m.exec(filter)?.[1] ?? '').replace('<HOST>', '(?<host>\\S+)');
+    const agent = '"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0"';
+    const line = (status: number, bytes: number) =>
+      `194.187.176.248 - - [07/Nov/2026:01:11:41 +0000] "GET /favicon.ico HTTP/1.1" ${status} ${bytes} "-" ${agent}`;
+
+    expect(new RegExp(failregex).exec(line(444, 0))?.groups?.host).toBe('194.187.176.248');
+    // The 400 that nginx logged before this rule is not counted.
+    expect(new RegExp(failregex).test(line(400, 264))).toBe(false);
+  });
+});
+
 describe('legacy images', () => {
   it.each(['Murphys-law-book.gif', '10001844.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
     const file = resolve(root, 'web', 'public', 'img', name);
