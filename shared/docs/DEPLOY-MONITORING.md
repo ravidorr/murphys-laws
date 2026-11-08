@@ -278,6 +278,9 @@ sudo systemctl status nginx
 # Check fail2ban
 sudo systemctl status fail2ban
 
+# Check the scanner jail reads its log ("File list" should show /var/log/nginx/scanner.log)
+sudo fail2ban-client status nginx-scanner
+
 # Test website
 curl -I https://murphys-laws.com
 
