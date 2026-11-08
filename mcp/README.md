@@ -10,6 +10,8 @@ A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gi
 
 Works with Claude Desktop, Cursor, VS Code Copilot, and any MCP-compatible host.
 
+It runs locally over stdio: your MCP host launches it with `npx`. There is no hosted or remote MCP endpoint. To use the archive without running a local process, call the [REST API](https://murphys-laws.com/developers) directly.
+
 ## Quick Start
 
 Add to your MCP client config (e.g. `claude_desktop_config.json`):

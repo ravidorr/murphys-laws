@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -111,6 +111,11 @@ describe('nginx scanner defense', () => {
     '/api/v1/code/blocks/exec/start',
     '/Team',
     '/ACCOUNT/Create',
+    '/users/sign_in',
+    '/users/sign_in/',
+    '/users/sign_in?next=/',
+    '/Users/Sign_In',
+    '/users/sign_up',
     '/api/sonicos/is-sslvpn-enabled',
     '/api/sonicos/auth',
     '/sonicos/auth',
@@ -180,6 +185,13 @@ describe('nginx scanner defense', () => {
     '/api/v1/laws?q=vpn',
     '/browse?q=readme.html',
     '/browse?q=docker-compose.yml',
+    '/users',
+    '/law/users',
+    '/browse?q=users/sign_in',
+    '/users/sign_in_help',
+    '/users/sign_up/extra',
+    '/user/sign_in',
+    '/murphy',
     '/img/pvtmurphy.gif',
     '/sitemaps.xml',
     '/favicon.png',
@@ -221,11 +233,59 @@ describe('nginx scanner defense', () => {
     expect(main).toContain('access_log /var/log/nginx/scanner.log combined if=$block_request;');
   });
 
-  it('only blocks when both the agent and path maps are clear', () => {
-    const start = conf.indexOf('map "$scanner_agent$scanner_path" $block_request {');
+  it('only blocks when the agent, path and method maps are all clear', () => {
+    const start = conf.indexOf('map "$scanner_agent$scanner_path$scanner_post_root" $block_request {');
+    expect(start).toBeGreaterThan(-1);
     const block = conf.slice(start, conf.indexOf('\n}', start));
     expect(block).toContain('default 1;');
-    expect(block).toContain('"00" 0;');
+    expect(block).toContain('"000" 0;');
+    // "000" must be the only key that lets a request through.
+    expect(block.match(/^\s*"[01]+" 0;$/gm)).toHaveLength(1);
+  });
+
+  // No route of the site accepts a POST at "/", so a POST to "/" is always a bot.
+  describe('POST to the home page', () => {
+    const postRootKeys = (): Set<string | undefined> => {
+      const start = conf.indexOf('map "$request_method $request_uri" $scanner_post_root {');
+      expect(start).toBeGreaterThan(-1);
+      const body = conf.slice(start, conf.indexOf('\n}', start));
+      expect(body).toContain('default 0;');
+      // nginx map keys without ~ are exact matches.
+      return new Set([...body.matchAll(/^\s*"(.+)" 1;$/gm)].map((match) => match[1]));
+    };
+    // The agent, path and method-and-path maps each give 0 or 1 and are joined into one key; only "000" passes.
+    const blocked = (method: string, uri: string, agent = 'Mozilla/5.0'): boolean => {
+      const flags = [isScannerAgent(agent), isScannerPath(uri), postRootKeys().has(`${method} ${uri}`)];
+      return flags.map((flag) => (flag ? '1' : '0')).join('') !== '000';
+    };
+
+    it('is parsed from nginx.conf, with a default of 0 and POST / as the only blocked key', () => {
+      expect([...postRootKeys()]).toEqual(['POST /']);
+    });
+
+    it('drops a POST to "/", also from a scanner user agent', () => {
+      expect(blocked('POST', '/')).toBe(true);
+      expect(blocked('POST', '/', 'libredtail-http')).toBe(true);
+    });
+
+    it('still drops scanner paths and agents on their own, by any method', () => {
+      expect(blocked('GET', '/.env')).toBe(true);
+      expect(blocked('POST', '/.env')).toBe(true);
+      expect(blocked('GET', '/', 'libredtail-http')).toBe(true);
+    });
+
+    it.each([
+      ['GET', '/'],
+      ['HEAD', '/'],
+      ['OPTIONS', '/'],
+      ['POST', '/api/v1/laws'],
+      ['POST', '/api/v1/laws/1/vote'],
+      ['POST', '/subscription/unsubscribe?token=abc'],
+      ['POST', '/?utm=x'],
+      ['POST', '/law/1'],
+    ])('lets %s %s through the whole chain', (method, uri) => {
+      expect(blocked(method, uri)).toBe(false);
+    });
   });
 });
 
@@ -271,6 +331,50 @@ describe('plain HTTP sent to a TLS port', () => {
   });
 });
 
+describe('MCP discovery paths', () => {
+  // The MCP server is a local stdio package (mcp/server.json), so nothing is served at /mcp or
+  // /.well-known/mcp*, and llms.txt, llms-full.txt and mcp/README.md say so.
+  const update =
+    'If a hosted MCP endpoint is added, update the stdio-only statements in web/public/llms.txt, web/public/llms-full.txt and mcp/README.md';
+
+  it('has no nginx location for an MCP endpoint or discovery file', () => {
+    expect(conf, update).not.toMatch(/^\s*location[^\n{]*mcp/im);
+  });
+
+  it('ships no static MCP discovery file', () => {
+    const publicDir = resolve(root, 'web', 'public');
+    const wellKnown = resolve(publicDir, '.well-known');
+    const names = [...readdirSync(publicDir), ...(existsSync(wellKnown) ? readdirSync(wellKnown) : [])];
+
+    expect(
+      names.filter((name) => /^mcp/i.test(name)),
+      update,
+    ).toEqual([]);
+  });
+
+  it.each(['web/public/llms.txt', 'web/public/llms-full.txt', 'mcp/README.md'])(
+    '%s says the server is stdio-only with no hosted or remote endpoint',
+    (file) => {
+      const text = readFileSync(resolve(root, file), 'utf8');
+
+      expect(text).toMatch(/stdio/i);
+      expect(text).toMatch(/no hosted or remote/i);
+    },
+  );
+
+  it('keeps the claim in step with mcp/server.json, which declares stdio and the Registry name', () => {
+    const server = JSON.parse(readFileSync(resolve(root, 'mcp', 'server.json'), 'utf8')) as {
+      name: string;
+      packages: Array<{ transport: { type: string } }>;
+    };
+
+    expect(server.packages.map((pkg) => pkg.transport.type)).toEqual(['stdio']);
+    for (const file of ['web/public/llms.txt', 'web/public/llms-full.txt']) {
+      expect(readFileSync(resolve(root, file), 'utf8')).toContain(server.name);
+    }
+  });
+});
+
 describe('legacy images', () => {
   it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
     const file = resolve(root, 'web', 'public', 'img', name);
@@ -292,6 +396,7 @@ describe('nginx legacy URL redirects', () => {
     ['/about-us', '/about'],
     ['/contact-us', '/contact'],
     ['/old/index.htm', '/'],
+    ['/murphy', '/'],
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
     ['/sitemaps.xml', '/sitemap.xml'],
     ['/favicon.png', '/favicon-32x32.png'],
@@ -301,6 +406,12 @@ describe('nginx legacy URL redirects', () => {
     expect(conf.slice(start, conf.indexOf('}', start))).toContain(
       `return 301 https://murphys-laws.com${to};`,
     );
+  });
+
+  it('sends an old /murphy/ link home in two hops: the trailing-slash rewrite, then the exact redirect', () => {
+    expect(conf).toMatch(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
+    expect('/murphy/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy');
+    expect(conf).toContain('location = /murphy {');
   });
 
   it('redirects /favicon.png to a favicon file that exists', () => {
@@ -366,6 +477,9 @@ describe('fail2ban scanner filter', () => {
 
     expect(regex.exec(`66.132.195.44 - - [30/Oct/2026:20:54:41 +0000] ${request} 444 ${agent}`)?.groups?.host).toBe('66.132.195.44');
     expect(regex.exec(`66.132.195.44 - - [] ${request} 444 ${agent}`)?.groups?.host).toBe('66.132.195.44');
+    expect(
+      regex.exec('159.89.227.118 - - [08/Nov/2026:09:01:02 +0000] "POST / HTTP/1.1" 444 0 "-" "Mozilla/5.0"')?.groups?.host,
+    ).toBe('159.89.227.118');
     expect(regex.test(`66.132.195.44 - - [30/Oct/2026:20:53:32 +0000] ${request} 400 264 "-" "Mozilla/5.0"`)).toBe(false);
     expect(regex.test(`66.132.195.44 - - [] ${request} 4441 ${agent}`)).toBe(false);
   });
