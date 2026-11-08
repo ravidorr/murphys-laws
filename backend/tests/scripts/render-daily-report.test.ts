@@ -8,6 +8,7 @@ import {
   buildAdminUrl,
   buildPendingApprovalsSection,
   collectDailyReport,
+  FAIL2BAN_JAILS,
   countPendingApprovals,
   loadConfigFromEnvFiles,
   reportRecipient,
@@ -15,7 +16,9 @@ import {
   logCollectorError,
   offsiteBackupItem,
   parseOffsiteBackupStatus,
+  parseFail2banJailStatus,
   parsePm2Jlist,
+  summarizeFail2banBans,
   renderHtmlReport,
   renderPlainTextReport,
 } from '../../scripts/render-daily-report.ts';
@@ -526,5 +529,183 @@ describe('off-site backup status in the report', () => {
     expect(offsiteBackupItem(logFile('nothing here\n'), now)).toMatchObject({ tone: 'warning', value: 'no result in the backup log' });
     expect(offsiteBackupItem('/nonexistent/backup.log', now)).toMatchObject({ tone: 'warning', value: 'no result in the backup log' });
     expect(stderr).toHaveBeenCalledWith(expect.stringContaining('off-site backup status failed'));
+  });
+});
+
+// `fail2ban-client status <jail>` as fail2ban 1.0.2 prints it (a tab after each colon).
+const jailStatus = (current: number, total: number, jail = 'nginx-scanner'): string =>
+  [
+    `Status for the jail: ${jail}`,
+    '|- Filter',
+    '|  |- Currently failed:\t0',
+    '|  |- Total failed:\t0',
+    '|  `- File list:\t/var/log/nginx/scanner.log',
+    '`- Actions',
+    `   |- Currently banned:\t${current}`,
+    `   |- Total banned:\t${total}`,
+    '   `- Banned IP list:\t',
+  ].join('\n');
+const missingJail = "Sorry but the jail 'nginx-scanner' does not exist";
+const permissionDenied = 'ERROR  Permission denied to socket: /var/run/fail2ban/fail2ban.sock, (you must be root)';
+
+describe('parseFail2banJailStatus', () => {
+  it('reads the current and total ban counts', () => {
+    expect(parseFail2banJailStatus(jailStatus(2, 17))).toEqual({ current: 2, total: 17 });
+    expect(parseFail2banJailStatus(jailStatus(0, 0))).toEqual({ current: 0, total: 0 });
+  });
+
+  it('reads counts of more than one digit', () => {
+    expect(parseFail2banJailStatus(jailStatus(12, 1234567))).toEqual({ current: 12, total: 1234567 });
+  });
+
+  it('reads counts separated by spaces instead of a tab', () => {
+    expect(parseFail2banJailStatus('|- Currently banned: 3\n`- Total banned:   9')).toEqual({ current: 3, total: 9 });
+  });
+
+  it('returns null when the jail does not exist, fail2ban cannot be read, or there is no output', () => {
+    expect(parseFail2banJailStatus(missingJail)).toBeNull();
+    expect(parseFail2banJailStatus(permissionDenied)).toBeNull();
+    expect(parseFail2banJailStatus('')).toBeNull();
+  });
+
+  it('returns null unless both counts are present', () => {
+    expect(parseFail2banJailStatus('   |- Currently banned:\t3')).toBeNull();
+    expect(parseFail2banJailStatus('   |- Total banned:\t3')).toBeNull();
+  });
+});
+
+describe('summarizeFail2banBans', () => {
+  const statuses = (byJail: Record<string, string>) => (jail: string) => byJail[jail] ?? '';
+
+  it('counts the SSH jail and the scanner jail, as a sum and a split', () => {
+    const summary = summarizeFail2banBans(
+      statuses({ sshd: jailStatus(11, 40, 'sshd'), 'nginx-scanner': jailStatus(20, 80) }),
+    );
+
+    expect(summary).toEqual({ currentlyBanned: '31 (SSH 11, scanners 20)', totalBans: '120 (SSH 40, scanners 80)', unreadable: [] });
+  });
+
+  it('shows scanner bans even when the SSH jail has none', () => {
+    const summary = summarizeFail2banBans(
+      statuses({ sshd: jailStatus(0, 0, 'sshd'), 'nginx-scanner': jailStatus(5, 5) }),
+    );
+
+    expect(summary.currentlyBanned).toBe('5 (SSH 0, scanners 5)');
+  });
+
+  it('lists a jail that cannot be read, with fail2ban\'s first line as the reason, and counts the rest', () => {
+    expect(
+      summarizeFail2banBans(statuses({ sshd: jailStatus(1, 4, 'sshd'), 'nginx-scanner': missingJail })),
+    ).toEqual({
+      currentlyBanned: '1 (SSH 1)',
+      totalBans: '4 (SSH 4)',
+      unreadable: [{ jail: 'nginx-scanner', label: 'scanners', detail: missingJail }],
+    });
+    expect(
+      summarizeFail2banBans(statuses({ sshd: permissionDenied, 'nginx-scanner': jailStatus(2, 8) })),
+    ).toEqual({
+      currentlyBanned: '2 (scanners 2)',
+      totalBans: '8 (scanners 8)',
+      unreadable: [{ jail: 'sshd', label: 'SSH', detail: permissionDenied }],
+    });
+  });
+
+  it('gives a reason when a jail printed nothing, and skips blank lines before the first real one', () => {
+    const summary = summarizeFail2banBans(statuses({ sshd: '\n  \n', 'nginx-scanner': `\n${missingJail}\nmore` }));
+
+    expect(summary.unreadable).toEqual([
+      { jail: 'sshd', label: 'SSH', detail: 'no output (fail2ban-client missing, not run as root, or timed out)' },
+      { jail: 'nginx-scanner', label: 'scanners', detail: missingJail },
+    ]);
+  });
+
+  it('has no counts when no jail can be read', () => {
+    const summary = summarizeFail2banBans(statuses({}));
+
+    expect(summary.currentlyBanned).toBeNull();
+    expect(summary.totalBans).toBeNull();
+    expect(summary.unreadable.map((entry) => entry.jail)).toEqual(['sshd', 'nginx-scanner']);
+  });
+
+  it('asks for each jail by name, SSH first', () => {
+    const asked: string[] = [];
+    summarizeFail2banBans((jail) => {
+      asked.push(jail);
+      return '';
+    });
+
+    expect(asked).toEqual(['sshd', 'nginx-scanner']);
+    expect(FAIL2BAN_JAILS.map((jail) => jail.name)).toEqual(['sshd', 'nginx-scanner']);
+  });
+});
+
+describe('daily report security summary', () => {
+  /** Runs the live collector with fail2ban answering as given; `daemon` is what `systemctl is-active fail2ban` says. */
+  function securitySection(statusByJail: Record<string, string>, daemon = 'active') {
+    const statusCalls: Array<{ command: string; jail: string; timeout: unknown }> = [];
+    vi.mocked(execFileSync).mockImplementation((command, args, options) => {
+      if (command === 'systemctl' && args?.[1] === 'fail2ban') {
+        return daemon;
+      }
+      const script = String(args?.[1] ?? '');
+      if (script.includes('fail2ban-client status')) {
+        const jail = String(args?.[3]);
+        statusCalls.push({ command: String(command), jail, timeout: (options as { timeout?: number } | undefined)?.timeout });
+        return statusByJail[jail] ?? '';
+      }
+      return '';
+    });
+    // The other collectors fail loudly on stderr when their commands and files are missing.
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const report = collectDailyReport({ repoRoot: scratchDir('daily-report-security-'), now: new Date(Date.UTC(2026, 1, 4)) });
+    const logged = write.mock.calls.map(([chunk]) => String(chunk)).filter((line) => line.includes('fail2ban'));
+    const items = report.sections.find((entry) => entry.title === 'SECURITY SUMMARY')?.items ?? [];
+    return { items, logged, statusCalls, report };
+  }
+
+  it('shows the bans from both jails under the existing labels, reading each jail once with a timeout', () => {
+    const { items, logged, statusCalls } = securitySection({ sshd: jailStatus(0, 3, 'sshd'), 'nginx-scanner': jailStatus(2, 2) });
+
+    expect(items).toContainEqual({ label: 'Fail2ban Currently Banned', value: '2 (SSH 0, scanners 2)' });
+    expect(items).toContainEqual({ label: 'Fail2ban Total Bans', value: '5 (SSH 3, scanners 2)' });
+    expect(items.some((item) => item.tone === 'warning')).toBe(false);
+    expect(logged).toEqual([]);
+    expect(statusCalls).toEqual([
+      { command: 'bash', jail: 'sshd', timeout: 10_000 },
+      { command: 'bash', jail: 'nginx-scanner', timeout: 10_000 },
+    ]);
+  });
+
+  it('shows a warning row and logs the reason when one jail cannot be read, instead of dropping it', () => {
+    const { items, logged, report } = securitySection({ sshd: jailStatus(1, 4, 'sshd'), 'nginx-scanner': missingJail });
+
+    expect(items).toContainEqual({ label: 'Fail2ban Currently Banned', value: '1 (SSH 1)' });
+    expect(items).toContainEqual({
+      label: 'Fail2ban scanners jail',
+      value: 'unavailable - see the daily-report log',
+      tone: 'warning',
+    });
+    expect(logged).toEqual([`[daily-report] fail2ban nginx-scanner jail failed: ${missingJail}\n`]);
+    expect(renderPlainTextReport(report)).toContain('unavailable - see the daily-report log');
+  });
+
+  it('warns about both jails, with no counts, when fail2ban is running but nothing can be read', () => {
+    const { items, logged } = securitySection({ sshd: permissionDenied, 'nginx-scanner': permissionDenied });
+
+    expect(items.map((item) => item.label)).toEqual(['Failed SSH Attempts', 'Fail2ban SSH jail', 'Fail2ban scanners jail']);
+    expect(items.filter((item) => item.tone === 'warning')).toHaveLength(2);
+    expect(logged).toEqual([
+      `[daily-report] fail2ban sshd jail failed: ${permissionDenied}\n`,
+      `[daily-report] fail2ban nginx-scanner jail failed: ${permissionDenied}\n`,
+    ]);
+  });
+
+  it('shows no ban lines and logs nothing when fail2ban is not running', () => {
+    const { items, logged } = securitySection({}, 'inactive');
+    const labels = items.map((item) => item.label);
+
+    expect(labels).toContain('Failed SSH Attempts');
+    expect(labels.filter((label) => label?.startsWith('Fail2ban'))).toEqual([]);
+    expect(logged).toEqual([]);
   });
 });

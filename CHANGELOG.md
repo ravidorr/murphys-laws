@@ -41,6 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The daily report's "Fail2ban Currently Banned" and "Fail2ban Total Bans" figures read only the `sshd` jail, so
+  bans from the `nginx-scanner` jail could never appear, and nothing said when that jail was down. They now sum
+  both jails and show the split, such as `2 (SSH 0, scanners 2)`, under the same labels. A jail that cannot be
+  read gets its own warning row ("Fail2ban scanners jail: unavailable - see the daily-report log") and a line in
+  the daily-report log with the reason, instead of dropping out; each read times out after 10 seconds. When
+  fail2ban is not running at all, no ban lines appear, as before. The text report from `vulnerability-scanner.sh`
+  (not the daily email) lists each jail on its own line in its FAIL2BAN STATUS block, with "not running or
+  unreadable" for one it cannot read. Backend bumped to `2.3.63`; root to `2.6.151`.
 - The `nginx-scanner` fail2ban jail never banned anyone. Debian and Ubuntu ship `backend = systemd` as the default
   for every jail (`jail.d/defaults-debian.conf`), and a systemd jail reads the journal and ignores `logpath`. On
   the droplet the jail showed journal matches instead of a file list and counted no failures, while `scanner.log`
