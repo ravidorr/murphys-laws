@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The daily report's "Fail2ban Currently Banned" and "Fail2ban Total Bans" figures only read the `sshd` jail, so
+  bans from the `nginx-scanner` web jail could never appear. They now sum both jails and show the split, such as
+  `2 (SSH 0, web 2)`, under the same labels; a jail that is not running is left out, and no ban lines appear when
+  fail2ban cannot be read, as before. The weekly vulnerability scan's "FAIL2BAN STATUS" block lists each jail the
+  same way. The counting is an exported, tested helper (`summarizeFail2banBans`). Backend bumped to `2.3.63`; root
+  to `2.6.151`.
 - Handled more of the daily report. nginx now drops a `POST /` with a 444, so the bots that post to the home
   page dozens of times a day (about 1,000 in 15 days from many addresses, per the production access logs) are
   logged to `scanner.log` and counted by fail2ban instead of getting a 405. The match is exactly `POST /` with
