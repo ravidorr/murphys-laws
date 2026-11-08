@@ -6,6 +6,8 @@
 
 An MCP (Model Context Protocol) server is available for direct integration with LLM hosts like Claude Desktop, VS Code Copilot, and Cursor.
 
+It is a local, stdio-only server: the host starts it with `npx` and talks to it over standard input and output. There is no hosted or remote MCP endpoint, so nothing is served at `/mcp` or `/.well-known/mcp`. It is listed in the official MCP Registry as `com.murphys-laws/murphys-laws` (npm package `murphys-laws-mcp`), and it calls the public REST API below, so it needs network access to https://murphys-laws.com.
+
 ### Tools Available
 
 - `search_laws` — Search laws by keyword with optional category filter
