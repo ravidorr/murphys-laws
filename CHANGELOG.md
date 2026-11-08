@@ -43,7 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `nginx-scanner` fail2ban jail's header comment said a false positive bans an address "from SSH and HTTP".
   The jail only sets `port = http,https`, so a ban blocks the website for 24 hours and leaves SSH alone; the
-  comment now says that. No behaviour change. Root bumped to `2.6.149`.
+  comment now says that, that a ban does not affect the separate `sshd` jail, that installing the file enables the
+  jail, and how to lift a ban. No behaviour change. Root bumped to `2.6.149`.
 - Handled more of the daily report. nginx now drops a `POST /` with a 444, so the bots that post to the home
   page dozens of times a day (about 1,000 in 15 days from many addresses, per the production access logs) are
   logged to `scanner.log` and counted by fail2ban instead of getting a 405. The match is exactly `POST /` with
