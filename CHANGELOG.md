@@ -41,6 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The `nginx-scanner` fail2ban jail never banned anyone. Debian and Ubuntu ship `backend = systemd` as the default
+  for every jail (`jail.d/defaults-debian.conf`), and a systemd jail reads the journal and ignores `logpath`. On
+  the droplet the jail showed journal matches instead of a file list and counted no failures, while `scanner.log`
+  held about 600 `444` lines (as of 2026-11-08) that its filter matches. The jail now sets `backend = auto`, so
+  the drops from the scanner defense count as strikes (5 in 10 minutes, banned on ports 80 and 443 for 24
+  hours). Tests pin that the `[nginx-scanner]` section sets a file backend exactly once, watches the log nginx
+  writes, and uses the filter on the web ports. Existing installs need `backend = auto` added to
+  `/etc/fail2ban/jail.d/nginx-scanner.local` and a `sudo fail2ban-client reload`. The disaster-recovery steps now
+  install the scanner jail, and the monitoring doc checks it. Web bumped to `3.4.63`; root to `2.6.150`.
 - The `nginx-scanner` fail2ban jail's header comment said a false positive bans an address "from SSH and HTTP".
   The jail only sets `port = http,https`, so a ban blocks the website for 24 hours and leaves SSH alone; the
   comment now says that, that a ban does not affect the separate `sshd` jail, that installing the file enables the
