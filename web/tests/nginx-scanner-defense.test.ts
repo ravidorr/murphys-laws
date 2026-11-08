@@ -485,6 +485,43 @@ describe('fail2ban scanner filter', () => {
   });
 });
 
+describe('fail2ban scanner jail', () => {
+  const jail = readFileSync(resolve(root, 'config', 'fail2ban', 'jail.d-nginx-scanner.local'), 'utf8');
+  // Only the [nginx-scanner] section counts: a setting in another section or in a comment does not
+  // configure this jail.
+  const section = /^\[nginx-scanner\]\s*$([\s\S]*?)(?=^\[|(?![\s\S]))/m.exec(jail)?.[1] ?? '';
+  // fail2ban takes the last value of a repeated key, so each setting has to be defined exactly once.
+  const setting = (key: string): string | undefined => {
+    const values = [...section.matchAll(new RegExp(`^${key}[ \\t]*=[ \\t]*(.+)$`, 'gm'))].map((match) => match[1]?.trim());
+    expect(values, `${key} must be set exactly once in [nginx-scanner]`).toHaveLength(1);
+    return values[0];
+  };
+
+  it('has an [nginx-scanner] section', () => {
+    expect(section).not.toBe('');
+  });
+
+  it('reads the log file instead of the journal', () => {
+    // Debian and Ubuntu default every jail to backend = systemd, and a systemd jail ignores logpath, so
+    // the jail has to name a file backend itself. Leaving it out, or choosing systemd, is the bug.
+    expect(setting('backend'), 'without a backend line the jail inherits systemd').toBeDefined();
+    expect(['auto', 'polling', 'pyinotify']).toContain(setting('backend'));
+  });
+
+  it('watches the scanner log that nginx writes', () => {
+    const logpath = setting('logpath') ?? '';
+    expect(logpath).toBe('/var/log/nginx/scanner.log');
+    expect(conf).toMatch(new RegExp(`^\\s*access_log\\s+${logpath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+combined\\b`, 'm'));
+  });
+
+  it('uses the nginx-scanner filter on the web ports, and is enabled', () => {
+    expect(setting('filter')).toBe('nginx-scanner');
+    expect(existsSync(resolve(root, 'config', 'fail2ban', 'filter.d-nginx-scanner.conf'))).toBe(true);
+    expect(setting('port')).toBe('http,https');
+    expect(setting('enabled')).toBe('true');
+  });
+});
+
 describe('embed routes', () => {
   it('proxies embeddable law cards to the backend and never blocks framing', () => {
     expect(conf).toContain('location ~ ^/embed/(law/\\d+|law-of-day)/?$ {');
