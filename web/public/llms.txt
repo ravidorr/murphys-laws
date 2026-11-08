@@ -6,7 +6,7 @@
 
 ## MCP Server
 
-A Model Context Protocol server is available for direct integration with AI hosts (Claude Desktop, VS Code, Cursor). Install via `npx -y murphys-laws-mcp` (npm package: `murphys-laws-mcp`). Tools: search_laws, get_random_law, get_law_of_the_day, get_law, list_categories, get_laws_by_category, submit_law. See [llms-full.txt](https://murphys-laws.com/llms-full.txt) for full setup instructions.
+A Model Context Protocol server is available for direct integration with AI hosts (Claude Desktop, VS Code, Cursor). Install via `npx -y murphys-laws-mcp` (npm package: `murphys-laws-mcp`). Tools: search_laws, get_random_law, get_law_of_the_day, get_law, list_categories, get_laws_by_category, submit_law. It runs locally on the user's machine over stdio, so there is no hosted or remote MCP endpoint to connect to: nothing is served at `/mcp` or `/.well-known/mcp`. It is listed in the official MCP Registry as `com.murphys-laws/murphys-laws`. See [llms-full.txt](https://murphys-laws.com/llms-full.txt) for full setup instructions.
 
 ## API
 

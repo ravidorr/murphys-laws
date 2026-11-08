@@ -60,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `llms.txt` and `llms-full.txt` now say the MCP server is stdio-only: it runs locally from `npx`, there is no
+  hosted or remote MCP endpoint (nothing is served at `/mcp` or `/.well-known/mcp`), and it is listed in the
+  official MCP Registry as `com.murphys-laws/murphys-laws`. The MCPCensus crawler and AI agents read these two
+  files, and no MCP discovery standard has a place to say "stdio-only": server cards (SEP-2127) describe remote
+  servers only and the Registry's `server.json` already covers the local package. No version bump: text files
+  count as documentation.
 - `/.well-known/security.txt` (RFC 9116) now answers with the GitHub private reporting link from `SECURITY.md`,
   so scanners and researchers looking for a security contact find one instead of a 404. It is served as UTF-8 text, as RFC 9116 requires. Its `Expires` date is
   2027-11-06 and must be renewed before then; a test fails 30 days before it passes, and `TODO.md` tracks it. nginx also drops the Jenkins `/crumbIssuer` probe, the
