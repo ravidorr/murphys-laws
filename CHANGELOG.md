@@ -41,13 +41,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The `nginx-scanner` fail2ban jail's header comment said a false positive bans an address "from SSH and HTTP".
+  The jail only sets `port = http,https`, so a ban blocks the website for 24 hours and leaves SSH alone; the
+  comment now says that. No behaviour change. Root bumped to `2.6.149`.
+- Handled more of the daily report. nginx now drops a `POST /` with a 444, so the bots that post to the home
+  page dozens of times a day (about 1,000 in 15 days from many addresses, per the production access logs) are
+  logged to `scanner.log` and counted by fail2ban instead of getting a 405. The match is exactly `POST /` with
+  no query string, so `GET`, `HEAD` and every POST to `/api` or `/subscription/*` are unchanged; nothing in the
+  site posts to `/`. `/users/sign_in` and `/users/sign_up`
+  (GitLab and Rails sign-in guesses) are dropped like the other guessed account paths. Bare `/murphy` now
+  redirects home: the trailing-slash rewrite turned old `/murphy/` backlinks into `/murphy`, which had no
+  page, so those links now take two hops (`/murphy/` to `/murphy` to the home page). The MCPCensus crawler's
+  weekly probes for MCP discovery files (`/mcp`, `/.well-known/mcp*`, `/AGENTS.md` and others, seen in the
+  production logs) are left as 404s, which is correct because the MCP server is a stdio npm package (see
+  `mcp/server.json`), not a hosted endpoint. Web bumped to `3.4.61`; root to `2.6.147`.
 - Cleared the rest of the daily report's 404s. `/img/pvtmurphy.gif`, the Pvt. Murphy's Law banner from the old
   site, is now served. Bing's `/sitemaps.xml` redirects to `/sitemap.xml` and the guessed `/favicon.png` to
   `/favicon-32x32.png`, like the existing `apple-touch-icon-precomposed.png` redirect. nginx now drops with a
   444 (so fail2ban counts it) SonicWall `/api/sonicos/...`, CrushFTP `/WebInterface`, a bare `/wp`, any
   `/health/...` probe such as `/health/liveliness` (the pattern only matched `/health` and `/health/`), and the
-  `rawgrab` scanner by user agent. `/sellers.json` and the `POST /` 405s are left alone: a 404 or 405 is the
-  right answer. Web bumped to `3.4.60`; root to `2.6.146`.
+  `rawgrab` scanner by user agent. `/sellers.json` is left alone: a 404 is the right answer for a file the site
+  does not have. (`POST /` was still a 405 at this point; the entry above drops it.) Web bumped to `3.4.60`;
+  root to `2.6.146`.
 - A well-formed plain HTTP request sent to the TLS port (443) no longer shows up as a `400` on
   `GET /favicon.ico` in the daily report. nginx raises error 497 for it and answered "400 The plain HTTP request was sent to HTTPS
   port" into the main access log; real browsers never do this, scanners do (a forged Firefox 65 user agent from
@@ -57,12 +72,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rule in every server block that listens for TLS and checks that the fail2ban filter counts the new log line.
   A malformed request (HTTP/1.1 without a Host header, say) is rejected before error 497 and still gets a plain 400.
   Web bumped to `3.4.59`; root to `2.6.145`.
-- The `nginx-scanner` fail2ban jail's header comment said a false positive bans an address "from SSH and HTTP".
-  The jail only sets `port = http,https`, so a ban blocks the website for 24 hours and leaves SSH alone; the
-  comment now says that. No behaviour change. Root bumped to `2.6.147`.
 
 ### Added
 
+- `llms.txt`, `llms-full.txt` and `mcp/README.md` now say the MCP server is stdio-only: it runs locally from
+  `npx`, there is no hosted or remote MCP endpoint (nothing is served at `/mcp` or `/.well-known/mcp`), and an
+  agent that cannot run local processes should use the REST API. The Registry name
+  `com.murphys-laws/murphys-laws` and a link to its Registry entry are given too. The Registry's `server.json`
+  already declares the stdio transport, but crawlers that read only `llms.txt` cannot see it, and MCP server
+  cards describe remote servers only ([SEP-2127](https://modelcontextprotocol.io/seps/2127-mcp-server-cards)),
+  so there was nowhere to say it where they look. The MCPCensus crawler
+  ([documentation](https://www.radixia.ai/census/crawler)) fetches `llms.txt` and `llms-full.txt` and then
+  probes `/mcp` and `/.well-known/mcp*`, as the production access logs show. A test pins that nginx and
+  `web/public` serve nothing at those paths and that the three files keep saying so, so they get updated if a
+  remote endpoint is ever added. Web bumped to `3.4.62`; root to `2.6.148`.
 - `/.well-known/security.txt` (RFC 9116) now answers with the GitHub private reporting link from `SECURITY.md`,
   so scanners and researchers looking for a security contact find one instead of a 404. It is served as UTF-8 text, as RFC 9116 requires. Its `Expires` date is
   2027-11-06 and must be renewed before then; a test fails 30 days before it passes, and `TODO.md` tracks it. nginx also drops the Jenkins `/crumbIssuer` probe, the
