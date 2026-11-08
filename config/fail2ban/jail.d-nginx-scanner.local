@@ -2,8 +2,9 @@
 # `sudo fail2ban-client reload`.
 #
 # BEFORE enabling, add your own address and any uptime monitor or health-check
-# addresses to ignoreip (space separated), otherwise a false positive bans them
-# from SSH and HTTP for 24 hours.
+# addresses to ignoreip (space separated), otherwise a false positive blocks them
+# from the website (ports 80 and 443) for 24 hours. SSH is not affected: the ban
+# only covers the ports listed in `port` below.
 [nginx-scanner]
 enabled  = true
 port     = http,https

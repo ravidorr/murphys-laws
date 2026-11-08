@@ -57,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rule in every server block that listens for TLS and checks that the fail2ban filter counts the new log line.
   A malformed request (HTTP/1.1 without a Host header, say) is rejected before error 497 and still gets a plain 400.
   Web bumped to `3.4.59`; root to `2.6.145`.
+- The `nginx-scanner` fail2ban jail's header comment said a false positive bans an address "from SSH and HTTP".
+  The jail only sets `port = http,https`, so a ban blocks the website for 24 hours and leaves SSH alone; the
+  comment now says that. No behaviour change. Root bumped to `2.6.147`.
 
 ### Added
 
