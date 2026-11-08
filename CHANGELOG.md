@@ -41,6 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The `nginx-scanner` fail2ban jail never banned anyone. Debian and Ubuntu set `backend = systemd` for every jail
+  in `jail.d/defaults-debian.conf`, a systemd jail reads the journal and ignores `logpath`, and so the jail
+  reported "No file is currently monitored" and zero failures while `scanner.log` filled with 600 `444` lines
+  that its filter matches. The jail now sets `backend = auto`, so the drops from the scanner defense count as
+  strikes (5 in 10 minutes, banned on ports 80 and 443 for 24 hours). A test pins that the jail reads a file
+  backend and watches the same log nginx writes. The file on the droplet has to be updated and fail2ban
+  reloaded; the droplet's copy also lists the owner's address in `ignoreip`, which this file does not. Web bumped
+  to `3.4.63`; root to `2.6.150`.
 - Handled more of the daily report. nginx now drops a `POST /` with a 444, so the bots that post to the home
   page dozens of times a day (about 1,000 in 15 days from many addresses, per the production access logs) are
   logged to `scanner.log` and counted by fail2ban instead of getting a 405. The match is exactly `POST /` with

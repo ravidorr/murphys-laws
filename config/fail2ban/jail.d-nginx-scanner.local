@@ -6,6 +6,10 @@
 # from SSH and HTTP for 24 hours.
 [nginx-scanner]
 enabled  = true
+# Debian and Ubuntu set backend = systemd for every jail in jail.d/defaults-debian.conf, and a
+# systemd jail reads the journal and ignores logpath, so without this line the jail never sees a
+# strike. This jail reads a log file, so say so.
+backend  = auto
 port     = http,https
 filter   = nginx-scanner
 logpath  = /var/log/nginx/scanner.log
