@@ -969,3 +969,49 @@ describe('the scripts themselves', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('vulnerability-scanner.sh fail2ban section', () => {
+  /** Runs just the fail2ban block of the script against fake systemctl and fail2ban-client commands. */
+  const report = (statusByJail: Record<string, string>, active = true) => {
+    const box = sandbox();
+    const fake = (name: string, body: string) => {
+      writeFileSync(path.join(box.bin, name), `#!/bin/bash\n${body}\n`);
+      chmodSync(path.join(box.bin, name), 0o755);
+    };
+    fake('systemctl', active ? 'exit 0' : 'exit 3');
+    const cases = Object.entries(statusByJail)
+      .map(([jail, status]) => `  ${jail}) printf '%s\\n' '${status}'; exit 0 ;;`)
+      .join('\n');
+    fake('fail2ban-client', `[ "$1" = status ] || exit 1\ncase "$2" in\n${cases}\n  *) echo "Sorry but the jail '$2' does not exist"; exit 255 ;;\nesac`);
+    const text = source('vulnerability-scanner.sh');
+    const block = text.slice(text.indexOf('# 6. Fail2ban Status'), text.indexOf('# 7. Open Ports'));
+    const result = bash(`log() { :; }\nREPORT=""\n${block}\nprintf '%b' "$REPORT"`, box, {}, '', { prelude: '' });
+    expect(result.status).toBe(0);
+    return result.stdout;
+  };
+  const status = (current: number, total: number) =>
+    `|- Currently banned:\t${current}\n\`- Total banned:\t${total}`;
+
+  it('reports the bans from the SSH jail and the web scanner jail', () => {
+    const out = report({ sshd: status(1, 4), 'nginx-scanner': status(2, 8) });
+
+    expect(out).toContain('Fail2ban: Active');
+    expect(out).toContain('sshd: currently banned 1, total bans 4');
+    expect(out).toContain('nginx-scanner: currently banned 2, total bans 8');
+  });
+
+  it('skips a jail that is not running', () => {
+    const out = report({ sshd: status(0, 0) });
+
+    expect(out).toContain('sshd: currently banned 0, total bans 0');
+    expect(out).not.toContain('nginx-scanner');
+  });
+
+  it('says fail2ban is inactive without listing jails', () => {
+    const out = report({ sshd: status(1, 1) }, false);
+
+    expect(out).toContain('Fail2ban: Inactive');
+    expect(out).not.toContain('sshd:');
+  });
+});
+

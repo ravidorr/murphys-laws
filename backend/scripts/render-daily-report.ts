@@ -643,6 +643,38 @@ export function captureCommandStdout(command: string, args: string[]): string {
   }
 }
 
+/** The fail2ban jails the report counts bans for: SSH, and the web scanner jail that reads nginx's scanner.log. */
+export const FAIL2BAN_JAILS = [
+  { name: 'sshd', label: 'SSH' },
+  { name: 'nginx-scanner', label: 'web' },
+] as const;
+
+/** Reads the two ban counts out of `fail2ban-client status <jail>`; null when the jail is not running. */
+export function parseFail2banJailStatus(output: string): { current: number; total: number } | null {
+  const current = /Currently banned:\s*(\d+)/.exec(output);
+  const total = /Total banned:\s*(\d+)/.exec(output);
+  return current && total ? { current: Number(current[1]), total: Number(total[1]) } : null;
+}
+
+/**
+ * Ban counts across the jails in FAIL2BAN_JAILS, as the report shows them: the sum, then the split, such as
+ * "3 (SSH 1, web 2)". A jail that is not running is left out; null when none is.
+ */
+export function summarizeFail2banBans(
+  readStatus: (jail: string) => string,
+): { currentlyBanned: string; totalBans: string } | null {
+  const counts = FAIL2BAN_JAILS.flatMap(({ name, label }) => {
+    const parsed = parseFail2banJailStatus(readStatus(name));
+    return parsed ? [{ label, ...parsed }] : [];
+  });
+  if (counts.length === 0) {
+    return null;
+  }
+  const format = (pick: (count: { current: number; total: number }) => number): string =>
+    `${counts.reduce((sum, count) => sum + pick(count), 0)} (${counts.map((count) => `${count.label} ${pick(count)}`).join(', ')})`;
+  return { currentlyBanned: format((count) => count.current), totalBans: format((count) => count.total) };
+}
+
 export interface Pm2Process {
   name?: string;
   pm2_env?: {
@@ -1419,19 +1451,12 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
     'grep "Failed password" /var/log/auth.log 2>/dev/null | grep "$(date +%b\\ %d)" | wc -l | tr -d " "',
   ]);
   const securityItems: ReportItem[] = [{ label: 'Failed SSH Attempts', value: failedSsh || '0' }];
-  const banned = tryCommand('bash', [
-    '-lc',
-    'fail2ban-client status sshd 2>/dev/null | awk -F: \'/Currently banned/{print $2}\' | xargs',
-  ]);
-  const totalBans = tryCommand('bash', [
-    '-lc',
-    'fail2ban-client status sshd 2>/dev/null | awk -F: \'/Total banned/{print $2}\' | xargs',
-  ]);
-  if (banned) {
-    securityItems.push({ label: 'Fail2ban Currently Banned', value: banned });
-  }
-  if (totalBans) {
-    securityItems.push({ label: 'Fail2ban Total Bans', value: totalBans });
+  const bans = summarizeFail2banBans((jail) =>
+    tryCommand('bash', ['-lc', `fail2ban-client status ${jail} 2>/dev/null`]),
+  );
+  if (bans) {
+    securityItems.push({ label: 'Fail2ban Currently Banned', value: bans.currentlyBanned });
+    securityItems.push({ label: 'Fail2ban Total Bans', value: bans.totalBans });
   }
   sections.push(section('SECURITY SUMMARY', securityItems));
 
