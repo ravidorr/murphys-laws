@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -328,6 +328,50 @@ describe('plain HTTP sent to a TLS port', () => {
     expect(new RegExp(failregex).exec(line(444, 0))?.groups?.host).toBe('194.187.176.248');
     // The 400 that nginx logged before this rule is not counted.
     expect(new RegExp(failregex).test(line(400, 264))).toBe(false);
+  });
+});
+
+describe('MCP discovery paths', () => {
+  // The MCP server is a local stdio package (mcp/server.json), so nothing is served at /mcp or
+  // /.well-known/mcp*, and llms.txt, llms-full.txt and mcp/README.md say so.
+  const update =
+    'If a hosted MCP endpoint is added, update the stdio-only statements in web/public/llms.txt, web/public/llms-full.txt and mcp/README.md';
+
+  it('has no nginx location for an MCP endpoint or discovery file', () => {
+    expect(conf, update).not.toMatch(/^\s*location[^\n{]*mcp/im);
+  });
+
+  it('ships no static MCP discovery file', () => {
+    const publicDir = resolve(root, 'web', 'public');
+    const wellKnown = resolve(publicDir, '.well-known');
+    const names = [...readdirSync(publicDir), ...(existsSync(wellKnown) ? readdirSync(wellKnown) : [])];
+
+    expect(
+      names.filter((name) => /^mcp/i.test(name)),
+      update,
+    ).toEqual([]);
+  });
+
+  it.each(['web/public/llms.txt', 'web/public/llms-full.txt', 'mcp/README.md'])(
+    '%s says the server is stdio-only with no hosted or remote endpoint',
+    (file) => {
+      const text = readFileSync(resolve(root, file), 'utf8');
+
+      expect(text).toMatch(/stdio/i);
+      expect(text).toMatch(/no hosted or remote/i);
+    },
+  );
+
+  it('keeps the claim in step with mcp/server.json, which declares stdio and the Registry name', () => {
+    const server = JSON.parse(readFileSync(resolve(root, 'mcp', 'server.json'), 'utf8')) as {
+      name: string;
+      packages: Array<{ transport: { type: string } }>;
+    };
+
+    expect(server.packages.map((pkg) => pkg.transport.type)).toEqual(['stdio']);
+    for (const file of ['web/public/llms.txt', 'web/public/llms-full.txt']) {
+      expect(readFileSync(resolve(root, file), 'utf8')).toContain(server.name);
+    }
   });
 });
 

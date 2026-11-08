@@ -72,12 +72,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `llms.txt` and `llms-full.txt` now say the MCP server is stdio-only: it runs locally from `npx`, there is no
-  hosted or remote MCP endpoint (nothing is served at `/mcp` or `/.well-known/mcp`), and it is listed in the
-  official MCP Registry as `com.murphys-laws/murphys-laws`. The MCPCensus crawler and AI agents read these two
-  files, and no MCP discovery standard has a place to say "stdio-only": server cards (SEP-2127) describe remote
-  servers only and the Registry's `server.json` already covers the local package. No version bump: text files
-  count as documentation.
+- `llms.txt`, `llms-full.txt` and `mcp/README.md` now say the MCP server is stdio-only: it runs locally from
+  `npx`, there is no hosted or remote MCP endpoint (nothing is served at `/mcp` or `/.well-known/mcp`), and an
+  agent that cannot run local processes should use the REST API. The Registry name
+  `com.murphys-laws/murphys-laws` and a link to its Registry entry are given too. The Registry's `server.json`
+  already declares the stdio transport, but crawlers that read only `llms.txt` cannot see it, and MCP server
+  cards describe remote servers only ([SEP-2127](https://modelcontextprotocol.io/seps/2127-mcp-server-cards)),
+  so there was nowhere to say it where they look. The MCPCensus crawler
+  ([documentation](https://www.radixia.ai/census/crawler)) fetches `llms.txt` and `llms-full.txt` and then
+  probes `/mcp` and `/.well-known/mcp*`, as the production access logs show. A test pins that nginx and
+  `web/public` serve nothing at those paths and that the three files keep saying so, so they get updated if a
+  remote endpoint is ever added. Web bumped to `3.4.62`; root to `2.6.148`.
 - `/.well-known/security.txt` (RFC 9116) now answers with the GitHub private reporting link from `SECURITY.md`,
   so scanners and researchers looking for a security contact find one instead of a 404. It is served as UTF-8 text, as RFC 9116 requires. Its `Expires` date is
   2027-11-06 and must be renewed before then; a test fails 30 days before it passes, and `TODO.md` tracks it. nginx also drops the Jenkins `/crumbIssuer` probe, the
