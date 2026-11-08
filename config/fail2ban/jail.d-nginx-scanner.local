@@ -1,9 +1,13 @@
 # Install on the droplet as /etc/fail2ban/jail.d/nginx-scanner.local, then
-# `sudo fail2ban-client reload`.
+# `sudo fail2ban-client reload`. Installing this file enables the jail (enabled = true
+# below), so edit ignoreip BEFORE the reload.
 #
-# BEFORE enabling, add your own address and any uptime monitor or health-check
-# addresses to ignoreip (space separated), otherwise a false positive bans them
-# from SSH and HTTP for 24 hours.
+# Add your own address and any uptime monitor or health-check addresses to ignoreip
+# (space separated), otherwise a false positive blocks them from the website (ports 80
+# and 443) for 24 hours. SSH is not affected by this jail: its ban only covers the ports
+# listed in `port` below, and a separate sshd jail is independent.
+#
+# To lift a ban early: sudo fail2ban-client set nginx-scanner unbanip <ip>
 [nginx-scanner]
 enabled  = true
 # Debian and Ubuntu set backend = systemd for every jail in jail.d/defaults-debian.conf, and a
