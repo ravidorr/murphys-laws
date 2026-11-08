@@ -42,21 +42,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Handled more of the daily report. nginx now drops a `POST /` with a 444, so the bots that post to the home
-  page dozens of times a day (about 1,000 in 15 days from many addresses) are logged to `scanner.log` and
-  counted by fail2ban instead of getting a 405. The match is exactly `POST /`, so `GET`, `HEAD` and every
-  POST to `/api` are unchanged; nothing in the site posts to `/`. `/users/sign_in` and `/users/sign_up`
+  page dozens of times a day (about 1,000 in 15 days from many addresses, per the production access logs) are
+  logged to `scanner.log` and counted by fail2ban instead of getting a 405. The match is exactly `POST /` with
+  no query string, so `GET`, `HEAD` and every POST to `/api` or `/subscription/*` are unchanged; nothing in the
+  site posts to `/`. `/users/sign_in` and `/users/sign_up`
   (GitLab and Rails sign-in guesses) are dropped like the other guessed account paths. Bare `/murphy` now
   redirects home: the trailing-slash rewrite turned old `/murphy/` backlinks into `/murphy`, which had no
-  page. The MCPCensus crawler's weekly probes for MCP discovery files (`/mcp`, `/.well-known/mcp*`,
-  `/AGENTS.md` and others) are left as 404s, which is correct because the MCP server is a stdio npm package,
-  not a hosted endpoint. Web bumped to `3.4.61`; root to `2.6.147`.
+  page, so those links now take two hops (`/murphy/` to `/murphy` to the home page). The MCPCensus crawler's
+  weekly probes for MCP discovery files (`/mcp`, `/.well-known/mcp*`, `/AGENTS.md` and others, seen in the
+  production logs) are left as 404s, which is correct because the MCP server is a stdio npm package (see
+  `mcp/server.json`), not a hosted endpoint. Web bumped to `3.4.61`; root to `2.6.147`.
 - Cleared the rest of the daily report's 404s. `/img/pvtmurphy.gif`, the Pvt. Murphy's Law banner from the old
   site, is now served. Bing's `/sitemaps.xml` redirects to `/sitemap.xml` and the guessed `/favicon.png` to
   `/favicon-32x32.png`, like the existing `apple-touch-icon-precomposed.png` redirect. nginx now drops with a
   444 (so fail2ban counts it) SonicWall `/api/sonicos/...`, CrushFTP `/WebInterface`, a bare `/wp`, any
   `/health/...` probe such as `/health/liveliness` (the pattern only matched `/health` and `/health/`), and the
-  `rawgrab` scanner by user agent. `/sellers.json` and the `POST /` 405s are left alone: a 404 or 405 is the
-  right answer. Web bumped to `3.4.60`; root to `2.6.146`.
+  `rawgrab` scanner by user agent. `/sellers.json` is left alone: a 404 is the right answer for a file the site
+  does not have. (`POST /` was still a 405 at this point; the entry above drops it.) Web bumped to `3.4.60`;
+  root to `2.6.146`.
 - A well-formed plain HTTP request sent to the TLS port (443) no longer shows up as a `400` on
   `GET /favicon.ico` in the daily report. nginx raises error 497 for it and answered "400 The plain HTTP request was sent to HTTPS
   port" into the main access log; real browsers never do this, scanners do (a forged Firefox 65 user agent from
