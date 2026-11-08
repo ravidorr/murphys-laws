@@ -485,6 +485,30 @@ describe('fail2ban scanner filter', () => {
   });
 });
 
+describe('fail2ban scanner jail', () => {
+  const jail = readFileSync(resolve(root, 'config', 'fail2ban', 'jail.d-nginx-scanner.local'), 'utf8');
+  // Comment lines start with #, so only real settings match.
+  const setting = (key: string): string | undefined => new RegExp(`^${key}\\s*=\\s*(.+)$`, 'm').exec(jail)?.[1]?.trim();
+
+  it('reads the log file instead of the journal', () => {
+    // Debian and Ubuntu set backend = systemd for every jail, and a systemd jail ignores logpath, so
+    // until this was set the jail never saw a strike and never banned anyone.
+    expect(['auto', 'polling', 'pyinotify']).toContain(setting('backend'));
+  });
+
+  it('watches the scanner log that nginx writes', () => {
+    expect(setting('logpath')).toBe('/var/log/nginx/scanner.log');
+    expect(conf).toContain(`access_log ${setting('logpath')} combined`);
+  });
+
+  it('uses the nginx-scanner filter on the web ports, and is enabled', () => {
+    expect(setting('filter')).toBe('nginx-scanner');
+    expect(existsSync(resolve(root, 'config', 'fail2ban', 'filter.d-nginx-scanner.conf'))).toBe(true);
+    expect(setting('port')).toBe('http,https');
+    expect(setting('enabled')).toBe('true');
+  });
+});
+
 describe('embed routes', () => {
   it('proxies embeddable law cards to the backend and never blocks framing', () => {
     expect(conf).toContain('location ~ ^/embed/(law/\\d+|law-of-day)/?$ {');
