@@ -629,9 +629,13 @@ function tryCommand(command: string, args: string[]): string {
 }
 
 /** Returns stdout even when the process exits nonzero (e.g. systemctl is-active). */
-export function captureCommandStdout(command: string, args: string[]): string {
+export function captureCommandStdout(command: string, args: string[], timeoutMs?: number): string {
   try {
-    return execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+    return execFileSync(command, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
+    }).trim();
   } catch (error) {
     if (error && typeof error === 'object' && 'stdout' in error) {
       const stdout = String((error as { stdout?: Buffer | string }).stdout ?? '').trim();
@@ -643,36 +647,58 @@ export function captureCommandStdout(command: string, args: string[]): string {
   }
 }
 
-/** The fail2ban jails the report counts bans for: SSH, and the web scanner jail that reads nginx's scanner.log. */
+/**
+ * The fail2ban jails the report counts bans for: SSH, and the scanner jail
+ * (config/fail2ban/jail.d-nginx-scanner.local) that bans the addresses nginx's scanner defense drops. Both are
+ * expected, so a jail that cannot be read is reported, not skipped.
+ */
 export const FAIL2BAN_JAILS = [
   { name: 'sshd', label: 'SSH' },
-  { name: 'nginx-scanner', label: 'web' },
+  { name: 'nginx-scanner', label: 'scanners' },
 ] as const;
 
-/** Reads the two ban counts out of `fail2ban-client status <jail>`; null when the jail is not running. */
+/** How long one `fail2ban-client status` may take before the jail counts as unreadable. */
+const FAIL2BAN_STATUS_TIMEOUT_MS = 10_000;
+
+/**
+ * Reads the currently-banned and total-banned counts out of `fail2ban-client status <jail>`. Null unless both are
+ * present, which is what a missing jail or an unreadable fail2ban gives.
+ */
 export function parseFail2banJailStatus(output: string): { current: number; total: number } | null {
   const current = /Currently banned:\s*(\d+)/.exec(output);
   const total = /Total banned:\s*(\d+)/.exec(output);
   return current && total ? { current: Number(current[1]), total: Number(total[1]) } : null;
 }
 
-/**
- * Ban counts across the jails in FAIL2BAN_JAILS, as the report shows them: the sum, then the split, such as
- * "3 (SSH 1, web 2)". A jail that is not running is left out; null when none is.
- */
-export function summarizeFail2banBans(
-  readStatus: (jail: string) => string,
-): { currentlyBanned: string; totalBans: string } | null {
-  const counts = FAIL2BAN_JAILS.flatMap(({ name, label }) => {
-    const parsed = parseFail2banJailStatus(readStatus(name));
-    return parsed ? [{ label, ...parsed }] : [];
-  });
-  if (counts.length === 0) {
-    return null;
+export interface Fail2banSummary {
+  /** The sum, then the split, such as "3 (SSH 1, scanners 2)"; null when no jail could be read. */
+  currentlyBanned: string | null;
+  totalBans: string | null;
+  /** The jails that could not be read, each with the first line fail2ban printed (or why there was none). */
+  unreadable: Array<{ jail: string; label: string; detail: string }>;
+}
+
+/** Ban counts across the jails in FAIL2BAN_JAILS, and the jails that could not be read. */
+export function summarizeFail2banBans(readStatus: (jail: string) => string): Fail2banSummary {
+  const counts: Array<{ label: string; current: number; total: number }> = [];
+  const unreadable: Fail2banSummary['unreadable'] = [];
+  for (const { name, label } of FAIL2BAN_JAILS) {
+    const output = readStatus(name);
+    const parsed = parseFail2banJailStatus(output);
+    if (parsed) {
+      counts.push({ label, ...parsed });
+    } else {
+      const detail =
+        output.split('\n').find((line) => line.trim() !== '')?.trim() ??
+        'no output (fail2ban-client missing, not run as root, or timed out)';
+      unreadable.push({ jail: name, label, detail });
+    }
   }
-  const format = (pick: (count: { current: number; total: number }) => number): string =>
-    `${counts.reduce((sum, count) => sum + pick(count), 0)} (${counts.map((count) => `${count.label} ${pick(count)}`).join(', ')})`;
-  return { currentlyBanned: format((count) => count.current), totalBans: format((count) => count.total) };
+  const format = (pick: (count: { current: number; total: number }) => number): string | null =>
+    counts.length === 0
+      ? null
+      : `${counts.reduce((sum, count) => sum + pick(count), 0)} (${counts.map((count) => `${count.label} ${pick(count)}`).join(', ')})`;
+  return { currentlyBanned: format((count) => count.current), totalBans: format((count) => count.total), unreadable };
 }
 
 export interface Pm2Process {
@@ -1451,12 +1477,30 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
     'grep "Failed password" /var/log/auth.log 2>/dev/null | grep "$(date +%b\\ %d)" | wc -l | tr -d " "',
   ]);
   const securityItems: ReportItem[] = [{ label: 'Failed SSH Attempts', value: failedSsh || '0' }];
+  // The jail name is passed as an argument, and 2>&1 keeps fail2ban's own error text for the log.
   const bans = summarizeFail2banBans((jail) =>
-    tryCommand('bash', ['-lc', `fail2ban-client status ${jail} 2>/dev/null`]),
+    captureCommandStdout(
+      'bash',
+      ['-lc', 'fail2ban-client status "$1" 2>&1', 'fail2ban-status', jail],
+      FAIL2BAN_STATUS_TIMEOUT_MS,
+    ),
   );
-  if (bans) {
+  if (bans.currentlyBanned !== null && bans.totalBans !== null) {
     securityItems.push({ label: 'Fail2ban Currently Banned', value: bans.currentlyBanned });
     securityItems.push({ label: 'Fail2ban Total Bans', value: bans.totalBans });
+  }
+  // When fail2ban is not running at all, leave the ban lines out (the system status row says so). When it is
+  // running, or answered for some jail, a jail that cannot be read is a fault to show and log.
+  const fail2banActive = captureCommandStdout('systemctl', ['is-active', 'fail2ban']) === 'active';
+  if (bans.currentlyBanned !== null || fail2banActive) {
+    for (const { jail, label, detail } of bans.unreadable) {
+      securityItems.push({
+        label: `Fail2ban ${label} jail`,
+        value: 'unavailable - see the daily-report log',
+        tone: 'warning',
+      });
+      logCollectorError(`fail2ban ${jail} jail`, detail);
+    }
   }
   sections.push(section('SECURITY SUMMARY', securityItems));
 
