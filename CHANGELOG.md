@@ -39,6 +39,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Cleared the rest of the daily report's 404s. `/img/pvtmurphy.gif`, the Pvt. Murphy's Law banner from the old
+  site, is now served. Bing's `/sitemaps.xml` redirects to `/sitemap.xml` and the guessed `/favicon.png` to
+  `/favicon-32x32.png`, like the existing `apple-touch-icon-precomposed.png` redirect. nginx now drops with a
+  444 (so fail2ban counts it) SonicWall `/api/sonicos/...`, CrushFTP `/WebInterface`, a bare `/wp`, any
+  `/health/...` probe such as `/health/liveliness` (the pattern only matched `/health` and `/health/`), and the
+  `rawgrab` scanner by user agent. `/sellers.json` and the `POST /` 405s are left alone: a 404 or 405 is the
+  right answer. Web bumped to `3.4.60`; root to `2.6.146`.
+- A well-formed plain HTTP request sent to the TLS port (443) no longer shows up as a `400` on
+  `GET /favicon.ico` in the daily report. nginx raises error 497 for it and answered "400 The plain HTTP request was sent to HTTPS
+  port" into the main access log; real browsers never do this, scanners do (a forged Firefox 65 user agent from
+  neighboring addresses). Both TLS server blocks now drop it without a response and log it to `scanner.log` as
+  a `444`, like the other scanner hits, so it counts toward the existing fail2ban jail (5 strikes in 10 minutes,
+  banned for a day). Port 80 still redirects to HTTPS and normal HTTPS requests are unchanged. A test requires the
+  rule in every server block that listens for TLS and checks that the fail2ban filter counts the new log line.
+  A malformed request (HTTP/1.1 without a Host header, say) is rejected before error 497 and still gets a plain 400.
+  Web bumped to `3.4.59`; root to `2.6.145`.
+
 ### Added
 
 - `/.well-known/security.txt` (RFC 9116) now answers with the GitHub private reporting link from `SECURITY.md`,
