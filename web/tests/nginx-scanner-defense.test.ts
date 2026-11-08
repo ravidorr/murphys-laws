@@ -111,6 +111,9 @@ describe('nginx scanner defense', () => {
     '/api/v1/code/blocks/exec/start',
     '/Team',
     '/ACCOUNT/Create',
+    '/users/sign_in',
+    '/users/sign_in/',
+    '/users/sign_up',
     '/api/sonicos/is-sslvpn-enabled',
     '/api/sonicos/auth',
     '/sonicos/auth',
@@ -180,6 +183,10 @@ describe('nginx scanner defense', () => {
     '/api/v1/laws?q=vpn',
     '/browse?q=readme.html',
     '/browse?q=docker-compose.yml',
+    '/users',
+    '/law/users',
+    '/browse?q=users/sign_in',
+    '/murphy',
     '/img/pvtmurphy.gif',
     '/sitemaps.xml',
     '/favicon.png',
@@ -221,11 +228,43 @@ describe('nginx scanner defense', () => {
     expect(main).toContain('access_log /var/log/nginx/scanner.log combined if=$block_request;');
   });
 
-  it('only blocks when both the agent and path maps are clear', () => {
-    const start = conf.indexOf('map "$scanner_agent$scanner_path" $block_request {');
+  it('only blocks when the agent, path and method maps are all clear', () => {
+    const start = conf.indexOf('map "$scanner_agent$scanner_path$scanner_post_root" $block_request {');
+    expect(start).toBeGreaterThan(-1);
     const block = conf.slice(start, conf.indexOf('\n}', start));
     expect(block).toContain('default 1;');
-    expect(block).toContain('"00" 0;');
+    expect(block).toContain('"000" 0;');
+  });
+
+  // The home page is static and the site's own writes go to /api, so a POST to "/" is always a bot.
+  describe('POST to the home page', () => {
+    const start = conf.indexOf('map "$request_method $request_uri" $scanner_post_root {');
+    const body = conf.slice(start, conf.indexOf('\n}', start));
+    const blockedKeys = new Set([...body.matchAll(/^\s*"(.+)" 1;$/gm)].map((match) => match[1]));
+    // nginx map keys without ~ are exact matches.
+    const isScannerPost = (method: string, uri: string): boolean => blockedKeys.has(`${method} ${uri}`);
+
+    it('is parsed from nginx.conf, with every other request left at the default of 0', () => {
+      expect(start).toBeGreaterThan(-1);
+      expect(body).toContain('default 0;');
+      expect([...blockedKeys]).toEqual(['POST /']);
+    });
+
+    it.each([['POST', '/']])('flags %s %s', (method, uri) => {
+      expect(isScannerPost(method, uri)).toBe(true);
+    });
+
+    it.each([
+      ['GET', '/'],
+      ['HEAD', '/'],
+      ['OPTIONS', '/'],
+      ['POST', '/api/v1/laws'],
+      ['POST', '/api/v1/laws/1/vote'],
+      ['POST', '/?utm=x'],
+      ['POST', '/law/1'],
+    ])('lets %s %s through', (method, uri) => {
+      expect(isScannerPost(method, uri)).toBe(false);
+    });
   });
 });
 
@@ -292,6 +331,7 @@ describe('nginx legacy URL redirects', () => {
     ['/about-us', '/about'],
     ['/contact-us', '/contact'],
     ['/old/index.htm', '/'],
+    ['/murphy', '/'],
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
     ['/sitemaps.xml', '/sitemap.xml'],
     ['/favicon.png', '/favicon-32x32.png'],
