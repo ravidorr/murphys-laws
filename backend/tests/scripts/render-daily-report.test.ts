@@ -617,6 +617,8 @@ describe('daily report security summary', () => {
       const jail = FAIL2BAN_JAILS.find((entry) => script.includes(`fail2ban-client status ${entry.name}`));
       return command === 'bash' && jail ? (statusByJail[jail.name] ?? '') : '';
     });
+    // The other collectors fail loudly on stderr when their commands and files are missing.
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
     const repoRoot = scratchDir('daily-report-security-');
     const report = collectDailyReport({ repoRoot, now: new Date(Date.UTC(2026, 1, 4)) });
     return report.sections.find((entry) => entry.title === 'SECURITY SUMMARY')?.items ?? [];
