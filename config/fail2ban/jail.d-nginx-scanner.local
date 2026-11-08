@@ -10,9 +10,11 @@
 # To lift a ban early: sudo fail2ban-client set nginx-scanner unbanip <ip>
 [nginx-scanner]
 enabled  = true
-# Debian and Ubuntu set backend = systemd for every jail in jail.d/defaults-debian.conf, and a
-# systemd jail reads the journal and ignores logpath, so without this line the jail never sees a
-# strike. This jail reads a log file, so say so.
+# Debian and Ubuntu ship jail.d/defaults-debian.conf with backend = systemd as the default for
+# every jail. A systemd jail reads the journal and ignores logpath, so without this line this jail
+# would never see a strike. It reads a log file, so set the backend explicitly. After a reload,
+# `sudo fail2ban-client status nginx-scanner` should show "File list: /var/log/nginx/scanner.log";
+# "Journal matches" instead means the jail is still on the systemd backend.
 backend  = auto
 port     = http,https
 filter   = nginx-scanner
