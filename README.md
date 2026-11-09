@@ -217,9 +217,9 @@ npm run build:backend:db
 `npm run build:web` prerenders the static pages from a local API. By default that API serves a database it builds from
 the archive, which is what pull-request CI uses. When `MURPHYS_DB_PATH` names a SQLite file, the build instead applies
 the pending migrations to that file and serves it, and `backend/scripts/migrate.ts` and `npm --prefix backend start`
-read the same variable (unset or blank, they keep using `backend/murphys.db`). The production deploy uses that: its
-first step streams `backend/scripts/sanitize-db-copy.sh` to the server over SSH, which takes a backup of the live
-database, removes personal data from the copy and sends it back; the build then migrates and prerenders from the
+read the same variable (unset or blank, they keep using `backend/murphys.db`). The production deploy uses that: the
+step before the build streams `backend/scripts/sanitize-db-copy.sh` to the server over SSH, which takes a backup of the live
+database, removes the private data from the copy and sends it back; the build then migrates and prerenders from the
 copy, which is deleted at the end of the job and never committed or uploaded. Every law page and sitemap entry
 therefore matches what the API serves, and a data fix in a migration shows up in the same deploy. The deploy stops
 before anything is uploaded when the copy cannot be fetched or fails a check. To rehearse the sanitizer locally, run

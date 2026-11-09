@@ -67,6 +67,15 @@ test('the build prerenders from the fetched copy through the local API', () => {
   assert.equal(jobEnv?.MURPHYS_DB_PATH, undefined, 'only the build step sees the copy');
 });
 
+test('only the cleanup step may run after a failure, and no other job can follow', () => {
+  const after = deploySteps.slice(fetchIndex + 1);
+  const runsAfterFailure = after.filter((step) => /always|failure|cancelled/.test(String(step.if ?? '')));
+  assert.deepEqual(runsAfterFailure.map((step) => step.name), ['Delete the database copy and the SSH key']);
+  assert.equal(indexOfStep('Deploy and restart services') >= 0, true);
+  assert.equal(deploySteps[indexOfStep('Deploy and restart services')]?.if, undefined, 'the production migration only runs after every step before it passed');
+  assert.deepEqual(Object.keys(deployWorkflow.jobs ?? {}), ['deploy'], 'no downstream job can run after a failed deploy');
+});
+
 test('nothing between the fetch and the upload may continue after a failure', () => {
   assert.doesNotMatch(String(deploySteps[uploadIndex]?.if ?? ''), /always|failure|cancelled/, 'the upload must not run after a failed build');
   for (const step of deploySteps.slice(fetchIndex, uploadIndex + 1)) {
@@ -90,14 +99,14 @@ test('the copy and the key are deleted even when the fetch or the build fails, a
 test('the key never appears in a command line or the log: it comes from env, in a private file that is removed', () => {
   const script = fetchStep?.run ?? '';
   assert.doesNotMatch(script, /\$\{\{/, 'no secret is interpolated into the script text');
-  for (const name of ['SERVER_HOST', 'SERVER_USER', 'SSH_PRIVATE_KEY']) {
+  for (const name of ['SERVER_HOST', 'SERVER_USER', 'SSH_PRIVATE_KEY', 'SERVER_HOST_KEY']) {
     assert.match(String(fetchStep?.env?.[name]), new RegExp(`^\\$\\{\\{ secrets\\['${name}'\\] \\}\\}$`));
   }
   assert.match(script, /^set -euo pipefail$/m);
   assert.match(script, /^umask 077$/m);
   assert.match(script, /chmod 600 "\$ssh_dir\/key"/);
   assert.match(script, /rm -f "\$ssh_dir\/key"/);
-  assert.doesNotMatch(script, /\becho\b[^\n]*(SSH_PRIVATE_KEY|SERVER_HOST|SERVER_USER)/);
+  assert.doesNotMatch(script, /\becho\b[^\n]*\$\{?(SSH_PRIVATE_KEY|SERVER_HOST|SERVER_USER)/);
   assert.doesNotMatch(script, /\bset -x\b/);
 });
 
@@ -139,6 +148,9 @@ function createSandbox(): Sandbox {
     INSERT INTO email_subscriptions (email, token) VALUES ('sub.secret@example.org', 'tok');
   `;
   assert.equal(spawnSync('sqlite3', [fixture], { input: seed, encoding: 'utf8' }).status, 0);
+  // The same database with every law removed, as the sanitizer would send it
+  spawnSync('sqlite3', [fixture, `.backup '${fixture}.nolaws'`]);
+  spawnSync('sqlite3', [`${fixture}.nolaws`, 'PRAGMA foreign_keys = ON; DELETE FROM laws;']);
   const log = path.join(directory, 'ssh');
   // `ssh` records how it was called, then plays the server according to STUB_SERVER: it runs the script it is
   // given on stdin against the fixture ("sanitized"), sends the fixture as it is ("raw"), or fails ("down").
@@ -159,6 +171,9 @@ case "$STUB_SERVER" in
   sanitized) exec bash -s -- export "${fixture}" ;;
   raw) cat "${fixture}" ;;
   empty) : ;;
+  truncated) bash -s -- export "${fixture}" | head -c 20000 ;;
+  partial) head -c 4096 "${fixture}"; exit 7 ;;
+  nolaws) bash -s -- export "${fixture}.nolaws" ;;
   chatter) echo "Welcome to the server"; exec bash -s -- export "${fixture}" ;;
   *) echo "ssh: connect to host: Connection timed out" >&2; exit 255 ;;
 esac
@@ -206,6 +221,18 @@ test('the fetch runs the sanitizer on the server and brings back only the saniti
   const options = readFileSync(`${sandbox.log}.options`, 'utf8');
   assert.match(options, /BatchMode=yes/);
   assert.match(options, /StrictHostKeyChecking=accept-new/);
+  assert.match(result.stdout, /::warning::The SERVER_HOST_KEY secret is not set/);
+});
+
+test('a pinned host key is written to known_hosts and enforced', () => {
+  const sandbox = createSandbox();
+  const result = runFetchStep(sandbox, 'sanitized', { SERVER_HOST_KEY: 'server.invalid ssh-ed25519 AAAAFAKEKEY' });
+  assert.equal(result.status, 0, result.stderr);
+  const options = readFileSync(`${sandbox.log}.options`, 'utf8');
+  assert.match(options, /StrictHostKeyChecking=yes/);
+  assert.doesNotMatch(options, /accept-new/);
+  assert.equal(readFileSync(path.join(sandbox.runnerTemp, 'deploy-ssh', 'known_hosts'), 'utf8'), 'server.invalid ssh-ed25519 AAAAFAKEKEY\n');
+  assert.doesNotMatch(result.stdout, /SERVER_HOST_KEY secret is not set/);
 });
 
 test('an unreachable server fails the fetch and leaves no usable copy', () => {
@@ -214,6 +241,8 @@ test('an unreachable server fails the fetch and leaves no usable copy', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Connection timed out/);
   assert.doesNotMatch(result.stdout, /Fetched a sanitized copy/);
+  const copy = copyPath(sandbox);
+  assert.ok(!existsSync(copy) || readFileSync(copy).length === 0, 'at most an empty file is left, which the build refuses');
 });
 
 test('an empty answer, a shell that prints first, or a copy that still holds personal data, fails the fetch', () => {
@@ -223,6 +252,21 @@ test('an empty answer, a shell that prints first, or a copy that still holds per
     assert.notEqual(result.status, 0, server);
     if (server !== 'raw') assert.match(result.stdout, /did not send a SQLite database/, server);
     for (const secret of fixtureSecrets) assert.ok(!result.stdout.includes(secret) && !result.stderr.includes(secret), `${server}: ${secret} is in the log`);
+  }
+});
+
+test('a corrupt or truncated copy, a stream that dies half way, and a copy with no laws all fail the fetch', () => {
+  const messages: Record<string, RegExp> = {
+    truncated: /integrity check|malformed|not a database|did not send/i,
+    partial: /^$/,
+    nolaws: /holds no published law/,
+  };
+  for (const [server, message] of Object.entries(messages)) {
+    const sandbox = createSandbox();
+    const result = runFetchStep(sandbox, server);
+    assert.notEqual(result.status, 0, server);
+    assert.doesNotMatch(result.stdout, /Fetched a sanitized copy/, server);
+    if (server !== 'partial') assert.match(`${result.stdout}${result.stderr}`, message, server);
   }
 });
 
