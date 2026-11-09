@@ -218,7 +218,7 @@ npm run build:backend:db
 CI uses. The production deploy builds with `API_BASE_URL=https://murphys-laws.com npm --prefix web run build` instead,
 so every law page and sitemap entry matches what `/api/v1/laws` serves; the build stops when production cannot be
 read. To rehearse the deploy build locally, run that command with the web dependencies installed (it needs network
-access to production and takes a few minutes).
+access to production; unlike the deploy it skips `npm run build:openapi` and the Sentry upload).
 
 ## TypeScript Runtime Architecture
 

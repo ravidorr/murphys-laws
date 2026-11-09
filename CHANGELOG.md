@@ -63,20 +63,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CI keeps its seeded local-API build.
   - The deploy depends on production being reachable, so the build's API requests (`web/scripts/ssg.ts`,
     `fetchWithRetry`) now have a 30 second deadline that also covers reading the body, and one retry after two
-    seconds on a network error, a timeout, a 429 or a 5xx. Other 4xx answers are not retried. A request that keeps
-    failing stops the build with its URL, the cause and the attempt count. The build runs before the upload step, so
-    a failed build leaves the live site untouched.
+    seconds on a network error, a timeout, a 429 or a 5xx. Other 4xx answers are not retried. A network failure or
+    timeout that persists stops the build with the URL, the cause and the attempt count, and a 429 or 5xx that
+    persists stops it with the HTTP status (the log line before it names the URL and the start of the answer's body;
+    a 200 that is not JSON is reported with its first 200 characters). The build runs before the upload step, so a
+    failed build leaves the live site untouched. Each category page also has to agree with itself now: the category
+    list's law count, the first page's total and the number of laws in the full list must match, so an API that
+    ignores the category filter stops the build instead of publishing a category page with the wrong laws.
   - A manual run of the workflow has a `seeded_build` option (off by default) that builds from the archive. It is for
     an outage of the production API only, because the pages it makes describe the wrong laws.
   - The build runs before the server migrates, so a data fix appears in the static pages one deploy later, and a
     build change that needs a new API field cannot ship in the same deploy as the backend change that adds it
     (`TODO.md` tracks building after the migration).
-  - `scripts/deploy-workflow.test.ts` pins the production build command, the emergency option and the order of the
-    build and upload steps. `fetchAllCategories` takes a base URL like the other API readers.
+  - `scripts/deploy-workflow.test.ts` (also run by the Lockfile sync workflow) pins the production build command, runs
+    the build step's script against a stand-in `npm` for a push, a plain manual run and the emergency option, and
+    checks the order of the build and upload steps. `fetchAllCategories` takes a base URL like the other API readers.
   - Search Console still needs two steps once this is live: resubmit `sitemap.xml`, then press "Validate fix" on the
     "Soft 404" issue.
 
-  Web bumped to `3.4.67`; root to `2.6.159`.
+  Web bumped to `3.4.68`; root to `2.6.160`.
 - Fixes for problems behind Search Console's page-indexing report of 9 November 2026. The largest one, static law
   pages that describe a different law from the one the API serves for the same ID, is still open (see `TODO.md`):
   - A law page that the backend renders itself (a law published after the last build, such as `/law/2513`)

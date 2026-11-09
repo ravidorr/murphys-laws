@@ -107,6 +107,7 @@ declare module '@scripts/ssg' {
     status: number;
     json(): Promise<unknown>;
   }>, baseUrl?: string): Promise<{ data: StaticLaw[]; total: number }>;
+  export function checkCategoryLawCounts(slug: string, firstPageTotal: number, listedLaws: number, categoryLawCount: number): void;
   export const REVIEWED_LAW_TITLES: string[];
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
   export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];
