@@ -40,3 +40,6 @@ jobs:
 
       - name: Test the lockfile sync script
         run: node --import tsx --test scripts/sync-lockfile-versions.test.ts
+
+      - name: Test the workflow contracts
+        run: node --import tsx --test scripts/npm-ci-action.test.ts scripts/codeql-workflow.test.ts

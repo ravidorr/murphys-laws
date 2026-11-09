@@ -117,7 +117,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.plan.outputs.release_needed == 'true'
-        run: npm ci
+        uses: ./.github/actions/npm-ci
 
       - name: Validate MCP release version contract
         if: steps.plan.outputs.release_needed == 'true'

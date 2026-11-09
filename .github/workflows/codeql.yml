@@ -92,7 +92,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies (root - npm workspaces)
-        run: npm ci
+        uses: ./.github/actions/npm-ci
 
       - name: Regenerate Android design tokens
         run: npm run design:export:android
@@ -113,6 +113,9 @@ jobs:
         with:
           languages: java-kotlin
           build-mode: manual
+
+      - name: Download the Gradle distribution (retried)
+        uses: ./.github/actions/gradle-distribution
 
       - name: Build Android debug artifacts
         run: |
@@ -148,7 +151,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies (root - npm workspaces)
-        run: npm ci
+        uses: ./.github/actions/npm-ci
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
