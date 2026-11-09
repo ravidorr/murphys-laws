@@ -76,6 +76,10 @@ jobs:
             < backend/scripts/sanitize-db-copy.sh > "$copy_dir/murphys.db"
           rm -f "$ssh_dir/key"
 
+          # A startup file on the server that prints to stdout would corrupt the stream: say so plainly.
+          [ "$(head -c 15 "$copy_dir/murphys.db")" = "SQLite format 3" ] \
+            || { echo "::error::the server did not send a SQLite database (a remote shell startup file may be printing to stdout)"; exit 1; }
+
           # Check the copy again here, on the runner, before anything is built from it. Counts only, no rows.
           bash backend/scripts/sanitize-db-copy.sh verify "$copy_dir/murphys.db"
           [ "$(sqlite3 "$copy_dir/murphys.db" 'PRAGMA integrity_check;')" = "ok" ] \

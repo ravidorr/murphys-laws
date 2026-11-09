@@ -180,9 +180,10 @@ git push # ← Migrations run automatically!
 git push origin main
 [GitHub Actions]
  1. Checkout code & install dependencies
- 2. Build project
- 3. Deploy to server
- 4. SSH into production server:
+ 2. Fetch a sanitized copy of the production database over SSH (the copy is migrated and used for the build)
+ 3. Build project from that copy (it applies the pending migrations to the copy first), then delete the copy
+ 4. Deploy to server
+ 5. SSH into production server:
  * Backup database (murphys.db.backup)
  * Pull latest code (including migration files)
  * Restore production database
