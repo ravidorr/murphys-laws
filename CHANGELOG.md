@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `/sitemap.gz` now redirects to `/sitemap.xml` instead of being dropped. Search Console still held a 2006 sitemap
+  submission at that path, and the scanner map matched `.gz` and answered `444` with no response, so the report read
+  "Couldn't fetch" and every retry counted as a fail2ban strike. Only that exact path is exempt from the `.gz`
+  scanner pattern; other `.gz` paths (`/backup.gz`, `/old/sitemap.gz`) are still dropped. Root bumped to `2.6.168`.
 - The admin moderation page (`/admin`) now shows the site's favicon and touch icon. It declares the icons explicitly,
   and its Content-Security-Policy allows images from its own origin (`img-src 'self'`), which it blocked before
   because the policy started from `default-src 'none'`.
