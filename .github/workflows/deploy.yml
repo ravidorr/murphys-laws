@@ -42,7 +42,8 @@ jobs:
       # 1. The sanitizer is streamed to the server over the SSH access the deploy already uses (the server still
       #    runs the previous release, so it cannot be uploaded first). On the server it takes a consistent
       #    .backup of the live database and sanitizes THAT COPY (an allowlist of tables, contact details and
-      #    voter identifiers removed, VACUUMed), so personal data never leaves the server. Only the sanitized
+      #    voter identifiers removed, VACUUMed), so the private data never leaves the server (text that is already public
+      #    is copied as it is, and the copy is deleted when the job ends). Only the sanitized
       #    file is streamed back, which is why no scp is needed.
       # 2. The build then applies this release's pending migrations to the copy (the same ones the server runs
       #    after the upload below) and prerenders from a local API that serves the copy.
@@ -53,6 +54,8 @@ jobs:
           SERVER_HOST: ${{ secrets['SERVER_HOST'] }}
           SERVER_USER: ${{ secrets['SERVER_USER'] }}
           SSH_PRIVATE_KEY: ${{ secrets['SSH_PRIVATE_KEY'] }}
+          # Optional: the server's line from `ssh-keyscan -t ed25519 <host>`. When set, the host key is pinned.
+          SERVER_HOST_KEY: ${{ secrets['SERVER_HOST_KEY'] }}
         run: |
           set -euo pipefail
           umask 077
@@ -66,11 +69,21 @@ jobs:
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
           chmod 600 "$ssh_dir/key"
 
+          # With a pinned host key the connection is refused when the server presents another one. Without it the
+          # key is trusted on first use, which is how the upload and deploy steps below connect too.
+          if [ -n "$(printf '%s' "${SERVER_HOST_KEY:-}" | tr -d '[:space:]')" ]; then
+            printf '%s\n' "$SERVER_HOST_KEY" > "$ssh_dir/known_hosts"
+            host_key_check=yes
+          else
+            echo "::warning::The SERVER_HOST_KEY secret is not set, so the server's host key is not verified (see shared/docs/GITHUB-SECRETS-SETUP.md)"
+            host_key_check=accept-new
+          fi
+
           # The script is read from stdin (it is not on the server yet) and the sanitized database comes back on
           # stdout; everything the script reports goes to stderr, and it never prints a row.
           ssh -i "$ssh_dir/key" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=30 -o ServerAliveInterval=15 \
-            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o StrictHostKeyChecking="$host_key_check" -o UserKnownHostsFile="$ssh_dir/known_hosts" \
             "$SERVER_USER@$SERVER_HOST" \
             'sudo bash -s -- export /root/murphys-laws/backend/murphys.db' \
             < backend/scripts/sanitize-db-copy.sh > "$copy_dir/murphys.db"

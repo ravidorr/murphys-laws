@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import { migrate } from '../../scripts/migrate.ts';
+import { migrate } from '../../scripts/migration-runner.ts';
 
 const backendDir = resolve(import.meta.dirname, '..', '..');
 const migrationCount = readdirSync(join(backendDir, 'db', 'migrations')).filter((f) => f.endsWith('.sql')).length;
@@ -42,23 +42,34 @@ describe('scripts/migrate.ts', () => {
     expect(console.log).toHaveBeenCalledWith('\nDatabase is up to date. No migrations to apply.');
   });
 
+  const runScript = (command: string, args: string[], cwd: string): string =>
+    execFileSync(command, args, { cwd, env: { ...process.env, MURPHYS_DB_PATH: dbFile }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  const existingDatabase = (): void => {
+    const db = new Database(dbFile);
+    db.exec('CREATE TABLE placeholder (id INTEGER)');
+    db.close();
+  };
+
   it('migrates the file named by MURPHYS_DB_PATH when run the way the deploy runs it (npm run migrate)', () => {
-    // Run as a script it must really migrate: a false "run as main" check would exit 0 having done nothing.
-    const output = execFileSync('npm', ['--prefix', backendDir, 'run', 'migrate'], {
-      cwd: resolve(backendDir, '..'),
-      env: { ...process.env, MURPHYS_DB_PATH: dbFile },
-      encoding: 'utf8',
-    });
+    existingDatabase();
+    const output = runScript('npm', ['--prefix', backendDir, 'run', 'migrate'], resolve(backendDir, '..'));
     expect(output).toContain(`Applied ${migrationCount} migration(s).`);
     expect(appliedCount()).toBe(migrationCount);
   });
 
-  it('does not touch any database when the file is only imported', () => {
-    execFileSync(process.execPath, ['--import', 'tsx', '--eval', "await import('./scripts/migrate.ts')"], {
-      cwd: backendDir,
-      env: { ...process.env, MURPHYS_DB_PATH: dbFile },
-      encoding: 'utf8',
-    });
+  it('always migrates, however the script is spelled (no extension, an absolute path)', () => {
+    existingDatabase();
+    expect(runScript(process.execPath, ['--import', 'tsx', 'scripts/migrate'], backendDir)).toContain(`Applied ${migrationCount} migration(s).`);
+    expect(runScript(process.execPath, ['--import', 'tsx', join(backendDir, 'scripts', 'migrate.ts')], backendDir)).toContain('Database is up to date');
+  });
+
+  it('refuses a MURPHYS_DB_PATH that names no database, and creates nothing', () => {
+    expect(() => runScript('npm', ['--prefix', backendDir, 'run', 'migrate'], resolve(backendDir, '..'))).toThrow(/existing, non-empty database file/);
+    expect(existsSync(dbFile)).toBe(false);
+  });
+
+  it('does not touch any database when the runner is only imported', () => {
+    runScript(process.execPath, ['--import', 'tsx', '--eval', "await import('./scripts/migration-runner.ts')"], backendDir);
     expect(existsSync(dbFile)).toBe(false);
   });
 });

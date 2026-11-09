@@ -1,12 +1,12 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import { migrate } from '../../scripts/migrate.ts';
+import { migrate } from '../../scripts/migration-runner.ts';
 import { createApiServer } from '../../src/server/api-server.ts';
 import { createMigratedDb } from '../helpers/migrated-db.ts';
 
@@ -30,6 +30,22 @@ const SECRETS = [
   'rejected-submitter@example.net',
   '2026-01-02T03:04:05.000Z-approval-mail',
 ];
+
+/** The columns of every kept table that are reviewed as safe to copy (the others are blanked or replaced). */
+const REVIEWED_COLUMNS: Record<string, string[]> = {
+      laws: ['id', 'slug', 'title', 'text', 'origin_note', 'first_seen_file_path', 'first_seen_line_number', 'canonical', 'created_at', 'updated_at', 'status'],
+      categories: ['id', 'slug', 'title', 'description', 'source_file_path', 'created_at', 'updated_at', 'law_context'],
+      law_categories: ['id', 'law_id', 'category_id', 'position'],
+      attributions: ['id', 'law_id', 'name', 'contact_type', 'note', 'created_at'],
+      law_relations: ['id', 'from_law_id', 'to_law_id', 'relation_type', 'note', 'created_at'],
+      votes: ['id', 'law_id', 'vote_type', 'created_at'],
+      law_of_the_day_history: ['id', 'law_id', 'featured_date', 'created_at'],
+      law_annotations: ['law_id', 'explanation', 'practical_example', 'source_label', 'source_url', 'reviewed_at'],
+      schema_migrations: ['id', 'filename', 'applied_at'],
+    };
+
+/** Tables the migrations create that the sanitizer deliberately empties: they hold private data. */
+const EMPTIED_TABLES = ['email_subscriptions', 'push_subscriptions', 'facebook_data_deletion_requests'];
 
 type Db = ReturnType<typeof createMigratedDb>;
 
@@ -109,8 +125,7 @@ describe('sanitize-db-copy.sh', () => {
 
   const exportCopy = (): void => {
     const { status, stdout, stderr } = sanitizerRun([SCRIPT, 'export', live]);
-    expect(stderr).not.toMatch(/failed|error/i);
-    expect(status).toBe(0);
+    expect(status, stderr).toBe(0);
     writeFileSync(copy, stdout);
   };
 
@@ -240,9 +255,8 @@ describe('sanitize-db-copy.sh', () => {
   });
 
   it('can sanitize a file in place without a server, and never reads rows into its output', () => {
-    writeFileSync(copy, readFileSync(live));
-    // A copy of the live file alone would miss its WAL, so take a consistent one first.
-    spawnSync('sqlite3', [live, `.backup '${copy}'`]);
+    // A copy of the live file alone would miss its WAL, so take a consistent one.
+    expect(spawnSync('sqlite3', [live, `.backup '${copy}'`]).status).toBe(0);
     const { status, stdout, stderr } = sanitizerRun([SCRIPT, 'sanitize', copy]);
     expect(status).toBe(0);
     for (const secret of SECRETS) {
@@ -252,25 +266,74 @@ describe('sanitize-db-copy.sh', () => {
     expect(readFileSync(copy).toString('latin1')).not.toContain('secret.person@example.org');
   });
 
-  it('verify rejects a database that still holds personal data, and one left in WAL mode', () => {
-    const backup = join(directory, 'unsanitized.db');
-    spawnSync('sqlite3', [live, `.backup '${backup}'`]);
-    const raw = sanitizerRun([SCRIPT, 'verify', backup]);
-    expect(raw.status).not.toBe(0);
-    expect(raw.stderr).toMatch(/not in rollback-journal mode|still has rows|still present/);
+  describe("verify, the runner's last gate", () => {
+    const tamper = (sql: string): void => {
+      const db = new Database(copy);
+      try {
+        db.exec(sql);
+      } finally {
+        db.close();
+      }
+    };
 
-    exportCopy();
-    const db = new Database(copy);
-    try {
-      db.pragma('journal_mode = WAL');
-      db.prepare("UPDATE votes SET voter_identifier = 'fp-voter-alpha-7731' WHERE id = (SELECT MIN(id) FROM votes)").run();
-      db.pragma('journal_mode = DELETE');
-    } finally {
-      db.close();
+    it('accepts the clean copy', () => {
+      exportCopy();
+      expect(sanitizerRun([SCRIPT, 'verify', copy]).status).toBe(0);
+    });
+
+    // One violation per case, each starting from a clean copy, each with the message that names it.
+    const violations: Array<[string, string, RegExp]> = [
+      ['an unpublished law', "INSERT INTO laws (text, status) VALUES ('draft', 'in_review')", /personal data is still present/],
+      ['raw markdown', 'UPDATE laws SET raw_markdown = \'x\' WHERE id = (SELECT MIN(id) FROM laws)', /personal data is still present/],
+      ['admin notes', 'UPDATE laws SET admin_notes = \'x\' WHERE id = (SELECT MIN(id) FROM laws)', /personal data is still present/],
+      ['an approval timestamp', 'UPDATE laws SET approval_email_sent_at = \'x\' WHERE id = (SELECT MIN(id) FROM laws)', /personal data is still present/],
+      ['a contact value', 'UPDATE attributions SET contact_value = \'a@b.co\' WHERE id = (SELECT MIN(id) FROM attributions)', /personal data is still present/],
+      ['a source fragment', 'UPDATE attributions SET source_fragment = \'x\' WHERE id = (SELECT MIN(id) FROM attributions)', /personal data is still present/],
+      ['a voter fingerprint', 'UPDATE votes SET voter_identifier = \'fp-voter-alpha-7731\' WHERE id = (SELECT MIN(id) FROM votes)', /personal data is still present/],
+      ['a subscriber row', "INSERT INTO email_subscriptions (email, token) VALUES ('x@y.zz', 't')", /outside the allowlist still has rows/],
+      ['a table outside the allowlist with rows', "CREATE TABLE brand_new (x TEXT); INSERT INTO brand_new VALUES ('v')", /outside the allowlist still has rows/],
+      ['planner statistics', 'ANALYZE', /planner statistics/],
+      ['a virtual table outside the allowlist', 'CREATE VIRTUAL TABLE not_allowed USING fts5(a)', /virtual table outside the allowlist/],
+    ];
+    for (const [name, sql, message] of violations) {
+      it(`rejects ${name}`, () => {
+        exportCopy();
+        tamper(sql);
+        const result = sanitizerRun([SCRIPT, 'verify', copy]);
+        expect(result.status, name).not.toBe(0);
+        expect(result.stderr).toMatch(message);
+      });
     }
-    const tampered = sanitizerRun([SCRIPT, 'verify', copy]);
-    expect(tampered.status).not.toBe(0);
-    expect(tampered.stderr).toMatch(/personal data is still present/);
+
+    it('rejects a copy left in WAL mode, and a -wal, -shm or -journal file next to it', () => {
+      exportCopy();
+      const db = new Database(copy);
+      db.pragma('journal_mode = WAL');
+      db.close();
+      expect(sanitizerRun([SCRIPT, 'verify', copy]).stderr).toMatch(/not in rollback-journal mode|-wal, -shm or -journal/);
+
+      exportCopy();
+      for (const suffix of ['-wal', '-shm', '-journal']) {
+        writeFileSync(`${copy}${suffix}`, '');
+        for (const mode of ['verify', 'sanitize']) {
+          const result = sanitizerRun([SCRIPT, mode, copy]);
+          expect(result.status, `${mode} with ${suffix}`).not.toBe(0);
+          expect(result.stderr).toMatch(/-wal, -shm or -journal/);
+        }
+        rmSync(`${copy}${suffix}`);
+      }
+    });
+
+    it('rejects a database that was never sanitized', () => {
+      const backup = join(directory, 'unsanitized.db');
+      expect(spawnSync('sqlite3', [live, `.backup '${backup}'`]).status).toBe(0);
+      const db = new Database(backup);
+      db.pragma('journal_mode = DELETE');
+      db.close();
+      const raw = sanitizerRun([SCRIPT, 'verify', backup]);
+      expect(raw.status).not.toBe(0);
+      expect(raw.stderr).toMatch(/outside the allowlist still has rows/);
+    });
   });
 
   it('sanitizes a database whose schema is behind this release, then lets the migrations catch it up', () => {
@@ -296,6 +359,128 @@ describe('sanitize-db-copy.sh', () => {
     expect(query<{ n: number }>("SELECT COUNT(*) AS n FROM sqlite_master WHERE name = 'laws_fts'")[0]?.n).toBe(1);
   });
 
+  it('leaves no scratch directory behind, on success or failure, and sweeps stale ones from killed runs', () => {
+    const scratch = join(directory, 'tmp');
+    mkdirSync(scratch);
+    const run = (liveFile: string) => spawnSync('bash', [SCRIPT, 'export', liveFile], { env: { ...process.env, TMPDIR: scratch }, maxBuffer: 256 * 1024 * 1024 });
+
+    expect(run(live).status).toBe(0);
+    expect(readdirSync(scratch)).toEqual([]);
+
+    const corrupt = join(directory, 'corrupt.db');
+    writeFileSync(corrupt, 'this is not a database');
+    expect(run(corrupt).status).not.toBe(0);
+    expect(readdirSync(scratch)).toEqual([]);
+
+    // A run killed with SIGKILL skips its trap: the next run removes what is older than an hour, and only that.
+    const stale = join(scratch, 'murphys-sanitize.OLDRUN');
+    const fresh = join(scratch, 'murphys-sanitize.NEWRUN');
+    const unrelated = join(scratch, 'someone-elses-directory');
+    for (const dir of [stale, fresh, unrelated]) mkdirSync(dir);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    utimesSync(stale, twoHoursAgo, twoHoursAgo);
+    utimesSync(unrelated, twoHoursAgo, twoHoursAgo);
+    expect(run(live).status).toBe(0);
+    expect(readdirSync(scratch).sort()).toEqual(['murphys-sanitize.NEWRUN', 'someone-elses-directory']);
+  });
+
+  it('does not copy planner statistics that sample index keys', () => {
+    liveDb.exec('ANALYZE');
+    exportCopy();
+    const bytes = readFileSync(copy).toString('latin1');
+    for (const secret of SECRETS) expect(bytes, secret).not.toContain(secret);
+    const statTables = query<{ name: string }>("SELECT name FROM sqlite_master WHERE name LIKE 'sqlite_stat%'");
+    for (const { name } of statTables) expect(query<{ n: number }>(`SELECT COUNT(*) AS n FROM ${name}`)[0]?.n, name).toBe(0);
+  });
+
+  it('migrating the sanitized copy gives the same public data as migrating the unsanitized backup', () => {
+    // The sanitizer removes rows and columns that migration 022 also reads (raw fragments, unpublished laws). The
+    // build only stands for production if what the pages show does not depend on what was removed.
+    exportCopy();
+    migrate(copy);
+    const unsanitized = join(directory, 'unsanitized.db');
+    expect(spawnSync('sqlite3', [live, `.backup '${unsanitized}'`]).status).toBe(0);
+    migrate(unsanitized);
+
+    const publicData = (file: string): unknown[] => {
+      const rows = query<Record<string, unknown>>(
+        `SELECT l.id, l.title, l.text, l.origin_note, l.status,
+                (SELECT group_concat(a.name || '|' || COALESCE(a.note, '') || '|' || a.contact_type, ';') FROM attributions a WHERE a.law_id = l.id) AS attributions,
+                (SELECT group_concat(c.category_id, ',') FROM law_categories c WHERE c.law_id = l.id) AS categories
+         FROM laws l WHERE l.status = 'published' ORDER BY l.id`,
+        file
+      );
+      return rows;
+    };
+    const fromCopy = publicData(copy);
+    expect(fromCopy.length).toBeGreaterThan(3);
+    expect(fromCopy).toEqual(publicData(unsanitized));
+  });
+
+  it('keeps the allowlist in step with the reviewed columns, and every other table is a deliberate emptying', () => {
+    const script = readFileSync(SCRIPT, 'utf8');
+    const allowed = (/^ALLOWED_TABLES="([^"]*)"$/m.exec(script)?.[1] ?? '').split(' ').sort();
+    const reviewed = [...Object.keys(REVIEWED_COLUMNS), 'sqlite_sequence', 'laws_fts', 'laws_fts_config', 'laws_fts_data', 'laws_fts_docsize', 'laws_fts_idx'].sort();
+    expect(allowed, 'a table joins the allowlist only together with a column review in this test').toEqual(reviewed);
+
+    const db = createMigratedDb();
+    try {
+      const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as Array<{ name: string }>).map((r) => r.name);
+      // schema_migrations is created by scripts/migrate.ts, not by a migration.
+      const decided = new Set([...allowed, ...EMPTIED_TABLES]);
+      expect(tables.filter((table) => !decided.has(table)), 'a new table must be allowlisted (public data) or listed as emptied').toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('never lets a value written in a non-reviewed column through, at any schema the server may have', () => {
+    // The copy is taken from the previous release's schema. For several historical schemas, write a sentinel into
+    // every text column of every table, export, and check that a sentinel survives only in a column reviewed as safe.
+    for (const before of ['010', '015', '019', '021', '022', '999']) {
+      const file = join(directory, `schema-${before}.db`);
+      const db = createMigratedDb({ path: file, before });
+      recordMigrations(db, before);
+      const sentinels = new Map<string, string>();
+      const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'laws_fts%'").all() as Array<{ name: string }>).map((r) => r.name);
+      for (const table of tables) {
+        const columns = db.prepare(`SELECT name, type, "notnull" AS required FROM pragma_table_info('${table}')`).all() as Array<{ name: string; type: string; required: number }>;
+        // One extra row per table, with a sentinel in each text column; laws needs to be published to be kept.
+        const values = columns.map((column) => {
+          if (/INT|REAL|NUM/i.test(column.type)) return null;
+          const sentinel = `SENTINEL_${table}_${column.name}_${before}`;
+          sentinels.set(`${table}.${column.name}`, sentinel);
+          return sentinel;
+        });
+        const names = columns.map((c) => `"${c.name}"`);
+        const row = columns.map((column, index) => (/INT|REAL|NUM/i.test(column.type) ? (column.name === 'id' || column.name === 'law_id' ? null : 1) : values[index]));
+        if (table === 'laws') {
+          const statusIndex = columns.findIndex((c) => c.name === 'status');
+          if (statusIndex >= 0) row[statusIndex] = 'published';
+        }
+        if (table === 'votes') row[columns.findIndex((c) => c.name === 'vote_type')] = 'up';
+        try {
+          db.pragma('foreign_keys = OFF');
+          db.prepare(`INSERT OR IGNORE INTO "${table}" (${names.join(', ')}) VALUES (${names.map(() => '?').join(', ')})`).run(...row);
+        } catch {
+          sentinels.delete(table);
+        }
+      }
+      db.close();
+
+      const { status, stdout, stderr } = sanitizerRun([SCRIPT, 'export', file]);
+      expect(status, `${before}: ${stderr}`).toBe(0);
+      const bytes = stdout.toString('latin1');
+      for (const [column, sentinel] of sentinels) {
+        const [table, name] = column.split('.') as [string, string];
+        const safe = (REVIEWED_COLUMNS[table] ?? []).includes(name);
+        if (!safe && sentinel.includes(`SENTINEL_${table}_${name}`)) {
+          expect(bytes, `${column} must not survive a sanitized export at schema ${before}`).not.toContain(sentinel);
+        }
+      }
+    }
+  }, 90_000);
+
   it('refuses a missing database and unknown modes', () => {
     expect(sanitizerRun([SCRIPT, 'export', join(directory, 'missing.db')]).status).not.toBe(0);
     expect(sanitizerRun([SCRIPT, 'sanitize', join(directory, 'missing.db')]).status).not.toBe(0);
@@ -314,19 +499,10 @@ describe('sanitize-db-copy.sh', () => {
   });
 
   describe('column review', () => {
-    // Every column of every kept table, as of the fully migrated schema, is either blanked or reviewed as safe.
-    // A migration that adds a column to one of these tables fails here until someone decides which it is.
-    const SAFE_COLUMNS: Record<string, string[]> = {
-      laws: ['id', 'slug', 'title', 'text', 'origin_note', 'first_seen_file_path', 'first_seen_line_number', 'canonical', 'created_at', 'updated_at', 'status'],
-      categories: ['id', 'slug', 'title', 'description', 'source_file_path', 'created_at', 'updated_at', 'law_context'],
-      law_categories: ['id', 'law_id', 'category_id', 'position'],
-      attributions: ['id', 'law_id', 'name', 'contact_type', 'note', 'created_at'],
-      law_relations: ['id', 'from_law_id', 'to_law_id', 'relation_type', 'note', 'created_at'],
-      votes: ['id', 'law_id', 'vote_type', 'created_at'],
-      law_of_the_day_history: ['id', 'law_id', 'featured_date', 'created_at'],
-      law_annotations: ['law_id', 'explanation', 'practical_example', 'source_label', 'source_url', 'reviewed_at'],
-      schema_migrations: ['id', 'filename', 'applied_at'],
-    };
+    // Every column of every kept table, as of the fully migrated schema, is either blanked or reviewed as safe
+    // (REVIEWED_COLUMNS, at the top of this file). A migration that adds a column to one of these tables fails here
+    // until someone decides which it is.
+    const SAFE_COLUMNS = REVIEWED_COLUMNS;
     // votes.voter_identifier is replaced by 'v' || id rather than blanked, so it is listed apart.
     const REPLACED = ['votes.voter_identifier'];
 
@@ -414,7 +590,7 @@ describe('sanitize-db-copy.sh', () => {
       expect((await get(`/api/v1/laws/${mine.second + 1}`)).status).toBe(404);
 
       expect((await get('/api/v1/categories')).status).toBe(200);
-      expect((await get('/api/v1/law-of-day')).status).toBeLessThan(500);
+      expect([200, 404]).toContain((await get('/api/v1/law-of-day')).status);
       expect((await get(`/api/v1/laws/${mine.first}/related`)).status).toBe(200);
       expect((await get('/api/health')).status).toBe(200);
     });

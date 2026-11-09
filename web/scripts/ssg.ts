@@ -102,7 +102,7 @@ async function readContentMetadata(): Promise<Record<string, ContentMetadataEntr
 
 // API configuration for fetching laws
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
-// The production deploy builds from the live API, so a slow or flaky answer must not fail it at random, and a
+// A slow or flaky API answer (the local API in CI and in the deploy) must not fail the build at random, and a
 // dead one must fail it quickly. Every request gets a deadline and one more try after a short pause.
 const API_TIMEOUT_MS = 30_000;
 const API_RETRIES = 1;
