@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   block as scanner, or needs a human), and opens one draft PR per run, only when something needs changing. Redirects are written for the path
   without its query string, and a report row missing from the list is looked up in the logs.
 
+### Changed
+
+- `TODO.md` now lists open work only. The finished and cancelled entries, and the "Implemented from Reviews" and
+  "Completed" sections, are gone, along with the sections they left empty. What shipped is recorded here.
+
 ### Fixed
 
 - CI no longer fails a whole job when a download from an outside host fails. On 2026-11-09 GitHub Releases answered
