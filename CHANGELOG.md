@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unrelated text, so `update`, `set`, `delete` and `from` in a browser string, `q=update settings` or `q=order+1=1`
   counted as an attack. All four scans now look at the request field only, and each SQL pattern names a whole
   attack shape (for example `union select`, `select ... from ... where`, `insert into ... values`,
-  `update x set y=`, `drop table`, `xp_cmdshell`, and `or`/`and` tautologies such as `or 1=1` and `or '1'='1`),
+  `update x set y=`, with or without spaces around the `=`, `drop table`, `xp_cmdshell`, and `or`/`and` tautologies such as `or 1=1` and `or '1'='1`),
   with spaces, `+`, `%20`, `%09`, `%0a` and `/**/` accepted between the words. The bare `--` pattern never matched
   anything, because `grep -iE "--"` ends option parsing and takes the log path as its pattern; a double hyphen now
   counts as a SQL comment only after a quote, `;` or `)`, plain or as `%2D%2D`. `document.cookie` no longer
