@@ -59,4 +59,71 @@ describe('parseAttributions', () => {
     expect(res.attributions).toHaveLength(0);
     expect(res.cleanText).toBe('Sent by Someone.');
   });
+
+  describe('contact details never reach public fields', () => {
+    it('masks an address used as the link text and records the target as an email contact', () => {
+      const res = parseAttributions('One college student in a hot rod car has half a brain. Sent by [Wildmoongurl69@aol.com](http://Wildmoongurl69@aol.com)');
+      expect(res.cleanText).toBe('One college student in a hot rod car has half a brain. Sent by Anonymous');
+      expect(res.attributions).toEqual([
+        {
+          name: 'Anonymous',
+          contact_type: 'email',
+          contact_value: 'Wildmoongurl69@aol.com',
+          source_fragment: '[Wildmoongurl69@aol.com](http://Wildmoongurl69@aol.com)'
+        }
+      ]);
+    });
+
+    it('masks an address used as the link text of a mailto link', () => {
+      const res = parseAttributions('It is late. Sent by [pjwmail@ntlworld.com](mailto:pjwmail@ntlworld.com), a commuter.');
+      expect(res.cleanText).toBe('It is late. Sent by Anonymous, a commuter.');
+      expect(res.attributions[0]).toMatchObject({ name: 'Anonymous', contact_type: 'email', contact_value: 'pjwmail@ntlworld.com' });
+    });
+
+    it('drops the leading "by" from an attribution name but keeps the sentence intact', () => {
+      const res = parseAttributions('The difference between love and the common cold is a vaccine. Sent [by Takura Razemba](mailto:tamzanzw@yahoo.com).');
+      expect(res.cleanText).toBe('The difference between love and the common cold is a vaccine. Sent by Takura Razemba.');
+      expect(res.attributions[0]).toMatchObject({ name: 'Takura Razemba', contact_type: 'email', contact_value: 'tamzanzw@yahoo.com' });
+    });
+
+    it('falls back to the anonymous label when a name is only "by"', () => {
+      const res = parseAttributions('A law. Sent [by](mailto:someone@example.com).');
+      expect(res.attributions[0]).toMatchObject({ name: 'Anonymous', contact_type: 'email' });
+    });
+
+    it('keeps a web link as a url contact', () => {
+      const res = parseAttributions('A law. Sent by [Jane](http://example.com/jane).');
+      expect(res.attributions[0]).toMatchObject({ name: 'Jane', contact_type: 'url', contact_value: 'http://example.com/jane' });
+    });
+
+    it('keeps a web link whose path holds an address as a url contact', () => {
+      const res = parseAttributions('A law. Sent by [Safwan Aumari](http://murphys-laws.com/old/inc/safwanan@yahoo.com).');
+      expect(res.attributions[0]).toMatchObject({ name: 'Safwan Aumari', contact_type: 'url' });
+      expect(res.cleanText).toBe('A law. Sent by Safwan Aumari.');
+    });
+
+    it('removes a truncated mailto link whose closing parenthesis was lost', () => {
+      const res = parseAttributions('A law. Sent [by Takura Razemba](mailto:tamzanzw@yahoo.com');
+      expect(res.cleanText).toBe('A law. Sent by Takura Razemba');
+      expect(res.attributions).toHaveLength(0);
+    });
+
+    it('masks an address inside a truncated mailto link name', () => {
+      const res = parseAttributions('A law. Sent [a@b.com](mailto:a@b.com');
+      expect(res.cleanText).toBe('A law. Sent Anonymous');
+    });
+
+    it('removes a leftover mailto target', () => {
+      expect(parseAttributions('A law. Sent by mailto:someone').cleanText).toBe('A law. Sent by');
+    });
+
+    it('masks a bare address in the text', () => {
+      expect(parseAttributions('A law. Sent by Karacourt@aol.com.').cleanText).toBe('A law. Sent by Anonymous.');
+    });
+
+    it('leaves a symbol-laden word that is not an address alone', () => {
+      const text = 'Do not call him a mother@#?!&* in public.';
+      expect(parseAttributions(text).cleanText).toBe(text);
+    });
+  });
 });

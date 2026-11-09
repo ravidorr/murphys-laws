@@ -89,6 +89,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     keeps them out of the index without stopping the fetch. The OG image location keeps its own headers.
 
   Backend bumped to `2.3.66`; web to `3.4.66`; root to `2.6.158`.
+- Law pages no longer show email addresses. Contact details belong in `attributions.contact_value`, which no public
+  endpoint serves, but they had leaked into what the pages and the API show: 24 laws built from the archive and
+  25 in production (66 and 69 pages once the lists that link to them are counted). Three shapes:
+  - An attribution name that was an address, from a link such as `[name@aol.com](http://name@aol.com)` (23
+    attributions in production, for example `Eppeguy@aol.com`). In the archive build the address was also part of
+    the law text (`Sent by Karacourt@aol.com.`).
+  - A `[Name](mailto:...)` link that an older import had cut inside the address. Law 1264's title ended
+    `Sent [by Takura Razemba](mailto` and its text was `tamzanzw@yahoo.com).`; law 892's note was
+    `and [getalife](mailto:getalife1@webtv` and its text ended with the tail `net).`. The build's privacy check only looked for
+    `mailto:`, so it failed a build from production data on the three pages that list law 1264.
+  - The parser (`backend/scripts/build-sqlite.ts`) now masks an address used as link text (`Anonymous`, the label
+    `sanitizeDisplayName` already uses), records `http://name@host` targets as email contacts, drops a leading `by`
+    from an attribution name, and removes a truncated `[Name](mailto...` link, a leftover `mailto:` target and any
+    bare address. The address stays in `contact_value`.
+  - Migration `022_strip_law_contact_details.sql` cleans the production rows by content, not by ID (production IDs
+    differ from the archive's), with `GLOB` and string functions only. Names that are addresses become `Anonymous`
+    (the address stays in `contact_value`). A cut title moves its sentence to the text, the title becomes empty and
+    the submitter's attribution is restored. A broken note becomes `and getalife` and the stray `net).` tail is
+    removed. Anything it still cannot clean (a `mailto` or an address left in a title or text) goes back to
+    `in_review` instead of staying public; none of the 2,453 production laws should. It is idempotent, runs in one
+    transaction, and its updates go through the search-index triggers from migration 019. It runs on the next
+    deploy, after the web build, so the production pages are clean from the build after that.
+  - The build's privacy check (`validateGeneratedPage` in `web/scripts/ssg.ts`) now rejects `mailto` without the
+    colon and an email address in any law or category page, so a leak stops the build. Pattern: letters, digits and
+    `._%+-` before the `@`, a dotted domain ending in a letters-only TLD, so `logo@2x.png`, JSON-LD `@context` and
+    `mother@#?!&*` do not count. The archive build passes it (0 addresses in 2,465 law pages).
+  Backend bumped to `2.3.67`; web to `3.4.67`; root to `2.6.159`.
 - The daily report's command injection count (28,131 in the 9 November report) was not real. Six of the ten
   patterns in `backend/scripts/log-analyzer.sh` began with an unescaped `|` (`|cat`, `|nc`, `|wget`, `|curl`,
   `|bash`, `|sh`). Run through `grep -E`, that is "empty or cat", which GNU grep matches on every line, so each
