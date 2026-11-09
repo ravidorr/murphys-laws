@@ -52,6 +52,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TODO.md` now lists open work only. The finished and cancelled entries, and the "Implemented from Reviews" and
   "Completed" sections, are gone, along with the sections they left empty. What shipped is recorded here.
 
+### Changed
+
+- The production deploy prerenders the site from a sanitized, freshly migrated COPY of the production database,
+  taken at build time. The copy is never committed, never uploaded and never kept as an artifact. This fixes the
+  deadlock where the build ran before the server migrated: a data fix such as migration 022 could not reach
+  production because the build failed on the rows it was meant to clean, so every deploy on `main` stopped at
+  "Build project".
+  - `.github/workflows/deploy.yml`: a new first step streams `backend/scripts/sanitize-db-copy.sh` to the server over
+    the SSH access the deploy already uses (the server still runs the previous release, so the script cannot be
+    uploaded first). On the server it takes a consistent `sqlite3 .backup` of the live database (safe while the API
+    writes, WAL included) into a private temp directory, sanitizes that copy, writes it to stdout and deletes the
+    directory. The runner verifies it again (nothing outside the allowlist has rows, no contact value, no voter
+    identifier, `integrity_check`, at least one published law), then `npm run build:web` migrates the copy with this
+    release's migrations (the ones the deploy runs on the server afterwards), starts the local API on it and
+    prerenders from `http://127.0.0.1:8787`. A last step with `if: always()` deletes the copy and the key file. Any
+    failure before the upload stops the deploy: there is no fallback to the archive or to a stale site, and nothing
+    between the fetch and the upload has `continue-on-error`. The key is read from the environment into a `0600`
+    file in `$RUNNER_TEMP` (never into the script text or the log) and removed as soon as the copy is fetched; the
+    host key is accepted on first use.
+  - Sanitizing is an allowlist: only `laws`, `categories`, `law_categories`, `attributions`, `law_relations`,
+    `votes`, `law_of_the_day_history`, `law_annotations`, `schema_migrations` and the `laws_fts` search index keep
+    rows. Every other table (today `email_subscriptions`, `push_subscriptions` and
+    `facebook_data_deletion_requests`, tomorrow whatever is added) keeps its definition, so the migrations still
+    apply, but loses all rows. In the kept tables, only published laws stay (migration 022 parks the laws it cannot
+    clean in `in_review`, with the address still in them); `laws.raw_markdown`, `laws.admin_notes`,
+    `laws.approval_email_sent_at`, `attributions.contact_value` (blanked to `''`) and `attributions.source_fragment`
+    are blanked, and `votes.voter_identifier` becomes `'v' || id`, so vote counts, the
+    `(law_id, voter_identifier)` unique index and score ordering are unchanged. Law titles and text, attribution
+    names and notes are public today and are left as they are, so migration 022 and the build see exactly what
+    production serves (the copy on the runner is deleted at the end of the job). The copy leaves WAL mode before
+    anything is changed, `secure_delete` is on, the search index is rebuilt and the file is `VACUUM`ed, so no
+    deleted row survives in a free page or a `-wal` file. The script is idempotent, needs only the `sqlite3`
+    CLI, prints counts and never a row, and also runs locally (`sanitize`, `verify` and `export` modes). A column
+    that a migration of the same deploy adds does not exist on the server yet and is skipped.
+  - `backend/scripts/migrate.ts` and the API (`npm --prefix backend start`) read the SQLite path from the new
+    `MURPHYS_DB_PATH` variable when it is set and not blank, and use `backend/murphys.db` otherwise, so production
+    does not change. `migrate` is now an exported function that only runs when the file is run as a script.
+    `scripts/build-web-with-local-api.mjs` migrates that file instead of building the archive when the variable is
+    set; pull-request CI (`web-ci.yml`) leaves it unset and keeps its seeded archive build.
+  - The `seeded_build` option of the manual run is removed. If the server cannot be reached the deploy cannot
+    upload or migrate either, and a build from the archive describes the wrong laws.
+  - Tests: `backend/tests/scripts/sanitize-db-copy.test.ts` builds a fixture with extra personal-data tables, an
+    unknown future table, an unpublished law with an address, votes, subscriptions and a WAL file, exports through
+    the real script (also streamed to `bash -s`), and asserts that no personal value appears anywhere in the raw
+    bytes of the copy, that vote counts and the unique index survive, that the copy migrates and serves the API
+    through `MURPHYS_DB_PATH`, and that every column of a kept table is either blanked or reviewed as safe.
+    `scripts/deploy-workflow.test.ts` runs the fetch step with a stand-in `ssh` (success, unreachable server,
+    empty answer, unsanitized copy, missing secret). A dry run of the whole build path on a 2025 snapshot (migration
+    009) prerendered 2,466 law pages.
+  - `backend/murphys-production.db` is no longer tracked (`git rm --cached`; it was already in `.gitignore`). It was
+    committed once, on 2025-11-16, and the repository is public: the file is still in the history, with 1,229
+    email addresses in `attributions.contact_value` and the vote identifiers. Removing it from the history needs a
+    history rewrite and a force-push, which is the owner's decision and has not been done.
+  Backend bumped to `2.3.68`; root to `2.6.163`.
+
 ### Fixed
 
 - The production deploy now prerenders the site from the production API instead of from a database built from the
@@ -70,14 +125,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     failed build leaves the live site untouched. Each category page also has to agree with itself now: the category
     list's law count and the first page's total (both count every category a law is in) must match, so an API that
     ignores the category filter stops the build instead of publishing a category page with the wrong laws.
-  - A manual run of the workflow has a `seeded_build` option (off by default) that builds from the archive. It is for
-    an outage of the production API only, because the pages it makes describe the wrong laws.
-  - The build runs before the server migrates, so a data fix appears in the static pages one deploy later, and a
-    build change that needs a new API field cannot ship in the same deploy as the backend change that adds it
-    (`TODO.md` tracks building after the migration).
-  - `scripts/deploy-workflow.test.ts` (also run by the Lockfile sync workflow) pins the production build command, runs
-    the build step's script against a stand-in `npm` for a push, a plain manual run and the emergency option, and
-    checks the order of the build and upload steps. `fetchAllCategories` takes a base URL like the other API readers.
+  - (Superseded by the entry below: the deploy now prerenders from a sanitized, freshly migrated copy of the
+    production database instead of from the live API, and the emergency `seeded_build` option is gone.)
+  - `scripts/deploy-workflow.test.ts` (also run by the Lockfile sync workflow) checks the order of the build and upload
+    steps. `fetchAllCategories` takes a base URL like the other API readers.
   - Search Console still needs two steps once this is live: resubmit `sitemap.xml`, then press "Validate fix" on the
     "Soft 404" issue.
 
@@ -171,10 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     still does goes back to `in_review` instead of staying public; none of the 2,453 production laws should.
     `GLOB` cannot say that a domain has no space in it, so it is a deliberate superset, and a false positive costs a
     moderator a look. The migration is idempotent, wrapped in one transaction, and its updates go through the
-    search-index triggers from migration 019. The deploy builds the site from the production API before it
-    migrates, and that build stops on the unmigrated rows (the pages that list law 1264), so the deploy that first
-    carries this migration is run once with the workflow's `seeded_build` input; the deploy after it prerenders from
-    clean production data.
+    search-index triggers from migration 019. The deploy builds the site from a copy of the production
+    database that it migrates first (see the entry below), so the build already sees the cleaned rows.
   - The build's privacy check (`validateGeneratedPage` in `web/scripts/ssg.ts`) now rejects `mailto` without the
     colon and an email address in any law or category page, so a leak stops the build. Pattern: letters, digits and
     `._%+-` before the `@`, a dotted domain ending in a letters-only label that is not a file extension, so
