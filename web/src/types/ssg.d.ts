@@ -18,6 +18,7 @@ declare module '@scripts/ssg' {
     category_context?: string | null;
     upvotes?: number;
     downvotes?: number;
+    score?: number;
     created_at?: string;
     updated_at?: string;
     editorial?: {
@@ -80,6 +81,17 @@ declare module '@scripts/ssg' {
     status: number;
     json(): Promise<unknown>;
   }>): Promise<StaticCategory[]>;
+  export function fetchAllLaws(fetchRequest?: (url: string) => Promise<{
+    ok: boolean;
+    status: number;
+    json(): Promise<unknown>;
+  }>, baseUrl?: string): Promise<StaticLaw[]>;
+  export function mergeReviewedLawDetails(laws: StaticLaw[], fetchRequest?: (url: string) => Promise<{
+    ok: boolean;
+    status: number;
+    json(): Promise<unknown>;
+  }>, baseUrl?: string): Promise<StaticLaw[]>;
+  export const REVIEWED_LAW_TITLES: string[];
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
   export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];
   export function renderLawLinkList(

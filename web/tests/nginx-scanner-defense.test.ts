@@ -417,6 +417,7 @@ describe('nginx legacy URL redirects', () => {
     ['/about-us', '/about'],
     ['/contact-us', '/contact'],
     ['/old/index.htm', '/'],
+    ['/index.htm', '/'],
     ['/murphy', '/'],
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
     ['/sitemaps.xml', '/sitemap.xml'],
@@ -459,6 +460,38 @@ describe('nginx legacy URL redirects', () => {
     const start = conf.indexOf('location ^~ /murphy/ {');
     expect(start).toBeGreaterThan(-1);
     expect(conf.slice(start, conf.indexOf('}', start))).toContain('return 301 https://murphys-laws.com/;');
+  });
+
+  // The text of a location block, found by its header and closed by its matching brace
+  function locationBlock(header: string): string {
+    const start = conf.indexOf(header);
+    expect(start, `${header} is missing from nginx.conf`).toBeGreaterThan(-1);
+    let depth = 0;
+    for (let index = conf.indexOf('{', start); index < conf.length; index += 1) {
+      if (conf[index] === '{') depth += 1;
+      if (conf[index] === '}') depth -= 1;
+      if (depth === 0) return conf.slice(start, index + 1);
+    }
+    throw new Error(`${header} is never closed`);
+  }
+
+  it('serves the JSON API with X-Robots-Tag noindex, so Google does not index the endpoints', () => {
+    expect(locationBlock('location /api {')).toContain('add_header X-Robots-Tag "noindex" always;');
+  });
+
+  it('keeps Googlebot able to fetch /api/, which the pages call while rendering', () => {
+    const robots = readFileSync(resolve(root, 'web', 'public', 'robots.txt'), 'utf-8');
+    const groups = robots.split(/\r?\n\s*\r?\n/);
+    const googlebot = groups.find((group) => /^User-agent: Googlebot\s*$/m.test(group));
+    expect(googlebot, 'robots.txt has no Googlebot group').toBeDefined();
+    // Googlebot follows only its own group, so the header above is what keeps the API out of the index
+    expect(googlebot).not.toContain('Disallow: /api/');
+    const everyone = groups.find((group) => /^User-agent: \*\s*$/m.test(group));
+    expect(everyone).toContain('Disallow: /api/');
+  });
+
+  it('leaves the OG image location without the noindex header, so Google Images can index the images', () => {
+    expect(locationBlock('location ~ ^/api/v1/og/law/')).not.toContain('X-Robots-Tag');
   });
 
   it('answers the Google prefetch proxy instead of returning 404', () => {

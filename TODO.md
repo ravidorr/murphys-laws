@@ -9,7 +9,29 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## Site data
 
-- [ ] **Pre-rendered law pages outlive deleted laws:** on 9 Nov the live sitemap listed 2,465 law URLs while the API reported 2,453 laws, so about 12 pages (for example `/law/1719` and `/law/1963`) are served and in the sitemap but `/api/v1/laws/<id>` returns 404 for them. Real visitors and Baiduspider/Googlebot hit the API 404 after loading the page. Find out why the build's law list (`fetchAllLaws` in `web/scripts/ssg.ts`, run against the API at build time) differs from production, then drop deleted laws from the pages and the sitemap.
+- [ ] **Prerender law pages from production data, not the seeded archive:** `scripts/build-web-with-local-api.mjs` builds
+  a database from the archive, so on 9 November 2026 the live static pages did not match the production API.
+  Every sampled law page (75 of 75) described a different law from the one `/api/v1/laws/<id>` returns for the same
+  ID (for example `/law/556` is a "cops" law, the API returns an elevator law), 38 law pages in the sitemap were
+  for laws the API no longer has (for example 1719, 1963, 2368 to 2373), and 26 laws in the API (IDs between 2466
+  and 2516) have no page or sitemap entry. Search Console reports these as soft 404s and alternate pages.
+  The fix is a small change in `.github/workflows/deploy.yml`: replace `npm run build:web` with
+  `API_BASE_URL=https://murphys-laws.com npm --prefix web run build`, and keep `npm run build:openapi` (`ssg.ts` now
+  stops on an incomplete list and finds the reviewed laws by title). It is held back because a
+  build from production data fails `validateGeneratedPage` on three pages (`/law/1228`, `/law/1244`, `/law/1263`),
+  all because they list law 1264, whose production title and text hold `[by ...](mailto` and an address. Law 892's
+  attribution note holds a similar fragment but is not rendered. With those three pages exempted, a production build
+  passes the validation of every other page and `npm run seo:audit` (2,453 law pages, no blocking errors). Fix law 1264 (and 892) in the admin page or with a
+  migration, then switch the build. A migration cannot ship in the same deploy as the switch, because `deploy.yml`
+  builds the web before it runs `npm run migrate`.
+- [ ] **Law pages show email addresses in their text:** 66 of the 2,465 pages built from the archive, and 69 of the 2,453
+  built from production, contain something that looks like an address (for example `name@aol.com`). The build's
+  privacy check only looks for `mailto:`. Find out where the addresses come from (law text, attribution notes)
+  and strip them in the parser and in the production rows.
+- [ ] **Old `/murphy/*` pages redirect to the home page, which Google reports as soft 404:** the `location ^~ /murphy/`
+  catch-all in `nginx.conf` sends every unmatched legacy page (19 of the 60 soft 404s, for example
+  `/murphy/murphy-golf.html`) to `/`. Map the ones that have a current category (golf, nurses, EMT, employees,
+  commerce, real estate, and so on) to it with an exact redirect, and answer the rest with 404 or 410.
 
 ## Design Review Findings (Jan 2026)
 

@@ -5,7 +5,7 @@ import { escapeHtml } from '../utils/sanitize.ts';
 import { toggleVote, getUserVote } from '../utils/voting.ts';
 import { getRandomLoadingMessage, SITE_URL } from '../utils/constants.ts';
 import { SocialShare, initSharePopovers } from '../components/social-share.ts';
-import { updatePageMetadata } from '../utils/dom.ts';
+import { setRobotsMeta, updatePageMetadata } from '../utils/dom.ts';
 import { buildLawSeo } from '../utils/seo.ts';
 // Note: law-detail uses template-based loading with getRandomLoadingMessage()
 // for text replacement, which is compatible with the unified loading approach
@@ -111,10 +111,28 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     /* v8 ignore stop */
   }
 
+  // A prerendered page for a law the API no longer has would otherwise stay indexable and be reported
+  // as a soft 404. Only a real 404 counts: a timeout or a 5xx while Googlebot renders must not
+  // de-index a law that exists. The robots tag belongs to the page on screen, so a view the user has
+  // already left must not touch it when its request settles late.
+  let markedNoindex = false;
+  let unmounted = false;
+
   function showLaw() {
     loadingState?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
     lawContent?.removeAttribute('hidden');
+    // A retry that finds the law again makes the page indexable again
+    if (markedNoindex && !unmounted) {
+      setRobotsMeta('index, follow');
+    }
+    markedNoindex = false;
+  }
+
+  function markMissingLaw(failure: LawLoadFailure) {
+    if (failure.failure_reason !== 'not_found' || unmounted) return;
+    setRobotsMeta('noindex, follow');
+    markedNoindex = true;
   }
 
   // A page view of /law/:id can't tell a broken inbound link from a successful view
@@ -475,7 +493,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         el.setAttribute('aria-busy', 'false');
         showNotFound();
         clearExportContent();
-        trackLawNotFound(describeLawLoadFailure(error), false);
+        const failure = describeLawLoadFailure(error);
+        markMissingLaw(failure);
+        trackLawNotFound(failure, false);
       });
   }
 
@@ -498,7 +518,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
           el.setAttribute('aria-busy', 'false');
           showNotFound();
           clearExportContent();
-          trackLawNotFound(describeLawLoadFailure(error), true);
+          const failure = describeLawLoadFailure(error);
+          markMissingLaw(failure);
+          trackLawNotFound(failure, true);
         });
       return;
     }
@@ -696,6 +718,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {
+    unmounted = true;
     clearExportContent();
   };
 
