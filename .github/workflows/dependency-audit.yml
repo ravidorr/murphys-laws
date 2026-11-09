@@ -20,5 +20,5 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
           cache-dependency-path: package-lock.json
-      - run: npm ci
+      - uses: ./.github/actions/npm-ci
       - run: npm run audit:full
