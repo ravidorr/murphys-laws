@@ -9,16 +9,24 @@
 </head>
 <body>
   <header class="bar">
-    <h1>Law moderation</h1>
-    <div id="session" class="session" hidden>
-      <span>Signed in as <strong id="session-login"></strong></span>
-      <button type="button" id="sign-out" class="btn">Sign out</button>
+    <div class="container bar-row">
+      <a class="brand" href="/" aria-label="Murphy's Law Archive home">
+        <span class="brand-badge" aria-hidden="true">M</span>
+        <div class="brand-content">
+          <p class="brand-name"><span class="accent-text">Murphy's</span> Law</p>
+          <h1 class="brand-subtitle">Law moderation</h1>
+        </div>
+      </a>
+      <div id="session" class="session" hidden>
+        <span>Signed in as <strong id="session-login"></strong></span>
+        <button type="button" id="sign-out" class="btn">Sign out</button>
+      </div>
     </div>
   </header>
 
-  <main>
+  <main class="container">
     <section id="signin" class="card card--section signin-card" hidden aria-labelledby="signin-title">
-      <div class="card-header"><h2 id="signin-title" class="card-title">Admin sign-in</h2></div>
+      <div class="card-header"><h2 id="signin-title" class="card-title"><span class="accent-text">Admin</span> sign-in</h2></div>
       <div class="card-body">
         <p id="signin-intro" class="signin-note">Sign in with the GitHub account approved for moderation.</p>
         <a id="github-signin" class="btn btn-primary btn-block" href="/api/v1/admin/auth/github" hidden>
