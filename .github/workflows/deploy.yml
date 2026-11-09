@@ -233,7 +233,24 @@ jobs:
             fi
 
             echo "==> Installing locked backend dependencies"
-            npm ci
+            # canvas downloads a prebuilt binary from GitHub Releases, which can fail on an outside outage; npm ci
+            # has already removed node_modules by then, so retry it here as the CI workflows do (a composite
+            # action cannot run inside this script).
+            installed=0
+            for attempt in 1 2 3; do
+              if npm ci; then
+                installed=1
+                break
+              fi
+              echo "npm ci failed (attempt ${attempt} of 3)" >&2
+              if [ "$attempt" -lt 3 ]; then
+                sleep $((attempt * 20))
+              fi
+            done
+            if [ "$installed" -ne 1 ]; then
+              echo "npm ci failed three times" >&2
+              exit 1
+            fi
 
             echo "==> Running migrations"
             npm run migrate

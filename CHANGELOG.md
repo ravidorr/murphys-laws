@@ -56,12 +56,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CI no longer fails a whole job when a download from an outside host fails. On 2026-11-09 GitHub Releases answered
   504 for the prebuilt `canvas` binary, so `npm ci` fell back to a compile the runner cannot do, and the Web,
-  Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. Every root `npm ci` step (the CI
-  workflows, CodeQL, the production deploy and the MCP registry publish, plus the backend one) now goes through a
-  small composite action, `.github/actions/npm-ci`, that tries up to three times with a pause between tries. A
-  new script test fails if a workflow brings back a bare `run: npm ci`. The Android builds in CI and CodeQL first fetch the Gradle distribution in its own
-  retried step, because the wrapper gives up after 10 seconds. Only the downloads are retried: a failing build or
-  test still fails on its first run. Root bumped to `2.6.154`.
+  Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. Every `npm ci` that can fetch a
+  native binary now tries up to three times with a pause between tries: the CI workflows, CodeQL, the MCP registry
+  publish and the deploy's runner-side install go through a small composite action, `.github/actions/npm-ci`, and
+  the backend install on the production server, which a composite action cannot reach, has the same loop inline.
+  The Android builds in CI and CodeQL first fetch the Gradle distribution through a second composite action,
+  `.github/actions/gradle-distribution`, because the wrapper gives up after 10 seconds. Only those two downloads
+  are retried: the Maven and Google artifacts the Android build fetches, and the Rollup `npm install` steps, still
+  run once, and a failing build or test still fails on its first run. A permanent failure such as an out-of-sync
+  lockfile is retried too, which adds about a minute before the job fails with npm's own error. A script test
+  (`scripts/npm-ci-action.test.ts`) now runs both actions' scripts against a fake `npm` and `gradlew` (three tries,
+  waits of 20 and 40 seconds, none after the last, a failing exit when all fail), parses every workflow to fail if
+  an `npm ci` that runs install scripts is left without the retry, and checks that each local action a workflow uses
+  exists and that every input it passes is declared. Those script tests, and the CodeQL workflow test, now run in
+  the Lockfile sync workflow on every pull request. Root bumped to `2.6.155`.
 - Triaged the 404s from the 9 November daily report. Probes for `/wallet/...`, `/build/manifest.json` and
   `/ipfs/...` are now dropped as scanner paths. `/security.txt` redirects to `/.well-known/security.txt`, and
   the sized `/apple-touch-icon-240x240.png` and `-precomposed` names redirect to `/apple-touch-icon.png`.
