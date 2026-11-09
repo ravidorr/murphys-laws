@@ -252,6 +252,13 @@ EOF
 1. **Configure nginx** (the repository's root `nginx.conf` is the live site config: the site, the scanner defense, and the `scanner.log` that the scanner jail reads):
  ```bash
  cp /root/murphys-laws/nginx.conf /etc/nginx/sites-available/murphys-laws
+
+ # nginx.conf serves /root/murphys-laws/web/dist as www-data, so the directories on the way there
+ # must be searchable by everyone (the droplet has /root at 711; Ubuntu ships it at 700, and the
+ # site then answers 403)
+ chmod o+x /root
+ chmod o+rx /root/murphys-laws /root/murphys-laws/web
+
  ln -s /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-enabled/
  rm /etc/nginx/sites-enabled/default
 
@@ -326,7 +333,7 @@ sudo DAILY_REPORT_TEST_RECIPIENT=<your-email> \
  # Check PM2
  pm2 list
 
- # Check nginx
+ # Check nginx (the first line must be 200, not 403)
  curl -I https://murphys-laws.com
 
  # Check API
