@@ -24,10 +24,6 @@ This document outlines additional tasks and potential improvements for the Murph
   passes the validation of every other page and `npm run seo:audit` (2,453 law pages, no blocking errors). Fix law 1264 (and 892) in the admin page or with a
   migration, then switch the build. A migration cannot ship in the same deploy as the switch, because `deploy.yml`
   builds the web before it runs `npm run migrate`.
-- [ ] **Old `/murphy/*` pages redirect to the home page, which Google reports as soft 404:** the `location ^~ /murphy/`
-  catch-all in `nginx.conf` sends every unmatched legacy page (19 of the 60 soft 404s, for example
-  `/murphy/murphy-golf.html`) to `/`. Map the ones that have a current category (golf, nurses, EMT, employees,
-  commerce, real estate, and so on) to it with an exact redirect, and answer the rest with 404 or 410.
 
 ## Design Review Findings (Jan 2026)
 
