@@ -86,6 +86,17 @@ describe('admin page', () => {
     expect(button('All (5)')).not.toBeNull();
   });
 
+  it('renders each law as a card with its details in the header, fields in the body and actions in the footer', async () => {
+    await boot(jsonResponse(listReply([law()])));
+    await connect();
+
+    const card = document.querySelector('.law') as HTMLElement;
+    expect(card.classList.contains('card')).toBe(true);
+    expect(card.querySelector(':scope > .card-header .pill')).not.toBeNull();
+    expect(card.querySelectorAll(':scope > .card-body .field').length).toBe(4);
+    expect(card.querySelector(':scope > .card-footer.actions button')).not.toBeNull();
+  });
+
   it('shows an empty-state message', async () => {
     await boot(jsonResponse(listReply([], { total: 0 })));
     await connect();

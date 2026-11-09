@@ -53,6 +53,8 @@
   --dark-surface: #15151d;
   --dark-surface-border: #4b5563;
   --dark-border: #ffffff40;
+  --dark-border-muted: #ffffff38;
+  --dark-border-strong: #ffffff52;
   --dark-link: #9ecbff;
   --dark-error: #f87171;
   --dark-success-bg: #103424;
@@ -159,8 +161,6 @@ main.container {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--fg);
-  text-decoration: none;
 }
 
 .brand-badge {
@@ -174,10 +174,11 @@ main.container {
   color: var(--white);
   font-size: var(--text-2xl);
   font-weight: var(--font-extrabold);
+  text-decoration: none;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.brand:hover .brand-badge {
+.brand-badge:hover {
   background: linear-gradient(135deg, var(--primary) 0%, var(--btn-primary-bg) 100%);
 }
 
@@ -543,6 +544,29 @@ select:focus-visible {
 
 :root[data-theme='dark'] .brand-badge {
   box-shadow: 0 0 0 1px var(--shadow-white-outline), 0 4px 16px var(--shadow-dark);
+}
+
+/* Outline buttons in dark mode, as web/styles/partials/theme.css. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) :is(.btn:not(.btn-primary, .btn-danger), .tab:not([aria-pressed='true'])) {
+    border-color: var(--dark-border-muted);
+    background: color-mix(in oklab, var(--bg) 86%, white 14%);
+  }
+
+  :root:not([data-theme='light']) :is(.btn:not(.btn-primary, .btn-danger), .tab:not([aria-pressed='true'])):hover {
+    border-color: var(--dark-border-strong);
+    background: color-mix(in oklab, var(--bg) 80%, white 20%);
+  }
+}
+
+:root[data-theme='dark'] :is(.btn:not(.btn-primary, .btn-danger), .tab:not([aria-pressed='true'])) {
+  border-color: var(--dark-border-muted);
+  background: color-mix(in oklab, var(--bg) 86%, white 14%);
+}
+
+:root[data-theme='dark'] :is(.btn:not(.btn-primary, .btn-danger), .tab:not([aria-pressed='true'])):hover {
+  border-color: var(--dark-border-strong);
+  background: color-mix(in oklab, var(--bg) 80%, white 20%);
 }
 
 @media (prefers-reduced-motion: reduce) {
