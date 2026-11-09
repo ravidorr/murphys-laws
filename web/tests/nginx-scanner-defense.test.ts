@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 
 const root = resolve(__dirname, '..', '..');
 const conf = readFileSync(resolve(root, 'nginx.conf'), 'utf8');
+// The apex HTTPS server block (the first one): the others only redirect to it. Tests of locations and
+// error_page search this slice, so a rule moved into another server block no longer passes.
+const apexStart = conf.indexOf('\nserver {');
+const apex = conf.slice(apexStart, conf.indexOf('\n}\n', apexStart) + 3);
 
 function mapPatterns(mapHeader: string): RegExp[] {
   const start = conf.indexOf(mapHeader);
@@ -173,6 +177,16 @@ describe('nginx scanner defense', () => {
     '/img/10001844.gif',
     '/contact-us',
     '/about-us',
+    '/murphy',
+    '/murphy/',
+    '/murphy/murphy-golf.html',
+    '/murphy/murphy-EMT.htm',
+    '/murphy/murphy-laws.html/',
+    '/murphy/murphy-laws.html%20',
+    '/murphy/murphy-true.html:D',
+    '/murphy/murphy-true.htmlkd',
+    '/murphy/links.html',
+    '/murphy/murphy-',
     '/team/x',
     '/services/seo',
     '/law/team',
@@ -396,6 +410,185 @@ describe('MCP discovery paths', () => {
   });
 });
 
+describe('nginx legacy /murphy/ pages', () => {
+  // Old file name -> current page. The file names are exact (nginx matches case-sensitively) and come from the
+  // Search Console exports of 9 November 2026 and the previous site's menu in the Internet Archive.
+  const pageRedirects: Array<[string, string]> = [
+    ['murphy-true.html', '/origin-story'],
+    ['life-by-murphys-law.html', '/examples'],
+    ['about.html', '/about'],
+    ['contact.html', '/contact'],
+    ['murphy-laws', '/category/murphys-laws'],
+    ['murphy-laws.html', '/category/murphys-laws'],
+    ['murphy-love.html', '/category/murphys-love-laws'],
+    ['murphy-technology.html', '/category/murphys-technology-laws'],
+    ['murphy-computer.html', '/category/murphys-computer-laws'],
+    ['murphy-commerce.html', '/category/murphys-commerce-laws'],
+    ['murphy-real-estate.htm', '/category/murphys-real-estate-laws'],
+    ['murphy-teaching.html', '/category/murphys-teaching-laws'],
+    ['murphy-war.html', '/category/murphys-war-laws'],
+    ['murphy-cops.html', '/category/murphys-cops-laws'],
+    ['murphy-military-police.html', '/category/murphys-military-police-laws'],
+    ['murphy-sewing.html', '/category/murphys-sewing-laws'],
+    ['murphy-fire-brigade.html', '/category/murphys-volunteer-bushfire-brigade-laws'],
+    ['murphy-Photography.html', '/category/murphys-photography-laws'],
+    ['murphy-nurses.html', '/category/murphys-nurses-laws'],
+    ['murphy-buses.html', '/category/murphys-bus-laws'],
+    ['murphy-lotto.html', '/category/murphys-lotto-laws'],
+    ['murphy-cas.htm', '/category/murphys-cowboy-action-shooting-cas-laws'],
+    ['murphy-cas.html', '/category/murphys-cowboy-action-shooting-cas-laws'],
+    ['murphy-cars.htm', '/category/murphys-cars-laws'],
+    ['murphy-cars.html', '/category/murphys-cars-laws'],
+    ['murphy-toddler.htm', '/category/murphys-toddlers-laws'],
+    ['murphy-EMT.htm', '/category/murphys-emt-laws'],
+    ['murphy-Graphic_Design.htm', '/category/murphys-graphic-design-laws'],
+    ['murphy-Mothers.htm', '/category/murphys-mothers-laws'],
+    ['murphy-scouts.html', '/category/murphys-scouting-laws'],
+    ['murphy-political.html', '/category/murphys-political-laws'],
+    ['murphy-golf.html', '/category/murphys-golf-laws'],
+    ['murphy-employees.html', '/category/murphys-employees-laws'],
+    ['murphy-office.html', '/category/murphys-office-laws'],
+    ['murphy-music.html', '/category/murphys-music-laws'],
+    ['murphy-horse.html', '/category/murphys-horse-laws'],
+    ['murphy-martial-arts.html', '/category/murphys-martial-arts-laws'],
+    ['murphy-miscellaneous.html', '/category/murphys-miscellaneous-laws'],
+  ];
+
+  // Pages that have no current equivalent, and bad backlinks: they must get the 410, not a redirect
+  const goneUrls = [
+    '/murphy/links.html',
+    '/murphy/murphy-book-store.html',
+    '/murphy/murphy-original.html',
+    '/murphy/murphy-true.html:D',
+    '/murphy/murphy-true.htmland',
+    '/murphy/murphy-true.htmlkd',
+    '/murphy/murphy-true.htmlVioxx',
+    '/murphy/murphy-laws.html%20',
+    '/murphy/murphy-laws.html ',
+    '/murphy/murphy-',
+    '/murphy/murphy',
+    '/murphy/murp',
+    '/murphy/img/Murphys-law-book.gif',
+    '/murphy/MURPHY-GOLF.HTML',
+  ];
+
+  const exactBlocks = [...apex.matchAll(/^\s*location = \/murphy\/(\S+) \{\n\s*return 301 https:\/\/murphys-laws\.com(\S+);$/gm)];
+
+  it.each(pageRedirects)('redirects /murphy/%s to %s', (file, target) => {
+    const start = apex.indexOf(`location = /murphy/${file} {`);
+    expect(start).toBeGreaterThan(-1);
+    expect(apex.slice(start, apex.indexOf('}', start))).toContain(`return 301 https://murphys-laws.com${target};`);
+  });
+
+  it('has an exact redirect for every page in the table and no redirect missing from it', () => {
+    const inConf = exactBlocks.map((match) => `${match[1]} ${match[2]}`).sort();
+    expect(inConf).toEqual(pageRedirects.map(([file, target]) => `${file} ${target}`).sort());
+  });
+
+  it('lists each legacy file name once, and declares no location twice (nginx would refuse to start)', () => {
+    const files = pageRedirects.map(([file]) => file);
+    expect(new Set(files).size).toBe(files.length);
+    const headers = [...apex.matchAll(/^ {4}location (= |\^~ )?(\S+) \{$/gm)].map((match) => `${match[1] ?? ''}${match[2]}`);
+    expect(headers.length).toBeGreaterThan(40);
+    expect(headers.filter((header, index) => headers.indexOf(header) !== index)).toEqual([]);
+  });
+
+  it('redirects only to category pages and content pages that exist', () => {
+    // A category's slug is its file name in shared/data, except where nginx renames it (the data files kept
+    // the slugs the API later corrected), so apply the renames before checking.
+    const renames = new Map(
+      [...apex.matchAll(/location = \/category\/(\S+) \{\n\s*return 301 https:\/\/murphys-laws\.com\/category\/(\S+?)\$is_args\$args;/g)].map(
+        (match) => [match[1] as string, match[2] as string] as const,
+      ),
+    );
+    expect(renames.size).toBeGreaterThan(5);
+    const slugs = new Set(
+      readdirSync(resolve(root, 'shared', 'data', 'murphys-laws'))
+        .filter((name) => name.endsWith('.md'))
+        .map((name) => name.slice(0, -'.md'.length))
+        .map((slug) => renames.get(slug) ?? slug),
+    );
+    expect(slugs.size).toBeGreaterThan(40);
+    const contentPages = new Set(
+      readdirSync(resolve(root, 'shared', 'content'))
+        .filter((name) => name.endsWith('.md'))
+        .map((name) => `/${name.slice(0, -'.md'.length)}`),
+    );
+    expect(exactBlocks.length).toBe(pageRedirects.length);
+    for (const match of exactBlocks) {
+      const target = match[2] as string;
+      // No $is_args$args: these rules are written for the path without its query string and drop it
+      expect(target, `${match[1]} must not forward the query string`).not.toContain('$');
+      const category = /^\/category\/([\w-]+)$/.exec(target)?.[1];
+      if (category !== undefined) expect(slugs.has(category), `${match[1]} -> ${target}`).toBe(true);
+      else expect(contentPages.has(target), `${match[1]} -> ${target}`).toBe(true);
+    }
+  });
+
+  it('does not treat any legacy URL as a scanner, so none is dropped with 444 or counted by fail2ban', () => {
+    const urls = [...pageRedirects.map(([file]) => `/murphy/${file}`), ...goneUrls, '/murphy', '/murphy/'];
+    for (const url of urls) {
+      expect(isScannerPath(url), url).toBe(false);
+    }
+  });
+
+  // nginx's choice of location for a request path (the query string is not part of it, and %20 is a space):
+  // an exact match wins; otherwise the longest prefix, and a ^~ prefix ends the search; otherwise the first
+  // matching regex; otherwise the longest prefix. Only the apex server's top-level locations are considered.
+  function selectLocation(requestPath: string): string {
+    const path = decodeURIComponent(requestPath.split('?')[0] as string);
+    const locations = [...apex.matchAll(/^ {4}location (= |\^~ |~\* |~ )?(\S+) \{$/gm)].map((match) => ({
+      modifier: (match[1] ?? '').trim(),
+      pattern: match[2] as string,
+    }));
+    const label = (location: { modifier: string; pattern: string }): string => `${location.modifier} ${location.pattern}`.trim();
+    const exact = locations.find((location) => location.modifier === '=' && location.pattern === path);
+    if (exact) return label(exact);
+    const prefixes = locations
+      .filter((location) => (location.modifier === '' || location.modifier === '^~') && path.startsWith(location.pattern))
+      .sort((left, right) => right.pattern.length - left.pattern.length);
+    const best = prefixes[0];
+    if (best?.modifier === '^~') return label(best);
+    const regex = locations.find(
+      (location) =>
+        (location.modifier === '~' || location.modifier === '~*') &&
+        new RegExp(location.pattern, location.modifier === '~*' ? 'i' : '').test(path),
+    );
+    if (regex) return label(regex);
+    return best ? label(best) : '';
+  }
+
+  it('selects the exact redirect for every legacy page, whatever else the server block holds', () => {
+    for (const [file] of pageRedirects) {
+      expect(selectLocation(`/murphy/${file}`), file).toBe(`= /murphy/${file}`);
+      // The query string does not change the choice
+      expect(selectLocation(`/murphy/${file}?utm_source=x`), file).toBe(`= /murphy/${file}`);
+    }
+    expect(selectLocation('/murphy')).toBe('= /murphy');
+  });
+
+  it.each(goneUrls)('selects the 410 location for %s, so no other rule can answer it', (url) => {
+    expect(selectLocation(url)).toBe('^~ /murphy/');
+  });
+
+  it('routes /murphy/ and /murphy/murphy-laws.html/ through the trailing-slash rewrite, which strips the slash before location matching', () => {
+    // A rewrite nested in a location would not run before location selection, so it must sit at server level
+    expect(apex).toMatch(/^ {4}rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
+    expect(selectLocation('/murphy')).toBe('= /murphy');
+    expect(selectLocation('/murphy/murphy-laws.html')).toBe('= /murphy/murphy-laws.html');
+  });
+
+  it('leaves real routes and the static files alone: the 410 prefix needs the slash after /murphy', () => {
+    for (const path of ['/sitemap.xml', '/robots.txt', '/llms.txt', '/murphys-law-vs-sods-law', '/murphys-laws-about-work', '/category/murphys-laws', '/law/1']) {
+      expect(selectLocation(path), path).not.toMatch(/murphy\/?$/);
+    }
+    // Google must be able to crawl a URL to see its 410, so robots.txt must not disallow the old section,
+    // and nothing that builds the sitemap may list a /murphy/ URL
+    expect(readFileSync(resolve(root, 'web', 'public', 'robots.txt'), 'utf-8')).not.toMatch(/^Disallow:.*\/murphy\b/m);
+    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).not.toContain('/murphy/');
+  });
+});
+
 describe('legacy images', () => {
   it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif', 'pick_of_the_week.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
     const file = resolve(root, 'web', 'public', 'img', name);
@@ -406,14 +599,6 @@ describe('legacy images', () => {
 
 describe('nginx legacy URL redirects', () => {
   it.each([
-    ['/murphy/murphy-true.html', '/examples'],
-    ['/murphy/murphy-technology.html', '/category/murphys-technology-laws'],
-    ['/murphy/murphy-laws.html', '/category/murphys-laws'],
-    ['/murphy/murphy-computer.html', '/category/murphys-computer-laws'],
-    ['/murphy/murphy-teaching.html', '/category/murphys-teaching-laws'],
-    ['/murphy/murphy-cas.htm', '/category/murphys-cowboy-action-shooting-cas-laws'],
-    ['/murphy/murphy-cars.htm', '/category/murphys-cars-laws'],
-    ['/murphy/contact.html', '/contact'],
     ['/about-us', '/about'],
     ['/contact-us', '/contact'],
     ['/old/index.htm', '/'],
@@ -456,21 +641,31 @@ describe('nginx legacy URL redirects', () => {
     expect(conf.slice(start, conf.indexOf('}', start))).toContain('return 200');
   });
 
-  it('sends any other old /murphy/ page home without letting regex locations win', () => {
-    const start = conf.indexOf('location ^~ /murphy/ {');
-    expect(start).toBeGreaterThan(-1);
-    expect(conf.slice(start, conf.indexOf('}', start))).toContain('return 301 https://murphys-laws.com/;');
+  it('answers any other old /murphy/ URL with 410 and the site 404 page, without letting regex locations win', () => {
+    // ^~ stops regex locations (such as the image caching rule inside location /) from taking the request
+    const block = locationBlock('location ^~ /murphy/ {');
+    expect(block).toContain('return 410;');
+    expect(block).not.toContain('return 301');
+    // 410 has no custom page by default; without this line nginx would send its bare built-in one
+    const errorPages = apex.match(/^\s*error_page .*;$/gm) ?? [];
+    expect(errorPages.filter((line) => /\b410\b/.test(line))).toEqual(['    error_page 404 410 /404.html;']);
+    // The page is served by an internal location, so nobody can request /404.html as a normal page
+    expect(locationBlock('location = /404.html {')).toContain('internal;');
+  });
+
+  it('keeps the bare /murphy section index redirecting home, because other sites may still link to it', () => {
+    expect(locationBlock('location = /murphy {')).toContain('return 301 https://murphys-laws.com/;');
   });
 
   // The text of a location block, found by its header and closed by its matching brace
   function locationBlock(header: string): string {
-    const start = conf.indexOf(header);
-    expect(start, `${header} is missing from nginx.conf`).toBeGreaterThan(-1);
+    const start = apex.indexOf(header);
+    expect(start, `${header} is missing from the apex server block`).toBeGreaterThan(-1);
     let depth = 0;
-    for (let index = conf.indexOf('{', start); index < conf.length; index += 1) {
-      if (conf[index] === '{') depth += 1;
-      if (conf[index] === '}') depth -= 1;
-      if (depth === 0) return conf.slice(start, index + 1);
+    for (let index = apex.indexOf('{', start); index < apex.length; index += 1) {
+      if (apex[index] === '{') depth += 1;
+      if (apex[index] === '}') depth -= 1;
+      if (depth === 0) return apex.slice(start, index + 1);
     }
     throw new Error(`${header} is never closed`);
   }

@@ -117,6 +117,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     keeps them out of the index without stopping the fetch. The OG image location keeps its own headers.
 
   Backend bumped to `2.3.66`; web to `3.4.66`; root to `2.6.158`.
+- Old `/murphy/*` pages no longer redirect to the home page, which Google reports as a soft 404 (19 of the 60 soft
+  404s, 19 of the 33 "not found" and 15 of the 115 "crawled, currently not indexed" in the 9 November 2026
+  Search Console exports were `/murphy/*` URLs):
+  - Each legacy page that has a current equivalent now has an exact `location = /murphy/<file>` redirect (written
+    for the path without its query string, with the file's exact case): 34 redirects to 31 category pages, 28 of the redirects new (for example
+    `murphy-golf.html` to `/category/murphys-golf-laws`, `murphy-EMT.htm` to `/category/murphys-emt-laws`; they
+    include the `.html` forms of `murphy-cas` and `murphy-cars` and the extensionless `murphy-laws`, a truncated
+    backlink), plus `life-by-murphys-law.html` ("Real Life Example" in the old menu) to `/examples` and `about.html` to `/about`.
+    The file names come from the Search Console exports and the old site's menu in the Internet Archive.
+  - `/murphy/murphy-true.html` was redirected to `/examples`, but it is the old "Murphy's laws origin" page (the
+    Desert Wings article on Edwards Air Force Base). It now goes to `/origin-story`.
+  - Every other URL under `/murphy/` (`links.html`, `murphy-original.html`, scripts, images, and bad backlinks such as
+    `murphy-true.html:D`, `murphy-true.htmlkd`, `murphy-laws.html` followed by a space, `murphy-` and `murphy`)
+    answers `410 Gone` instead of redirecting home, with the site's own 404 page as the body (`error_page 404 410
+    /404.html`; without it nginx sends its bare built-in 410 page). For pages that will not come back, 410 is at least as
+    strong a removal signal as 404, and it never looks like a soft 404. `^~` still keeps regex locations from taking these paths.
+  - `/murphy` and `/murphy/` (the old section index, which other sites may still link to; neither is in the
+    Search Console exports) still redirect to `/`, and move to 410 if they show up as soft 404s later; the
+    trailing-slash rewrite turns `/murphy/` into `/murphy` first, and `/murphy/murphy-laws.html/` takes two hops
+    to the category. None of these URLs match the scanner maps, so none is dropped or counted by fail2ban.
+  - The daily report's "Top 404 URLs" counts only status 404, so `/murphy/*` hits now appear as 410 and drop out of it, which is
+    intended: the 410 is the settled answer for those URLs.
+  - Tests in `nginx-scanner-defense.test.ts` pin the table of redirects (and fail when nginx.conf has one that the
+    table lacks), check that every target is a real category (from `shared/data`, after nginx's slug renames) or
+    content page, and cover the 410, the garbage URLs, the scanner maps, robots.txt and the sitemap builder.
+
+  Root bumped to `2.6.159`.
 - The daily report's command injection count (28,131 in the 9 November report) was not real. Six of the ten
   patterns in `backend/scripts/log-analyzer.sh` began with an unescaped `|` (`|cat`, `|nc`, `|wget`, `|curl`,
   `|bash`, `|sh`). Run through `grep -E`, that is "empty or cat", which GNU grep matches on every line, so each
