@@ -214,6 +214,12 @@ npm run build:web
 npm run build:backend:db
 ```
 
+`npm run build:web` prerenders the static pages from a database it builds from the archive, which is what pull-request
+CI uses. The production deploy builds with `API_BASE_URL=https://murphys-laws.com npm --prefix web run build` instead,
+so every law page and sitemap entry matches what `/api/v1/laws` serves; the build stops when production cannot be
+read. To rehearse the deploy build locally, run that command with the web dependencies installed (it needs network
+access to production; unlike the deploy it skips `npm run build:openapi` and the Sentry upload).
+
 ## TypeScript Runtime Architecture
 
 - Backend runs TypeScript source directly with `tsx` (no JS build step required for startup).
