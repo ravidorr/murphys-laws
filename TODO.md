@@ -7,6 +7,10 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Make the disaster-recovery PM2 step work on a fresh droplet:** `backend/ecosystem.config.cjs` hardcodes `/root/.nvm/versions/node/v22.20.0/bin/node` (while `.nvmrc` says 22.16.0), but `DISASTER-RECOVERY.md` installs nvm and pm2 for the `ravidor` user and runs the PM2 step as root. Install Node and pm2 for root at the version the config names, or make the interpreter follow `.nvmrc`.
 - [ ] **Renew `/.well-known/security.txt` before 2027-11-06:** the `Expires` date in `nginx.conf` must be moved forward. A test in `nginx-scanner-defense.test.ts` fails 30 days before it passes.
 
+## Site data
+
+- [ ] **Pre-rendered law pages outlive deleted laws:** on 9 Nov the live sitemap listed 2,465 law URLs while the API reported 2,453 laws, so about 12 pages (for example `/law/1719` and `/law/1963`) are served and in the sitemap but `/api/v1/laws/<id>` returns 404 for them. Real visitors and Baiduspider/Googlebot hit the API 404 after loading the page. Find out why the build's law list (`fetchAllLaws` in `web/scripts/ssg.ts`, run against the API at build time) differs from production, then drop deleted laws from the pages and the sitemap.
+
 ## Design Review Findings (Jan 2026)
 
 The following items were identified during comprehensive UX, UI, Accessibility, Microcopy, and SEO skill reviews but not yet implemented.

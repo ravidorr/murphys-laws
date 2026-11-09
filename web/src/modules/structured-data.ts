@@ -120,7 +120,7 @@ export function setSiteStructuredData(): void {
     '@type': 'Organization',
     'name': SITE_NAME,
     'url': SITE_URL,
-    'logo': `${SITE_URL}/favicon-512x512.png`,
+    'logo': `${SITE_URL}/android-chrome-512x512.png`,
     'sameAs': [
       'https://github.com/ravidor',
       'https://www.linkedin.com/in/raananavidor/'

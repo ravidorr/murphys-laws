@@ -42,7 +42,7 @@ export function MurphysLawProjectManagement({ onNavigate }: { onNavigate?: OnNav
     'publisher': {
       '@type': 'Organization',
       'name': "Murphy's Law Archive",
-      'logo': { '@type': 'ImageObject', 'url': `${SITE_URL}/favicon-512x512.png` }
+      'logo': { '@type': 'ImageObject', 'url': `${SITE_URL}/android-chrome-512x512.png` }
     },
     'mainEntityOfPage': { '@type': 'WebPage', '@id': `${SITE_URL}/murphys-law-project-management` }
   });

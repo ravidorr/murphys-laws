@@ -126,6 +126,17 @@ describe('nginx scanner defense', () => {
     '/health/liveliness',
     '/health/readiness',
     '/health/liveliness?probe=1',
+    '/wallet/topup/9985',
+    '/wallet',
+    '/wallet/',
+    '/build/manifest.json',
+    '/ipfs/bafkreicyqcbhpicbos7ev4mrxofwqx6hvvge7pahpta6xuspr44crai5by',
+    '/ipfs/',
+    '/ipfs',
+    '/Wallet/topup/1',
+    '/wallet?x=1',
+    '/build/manifest.json?v=1',
+    '/ipfs/bafy?filename=x',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -202,6 +213,16 @@ describe('nginx scanner defense', () => {
     '/healthcheck',
     '/law/health',
     '/browse?q=health/liveliness',
+    '/browse?q=wallet',
+    '/search?q=build/manifest.json',
+    '/browse?q=ipfs',
+    '/law/wallet',
+    '/wallets',
+    '/build',
+    '/security.txt',
+    '/apple-touch-icon-240x240.png',
+    '/apple-touch-icon-240x240-precomposed.png',
+    '/favicon-512x512.png',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -376,7 +397,7 @@ describe('MCP discovery paths', () => {
 });
 
 describe('legacy images', () => {
-  it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
+  it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif', 'pick_of_the_week.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
     const file = resolve(root, 'web', 'public', 'img', name);
     expect(existsSync(file)).toBe(true);
     expect(['GIF87a', 'GIF89a']).toContain(readFileSync(file).subarray(0, 6).toString('ascii'));
@@ -400,6 +421,10 @@ describe('nginx legacy URL redirects', () => {
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
     ['/sitemaps.xml', '/sitemap.xml'],
     ['/favicon.png', '/favicon-32x32.png'],
+    ['/apple-touch-icon-240x240.png', '/apple-touch-icon.png'],
+    ['/apple-touch-icon-240x240-precomposed.png', '/apple-touch-icon.png'],
+    ['/favicon-512x512.png', '/android-chrome-512x512.png'],
+    ['/security.txt', '/.well-known/security.txt'],
   ])('redirects %s to %s', (from, to) => {
     const start = conf.indexOf(`location = ${from} {`);
     expect(start).toBeGreaterThan(-1);
@@ -414,8 +439,20 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toContain('location = /murphy {');
   });
 
-  it('redirects /favicon.png to a favicon file that exists', () => {
-    expect(existsSync(resolve(root, 'web', 'public', 'favicon-32x32.png'))).toBe(true);
+  it('redirects every image target to a file that exists in web/public', () => {
+    const targets = [...conf.matchAll(/return 301 https:\/\/murphys-laws\.com\/([\w.-]+\.(?:png|ico|gif|jpe?g|svg|webp));/g)].map(
+      (match) => match[1] as string,
+    );
+    expect(targets).toEqual(expect.arrayContaining(['apple-touch-icon.png', 'android-chrome-512x512.png', 'favicon-32x32.png']));
+    for (const name of targets) {
+      expect(existsSync(resolve(root, 'web', 'public', name)), name).toBe(true);
+    }
+  });
+
+  it('redirects /security.txt to the served /.well-known/security.txt', () => {
+    const start = conf.indexOf('location = /.well-known/security.txt {');
+    expect(start).toBeGreaterThan(-1);
+    expect(conf.slice(start, conf.indexOf('}', start))).toContain('return 200');
   });
 
   it('sends any other old /murphy/ page home without letting regex locations win', () => {
