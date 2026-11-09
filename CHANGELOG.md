@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scanner jail with nothing to read. Both guides now install the root `nginx.conf`, the file the droplet actually
   runs. The recovery steps now update DNS and then issue the certificate before installing it, because that file
   points at the certificate and `nginx -t` fails until it exists, and the certificate needs the names to resolve
-  to the new droplet. Both guides start PM2 from `backend/ecosystem.config.cjs`, where the file is. The monitoring
+  to the new droplet. Both guides name the PM2 config at `backend/ecosystem.config.cjs`, where the file is (installing the Node it points at on a fresh droplet is still open, in `TODO.md`). The recovery steps also open `/root` and the checkout to the nginx worker, which the droplet has and a fresh Ubuntu does not, and check for a 200 rather than a 403. The monitoring
   guide no longer promises rate limiting, 429 responses and security headers that the live config does not have;
   it checks the scanner defense instead. A new test checks that every repository file that a runbook `cp` or `scp`
   line copies is tracked by git, and Web CI now also runs when `shared/docs/**` changes, so a runbook edit gets that check. Web bumped
