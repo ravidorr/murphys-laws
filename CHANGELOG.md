@@ -54,6 +54,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The daily report's command injection count (28,131 on 9 November) was not real. Six of the ten patterns in
+  `backend/scripts/log-analyzer.sh` began with an unescaped `|` (`|cat`, `|nc`, `|wget`, `|curl`, `|bash`, `|sh`).
+  Run through `grep -E`, that is "empty or cat", which GNU grep matches on every line, so each request was counted
+  once per pattern and the sample list was the first two log lines six times over. `&cat` also matched the
+  site's own `&category_id=` API calls. The patterns now escape the pipe, accept the URL-encoded forms (`%7C`,
+  `%26`, `%3B`, `%60`, `%24%28`), end the command at a word boundary after `|`, backtick and `$(`, and require a
+  separator after `&` and `;`. A script test (`backend/tests/scripts/log-analyzer.test.ts`) runs the real script
+  against a log of ordinary traffic (including the 9 November lines) and eleven real attack shapes. Backend bumped
+  to `2.3.64`; root to `2.6.156`.
 - CI no longer fails a whole job when a download from an outside host fails. On 2026-11-09 GitHub Releases answered
   504 for the prebuilt `canvas` binary, so `npm ci` fell back to a compile the runner cannot do, and the Web,
   Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. Every `npm ci` that can fetch a
