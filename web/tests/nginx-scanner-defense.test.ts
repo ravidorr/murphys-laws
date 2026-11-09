@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 
 const root = resolve(__dirname, '..', '..');
 const conf = readFileSync(resolve(root, 'nginx.conf'), 'utf8');
+// The apex HTTPS server block (the first one): the others only redirect to it. Tests of locations and
+// error_page search this slice, so a rule moved into another server block no longer passes.
+const apexStart = conf.indexOf('\nserver {');
+const apex = conf.slice(apexStart, conf.indexOf('\n}\n', apexStart) + 3);
 
 function mapPatterns(mapHeader: string): RegExp[] {
   const start = conf.indexOf(mapHeader);
@@ -467,12 +471,12 @@ describe('nginx legacy /murphy/ pages', () => {
     '/murphy/MURPHY-GOLF.HTML',
   ];
 
-  const exactBlocks = [...conf.matchAll(/^\s*location = \/murphy\/(\S+) \{\n\s*return 301 https:\/\/murphys-laws\.com(\S+);$/gm)];
+  const exactBlocks = [...apex.matchAll(/^\s*location = \/murphy\/(\S+) \{\n\s*return 301 https:\/\/murphys-laws\.com(\S+);$/gm)];
 
   it.each(pageRedirects)('redirects /murphy/%s to %s', (file, target) => {
-    const start = conf.indexOf(`location = /murphy/${file} {`);
+    const start = apex.indexOf(`location = /murphy/${file} {`);
     expect(start).toBeGreaterThan(-1);
-    expect(conf.slice(start, conf.indexOf('}', start))).toContain(`return 301 https://murphys-laws.com${target};`);
+    expect(apex.slice(start, apex.indexOf('}', start))).toContain(`return 301 https://murphys-laws.com${target};`);
   });
 
   it('has an exact redirect for every page in the table and no redirect missing from it', () => {
@@ -480,16 +484,19 @@ describe('nginx legacy /murphy/ pages', () => {
     expect(inConf).toEqual(pageRedirects.map(([file, target]) => `${file} ${target}`).sort());
   });
 
-  it('lists each legacy file name once', () => {
+  it('lists each legacy file name once, and declares no location twice (nginx would refuse to start)', () => {
     const files = pageRedirects.map(([file]) => file);
     expect(new Set(files).size).toBe(files.length);
+    const headers = [...apex.matchAll(/^ {4}location (= |\^~ )?(\S+) \{$/gm)].map((match) => `${match[1] ?? ''}${match[2]}`);
+    expect(headers.length).toBeGreaterThan(40);
+    expect(headers.filter((header, index) => headers.indexOf(header) !== index)).toEqual([]);
   });
 
   it('redirects only to category pages and content pages that exist', () => {
     // A category's slug is its file name in shared/data, except where nginx renames it (the data files kept
     // the slugs the API later corrected), so apply the renames before checking.
     const renames = new Map(
-      [...conf.matchAll(/location = \/category\/(\S+) \{\n\s*return 301 https:\/\/murphys-laws\.com\/category\/(\S+?)\$is_args\$args;/g)].map(
+      [...apex.matchAll(/location = \/category\/(\S+) \{\n\s*return 301 https:\/\/murphys-laws\.com\/category\/(\S+?)\$is_args\$args;/g)].map(
         (match) => [match[1] as string, match[2] as string] as const,
       ),
     );
@@ -509,14 +516,12 @@ describe('nginx legacy /murphy/ pages', () => {
     expect(exactBlocks.length).toBe(pageRedirects.length);
     for (const match of exactBlocks) {
       const target = match[2] as string;
+      // No $is_args$args: these rules are written for the path without its query string and drop it
+      expect(target, `${match[1]} must not forward the query string`).not.toContain('$');
       const category = /^\/category\/([\w-]+)$/.exec(target)?.[1];
       if (category !== undefined) expect(slugs.has(category), `${match[1]} -> ${target}`).toBe(true);
       else expect(contentPages.has(target), `${match[1]} -> ${target}`).toBe(true);
     }
-  });
-
-  it('never redirects a legacy page to the home page, which Google reports as a soft 404', () => {
-    expect(exactBlocks.filter((match) => match[2] === '/')).toEqual([]);
   });
 
   it('does not treat any legacy URL as a scanner, so none is dropped with 444 or counted by fail2ban', () => {
@@ -526,29 +531,60 @@ describe('nginx legacy /murphy/ pages', () => {
     }
   });
 
-  // nginx matches location = against the decoded path, so a %20 is a space
-  it.each(goneUrls)('has no exact redirect for %s, so it falls through to the 410 prefix location', (url) => {
-    const decoded = decodeURIComponent(url);
-    expect(pageRedirects.map(([file]) => `/murphy/${file}`)).not.toContain(decoded);
-    expect(conf).not.toContain(`location = ${decoded} {`);
-    expect(decoded.startsWith('/murphy/')).toBe(true);
-  });
+  // nginx's choice of location for a request path (the query string is not part of it, and %20 is a space):
+  // an exact match wins; otherwise the longest prefix, and a ^~ prefix ends the search; otherwise the first
+  // matching regex; otherwise the longest prefix. Only the apex server's top-level locations are considered.
+  function selectLocation(requestPath: string): string {
+    const path = decodeURIComponent(requestPath.split('?')[0] as string);
+    const locations = [...apex.matchAll(/^ {4}location (= |\^~ |~\* |~ )?(\S+) \{$/gm)].map((match) => ({
+      modifier: (match[1] ?? '').trim(),
+      pattern: match[2] as string,
+    }));
+    const label = (location: { modifier: string; pattern: string }): string => `${location.modifier} ${location.pattern}`.trim();
+    const exact = locations.find((location) => location.modifier === '=' && location.pattern === path);
+    if (exact) return label(exact);
+    const prefixes = locations
+      .filter((location) => (location.modifier === '' || location.modifier === '^~') && path.startsWith(location.pattern))
+      .sort((left, right) => right.pattern.length - left.pattern.length);
+    const best = prefixes[0];
+    if (best?.modifier === '^~') return label(best);
+    const regex = locations.find(
+      (location) =>
+        (location.modifier === '~' || location.modifier === '~*') &&
+        new RegExp(location.pattern, location.modifier === '~*' ? 'i' : '').test(path),
+    );
+    if (regex) return label(regex);
+    return best ? label(best) : '';
+  }
 
-  it('strips a trailing slash in a server-level rewrite, so /murphy/murphy-laws.html/ reaches the exact redirect (two hops on the apex)', () => {
-    // Server-level rewrites run before location matching wherever they sit in the file, but one inside a
-    // location would not: the rule must not be nested.
-    expect(conf).toMatch(/^ {4}rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
-    expect('/murphy/murphy-laws.html/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy/murphy-laws.html');
-  });
-
-  it('leaves the sitemap, robots.txt and real routes alone: the 410 prefix needs the slash after /murphy, and nothing we publish lives under it', () => {
-    const prefix = '/murphy/';
-    for (const path of ['/sitemap.xml', '/sitemaps.xml', '/robots.txt', '/llms.txt', '/murphys-law-vs-sods-law', '/murphys-laws-about-work', '/category/murphys-laws', '/law/1']) {
-      expect(path.startsWith(prefix), path).toBe(false);
+  it('selects the exact redirect for every legacy page, whatever else the server block holds', () => {
+    for (const [file] of pageRedirects) {
+      expect(selectLocation(`/murphy/${file}`), file).toBe(`= /murphy/${file}`);
+      // The query string does not change the choice
+      expect(selectLocation(`/murphy/${file}?utm_source=x`), file).toBe(`= /murphy/${file}`);
     }
-    // robots.txt is static; the sitemap is generated at build time, so check the builder that writes it
-    expect(readFileSync(resolve(root, 'web', 'public', 'robots.txt'), 'utf-8')).not.toContain(prefix);
-    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).not.toContain(prefix);
+    expect(selectLocation('/murphy')).toBe('= /murphy');
+  });
+
+  it.each(goneUrls)('selects the 410 location for %s, so no other rule can answer it', (url) => {
+    expect(selectLocation(url)).toBe('^~ /murphy/');
+  });
+
+  it('routes /murphy/ and /murphy/murphy-laws.html/ through the trailing-slash rewrite, which strips the slash before location matching', () => {
+    // A rewrite nested in a location would not run before location selection, so it must sit at server level
+    expect(apex).toMatch(/^ {4}rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
+    expect(selectLocation('/murphy')).toBe('= /murphy');
+    expect(selectLocation('/murphy/murphy-laws.html')).toBe('= /murphy/murphy-laws.html');
+  });
+
+  it('leaves real routes and the static files alone: the 410 prefix needs the slash after /murphy', () => {
+    for (const path of ['/sitemap.xml', '/robots.txt', '/llms.txt', '/murphys-law-vs-sods-law', '/murphys-laws-about-work', '/category/murphys-laws', '/law/1']) {
+      expect(selectLocation(path), path).not.toMatch(/murphy\/?$/);
+    }
+    // Google must be able to crawl a URL to see its 410, so robots.txt must not disallow the old section,
+    // and nothing that builds the sitemap may list a /murphy/ URL
+    expect(readFileSync(resolve(root, 'web', 'public', 'robots.txt'), 'utf-8')).not.toMatch(/^Disallow:.*\/murphy\b/m);
+    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).not.toContain('/murphy/');
   });
 });
 
@@ -610,7 +646,10 @@ describe('nginx legacy URL redirects', () => {
     expect(block).toContain('return 410;');
     expect(block).not.toContain('return 301');
     // 410 has no custom page by default; without this line nginx would send its bare built-in one
-    expect(conf).toMatch(/^\s*error_page 404 410 \/404\.html;$/m);
+    const errorPages = apex.match(/^\s*error_page .*;$/gm) ?? [];
+    expect(errorPages.filter((line) => /\b410\b/.test(line))).toEqual(['    error_page 404 410 /404.html;']);
+    // The page is served by an internal location, so nobody can request /404.html as a normal page
+    expect(locationBlock('location = /404.html {')).toContain('internal;');
   });
 
   it('keeps the bare /murphy section index redirecting home, because other sites may still link to it', () => {
@@ -619,13 +658,13 @@ describe('nginx legacy URL redirects', () => {
 
   // The text of a location block, found by its header and closed by its matching brace
   function locationBlock(header: string): string {
-    const start = conf.indexOf(header);
-    expect(start, `${header} is missing from nginx.conf`).toBeGreaterThan(-1);
+    const start = apex.indexOf(header);
+    expect(start, `${header} is missing from the apex server block`).toBeGreaterThan(-1);
     let depth = 0;
-    for (let index = conf.indexOf('{', start); index < conf.length; index += 1) {
-      if (conf[index] === '{') depth += 1;
-      if (conf[index] === '}') depth -= 1;
-      if (depth === 0) return conf.slice(start, index + 1);
+    for (let index = apex.indexOf('{', start); index < apex.length; index += 1) {
+      if (apex[index] === '{') depth += 1;
+      if (apex[index] === '}') depth -= 1;
+      if (depth === 0) return apex.slice(start, index + 1);
     }
     throw new Error(`${header} is never closed`);
   }

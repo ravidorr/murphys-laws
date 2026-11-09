@@ -109,6 +109,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     Search Console exports) still redirect to `/`, and move to 410 if they show up as soft 404s later; the
     trailing-slash rewrite turns `/murphy/` into `/murphy` first, and `/murphy/murphy-laws.html/` takes two hops
     to the category. None of these URLs match the scanner maps, so none is dropped or counted by fail2ban.
+  - The daily report's "Top 404 URLs" counts only status 404, so `/murphy/*` hits now appear as 410 and drop out of it, which is
+    intended: the 410 is the settled answer for those URLs.
   - Tests in `nginx-scanner-defense.test.ts` pin the table of redirects (and fail when nginx.conf has one that the
     table lacks), check that every target is a real category (from `shared/data`, after nginx's slug renames) or
     content page, and cover the 410, the garbage URLs, the scanner maps, robots.txt and the sitemap builder.
