@@ -44,7 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `triage-404s` skill (`.claude/skills/triage-404s/SKILL.md`) for the daily report's 404 list. It checks each
   path against the repo and the server logs (read-only, with reported strings quoted as untrusted data), picks
   one verdict per path (already handled, notify about an image, redirect, ignore, fix link or create content,
-  block as scanner, or needs a human), and opens one draft PR per run, only when something needs changing.
+  block as scanner, or needs a human), and opens one draft PR per run, only when something needs changing. Redirects are written for the path
+  without its query string, and a report row missing from the list is looked up in the logs.
 
 ### Fixed
 
