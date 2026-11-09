@@ -48,7 +48,7 @@ export function OriginStory({ onNavigate }: { onNavigate?: OnNavigate } = {}): H
       'name': 'Murphy\'s Law Archive',
       'logo': {
         '@type': 'ImageObject',
-        'url': `${SITE_URL}/favicon-512x512.png`
+        'url': `${SITE_URL}/android-chrome-512x512.png`
       }
     },
     'mainEntityOfPage': {
