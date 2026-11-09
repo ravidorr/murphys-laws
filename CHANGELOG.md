@@ -46,11 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (both are under `backend/config/`), and the enhanced config has no scanner defense and no `scanner.log`, so
   following the old steps would have either failed or replaced the live site config with one that leaves the
   scanner jail with nothing to read. Both guides now install the root `nginx.conf`, the file the droplet actually
-  runs. The recovery steps issue the certificate first, because that file points at the certificate and
-  `nginx -t` fails until it exists. The monitoring guide's PM2 step now uploads `backend/ecosystem.config.cjs`.
-  A new test checks that every repository file a runbook copies exists. The rate-limit zones file is no longer
-  part of the recovery steps, because the live nginx config uses no rate-limit zones. Web bumped to `3.4.64`;
-  root to `2.6.152`.
+  runs. The recovery steps now update DNS and then issue the certificate before installing it, because that file
+  points at the certificate and `nginx -t` fails until it exists, and the certificate needs the names to resolve
+  to the new droplet. Both guides start PM2 from `backend/ecosystem.config.cjs`, where the file is. The monitoring
+  guide no longer promises rate limiting, 429 responses and security headers that the live config does not have;
+  it checks the scanner defense instead. A new test checks that every repository file a runbook copies is tracked
+  by git, and Web CI now also runs when `shared/docs/**` changes, so a runbook edit gets that check. Web bumped
+  to `3.4.64`; root to `2.6.152`.
 - The daily report's "Fail2ban Currently Banned" and "Fail2ban Total Bans" figures read only the `sshd` jail, so
   bans from the `nginx-scanner` jail could never appear, and nothing said when that jail was down. They now sum
   both jails and show the split, such as `2 (SSH 0, scanners 2)`, under the same labels. A jail that cannot be

@@ -230,16 +230,22 @@ EOF
 
 1. **Install and start PM2**:
  ```bash
- pm2 start ecosystem.config.cjs
+ pm2 start backend/ecosystem.config.cjs
  pm2 save
  pm2 startup
  ```
+
+1. **Update DNS** (first: the certificate check below needs both names to resolve to this droplet):
+- Update A record for murphys-laws.com to <NEW_IP>
+- Update A record for <www.murphys-laws.com> to <NEW_IP>
+- Wait for DNS propagation (5-30 minutes)
 
 1. **Issue the SSL certificate** (first, because the repository's `nginx.conf` points at the certificate files, and `nginx -t` fails until they exist; nginx still runs its stock config at this point):
  ```bash
  certbot certonly --nginx -d murphys-laws.com -d www.murphys-laws.com \
  --non-interactive --agree-tos --email <your-email>
- test -f /etc/letsencrypt/options-ssl-nginx.conf # the nginx plugin installs this; nginx.conf includes it
+ # the nginx plugin installs these two files; nginx.conf includes both
+ test -f /etc/letsencrypt/options-ssl-nginx.conf && test -f /etc/letsencrypt/ssl-dhparams.pem
  ```
 
 1. **Configure nginx** (the repository's root `nginx.conf` is the live site config: the site, the scanner defense, and the `scanner.log` that the scanner jail reads):
@@ -313,11 +319,6 @@ plain-text delivery. After deploy, validate formatting with:
 sudo DAILY_REPORT_TEST_RECIPIENT=<your-email> \
   /usr/local/bin/daily-report.sh --test-email
 ```
-
-1. **Update DNS**:
-- Update A record for murphys-laws.com to <NEW_IP>
-- Update A record for <www.murphys-laws.com> to <NEW_IP>
-- Wait for DNS propagation (5-30 minutes)
 
 1. **Verify services**:
  ```bash
