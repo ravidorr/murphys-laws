@@ -76,11 +76,22 @@ declare module '@scripts/ssg' {
   export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
   export function buildNotFoundPage(template: string, laws: StaticLaw[]): string;
   export function validateNotFoundPage(html: string): string[];
+  export function fetchWithRetry(url: string, options?: {
+    fetchImpl?: (url: string, init: { signal: AbortSignal }) => Promise<{
+      ok: boolean;
+      status: number;
+      text(): Promise<string>;
+    }>;
+    timeoutMs?: number;
+    retries?: number;
+    retryDelayMs?: number;
+    sleep?: (milliseconds: number) => Promise<void>;
+  }): Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
   export function fetchAllCategories(fetchRequest?: (url: string) => Promise<{
     ok: boolean;
     status: number;
     json(): Promise<unknown>;
-  }>): Promise<StaticCategory[]>;
+  }>, baseUrl?: string): Promise<StaticCategory[]>;
   export function fetchAllLaws(fetchRequest?: (url: string) => Promise<{
     ok: boolean;
     status: number;
@@ -96,6 +107,7 @@ declare module '@scripts/ssg' {
     status: number;
     json(): Promise<unknown>;
   }>, baseUrl?: string): Promise<{ data: StaticLaw[]; total: number }>;
+  export function checkCategoryLawCounts(slug: string, firstPageTotal: number, categoryLawCount: number): void;
   export const REVIEWED_LAW_TITLES: string[];
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
   export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];
