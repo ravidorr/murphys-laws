@@ -50,8 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   points at the certificate and `nginx -t` fails until it exists, and the certificate needs the names to resolve
   to the new droplet. Both guides start PM2 from `backend/ecosystem.config.cjs`, where the file is. The monitoring
   guide no longer promises rate limiting, 429 responses and security headers that the live config does not have;
-  it checks the scanner defense instead. A new test checks that every repository file a runbook copies is tracked
-  by git, and Web CI now also runs when `shared/docs/**` changes, so a runbook edit gets that check. Web bumped
+  it checks the scanner defense instead. A new test checks that every repository file that a runbook `cp` or `scp`
+  line copies is tracked by git, and Web CI now also runs when `shared/docs/**` changes, so a runbook edit gets that check. Web bumped
   to `3.4.64`; root to `2.6.152`.
 - The daily report's "Fail2ban Currently Banned" and "Fail2ban Total Bans" figures read only the `sshd` jail, so
   bans from the `nginx-scanner` jail could never appear, and nothing said when that jail was down. They now sum

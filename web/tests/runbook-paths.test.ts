@@ -16,14 +16,23 @@ const trackedFiles = new Set(
   execFileSync('git', ['ls-files'], { cwd: repositoryRoot, encoding: 'utf8' }).split('\n').filter(Boolean),
 );
 
-// Files a runbook may copy that the repository deliberately does not track: the database and the
-// environment file are created on the server. A bare `murphys.db` is the same database, copied from
-// inside `backend/`.
-const runtimeFiles = new Set(['backend/murphys.db', 'murphys.db', '.env']);
+// Directories that hold tracked files, so `cp -r backend/config /etc/x` is accepted.
+const trackedDirectories = new Set(
+  [...trackedFiles].flatMap((file) => {
+    const parts = file.split('/').slice(0, -1);
+    return parts.map((_, index) => parts.slice(0, index + 1).join('/'));
+  }),
+);
+
+// The database is created on the server, so the repository does not track it. A bare `murphys.db` is
+// the same file copied from inside `backend/` (DATABASE.md only).
+const runtimeFiles = new Set(['backend/murphys.db', 'murphys.db']);
 
 // The source of a `cp` or `scp` line in a runbook, when it names a file inside this repository:
 // under the droplet's checkout, or a plain relative path. Anything else (/root/backups, /tmp, ~/...,
 // a $VARIABLE, a user@host path, a glob, a placeholder, a dot-folder) is not a repository file.
+// Known gaps: only a line that starts with `cp`, `scp` or `sudo cp` is read, so `install`, `rsync`,
+// `cp -t DIR`, a copy after `&&`, and a source on a continuation line are not checked.
 const repositorySource = (line: string): string | null => {
   const source = /^\s*(?:sudo\s+)?s?cp\s+(?:-\S+\s+)*(\S+)\s+\S+/.exec(line)?.[1];
   if (source === undefined) {
@@ -32,7 +41,8 @@ const repositorySource = (line: string): string | null => {
   if (source.startsWith(dropletCheckout)) {
     return source.slice(dropletCheckout.length);
   }
-  return /^[A-Za-z0-9]/.test(source) && !/[@:*<$"]/.test(source) ? source : null;
+  const relative = source.replace(/^\.\//, '');
+  return /^[A-Za-z0-9]/.test(relative) && !/[@:*<$"]/.test(relative) ? relative : null;
 };
 
 const copiedSources = (runbook: string): string[] =>
@@ -56,11 +66,13 @@ describe('runbook copy commands', () => {
     expect(repositorySource(' cp /root/.ssh/authorized_keys /home/me/.ssh/')).toBeNull();
     expect(repositorySource(' cp "$LATEST_BACKUP" /tmp/x')).toBeNull();
     expect(repositorySource(' cp ~/local-backups/x.db /tmp/x')).toBeNull();
+    expect(repositorySource(' cp ./backend/a.sh /etc/a.sh')).toBe('backend/a.sh');
     expect(repositorySource(' cp .migration-backup-1/* ./')).toBeNull();
     expect(repositorySource('Copy the nginx config')).toBeNull();
   });
 
   it('still finds the copy commands the recovery guides are written around', () => {
+    expect(copiedSources('DISASTER-RECOVERY.md').length, 'the runbook format changed: no copy commands found').toBeGreaterThan(8);
     expect(copiedSources('DISASTER-RECOVERY.md')).toEqual(
       expect.arrayContaining(['nginx.conf', 'config/fail2ban/filter.d-nginx-scanner.conf', 'backend/scripts/daily-report.sh']),
     );
@@ -72,10 +84,11 @@ describe('runbook copy commands', () => {
   for (const runbook of runbooks) {
     it(`${runbook} copies only files that exist in the repository`, () => {
       const missing = copiedSources(runbook).filter(
-        (source) => !trackedFiles.has(source) && !runtimeFiles.has(source),
+        (source) =>
+          !trackedFiles.has(source) && !trackedDirectories.has(source.replace(/\/$/, '')) && !runtimeFiles.has(source),
       );
 
-      expect(missing).toEqual([]);
+      expect(missing, 'the check uses `git ls-files`: `git add` a new file the runbook copies').toEqual([]);
     });
   }
 });

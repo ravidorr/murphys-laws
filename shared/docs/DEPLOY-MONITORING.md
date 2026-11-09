@@ -283,7 +283,10 @@ curl -I https://murphys-laws.com
 # Test API health endpoint (should include dbQueryTime now)
 curl https://murphys-laws.com/api/health
 
-# Check the scanner defense: nginx closes the connection (curl prints 000)
+# Check the scanner defense: nginx closes the connection (curl prints 000).
+# Each probe counts as one scanner strike (5 in 10 minutes bans the address for 24 hours),
+# so run it once, or from an address listed in ignoreip of the jail file
+# (installed by the scanner jail step of DISASTER-RECOVERY.md).
 curl -s -o /dev/null -w '%{http_code}\n' https://murphys-laws.com/.env
 # The probe appears in the scanner log
 sudo tail -1 /var/log/nginx/scanner.log
@@ -344,7 +347,8 @@ sudo systemctl reload nginx
 ```bash
 # Restore previous ecosystem config from git history
 cd /root/murphys-laws
-git checkout HEAD~1 ecosystem.config.cjs
+git checkout HEAD~1 -- backend/ecosystem.config.cjs
+cd backend
 pm2 delete all
 pm2 start ecosystem.config.cjs
 pm2 save
@@ -454,7 +458,8 @@ cat /etc/postfix/sasl_passwd
 # Check nginx error log
 tail -100 /var/log/nginx/error.log
 
-# A probe must be closed with no response (curl prints 000) and logged
+# A probe must be closed with no response (curl prints 000) and logged.
+# Each probe is one scanner strike: run it once, or from an address in ignoreip.
 curl -s -o /dev/null -w '%{http_code}\n' https://murphys-laws.com/.env
 sudo tail -3 /var/log/nginx/scanner.log
 
