@@ -252,8 +252,9 @@ function isRetryableStatus(status: number): boolean {
 
 /**
  * Fetch one API URL with a deadline that covers reading the whole body, and retry it once on a network
- * error, a timeout, a 429 or a 5xx. Each request is retried on its own, so the paging loop in
- * `fetchAllLaws` still sees one consistent sequence of pages. A request that keeps failing with a thrown
+ * error, a timeout, a 429 or a 5xx. Each request is retried on its own, which does not restart or reorder the
+ * paging loop in `fetchAllLaws`; its stable sort and its check for a total that moves while paging still
+ * catch a list that changes during the build. A request that keeps failing with a thrown
  * error stops the build with the URL, the cause and the number of attempts; one that keeps answering 429 or
  * 5xx hands that last answer to the caller, which reports the status in its own words.
  */
@@ -278,12 +279,17 @@ async function fetchWithRetry(url: string, options: FetchWithRetryOptions = {}):
         json: async (): Promise<unknown> => {
           try {
             return JSON.parse(body) as unknown;
-          } catch {
-            throw new Error(`${url} answered with something that is not JSON`);
+          } catch (error) {
+            throw new Error(`${url} answered ${response.status} with something that is not JSON: ${body.slice(0, 200)}`, { cause: error });
           }
         }
       };
-      if (response.ok || !isRetryableStatus(response.status) || attempt === attempts) return result;
+      if (response.ok) return result;
+      if (!isRetryableStatus(response.status) || attempt === attempts) {
+        // The caller reports the status; the URL and the start of the body say what answered and why.
+        console.error(`${url} answered ${response.status} after ${attempt} ${attempt === 1 ? 'attempt' : 'attempts'}: ${body.slice(0, 200)}`);
+        return result;
+      }
       failure = `HTTP ${response.status}`;
     } catch (error) {
       const name = error instanceof Error ? error.name : '';
@@ -445,6 +451,17 @@ async function fetchFirstPageOfLaws(
     throw new Error(`Law API returned no laws for ?${query} although it reports ${json.total as number}`);
   }
   return { data: json.data as Law[], total: json.total as number };
+}
+
+/**
+ * A category page must show laws that belong to it. The category API's own total and the full law list
+ * both describe the category, so all three counts have to agree before the page is built; otherwise
+ * the API ignored the category filter or the data moved mid-build, and the page would show the wrong laws.
+ */
+function checkCategoryLawCounts(slug: string, firstPageTotal: number, listedLaws: number, categoryLawCount: number): void {
+  if (firstPageTotal !== listedLaws || firstPageTotal !== categoryLawCount) {
+    throw new Error(`Category "${slug}" disagrees with itself: the category list says ${categoryLawCount} laws, its first page reports ${firstPageTotal} and the full law list has ${listedLaws}; run the build again.`);
+  }
 }
 
 /**
@@ -1350,7 +1367,8 @@ async function main(): Promise<void> {
 
     // Pre-render first page of laws from API for SEO and no-JS users
     const CATEGORY_LAWS_PER_PAGE = 25;
-    const { data: categoryLaws } = await fetchFirstPageOfLaws({ limit: CATEGORY_LAWS_PER_PAGE, category_slug: slug });
+    const { data: categoryLaws, total: categoryTotal } = await fetchFirstPageOfLaws({ limit: CATEGORY_LAWS_PER_PAGE, category_slug: slug });
+    checkCategoryLawCounts(slug, categoryTotal, (lawsByCategorySlug.get(slug) || []).length, law_count);
     const categoryLawCardsHtml = renderStaticLawCards(categoryLaws);
     const ssgLawCardsSection = categoryLawCardsHtml
       ? `<div class="ssg-law-cards mt-8"><h2 class="text-xl font-semibold mb-4">Laws in this category</h2><section class="card-text">${categoryLawCardsHtml}</section></div>`
@@ -1906,6 +1924,7 @@ export {
   fetchAllCategories,
   fetchAllLaws,
   fetchFirstPageOfLaws,
+  checkCategoryLawCounts,
   mergeReviewedLawDetails,
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
