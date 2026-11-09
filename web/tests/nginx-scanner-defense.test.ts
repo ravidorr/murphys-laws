@@ -526,26 +526,29 @@ describe('nginx legacy /murphy/ pages', () => {
     }
   });
 
-  it.each(goneUrls)('has no exact redirect for %s, so the 410 answers it', (url) => {
-    expect(conf).not.toContain(`location = ${url} {`);
-    expect(url.startsWith('/murphy/')).toBe(true);
+  // nginx matches location = against the decoded path, so a %20 is a space
+  it.each(goneUrls)('has no exact redirect for %s, so it falls through to the 410 prefix location', (url) => {
+    const decoded = decodeURIComponent(url);
+    expect(pageRedirects.map(([file]) => `/murphy/${file}`)).not.toContain(decoded);
+    expect(conf).not.toContain(`location = ${decoded} {`);
+    expect(decoded.startsWith('/murphy/')).toBe(true);
   });
 
-  it('puts the trailing-slash rewrite before these locations so /murphy/murphy-laws.html/ takes two hops to the category', () => {
-    const rewrite = conf.search(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
-    expect(rewrite).toBeGreaterThan(-1);
-    expect(rewrite).toBeLessThan(conf.indexOf('location = /murphy/murphy-laws.html {'));
-    expect(rewrite).toBeLessThan(conf.indexOf('location ^~ /murphy/ {'));
+  it('strips a trailing slash in a server-level rewrite, so /murphy/murphy-laws.html/ reaches the exact redirect (two hops on the apex)', () => {
+    // Server-level rewrites run before location matching wherever they sit in the file, but one inside a
+    // location would not: the rule must not be nested.
+    expect(conf).toMatch(/^ {4}rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
     expect('/murphy/murphy-laws.html/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy/murphy-laws.html');
   });
 
-  it('does not touch the sitemap, robots.txt or any real route, because the 410 prefix needs the slash after /murphy', () => {
+  it('leaves the sitemap, robots.txt and real routes alone: the 410 prefix needs the slash after /murphy, and nothing we publish lives under it', () => {
     const prefix = '/murphy/';
     for (const path of ['/sitemap.xml', '/sitemaps.xml', '/robots.txt', '/llms.txt', '/murphys-law-vs-sods-law', '/murphys-laws-about-work', '/category/murphys-laws', '/law/1']) {
       expect(path.startsWith(prefix), path).toBe(false);
     }
-    // The sitemap and robots.txt do not list anything under /murphy/ either
+    // robots.txt is static; the sitemap is generated at build time, so check the builder that writes it
     expect(readFileSync(resolve(root, 'web', 'public', 'robots.txt'), 'utf-8')).not.toContain(prefix);
+    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).not.toContain(prefix);
   });
 });
 
@@ -602,7 +605,7 @@ describe('nginx legacy URL redirects', () => {
   });
 
   it('answers any other old /murphy/ URL with 410 and the site 404 page, without letting regex locations win', () => {
-    // ^~ stops regex locations (such as the .html and image caching rules) from taking the request
+    // ^~ stops regex locations (such as the image caching rule inside location /) from taking the request
     const block = locationBlock('location ^~ /murphy/ {');
     expect(block).toContain('return 410;');
     expect(block).not.toContain('return 301');
@@ -610,7 +613,7 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toMatch(/^\s*error_page 404 410 \/404\.html;$/m);
   });
 
-  it('keeps the bare /murphy section index redirecting home, because other sites link to it', () => {
+  it('keeps the bare /murphy section index redirecting home, because other sites may still link to it', () => {
     expect(locationBlock('location = /murphy {')).toContain('return 301 https://murphys-laws.com/;');
   });
 
