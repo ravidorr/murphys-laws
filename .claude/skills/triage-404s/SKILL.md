@@ -104,9 +104,10 @@ verdicts you are choosing between. If the session has no `advisor` tool, skip to
 
 ## 5. Make the changes (clear-cut verdicts only)
 
-Only verdicts 4 and 6, and the link fix of 5, produce changes. Put all the changes of one report in a
-single branch and a single draft PR. Split a change out only when it touches a different package or a
-different concern (for example a link fix in `web/src` next to nginx rules), and say so in the report.
+Only verdicts 4 and 6, and the link fix of 5, produce changes. A run produces **one branch and one
+draft PR for every 404 it received**, never one PR per path and never a second PR for a different
+concern. If the changes span packages (for example nginx rules plus a link fix in `web/src`), they still
+go in the same PR; bump each affected package's version in it. If no path needs a change, open no PR.
 
 **Rules for `nginx.conf`**
 - Scanner path patterns go in the `$scanner_path` map. Anchor them with a segment boundary:
@@ -178,7 +179,7 @@ End with one table, in the order of the report, then the short lists. Keep it pl
 |------|-------|---------|----------|---------|
 
 Then:
-- **Opened:** the PR link or links and what each covers.
+- **Opened:** the one PR link, with the paths it covers.
 - **Needs your decision:** images (with the evidence) and unresolved paths (with the options).
 - **Needs you to run:** any server command.
 - **Ignored on purpose:** paths left alone and why, so the next report's repeat does not look new.
