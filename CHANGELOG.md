@@ -58,6 +58,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and disabled states, a message-style status notice, the same elevation in dark mode, and outline buttons with the site's dark-mode fill and borders. The brand badge links to the archive and the
   page heading stays a plain heading, outside that link. Only canonical tokens from
   `web/styles/partials/variables.css` are used; `tests/admin-ui-tokens.test.ts` still checks they match.
+- A migration that fails now stops where it fails and is rolled back. `backend/scripts/migration-runner.ts`
+  starts the `sqlite3` CLI with `-bail`, so the first failing statement stops the run; before, the CLI carried on
+  after an error, through the file's closing `COMMIT`, and only then did the script report it, so a migration
+  could be half applied. A file that starts with its own `BEGIN` keeps its transaction and must end with one
+  `COMMIT`; any other file is wrapped in a transaction by the runner and must not `COMMIT` or `ROLLBACK`. The
+  row in `schema_migrations` is written in the same transaction as the migration, so a migration is applied and
+  recorded, or neither. A file that breaks those rules is refused before that migration runs. The command exits
+  non-zero with a message naming the migration and quoting sqlite3's error and, when sqlite3 reports a line, the
+  failing statement; later migrations are not tried. In the deploy, `npm run migrate` runs under `set -e`, so a failed migration stops the deploy before the
+  services restart; the build step migrates the database copy first, so it fails earlier still, before anything
+  is uploaded. `migrate()` takes an optional migrations folder (for tests). `MURPHYS_DB_PATH` is unchanged.
+  `shared/docs/DATABASE_MIGRATIONS.md` describes the behaviour; the matching `TODO.md` entry is removed. Backend bumped to `2.3.72`; root to `2.6.167`.
 - The production deploy prerenders the site from a sanitized, freshly migrated COPY of the production database,
   taken at build time. The copy is never committed, never uploaded and never kept as an artifact. This fixes the
   deadlock where the build ran before the server migrated: a data fix such as migration 022 could not reach
