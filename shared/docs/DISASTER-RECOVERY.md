@@ -235,17 +235,18 @@ EOF
  pm2 startup
  ```
 
-1. **Update DNS** (first: the certificate check below needs both names to resolve to this droplet):
+1. **Update DNS** (before the certificate step: the certificate check needs both names to resolve to this droplet):
 - Update A record for murphys-laws.com to <NEW_IP>
 - Update A record for <www.murphys-laws.com> to <NEW_IP>
 - Wait for DNS propagation (5-30 minutes)
 
-1. **Issue the SSL certificate** (first, because the repository's `nginx.conf` points at the certificate files, and `nginx -t` fails until they exist; nginx still runs its stock config at this point):
+1. **Issue the SSL certificate** (before configuring nginx, because the repository's `nginx.conf` points at the certificate files and `nginx -t` fails until they exist; nginx still runs its stock config at this point):
  ```bash
  certbot certonly --nginx -d murphys-laws.com -d www.murphys-laws.com \
- --non-interactive --agree-tos --email <your-email>
+ --non-interactive --agree-tos --email <your-email> \
+ --deploy-hook 'systemctl reload nginx'
  # the nginx plugin installs these two files; nginx.conf includes both
- test -f /etc/letsencrypt/options-ssl-nginx.conf && test -f /etc/letsencrypt/ssl-dhparams.pem
+ test -f /etc/letsencrypt/options-ssl-nginx.conf && test -f /etc/letsencrypt/ssl-dhparams.pem && echo "certbot files present"
  ```
 
 1. **Configure nginx** (the repository's root `nginx.conf` is the live site config: the site, the scanner defense, and the `scanner.log` that the scanner jail reads):
