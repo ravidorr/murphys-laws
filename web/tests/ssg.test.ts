@@ -1141,18 +1141,17 @@ describe('SSG law data from the API', () => {
   });
 
   describe('checkCategoryLawCounts', () => {
-    it('accepts a category whose three counts agree', () => {
-      expect(() => checkCategoryLawCounts('computers', 12, 12, 12)).not.toThrow();
+    it('accepts a category whose two counts agree', () => {
+      expect(() => checkCategoryLawCounts('computers', 12, 12)).not.toThrow();
     });
 
     it.each([
-      ['the first page reports another total', 40, 12, 12],
-      ['the full law list holds another number', 12, 11, 12],
-      ['the category list counts another number', 12, 12, 13],
-      ['the first page is empty', 0, 12, 12]
-    ])('stops the build when %s', (_case, firstPageTotal, listed, categoryCount) => {
-      expect(() => checkCategoryLawCounts('computers', firstPageTotal, listed, categoryCount))
-        .toThrow(`Category "computers" disagrees with itself: the category list says ${categoryCount} laws, its first page reports ${firstPageTotal} and the full law list has ${listed}; run the build again.`);
+      ['the first page reports every law', 2453, 12],
+      ['the first page is empty', 0, 12],
+      ['the category list counts another number', 12, 13]
+    ])('stops the build when %s', (_case, firstPageTotal, categoryCount) => {
+      expect(() => checkCategoryLawCounts('computers', firstPageTotal, categoryCount))
+        .toThrow(`Category "computers" disagrees with itself: the category list says ${categoryCount} laws and its first page reports ${firstPageTotal}; run the build again.`);
     });
   });
 
