@@ -159,6 +159,7 @@ case "$STUB_SERVER" in
   sanitized) exec bash -s -- export "${fixture}" ;;
   raw) cat "${fixture}" ;;
   empty) : ;;
+  chatter) echo "Welcome to the server"; exec bash -s -- export "${fixture}" ;;
   *) echo "ssh: connect to host: Connection timed out" >&2; exit 255 ;;
 esac
 `);
@@ -215,11 +216,12 @@ test('an unreachable server fails the fetch and leaves no usable copy', () => {
   assert.doesNotMatch(result.stdout, /Fetched a sanitized copy/);
 });
 
-test('an empty answer, or a copy that still holds personal data, fails the fetch', () => {
-  for (const server of ['empty', 'raw']) {
+test('an empty answer, a shell that prints first, or a copy that still holds personal data, fails the fetch', () => {
+  for (const server of ['empty', 'chatter', 'raw']) {
     const sandbox = createSandbox();
     const result = runFetchStep(sandbox, server);
     assert.notEqual(result.status, 0, server);
+    if (server !== 'raw') assert.match(result.stdout, /did not send a SQLite database/, server);
     for (const secret of fixtureSecrets) assert.ok(!result.stdout.includes(secret) && !result.stderr.includes(secret), `${server}: ${secret} is in the log`);
   }
 });

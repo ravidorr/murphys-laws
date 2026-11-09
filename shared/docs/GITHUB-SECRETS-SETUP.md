@@ -23,6 +23,11 @@ Navigate to: **GitHub Repository -> Settings -> Secrets and variables -> Actions
  ```
 - **Format**: Should start with `-----BEGIN OPENSSH PRIVATE KEY-----` and end with `-----END OPENSSH PRIVATE KEY-----`
 - **Important**: Copy the entire key including the header and footer lines
+- **Used for**: the file upload and the deploy script, and also a first step that reads the production database
+  through `sudo` (`sudo bash -s -- export /root/murphys-laws/backend/murphys.db`, with `sqlite3` installed on the
+  server) to build the site from a sanitized copy. `SERVER_USER` therefore needs passwordless `sudo` without a
+  terminal, and the remote shell's startup files must print nothing. The host key is not verified (a new
+  `known_hosts` file per run, as in the upload and deploy actions).
 
 ### 4. SMTP_HOST
 - **Value**: Your SMTP server hostname (e.g., `mail.smtp2go.com`)

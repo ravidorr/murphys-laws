@@ -42,9 +42,10 @@ describe('scripts/migrate.ts', () => {
     expect(console.log).toHaveBeenCalledWith('\nDatabase is up to date. No migrations to apply.');
   });
 
-  it('migrates the file named by MURPHYS_DB_PATH when it runs as a script, and leaves backend/murphys.db alone', () => {
-    const output = execFileSync(process.execPath, ['--import', 'tsx', 'scripts/migrate.ts'], {
-      cwd: backendDir,
+  it('migrates the file named by MURPHYS_DB_PATH when run the way the deploy runs it (npm run migrate)', () => {
+    // Run as a script it must really migrate: a false "run as main" check would exit 0 having done nothing.
+    const output = execFileSync('npm', ['--prefix', backendDir, 'run', 'migrate'], {
+      cwd: resolve(backendDir, '..'),
       env: { ...process.env, MURPHYS_DB_PATH: dbFile },
       encoding: 'utf8',
     });

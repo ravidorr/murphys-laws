@@ -49,11 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `TODO.md` now lists open work only. The finished and cancelled entries, and the "Implemented from Reviews" and
-  "Completed" sections, are gone, along with the sections they left empty. What shipped is recorded here.
-
-### Changed
-
 - The production deploy prerenders the site from a sanitized, freshly migrated COPY of the production database,
   taken at build time. The copy is never committed, never uploaded and never kept as an artifact. This fixes the
   deadlock where the build ran before the server migrated: a data fix such as migration 022 could not reach
@@ -70,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     failure before the upload stops the deploy: there is no fallback to the archive or to a stale site, and nothing
     between the fetch and the upload has `continue-on-error`. The key is read from the environment into a `0600`
     file in `$RUNNER_TEMP` (never into the script text or the log) and removed as soon as the copy is fetched; the
-    host key is accepted on first use.
+    host key is not verified (a fresh `known_hosts` per run, as in the upload and deploy actions).
   - Sanitizing is an allowlist: only `laws`, `categories`, `law_categories`, `attributions`, `law_relations`,
     `votes`, `law_of_the_day_history`, `law_annotations`, `schema_migrations` and the `laws_fts` search index keep
     rows. Every other table (today `email_subscriptions`, `push_subscriptions` and
@@ -106,6 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     email addresses in `attributions.contact_value` and the vote identifiers. Removing it from the history needs a
     history rewrite and a force-push, which is the owner's decision and has not been done.
   Backend bumped to `2.3.68`; root to `2.6.163`.
+- `TODO.md` now lists open work only. The finished and cancelled entries, and the "Implemented from Reviews" and
+  "Completed" sections, are gone, along with the sections they left empty. What shipped is recorded here.
 
 ### Fixed
 
