@@ -12,8 +12,7 @@ The following enhancements have been created:
 - Automated service restart on failures (every 5 minutes)
 
 **Security Enhancements:**
-- Enhanced nginx rate limiting
-- Comprehensive security headers (including CSP)
+- Scanner defense in nginx (drops exploit probes and feeds the fail2ban scanner jail)
 - SSL certificate monitoring with chain validation
 - Weekly vulnerability scanning
 - Daily log analysis with attack detection
@@ -142,11 +141,11 @@ pm2 restart all
 ```bash
 # Upload new ecosystem config
 # From local machine:
-scp ecosystem.config.cjs ravidor@167.99.53.90:/tmp/
+scp backend/ecosystem.config.cjs ravidor@167.99.53.90:/tmp/
 
 # On server:
-sudo cp /tmp/ecosystem.config.cjs /root/murphys-laws/
-cd /root/murphys-laws
+sudo cp /tmp/ecosystem.config.cjs /root/murphys-laws/backend/
+cd /root/murphys-laws/backend
 pm2 delete all
 pm2 start ecosystem.config.cjs
 pm2 save
@@ -200,31 +199,28 @@ When `backend/scripts/render-daily-report.ts` changes on a push to `main`, the d
 workflow sends one template smoke email if the repository secret
 `DAILY_REPORT_TEST_RECIPIENT` is configured (same explicit recipient as manual runs).
 
-#### 6. Update Nginx Configuration (Rate Limiting & Security Headers)
+#### 6. Update Nginx Configuration (Site Config and Scanner Defense)
+
+The repository's root `nginx.conf` is the live site config. It also holds the scanner defense and writes
+`/var/log/nginx/scanner.log`, which the `nginx-scanner` fail2ban jail reads. Do not install
+`backend/config/nginx-murphys-laws-enhanced.conf` instead: it has neither.
 
 **IMPORTANT**: Test nginx configuration before applying!
 
 ```bash
-# Upload nginx configs
+# Upload the nginx config
 # From local machine:
-scp config/nginx-rate-limiting.conf ravidor@167.99.53.90:/tmp/
-scp config/nginx-murphys-laws-enhanced.conf ravidor@167.99.53.90:/tmp/
+scp nginx.conf ravidor@167.99.53.90:/tmp/
 
 # On server:
 # Backup current configuration
 sudo cp /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-available/murphys-laws.backup-$(date +%Y%m%d)
 
-# Add rate limiting configuration to nginx.conf
-sudo cp /tmp/nginx-rate-limiting.conf /etc/nginx/conf.d/rate-limiting.conf
-
-# Review the new server configuration
-cat /tmp/nginx-murphys-laws-enhanced.conf
-
-# IMPORTANT: Review the CSP (Content Security Policy) in the config
-# Make sure it includes all domains your app needs (Google Analytics, GTM, etc.)
+# Review what changes (an empty diff means the server already runs this file)
+diff /etc/nginx/sites-available/murphys-laws /tmp/nginx.conf
 
 # If satisfied, apply it:
-sudo cp /tmp/nginx-murphys-laws-enhanced.conf /etc/nginx/sites-available/murphys-laws
+sudo cp /tmp/nginx.conf /etc/nginx/sites-available/murphys-laws
 
 # Test configuration
 sudo nginx -t
@@ -287,10 +283,13 @@ curl -I https://murphys-laws.com
 # Test API health endpoint (should include dbQueryTime now)
 curl https://murphys-laws.com/api/health
 
-# Check rate limiting is working
-# Run this command multiple times rapidly:
-for i in {1..30}; do curl -I https://murphys-laws.com; done
-# Should eventually see 429 (Too Many Requests) responses
+# Check the scanner defense: nginx closes the connection (curl prints 000).
+# Each probe counts as one scanner strike (5 in 10 minutes bans the address for 24 hours),
+# so run it once, or from an address listed in ignoreip of the jail file
+# (installed by the scanner jail step of DISASTER-RECOVERY.md).
+curl -s -o /dev/null -w '%{http_code}\n' https://murphys-laws.com/.env
+# The probe appears in the scanner log
+sudo tail -1 /var/log/nginx/scanner.log
 ```
 
 ---
@@ -317,8 +316,7 @@ After deployment, verify:
 - [ ] Vulnerability scanner runs weekly
 - [ ] Log analyzer runs daily
 - [ ] Enhanced daily report sent at 8 AM
-- [ ] Nginx rate limiting active
-- [ ] Security headers present (check with: `curl -I https://murphys-laws.com`)
+- [ ] Scanner defense active (`curl https://murphys-laws.com/.env` is closed with no response and logged in `scanner.log`)
 - [ ] PM2 auto-restart configured
 - [ ] All PM2 processes running
 - [ ] Email alerts working
@@ -349,7 +347,8 @@ sudo systemctl reload nginx
 ```bash
 # Restore previous ecosystem config from git history
 cd /root/murphys-laws
-git checkout HEAD~1 ecosystem.config.cjs
+git checkout HEAD~1 -- backend/ecosystem.config.cjs
+cd backend
 pm2 delete all
 pm2 start ecosystem.config.cjs
 pm2 save
@@ -453,18 +452,19 @@ echo "Test" | mail -s "Test" <your-email>
 cat /etc/postfix/sasl_passwd
 ```
 
-### Nginx Rate Limiting Issues
+### Nginx Scanner Defense Issues
 
 ```bash
 # Check nginx error log
 tail -100 /var/log/nginx/error.log
 
-# Check if rate limit zones are defined
-grep "limit_req_zone" /etc/nginx/conf.d/rate-limiting.conf
+# A probe must be closed with no response (curl prints 000) and logged.
+# Each probe is one scanner strike: run it once, or from an address in ignoreip.
+curl -s -o /dev/null -w '%{http_code}\n' https://murphys-laws.com/.env
+sudo tail -3 /var/log/nginx/scanner.log
 
-# Test rate limiting
-for i in {1..50}; do curl -w "%{http_code}\n" -o /dev/null -s https://murphys-laws.com; done
-# Should see some 429 responses
+# The jail must be reading that file
+sudo fail2ban-client status nginx-scanner
 ```
 
 ### PM2 Process Crashes
