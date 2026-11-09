@@ -116,6 +116,64 @@ describe('migration 022: strip contact details from public law fields', () => {
     expect(searchIds('quokkas')).toEqual([]);
   });
 
+  it('sends a law with an address in its text but no broken title to review, and leaves the other statuses alone', () => {
+    const quoted = addLaw('Quoted title', 'tamzanzw@yahoo.com).');
+    const open = addLaw(null, 'Mail me at open@example.com');
+    const rejected = addLaw(null, 'Mail me at rejected@example.com');
+    db.prepare("UPDATE laws SET status = 'in_review', admin_notes = 'awaiting' WHERE id = ?").run(open);
+    db.prepare("UPDATE laws SET status = 'rejected' WHERE id = ?").run(rejected);
+    migrate();
+    expect(law(quoted).status).toBe('in_review');
+    expect(law(open)).toMatchObject({ status: 'in_review', admin_notes: 'awaiting' });
+    expect(law(rejected)).toMatchObject({ status: 'rejected', admin_notes: null });
+  });
+
+  it('writes the review note without a leading space and does not repeat it on a second run', () => {
+    const id = addLaw(null, 'Mail me at someone@example.com');
+    migrate();
+    const note = law(id).admin_notes;
+    expect(note).toBe('Moved to review by migration 022: the text or title holds a contact detail (email address or mailto link).');
+    migrate();
+    expect(law(id).admin_notes).toBe(note);
+  });
+
+  it('leaves a cut title alone when the text is more than the address, or when the title is only the lead-in', () => {
+    const wordy = addLaw('Law one. Sent [by Z](mailto', 'z@y.com). Thanks');
+    const leadIn = addLaw('Sent [by Z](mailto', 'z@y.com).');
+    migrate();
+    expect(law(wordy)).toMatchObject({ title: 'Law one. Sent [by Z](mailto', text: 'z@y.com). Thanks', status: 'in_review' });
+    expect(law(leadIn)).toMatchObject({ title: 'Sent [by Z](mailto', text: 'z@y.com).', status: 'in_review' });
+    expect(attributions(wordy)).toEqual([]);
+    expect(attributions(leadIn)).toEqual([]);
+  });
+
+  it('turns a note with text after the link into the prefix and the handle, and keeps the first of two links', () => {
+    const trailing = addLaw(null, 'A law.', [{ name: 'Jo', note: '[h](mailto:h@x.com) thanks for the law' }]);
+    const two = addLaw(null, 'Another law.', [{ name: 'Jo', note: 'Sent by [a](mailto:a@b.com) and [c](mailto:c@d.com)' }]);
+    migrate();
+    expect(attributions(trailing)[0]?.note).toBe('h');
+    expect(attributions(two)[0]?.note).toBe('Sent by a');
+  });
+
+  it('fills an empty contact value from an address name and leaves the other attributions of the law alone', () => {
+    const id = addLaw(null, 'A law.', [
+      { name: 'Real Person', contact_type: 'text', contact_value: 'http://example.com/rp' },
+      { name: 'solo@example.com', contact_type: 'url', contact_value: '' }
+    ]);
+    migrate();
+    expect(attributions(id)).toEqual([
+      { name: 'Real Person', contact_type: 'text', contact_value: 'http://example.com/rp', note: null },
+      { name: 'Anonymous', contact_type: 'email', contact_value: 'solo@example.com', note: null }
+    ]);
+  });
+
+  it('matches MAILTO in any case', () => {
+    const id = addLaw('Law. Sent [by Q](MAILTO', 'q@y.com).');
+    migrate();
+    expect(law(id).status).toBe('published');
+    expect(law(id).title).toBeNull();
+  });
+
   it('keeps an existing admin note when sending a law back to review', () => {
     const id = addLaw(null, 'Mail me at someone@example.com');
     db.prepare('UPDATE laws SET admin_notes = ? WHERE id = ?').run('checked once', id);
@@ -129,15 +187,18 @@ describe('migration 022: strip contact details from public law fields', () => {
       addLaw('Peter Principle', 'People rise to their level of incompetence (see the corollary).', [{ name: 'Brad Johnson', note: 'Austin, TX' }]),
       addLaw(null, 'Meet me @ 5 p.m. (or later).', [{ name: '@handle' }]),
       addLaw(null, 'An unfinished thought (maybe net).', [{ name: 'Jo', note: 'age 42' }]),
-      addLaw('Quoted title', 'tamzanzw@yahoo.com).', [])
+      addLaw(null, 'People rise to their level (see the corollary).', [{ name: 'Sam', note: 'and [h](mailto:h@webtv' }]),
+      addLaw(null, 'A law with no attribution fields at all.', [{}]),
+      addLaw(null, 'A law with an ordinary note.', [{ name: 'Pat', note: 'Sent from Paris' }])
     ];
     const rows = (): unknown[] => untouched.map((id) => [law(id), attributions(id)]);
     const before = rows();
     migrate();
-    // Only the last fixture holds an address in its text, and no broken title explains it: it goes to review.
-    const after = rows();
-    expect(after.slice(0, 4)).toEqual(before.slice(0, 4));
-    expect(law(untouched[4]!).status).toBe('in_review');
+        const after = rows();
+    // The corollary text keeps its ending even though a broken mailto note sits next to it; only the note changes.
+    expect(law(untouched[4]!).text).toBe('People rise to their level (see the corollary).');
+    expect(attributions(untouched[4]!)[0]?.note).toBe('and h');
+    expect(after.filter((_, i) => i !== 4)).toEqual(before.filter((_, i) => i !== 4));
   });
 
   it('does not rewrite the updated_at of rows it leaves alone', () => {

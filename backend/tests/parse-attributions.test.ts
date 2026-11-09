@@ -91,6 +91,32 @@ describe('parseAttributions', () => {
       expect(res.attributions[0]).toMatchObject({ name: 'Anonymous', contact_type: 'email' });
     });
 
+    it('handles the production shape of a link cut before its colon', () => {
+      const res = parseAttributions('A vaccine law. Sent [by Takura Razemba](mailto');
+      expect(res.cleanText).toBe('A vaccine law. Sent by Takura Razemba');
+    });
+
+    it('keeps names that merely start with the letters "by" and a capitalised "By"', () => {
+      const names = ['Byrd', 'Byron', 'Bylund', 'By Jove'];
+      for (const name of names) {
+        expect(parseAttributions(`A law. Sent by [${name}](http://example.com/x).`).attributions[0]?.name).toBe(name);
+      }
+      expect(parseAttributions('A law. Sent [by Jane](http://example.com/jane).').attributions[0]?.name).toBe('Jane');
+    });
+
+    it('keeps the order and source fragment of several links and masks several addresses', () => {
+      const res = parseAttributions('A law. Sent by [Ann](mailto:ann@example.com) and [Bo](http://example.com/bo), cc a@b.com and c@d.org.');
+      expect(res.attributions.map((a) => [a.name, a.contact_type, a.source_fragment])).toEqual([
+        ['Ann', 'email', '[Ann](mailto:ann@example.com)'],
+        ['Bo', 'url', '[Bo](http://example.com/bo)']
+      ]);
+      expect(res.cleanText).toBe('A law. Sent by Ann and Bo, cc Anonymous and Anonymous.');
+    });
+
+    it('masks an address inside a longer link text', () => {
+      expect(parseAttributions('Sent by [J a@b.com](mailto:a@b.com).').attributions[0]?.name).toBe('J Anonymous');
+    });
+
     it('keeps a web link as a url contact', () => {
       const res = parseAttributions('A law. Sent by [Jane](http://example.com/jane).');
       expect(res.attributions[0]).toMatchObject({ name: 'Jane', contact_type: 'url', contact_value: 'http://example.com/jane' });
