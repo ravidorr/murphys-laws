@@ -5,14 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      seeded_build:
-        description: >-
-          Emergency only: prerender from a database built from the archive instead of the production API.
-          Use it when the production API is down, and fix the production data afterwards, because the
-          static law pages then describe different laws from the ones the API serves.
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -42,33 +34,92 @@ jobs:
         run: npm install @rollup/rollup-linux-x64-gnu@4.59.0 --no-save
         if: runner.os == 'Linux'
 
-      # The static pages are prerendered from the production API, not from the archive: production numbers
-      # and publishes laws differently, so a build from the archive gave every law page the wrong law and
-      # left the sitemap listing laws the API no longer has. The build stops (and with it the deploy, before
-      # anything is uploaded) when the API is unreachable, incomplete or serves a page that fails the build's
-      # checks. Pull-request CI keeps building from a seeded local API.
+      # The static pages are prerendered from a COPY of the production database, taken here at build time and
+      # never committed or uploaded: the archive numbers and publishes laws differently from production (every
+      # law page then described the wrong law), and prerendering from the live API ran before the server migrated,
+      # so a data-fixing migration in the same deploy could never take effect.
       #
-      # The build runs before the server migrates, so the pages show the production data as it was before this
-      # deploy's migrations (a data fix appears one deploy later), and a change that makes the build need a
-      # new API field cannot ship in the same deploy as the backend change that adds it.
+      # 1. The sanitizer is streamed to the server over the SSH access the deploy already uses (the server still
+      #    runs the previous release, so it cannot be uploaded first). On the server it takes a consistent
+      #    .backup of the live database and sanitizes THAT COPY (an allowlist of tables, contact details and
+      #    voter identifiers removed, VACUUMed), so the private data never leaves the server (text that is already public
+      #    is copied as it is, and the copy is deleted when the job ends). Only the sanitized
+      #    file is streamed back, which is why no scp is needed.
+      # 2. The build then applies this release's pending migrations to the copy (the same ones the server runs
+      #    after the upload below) and prerenders from a local API that serves the copy.
+      # Any failure here stops the job before anything is uploaded: there is no fallback to the archive or to a
+      # stale site. If the server cannot be reached the deploy could not upload or migrate either.
+      - name: Fetch a sanitized copy of the production database
+        env:
+          SERVER_HOST: ${{ secrets['SERVER_HOST'] }}
+          SERVER_USER: ${{ secrets['SERVER_USER'] }}
+          SSH_PRIVATE_KEY: ${{ secrets['SSH_PRIVATE_KEY'] }}
+          # Optional: the server's line from `ssh-keyscan -t ed25519 <host>`. When set, the host key is pinned.
+          SERVER_HOST_KEY: ${{ secrets['SERVER_HOST_KEY'] }}
+        run: |
+          set -euo pipefail
+          umask 077
+          : "${SERVER_HOST:?the SERVER_HOST secret is not set}" "${SERVER_USER:?the SERVER_USER secret is not set}" "${SSH_PRIVATE_KEY:?the SSH_PRIVATE_KEY secret is not set}"
+          command -v sqlite3 > /dev/null || { echo "::error::sqlite3 is not installed on the runner"; exit 1; }
+
+          ssh_dir="$RUNNER_TEMP/deploy-ssh"
+          copy_dir="$RUNNER_TEMP/prod-db-copy"
+          mkdir -p "$ssh_dir" "$copy_dir"
+          chmod 700 "$ssh_dir" "$copy_dir"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          chmod 600 "$ssh_dir/key"
+
+          # With a pinned host key the connection is refused when the server presents another one. Without it the
+          # key is trusted on first use, which is how the upload and deploy steps below connect too.
+          if [ -n "$(printf '%s' "${SERVER_HOST_KEY:-}" | tr -d '[:space:]')" ]; then
+            printf '%s\n' "$SERVER_HOST_KEY" > "$ssh_dir/known_hosts"
+            host_key_check=yes
+          else
+            echo "::warning::The SERVER_HOST_KEY secret is not set, so the server's host key is not verified (see shared/docs/GITHUB-SECRETS-SETUP.md)"
+            host_key_check=accept-new
+          fi
+
+          # The script is read from stdin (it is not on the server yet) and the sanitized database comes back on
+          # stdout; everything the script reports goes to stderr, and it never prints a row.
+          ssh -i "$ssh_dir/key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=30 -o ServerAliveInterval=15 \
+            -o StrictHostKeyChecking="$host_key_check" -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            "$SERVER_USER@$SERVER_HOST" \
+            'sudo bash -s -- export /root/murphys-laws/backend/murphys.db' \
+            < backend/scripts/sanitize-db-copy.sh > "$copy_dir/murphys.db"
+          rm -f "$ssh_dir/key"
+
+          # A startup file on the server that prints to stdout would corrupt the stream: say so plainly.
+          [ "$(head -c 15 "$copy_dir/murphys.db")" = "SQLite format 3" ] \
+            || { echo "::error::the server did not send a SQLite database (a remote shell startup file may be printing to stdout)"; exit 1; }
+
+          # Check the copy again here, on the runner, before anything is built from it. Counts only, no rows.
+          bash backend/scripts/sanitize-db-copy.sh verify "$copy_dir/murphys.db"
+          [ "$(sqlite3 "$copy_dir/murphys.db" 'PRAGMA integrity_check;')" = "ok" ] \
+            || { echo "::error::the fetched database failed its integrity check"; exit 1; }
+          laws="$(sqlite3 "$copy_dir/murphys.db" "SELECT COUNT(*) FROM laws WHERE status = 'published';")"
+          [ "$laws" -gt 0 ] || { echo "::error::the fetched database holds no published law"; exit 1; }
+          echo "Fetched a sanitized copy: $laws published laws, $(wc -c < "$copy_dir/murphys.db" | tr -d ' ') bytes"
+
       - name: Build project
         run: |
           npm run build:openapi
-          if [ "$SEEDED_BUILD" = "true" ]; then
-            echo "::warning::Emergency seeded build: law pages are prerendered from the archive, not from production"
-            npm run build:web
-          else
-            npm --prefix web run build
-          fi
+          npm run build:web
         env:
-          API_BASE_URL: https://murphys-laws.com
-          SEEDED_BUILD: ${{ inputs.seeded_build }}
+          # npm run build:web migrates this copy, serves it from a local API and prerenders from that API
+          MURPHYS_DB_PATH: ${{ runner.temp }}/prod-db-copy/murphys.db
           # Sentry configuration for frontend error tracking and source map upload
           VITE_SENTRY_DSN: ${{ secrets['SENTRY_DSN'] }}
           SENTRY_AUTH_TOKEN: ${{ secrets['SENTRY_AUTH_TOKEN'] }}
           SENTRY_ORG: ${{ secrets['SENTRY_ORG'] }}
           SENTRY_PROJECT: ${{ secrets['SENTRY_PROJECT'] }}
           SENTRY_UPLOAD: 'true'
+
+      # Runs whether the fetch or the build passed or failed. The copy is never uploaded (the upload step names
+      # its sources) and is never kept as an artifact.
+      - name: Delete the database copy and the SSH key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/prod-db-copy" "$RUNNER_TEMP/deploy-ssh"
 
       - name: Check monitoring recipient secrets
         env:

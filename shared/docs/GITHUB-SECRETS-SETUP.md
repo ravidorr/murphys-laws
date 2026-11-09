@@ -23,6 +23,14 @@ Navigate to: **GitHub Repository -> Settings -> Secrets and variables -> Actions
  ```
 - **Format**: Should start with `-----BEGIN OPENSSH PRIVATE KEY-----` and end with `-----END OPENSSH PRIVATE KEY-----`
 - **Important**: Copy the entire key including the header and footer lines
+- **Used for**: the file upload and the deploy script, and also a step before the build that reads the production database
+  through `sudo` (`sudo bash -s -- export /root/murphys-laws/backend/murphys.db`, with `sqlite3` installed on the
+  server) to build the site from a sanitized copy. The step runs `sudo bash -s` without a
+  terminal, so passwordless `sudo` must work non-interactively (the deploy script already relies on it) and the remote
+  shell's startup files must print nothing.
+- **Optional `SERVER_HOST_KEY`**: the server's line from `ssh-keyscan -t ed25519 <SERVER_HOST>`. When set, that
+  step pins the host key (`StrictHostKeyChecking=yes`); without it the key is trusted on first use, which is also how
+  the upload and deploy actions connect, and the step prints a warning.
 
 ### 4. SMTP_HOST
 - **Value**: Your SMTP server hostname (e.g., `mail.smtp2go.com`)

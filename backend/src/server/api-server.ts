@@ -14,6 +14,7 @@ import { AttributionService } from '../services/attributions.service.ts';
 import { FeedService } from '../services/feed.service.ts';
 import { OgImageService } from '../services/og-image.service.ts';
 import { HtmlInjectionService } from '../services/html-injection.service.ts';
+import { resolveDatabasePath } from '../utils/database-path.ts';
 
 import { LawController } from '../controllers/laws.controller.ts';
 import { AdminController } from '../controllers/admin.controller.ts';
@@ -81,7 +82,7 @@ export interface CreateApiServerOptions {
 export function createApiServer(options?: CreateApiServerOptions) {
   initSentry();
 
-  const dbPath = resolve(__dirname, '..', '..', 'murphys.db');
+  const dbPath = resolveDatabasePath(resolve(__dirname, '..', '..', 'murphys.db'));
   const host = process.env.HOST || '127.0.0.1';
   const port = Number(process.env.PORT || 8787);
 

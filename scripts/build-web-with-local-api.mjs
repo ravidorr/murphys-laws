@@ -1,8 +1,20 @@
 import { spawn } from 'node:child_process';
+import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+// The production deploy points this at a sanitized copy of the production database (see
+// backend/scripts/sanitize-db-copy.sh). The backend reads the same variable, so the migration and the API below
+// use that file; pull-request CI leaves it unset and builds from the archive.
+if (process.env.MURPHYS_DB_PATH !== undefined && !process.env.MURPHYS_DB_PATH.trim()) {
+  // A blank value must not quietly select the archive build.
+  throw new Error('MURPHYS_DB_PATH is set but blank. Unset it for the archive build, or name the database copy.');
+}
+const databaseCopy = process.env.MURPHYS_DB_PATH ? path.resolve(process.env.MURPHYS_DB_PATH.trim()) : '';
+// npm runs the backend scripts from backend/, so hand them an absolute path.
+if (databaseCopy) process.env.MURPHYS_DB_PATH = databaseCopy;
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -45,7 +57,19 @@ try {
   if (error instanceof Error && error.message.startsWith('Port 8787')) throw error;
 }
 
-await run('npm', ['--prefix', 'backend', 'run', 'build:db']);
+if (databaseCopy) {
+  // With a copy configured, never build the archive over it. And never prerender from a missing or empty file:
+  // SQLite would create a database there and the migrations would seed it with about a hundred laws, a site that no
+  // later check would reject.
+  if (!existsSync(databaseCopy) || !statSync(databaseCopy).isFile() || statSync(databaseCopy).size === 0) {
+    throw new Error('MURPHYS_DB_PATH must name an existing, non-empty database file.');
+  }
+  // Bring the copy to the schema and data this deploy leaves on the server: the same migrations the deploy runs
+  // after uploading. This is what lets a deploy carry both a data-fixing migration and the build that needs it.
+  await run('npm', ['--prefix', 'backend', 'run', 'migrate']);
+} else {
+  await run('npm', ['--prefix', 'backend', 'run', 'build:db']);
+}
 
 let apiLogs = '';
 const apiProcess = spawn('npm', ['--prefix', 'backend', 'start'], {
