@@ -57,20 +57,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixes for problems behind Search Console's page-indexing report of 9 November 2026. The largest one, static law
   pages that describe a different law from the one the API serves for the same ID, is still open (see `TODO.md`):
   - A law page that the backend renders itself (a law published after the last build, such as `/law/2513`)
-    declared `https://murphys-laws.com/law/2513/` as its canonical, `og:url` and JSON-LD URL. nginx redirects the
-    trailing-slash form back to `/law/2513`, so the canonical pointed at a redirect. The URL no longer ends in a
-    slash.
+    declared `https://murphys-laws.com/law/2513/` as its canonical, `og:url`, `twitter:url` and JSON-LD `url` and
+    `@id`. nginx redirects the trailing-slash form back to `/law/2513`, so the canonical pointed at a redirect. The
+    URL no longer ends in a slash.
   - A prerendered law page whose law the API no longer has (38 of them were in the sitemap, for example `/law/1719`)
     stayed `index, follow` and showed its "not found" state only after JavaScript ran, which Google reports as a
-    soft 404. The page is now marked `noindex, follow` when the API answers 404, unless the user has already left it. A timeout, a 5xx or a network failure
+    soft 404. The page is now marked `noindex, follow` when the API answers 404, unless the user has already left it.
+    The tag is set by JavaScript, so Google drops the page once it renders it again (Search Console will then list
+    it as "Excluded by noindex"). A timeout, a 5xx or a network failure
     does not, so a law that exists is never de-indexed because the API was slow while Googlebot rendered it, and a
     retry that finds the law makes the page indexable again.
-  - The site build (`web/scripts/ssg.ts`) logged a warning and carried on with **no law pages and an empty
-    sitemap** when the law list could not be read, and it accepted a partial or repeated list. It now stops when the
-    API errors, returns nothing, returns fewer laws than its own total, or returns the same law twice. It also
-    reads the list sorted by `created_at`, which votes do not change (the API breaks ties by ID), so paging is
-    stable, and puts it back into the order the default listing used. The browse and category pages' first page of
-    laws now stops the build on an API failure too, instead of publishing pages with no laws on them.
+  - The site build (`web/scripts/ssg.ts`) logged a warning and carried on with **no law pages and no law URLs in
+    the sitemap** when the law list could not be read, and it accepted a partial or repeated list. It now stops
+    when the API errors, returns nothing, returns a different number of laws than its own total, returns the same
+    law twice, or reports a different total halfway through the paging. It also reads the list sorted by
+    `created_at`, which votes do not change (the API breaks ties by ID), so paging is stable, and puts it back into
+    the order the default listing used. The first page of laws that the browse and category pages show stops the
+    build on an API failure or an empty page with a positive total, instead of publishing pages with no laws on
+    them. The build also stops when the browse total does not match the full list, or when a law is in a category
+    the category API does not list (such a law would be prerendered yet linked from no list page).
   - The 25 laws with an editorial annotation were looked up by hardcoded ID (`2, 4, 8, ...`). Those are the IDs a
     database built from the archive gives them; production gives them IDs between 2381 and 2470. Migration 016 names
     them by slug, which the API list does not carry, so the build now finds them by title. The one that carries the
@@ -78,12 +83,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     that is missing, or whose title is annotated on more than one law, still stops the build.
   - `/index.htm`, the old site's home page, redirects to `/` instead of returning 404.
   - The JSON API is served with `X-Robots-Tag: noindex`. robots.txt gives Googlebot its own group that does not
-    disallow `/api/` (the `*` group does, and the pages call the API while rendering), so Google crawled
-    `/api/v1/laws`, `/api/v1/categories` and the RSS and Atom feeds as pages and listed them as "crawled, currently
-    not indexed", "not found" and "duplicate". The header keeps them out of the index without stopping the fetch.
-    The OG image location keeps its own headers.
+    disallow `/api/` (the `*` group does, and the pages call the API while rendering), so Google crawled the API as
+    pages: `/api/v1/laws`, `/api/v1/categories` and both feeds are listed as "crawled, currently not indexed",
+    `/api/v1`, `/api/v1/` and `/api/v1/health` as "not found", and the `www` RSS feed as a duplicate. The header
+    keeps them out of the index without stopping the fetch. The OG image location keeps its own headers.
 
-  Backend bumped to `2.3.65`; web to `3.4.66`; root to `2.6.157`.
+  Backend bumped to `2.3.66`; web to `3.4.66`; root to `2.6.158`.
 - The daily report's command injection count (28,131 in the 9 November report) was not real. Six of the ten
   patterns in `backend/scripts/log-analyzer.sh` began with an unescaped `|` (`|cat`, `|nc`, `|wget`, `|curl`,
   `|bash`, `|sh`). Run through `grep -E`, that is "empty or cat", which GNU grep matches on every line, so each

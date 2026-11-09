@@ -24,6 +24,7 @@ import {
   buildContentBreadcrumbTrail,
   fetchAllCategories,
   fetchAllLaws,
+  fetchFirstPageOfLaws,
   mergeReviewedLawDetails,
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
@@ -766,10 +767,65 @@ describe('SSG law data from the API', () => {
       expect((await fetchAllLaws(request, 'https://api.test')).map((item) => item.id)).toEqual([3, 2, 1]);
     });
 
+    it('throws when the total changes while the pages are read, because a page boundary may have shifted', async () => {
+      const request = vi.fn()
+        .mockResolvedValueOnce(reply({ data: [law(1), law(2)], total: 3 }))
+        .mockResolvedValueOnce(reply({ data: [law(3)], total: 2 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('total changed from 3 to 2');
+    });
+
+    it('stops instead of looping when the API ignores the offset and keeps sending the same page', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1), law(2)], total: 5 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow(/more than once|of 5 laws/);
+      expect(request.mock.calls.length).toBeLessThan(10);
+    });
+
     it('throws when one law came back twice', async () => {
       const request = vi.fn().mockResolvedValue(reply({ data: [law(1), law(1)], total: 2 }));
 
       await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('more than once');
+    });
+  });
+
+  describe('fetchFirstPageOfLaws', () => {
+    it('asks for the first page, in the API default order, with the category when one is given', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1)], total: 1 }));
+
+      const page = await fetchFirstPageOfLaws({ limit: 25, category_slug: 'murphys-laws', category_id: 3 }, request, 'https://api.test');
+
+      expect(page).toEqual({ data: [law(1)], total: 1 });
+      expect(request).toHaveBeenCalledWith('https://api.test/api/v1/laws?limit=25&offset=0&sort=score&order=desc&category_id=3&category_slug=murphys-laws');
+    });
+
+    it('accepts a page that is empty because the category has no laws', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [], total: 0 }));
+
+      expect(await fetchFirstPageOfLaws({ limit: 25 }, request, 'https://api.test')).toEqual({ data: [], total: 0 });
+    });
+
+    it('throws when the API answers with an error, instead of building a page with no laws on it', async () => {
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, vi.fn().mockResolvedValue(reply({}, 503)), 'https://api.test')).rejects.toThrow('Law API returned 503');
+    });
+
+    it('throws when the request itself fails', async () => {
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, vi.fn().mockRejectedValue(new TypeError('fetch failed')), 'https://api.test')).rejects.toThrow('fetch failed');
+    });
+
+    it.each([
+      ['data that is not a list', { data: 'x', total: 1 }],
+      ['no total', { data: [] }],
+      ['a total that is not a number', { data: [], total: '3' }],
+      ['a negative total', { data: [], total: -1 }],
+    ])('throws on %s', async (_name, body) => {
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, vi.fn().mockResolvedValue(reply(body)), 'https://api.test')).rejects.toThrow('unexpected payload');
+    });
+
+    it('throws on an empty page that comes with a positive total', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [], total: 40 }));
+
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, request, 'https://api.test')).rejects.toThrow('reports 40');
     });
   });
 

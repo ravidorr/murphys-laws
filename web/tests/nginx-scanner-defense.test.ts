@@ -485,7 +485,7 @@ describe('nginx legacy URL redirects', () => {
     const googlebot = groups.find((group) => /^User-agent: Googlebot\s*$/m.test(group));
     expect(googlebot, 'robots.txt has no Googlebot group').toBeDefined();
     // Googlebot follows only its own group, so the header above is what keeps the API out of the index
-    expect(googlebot).not.toContain('Disallow: /api/');
+    expect(googlebot).not.toMatch(/^Disallow:\s*\/api/m);
     const everyone = groups.find((group) => /^User-agent: \*\s*$/m.test(group));
     expect(everyone).toContain('Disallow: /api/');
   });
