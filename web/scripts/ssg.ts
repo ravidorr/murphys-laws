@@ -454,13 +454,14 @@ async function fetchFirstPageOfLaws(
 }
 
 /**
- * A category page must show laws that belong to it. The category API's own total and the full law list
- * both describe the category, so all three counts have to agree before the page is built; otherwise
+ * A category page must show laws that belong to it. The category list's law count and the first page's total
+ * both count every membership of a law (a law can sit in several categories), so they have to agree; otherwise
  * the API ignored the category filter or the data moved mid-build, and the page would show the wrong laws.
+ * The full law list cannot be used for this: it names only each law's primary category.
  */
-function checkCategoryLawCounts(slug: string, firstPageTotal: number, listedLaws: number, categoryLawCount: number): void {
-  if (firstPageTotal !== listedLaws || firstPageTotal !== categoryLawCount) {
-    throw new Error(`Category "${slug}" disagrees with itself: the category list says ${categoryLawCount} laws, its first page reports ${firstPageTotal} and the full law list has ${listedLaws}; run the build again.`);
+function checkCategoryLawCounts(slug: string, firstPageTotal: number, categoryLawCount: number): void {
+  if (firstPageTotal !== categoryLawCount) {
+    throw new Error(`Category "${slug}" disagrees with itself: the category list says ${categoryLawCount} laws and its first page reports ${firstPageTotal}; run the build again.`);
   }
 }
 
@@ -1368,7 +1369,7 @@ async function main(): Promise<void> {
     // Pre-render first page of laws from API for SEO and no-JS users
     const CATEGORY_LAWS_PER_PAGE = 25;
     const { data: categoryLaws, total: categoryTotal } = await fetchFirstPageOfLaws({ limit: CATEGORY_LAWS_PER_PAGE, category_slug: slug });
-    checkCategoryLawCounts(slug, categoryTotal, (lawsByCategorySlug.get(slug) || []).length, law_count);
+    checkCategoryLawCounts(slug, categoryTotal, law_count);
     const categoryLawCardsHtml = renderStaticLawCards(categoryLaws);
     const ssgLawCardsSection = categoryLawCardsHtml
       ? `<div class="ssg-law-cards mt-8"><h2 class="text-xl font-semibold mb-4">Laws in this category</h2><section class="card-text">${categoryLawCardsHtml}</section></div>`
