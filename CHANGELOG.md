@@ -171,8 +171,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     still does goes back to `in_review` instead of staying public; none of the 2,453 production laws should.
     `GLOB` cannot say that a domain has no space in it, so it is a deliberate superset, and a false positive costs a
     moderator a look. The migration is idempotent, wrapped in one transaction, and its updates go through the
-    search-index triggers from migration 019. It runs on the next deploy, after the web build, so the production
-    pages are clean from the build after that.
+    search-index triggers from migration 019. The deploy builds the site from the production API before it
+    migrates, and that build stops on the unmigrated rows (the pages that list law 1264), so the deploy that first
+    carries this migration is run once with the workflow's `seeded_build` input; the deploy after it prerenders from
+    clean production data.
   - The build's privacy check (`validateGeneratedPage` in `web/scripts/ssg.ts`) now rejects `mailto` without the
     colon and an email address in any law or category page, so a leak stops the build. Pattern: letters, digits and
     `._%+-` before the `@`, a dotted domain ending in a letters-only label that is not a file extension, so
