@@ -16,6 +16,15 @@ This project has two types of database scripts:
 - Adding an index: `CREATE INDEX idx_votes_law_id ON votes(law_id)`
 - Performance optimization: `006_add_performance_indexes.sql` adds indexes on commonly queried columns (status, created_at, category filters)
 
+#### How `npm run migrate` applies a migration
+
+Pending files in `db/migrations` run in name order, each one piped into the `sqlite3` CLI started with `-bail`, so the first statement that fails stops the run: nothing after it executes.
+
+- **Each migration is all or nothing.** A file that starts with its own `BEGIN` (after any comments) keeps its transaction and must end with a single `COMMIT;`. Any other file is wrapped in a transaction by the runner and must not `COMMIT` or `ROLLBACK` itself. A file that breaks either rule is refused before anything runs.
+- **A failure is rolled back and not recorded.** The row in `schema_migrations` is written in the same transaction as the migration, so a migration is either applied and recorded or neither.
+- **The run stops at the first failure.** Later migrations are not tried, and the command exits non-zero with a message that names the migration, the line and the failing statement. After you fix the migration file, `npm run migrate` retries it from the start.
+- **Keep out of transactions what SQLite does not allow inside one:** `VACUUM` and the `foreign_keys` and `journal_mode` pragmas have to go in their own tooling, not in a migration.
+
 ### 2. **Seeding Scripts** (Initial Data)
 - **Purpose**: Populate database from source markdown files
 - **Location**: `shared/data/murphys-laws/*.md` -> `backend/scripts/build-sqlite.mjs`
@@ -153,7 +162,7 @@ The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
 1.Runs pre-migration safety checks
 2.Backs up the production database
 3.Applies pending migrations
-4.Restores backup if migration fails
+4.Stops the deploy if a migration fails (the failed migration is rolled back, nothing later runs, and the backup copy stays beside the database)
 5.Shows migration results in GitHub Actions logs
 
 ### Automated Workflow:
@@ -190,7 +199,7 @@ git push origin main
  * Run safety checks (table structure, data counts)
  * Create pre-migration backup
  * Run migrations (npm run migrate:safe)
- * Verify success or rollback
+ * A failed migration is rolled back, the step exits non-zero and the deploy stops before PM2 restarts
  * Show applied migrations in logs
  * Restart PM2 services
 ```
@@ -248,6 +257,18 @@ sqlite3 murphys.db "SELECT * FROM schema_migrations ORDER BY filename;"
 
 **Q: What if I need to rollback a migration?**
 Migrations don't have automatic rollback. You need to manually create a new migration that reverses the changes.
+
+**Q: What happens when a migration fails?**
+The runner stops at the failing statement, rolls the migration back, does not record it in `schema_migrations` and exits non-zero. The message looks like this:
+
+```
+Migration 023_example.sql failed near line 4: UNIQUE constraint failed: t.a
+Failing statement:
+INSERT INTO t VALUES (10);
+sqlite3 stopped there: nothing after it ran and its transaction was rolled back, so the migration is not recorded in schema_migrations.
+```
+
+In a deploy, the migrate step fails, so the deploy stops before the services restart; the site keeps running the previous release, on the database as it was before the failed migration. Fix the migration file (or add a new one) and run again: the failed migration is retried from its first statement.
 
 **Q: Can I edit a migration file after it's been applied?**
 No. Once applied and tracked in `schema_migrations`, editing the file won't re-run it. Create a new migration instead.

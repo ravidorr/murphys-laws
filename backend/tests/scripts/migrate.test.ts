@@ -68,6 +68,29 @@ describe('scripts/migrate.ts', () => {
     expect(existsSync(dbFile)).toBe(false);
   });
 
+  it('exits non-zero with a message naming the migration and the statement when one fails, and records nothing', () => {
+    // A database that claims migration 001 ran but has no tables, so the next migration (which updates laws) fails.
+    const first = readdirSync(join(backendDir, 'db', 'migrations')).filter((f) => f.endsWith('.sql')).sort()[0]!;
+    const db = new Database(dbFile);
+    db.exec('CREATE TABLE schema_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT NOT NULL UNIQUE, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)');
+    db.prepare('INSERT INTO schema_migrations (filename) VALUES (?)').run(first);
+    db.close();
+
+    let failure: { status: number | null; stderr: string } | undefined;
+    try {
+      runScript('npm', ['--prefix', backendDir, 'run', 'migrate'], resolve(backendDir, '..'));
+    } catch (err) {
+      failure = err as { status: number | null; stderr: string };
+    }
+
+    expect(failure?.status).not.toBe(0);
+    expect(failure?.stderr).toContain('Migration failed.');
+    expect(failure?.stderr).toMatch(/Migration 002_\S+\.sql failed near line \d+: .*no such table: laws/);
+    expect(failure?.stderr).toContain('Failing statement:');
+    expect(failure?.stderr).toContain('not recorded in schema_migrations');
+    expect(appliedCount()).toBe(1);
+  });
+
   it('does not touch any database when the runner is only imported', () => {
     runScript(process.execPath, ['--import', 'tsx', '--eval', "await import('./scripts/migration-runner.ts')"], backendDir);
     expect(existsSync(dbFile)).toBe(false);

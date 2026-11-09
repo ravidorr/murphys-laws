@@ -12,10 +12,6 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Remove `backend/murphys-production.db` from the git history:** the public repository still holds the file
   committed on 2025-11-16 (1,229 contact addresses in `attributions.contact_value` and the vote identifiers). It is
   untracked now, but only a history rewrite and a force-push remove it, which is the owner's decision.
-- [ ] **A migration that fails halfway is half applied:** `backend/scripts/migrate.ts` pipes each migration into the
-  `sqlite3` CLI without `-bail`, so after a failed statement the CLI runs the rest, including a closing `COMMIT`, and
-  only then does the script report the error and skip recording the migration. Every migration relies on being safe
-  to re-run. Pass `-bail` (and check the exit code before recording) so a failure stops where it happens.
 
 ## Design Review Findings (Jan 2026)
 
