@@ -64,7 +64,8 @@ export class HtmlInjectionService {
       category_name: typeof law.category_name === 'string' ? law.category_name : null
     });
     const description = seo.description;
-    const lawUrl = `${SITE_URL}/law/${law.id}/`;
+    // No trailing slash: nginx redirects /law/N/ to /law/N, so a canonical with one points at a redirect
+    const lawUrl = `${SITE_URL}/law/${law.id}`;
     const ogImageUrl = `${SITE_URL}/api/v1/og/law/${law.id}.png`;
 
     let html = template;
