@@ -12,8 +12,7 @@ The following enhancements have been created:
 - Automated service restart on failures (every 5 minutes)
 
 **Security Enhancements:**
-- Enhanced nginx rate limiting
-- Comprehensive security headers (including CSP)
+- Scanner defense in nginx (drops exploit probes and feeds the fail2ban scanner jail)
 - SSL certificate monitoring with chain validation
 - Weekly vulnerability scanning
 - Daily log analysis with attack detection
@@ -145,8 +144,8 @@ pm2 restart all
 scp backend/ecosystem.config.cjs ravidor@167.99.53.90:/tmp/
 
 # On server:
-sudo cp /tmp/ecosystem.config.cjs /root/murphys-laws/
-cd /root/murphys-laws
+sudo cp /tmp/ecosystem.config.cjs /root/murphys-laws/backend/
+cd /root/murphys-laws/backend
 pm2 delete all
 pm2 start ecosystem.config.cjs
 pm2 save
@@ -284,10 +283,10 @@ curl -I https://murphys-laws.com
 # Test API health endpoint (should include dbQueryTime now)
 curl https://murphys-laws.com/api/health
 
-# Check rate limiting is working
-# Run this command multiple times rapidly:
-for i in {1..30}; do curl -I https://murphys-laws.com; done
-# Should eventually see 429 (Too Many Requests) responses
+# Check the scanner defense: nginx closes the connection (curl prints 000)
+curl -s -o /dev/null -w '%{http_code}\n' https://murphys-laws.com/.env
+# The probe appears in the scanner log
+sudo tail -1 /var/log/nginx/scanner.log
 ```
 
 ---
@@ -314,8 +313,7 @@ After deployment, verify:
 - [ ] Vulnerability scanner runs weekly
 - [ ] Log analyzer runs daily
 - [ ] Enhanced daily report sent at 8 AM
-- [ ] Nginx rate limiting active
-- [ ] Security headers present (check with: `curl -I https://murphys-laws.com`)
+- [ ] Scanner defense active (`curl https://murphys-laws.com/.env` is closed with no response and logged in `scanner.log`)
 - [ ] PM2 auto-restart configured
 - [ ] All PM2 processes running
 - [ ] Email alerts working
@@ -450,18 +448,18 @@ echo "Test" | mail -s "Test" <your-email>
 cat /etc/postfix/sasl_passwd
 ```
 
-### Nginx Rate Limiting Issues
+### Nginx Scanner Defense Issues
 
 ```bash
 # Check nginx error log
 tail -100 /var/log/nginx/error.log
 
-# Check if rate limit zones are defined
-grep "limit_req_zone" /etc/nginx/conf.d/rate-limiting.conf
+# A probe must be closed with no response (curl prints 000) and logged
+curl -s -o /dev/null -w '%{http_code}\n' https://murphys-laws.com/.env
+sudo tail -3 /var/log/nginx/scanner.log
 
-# Test rate limiting
-for i in {1..50}; do curl -w "%{http_code}\n" -o /dev/null -s https://murphys-laws.com; done
-# Should see some 429 responses
+# The jail must be reading that file
+sudo fail2ban-client status nginx-scanner
 ```
 
 ### PM2 Process Crashes
