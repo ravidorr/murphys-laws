@@ -91,6 +91,11 @@ declare module '@scripts/ssg' {
     status: number;
     json(): Promise<unknown>;
   }>, baseUrl?: string): Promise<StaticLaw[]>;
+  export function fetchFirstPageOfLaws(params: { limit: number; offset?: number; category_id?: number; category_slug?: string }, fetchRequest?: (url: string) => Promise<{
+    ok: boolean;
+    status: number;
+    json(): Promise<unknown>;
+  }>, baseUrl?: string): Promise<{ data: StaticLaw[]; total: number }>;
   export const REVIEWED_LAW_TITLES: string[];
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
   export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];

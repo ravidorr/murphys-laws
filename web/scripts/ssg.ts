@@ -239,8 +239,7 @@ async function fetchAllLaws(fetchRequest: FetchCategoriesRequest = fetch, baseUr
   const limit = 100; // Request up to 100, but API may return fewer
 
   while (true) {
-    // created_at does not change when votes arrive and the API breaks ties by id, so paging is stable;
-    // the checks below catch a law added or removed while the build runs
+    // created_at does not change when votes arrive and the API breaks ties by id, so paging is stable
     const response = await fetchRequest(`${baseUrl}/api/v1/laws?limit=${limit}&offset=${offset}&sort=created_at&order=asc`);
     if (!response.ok) {
       throw new Error(`Law API returned ${response.status}`);
@@ -250,6 +249,11 @@ async function fetchAllLaws(fetchRequest: FetchCategoriesRequest = fetch, baseUr
     if (!Array.isArray(payload.data) || !Number.isInteger(payload.total) || (payload.total as number) < 0
       || !payload.data.every((item) => Number.isInteger((item as Law | null)?.id))) {
       throw new Error(`Law API returned an unexpected payload at offset ${offset}.`);
+    }
+    // A total that moves while the pages are read means laws were added or removed mid-run, which can
+    // shift a page boundary and skip a law without the count check below noticing
+    if (offset > 0 && payload.total !== total) {
+      throw new Error(`Law API total changed from ${total} to ${payload.total as number} while paging; run the build again.`);
     }
     total = payload.total as number;
 
@@ -347,19 +351,27 @@ async function mergeReviewedLawDetails(laws: Law[], fetchRequest: FetchCategorie
 /**
  * Fetch first page of laws for SSG pre-render (browse, category)
  */
-async function fetchFirstPageOfLaws(params: { limit: number; offset?: number; category_id?: number; category_slug?: string }): Promise<{ data: Law[]; total: number }> {
+async function fetchFirstPageOfLaws(
+  params: { limit: number; offset?: number; category_id?: number; category_slug?: string },
+  fetchRequest: FetchCategoriesRequest = fetch,
+  baseUrl: string = API_BASE_URL
+): Promise<{ data: Law[]; total: number }> {
   const { limit, offset = 0, category_id, category_slug } = params;
   const searchParams = new URLSearchParams({ limit: String(limit), offset: String(offset), sort: 'score', order: 'desc' });
   if (category_id !== undefined) searchParams.set('category_id', String(category_id));
   if (category_slug) searchParams.set('category_slug', category_slug);
   // A failure stops the build: swallowing it published browse and category pages with no laws on them.
-  const response = await fetch(`${API_BASE_URL}/api/v1/laws?${searchParams.toString()}`);
-  if (!response.ok) throw new Error(`Law API returned ${response.status} for ?${searchParams.toString()}`);
-  const json = await response.json();
-  if (!Array.isArray(json.data) || !Number.isInteger(json.total)) {
-    throw new Error(`Law API returned an unexpected payload for ?${searchParams.toString()}`);
+  const query = searchParams.toString();
+  const response = await fetchRequest(`${baseUrl}/api/v1/laws?${query}`);
+  if (!response.ok) throw new Error(`Law API returned ${response.status} for ?${query}`);
+  const json = await response.json() as { data?: unknown; total?: unknown };
+  if (!Array.isArray(json.data) || !Number.isInteger(json.total) || (json.total as number) < 0) {
+    throw new Error(`Law API returned an unexpected payload for ?${query}`);
   }
-  return { data: json.data, total: json.total };
+  if (json.data.length === 0 && (json.total as number) > offset) {
+    throw new Error(`Law API returned no laws for ?${query} although it reports ${json.total as number}`);
+  }
+  return { data: json.data as Law[], total: json.total as number };
 }
 
 /**
@@ -1222,10 +1234,13 @@ async function main(): Promise<void> {
   }
 
   const laws = await mergeReviewedLawDetails(await fetchAllLaws());
-  if (laws.length === 0) {
-    throw new Error('SSG requires a populated laws API; refusing to generate empty archive pages.');
-  }
   const categories = await fetchAllCategories();
+  // A law in a category that has no page would be prerendered and listed in the sitemap, yet linked from no list page
+  const categorySlugs = new Set(categories.map((category) => category.slug));
+  const unknownCategory = laws.filter((law) => law.category_slug && !categorySlugs.has(law.category_slug));
+  if (unknownCategory.length > 0) {
+    throw new Error(`${unknownCategory.length} laws are in a category the category API does not list (for example law ${unknownCategory[0]!.id} in "${unknownCategory[0]!.category_slug}")`);
+  }
   const lawSeoById = buildUniqueLawSeo(laws);
   const lawsByCategorySlug = new Map<string, Law[]>();
   const uncategorizedLaws: Law[] = [];
@@ -1336,6 +1351,9 @@ async function main(): Promise<void> {
 
   const LAWS_PER_PAGE = 25;
   const { data: browseLaws, total: browseTotal } = await fetchFirstPageOfLaws({ limit: LAWS_PER_PAGE });
+  if (browseTotal !== laws.length) {
+    throw new Error(`The browse list reports ${browseTotal} laws but the full list has ${laws.length}; the API changed during the build, run it again.`);
+  }
   const staticLawCardsHtml = renderStaticLawCards(browseLaws);
   const showCount = browseTotal > 0
     ? `<p class="text-center text-muted-fg mb-6" aria-live="polite">Showing 1&ndash;${Math.min(LAWS_PER_PAGE, browseTotal)} of ${browseTotal} laws.</p>`
@@ -1813,6 +1831,7 @@ export {
   buildContentBreadcrumbTrail,
   fetchAllCategories,
   fetchAllLaws,
+  fetchFirstPageOfLaws,
   mergeReviewedLawDetails,
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,

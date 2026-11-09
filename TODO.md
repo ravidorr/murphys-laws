@@ -16,11 +16,11 @@ This document outlines additional tasks and potential improvements for the Murph
   for laws the API no longer has (for example 1719, 1963, 2368 to 2373), and 26 laws in the API (IDs between 2466
   and 2516) have no page or sitemap entry. Search Console reports these as soft 404s and alternate pages.
   The fix is a small change in `.github/workflows/deploy.yml`: replace `npm run build:web` with
-  `API_BASE_URL=https://murphys-laws.com npm --prefix web run build`, and keep `npm run build:openapi` (`ssg.ts` now
-  stops on an incomplete list and finds the reviewed laws by title). It is held back because a
+  `API_BASE_URL=https://murphys-laws.com npm --prefix web run build`, and keep `npm run build:openapi`. The build side
+  is ready for it: `ssg.ts` stops on an incomplete list and finds the reviewed laws by title. It is held back because a
   build from production data fails `validateGeneratedPage` on three pages (`/law/1228`, `/law/1244`, `/law/1263`),
   all because they list law 1264, whose production title and text hold `[by ...](mailto` and an address. Law 892's
-  attribution note holds a similar fragment but is not rendered. With those three pages exempted, a production build
+  attribution note holds a similar fragment but is not rendered in the built page. With those three pages exempted, a production build
   passes the validation of every other page and `npm run seo:audit` (2,453 law pages, no blocking errors). Fix law 1264 (and 892) in the admin page or with a
   migration, then switch the build. A migration cannot ship in the same deploy as the switch, because `deploy.yml`
   builds the web before it runs `npm run migrate`.

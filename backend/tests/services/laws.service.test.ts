@@ -538,6 +538,21 @@ describe('LawService', () => {
     expect(result.data[2].text).toBe('Newest');
   });
 
+  it('pages laws that share a created_at without skipping or repeating one (the site build reads every law this way)', async () => {
+    for (let index = 1; index <= 5; index += 1) {
+      db.prepare("INSERT INTO laws (text, status, created_at) VALUES (?, 'published', '2025-08-09T16:15:37.301Z')").run(`Tied ${index}`);
+    }
+
+    const pages = [];
+    for (const offset of [0, 2, 4]) {
+      pages.push(...(await lawService.listLaws({ limit: 2, offset, sort: 'created_at', order: 'asc' })).data);
+    }
+
+    const ids = pages.map((law: { id: number }) => law.id);
+    expect(new Set(ids).size).toBe(5);
+    expect(ids).toEqual([...ids].sort((a: number, b: number) => b - a));
+  });
+
   it('should sort laws by created_at descending (newest first)', async () => {
     db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Oldest', 'published', '2020-01-01T00:00:00Z')").run();
     db.prepare("INSERT INTO laws (text, status, created_at) VALUES ('Newest', 'published', '2024-01-01T00:00:00Z')").run();
