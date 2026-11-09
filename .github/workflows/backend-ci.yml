@@ -57,10 +57,12 @@ jobs:
             backend/package-lock.json
 
       - name: Install dependencies (root - npm workspaces)
-        run: npm ci
+        uses: ./.github/actions/npm-ci
 
       - name: Install locked backend dependencies
-        run: npm ci --prefix backend
+        uses: ./.github/actions/npm-ci
+        with:
+          args: --prefix backend
 
       - name: Install Rollup Linux native binary (npm optional deps bug)
         run: npm install @rollup/rollup-linux-x64-gnu@4.59.0 --no-save

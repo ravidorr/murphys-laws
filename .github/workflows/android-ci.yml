@@ -56,7 +56,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies (root - npm workspaces)
-        run: npm ci
+        uses: ./.github/actions/npm-ci
 
       - name: Check design-system conformance
         run: npm run design:conformance
@@ -98,6 +98,19 @@ jobs:
       - name: Make gradlew executable
         if: steps.check_gradle.outputs.exists == 'true'
         run: chmod +x android/gradlew
+
+      - name: Download the Gradle distribution (retried)
+        if: steps.check_gradle.outputs.exists == 'true'
+        run: |
+          chmod +x android/gradlew
+          for attempt in 1 2 3; do
+            if (cd android && ./gradlew --version --no-daemon); then
+              exit 0
+            fi
+            echo "::warning::Gradle distribution download failed (attempt ${attempt} of 3)"
+            sleep $((attempt * 20))
+          done
+          exit 1
 
       - name: Build, lint, unit tests, and coverage report (if project exists)
         if: steps.check_gradle.outputs.exists == 'true'

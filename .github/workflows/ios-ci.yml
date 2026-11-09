@@ -51,7 +51,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies (root - npm workspaces)
-        run: npm ci
+        uses: ./.github/actions/npm-ci
 
       - name: Check design-system conformance
         run: npm run design:conformance
