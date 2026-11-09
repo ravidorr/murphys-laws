@@ -47,7 +47,7 @@ SQL_INJECTION_PATTERNS=(
     "select${SQL_SEP}[^&\"]{1,80}from${SQL_SEP}[^&\"]{1,80}where"
     "insert${SQL_SEP}+into${SQL_SEP}+[^&\"]{1,80}(values|select)"
     "delete${SQL_SEP}+from${SQL_SEP}+[^&\"]{1,80}where"
-    "update${SQL_SEP}+[a-z0-9_.]+${SQL_SEP}+set${SQL_SEP}+[a-z0-9_.]+(=|%3D)"
+    "update${SQL_SEP}+[a-z0-9_.]+${SQL_SEP}+set${SQL_SEP}+[a-z0-9_.]+${SQL_SEP}*(=|%3D)"
     "(;|%3B)${SQL_SEP}*(delete${SQL_SEP}+from|insert${SQL_SEP}+into|update${SQL_SEP}+[a-z0-9_.]+${SQL_SEP}+set)"
     "drop${SQL_SEP}+table"
     "xp_cmdshell"

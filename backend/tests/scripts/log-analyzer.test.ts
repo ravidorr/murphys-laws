@@ -416,6 +416,8 @@ describe('log-analyzer.sh SQL injection detection', () => {
     ['delete from where', '/x?q=delete from users where 1'],
     ['insert into values', '/x?q=insert into users values(1)'],
     ['update set', '/x?q=update users set admin=1'],
+    ['update set with an encoded space before the equals sign', '/x?q=update%20users%20set%20admin%20=%201'],
+    ['update set with a plus-encoded space before an encoded equals sign', '/x?q=update+users+set+admin+%3D+1'],
   ])('flags %s', (_name, request) => {
     const report = runAnalyzer(sandbox(), [...ORDINARY_TRAFFIC, nginxLine(request)]);
     expect(sqlSection(report)).toContain('Detected 1 potential SQL injection attempts');
