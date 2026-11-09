@@ -44,6 +44,7 @@ describe('AdminUiController', () => {
     expect(headers['Content-Type']).toBe(type);
     expect(headers['Cache-Control']).toBe('no-store');
     expect(headers['Content-Security-Policy']).toContain("frame-ancestors 'none'");
+    expect(headers['Content-Security-Policy']).toContain("img-src 'self'");
     expect(Buffer.isBuffer(res.end.mock.calls[0][0])).toBe(true);
   });
 

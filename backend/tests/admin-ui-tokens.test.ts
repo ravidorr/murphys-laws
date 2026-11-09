@@ -29,6 +29,13 @@ describe('admin page design tokens', () => {
     expect(web.get(name)).toBe(value);
   });
 
+  it('declares the site icons, which the Content-Security-Policy allows from the same origin', () => {
+    const html = read('backend/src/admin-ui/index.html');
+    for (const href of ['/favicon.ico', '/favicon-32x32.png', '/apple-touch-icon.png']) {
+      expect(html).toContain(`href="${href}"`);
+    }
+  });
+
   it('never uses inline styles or scripts in the page shell', () => {
     const html = read('backend/src/admin-ui/index.html');
     expect(html).not.toMatch(/\sstyle=/);
