@@ -230,16 +230,35 @@ EOF
 
 1. **Install and start PM2**:
  ```bash
- pm2 start ecosystem.config.cjs
+ pm2 start backend/ecosystem.config.cjs
  pm2 save
  pm2 startup
  ```
 
-1. **Configure nginx**:
+1. **Update DNS** (before the certificate step: the certificate check needs both names to resolve to this droplet):
+- Update A record for murphys-laws.com to <NEW_IP>
+- Update A record for <www.murphys-laws.com> to <NEW_IP>
+- Wait for DNS propagation (5-30 minutes)
+
+1. **Issue the SSL certificate** (before configuring nginx, because the repository's `nginx.conf` points at the certificate files and `nginx -t` fails until they exist; nginx still runs its stock config at this point):
  ```bash
- # Copy enhanced nginx config
- cp config/nginx-rate-limiting.conf /etc/nginx/conf.d/rate-limiting.conf
- cp config/nginx-murphys-laws-enhanced.conf /etc/nginx/sites-available/murphys-laws
+ certbot certonly --nginx -d murphys-laws.com -d www.murphys-laws.com \
+ --non-interactive --agree-tos --email <your-email> \
+ --deploy-hook 'systemctl reload nginx'
+ # the nginx plugin installs these two files; nginx.conf includes both
+ test -f /etc/letsencrypt/options-ssl-nginx.conf && test -f /etc/letsencrypt/ssl-dhparams.pem && echo "certbot files present"
+ ```
+
+1. **Configure nginx** (the repository's root `nginx.conf` is the live site config: the site, the scanner defense, and the `scanner.log` that the scanner jail reads):
+ ```bash
+ cp /root/murphys-laws/nginx.conf /etc/nginx/sites-available/murphys-laws
+
+ # nginx.conf serves /root/murphys-laws/web/dist as www-data, so the directories on the way there
+ # must be searchable by everyone (the droplet has /root at 711; Ubuntu ships it at 700, and the
+ # site then answers 403)
+ chmod o+x /root
+ chmod o+rx /root/murphys-laws /root/murphys-laws/web
+
  ln -s /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-enabled/
  rm /etc/nginx/sites-enabled/default
 
@@ -248,12 +267,6 @@ EOF
 
  # Restart nginx
  systemctl restart nginx
- ```
-
-1. **Configure SSL certificate**:
- ```bash
- certbot --nginx -d murphys-laws.com -d www.murphys-laws.com \
- --non-interactive --agree-tos --email <your-email>
  ```
 
 1. **Install the scanner jail** (it bans the addresses that the nginx scanner defense drops, and needs the repository's root `nginx.conf`, which writes `/var/log/nginx/scanner.log`):
@@ -315,17 +328,12 @@ sudo DAILY_REPORT_TEST_RECIPIENT=<your-email> \
   /usr/local/bin/daily-report.sh --test-email
 ```
 
-1. **Update DNS**:
-- Update A record for murphys-laws.com to <NEW_IP>
-- Update A record for <www.murphys-laws.com> to <NEW_IP>
-- Wait for DNS propagation (5-30 minutes)
-
 1. **Verify services**:
  ```bash
  # Check PM2
  pm2 list
 
- # Check nginx
+ # Check nginx (the first line must be 200, not 403)
  curl -I https://murphys-laws.com
 
  # Check API
