@@ -751,10 +751,17 @@ function buildContentBreadcrumbTrail(page: { slug: string; title: string }): Bre
   return trail;
 }
 
+/**
+ * An email address in generated HTML: letters, digits and `._%+-`, an `@`, and a dotted domain whose last label is
+ * letters only and not a file extension, so `logo@2x.png` (a retina image name) is not one. Not the same pattern as
+ * the parser's (`backend/scripts/build-sqlite.ts`), which sees plain text, not markup and asset names.
+ */
+const EMAIL_ADDRESS_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.(?!(?:png|jpe?g|gif|webp|avif|svg|ico|css|js|woff2?|ttf|map)\b)[A-Za-z]{2,}/i;
+
 interface GeneratedPageExpectations {
   description?: string;
   canonicalPath: string;
-  forbidMailto?: boolean;
+  forbidContactDetails?: boolean;
   requireCategoryLink?: boolean;
   requireContentFigure?: boolean;
 }
@@ -763,7 +770,11 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   const failures: string[] = [];
   const h1Count = (html.match(/<h1\b/gi) || []).length;
   if (h1Count !== 1) failures.push(`expected one h1, found ${h1Count}`);
-  if (expectations.forbidMailto && /mailto:/i.test(html)) failures.push('contains a public mailto link');
+  if (expectations.forbidContactDetails) {
+    // `mailto` without the colon catches a link cut in the middle (`[by Name](mailto`).
+    if (/mailto/i.test(html)) failures.push('contains a public mailto link');
+    if (EMAIL_ADDRESS_PATTERN.test(html)) failures.push('contains a public email address');
+  }
   const expectedCanonical = `rel="canonical" href="${buildCanonicalUrl(expectations.canonicalPath)}"`;
   if (!html.includes(expectedCanonical)) failures.push(`missing canonical ${expectations.canonicalPath}`);
   if (!/<meta name="description" content="[^"].*?">/i.test(html)) failures.push('missing route description');
@@ -828,7 +839,7 @@ async function validateGeneratedOutput(): Promise<void> {
       const html = await fs.readFile(path.join(DIST_DIR, relativePath), 'utf-8');
       const failures = validateGeneratedPage(html, {
         canonicalPath: `/${routeName}/${entry.name}`,
-        forbidMailto: true
+        forbidContactDetails: true
       });
       if (failures.length > 0) throw new Error(`Invalid generated page ${relativePath}: ${failures.join('; ')}`);
     }

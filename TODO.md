@@ -14,10 +14,10 @@ This document outlines additional tasks and potential improvements for the Murph
   migrations (a data fix appears one deploy later), and a build change that needs a new API field cannot ship in the same
   deploy as the backend change that adds it. Upload and migrate first, then build against the new API and upload
   `web/dist` in a second step (keeping the "no partial site" guarantee: the old `dist` stays until the new one is complete).
-- [ ] **Law pages show email addresses in their text:** 66 of the 2,465 pages built from the archive, and 69 of the 2,453
-  built from production, contain something that looks like an address (for example `name@aol.com`). The build's
-  privacy check only looks for `mailto:`. Find out where the addresses come from (law text, attribution notes)
-  and strip them in the parser and in the production rows.
+- [ ] **A migration that fails halfway is half applied:** `backend/scripts/migrate.ts` pipes each migration into the
+  `sqlite3` CLI without `-bail`, so after a failed statement the CLI runs the rest, including a closing `COMMIT`, and
+  only then does the script report the error and skip recording the migration. Every migration relies on being safe
+  to re-run. Pass `-bail` (and check the exit code before recording) so a failure stops where it happens.
 
 ## Design Review Findings (Jan 2026)
 
