@@ -103,8 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Every other URL under `/murphy/` (`links.html`, `murphy-original.html`, scripts, images, and bad backlinks such as
     `murphy-true.html:D`, `murphy-true.htmlkd`, `murphy-laws.html` followed by a space, `murphy-` and `murphy`)
     answers `410 Gone` instead of redirecting home, with the site's own 404 page as the body (`error_page 404 410
-    /404.html`; without it nginx sends its bare built-in 410 page). Pages that will not come back get an answer at
-    least as strong a removal signal as a 404, and a 410 never looks like a soft 404. `^~` still keeps regex locations from taking these paths.
+    /404.html`; without it nginx sends its bare built-in 410 page). For pages that will not come back, 410 is at least as
+    strong a removal signal as 404, and it never looks like a soft 404. `^~` still keeps regex locations from taking these paths.
   - `/murphy` and `/murphy/` (the old section index, which other sites may still link to; neither is in the
     Search Console exports) still redirect to `/`, and move to 410 if they show up as soft 404s later; the
     trailing-slash rewrite turns `/murphy/` into `/murphy` first, and `/murphy/murphy-laws.html/` takes two hops

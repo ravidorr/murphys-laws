@@ -462,6 +462,7 @@ describe('nginx legacy /murphy/ pages', () => {
     '/murphy/murphy-true.html:D',
     '/murphy/murphy-true.htmland',
     '/murphy/murphy-true.htmlkd',
+    '/murphy/murphy-true.htmlVioxx',
     '/murphy/murphy-laws.html%20',
     '/murphy/murphy-laws.html ',
     '/murphy/murphy-',
