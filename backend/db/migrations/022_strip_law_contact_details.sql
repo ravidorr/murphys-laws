@@ -9,20 +9,29 @@
 --   3. The same split left a note `and [handle](mailto:handle@host` and a text ending ` net).`
 -- The rows are found by their CONTENT, never by id: production ids differ from the ids the archive seeds.
 -- SQLite has no regular expressions here (better-sqlite3 has no REGEXP either), so an address is matched
--- with GLOB. The domain part needs a dot, so `mother@#?!&*` is not an address.
+-- with GLOB: a letter, digit or `._%+-` before the `@`, a domain character after it, and later a dot followed
+-- by a letter. `mother@#?!&*` is not an address. GLOB cannot say that the domain has no space in it, so the
+-- pattern is deliberately a superset of the real thing (`meet 5@3 p.m.` also matches). A false positive costs
+-- little: a law goes back to review (a person looks at it), a note is dropped, a name becomes `Anonymous`.
+-- Nothing is deleted, and attributions.source_fragment (the raw markdown, never served) is left alone.
 --
 -- What a cleaned row looks like:
 --   * name that is an address -> `Anonymous` (the label sanitizeDisplayName uses); the address is kept in
 --     contact_value, which is never public.
---   * title ending `Sent [by Name](mailto` + text that is only an address -> the sentence moves from title
---     to text, title becomes NULL, and a `Name` attribution (contact = the address) is added when the law
---     has none.
---   * note `and [handle](mailto:...` -> `and handle`; text ending `net).` -> the stray tail is removed.
---   * anything that still holds `mailto` or an address after the steps above cannot be cleaned
---     mechanically, so the law goes back to `in_review` for a human (it is not deleted).
+--   * title ending `Sent [by Name](mailto` (or `Sent by [Name](mailto`, `by [Name](mailto`, `[Name](mailto`)
+--     + text that is only an address -> the sentence moves from title to text, title becomes NULL, and a
+--     `Name` attribution (contact = the address) is added when the law has none. A title that is only the
+--     lead-in has no sentence to move and is left for step 4.
+--   * note `and [handle](mailto:...` -> `and handle` (text after the link is dropped); text ending `net).` with
+--     such a note -> the stray tail is removed, only when the text has no `(`, so `(see the corollary).` stays.
+--   * a note that still holds `mailto` or an address after that is set to NULL (the law stays published).
+--   * a published law whose title or text still holds `mailto` or an address cannot be cleaned
+--     mechanically, so it goes back to `in_review` for a human (it is not deleted). Laws that are already
+--     `in_review` or `rejected` are not public and are not touched.
 -- Every UPDATE on laws goes through the search-index triggers from migration 019, so the index stays in step.
--- The migration is idempotent: a cleaned row no longer matches any condition. Everything runs in one
--- transaction.
+-- The migration is idempotent: a cleaned row no longer matches any condition, and the move to review only
+-- applies to published laws. It is wrapped in one transaction; note that scripts/migrate.ts pipes it through the
+-- sqlite3 CLI, which carries on after a failed statement, so idempotence is what makes a re-run safe.
 
 BEGIN;
 
@@ -60,7 +69,8 @@ FROM (
     AND instr(text, ' ') = 0
     AND text GLOB '*[A-Za-z0-9._%+-]@[A-Za-z0-9-]*.[A-Za-z]*'
 )
-WHERE length(trim(pre)) > 0;
+WHERE length(trim(pre)) > 0
+  AND lower(trim(pre)) NOT IN ('sent', 'sent by', 'by');
 
 INSERT INTO attributions (law_id, name, contact_type, contact_value)
 SELECT
@@ -84,11 +94,14 @@ DROP TABLE temp.law_contact_fix;
 
 -- 3a. A text left ending in the tail of a split address (` net).`) next to a broken mailto note: drop the
 -- last word. rtrim removes the trailing characters that can be part of an address tail and stops at the space.
+-- Only a text without any `(` qualifies, so a legitimate `... (see the corollary).` is never cut.
 UPDATE laws
 SET text = trim(rtrim(text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-)')),
     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE (text LIKE '% %)' OR text LIKE '% %).')
+  AND text NOT LIKE '%(%'
   AND EXISTS (SELECT 1 FROM attributions WHERE attributions.law_id = laws.id AND attributions.note LIKE '%](mailto%')
+  AND rtrim(text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-)') LIKE '% '
   AND length(trim(rtrim(text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-)'))) > 0;
 
 -- 3b. A note holding a broken `[handle](mailto...` link: keep the prefix and the handle, drop the contact.

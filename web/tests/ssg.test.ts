@@ -97,6 +97,7 @@ describe('SSG Utilities', () => {
 
     it.each([
       ['a link cut inside the mailto target', '<h2>Sent [by Takura Razemba](mailto</h2>'],
+      ['MAILTO in capitals', '<a href="MAILTO:x">x</a>'],
       ['a mailto link', '<a href="mailto:person@example.com">Email</a>']
     ])('rejects %s', (_label, body) => {
       expect(check(body)).toContain('contains a public mailto link');
@@ -104,12 +105,21 @@ describe('SSG Utilities', () => {
 
     it.each([
       ['an image name with a pixel ratio', '<img src="/img/logo@2x.png" alt="">'],
+      ['an upper-case image name', '<img src="/img/LOGO@2X.PNG" alt="">'],
+      ['asset names with other extensions', '<link href="/s/sprite@2x.css"><script src="/a/app@1.js"></script><link href="/f/font@1.woff2">'],
       ['an image name with another extension', '<img src="/img/hero@3x.webp" alt=""><img src="/img/a@2x.jpeg" alt="">'],
       ['JSON-LD keywords', '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Quotation"}</script>'],
       ['a symbol-laden word', '<p>that mother@#?!&amp;* upside the head</p>'],
       ['a handle', '<p>Follow @murphyslaws today</p>']
     ])('accepts %s', (_label, body) => {
       expect(check(body)).toEqual([]);
+    });
+
+    it('reports a mailto link and an address together', () => {
+      expect(check('<a href="mailto:person@example.com">x</a>')).toEqual([
+        'contains a public mailto link',
+        'contains a public email address'
+      ]);
     });
 
     it('does not apply to pages that are not checked for contact details', () => {

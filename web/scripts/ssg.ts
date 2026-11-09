@@ -662,9 +662,10 @@ function buildContentBreadcrumbTrail(page: { slug: string; title: string }): Bre
 
 /**
  * An email address in generated HTML: letters, digits and `._%+-`, an `@`, and a dotted domain whose last label is
- * letters only and not an image extension, so `logo@2x.png` (a retina image name) is not one.
+ * letters only and not a file extension, so `logo@2x.png` (a retina image name) is not one. Not the same pattern as
+ * the parser's (`backend/scripts/build-sqlite.ts`), which sees plain text, not markup and asset names.
  */
-const EMAIL_ADDRESS_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.(?!(?:png|jpe?g|gif|webp|avif|svg)\b)[A-Za-z]{2,}/;
+const EMAIL_ADDRESS_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.(?!(?:png|jpe?g|gif|webp|avif|svg|ico|css|js|woff2?|ttf|map)\b)[A-Za-z]{2,}/i;
 
 interface GeneratedPageExpectations {
   description?: string;

@@ -68,11 +68,15 @@ async function listMarkdownFiles(dir: string): Promise<string[]> {
   return out.sort();
 }
 
-/** Matches an email address anywhere in a string. The domain needs a dot, so `mother@#?!&*` is not one. */
+/**
+ * Matches an email address anywhere in a string. The domain needs a dot, so `mother@#?!&*` is not one.
+ * (`web/scripts/ssg.ts` has its own pattern for generated HTML, and migration 022 a GLOB form of it.)
+ */
 const EMAIL_ADDRESS_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
 const ANONYMOUS_NAME = 'Anonymous';
 
 function containsEmailAddress(value: string): boolean {
+  // The shared pattern has the `g` flag, whose `lastIndex` would make a reused `.test` flaky: use a fresh copy.
   return new RegExp(EMAIL_ADDRESS_PATTERN.source).test(value);
 }
 
@@ -88,12 +92,13 @@ function publicLinkText(linkText: string): string {
 
 /** The attribution name: drops the leading "by " that some archive lines put inside the link (`[by Name](...)`). */
 function attributionName(linkText: string): string {
-  return publicLinkText(linkText.replace(/^by(?:\s+|$)/i, '').trim()) || ANONYMOUS_NAME;
+  return publicLinkText(linkText.replace(/^by(?:\s+|$)/, '').trim()) || ANONYMOUS_NAME;
 }
 
 /**
- * Remove contact fragments that survive the link pass: a truncated `[Name](mailto...` whose closing
- * parenthesis was lost, a leftover `mailto:` target and any bare address.
+ * Remove contact fragments that survive the link pass: a truncated `[Name](mailto...` at the very end of the text
+ * (its closing parenthesis was lost; the link text stays, the target goes), a leftover `mailto:` target and any
+ * bare address.
  */
 function stripContactFragments(text: string): string {
   return maskEmailAddresses(
