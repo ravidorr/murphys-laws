@@ -1,8 +1,16 @@
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+// The production deploy points this at a sanitized copy of the production database (see
+// backend/scripts/sanitize-db-copy.sh). The backend reads the same variable, so the migration and the API below
+// use that file; pull-request CI leaves it unset and builds from the archive.
+const databaseCopy = process.env.MURPHYS_DB_PATH?.trim() ? path.resolve(process.env.MURPHYS_DB_PATH.trim()) : '';
+// npm runs the backend scripts from backend/, so hand them an absolute path.
+if (databaseCopy) process.env.MURPHYS_DB_PATH = databaseCopy;
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -45,7 +53,18 @@ try {
   if (error instanceof Error && error.message.startsWith('Port 8787')) throw error;
 }
 
-await run('npm', ['--prefix', 'backend', 'run', 'build:db']);
+if (databaseCopy) {
+  // Never build the archive over a copy of production, and never prerender from a missing file (SQLite would
+  // create an empty database and the build would then fail with a confusing "incomplete list").
+  if (!existsSync(databaseCopy)) {
+    throw new Error('MURPHYS_DB_PATH is set but no database exists there.');
+  }
+  // Bring the copy to the schema and data this deploy leaves on the server: the same migrations the deploy runs
+  // after uploading. This is what lets a deploy carry both a data-fixing migration and the build that needs it.
+  await run('npm', ['--prefix', 'backend', 'run', 'migrate']);
+} else {
+  await run('npm', ['--prefix', 'backend', 'run', 'build:db']);
+}
 
 let apiLogs = '';
 const apiProcess = spawn('npm', ['--prefix', 'backend', 'start'], {
