@@ -115,12 +115,13 @@ single branch and a single draft PR, unless a change is unrelated to the rest.
   threshold.
 - Commit message: conventional prefix, for example `fix: drop <thing> probes from the 404 report`.
   No Claude co-author trailer and no Claude attribution line, in the commit or the PR.
+- Before opening the PR, run `/pr-review-toolkit:review-pr` on your own change and fix what it finds
+  (AGENTS.md requires the review first).
 - Open the PR as a **draft**. Title in the same conventional style (this repo uses GitHub issues, not
   Jira). Body: no section titles, a short intro, then bullets with the actual changes, one line per
   path and its verdict. No "Generated with" line.
 - After opening the PR, call `mcp__ccd_pr__get_status` once. Do not poll CI.
-- Run `/pr-review-toolkit:review-pr` on your own PR and fix what it finds before asking anyone else to
-  look. Do not merge: merges that need `--admin` are run by the user.
+- Do not merge: merges that need `--admin` are run by the user.
 
 **Deploying**
 - A merged `nginx.conf` does not change the droplet by itself unless the deploy workflow installs it.
