@@ -49,6 +49,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Triaged the 404s from the 9 November daily report. Probes for `/wallet/...`, `/build/manifest.json` and
+  `/ipfs/...` are now dropped as scanner paths. `/security.txt` redirects to `/.well-known/security.txt`, and
+  the sized `/apple-touch-icon-240x240.png` and `-precomposed` names redirect to `/apple-touch-icon.png`.
+  The structured-data logo on five pages pointed at `/favicon-512x512.png`, a file that was never published
+  (Googlebot-Image kept asking for it); it now points at `/android-chrome-512x512.png`, the old URL redirects
+  there, and a test checks that every image URL built from `SITE_URL` or `baseUrl` (folders included) exists in `web/public`.
+  The probe patterns also match `/ipfs` without a slash and any query string.
+  The old Yahoo "Pick of the Week" badge that legacy pages still link to is served again at `/img/pick_of_the_week.gif`. Web bumped to
+  `3.4.65`; root to `2.6.153`.
 - The disaster-recovery runbook and the monitoring deploy guide told a reader to copy
   `config/nginx-rate-limiting.conf` and `config/nginx-murphys-laws-enhanced.conf`. Neither is at the repository root
   (both are under `backend/config/`), and the enhanced config has no scanner defense and no `scanner.log`, so
