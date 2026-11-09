@@ -80,6 +80,15 @@ describe('scripts/migration-runner.ts', () => {
       expect(recorded()).toEqual([SETUP, "002_it's_a_trigger.sql"]);
     });
 
+    it('does not mistake a line of quoted text that starts with the word commit for a COMMIT', () => {
+      write(SECOND, "INSERT INTO t VALUES (1);\nCREATE TABLE notes (body TEXT);\nINSERT INTO notes VALUES ('first line\ncommit this to memory\nrollback is not a statement here');\n");
+
+      migrate(dbFile, migrationsDir);
+
+      expect(query('SELECT body FROM notes')).toEqual([{ body: 'first line\ncommit this to memory\nrollback is not a statement here' }]);
+      expect(recorded()).toEqual([SETUP, SECOND]);
+    });
+
     it('does nothing the second time', () => {
       migrate(dbFile, migrationsDir);
       migrate(dbFile, migrationsDir);
@@ -227,6 +236,17 @@ describe('scripts/migration-runner.ts', () => {
 
         expect(message).toContain(`Migration ${SETUP} failed: disk I/O error\n`);
         expect(message).not.toContain('Failing statement');
+        expect(recorded()).toEqual([]);
+      });
+
+      it('reports the signal when sqlite3 is killed, and records nothing', () => {
+        standIn(`if [ $# -eq 2 ]; then kill -9 $$; fi\nexec ${realSqlite3} "$@"`);
+
+        const message = failure().message;
+
+        expect(message).toContain(`Migration ${SETUP} failed: sqlite3 was stopped by SIGKILL`);
+        expect(message).toContain('sqlite3 did not finish');
+        expect(message).not.toContain('nothing after it ran');
         expect(recorded()).toEqual([]);
       });
 

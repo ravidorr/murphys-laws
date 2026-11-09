@@ -20,10 +20,10 @@ This project has two types of database scripts:
 
 Pending files in `db/migrations` run in name order, each one piped into the `sqlite3` CLI started with `-bail`, so the first statement that fails stops the run: nothing after it executes.
 
-- **Each migration is all or nothing.** A file that starts with its own `BEGIN` (after any comments) keeps its transaction and must end with a single `COMMIT;`. Any other file is wrapped in a transaction by the runner and must not `COMMIT` or `ROLLBACK` itself. A file that breaks either rule is refused before anything runs.
+- **Each migration is all or nothing.** A file that starts with its own `BEGIN` (after any comments) keeps its transaction and must end with a single `COMMIT;`. Any other file is wrapped in a transaction by the runner and must not `COMMIT` or `ROLLBACK` itself. A file that breaks either rule is refused before that migration runs (migrations before it in the same run are already applied).
 - **A failure is rolled back and not recorded.** The row in `schema_migrations` is written in the same transaction as the migration, so a migration is either applied and recorded or neither.
-- **The run stops at the first failure.** Later migrations are not tried, and the command exits non-zero with a message that names the migration, the line and the failing statement. After you fix the migration file, `npm run migrate` retries it from the start.
-- **Keep out of transactions what SQLite does not allow inside one:** `VACUUM` and the `foreign_keys` and `journal_mode` pragmas have to go in their own tooling, not in a migration.
+- **The run stops at the first failure.** Later migrations are not tried, and the command exits non-zero with a message that names the migration and quotes sqlite3's error; when sqlite3 reports a line, it also quotes the failing statement. After you fix the migration file, `npm run migrate` retries it from the start.
+- **Keep out of migrations what a transaction does not allow:** `VACUUM` fails inside one, and the `foreign_keys` pragma does nothing inside one, so do those outside the migration runner.
 
 ### 2. **Seeding Scripts** (Initial Data)
 - **Purpose**: Populate database from source markdown files
@@ -159,11 +159,10 @@ npm run build:backend:db
 **Good news:** Migrations run automatically when you push to `main`!
 
 The GitHub Actions workflow (`.github/workflows/deploy.yml`) automatically:
-1.Runs pre-migration safety checks
-2.Backs up the production database
-3.Applies pending migrations
-4.Stops the deploy if a migration fails (the failed migration is rolled back, nothing later runs, and the backup copy stays beside the database)
-5.Shows migration results in GitHub Actions logs
+1.Copies the production database to `murphys.db.backup` on the server (best effort; nothing restores it automatically)
+2.Applies pending migrations with `npm run migrate`
+3.Stops the deploy if a migration fails: the failed migration is rolled back, nothing later runs, and the services are not restarted
+4.Shows migration results in GitHub Actions logs
 
 ### Automated Workflow:
 
@@ -193,12 +192,9 @@ git push origin main
  3. Build project from that copy (it applies the pending migrations to the copy first), then delete the copy
  4. Deploy to server
  5. SSH into production server:
- * Backup database (murphys.db.backup)
- * Pull latest code (including migration files)
- * Restore production database
- * Run safety checks (table structure, data counts)
- * Create pre-migration backup
- * Run migrations (npm run migrate:safe)
+ * Copy the database to murphys.db.backup
+ * Install the locked dependencies (npm ci)
+ * Run migrations (npm run migrate)
  * A failed migration is rolled back, the step exits non-zero and the deploy stops before PM2 restarts
  * Show applied migrations in logs
  * Restart PM2 services
@@ -208,17 +204,10 @@ git push origin main
 
 After pushing, go to:
 - GitHub -> Actions tab -> Click your deployment run
-- Look for "Update server and restart services" step
+- Look for the "Deploy and restart services" step
 - You'll see output like:
 
 ```
-Running pre-migration safety checks...
-* Database file exists
-* Table 'laws' exists
-* Table 'votes' exists
-Database has 2379 laws and 15420 votes
-Pre-migration backup created: 8.45 MB
-
 Running database migrations...
 Applied migrations: 1
 Total migration files: 2
@@ -226,11 +215,7 @@ Total migration files: 2
 Applying migration: 002_update_law_content_20251020.sql
 * Applied: 002_update_law_content_20251020.sql
 
-Migrations completed successfully
-
-Applied migrations:
-002_update_law_content_20251020.sql|2025-10-20 15:30:45
-001_initial_schema.sql|2025-10-05 14:08:58
+Applied 1 migration(s).
 ```
 
 ## Manual Deployment (Optional)
@@ -244,8 +229,8 @@ ssh root@your-server.com
 # Go to project directory
 cd ~/murphys-laws
 
-# Run migrations with safety checks
-npm run migrate:safe
+# Apply pending migrations (from backend/)
+cd backend && npm run migrate
 ```
 
 ## Troubleshooting
@@ -256,19 +241,20 @@ sqlite3 murphys.db "SELECT * FROM schema_migrations ORDER BY filename;"
 ```
 
 **Q: What if I need to rollback a migration?**
-Migrations don't have automatic rollback. You need to manually create a new migration that reverses the changes.
+A migration that fails is rolled back for you (see below). One that was applied successfully has no automatic undo: create a new migration that reverses the changes.
 
 **Q: What happens when a migration fails?**
-The runner stops at the failing statement, rolls the migration back, does not record it in `schema_migrations` and exits non-zero. The message looks like this:
+The runner stops at the failing statement, rolls the migration back, does not record it in `schema_migrations` and exits non-zero. The message names the migration and quotes sqlite3's own error (its wording varies a little between sqlite3 versions), then the failing statement when sqlite3 gave a line number:
 
 ```
-Migration 023_example.sql failed near line 4: UNIQUE constraint failed: t.a
+Migration failed.
+Migration 023_example.sql failed near line 4: Error near line 4: UNIQUE constraint failed: t.a
 Failing statement:
 INSERT INTO t VALUES (10);
 sqlite3 stopped there: nothing after it ran and its transaction was rolled back, so the migration is not recorded in schema_migrations.
 ```
 
-In a deploy, the migrate step fails, so the deploy stops before the services restart; the site keeps running the previous release, on the database as it was before the failed migration. Fix the migration file (or add a new one) and run again: the failed migration is retried from its first statement.
+In a deploy, the migrate step fails, so the deploy stops before PM2 is restarted. By then the new files are on the server (the web build is served by nginx and `npm ci` has run) while the API process keeps running in memory, and the database is as it was before the failed migration. Fix the migration file (or add a new one) and deploy again: the failed migration is retried from its first statement.
 
 **Q: Can I edit a migration file after it's been applied?**
 No. Once applied and tracked in `schema_migrations`, editing the file won't re-run it. Create a new migration instead.
