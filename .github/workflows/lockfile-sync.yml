@@ -42,4 +42,4 @@ jobs:
         run: node --import tsx --test scripts/sync-lockfile-versions.test.ts
 
       - name: Test the workflow contracts
-        run: node --import tsx --test scripts/npm-ci-action.test.ts scripts/codeql-workflow.test.ts
+        run: node --import tsx --test scripts/npm-ci-action.test.ts scripts/codeql-workflow.test.ts scripts/deploy-workflow.test.ts
