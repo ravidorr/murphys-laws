@@ -528,4 +528,4 @@ log "Log analysis completed"
 log "=========================================="
 
 # Cleanup old reports
-find /tmp -name "log-analysis-*.txt" -mtime +30 -delete
+find /tmp -maxdepth 1 -name "log-analysis-*.txt" -mtime +30 -delete

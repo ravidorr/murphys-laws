@@ -17,7 +17,11 @@ interface CommandInjectionReport {
 function analyze(box: Sandbox, lines: string[]): CommandInjectionReport {
   const accessLog = path.join(box.root, 'access.log');
   writeFileSync(accessLog, `${lines.join('\n')}\n`);
-  const script = install(box, 'log-analyzer.sh', readFileSync(path.join(scriptsDir, 'log-analyzer.sh'), 'utf8'), {
+  // The script's last step prunes old reports with an unquoted `find /tmp ...`, which install() leaves
+  // alone. Point it at the sandbox so a test never deletes anything under the real /tmp.
+  const original = readFileSync(path.join(scriptsDir, 'log-analyzer.sh'), 'utf8');
+  expect(original).toContain('find /tmp ');
+  const script = install(box, 'log-analyzer.sh', original.replace('find /tmp ', `find ${box.root} `), {
     withHelper: false,
   });
   const result = runFile(script, [], box, {
