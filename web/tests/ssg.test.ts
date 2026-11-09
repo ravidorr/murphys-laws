@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, it, expect, vi } from 'vitest';
 import { marked } from 'marked';
 import { CALCULATOR_META_DESCRIPTIONS } from '../src/utils/constants.ts';
 import {
@@ -21,6 +23,10 @@ import {
   injectBreadcrumbJsonLd,
   buildContentBreadcrumbTrail,
   fetchAllCategories,
+  fetchAllLaws,
+  fetchFirstPageOfLaws,
+  mergeReviewedLawDetails,
+  REVIEWED_LAW_TITLES,
   categorySitemapPaths,
   pickRelatedLaws,
   renderLawLinkList
@@ -671,6 +677,254 @@ describe('SSG SEO output', () => {
 
     it('renders nothing for no laws', () => {
       expect(renderLawLinkList([], new Map())).toBe('');
+    });
+  });
+});
+
+describe('SSG law data from the API', () => {
+  type Reply = { ok: boolean; status: number; json(): Promise<unknown> };
+  const reply = (body: unknown, status = 200): Reply => ({ ok: status < 400, status, json: async () => body });
+  const law = (id: number, extra: Record<string, unknown> = {}) => ({ id, title: `Law ${id}`, text: `Text ${id}`, ...extra });
+
+  describe('fetchAllLaws', () => {
+    it('pages through the API until every law is read and asks for an order that votes cannot change', async () => {
+      const request = vi.fn()
+        .mockResolvedValueOnce(reply({ data: [law(1), law(2)], total: 3 }))
+        .mockResolvedValueOnce(reply({ data: [law(3)], total: 3 }));
+
+      const laws = await fetchAllLaws(request, 'https://api.test');
+
+      expect(laws.map((item) => item.id).sort()).toEqual([1, 2, 3]);
+      expect(request).toHaveBeenNthCalledWith(1, 'https://api.test/api/v1/laws?limit=100&offset=0&sort=created_at&order=asc');
+      expect(request).toHaveBeenNthCalledWith(2, 'https://api.test/api/v1/laws?limit=100&offset=2&sort=created_at&order=asc');
+    });
+
+    it('returns laws in the API default order, highest score first', async () => {
+      const request = vi.fn().mockResolvedValue(reply({
+        data: [law(1, { score: 1, upvotes: 1 }), law(2, { score: 5, upvotes: 9 }), law(3, { score: 5, upvotes: 9 }), law(4, { score: 5, upvotes: 2 }), law(5)],
+        total: 5
+      }));
+
+      const laws = await fetchAllLaws(request, 'https://api.test');
+
+      expect(laws.map((item) => item.id)).toEqual([3, 2, 4, 1, 5]);
+    });
+
+    it('throws when the API answers with an error, instead of building a site with no law pages', async () => {
+      await expect(fetchAllLaws(vi.fn().mockResolvedValue(reply({}, 503)), 'https://api.test')).rejects.toThrow('Law API returned 503');
+    });
+
+    it('throws when the API cannot be reached', async () => {
+      await expect(fetchAllLaws(vi.fn().mockRejectedValue(new TypeError('fetch failed')), 'https://api.test')).rejects.toThrow('fetch failed');
+    });
+
+    it.each([
+      ['no data array', { total: 1 }],
+      ['no total', { data: [law(1)] }],
+      ['a total that is not a number', { data: [law(1)], total: '1' }],
+    ])('throws on a payload with %s', async (_name, body) => {
+      await expect(fetchAllLaws(vi.fn().mockResolvedValue(reply(body)), 'https://api.test')).rejects.toThrow('unexpected payload');
+    });
+
+    it('throws when the API has no laws', async () => {
+      await expect(fetchAllLaws(vi.fn().mockResolvedValue(reply({ data: [], total: 0 })), 'https://api.test')).rejects.toThrow('no laws');
+    });
+
+    it('throws when the pages add up to fewer laws than the total', async () => {
+      const request = vi.fn()
+        .mockResolvedValueOnce(reply({ data: [law(1), law(2)], total: 5 }))
+        .mockResolvedValueOnce(reply({ data: [], total: 5 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('2 of 5 laws');
+    });
+
+    it('throws when a later page fails, not only the first', async () => {
+      const request = vi.fn()
+        .mockResolvedValueOnce(reply({ data: [law(1)], total: 2 }))
+        .mockResolvedValueOnce(reply({}, 503));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('Law API returned 503');
+    });
+
+    it.each([
+      ['a total that is not a whole number', { data: [law(1)], total: Number.NaN }],
+      ['a negative total', { data: [law(1)], total: -1 }],
+      ['a law without an ID', { data: [{ title: 'No ID' }], total: 1 }],
+      ['a null entry', { data: [null], total: 1 }],
+    ])('throws on %s', async (_name, body) => {
+      await expect(fetchAllLaws(vi.fn().mockResolvedValue(reply(body)), 'https://api.test')).rejects.toThrow('unexpected payload');
+    });
+
+    it('throws when the API returns more laws than its total', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1), law(2), law(3)], total: 2 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('3 of 2 laws');
+    });
+
+    it('treats a missing score as zero when sorting', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1, { score: -1 }), law(2), law(3, { score: 1 })], total: 3 }));
+
+      expect((await fetchAllLaws(request, 'https://api.test')).map((item) => item.id)).toEqual([3, 2, 1]);
+    });
+
+    it('throws when the total changes while the pages are read, because a page boundary may have shifted', async () => {
+      const request = vi.fn()
+        .mockResolvedValueOnce(reply({ data: [law(1), law(2)], total: 3 }))
+        .mockResolvedValueOnce(reply({ data: [law(3)], total: 2 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('total changed from 3 to 2');
+    });
+
+    it('stops instead of looping when the API ignores the offset and keeps sending the same page', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1), law(2)], total: 5 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow(/more than once|of 5 laws/);
+      expect(request.mock.calls.length).toBeLessThan(10);
+    });
+
+    it('throws when one law came back twice', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1), law(1)], total: 2 }));
+
+      await expect(fetchAllLaws(request, 'https://api.test')).rejects.toThrow('more than once');
+    });
+  });
+
+  describe('fetchFirstPageOfLaws', () => {
+    it('asks for the first page, in the API default order, with the category when one is given', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [law(1)], total: 1 }));
+
+      const page = await fetchFirstPageOfLaws({ limit: 25, category_slug: 'murphys-laws', category_id: 3 }, request, 'https://api.test');
+
+      expect(page).toEqual({ data: [law(1)], total: 1 });
+      expect(request).toHaveBeenCalledWith('https://api.test/api/v1/laws?limit=25&offset=0&sort=score&order=desc&category_id=3&category_slug=murphys-laws');
+    });
+
+    it('accepts a page that is empty because the category has no laws', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [], total: 0 }));
+
+      expect(await fetchFirstPageOfLaws({ limit: 25 }, request, 'https://api.test')).toEqual({ data: [], total: 0 });
+    });
+
+    it('throws when the API answers with an error, instead of building a page with no laws on it', async () => {
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, vi.fn().mockResolvedValue(reply({}, 503)), 'https://api.test')).rejects.toThrow('Law API returned 503');
+    });
+
+    it('throws when the request itself fails', async () => {
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, vi.fn().mockRejectedValue(new TypeError('fetch failed')), 'https://api.test')).rejects.toThrow('fetch failed');
+    });
+
+    it.each([
+      ['data that is not a list', { data: 'x', total: 1 }],
+      ['no total', { data: [] }],
+      ['a total that is not a number', { data: [], total: '3' }],
+      ['a negative total', { data: [], total: -1 }],
+    ])('throws on %s', async (_name, body) => {
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, vi.fn().mockResolvedValue(reply(body)), 'https://api.test')).rejects.toThrow('unexpected payload');
+    });
+
+    it('throws on an empty page that comes with a positive total', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [], total: 40 }));
+
+      await expect(fetchFirstPageOfLaws({ limit: 25 }, request, 'https://api.test')).rejects.toThrow('reports 40');
+    });
+  });
+
+  describe('mergeReviewedLawDetails', () => {
+    const annotation = { explanation: 'e', practical_example: 'p', source_label: 's', source_url: 'https://example.com', reviewed_at: '2026-07-21' };
+    // Production numbers these laws 2381 and up; a freshly built archive numbers them 2, 4, 8 and so on
+    const reviewedLaws = () => REVIEWED_LAW_TITLES.map((title, index) => law(2381 + index, { title }));
+
+    function detailRequest(annotatedIds: number[], status = 200) {
+      return vi.fn(async (url: string) => {
+        const id = Number(url.split('/').pop());
+        return reply(annotatedIds.includes(id) ? { ...law(id), editorial: annotation } : law(id), status);
+      });
+    }
+
+    it('keeps the list unchanged when there are no laws', async () => {
+      const request = vi.fn();
+      expect(await mergeReviewedLawDetails([], request, 'https://api.test')).toEqual([]);
+      expect(request).not.toHaveBeenCalled();
+    });
+
+    it('finds each reviewed law by title, whatever its ID, and merges its annotation', async () => {
+      const laws = [law(1), ...reviewedLaws()];
+      const request = detailRequest(laws.slice(1).map((item) => item.id));
+
+      const merged = await mergeReviewedLawDetails(laws, request, 'https://api.test');
+
+      expect(merged).toHaveLength(laws.length);
+      expect(merged[0]).toEqual(law(1));
+      expect(merged.slice(1).every((item) => item.editorial?.explanation === 'e')).toBe(true);
+      expect(request).toHaveBeenCalledWith('https://api.test/api/v1/laws/2381');
+      expect(request).not.toHaveBeenCalledWith('https://api.test/api/v1/laws/2');
+    });
+
+    it('matches titles without regard to case or surrounding space', async () => {
+      const laws = reviewedLaws().map((item, index) => index === 0 ? { ...item, title: `  ${item.title!.toUpperCase()} ` } : item);
+
+      const merged = await mergeReviewedLawDetails(laws, detailRequest(laws.map((item) => item.id)), 'https://api.test');
+
+      expect(merged[0]!.editorial).toBeDefined();
+    });
+
+    it('picks the annotated law when another law shares the title', async () => {
+      const laws = [...reviewedLaws(), law(974, { title: REVIEWED_LAW_TITLES[12] })];
+      const request = detailRequest(reviewedLaws().map((item) => item.id));
+
+      const merged = await mergeReviewedLawDetails(laws, request, 'https://api.test');
+
+      expect(merged.find((item) => item.id === 974)!.editorial).toBeUndefined();
+      expect(merged.find((item) => item.id === 2381 + 12)!.editorial).toBeDefined();
+    });
+
+    it('throws when a reviewed law is not in the list', async () => {
+      const laws = reviewedLaws().slice(1);
+
+      await expect(mergeReviewedLawDetails(laws, detailRequest([]), 'https://api.test')).rejects.toThrow(`"${REVIEWED_LAW_TITLES[0]}" is not in the API law list`);
+    });
+
+    it('throws instead of dropping reviewed content when the annotation is missing', async () => {
+      const laws = reviewedLaws();
+
+      await expect(mergeReviewedLawDetails(laws, detailRequest([]), 'https://api.test')).rejects.toThrow('missing its editorial annotation');
+    });
+
+    it('throws when two laws with the same title both carry an annotation', async () => {
+      const laws = [...reviewedLaws(), law(974, { title: REVIEWED_LAW_TITLES[0] })];
+
+      await expect(mergeReviewedLawDetails(laws, detailRequest(laws.map((item) => item.id)), 'https://api.test')).rejects.toThrow('more than one law');
+    });
+
+    it('keeps the list fields of a reviewed law that the detail answer leaves out', async () => {
+      const laws = reviewedLaws().map((item, index) => index === 0 ? { ...item, score: 5, category_slug: 'murphys-laws' } : item);
+      const request = vi.fn(async (url: string) => {
+        const id = Number(url.split('/').pop());
+        return reply({ id, title: laws.find((item) => item.id === id)!.title, editorial: annotation });
+      });
+
+      const merged = await mergeReviewedLawDetails(laws, request, 'https://api.test');
+
+      expect(merged[0]).toMatchObject({ score: 5, category_slug: 'murphys-laws', editorial: annotation });
+    });
+
+    it('throws when the detail answer is for a different law than the one asked for', async () => {
+      const request = vi.fn(async () => reply({ ...law(1), editorial: annotation }));
+
+      await expect(mergeReviewedLawDetails(reviewedLaws(), request, 'https://api.test')).rejects.toThrow('API answered with law 1');
+    });
+
+    it('lists exactly the laws that migration 016 annotates, once each', () => {
+      const migration = readFileSync(resolve(__dirname, '..', '..', 'backend', 'db', 'migrations', '016_add_reviewed_law_annotations.sql'), 'utf8');
+      const slugs = [...migration.matchAll(/WHERE slug = '([^']+)'/g)].map((match) => match[1]);
+      const slugify = (title: string) => title.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+      expect(new Set(REVIEWED_LAW_TITLES).size).toBe(REVIEWED_LAW_TITLES.length);
+      expect(REVIEWED_LAW_TITLES.map(slugify).sort()).toEqual([...slugs].sort());
+    });
+
+    it('throws when a detail request fails', async () => {
+      await expect(mergeReviewedLawDetails(reviewedLaws(), detailRequest([], 500), 'https://api.test')).rejects.toThrow('API returned 500');
     });
   });
 });

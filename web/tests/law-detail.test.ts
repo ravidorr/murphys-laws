@@ -1476,3 +1476,134 @@ describe('LawDetail head metadata', () => {
     expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('Original');
   });
 });
+
+describe('LawDetail robots meta for a missing law', () => {
+  const robots = () => document.querySelector('meta[name="robots"]')?.getAttribute('content');
+
+  const notFoundShown = (el: HTMLElement) => el.querySelector('[data-not-found]')?.hasAttribute('hidden') === false;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.querySelectorAll('meta[name="robots"]').forEach((meta) => meta.remove());
+    document.head.insertAdjacentHTML('beforeend', '<meta name="robots" content="index, follow">');
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('meta[name="robots"]').forEach((meta) => meta.remove());
+  });
+
+  it('marks the page noindex when the API answers 404, so a stale prerendered page is not a soft 404', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+
+    LawDetail({ lawId: '1719', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(robots()).toBe('noindex, follow'), { timeout: 500 });
+  });
+
+  it.each([
+    ['a server error', { ok: false, status: 503 }],
+    ['a forbidden answer', { ok: false, status: 403 }],
+  ])('keeps the page indexable on %s, which says nothing about the law', async (_name, response) => {
+    globalThis.fetch = vi.fn().mockResolvedValue(response);
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-action="retry-law"]')).toBeTruthy(), { timeout: 500 });
+    expect(robots()).toBe('index, follow');
+  });
+
+  it('keeps the page indexable when the request fails before the API answers', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-action="retry-law"]')).toBeTruthy(), { timeout: 500 });
+    expect(robots()).toBe('index, follow');
+  });
+
+  it('makes the page indexable again when a retry finds the law', async () => {
+    const law = { id: 7, title: 'Test Law', text: 'Test text', upvotes: 1, downvotes: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 404 })
+      .mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    await vi.waitFor(() => expect(robots()).toBe('noindex, follow'), { timeout: 500 });
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(robots()).toBe('index, follow'), { timeout: 500 });
+  });
+
+  it('marks the page noindex when a retry ends in a 404', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValue({ ok: false, status: 404 });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-action="retry-law"]')).toBeTruthy(), { timeout: 500 });
+    expect(robots()).toBe('index, follow');
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(robots()).toBe('noindex, follow'), { timeout: 500 });
+  });
+
+  it('keeps the page noindex when a retry after a 404 fails for another reason', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 404 })
+      .mockResolvedValue({ ok: false, status: 503 });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    await vi.waitFor(() => expect(robots()).toBe('noindex, follow'), { timeout: 500 });
+    const failures = vi.mocked(globalThis.fetch);
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(failures).toHaveBeenCalledTimes(2), { timeout: 500 });
+    // The retry hides the not-found state while it loads; it shows again once the retry has failed
+    await vi.waitFor(() => expect(notFoundShown(el)).toBe(true), { timeout: 500 });
+    expect(robots()).toBe('noindex, follow');
+  });
+
+  it('does not touch the robots tag when a 404 arrives after the user left the page', async () => {
+    let answer: (value: unknown) => void = () => { };
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    (el as unknown as { cleanup: () => void }).cleanup();
+
+    answer({ ok: false, status: 404 });
+    // The late 404 still reaches the view (it shows its not-found state); only the robots tag is off limits
+    await vi.waitFor(() => expect(notFoundShown(el)).toBe(true), { timeout: 500 });
+
+    expect(robots()).toBe('index, follow');
+  });
+
+  it('does not restore the robots tag for a page the user already left', async () => {
+    const law = { id: 7, title: 'Test Law', text: 'Test text', upvotes: 1, downvotes: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 404 })
+      .mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+    await vi.waitFor(() => expect(robots()).toBe('noindex, follow'), { timeout: 500 });
+    (el as unknown as { cleanup: () => void }).cleanup();
+    document.querySelector('meta[name="robots"]')!.setAttribute('content', 'next page');
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-card-root]')).toBeTruthy(), { timeout: 500 });
+    expect(robots()).toBe('next page');
+  });
+
+  it('leaves the robots tag alone when the law ID is missing', () => {
+    const el = LawDetail({ lawId: '', onNavigate: () => { } });
+    // The not-found state is shown synchronously for a missing ID, so there is nothing to wait for
+    expect(notFoundShown(el)).toBe(true);
+    expect(robots()).toBe('index, follow');
+  });
+
+  it('leaves the robots tag alone when the law loads on the first try', async () => {
+    const law = { id: 7, title: 'Test Law', text: 'Test text', upvotes: 1, downvotes: 0 };
+    document.querySelector('meta[name="robots"]')!.setAttribute('content', 'custom');
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-card-root]')).toBeTruthy(), { timeout: 500 });
+    expect(robots()).toBe('custom');
+  });
+});

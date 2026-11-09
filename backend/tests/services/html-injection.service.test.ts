@@ -250,6 +250,24 @@ describe('HtmlInjectionService', () => {
       expect(schema!['url']).toContain('/law/10');
     });
 
+    it('declares a canonical URL without a trailing slash, because nginx redirects /law/N/ to /law/N', async () => {
+      mockLawService.getLaw.mockResolvedValue({
+        id: 2513,
+        title: 'Test Law',
+        text: 'Things go wrong.',
+        attributions: [],
+      });
+
+      const html = await service.getLawHtml('2513');
+      const url = /<link rel="canonical" href="([^"]*)">/.exec(html!)?.[1];
+      expect(url).toMatch(/\/law\/2513$/);
+      expect(html).toContain(`<meta property="og:url" content="${url}">`);
+      expect(html).toContain(`<meta property="twitter:url" content="${url}">`);
+      const schema = extractJsonLd(html!);
+      expect(schema!['url']).toBe(url);
+      expect((schema!['mainEntityOfPage'] as { '@id': string })['@id']).toBe(url);
+    });
+
     it('JSON-LD includes author when attribution is present', async () => {
       mockLawService.getLaw.mockResolvedValue({
         id: 11,

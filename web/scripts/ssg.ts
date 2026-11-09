@@ -38,6 +38,7 @@ interface Law {
   category_context?: string | null;
   upvotes?: number;
   downvotes?: number;
+  score?: number;
   created_at?: string;
   updated_at?: string;
   editorial?: {
@@ -101,9 +102,16 @@ async function readContentMetadata(): Promise<Record<string, ContentMetadataEntr
 
 // API configuration for fetching laws
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
-const REVIEWED_LAW_IDS = [
-  2, 4, 8, 10, 14, 24, 28, 32, 33, 43, 44, 48, 50,
-  61, 62, 68, 71, 72, 73, 75, 76, 77, 87, 90, 91
+// Laws that carry an editorial annotation (migration 016, which names them by slug; the API list has no
+// slug, so the build matches on title). They are never found by ID: a database built from the archive
+// gives them IDs 2, 4, 8 and so on, while production gives them IDs between 2381 and 2470.
+const REVIEWED_LAW_TITLES = [
+  "Betteridge's law of headlines", "Brooks's law", "Chekhov's gun", "Chesterton's fence",
+  'Sir Arthur Charles Clarke Third Law', "Conway's law", "Cunningham's law", "Metcalfe's law",
+  "Gall's law", "Godwin's law", "Goodhart's law", "Hick's law", "Hofstadter's law", "Lindy's law",
+  "Linus's law", "Occam's razor", 'Pareto principle', "Parkinson's law", "Parkinson's law of triviality",
+  'Peter principle', "Poe's law", "Postel's law", "Segal's law", "Stigler's law of eponymy",
+  'Streisand effect'
 ];
 
 // Content pages metadata for SSG
@@ -219,38 +227,57 @@ const CONTENT_PAGES: ContentPageMeta[] = [
 ];
 
 /**
- * Fetch all published laws from the API
+ * Fetch all published laws from the API.
+ *
+ * Every law page and sitemap entry comes from this list, so a partial or empty answer must stop the
+ * build: shipping it would publish a site that silently lost its law pages.
  */
-async function fetchAllLaws(): Promise<Law[]> {
+async function fetchAllLaws(fetchRequest: FetchCategoriesRequest = fetch, baseUrl: string = API_BASE_URL): Promise<Law[]> {
   const laws: Law[] = [];
   let offset = 0;
+  let total = 0;
   const limit = 100; // Request up to 100, but API may return fewer
 
-  try {
-    while (true) {
-      const response = await fetch(`${API_BASE_URL}/api/v1/laws?limit=${limit}&offset=${offset}`);
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      laws.push(...data.data);
-
-      // Stop if we got no data or have all items
-      // Note: API may return fewer items than limit (e.g., max 25 per request)
-      if (data.data.length === 0 || laws.length >= data.total) {
-        break;
-      }
-      offset += data.data.length; // Use actual count returned, not requested limit
+  while (true) {
+    // created_at does not change when votes arrive and the API breaks ties by id, so paging is stable
+    const response = await fetchRequest(`${baseUrl}/api/v1/laws?limit=${limit}&offset=${offset}&sort=created_at&order=asc`);
+    if (!response.ok) {
+      throw new Error(`Law API returned ${response.status}`);
     }
 
-    console.log(`Fetched ${laws.length} laws from API.`);
-    return laws;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`Warning: Could not fetch laws from API: ${message}`);
-    return [];
+    const payload = await response.json() as { data?: unknown; total?: unknown };
+    if (!Array.isArray(payload.data) || !Number.isInteger(payload.total) || (payload.total as number) < 0
+      || !payload.data.every((item) => Number.isInteger((item as Law | null)?.id))) {
+      throw new Error(`Law API returned an unexpected payload at offset ${offset}.`);
+    }
+    // A total that moves while the pages are read means laws were added or removed mid-run, which can
+    // shift a page boundary and skip a law without the count check below noticing
+    if (offset > 0 && payload.total !== total) {
+      throw new Error(`Law API total changed from ${total} to ${payload.total as number} while paging; run the build again.`);
+    }
+    total = payload.total as number;
+
+    // Stop if we got no data or have all items
+    // Note: API may return fewer items than limit (e.g., max 25 per request)
+    if (payload.data.length === 0) break;
+    laws.push(...(payload.data as Law[]));
+    if (laws.length >= total) break;
+    offset += payload.data.length; // Use actual count returned, not requested limit
   }
+
+  if (laws.length === 0) {
+    throw new Error('Law API returned no laws; refusing to generate a site without law pages.');
+  }
+  if (laws.length !== total) {
+    throw new Error(`Law API returned ${laws.length} of ${total} laws; refusing to generate an incomplete site.`);
+  }
+  if (new Set(laws.map((law) => law.id)).size !== laws.length) {
+    throw new Error('Law API returned the same law more than once; refusing to generate duplicate pages.');
+  }
+
+  console.log(`Fetched ${laws.length} laws from API.`);
+  // Keep the order the API's default listing used, which related-law picking depends on
+  return laws.sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || (b.upvotes ?? 0) - (a.upvotes ?? 0) || b.id - a.id);
 }
 
 /**
@@ -291,38 +318,60 @@ function categorySitemapPaths(categories: Category[]): string[] {
   return categories.map(({ slug }) => `/category/${slug}`);
 }
 
-async function mergeReviewedLawDetails(laws: Law[]): Promise<Law[]> {
+/**
+ * Add the editorial annotation to each reviewed law. A law is found by title in the list the build
+ * already fetched; when another law shares the title, the one that carries an annotation is the
+ * reviewed one. A reviewed law that cannot be found, or whose title is annotated on more than one law,
+ * stops the build instead of quietly dropping its reviewed content from the page.
+ */
+async function mergeReviewedLawDetails(laws: Law[], fetchRequest: FetchCategoriesRequest = fetch, baseUrl: string = API_BASE_URL): Promise<Law[]> {
   if (laws.length === 0) return laws;
 
-  const details = await Promise.all(REVIEWED_LAW_IDS.map(async (lawId) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/laws/${lawId}`);
-    if (!response.ok) throw new Error(`Could not fetch reviewed law ${lawId}: API returned ${response.status}`);
-    const law = await response.json() as Law;
-    if (!law.editorial) throw new Error(`Reviewed law ${lawId} is missing its editorial annotation`);
-    return law;
-  }));
-  const detailsById = new Map(details.map((law) => [law.id, law]));
+  const normalize = (title: string | undefined) => (title ?? '').trim().toLowerCase();
+  const detailsById = new Map<number, Law>();
+  for (const title of REVIEWED_LAW_TITLES) {
+    const candidates = laws.filter((law) => normalize(law.title) === normalize(title));
+    if (candidates.length === 0) throw new Error(`Reviewed law "${title}" is not in the API law list`);
+
+    const details = await Promise.all(candidates.map(async (candidate) => {
+      const response = await fetchRequest(`${baseUrl}/api/v1/laws/${candidate.id}`);
+      if (!response.ok) throw new Error(`Could not fetch reviewed law "${title}" (${candidate.id}): API returned ${response.status}`);
+      const detail = await response.json() as Law;
+      if (detail.id !== candidate.id) throw new Error(`Reviewed law "${title}" (${candidate.id}): API answered with law ${detail.id}`);
+      return detail;
+    }));
+    const annotated = details.filter((law) => law.editorial);
+    if (annotated.length === 0) throw new Error(`Reviewed law "${title}" is missing its editorial annotation`);
+    if (annotated.length > 1) throw new Error(`Reviewed law "${title}" has an editorial annotation on more than one law`);
+    detailsById.set(annotated[0]!.id, annotated[0]!);
+  }
   return laws.map((law) => detailsById.has(law.id) ? { ...law, ...detailsById.get(law.id)! } : law);
 }
 
 /**
  * Fetch first page of laws for SSG pre-render (browse, category)
  */
-async function fetchFirstPageOfLaws(params: { limit: number; offset?: number; category_id?: number; category_slug?: string }): Promise<{ data: Law[]; total: number }> {
+async function fetchFirstPageOfLaws(
+  params: { limit: number; offset?: number; category_id?: number; category_slug?: string },
+  fetchRequest: FetchCategoriesRequest = fetch,
+  baseUrl: string = API_BASE_URL
+): Promise<{ data: Law[]; total: number }> {
   const { limit, offset = 0, category_id, category_slug } = params;
   const searchParams = new URLSearchParams({ limit: String(limit), offset: String(offset), sort: 'score', order: 'desc' });
   if (category_id !== undefined) searchParams.set('category_id', String(category_id));
   if (category_slug) searchParams.set('category_slug', category_slug);
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/laws?${searchParams.toString()}`);
-    if (!response.ok) throw new Error(`API returned ${response.status}`);
-    const json = await response.json();
-    return { data: json.data ?? [], total: Number.isFinite(json.total) ? json.total : 0 };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`Warning: Could not fetch first page of laws: ${message}`);
-    return { data: [], total: 0 };
+  // A failure stops the build: swallowing it published browse and category pages with no laws on them.
+  const query = searchParams.toString();
+  const response = await fetchRequest(`${baseUrl}/api/v1/laws?${query}`);
+  if (!response.ok) throw new Error(`Law API returned ${response.status} for ?${query}`);
+  const json = await response.json() as { data?: unknown; total?: unknown };
+  if (!Array.isArray(json.data) || !Number.isInteger(json.total) || (json.total as number) < 0) {
+    throw new Error(`Law API returned an unexpected payload for ?${query}`);
   }
+  if (json.data.length === 0 && (json.total as number) > offset) {
+    throw new Error(`Law API returned no laws for ?${query} although it reports ${json.total as number}`);
+  }
+  return { data: json.data as Law[], total: json.total as number };
 }
 
 /**
@@ -1185,10 +1234,13 @@ async function main(): Promise<void> {
   }
 
   const laws = await mergeReviewedLawDetails(await fetchAllLaws());
-  if (laws.length === 0) {
-    throw new Error('SSG requires a populated laws API; refusing to generate empty archive pages.');
-  }
   const categories = await fetchAllCategories();
+  // A law in a category that has no page would be prerendered and listed in the sitemap, yet linked from no list page
+  const categorySlugs = new Set(categories.map((category) => category.slug));
+  const unknownCategory = laws.filter((law) => law.category_slug && !categorySlugs.has(law.category_slug));
+  if (unknownCategory.length > 0) {
+    throw new Error(`${unknownCategory.length} laws are in a category the category API does not list (for example law ${unknownCategory[0]!.id} in "${unknownCategory[0]!.category_slug}")`);
+  }
   const lawSeoById = buildUniqueLawSeo(laws);
   const lawsByCategorySlug = new Map<string, Law[]>();
   const uncategorizedLaws: Law[] = [];
@@ -1299,6 +1351,9 @@ async function main(): Promise<void> {
 
   const LAWS_PER_PAGE = 25;
   const { data: browseLaws, total: browseTotal } = await fetchFirstPageOfLaws({ limit: LAWS_PER_PAGE });
+  if (browseTotal !== laws.length) {
+    throw new Error(`The browse list reports ${browseTotal} laws but the full list has ${laws.length}; the API changed during the build, run it again.`);
+  }
   const staticLawCardsHtml = renderStaticLawCards(browseLaws);
   const showCount = browseTotal > 0
     ? `<p class="text-center text-muted-fg mb-6" aria-live="polite">Showing 1&ndash;${Math.min(LAWS_PER_PAGE, browseTotal)} of ${browseTotal} laws.</p>`
@@ -1613,24 +1668,20 @@ ${articleArchive.featuredLaws}
   // 3c. Generate Law Detail Pages
   // Pre-render individual law pages with correct OG meta tags for social sharing
   console.log('Generating law detail pages...');
-  if (laws.length > 0) {
-    const lawDir = path.join(DIST_DIR, 'law');
-    await fs.mkdir(lawDir, { recursive: true });
+  const lawDir = path.join(DIST_DIR, 'law');
+  await fs.mkdir(lawDir, { recursive: true });
 
-    for (const law of laws) {
-      const lawPageDir = path.join(lawDir, String(law.id));
-      await fs.mkdir(lawPageDir, { recursive: true });
-      
-      const relatedLaws = law.category_slug
-        ? pickRelatedLaws(law, lawsByCategorySlug.get(law.category_slug) || [])
-        : [];
-      const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)));
-      await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
-    }
-    console.log(`Generated ${laws.length} law detail pages.`);
-  } else {
-    console.log('Skipping law detail pages (API not available or no laws found).');
+  for (const law of laws) {
+    const lawPageDir = path.join(lawDir, String(law.id));
+    await fs.mkdir(lawPageDir, { recursive: true });
+    
+    const relatedLaws = law.category_slug
+      ? pickRelatedLaws(law, lawsByCategorySlug.get(law.category_slug) || [])
+      : [];
+    const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)));
+    await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
   }
+  console.log(`Generated ${laws.length} law detail pages.`);
 
   // 4. Update Home Page (dist/index.html)
   // Crucial for AdSense and SEO: Replace the empty shell with meaningful content
@@ -1779,6 +1830,10 @@ export {
   injectBreadcrumbJsonLd,
   buildContentBreadcrumbTrail,
   fetchAllCategories,
+  fetchAllLaws,
+  fetchFirstPageOfLaws,
+  mergeReviewedLawDetails,
+  REVIEWED_LAW_TITLES,
   categorySitemapPaths,
   pickRelatedLaws,
   renderLawLinkList
