@@ -48,7 +48,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Googlebot-Image kept asking for it); it now points at `/android-chrome-512x512.png`, the old URL redirects
   there, and a test checks that every image URL built from `SITE_URL` or `baseUrl` (folders included) exists in `web/public`.
   The probe patterns also match `/ipfs` without a slash and any query string. Web bumped to
-  `3.4.64`; root to `2.6.152`.
+  `3.4.65`; root to `2.6.153`.
+- The disaster-recovery runbook and the monitoring deploy guide told a reader to copy
+  `config/nginx-rate-limiting.conf` and `config/nginx-murphys-laws-enhanced.conf`. Neither is at the repository root
+  (both are under `backend/config/`), and the enhanced config has no scanner defense and no `scanner.log`, so
+  following the old steps would have either failed or replaced the live site config with one that leaves the
+  scanner jail with nothing to read. Both guides now install the root `nginx.conf`, the file the droplet actually
+  runs. The recovery steps now update DNS and then issue the certificate before installing it, because that file
+  points at the certificate and `nginx -t` fails until it exists, and the certificate needs the names to resolve
+  to the new droplet. Both guides name the PM2 config at `backend/ecosystem.config.cjs`, where the file is (installing the Node it points at on a fresh droplet is still open, in `TODO.md`). The recovery steps also open `/root` and the checkout to the nginx worker, which the droplet has and a fresh Ubuntu does not, and check for a 200 rather than a 403. The monitoring
+  guide no longer promises rate limiting, 429 responses and security headers that the live config does not have;
+  it checks the scanner defense instead. A new test checks that every repository file that a runbook `cp` or `scp`
+  line copies is tracked by git, and Web CI now also runs when `shared/docs/**` changes, so a runbook edit gets that check. Web bumped
+  to `3.4.64`; root to `2.6.152`.
 - The daily report's "Fail2ban Currently Banned" and "Fail2ban Total Bans" figures read only the `sshd` jail, so
   bans from the `nginx-scanner` jail could never appear, and nothing said when that jail was down. They now sum
   both jails and show the split, such as `2 (SSH 0, scanners 2)`, under the same labels. A jail that cannot be
