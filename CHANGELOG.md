@@ -52,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The admin moderation page (`/admin`) now looks like the main site: the sticky header with the brand badge (linking to
   the archive), the site's cards for sign-in and for each law (pill and details in the header, fields in the body,
   Approve, Reject, Move to review and Save edits in the footer), outline and filled buttons with hover, pressed, focus
-  and disabled states, a message-style status notice, and the same elevation in dark mode. Only canonical tokens from
+  and disabled states, a message-style status notice, the same elevation in dark mode, and outline buttons with the site's dark-mode fill and borders. The brand badge links to the archive and the
+  page heading stays a plain heading, outside that link. Only canonical tokens from
   `web/styles/partials/variables.css` are used; `tests/admin-ui-tokens.test.ts` still checks they match.
 - The production deploy prerenders the site from a sanitized, freshly migrated COPY of the production database,
   taken at build time. The copy is never committed, never uploaded and never kept as an artifact. This fixes the
