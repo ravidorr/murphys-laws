@@ -43,9 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CI no longer fails a whole job when a download from an outside host fails. On 2026-11-09 GitHub Releases answered
   504 for the prebuilt `canvas` binary, so `npm ci` fell back to a compile the runner cannot do, and the Web,
-  Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. The root `npm ci` steps (and the
-  backend one) now go through a small composite action, `.github/actions/npm-ci`, that tries up to three times
-  with a pause between tries. The Android builds in CI and CodeQL first fetch the Gradle distribution in its own
+  Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. Every root `npm ci` step (the CI
+  workflows, CodeQL, the production deploy and the MCP registry publish, plus the backend one) now goes through a
+  small composite action, `.github/actions/npm-ci`, that tries up to three times with a pause between tries. A
+  new script test fails if a workflow brings back a bare `run: npm ci`. The Android builds in CI and CodeQL first fetch the Gradle distribution in its own
   retried step, because the wrapper gives up after 10 seconds. Only the downloads are retried: a failing build or
   test still fails on its first run. Root bumped to `2.6.153`.
 - The disaster-recovery runbook and the monitoring deploy guide told a reader to copy

@@ -26,7 +26,9 @@ runs:
             exit 0
           fi
           echo "::warning::npm ci failed (attempt ${attempt} of 3)"
-          sleep $((attempt * 20))
+          if [ "$attempt" -lt 3 ]; then
+            sleep $((attempt * 20))
+          fi
         done
         echo "::error::npm ci failed three times"
         exit 1

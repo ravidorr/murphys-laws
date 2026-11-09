@@ -108,7 +108,9 @@ jobs:
               exit 0
             fi
             echo "::warning::Gradle distribution download failed (attempt ${attempt} of 3)"
-            sleep $((attempt * 20))
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 20))
+            fi
           done
           exit 1
 
