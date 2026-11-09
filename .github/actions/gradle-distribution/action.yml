@@ -1,0 +1,26 @@
+name: Download the Gradle distribution with retries
+description: >-
+  Run `./gradlew --version`, retrying up to three times. The first run of the wrapper downloads the Gradle
+  distribution and gives up after 10 seconds, so one slow answer from the outside host would otherwise fail
+  the whole Android job. Only this download is retried: the builds that follow still run once.
+
+runs:
+  using: composite
+  steps:
+    - name: gradlew --version
+      shell: bash
+      run: |
+        chmod +x android/gradlew
+        for attempt in 1 2 3; do
+          status=0
+          (cd android && ./gradlew --version --no-daemon) || status=$?
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          echo "::warning::gradlew --version failed with exit code ${status} (attempt ${attempt} of 3)"
+          if [ "$attempt" -lt 3 ]; then
+            sleep $((attempt * 20))
+          fi
+        done
+        echo "::error::gradlew --version failed three times"
+        exit 1
