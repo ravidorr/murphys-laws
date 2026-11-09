@@ -9,21 +9,11 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## Site data
 
-- [ ] **Prerender law pages from production data, not the seeded archive:** `scripts/build-web-with-local-api.mjs` builds
-  a database from the archive, so on 9 November 2026 the live static pages did not match the production API.
-  Every sampled law page (75 of 75) described a different law from the one `/api/v1/laws/<id>` returns for the same
-  ID (for example `/law/556` is a "cops" law, the API returns an elevator law), 38 law pages in the sitemap were
-  for laws the API no longer has (for example 1719, 1963, 2368 to 2373), and 26 laws in the API (IDs between 2466
-  and 2516) have no page or sitemap entry. Search Console reports these as soft 404s and alternate pages.
-  The fix is a small change in `.github/workflows/deploy.yml`: replace `npm run build:web` with
-  `API_BASE_URL=https://murphys-laws.com npm --prefix web run build`, and keep `npm run build:openapi`. The build side
-  is ready for it: `ssg.ts` stops on an incomplete list and finds the reviewed laws by title. It is held back because a
-  build from production data fails `validateGeneratedPage` on three pages (`/law/1228`, `/law/1244`, `/law/1263`),
-  all because they list law 1264, whose production title and text hold `[by ...](mailto` and an address. Law 892's
-  attribution note holds a similar fragment but is not rendered in the built page. With those three pages exempted, a production build
-  passes the validation of every other page and `npm run seo:audit` (2,453 law pages, no blocking errors). Fix law 1264 (and 892) in the admin page or with a
-  migration, then switch the build. A migration cannot ship in the same deploy as the switch, because `deploy.yml`
-  builds the web before it runs `npm run migrate`.
+- [ ] **Build the site after the server has migrated:** `.github/workflows/deploy.yml` builds the web from the production
+  API before it uploads and migrates, so the static pages show production data as it was before the deploy's
+  migrations (a data fix appears one deploy later), and a build change that needs a new API field cannot ship in the same
+  deploy as the backend change that adds it. Upload and migrate first, then build against the new API and upload
+  `web/dist` in a second step (keeping the "no partial site" guarantee: the old `dist` stays until the new one is complete).
 - [ ] **Law pages show email addresses in their text:** 66 of the 2,465 pages built from the archive, and 69 of the 2,453
   built from production, contain something that looks like an address (for example `name@aol.com`). The build's
   privacy check only looks for `mailto:`. Find out where the addresses come from (law text, attribution notes)
