@@ -72,6 +72,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `find /tmp`, now stays at the top of `/tmp` (`-maxdepth 1`), so an unreadable directory there (CI runners have
   `systemd-private-*`) no longer makes the whole script exit 1, and the test points that step at its sandbox.
   Backend bumped to `2.3.64`; root to `2.6.156`.
+- The daily report's security scans (`backend/scripts/log-analyzer.sh`) now count today's requests, once each. They
+  read the whole access log, so the counts covered whatever the log retained; every nginx access-log count,
+  sample and IP, including the JSON `securityFindings` and `summary`, now comes from lines whose timestamp starts
+  with today's `[dd/Mon/yyyy:`, so a bare date in a URL, referrer or User-Agent does not pull in another day.
+- A line that matched several patterns was counted once per pattern. Each category now runs one scan with its
+  patterns joined into one alternation, so a request counts once per category, and the grand total counts a
+  request that matches two categories once (the text summary says so when the categories add up to more than the
+  total). The sample lines and attacking IPs use the same patterns and date filter as the count.
+- The SQL patterns matched anywhere in the line, including the referrer and User-Agent, with `.*` spanning
+  unrelated text, so `update`, `set`, `delete` and `from` in a browser string, `q=update settings` or `q=order+1=1`
+  counted as an attack. All four scans now look at the request field only, and each SQL pattern names a whole
+  attack shape (for example `union select`, `select ... from ... where`, `insert into ... values`,
+  `update x set y=`, `drop table`, `xp_cmdshell`, and `or`/`and` tautologies such as `or 1=1` and `or '1'='1`),
+  with spaces, `+`, `%20`, `%09`, `%0a` and `/**/` accepted between the words. The bare `--` pattern never matched
+  anything, because `grep -iE "--"` ends option parsing and takes the log path as its pattern; a double hyphen now
+  counts as a SQL comment only after a quote, `;` or `)`, plain or as `%2D%2D`. `document.cookie` no longer
+  matches any character for the dot, and the traversal pattern `\.\.\/` no longer makes GNU grep 3.8 warn about a
+  stray backslash.
+- On macOS, where bash is 3.2 and `wc` pads its output, the JSON report no longer uses `mapfile` and the request
+  total no longer carries leading spaces. `LOG_ANALYZER_DATE` (`dd/Mon/yyyy`) now analyses another day of the
+  access log, such as yesterday's to rerun a report. `backend/tests/scripts/log-analyzer.test.ts` uses it to pin
+  "today", covers a multi-day log, a line that matches several patterns, the `--` and word-boundary cases,
+  and keywords in the referrer and User-Agent, and runs its JSON tests wherever `jq` exists instead of only on
+  bash 4. Backend bumped to `2.3.65`; root to `2.6.157`.
 - CI no longer fails a whole job when a download from an outside host fails. On 2026-11-09 GitHub Releases answered
   504 for the prebuilt `canvas` binary, so `npm ci` fell back to a compile the runner cannot do, and the Web,
   Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. Every `npm ci` that can fetch a

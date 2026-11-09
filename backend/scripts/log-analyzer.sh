@@ -28,23 +28,37 @@ NGINX_ERROR_LOG="${NGINX_ERROR_LOG:-/var/log/nginx/error.log}"
 AUTH_LOG="${AUTH_LOG:-/var/log/auth.log}"
 SYSLOG="${SYSLOG:-/var/log/syslog}"
 
-# Suspicious patterns
+# Suspicious patterns. Each is an extended regex matched case-insensitively against the request field only
+# (the quoted `GET /path?query HTTP/1.1` part of an nginx combined-format line), never the referrer or
+# User-Agent, so `update` and `set`, or `delete` and `from`, in a browser string cannot add up to an attack.
+# A "separator" below is what a SQL keyword gap looks like in a logged URL: a space, `+`, `%20`, a tab or line
+# break (`%09`, `%0a`, `%0d`) or `/**/`.
+SQL_SEP='(%20|%09|%0[ad]|\+|[[:space:]]|/\*\*/)'
+
+# Every pattern names a whole attack shape. Free-text words such as `update`, `set`, `from` or `or` do not
+# match alone, and `.*` is replaced by a bounded run inside one query parameter (`[^&"]`), so a site search such
+# as `q=update settings` stays out of the count. `or` and `and` must start a word (after a separator, quote or
+# `)`), so `q=color+1=1` is not a tautology. A bare `--` is not a signal (slugs and User-Agents contain it); it
+# counts only directly after a quote (with `)`, `;` or separators between them) or after `;` or `)`, in plain or
+# URL-encoded (`%2D%2D`) form. A search that spells out `select ... from ... where` inside one parameter still
+# counts: it is indistinguishable from the attack.
 SQL_INJECTION_PATTERNS=(
-    "union.*select"
-    "select.*from.*where"
-    "insert.*into"
-    "delete.*from"
-    "drop.*table"
-    "update.*set"
-    "--"
+    "union(${SQL_SEP}|\(|%28)+(all${SQL_SEP}+)?select"
+    "select${SQL_SEP}[^&\"]{1,80}from${SQL_SEP}[^&\"]{1,80}where"
+    "insert${SQL_SEP}+into${SQL_SEP}+[^&\"]{1,80}(values|select)"
+    "delete${SQL_SEP}+from${SQL_SEP}+[^&\"]{1,80}where"
+    "update${SQL_SEP}+[a-z0-9_.]+${SQL_SEP}+set${SQL_SEP}+[a-z0-9_.]+(=|%3D)"
+    "(;|%3B)${SQL_SEP}*(delete${SQL_SEP}+from|insert${SQL_SEP}+into|update${SQL_SEP}+[a-z0-9_.]+${SQL_SEP}+set)"
+    "drop${SQL_SEP}+table"
     "xp_cmdshell"
-    "exec.*xp"
-    "';.*--"
-    "or.*1=1"
-    "or.*'1'='1"
-    "admin'.*--"
+    "exec${SQL_SEP}+(master\.\.)?xp_"
+    "('|%27)(${SQL_SEP}|;|%3B|\)|%29)*(--|%2D%2D)"
+    "(;|%3B|\)|%29)${SQL_SEP}*(--|%2D%2D)"
+    "(${SQL_SEP}|'|%27|\)|%29)(or|and)${SQL_SEP}+(\(|%28)?([0-9]+${SQL_SEP}*(=|%3D)${SQL_SEP}*[0-9]+|('|%27)[a-z0-9]*('|%27)${SQL_SEP}*(=|%3D)${SQL_SEP}*('|%27)[a-z0-9]*)"
 )
 
+# Matched against the request field only. `document\.cookie` and `eval\(` escape their punctuation so the dot
+# is not a wildcard.
 XSS_PATTERNS=(
     "<script"
     "javascript:"
@@ -52,12 +66,12 @@ XSS_PATTERNS=(
     "onload="
     "onclick="
     "<iframe"
-    "document.cookie"
+    "document\.cookie"
     "eval\("
 )
 
 PATH_TRAVERSAL_PATTERNS=(
-    "\.\.\/"
+    "\.\./"
     "\.\.%2F"
     "\.\.%5C"
     "%2e%2e"
@@ -68,7 +82,7 @@ PATH_TRAVERSAL_PATTERNS=(
 )
 
 # Each pattern is an extended regex run through `grep -iE`, so a bare `|` is alternation: `|cat` means
-# "empty or cat" and matches every line (GNU grep; BSD grep rejects it, which the callers' `2>/dev/null` hides).
+# "empty or cat" and matches every line (GNU grep; BSD grep rejects it).
 # The pipe is therefore escaped, and every metacharacter is matched literally and in its URL-encoded form
 # (`%7C`, `%26`, `%3B`, `%60`, `%24%28`). Between the metacharacter and the command there may be spaces written
 # as `+`, `%20`, a tab (`%09`) or a line break (`%0a`, `%0d`); after `|`, backtick and `$(` literal whitespace is
@@ -94,6 +108,44 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# Today's date in nginx log format. Every nginx access-log count, sample and IP in the report is taken from
+# lines stamped with this date, so the security scans cover the same day as the request totals.
+# LOG_ANALYZER_DATE (same `dd/Mon/yyyy` form) analyses another day of the access log, such as yesterday's to
+# rerun a report; it does not affect the auth log, rate-limit or API-error sections, which still use today.
+TODAY="${LOG_ANALYZER_DATE:-$(date +%d/%b/%Y)}"
+
+# Today's lines of the nginx access log. The date is matched as the bracketed start of the timestamp
+# (`[dd/Mon/yyyy:`), so a bare date in a URL, referrer or User-Agent does not pull in another day's request.
+todays_requests() {
+    grep -F "[$TODAY:" "$NGINX_ACCESS_LOG" 2>/dev/null
+}
+
+# Today's request lines whose request field matches any of the given patterns. The patterns are joined into
+# one alternation and run in a single pass, so a line is returned once however many of them it matches. The
+# regex is anchored to the first quoted field of the line, the request, so nothing outside it can match.
+scan_requests() {
+    local regex="" pattern
+    for pattern in "$@"; do
+        regex+="${regex:+|}($pattern)"
+    done
+    todays_requests | grep -iE "^[^\"]*\"[^\"]*($regex)"
+}
+
+# Number of lines scan_requests returns for the given patterns (each matching line once, however many of the
+# patterns it matches).
+count_requests() {
+    scan_requests "$@" | awk 'END {print NR}'
+}
+
+# How many sample lines each security section prints.
+SAMPLE_LINES=5
+
+# Up to SAMPLE_LINES of the lines scan_requests returns, uncut; the text report cuts them to 120 characters
+# when it prints them.
+sample_requests() {
+    scan_requests "$@" | head -"$SAMPLE_LINES"
+}
+
 # Generate report
 REPORT=""
 
@@ -108,45 +160,42 @@ REPORT+="NGINX ACCESS LOG ANALYSIS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 if [ -f "$NGINX_ACCESS_LOG" ]; then
-    # Get today's date in nginx log format
-    TODAY=$(date +%d/%b/%Y)
-
     # Total requests today
-    TOTAL_REQUESTS=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | wc -l)
+    TOTAL_REQUESTS=$(todays_requests | awk 'END {print NR}')
     REPORT+="Total requests today: $TOTAL_REQUESTS\n\n"
 
     # Status code distribution
     REPORT+="Status Code Distribution:\n"
     while read -r count code; do
         REPORT+="  $code: $count requests\n"
-    done < <(grep "$TODAY" "$NGINX_ACCESS_LOG" | awk '{print $9}' | sort | uniq -c | sort -rn)
+    done < <(todays_requests | awk '{print $9}' | sort | uniq -c | sort -rn)
     REPORT+="\n"
 
     # Top 10 IPs
     REPORT+="Top 10 IP Addresses:\n"
     while read -r count ip; do
         REPORT+="  $ip: $count requests\n"
-    done < <(grep "$TODAY" "$NGINX_ACCESS_LOG" | awk '{print $1}' | sort | uniq -c | sort -rn | head -10)
+    done < <(todays_requests | awk '{print $1}' | sort | uniq -c | sort -rn | head -10)
     REPORT+="\n"
 
     # 4xx errors
-    ERROR_4XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^4[0-9][0-9]$/) count++} END {print count + 0}')
+    ERROR_4XX=$(todays_requests | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^4[0-9][0-9]$/) count++} END {print count + 0}')
     if [ "$ERROR_4XX" -gt 0 ]; then
         REPORT+="4xx Client Errors: $ERROR_4XX\n"
         REPORT+="Top 404 URLs:\n"
         while read -r count url; do
             REPORT+="  $url: $count times\n"
-        done < <(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 404 ' | awk '{print $7}' | sort | uniq -c | sort -rn | head -10)
+        done < <(todays_requests | grep ' 404 ' | awk '{print $7}' | sort | uniq -c | sort -rn | head -10)
         REPORT+="\n"
     fi
 
     # 5xx errors
-    ERROR_5XX=$(grep "$TODAY" "$NGINX_ACCESS_LOG" | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^5[0-9][0-9]$/) count++} END {print count + 0}')
+    ERROR_5XX=$(todays_requests | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^5[0-9][0-9]$/) count++} END {print count + 0}')
     if [ "$ERROR_5XX" -gt 0 ]; then
         REPORT+="5xx Server Errors: $ERROR_5XX\n"
         while IFS= read -r line; do
             REPORT+="  $line\n"
-        done < <(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep ' 5[0-9][0-9] ' | tail -10)
+        done < <(todays_requests | grep ' 5[0-9][0-9] ' | tail -10)
         REPORT+="\n"
     else
         REPORT+="No 5xx server errors\n\n"
@@ -156,7 +205,7 @@ if [ -f "$NGINX_ACCESS_LOG" ]; then
     REPORT+="Suspicious User Agents:\n"
     while read -r count agent; do
         REPORT+="  $count - $agent\n"
-    done < <(grep "$TODAY" "$NGINX_ACCESS_LOG" | grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" | awk -F'"' '{print $6}' | sort | uniq -c | sort -rn | head -10)
+    done < <(todays_requests | grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" | awk -F'"' '{print $6}' | sort | uniq -c | sort -rn | head -10)
     REPORT+="\n"
 else
     TOTAL_REQUESTS=0
@@ -171,34 +220,22 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="SQL INJECTION ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-SQL_ATTEMPTS=0
-for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do
-    matches=$(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | wc -l)
-    if [ "$matches" -gt 0 ]; then
-        SQL_ATTEMPTS=$((SQL_ATTEMPTS + matches))
-    fi
-done
+SQL_ATTEMPTS=$(count_requests "${SQL_INJECTION_PATTERNS[@]}")
 
 if [ "$SQL_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $SQL_ATTEMPTS potential SQL injection attempts\n\n"
     REPORT+="Sample attempts:\n"
 
-    for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do
-        while IFS= read -r line; do
-            REPORT+="  $(echo "$line" | cut -c1-120)...\n"
-        done < <(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -3)
-    done
+    while IFS= read -r line; do
+        REPORT+="  $(echo "$line" | cut -c1-120)...\n"
+    done < <(sample_requests "${SQL_INJECTION_PATTERNS[@]}")
     REPORT+="\n"
 
     # Get attacking IPs
     REPORT+="Attacking IPs:\n"
     while read -r count ip; do
         REPORT+="  $ip: $count attempts\n"
-    done < <(
-        for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do
-            grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | awk '{print $1}'
-        done | sort | uniq -c | sort -rn | head -10
-    )
+    done < <(scan_requests "${SQL_INJECTION_PATTERNS[@]}" | awk '{print $1}' | sort | uniq -c | sort -rn | head -10)
     REPORT+="\n"
 
     log "Found $SQL_ATTEMPTS SQL injection attempts"
@@ -213,23 +250,15 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="CROSS-SITE SCRIPTING (XSS) ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-XSS_ATTEMPTS=0
-for pattern in "${XSS_PATTERNS[@]}"; do
-    matches=$(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | wc -l)
-    if [ "$matches" -gt 0 ]; then
-        XSS_ATTEMPTS=$((XSS_ATTEMPTS + matches))
-    fi
-done
+XSS_ATTEMPTS=$(count_requests "${XSS_PATTERNS[@]}")
 
 if [ "$XSS_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $XSS_ATTEMPTS potential XSS attempts\n\n"
     REPORT+="Sample attempts:\n"
 
-    for pattern in "${XSS_PATTERNS[@]}"; do
-        while IFS= read -r line; do
-            REPORT+="  $(echo "$line" | cut -c1-120)...\n"
-        done < <(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2)
-    done
+    while IFS= read -r line; do
+        REPORT+="  $(echo "$line" | cut -c1-120)...\n"
+    done < <(sample_requests "${XSS_PATTERNS[@]}")
     REPORT+="\n"
 
     log "Found $XSS_ATTEMPTS XSS attempts"
@@ -244,23 +273,15 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="PATH TRAVERSAL ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-TRAVERSAL_ATTEMPTS=0
-for pattern in "${PATH_TRAVERSAL_PATTERNS[@]}"; do
-    matches=$(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | wc -l)
-    if [ "$matches" -gt 0 ]; then
-        TRAVERSAL_ATTEMPTS=$((TRAVERSAL_ATTEMPTS + matches))
-    fi
-done
+TRAVERSAL_ATTEMPTS=$(count_requests "${PATH_TRAVERSAL_PATTERNS[@]}")
 
 if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $TRAVERSAL_ATTEMPTS potential path traversal attempts\n\n"
     REPORT+="Sample attempts:\n"
 
-    for pattern in "${PATH_TRAVERSAL_PATTERNS[@]}"; do
-        while IFS= read -r line; do
-            REPORT+="  $(echo "$line" | cut -c1-120)...\n"
-        done < <(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2)
-    done
+    while IFS= read -r line; do
+        REPORT+="  $(echo "$line" | cut -c1-120)...\n"
+    done < <(sample_requests "${PATH_TRAVERSAL_PATTERNS[@]}")
     REPORT+="\n"
 
     log "Found $TRAVERSAL_ATTEMPTS path traversal attempts"
@@ -275,23 +296,15 @@ REPORT+="━━━━━━━━━━━━━━━━━━━━━━━�
 REPORT+="COMMAND INJECTION ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-CMD_ATTEMPTS=0
-for pattern in "${COMMAND_INJECTION_PATTERNS[@]}"; do
-    matches=$(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | wc -l)
-    if [ "$matches" -gt 0 ]; then
-        CMD_ATTEMPTS=$((CMD_ATTEMPTS + matches))
-    fi
-done
+CMD_ATTEMPTS=$(count_requests "${COMMAND_INJECTION_PATTERNS[@]}")
 
 if [ "$CMD_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $CMD_ATTEMPTS potential command injection attempts\n\n"
     REPORT+="Sample attempts:\n"
 
-    for pattern in "${COMMAND_INJECTION_PATTERNS[@]}"; do
-        while IFS= read -r line; do
-            REPORT+="  $(echo "$line" | cut -c1-120)...\n"
-        done < <(grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2)
-    done
+    while IFS= read -r line; do
+        REPORT+="  $(echo "$line" | cut -c1-120)...\n"
+    done < <(sample_requests "${COMMAND_INJECTION_PATTERNS[@]}")
     REPORT+="\n"
 
     log "Found $CMD_ATTEMPTS command injection attempts"
@@ -373,7 +386,11 @@ else
 fi
 
 # Generate summary
-TOTAL_ISSUES=$((SQL_ATTEMPTS + XSS_ATTEMPTS + TRAVERSAL_ATTEMPTS + CMD_ATTEMPTS))
+# A request that matches two categories (a traversal into /etc/passwd with a piped cat, say) is one request,
+# so the grand total counts each request once rather than adding the category counts. Each category line
+# still shows every request that matches it.
+CATEGORY_SUM=$((SQL_ATTEMPTS + XSS_ATTEMPTS + TRAVERSAL_ATTEMPTS + CMD_ATTEMPTS))
+TOTAL_ISSUES=$(count_requests "${SQL_INJECTION_PATTERNS[@]}" "${XSS_PATTERNS[@]}" "${PATH_TRAVERSAL_PATTERNS[@]}" "${COMMAND_INJECTION_PATTERNS[@]}")
 
 SUMMARY=""
 
@@ -382,7 +399,11 @@ if [ "$TOTAL_ISSUES" -gt 0 ]; then
     [ "$XSS_ATTEMPTS" -gt 0 ] && SUMMARY+="  • XSS: $XSS_ATTEMPTS attempts\n"
     [ "$TRAVERSAL_ATTEMPTS" -gt 0 ] && SUMMARY+="  • Path Traversal: $TRAVERSAL_ATTEMPTS attempts\n"
     [ "$CMD_ATTEMPTS" -gt 0 ] && SUMMARY+="  • Command Injection: $CMD_ATTEMPTS attempts\n"
-    SUMMARY+="\nTotal attack attempts: $TOTAL_ISSUES\n\n"
+    SUMMARY+="\nTotal attack attempts: $TOTAL_ISSUES\n"
+    if [ "$CATEGORY_SUM" -gt "$TOTAL_ISSUES" ]; then
+        SUMMARY+="(a request matching several categories is counted once in the total)\n"
+    fi
+    SUMMARY+="\n"
 else
     SUMMARY+="No security issues detected in logs\n\n"
 fi
@@ -395,7 +416,6 @@ SUMMARY+="5xx errors: $ERROR_5XX\n\n"
 FULL_REPORT="$SUMMARY$REPORT"
 
 emit_json_report() {
-    local today="${TODAY:-$(date +%d/%b/%Y)}"
     local status_codes='[]'
     local top_urls='[]'
     local top_ips='[]'
@@ -408,29 +428,29 @@ emit_json_report() {
 
     if [ -f "$NGINX_ACCESS_LOG" ]; then
         status_codes=$(
-            grep "$today" "$NGINX_ACCESS_LOG" | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^[1-5][0-9][0-9]$/) print rest[1]}' | sort | uniq -c | sort -rn | head -10 |
+            todays_requests | awk -F'"' '{split($3, rest, " "); if (rest[1] ~ /^[1-5][0-9][0-9]$/) print rest[1]}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{print $1"\t"$2}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), code:(.[1]|tonumber)})'
         )
         top_urls=$(
-            grep "$today" "$NGINX_ACCESS_LOG" | awk '{print $7}' | sort | uniq -c | sort -rn | head -10 |
+            todays_requests | awk '{print $7}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{print $1"\t"$2}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), url:.[1]})'
         )
         top_ips=$(
-            grep "$today" "$NGINX_ACCESS_LOG" | awk '{print $1}' | sort | uniq -c | sort -rn | head -10 |
+            todays_requests | awk '{print $1}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{print $1"\t"$2}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), ip:.[1]})'
         )
         suspicious=$(
-            grep "$today" "$NGINX_ACCESS_LOG" | grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" |
+            todays_requests | grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" |
                 awk -F'"' '{print $6}' | sort | uniq -c | sort -rn | head -10 |
                 awk '{count=$1; $1=""; sub(/^ /,""); print count"\t"$0}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), agent:.[1]})'
         )
         # Up to 10 most frequent distinct requests for each 4xx/5xx status code.
         error_samples=$(
-            grep "$today" "$NGINX_ACCESS_LOG" |
+            todays_requests |
                 awk -F'"' '{
                     split($3, rest, " "); code = rest[1]
                     if (code !~ /^[45][0-9][0-9]$/) next
@@ -448,30 +468,28 @@ emit_json_report() {
         )
     fi
 
+    # Records one category: its count, and up to SAMPLE_LINES of its matching lines from today, found with
+    # the same patterns and date filter as the count. The remaining arguments are the category's patterns.
     append_finding() {
         local category="$1"
         local count="$2"
         shift 2
-        samples=$(printf '%s\n' "$@" | jq -R -s 'split("\n") | map(select(length>0))')
+        samples=$(sample_requests "$@" | jq -R -s 'split("\n") | map(select(length>0))')
         findings=$(jq -n --argjson findings "$findings" --arg category "$category" --argjson count "$count" --argjson samples "$samples" \
             '$findings + [{category:$category,count:$count,samples:$samples}]')
     }
 
     if [ "$SQL_ATTEMPTS" -gt 0 ]; then
-        mapfile -t sql_samples < <(for pattern in "${SQL_INJECTION_PATTERNS[@]}"; do grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2; done)
-        append_finding "SQL Injection" "$SQL_ATTEMPTS" "${sql_samples[@]}"
+        append_finding "SQL Injection" "$SQL_ATTEMPTS" "${SQL_INJECTION_PATTERNS[@]}"
     fi
     if [ "$XSS_ATTEMPTS" -gt 0 ]; then
-        mapfile -t xss_samples < <(for pattern in "${XSS_PATTERNS[@]}"; do grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2; done)
-        append_finding "Cross-Site Scripting (XSS)" "$XSS_ATTEMPTS" "${xss_samples[@]}"
+        append_finding "Cross-Site Scripting (XSS)" "$XSS_ATTEMPTS" "${XSS_PATTERNS[@]}"
     fi
     if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
-        mapfile -t traversal_samples < <(for pattern in "${PATH_TRAVERSAL_PATTERNS[@]}"; do grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2; done)
-        append_finding "Path Traversal" "$TRAVERSAL_ATTEMPTS" "${traversal_samples[@]}"
+        append_finding "Path Traversal" "$TRAVERSAL_ATTEMPTS" "${PATH_TRAVERSAL_PATTERNS[@]}"
     fi
     if [ "$CMD_ATTEMPTS" -gt 0 ]; then
-        mapfile -t cmd_samples < <(for pattern in "${COMMAND_INJECTION_PATTERNS[@]}"; do grep -iE "$pattern" "$NGINX_ACCESS_LOG" 2>/dev/null | head -2; done)
-        append_finding "Command Injection" "$CMD_ATTEMPTS" "${cmd_samples[@]}"
+        append_finding "Command Injection" "$CMD_ATTEMPTS" "${COMMAND_INJECTION_PATTERNS[@]}"
     fi
 
     if [ -f "/root/murphys-laws/logs/api-error.log" ]; then
