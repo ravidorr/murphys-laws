@@ -102,6 +102,11 @@ async function readContentMetadata(): Promise<Record<string, ContentMetadataEntr
 
 // API configuration for fetching laws
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8787';
+// The production deploy builds from the live API, so a slow or flaky answer must not fail it at random, and a
+// dead one must fail it quickly. Every request gets a deadline and one more try after a short pause.
+const API_TIMEOUT_MS = 30_000;
+const API_RETRIES = 1;
+const API_RETRY_DELAY_MS = 2_000;
 // Laws that carry an editorial annotation (migration 016, which names them by slug; the API list has no
 // slug, so the build matches on title). They are never found by ID: a database built from the archive
 // gives them IDs 2, 4, 8 and so on, while production gives them IDs between 2381 and 2470.
@@ -226,13 +231,81 @@ const CONTENT_PAGES: ContentPageMeta[] = [
   }
 ];
 
+type ApiFetch = (url: string, init: { signal: AbortSignal }) => Promise<{
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+}>;
+
+interface FetchWithRetryOptions {
+  fetchImpl?: ApiFetch;
+  timeoutMs?: number;
+  retries?: number;
+  retryDelayMs?: number;
+  sleep?: (milliseconds: number) => Promise<void>;
+}
+
+/** A timeout, a rate limit and a server error can pass on their own; any other answer (404, 400) will not. */
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+/**
+ * Fetch one API URL with a deadline that covers reading the whole body, and retry it once on a network
+ * error, a timeout, a 429 or a 5xx. Each request is retried on its own, so the paging loop in
+ * `fetchAllLaws` still sees one consistent sequence of pages. A request that keeps failing with a thrown
+ * error stops the build with the URL, the cause and the number of attempts; one that keeps answering 429 or
+ * 5xx hands that last answer to the caller, which reports the status in its own words.
+ */
+async function fetchWithRetry(url: string, options: FetchWithRetryOptions = {}): Promise<{ ok: boolean; status: number; json(): Promise<unknown> }> {
+  const {
+    fetchImpl = fetch as unknown as ApiFetch,
+    timeoutMs = API_TIMEOUT_MS,
+    retries = API_RETRIES,
+    retryDelayMs = API_RETRY_DELAY_MS,
+    sleep = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
+  } = options;
+  const attempts = retries + 1;
+  let failure = '';
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) });
+      const body = await response.text();
+      const result = {
+        ok: response.ok,
+        status: response.status,
+        json: async (): Promise<unknown> => {
+          try {
+            return JSON.parse(body) as unknown;
+          } catch {
+            throw new Error(`${url} answered with something that is not JSON`);
+          }
+        }
+      };
+      if (response.ok || !isRetryableStatus(response.status) || attempt === attempts) return result;
+      failure = `HTTP ${response.status}`;
+    } catch (error) {
+      const name = error instanceof Error ? error.name : '';
+      failure = name === 'TimeoutError' || name === 'AbortError'
+        ? `no complete answer within ${timeoutMs / 1000} seconds`
+        : (error instanceof Error ? error.message : String(error));
+      if (attempt === attempts) throw new Error(`${url} failed after ${attempts} attempts: ${failure}`, { cause: error });
+    }
+    console.warn(`${url} failed (${failure}); trying again in ${retryDelayMs / 1000} seconds (attempt ${attempt} of ${attempts}).`);
+    await sleep(retryDelayMs);
+  }
+  /* v8 ignore next -- the loop always returns or throws on its last attempt */
+  throw new Error(`${url} failed after ${attempts} attempts: ${failure}`);
+}
+
 /**
  * Fetch all published laws from the API.
  *
  * Every law page and sitemap entry comes from this list, so a partial or empty answer must stop the
  * build: shipping it would publish a site that silently lost its law pages.
  */
-async function fetchAllLaws(fetchRequest: FetchCategoriesRequest = fetch, baseUrl: string = API_BASE_URL): Promise<Law[]> {
+async function fetchAllLaws(fetchRequest: FetchCategoriesRequest = fetchWithRetry, baseUrl: string = API_BASE_URL): Promise<Law[]> {
   const laws: Law[] = [];
   let offset = 0;
   let total = 0;
@@ -285,8 +358,8 @@ async function fetchAllLaws(fetchRequest: FetchCategoriesRequest = fetch, baseUr
  * must not derive public routes from archived source filenames: those can
  * outlive a renamed category and create empty, indexable landing pages.
  */
-async function fetchAllCategories(fetchRequest: FetchCategoriesRequest = fetch): Promise<Category[]> {
-  const response = await fetchRequest(`${API_BASE_URL}/api/v1/categories`);
+async function fetchAllCategories(fetchRequest: FetchCategoriesRequest = fetchWithRetry, baseUrl: string = API_BASE_URL): Promise<Category[]> {
+  const response = await fetchRequest(`${baseUrl}/api/v1/categories`);
   if (!response.ok) {
     throw new Error(`Category API returned ${response.status}`);
   }
@@ -324,7 +397,7 @@ function categorySitemapPaths(categories: Category[]): string[] {
  * reviewed one. A reviewed law that cannot be found, or whose title is annotated on more than one law,
  * stops the build instead of quietly dropping its reviewed content from the page.
  */
-async function mergeReviewedLawDetails(laws: Law[], fetchRequest: FetchCategoriesRequest = fetch, baseUrl: string = API_BASE_URL): Promise<Law[]> {
+async function mergeReviewedLawDetails(laws: Law[], fetchRequest: FetchCategoriesRequest = fetchWithRetry, baseUrl: string = API_BASE_URL): Promise<Law[]> {
   if (laws.length === 0) return laws;
 
   const normalize = (title: string | undefined) => (title ?? '').trim().toLowerCase();
@@ -353,7 +426,7 @@ async function mergeReviewedLawDetails(laws: Law[], fetchRequest: FetchCategorie
  */
 async function fetchFirstPageOfLaws(
   params: { limit: number; offset?: number; category_id?: number; category_slug?: string },
-  fetchRequest: FetchCategoriesRequest = fetch,
+  fetchRequest: FetchCategoriesRequest = fetchWithRetry,
   baseUrl: string = API_BASE_URL
 ): Promise<{ data: Law[]; total: number }> {
   const { limit, offset = 0, category_id, category_slug } = params;
@@ -1212,7 +1285,7 @@ function buildNotFoundPage(template: string, laws: Law[]): string {
 }
 
 async function main(): Promise<void> {
-  console.log('Starting Static Site Generation (SSG)...');
+  console.log(`Starting Static Site Generation (SSG) from ${API_BASE_URL}...`);
   const contentMetadata = await readContentMetadata();
 
   // Ensure dist exists (it should after build)
@@ -1829,6 +1902,7 @@ export {
   validateGeneratedPage,
   injectBreadcrumbJsonLd,
   buildContentBreadcrumbTrail,
+  fetchWithRetry,
   fetchAllCategories,
   fetchAllLaws,
   fetchFirstPageOfLaws,
