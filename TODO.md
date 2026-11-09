@@ -28,10 +28,6 @@ This document outlines additional tasks and potential improvements for the Murph
   built from production, contain something that looks like an address (for example `name@aol.com`). The build's
   privacy check only looks for `mailto:`. Find out where the addresses come from (law text, attribution notes)
   and strip them in the parser and in the production rows.
-- [ ] **Old `/murphy/*` pages redirect to the home page, which Google reports as soft 404:** the `location ^~ /murphy/`
-  catch-all in `nginx.conf` sends every unmatched legacy page (19 of the 60 soft 404s, for example
-  `/murphy/murphy-golf.html`) to `/`. Map the ones that have a current category (golf, nurses, EMT, employees,
-  commerce, real estate, and so on) to it with an exact redirect, and answer the rest with 404 or 410.
 
 ## Design Review Findings (Jan 2026)
 
