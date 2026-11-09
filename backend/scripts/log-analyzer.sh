@@ -68,21 +68,25 @@ PATH_TRAVERSAL_PATTERNS=(
 )
 
 # Each pattern is an extended regex run through `grep -iE`, so a bare `|` is alternation: `|cat` means
-# "empty or cat" and matches every line. The shell metacharacter is therefore escaped and its URL-encoded
-# form accepted too. After `|`, backtick and `$(` the command must end at a word boundary; after `&` and
-# `;` it must be followed by a separator, so `&category_id=23` and a parameter named `cat` stay out of the
-# count.
+# "empty or cat" and matches every line (GNU grep; BSD grep rejects it, which the callers' `2>/dev/null` hides).
+# The pipe is therefore escaped, and every metacharacter is matched literally and in its URL-encoded form
+# (`%7C`, `%26`, `%3B`, `%60`, `%24%28`). Between the metacharacter and the command there may be spaces written
+# as `+`, `%20`, a tab (`%09`) or a line break (`%0a`, `%0d`); after `|`, backtick and `$(` literal whitespace is
+# allowed too, but not after `&` and `;`, which are everywhere in User-Agents (`(Linux; Android 11; CAT S62)`).
+# After `|`, backtick and `$(` the command must end at a word boundary. After `&` and `;` it must not be followed
+# by a letter, digit, `_`, `=` or `&`, so `&category_id=23` and a parameter named `cat` (`&cat=5`) stay out of
+# the count while `;cat</etc/passwd` and `;cat${IFS}...` are counted.
 COMMAND_INJECTION_PATTERNS=(
-    '(\||%7C)(%20|[[:space:]])*cat\b'
-    '(\||%7C)(%20|[[:space:]])*nc\b'
-    '(\||%7C)(%20|[[:space:]])*wget\b'
-    '(\||%7C)(%20|[[:space:]])*curl\b'
-    '(\||%7C)(%20|[[:space:]])*bash\b'
-    '(\||%7C)(%20|[[:space:]])*sh\b'
-    '(&|%26)(%20|[[:space:]])*cat(%20|[[:space:]]|\+)'
-    '(;|%3B)(%20|[[:space:]])*cat(%20|[[:space:]]|\+)'
-    '(`|%60)(%20|[[:space:]])*cat\b'
-    '(\$\(|%24%28)(%20|[[:space:]])*cat\b'
+    '(\||%7C)(%20|%09|%0[ad]|\+|[[:space:]])*cat\b'
+    '(\||%7C)(%20|%09|%0[ad]|\+|[[:space:]])*nc\b'
+    '(\||%7C)(%20|%09|%0[ad]|\+|[[:space:]])*wget\b'
+    '(\||%7C)(%20|%09|%0[ad]|\+|[[:space:]])*curl\b'
+    '(\||%7C)(%20|%09|%0[ad]|\+|[[:space:]])*bash\b'
+    '(\||%7C)(%20|%09|%0[ad]|\+|[[:space:]])*sh\b'
+    '(&|%26)(%20|%09|%0[ad]|\+)*cat([^[:alnum:]_=&]|$)'
+    '(;|%3B)(%20|%09|%0[ad]|\+)*cat([^[:alnum:]_=&]|$)'
+    '(`|%60)(%20|%09|%0[ad]|\+|[[:space:]])*cat\b'
+    '(\$\(|%24%28)(%20|%09|%0[ad]|\+|[[:space:]])*cat\b'
 )
 
 # Logging - only to log file, not stdout (stdout goes to email)
