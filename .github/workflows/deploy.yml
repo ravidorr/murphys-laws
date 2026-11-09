@@ -5,6 +5,14 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      seeded_build:
+        description: >-
+          Emergency only: prerender from a database built from the archive instead of the production API.
+          Use it when the production API is down, and fix the production data afterwards, because the
+          static law pages then describe different laws from the ones the API serves.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -34,11 +42,27 @@ jobs:
         run: npm install @rollup/rollup-linux-x64-gnu@4.59.0 --no-save
         if: runner.os == 'Linux'
 
+      # The static pages are prerendered from the production API, not from the archive: production numbers
+      # and publishes laws differently, so a build from the archive gave every law page the wrong law and
+      # left the sitemap listing laws the API no longer has. The build stops (and with it the deploy, before
+      # anything is uploaded) when the API is unreachable, incomplete or serves a page that fails the build's
+      # checks. Pull-request CI keeps building from a seeded local API.
+      #
+      # The build runs before the server migrates, so the pages show the production data as it was before this
+      # deploy's migrations (a data fix appears one deploy later), and a change that makes the build need a
+      # new API field cannot ship in the same deploy as the backend change that adds it.
       - name: Build project
         run: |
           npm run build:openapi
-          npm run build:web
+          if [ "$SEEDED_BUILD" = "true" ]; then
+            echo "::warning::Emergency seeded build: law pages are prerendered from the archive, not from production"
+            npm run build:web
+          else
+            npm --prefix web run build
+          fi
         env:
+          API_BASE_URL: https://murphys-laws.com
+          SEEDED_BUILD: ${{ inputs.seeded_build }}
           # Sentry configuration for frontend error tracking and source map upload
           VITE_SENTRY_DSN: ${{ secrets['SENTRY_DSN'] }}
           SENTRY_AUTH_TOKEN: ${{ secrets['SENTRY_AUTH_TOKEN'] }}

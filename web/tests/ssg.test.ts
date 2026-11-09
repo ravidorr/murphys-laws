@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { marked } from 'marked';
 import { CALCULATOR_META_DESCRIPTIONS } from '../src/utils/constants.ts';
 import {
@@ -22,9 +22,11 @@ import {
   validateGeneratedPage,
   injectBreadcrumbJsonLd,
   buildContentBreadcrumbTrail,
+  fetchWithRetry,
   fetchAllCategories,
   fetchAllLaws,
   fetchFirstPageOfLaws,
+  checkCategoryLawCounts,
   mergeReviewedLawDetails,
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
@@ -925,6 +927,241 @@ describe('SSG law data from the API', () => {
 
     it('throws when a detail request fails', async () => {
       await expect(mergeReviewedLawDetails(reviewedLaws(), detailRequest([], 500), 'https://api.test')).rejects.toThrow('API returned 500');
+    });
+  });
+
+  describe('fetchWithRetry', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    const answer = (body: string, status = 200) => ({ ok: status < 400, status, text: async () => body });
+    type RetryFetch = NonNullable<NonNullable<Parameters<typeof fetchWithRetry>[1]>['fetchImpl']>;
+    const options = (fetchImpl: ReturnType<typeof vi.fn>) => ({
+      fetchImpl: fetchImpl as unknown as RetryFetch,
+      retryDelayMs: 2000,
+      sleep: vi.fn().mockResolvedValue(undefined)
+    });
+
+    it('returns a good answer on the first attempt without waiting', async () => {
+      const opts = options(vi.fn().mockResolvedValue(answer('{"a":1}')));
+
+      const response = await fetchWithRetry('https://api.test/x', opts);
+
+      expect(response.ok).toBe(true);
+      expect(await response.json()).toEqual({ a: 1 });
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(1);
+      expect(opts.fetchImpl).toHaveBeenCalledWith('https://api.test/x', { signal: expect.any(AbortSignal) });
+      expect(opts.sleep).not.toHaveBeenCalled();
+    });
+
+    it('tries a network error once more after the pause', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const opts = options(vi.fn().mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(answer('{"ok":true}')));
+
+      const response = await fetchWithRetry('https://api.test/x', opts);
+
+      expect(await response.json()).toEqual({ ok: true });
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(2);
+      expect(opts.sleep).toHaveBeenCalledWith(2000);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('fetch failed'));
+    });
+
+    it.each([429, 500, 503])('tries an HTTP %i answer once more', async (status) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const opts = options(vi.fn().mockResolvedValueOnce(answer('', status)).mockResolvedValueOnce(answer('[]')));
+
+      const response = await fetchWithRetry('https://api.test/x', opts);
+
+      expect(response.ok).toBe(true);
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it('hands the last 5xx answer to the caller when the retry fails too, and logs the URL and the start of the body', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const opts = options(vi.fn().mockResolvedValue(answer('upstream connect error', 503)));
+
+      const response = await fetchWithRetry('https://api.test/x', opts);
+
+      expect(response).toMatchObject({ ok: false, status: 503 });
+      expect(logged).toHaveBeenCalledWith('https://api.test/x answered 503 after 2 attempts: upstream connect error');
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(2);
+      expect(opts.sleep).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([400, 404])('does not retry an HTTP %i answer', async (status) => {
+      const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const opts = options(vi.fn().mockResolvedValue(answer('', status)));
+
+      const response = await fetchWithRetry('https://api.test/x', opts);
+
+      expect(response.status).toBe(status);
+      expect(logged).toHaveBeenCalledWith(`https://api.test/x answered ${status} after 1 attempt: `);
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(1);
+      expect(opts.sleep).not.toHaveBeenCalled();
+    });
+
+    it('stops with the URL, the cause and the attempt count when every attempt throws', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const opts = options(vi.fn().mockRejectedValue(new TypeError('connect ECONNREFUSED')));
+
+      await expect(fetchWithRetry('https://api.test/x', opts))
+        .rejects.toThrow('https://api.test/x failed after 2 attempts: connect ECONNREFUSED');
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports a request that outlives its deadline as a timeout', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const timeout = Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' });
+      const opts = { ...options(vi.fn().mockRejectedValue(timeout)), timeoutMs: 5000, retries: 0 };
+
+      await expect(fetchWithRetry('https://api.test/x', opts))
+        .rejects.toThrow(/https:\/\/api\.test\/x failed after 1 attempts?: no complete answer within 5 seconds/);
+      expect(opts.sleep).not.toHaveBeenCalled();
+    });
+
+    it('applies the deadline to reading the body, and retries a body that cannot be read', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const aborted = Object.assign(new Error('aborted'), { name: 'AbortError' });
+      const brokenBody = { ok: true, status: 200, text: async () => { throw aborted; } };
+      const opts = options(vi.fn().mockResolvedValueOnce(brokenBody).mockResolvedValueOnce(answer('{"ok":1}')));
+
+      expect(await (await fetchWithRetry('https://api.test/x', opts)).json()).toEqual({ ok: 1 });
+      expect(opts.fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it('gives each attempt a signal that expires after the configured deadline', async () => {
+      const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+      const opts = { ...options(vi.fn().mockResolvedValue(answer('{}'))), timeoutMs: 1234 };
+
+      await fetchWithRetry('https://api.test/x', opts);
+
+      expect(timeoutSignal).toHaveBeenCalledWith(1234);
+    });
+
+    it('stops a request that never answers once its deadline passes', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const hangs = (_url: string, init: { signal: AbortSignal }) => new Promise<never>((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(init.signal.reason));
+      });
+
+      await expect(fetchWithRetry('https://api.test/x', {
+        fetchImpl: hangs as unknown as RetryFetch, timeoutMs: 20, retries: 0, sleep: vi.fn()
+      })).rejects.toThrow('no complete answer within 0.02 seconds');
+    });
+
+    it('reports a thrown value that is not an Error', async () => {
+      const opts = { ...options(vi.fn().mockRejectedValue('boom')), retries: 0 };
+
+      await expect(fetchWithRetry('https://api.test/x', opts)).rejects.toThrow('failed after 1 attempts: boom');
+    });
+
+    it('names the URL when the answer is not JSON', async () => {
+      const response = await fetchWithRetry('https://api.test/x', options(vi.fn().mockResolvedValue(answer('<html>maintenance</html>'))));
+
+      await expect(response.json()).rejects.toThrow('https://api.test/x answered 200 with something that is not JSON: <html>maintenance</html>');
+    });
+
+    it('uses the global fetch with the default pause and deadline', async () => {
+      const globalFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{"ok":true}'));
+      const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+
+      const response = await fetchWithRetry('https://api.test/x');
+
+      expect(await response.json()).toEqual({ ok: true });
+      expect(globalFetch).toHaveBeenCalledWith('https://api.test/x', { signal: expect.any(AbortSignal) });
+      expect(timeoutSignal).toHaveBeenCalledWith(30_000);
+    });
+
+    it('waits the default pause between attempts', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const fetchImpl = vi.fn().mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce(answer('{}'));
+
+      const pending = fetchWithRetry('https://api.test/x', { fetchImpl: fetchImpl as unknown as RetryFetch });
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect((await pending).ok).toBe(true);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('the API readers use the retrying fetch by default', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    const flaky = (body: unknown) => {
+      vi.useFakeTimers();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      return vi.spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('', { status: 503 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(body)));
+    };
+
+    it.each([
+      ['fetchAllLaws', (): Promise<unknown> => fetchAllLaws(undefined, 'https://api.test'), { data: [law(1)], total: 1 }],
+      ['fetchAllCategories', (): Promise<unknown> => fetchAllCategories(undefined, 'https://api.test'), { data: [{ slug: 'a', title: 'A', law_count: 1 }] }],
+      ['fetchFirstPageOfLaws', (): Promise<unknown> => fetchFirstPageOfLaws({ limit: 5 }, undefined, 'https://api.test'), { data: [law(1)], total: 1 }]
+    ])('%s retries a 503 from the real fetch', async (_name, read, body) => {
+      const globalFetch = flaky(body);
+
+      const pending = read();
+      await vi.advanceTimersByTimeAsync(2000);
+
+      await expect(pending).resolves.toBeTruthy();
+      expect(globalFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('mergeReviewedLawDetails retries a 503 from the real fetch', async () => {
+      const laws = REVIEWED_LAW_TITLES.map((title, index) => law(index + 1, { title }));
+      vi.useFakeTimers();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      let failedOnce = false;
+      const globalFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+        if (!failedOnce) {
+          failedOnce = true;
+          return new Response('', { status: 503 });
+        }
+        const id = Number(String(url).split('/').pop());
+        return new Response(JSON.stringify({ ...laws[id - 1], editorial: { note: 'reviewed' } }));
+      });
+
+      const pending = mergeReviewedLawDetails(laws, undefined, 'https://api.test');
+      await vi.advanceTimersByTimeAsync(2000);
+
+      await expect(pending).resolves.toHaveLength(laws.length);
+      expect(globalFetch).toHaveBeenCalledTimes(laws.length + 1);
+    });
+  });
+
+  describe('checkCategoryLawCounts', () => {
+    it('accepts a category whose two counts agree', () => {
+      expect(() => checkCategoryLawCounts('computers', 12, 12)).not.toThrow();
+    });
+
+    it.each([
+      ['the first page reports every law', 2453, 12],
+      ['the first page is empty', 0, 12],
+      ['the category list counts another number', 12, 13]
+    ])('stops the build when %s', (_case, firstPageTotal, categoryCount) => {
+      expect(() => checkCategoryLawCounts('computers', firstPageTotal, categoryCount))
+        .toThrow(`Category "computers" disagrees with itself: the category list says ${categoryCount} laws and its first page reports ${firstPageTotal}; run the build again.`);
+    });
+  });
+
+  describe('fetchAllCategories base URL', () => {
+    it('reads the categories from the given API', async () => {
+      const request = vi.fn().mockResolvedValue(reply({ data: [{ slug: 'a', title: 'A', law_count: 1 }] }));
+
+      await fetchAllCategories(request, 'https://api.test');
+
+      expect(request).toHaveBeenCalledWith('https://api.test/api/v1/categories');
     });
   });
 });
