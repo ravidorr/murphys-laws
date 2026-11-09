@@ -210,8 +210,8 @@ function categoryOptions(law, serverCategories) {
 }
 
 function renderLaw(law, serverCategories = state.categories) {
-  const item = el('li', 'law');
-  const head = el('div', 'law-head');
+  const item = el('li', 'law card card--section');
+  const head = el('div', 'law-head card-header');
   head.append(
     el('span', `pill pill-${law.status}`, STATUS_LABELS[law.status] || law.status),
     el('span', 'meta', `#${law.id} · ${formatDate(law.created_at)} · ${describeSubmitter(law.attributions)}`),
@@ -248,7 +248,7 @@ function renderLaw(law, serverCategories = state.categories) {
   }
   category.value = categorySelectValue(law);
 
-  const actions = el('div', 'actions');
+  const actions = el('div', 'actions card-footer');
   const save = async (status) => {
     const body = buildUpdateBody(law, { status, title: title.value, text: text.value, notes: notes.value,
       categoryId: category.value === '' ? undefined : Number(category.value),
@@ -321,14 +321,14 @@ function renderLaw(law, serverCategories = state.categories) {
   }
   addAction('Save edits', '', undefined);
 
-  item.append(
-    head,
+  const body = el('div', 'card-body');
+  body.append(
     field(`title-${law.id}`, 'Title', title),
     field(`text-${law.id}`, 'Law', text),
     field(`category-${law.id}`, 'Category', category),
     field(`notes-${law.id}`, 'Admin notes', notes),
-    actions,
   );
+  item.append(head, body, actions);
   return item;
 }
 
