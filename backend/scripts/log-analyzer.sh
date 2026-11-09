@@ -67,17 +67,22 @@ PATH_TRAVERSAL_PATTERNS=(
     "win\.ini"
 )
 
+# Each pattern is an extended regex run through `grep -iE`, so a bare `|` is alternation: `|cat` means
+# "empty or cat" and matches every line. The shell metacharacter is therefore escaped and its URL-encoded
+# form accepted too. After `|`, backtick and `$(` the command must end at a word boundary; after `&` and
+# `;` it must be followed by a separator, so `&category_id=23` and a parameter named `cat` stay out of the
+# count.
 COMMAND_INJECTION_PATTERNS=(
-    "|cat"
-    "|nc"
-    "|wget"
-    "|curl"
-    "|bash"
-    "|sh"
-    "&cat"
-    ";cat"
-    "\`cat"
-    "\$\(cat"
+    '(\||%7C)(%20|[[:space:]])*cat\b'
+    '(\||%7C)(%20|[[:space:]])*nc\b'
+    '(\||%7C)(%20|[[:space:]])*wget\b'
+    '(\||%7C)(%20|[[:space:]])*curl\b'
+    '(\||%7C)(%20|[[:space:]])*bash\b'
+    '(\||%7C)(%20|[[:space:]])*sh\b'
+    '(&|%26)(%20|[[:space:]])*cat(%20|[[:space:]]|\+)'
+    '(;|%3B)(%20|[[:space:]])*cat(%20|[[:space:]]|\+)'
+    '(`|%60)(%20|[[:space:]])*cat\b'
+    '(\$\(|%24%28)(%20|[[:space:]])*cat\b'
 )
 
 # Logging - only to log file, not stdout (stdout goes to email)
