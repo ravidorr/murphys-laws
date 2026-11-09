@@ -46,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the sized `/apple-touch-icon-240x240.png` and `-precomposed` names redirect to `/apple-touch-icon.png`.
   The structured-data logo on five pages pointed at `/favicon-512x512.png`, a file that was never published
   (Googlebot-Image kept asking for it); it now points at `/android-chrome-512x512.png`, the old URL redirects
-  there, and a test checks that every root image URL built from `SITE_URL` exists in `web/public`. Web bumped to
+  there, and a test checks that every image URL built from `SITE_URL` or `baseUrl` (folders included) exists in `web/public`.
+  The probe patterns also match `/ipfs` without a slash and any query string. Web bumped to
   `3.4.64`; root to `2.6.152`.
 - The daily report's "Fail2ban Currently Banned" and "Fail2ban Total Bans" figures read only the `sshd` jail, so
   bans from the `nginx-scanner` jail could never appear, and nothing said when that jail was down. They now sum

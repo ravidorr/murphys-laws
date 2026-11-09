@@ -132,6 +132,11 @@ describe('nginx scanner defense', () => {
     '/build/manifest.json',
     '/ipfs/bafkreicyqcbhpicbos7ev4mrxofwqx6hvvge7pahpta6xuspr44crai5by',
     '/ipfs/',
+    '/ipfs',
+    '/Wallet/topup/1',
+    '/wallet?x=1',
+    '/build/manifest.json?v=1',
+    '/ipfs/bafy?filename=x',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -434,20 +439,20 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toContain('location = /murphy {');
   });
 
-  it.each([
-    'apple-touch-icon.png',
-    'android-chrome-512x512.png',
-    'favicon-32x32.png',
-  ])('redirects to a public file that exists: %s', (name) => {
-    expect(existsSync(resolve(root, 'web', 'public', name))).toBe(true);
+  it('redirects every image target to a file that exists in web/public', () => {
+    const targets = [...conf.matchAll(/return 301 https:\/\/murphys-laws\.com\/([\w.-]+\.(?:png|ico|gif|jpe?g|svg|webp));/g)].map(
+      (match) => match[1] as string,
+    );
+    expect(targets).toEqual(expect.arrayContaining(['apple-touch-icon.png', 'android-chrome-512x512.png', 'favicon-32x32.png']));
+    for (const name of targets) {
+      expect(existsSync(resolve(root, 'web', 'public', name)), name).toBe(true);
+    }
   });
 
   it('redirects /security.txt to the served /.well-known/security.txt', () => {
-    expect(conf).toContain('location = /.well-known/security.txt {');
-  });
-
-  it('redirects /favicon.png to a favicon file that exists', () => {
-    expect(existsSync(resolve(root, 'web', 'public', 'favicon-32x32.png'))).toBe(true);
+    const start = conf.indexOf('location = /.well-known/security.txt {');
+    expect(start).toBeGreaterThan(-1);
+    expect(conf.slice(start, conf.indexOf('}', start))).toContain('return 200');
   });
 
   it('sends any other old /murphy/ page home without letting regex locations win', () => {
