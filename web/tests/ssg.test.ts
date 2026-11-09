@@ -71,13 +71,51 @@ describe('SSG Utilities', () => {
 
     expect(validateGeneratedPage(invalid, {
       canonicalPath: '/',
-      forbidMailto: true,
+      forbidContactDetails: true,
       requireCategoryLink: true
     })).toEqual(expect.arrayContaining([
       'expected one h1, found 2',
       'contains a public mailto link',
       'missing navigable category link'
     ]));
+  });
+
+  describe('contact details in generated pages', () => {
+    const check = (body: string) => validateGeneratedPage(
+      metadataTemplate.replace('</body>', `${body}</body>`),
+      { canonicalPath: '/', forbidContactDetails: true }
+    );
+
+    it.each([
+      ['a bare address in a law text', '<p class="law-text">Sent by Karacourt@aol.com.</p>'],
+      ['an address whose domain contains an image extension', '<p>Sent by pic@png.example.com</p>'],
+      ['an address with a dotted domain and plus tag', '<p>Sent by first.last+tag@interactive.rogers.com</p>'],
+      ['an address as an attribution name', '<p class="attribution">- Eppeguy@aol.com</p>']
+    ])('rejects %s', (_label, body) => {
+      expect(check(body)).toContain('contains a public email address');
+    });
+
+    it.each([
+      ['a link cut inside the mailto target', '<h2>Sent [by Takura Razemba](mailto</h2>'],
+      ['a mailto link', '<a href="mailto:person@example.com">Email</a>']
+    ])('rejects %s', (_label, body) => {
+      expect(check(body)).toContain('contains a public mailto link');
+    });
+
+    it.each([
+      ['an image name with a pixel ratio', '<img src="/img/logo@2x.png" alt="">'],
+      ['an image name with another extension', '<img src="/img/hero@3x.webp" alt=""><img src="/img/a@2x.jpeg" alt="">'],
+      ['JSON-LD keywords', '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Quotation"}</script>'],
+      ['a symbol-laden word', '<p>that mother@#?!&amp;* upside the head</p>'],
+      ['a handle', '<p>Follow @murphyslaws today</p>']
+    ])('accepts %s', (_label, body) => {
+      expect(check(body)).toEqual([]);
+    });
+
+    it('does not apply to pages that are not checked for contact details', () => {
+      const html = metadataTemplate.replace('</body>', '<p>Write to contact@murphys-laws.com</p></body>');
+      expect(validateGeneratedPage(html, { canonicalPath: '/' })).toEqual([]);
+    });
   });
 
   it('keeps calculator meta descriptions unique, sized for search results, and plain text', () => {
