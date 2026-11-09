@@ -54,6 +54,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The daily report's command injection count (28,131 in the 9 November report) was not real. Six of the ten
+  patterns in `backend/scripts/log-analyzer.sh` began with an unescaped `|` (`|cat`, `|nc`, `|wget`, `|curl`,
+  `|bash`, `|sh`). Run through `grep -E`, that is "empty or cat", which GNU grep matches on every line, so each
+  request was counted once per pattern and the sample list was the first two log lines six times over, followed by
+  two `&category_id=` lines. `&cat` also matched the site's own `&category_id=` API calls, and the old `$(cat`
+  pattern could never match (its `$` was an anchor), so subshell attempts were never counted at all. The patterns
+  now escape the pipe, match each shell metacharacter literally and URL-encoded (`%7C`, `%26`, `%3B`, `%60`,
+  `%24%28`), and accept `+`, `%20`, `%09`, `%0a` and `%0d` as spaces after it. After `|`, backtick and `$(` the
+  command must end at a word boundary. After `&` and `;` it must not be followed by a letter, digit, `_`, `=` or
+  `&`, so `&category_id=23` and `&cat=5` stay out of the count while `;cat</proc/self/environ` and
+  `;cat${IFS}/etc/passwd` are counted, and literal whitespace is not accepted there, because a semicolon, a space
+  and `CAT` appear together in User-Agents such as `(Linux; Android 11; CAT S62 Pro)`. A script test
+  (`backend/tests/scripts/log-analyzer.test.ts`) runs the real script against a log of ordinary traffic modelled on
+  the 9 November lines and 23 attack shapes, pins the exact count and sample, and, where bash 4 and `jq` exist (CI),
+  checks the `--format json` path that the daily report uses. The script's last step, which prunes old reports with
+  `find /tmp`, now stays at the top of `/tmp` (`-maxdepth 1`), so an unreadable directory there (CI runners have
+  `systemd-private-*`) no longer makes the whole script exit 1, and the test points that step at its sandbox.
+  Backend bumped to `2.3.64`; root to `2.6.156`.
 - CI no longer fails a whole job when a download from an outside host fails. On 2026-11-09 GitHub Releases answered
   504 for the prebuilt `canvas` binary, so `npm ci` fell back to a compile the runner cannot do, and the Web,
   Backend, MCP, SDK and CodeQL jobs failed on changes that touched none of that. Every `npm ci` that can fetch a
