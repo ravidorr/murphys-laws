@@ -142,7 +142,7 @@ pm2 restart all
 ```bash
 # Upload new ecosystem config
 # From local machine:
-scp ecosystem.config.cjs ravidor@167.99.53.90:/tmp/
+scp backend/ecosystem.config.cjs ravidor@167.99.53.90:/tmp/
 
 # On server:
 sudo cp /tmp/ecosystem.config.cjs /root/murphys-laws/
@@ -200,31 +200,28 @@ When `backend/scripts/render-daily-report.ts` changes on a push to `main`, the d
 workflow sends one template smoke email if the repository secret
 `DAILY_REPORT_TEST_RECIPIENT` is configured (same explicit recipient as manual runs).
 
-#### 6. Update Nginx Configuration (Rate Limiting & Security Headers)
+#### 6. Update Nginx Configuration (Site Config and Scanner Defense)
+
+The repository's root `nginx.conf` is the live site config. It also holds the scanner defense and writes
+`/var/log/nginx/scanner.log`, which the `nginx-scanner` fail2ban jail reads. Do not install
+`backend/config/nginx-murphys-laws-enhanced.conf` instead: it has neither.
 
 **IMPORTANT**: Test nginx configuration before applying!
 
 ```bash
-# Upload nginx configs
+# Upload the nginx config
 # From local machine:
-scp config/nginx-rate-limiting.conf ravidor@167.99.53.90:/tmp/
-scp config/nginx-murphys-laws-enhanced.conf ravidor@167.99.53.90:/tmp/
+scp nginx.conf ravidor@167.99.53.90:/tmp/
 
 # On server:
 # Backup current configuration
 sudo cp /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-available/murphys-laws.backup-$(date +%Y%m%d)
 
-# Add rate limiting configuration to nginx.conf
-sudo cp /tmp/nginx-rate-limiting.conf /etc/nginx/conf.d/rate-limiting.conf
-
-# Review the new server configuration
-cat /tmp/nginx-murphys-laws-enhanced.conf
-
-# IMPORTANT: Review the CSP (Content Security Policy) in the config
-# Make sure it includes all domains your app needs (Google Analytics, GTM, etc.)
+# Review what changes (an empty diff means the server already runs this file)
+diff /etc/nginx/sites-available/murphys-laws /tmp/nginx.conf
 
 # If satisfied, apply it:
-sudo cp /tmp/nginx-murphys-laws-enhanced.conf /etc/nginx/sites-available/murphys-laws
+sudo cp /tmp/nginx.conf /etc/nginx/sites-available/murphys-laws
 
 # Test configuration
 sudo nginx -t

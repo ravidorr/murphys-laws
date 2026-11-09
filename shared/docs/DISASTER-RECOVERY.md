@@ -235,11 +235,16 @@ EOF
  pm2 startup
  ```
 
-1. **Configure nginx**:
+1. **Issue the SSL certificate** (first, because the repository's `nginx.conf` points at the certificate files, and `nginx -t` fails until they exist; nginx still runs its stock config at this point):
  ```bash
- # Copy enhanced nginx config
- cp config/nginx-rate-limiting.conf /etc/nginx/conf.d/rate-limiting.conf
- cp config/nginx-murphys-laws-enhanced.conf /etc/nginx/sites-available/murphys-laws
+ certbot certonly --nginx -d murphys-laws.com -d www.murphys-laws.com \
+ --non-interactive --agree-tos --email <your-email>
+ test -f /etc/letsencrypt/options-ssl-nginx.conf # the nginx plugin installs this; nginx.conf includes it
+ ```
+
+1. **Configure nginx** (the repository's root `nginx.conf` is the live site config: the site, the scanner defense, and the `scanner.log` that the scanner jail reads):
+ ```bash
+ cp /root/murphys-laws/nginx.conf /etc/nginx/sites-available/murphys-laws
  ln -s /etc/nginx/sites-available/murphys-laws /etc/nginx/sites-enabled/
  rm /etc/nginx/sites-enabled/default
 
@@ -248,12 +253,6 @@ EOF
 
  # Restart nginx
  systemctl restart nginx
- ```
-
-1. **Configure SSL certificate**:
- ```bash
- certbot --nginx -d murphys-laws.com -d www.murphys-laws.com \
- --non-interactive --agree-tos --email <your-email>
  ```
 
 1. **Install the scanner jail** (it bans the addresses that the nginx scanner defense drops, and needs the repository's root `nginx.conf`, which writes `/var/log/nginx/scanner.log`):
