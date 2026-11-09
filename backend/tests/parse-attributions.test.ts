@@ -117,6 +117,11 @@ describe('parseAttributions', () => {
       expect(parseAttributions('Sent by [J a@b.com](mailto:a@b.com).').attributions[0]?.name).toBe('J Anonymous');
     });
 
+    it('keeps a link with credentials but no dotted host as a url contact', () => {
+      const res = parseAttributions('A law. Sent by [Bob](http://bob@localhost).');
+      expect(res.attributions[0]).toMatchObject({ name: 'Bob', contact_type: 'url', contact_value: 'http://bob@localhost' });
+    });
+
     it('keeps a web link as a url contact', () => {
       const res = parseAttributions('A law. Sent by [Jane](http://example.com/jane).');
       expect(res.attributions[0]).toMatchObject({ name: 'Jane', contact_type: 'url', contact_value: 'http://example.com/jane' });

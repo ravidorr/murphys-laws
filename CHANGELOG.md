@@ -130,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     accident: the law card's `aria-label` joins the title and text with a colon, which turned `(mailto` and
     `tamzanzw@...` into `mailto:`.
   - The parser (`backend/scripts/build-sqlite.ts`) now masks an address used as link text (`Anonymous`, the label
-    `sanitizeDisplayName` already uses), records a `http://name@host` target as an email contact, drops a leading
+    `sanitizeDisplayName` already uses), records a `http://name@host.tld` target as an email contact (one without a dotted host, or with a path, stays a link), drops a leading
     `by` from an attribution name, and removes the target of a truncated `[Name](mailto...` link at the end of a
     text (the link text stays), a leftover `mailto:` target and any bare address. The address stays in
     `contact_value`.
