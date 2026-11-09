@@ -144,6 +144,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     content page, and cover the 410, the garbage URLs, the scanner maps, robots.txt and the sitemap builder.
 
   Root bumped to `2.6.159`.
+- Law pages no longer show email addresses. Contact details belong in `attributions.contact_value`, which no public
+  endpoint serves, but they had leaked into what the pages and the API show: 23 laws built from the archive and 25
+  in production (an earlier scan counted 66 and 69 pages, which include the lists that link to these laws and one
+  false positive, `mother@#?!&*`). Three shapes:
+  - An attribution name that was an address, from a link such as `[name@aol.com](http://name@aol.com)` or
+    `[name@aol.com](mailto:name@aol.com)` (23 attributions in production, for example `Eppeguy@aol.com`). In the
+    archive build the address was also part of the law text (`Sent by Karacourt@aol.com.`).
+  - A `[Name](mailto:...)` link that an older import had cut inside the address. Law 1264's title ended
+    `Sent [by Takura Razemba](mailto` and its text was `tamzanzw@yahoo.com).`; law 892's note was
+    `and [getalife](mailto:getalife1@webtv` and its text ended with the tail `net).`. The build's privacy check only
+    looked for `mailto:`. It failed a build from production data on the three pages that list law 1264 only by
+    accident: the law card's `aria-label` joins the title and text with a colon, which turned `(mailto` and
+    `tamzanzw@...` into `mailto:`.
+  - The parser (`backend/scripts/build-sqlite.ts`) now masks an address used as link text (`Anonymous`, the label
+    `sanitizeDisplayName` already uses), records a `http://name@host.tld` target as an email contact (one without a dotted host, or with a path, stays a link), drops a leading
+    `by` from an attribution name, and removes the target of a truncated `[Name](mailto...` link at the end of a
+    text (the link text stays), a leftover `mailto:` target and any bare address. The address stays in
+    `contact_value`.
+  - Migration `022_strip_law_contact_details.sql` cleans the production rows by content, not by ID (production IDs
+    differ from the archive's), with `GLOB` and string functions only. Names that are addresses become `Anonymous`
+    (the address stays in `contact_value`). A cut title whose text is only the rest of the address moves its
+    sentence to the text, the title becomes `NULL` and the submitter's attribution is added when the law has none.
+    A broken note becomes `and getalife` and the stray `net).` tail is removed (only from a text without a
+    parenthesis). A note that still holds a contact detail is set to `NULL`, and a published law whose title or text
+    still does goes back to `in_review` instead of staying public; none of the 2,453 production laws should.
+    `GLOB` cannot say that a domain has no space in it, so it is a deliberate superset, and a false positive costs a
+    moderator a look. The migration is idempotent, wrapped in one transaction, and its updates go through the
+    search-index triggers from migration 019. The deploy builds the site from the production API before it
+    migrates, and that build stops on the unmigrated rows (the pages that list law 1264), so the deploy that first
+    carries this migration is run once with the workflow's `seeded_build` input; the deploy after it prerenders from
+    clean production data.
+  - The build's privacy check (`validateGeneratedPage` in `web/scripts/ssg.ts`) now rejects `mailto` without the
+    colon and an email address in any law or category page, so a leak stops the build. Pattern: letters, digits and
+    `._%+-` before the `@`, a dotted domain ending in a letters-only label that is not a file extension, so
+    `logo@2x.png`, JSON-LD `@context` and `mother@#?!&*` do not count. The archive build passes it (0 addresses in
+    2,465 law pages).
+  Backend bumped to `2.3.67`; web to `3.4.70`; root to `2.6.162`.
 - The daily report's command injection count (28,131 in the 9 November report) was not real. Six of the ten
   patterns in `backend/scripts/log-analyzer.sh` began with an unescaped `|` (`|cat`, `|nc`, `|wget`, `|curl`,
   `|bash`, `|sh`). Run through `grep -E`, that is "empty or cat", which GNU grep matches on every line, so each

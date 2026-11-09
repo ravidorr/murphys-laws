@@ -68,6 +68,46 @@ async function listMarkdownFiles(dir: string): Promise<string[]> {
   return out.sort();
 }
 
+/**
+ * Matches an email address anywhere in a string. The domain needs a dot, so `mother@#?!&*` is not one.
+ * (`web/scripts/ssg.ts` has its own pattern for generated HTML, and migration 022 a GLOB form of it.)
+ */
+const EMAIL_ADDRESS_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
+const ANONYMOUS_NAME = 'Anonymous';
+
+function containsEmailAddress(value: string): boolean {
+  // The shared pattern has the `g` flag, whose `lastIndex` would make a reused `.test` flaky: use a fresh copy.
+  return new RegExp(EMAIL_ADDRESS_PATTERN.source).test(value);
+}
+
+/** Replace every email address in a string with the anonymous label. */
+function maskEmailAddresses(value: string): string {
+  return value.replace(EMAIL_ADDRESS_PATTERN, ANONYMOUS_NAME);
+}
+
+/** Link text is shown to the public, so an address used as link text is masked. */
+function publicLinkText(linkText: string): string {
+  return maskEmailAddresses(linkText);
+}
+
+/** The attribution name: drops the leading "by " that some archive lines put inside the link (`[by Name](...)`). */
+function attributionName(linkText: string): string {
+  return publicLinkText(linkText.replace(/^by(?:\s+|$)/, '').trim()) || ANONYMOUS_NAME;
+}
+
+/**
+ * Remove contact fragments that survive the link pass: a truncated `[Name](mailto...` at the very end of the text
+ * (its closing parenthesis was lost; the link text stays, the target goes), a leftover `mailto:` target and any
+ * bare address.
+ */
+function stripContactFragments(text: string): string {
+  return maskEmailAddresses(
+    text
+      .replace(/\[([^\]]*)\]\(mailto[^)]*$/i, (_match, linkText: string) => publicLinkText(linkText))
+      .replace(/mailto:\S*/gi, '')
+  ).trim();
+}
+
 export function parseAttributions(text: string): ParseAttributionsResult {
   const attrs: Attribution[] = [];
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/gs;
@@ -85,19 +125,29 @@ export function parseAttributions(text: string): ParseAttributionsResult {
       contactType = 'text';
     }
 
-    const actualContact = contactType === 'email'
+    let actualContact = contactType === 'email'
       ? contactValue.replace(/^mailto:\s*/i, '').trim()
       : contactValue;
 
+    // `[name@host](http://name@host)`: the target is the address with a scheme, so record it as an email.
+    const schemeAddress = /^https?:\/\/([^/\s]+@[^/\s]+)$/i.exec(actualContact);
+    if (contactType === 'url' && schemeAddress && containsEmailAddress(schemeAddress[1])) {
+      contactType = 'email';
+      actualContact = schemeAddress[1];
+    }
+
     attrs.push({
-      name,
+      // The contact value keeps the address (it is not public); the name must not be one.
+      name: attributionName(name),
       contact_type: contactType,
       contact_value: actualContact,
       source_fragment: m[0],
     });
   }
 
-  const cleanText = text.replace(linkRegex, (_match, linkText: string) => linkText).trim();
+  const cleanText = stripContactFragments(
+    text.replace(linkRegex, (_match, linkText: string) => publicLinkText(linkText))
+  );
   return { cleanText, attributions: attrs };
 }
 
