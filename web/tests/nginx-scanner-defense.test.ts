@@ -126,6 +126,12 @@ describe('nginx scanner defense', () => {
     '/health/liveliness',
     '/health/readiness',
     '/health/liveliness?probe=1',
+    '/wallet/topup/9985',
+    '/wallet',
+    '/wallet/',
+    '/build/manifest.json',
+    '/ipfs/bafkreicyqcbhpicbos7ev4mrxofwqx6hvvge7pahpta6xuspr44crai5by',
+    '/ipfs/',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -202,6 +208,16 @@ describe('nginx scanner defense', () => {
     '/healthcheck',
     '/law/health',
     '/browse?q=health/liveliness',
+    '/browse?q=wallet',
+    '/search?q=build/manifest.json',
+    '/browse?q=ipfs',
+    '/law/wallet',
+    '/wallets',
+    '/build',
+    '/security.txt',
+    '/apple-touch-icon-240x240.png',
+    '/apple-touch-icon-240x240-precomposed.png',
+    '/favicon-512x512.png',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -400,6 +416,10 @@ describe('nginx legacy URL redirects', () => {
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
     ['/sitemaps.xml', '/sitemap.xml'],
     ['/favicon.png', '/favicon-32x32.png'],
+    ['/apple-touch-icon-240x240.png', '/apple-touch-icon.png'],
+    ['/apple-touch-icon-240x240-precomposed.png', '/apple-touch-icon.png'],
+    ['/favicon-512x512.png', '/android-chrome-512x512.png'],
+    ['/security.txt', '/.well-known/security.txt'],
   ])('redirects %s to %s', (from, to) => {
     const start = conf.indexOf(`location = ${from} {`);
     expect(start).toBeGreaterThan(-1);
@@ -412,6 +432,18 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toMatch(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
     expect('/murphy/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy');
     expect(conf).toContain('location = /murphy {');
+  });
+
+  it.each([
+    'apple-touch-icon.png',
+    'android-chrome-512x512.png',
+    'favicon-32x32.png',
+  ])('redirects to a public file that exists: %s', (name) => {
+    expect(existsSync(resolve(root, 'web', 'public', name))).toBe(true);
+  });
+
+  it('redirects /security.txt to the served /.well-known/security.txt', () => {
+    expect(conf).toContain('location = /.well-known/security.txt {');
   });
 
   it('redirects /favicon.png to a favicon file that exists', () => {
