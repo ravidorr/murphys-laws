@@ -140,6 +140,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Daily 404 report of 10 November 2026: more scanner probes are dropped and two sitemap-index guesses are redirected.
+  Dropped (`444`, logged to `scanner.log`): Cisco ASA login probes (`/+CSCOE+/logon.html`, `/+CSCOT+/...`),
+  `/eventmanager`, `/server-status`, `/server-info`, `/debug/vars`, `/solr/...`, Joomla component assets
+  (`/media/com_*/`, `/components/com_*/`) and `.sqlite`, `.sqlite3` and `.db` files. Each pattern is anchored to the
+  path, so a search such as `/browse?q=solr/admin` still passes. `/sitemap_index.xml` and `/sitemap-index.xml` now
+  redirect to `/sitemap.xml`, like `/sitemaps.xml`. Web bumped to `3.4.71`; root to `2.6.169`.
 - The production deploy prerenders the site from a sanitized, freshly migrated copy of the production database (see
   the entry above) instead of from a database built from the archive. The two number and publish laws differently, so on 9 November 2026 every sampled law page (75 of 75)
   described a different law from the one `/api/v1/laws/<id>` returns for the same ID, 38 law pages in the sitemap
