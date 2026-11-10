@@ -129,6 +129,7 @@ const THANK_YOU_SKIPPED = {
   no_email: 'The submitter left no email address, so no thank-you was sent.',
   invalid_email: 'The submitter\'s email address is not valid, so no thank-you was sent.',
   error: 'The thank-you email could not be started. Check the server logs.',
+  corollary: 'This law is a corollary, so no thank-you was sent; the thank-you belongs to its parent law.',
 };
 
 /** Text appended to the "updated" message about the submitter's thank-you email; empty when not an approval. */
@@ -140,4 +141,123 @@ export function describeThankYou(thankYou) {
     return ' Thank-you email is being sent (delivery is not confirmed).';
   }
   return ` ${THANK_YOU_SKIPPED[thankYou.reason] || 'No thank-you email was sent.'}`;
+}
+
+/*
+ * Split review. These limits mirror shared/modules/corollary-parser.ts, which the server enforces; the page cannot
+ * import from outside its own directory, so the numbers are repeated here and the server stays the authority.
+ */
+export const MAX_COROLLARIES = 5;
+const TEXT_MIN = 10;
+const TEXT_MAX = 1000;
+const TITLE_MAX = 200;
+
+/** What each bullet can be turned into. There is no "variant": nothing reads that relation. */
+export const TREAT_OPTIONS = [
+  { value: 'corollary', label: 'Corollary' },
+  { value: 'keep', label: 'Keep in parent text' },
+];
+
+const isCorollaryRow = (row) => row.treatAs === 'corollary';
+
+export function countCorollaries(rows) {
+  return rows.filter(isCorollaryRow).length;
+}
+
+export function canAddCorollary(rows) {
+  return countCorollaries(rows) < MAX_COROLLARIES;
+}
+
+/**
+ * One editable row per bullet the server found. Labeled bullets start as corollaries and unlabeled ones stay in the
+ * parent text, so nothing is split unless it looks like a corollary. Labeled bullets beyond the maximum start as kept.
+ */
+export function seedSplitRows(candidates) {
+  let corollaries = 0;
+  return candidates.items.map((item) => {
+    const asCorollary = item.labeled && corollaries < MAX_COROLLARIES;
+    if (asCorollary) {
+      corollaries += 1;
+    }
+    return { title: item.title || '', text: item.text, treatAs: asCorollary ? 'corollary' : 'keep', manual: false };
+  });
+}
+
+/** The parent text with every kept bullet put back after it, as a bulleted line. */
+export function composeParentText(parentText, rows) {
+  const kept = rows
+    .filter((row) => !isCorollaryRow(row))
+    .map((row) => {
+      const title = row.title.trim();
+      const text = row.text.trim();
+      return `• ${title ? `${title}: ${text}` : text}`;
+    });
+  return kept.length === 0 ? parentText.trim() : `${parentText.trim()}\n\n${kept.join('\n')}`;
+}
+
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+/** The banner sentence on the card. */
+export function describeCandidates(candidates) {
+  const found = candidates.items.length;
+  const labeled = candidates.items.filter((item) => item.labeled).length;
+  if (labeled === found) {
+    return `${plural(found, 'corollary', 'corollaries')} found in the law text.`;
+  }
+  return `${plural(found, 'bullet', 'bullets')} found in the law text, ${labeled === 0 ? `none labeled as a corollary` : `${labeled} of them labeled as corollaries`}.`;
+}
+
+/** The footer wording for the number of corollaries that will be published with the parent. */
+export function describeSplit(corollaries) {
+  const total = corollaries + 1;
+  return {
+    button: corollaries === 0 ? 'Approve and publish the law' : `Approve and publish ${total} laws`,
+    summary: `Approving publishes ${total} laws: the parent and ${plural(corollaries, 'corollary', 'corollaries')}. Category, author credit and the approval email are shared, and the submitter gets one email.`,
+  };
+}
+
+const sameText = (text) => text.trim().toLowerCase().replace(/\s+/g, ' ');
+
+/** Problems that would stop the split, in plain words. The server checks the same rules again. */
+export function validateSplit({ parentText, rows }) {
+  const problems = [];
+  const corollaryRows = rows.map((row, index) => ({ row, index })).filter(({ row }) => isCorollaryRow(row));
+  if (corollaryRows.length === 0) {
+    problems.push('Choose at least one bullet to publish as a corollary.');
+  }
+  if (corollaryRows.length > MAX_COROLLARIES) {
+    problems.push(`A law can have at most ${MAX_COROLLARIES} corollaries. Keep the others in the parent text.`);
+  }
+  const composed = composeParentText(parentText, rows);
+  if (composed.length < TEXT_MIN || composed.length > TEXT_MAX) {
+    problems.push(`The law text must be between ${TEXT_MIN} and ${TEXT_MAX} characters.`);
+  }
+  const seen = new Set([sameText(composed)]);
+  for (const { row, index } of corollaryRows) {
+    const label = `Bullet ${index + 1}`;
+    const text = row.text.trim();
+    if (text.length < TEXT_MIN || text.length > TEXT_MAX) {
+      problems.push(`${label} must be between ${TEXT_MIN} and ${TEXT_MAX} characters.`);
+    } else if (seen.has(sameText(text))) {
+      problems.push(`${label} repeats another corollary or the law text.`);
+    }
+    seen.add(sameText(text));
+    if (row.title.trim().length > TITLE_MAX) {
+      problems.push(`${label} title must be at most ${TITLE_MAX} characters.`);
+    }
+  }
+  return problems;
+}
+
+/** The explicit request the server applies: the guard, the composed parent text and the corollaries to create. */
+export function buildSplitBody(law, { title, notes, categoryId, parentText, rows }) {
+  const body = { parent_text: composeParentText(parentText, rows) };
+  if (typeof law.updated_at === 'string') {
+    body.updated_at = law.updated_at;
+  }
+  Object.assign(body, buildUpdateBody(law, { title, notes, categoryId }));
+  body.corollaries = rows
+    .filter(isCorollaryRow)
+    .map((row) => ({ title: row.title.trim() || null, text: row.text.trim() }));
+  return body;
 }

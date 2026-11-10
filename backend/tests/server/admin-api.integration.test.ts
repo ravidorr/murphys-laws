@@ -124,6 +124,94 @@ describe('admin API through the real server and migrated database', () => {
     expect(inCategory.data.map((l: { id: number }) => l.id)).toContain(lawId);
   });
 
+  describe('splitting corollaries out of a submitted law', () => {
+    const bulleted = 'A red light turns green right after you stop watching it.\n\n• The Ignition Corollary: The engine restarts slowly behind a horn.\n• The Green-Light Corollary: The green lasts just long enough to miss.';
+    const flush = () => new Promise((resolve) => setImmediate(resolve));
+    let submitted: number;
+
+    beforeEach(() => {
+      submitted = Number(
+        db.prepare("INSERT INTO laws (title, text, status, first_seen_file_path) VALUES ('Lights', ?, 'in_review', 'web-submission')").run(bulleted).lastInsertRowid,
+      );
+      db.prepare("INSERT INTO attributions (law_id, name, contact_type, contact_value) VALUES (?, 'Ringo', 'email', 'ringo@example.com')").run(submitted);
+    });
+
+    const candidates = async () => {
+      const { data } = (await request('GET', '/api/v1/admin/laws?status=in_review', { token: TOKEN })).json();
+      return data.find((l: { id: number }) => l.id === submitted);
+    };
+
+    it('offers the candidates, splits on the explicit body, publishes everything and thanks only the parent', async () => {
+      const law = await candidates();
+      expect(law.corollary_candidates.items.map((i: { title: string }) => i.title)).toEqual(['The Ignition Corollary', 'The Green-Light Corollary']);
+
+      const reply = await request('POST', `/api/v1/admin/laws/${submitted}/split`, {
+        token: TOKEN,
+        body: {
+          updated_at: law.updated_at,
+          parent_text: law.corollary_candidates.parent_text,
+          corollaries: law.corollary_candidates.items.map((i: { title: string; text: string }) => ({ title: i.title, text: i.text })),
+        },
+      });
+      await flush();
+      expect(reply.status).toBe(200);
+      expect(reply.headers['Cache-Control']).toBe('no-store');
+      const { data, corollaries, thank_you: thankYou } = reply.json();
+      expect(data).toMatchObject({ id: submitted, status: 'published', text: law.corollary_candidates.parent_text });
+      expect(corollaries).toHaveLength(2);
+      expect(thankYou).toEqual({ status: 'queued' });
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(mockSendMail.mock.calls[0][0].to).toEqual({ name: '', address: 'ringo@example.com' });
+
+      for (const child of corollaries) {
+        expect((await request('GET', `/api/v1/laws/${child.id}`)).status).toBe(200);
+      }
+      expect(db.prepare('SELECT contact_type, contact_value FROM attributions WHERE law_id = ?').all(corollaries[0].id)).toEqual([{ contact_type: 'text', contact_value: null }]);
+      expect((await request('GET', `/api/v1/laws/${submitted}`)).status).toBe(200);
+      expect(await candidates()).toBeUndefined();
+    });
+
+    it('answers 409 for a stale page, 400 for a rule violation, 404 for a missing law and 413 for a huge body', async () => {
+      const law = await candidates();
+      const body = { updated_at: law.updated_at, parent_text: law.corollary_candidates.parent_text, corollaries: [{ title: null, text: 'A single corollary of enough length.' }] };
+
+      expect((await request('POST', `/api/v1/admin/laws/${submitted}/split`, { token: TOKEN, body: { ...body, updated_at: 'stale' } })).status).toBe(409);
+      expect((await request('POST', `/api/v1/admin/laws/${submitted}/split`, { token: TOKEN, body: { ...body, corollaries: [] } })).status).toBe(400);
+      expect((await request('POST', '/api/v1/admin/laws/999999/split', { token: TOKEN, body })).status).toBe(404);
+      expect((await request('POST', `/api/v1/admin/laws/${submitted}/split`, { token: TOKEN, raw: JSON.stringify({ ...body, pad: 'x'.repeat(70 * 1024) }) })).status).toBe(413);
+      expect((await request('POST', `/api/v1/admin/laws/${submitted}/split`, { body })).status).toBe(401);
+      expect(db.prepare('SELECT status FROM laws WHERE id = ?').get(submitted)).toEqual({ status: 'in_review' });
+
+      const ok = await request('POST', `/api/v1/admin/laws/${submitted}/split`, { token: TOKEN, body });
+      expect(ok.status).toBe(200);
+      const again = await request('POST', `/api/v1/admin/laws/${submitted}/split`, { token: TOKEN, body: { ...body, updated_at: ok.json().data.updated_at } });
+      expect(again.status).toBe(400);
+      expect(again.json().error).toBe('Only a law in review can be split');
+    });
+
+    it('moves the corollaries with their law on a plain reject, and refuses to publish a corollary before its law', async () => {
+      const law = await candidates();
+      const split = await request('POST', `/api/v1/admin/laws/${submitted}/split`, {
+        token: TOKEN,
+        body: { updated_at: law.updated_at, parent_text: law.corollary_candidates.parent_text, corollaries: [{ title: 'One', text: 'The engine restarts slowly behind a horn.' }] },
+      });
+      const [child] = split.json().corollaries;
+
+      const rejected = await request('POST', `/api/v1/admin/laws/${submitted}`, { token: TOKEN, body: { status: 'rejected' } });
+      expect(rejected.json().cascaded).toBe(1);
+      expect(db.prepare('SELECT status FROM laws WHERE id = ?').get(child.id)).toEqual({ status: 'rejected' });
+      expect((await request('GET', `/api/v1/laws/${child.id}`)).status).toBe(404);
+
+      const orphan = await request('POST', `/api/v1/admin/laws/${child.id}`, { token: TOKEN, body: { status: 'published' } });
+      expect(orphan.status).toBe(400);
+      expect(orphan.json().error).toContain(`#${submitted}`);
+
+      await request('POST', `/api/v1/admin/laws/${submitted}`, { token: TOKEN, body: { status: 'published' } });
+      expect((await request('POST', `/api/v1/admin/laws/${child.id}`, { token: TOKEN, body: { status: 'published' } })).status).toBe(200);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('answers 404 for an unknown law', async () => {
     const reply = await request('POST', '/api/v1/admin/laws/999999', { token: TOKEN, body: { status: 'rejected' } });
     expect(reply.status).toBe(404);

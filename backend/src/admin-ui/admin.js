@@ -13,6 +13,15 @@ import {
   isLawReply,
   describeThankYou,
   categorySelectValue,
+  TREAT_OPTIONS,
+  seedSplitRows,
+  countCorollaries,
+  canAddCorollary,
+  describeCandidates,
+  describeSplit,
+  validateSplit,
+  composeParentText,
+  buildSplitBody,
 } from './admin-logic.js';
 
 const state = { token: '', login: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
@@ -209,6 +218,207 @@ function categoryOptions(law, serverCategories) {
   return [...known.values()];
 }
 
+/**
+ * The inline split review for a law whose text holds bullets. It takes over the card's Law field and footer until the
+ * moderator approves or cancels; the title, category and notes fields of the card are reused, not repeated.
+ * Nothing is split unless the moderator approves, and the server applies exactly the body built here.
+ */
+function openSplitReview({ law, item, card, reviewButton }) {
+  const candidates = law.corollary_candidates;
+  const rows = seedSplitRows(candidates);
+  let busy = false;
+
+  const heading = el('h3', 'card-title split-title', 'Review the split');
+  heading.id = `split-title-${law.id}`;
+  heading.tabIndex = -1;
+  const intro = el('p', 'meta', `${describeCandidates(candidates)} Check each one before publishing.`);
+
+  const parentText = el('textarea');
+  parentText.rows = 3;
+  parentText.maxLength = 1000;
+  parentText.value = candidates.parent_text;
+  const parentField = field(`split-parent-${law.id}`, 'Law text, corollaries removed', parentText);
+
+  const composed = el('div', 'split-composed');
+  const composedText = el('p', 'split-composed-text');
+  composed.append(el('p', 'meta', 'Law text as it will be published, with the bullets you keep'), composedText);
+
+  const rowsEl = el('div', 'split-rows');
+  const addButton = el('button', 'btn split-add', '+ Add a corollary by hand');
+  addButton.type = 'button';
+  const problem = el('p', 'split-problem');
+  problem.setAttribute('aria-live', 'polite');
+
+  const panel = el('section', 'split-review');
+  panel.setAttribute('aria-labelledby', heading.id);
+  panel.append(
+    heading,
+    intro,
+    parentField,
+    composed,
+    el('p', 'meta split-link', 'Each one is saved as its own law and linked to the parent'),
+    rowsEl,
+    addButton,
+    problem,
+  );
+
+  const summary = el('p', 'split-summary');
+  const cancel = el('button', 'btn', 'Cancel');
+  cancel.type = 'button';
+  const approve = el('button', 'btn btn-primary');
+  approve.type = 'button';
+  const footer = el('div', 'split-actions card-footer');
+  const buttons = el('div', 'split-buttons');
+  buttons.append(cancel, approve);
+  footer.append(summary, buttons);
+
+  let views = [];
+  const refresh = () => {
+    const corollaries = countCorollaries(rows);
+    const problems = validateSplit({ parentText: parentText.value, rows });
+    const wording = describeSplit(corollaries);
+    const keeping = rows.some((row) => row.treatAs !== 'corollary');
+    composed.hidden = !keeping;
+    composedText.textContent = composeParentText(parentText.value, rows);
+    summary.textContent = wording.summary;
+    approve.textContent = wording.button;
+    approve.disabled = busy || problems.length > 0;
+    problem.hidden = problems.length === 0;
+    problem.textContent = problems[0] || '';
+    addButton.disabled = !canAddCorollary(rows);
+    for (const view of views) {
+      const isCorollary = view.row.treatAs === 'corollary';
+      view.titleField.hidden = !isCorollary;
+      // A row that is not a corollary cannot become one while the maximum is reached.
+      view.select.options[0].disabled = !isCorollary && !canAddCorollary(rows);
+    }
+  };
+
+  const buildRow = (row, index) => {
+    const prefix = `split-${law.id}-${index}`;
+    const box = el('fieldset', 'split-row');
+    box.append(el('legend', null, `Bullet ${index + 1}`));
+
+    const select = el('select');
+    for (const option of TREAT_OPTIONS) {
+      const node = el('option', null, option.label);
+      node.value = option.value;
+      select.append(node);
+    }
+    select.value = row.treatAs;
+    select.id = `${prefix}-treat`;
+    const treatLabel = el('label', null, 'Treat as');
+    treatLabel.htmlFor = select.id;
+    const treat = el('div', 'split-treat');
+    treat.append(treatLabel, select);
+    const head = el('div', 'split-row-head');
+    head.append(treat);
+    if (row.manual) {
+      const remove = el('button', 'btn split-remove', 'Remove');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `Remove bullet ${index + 1}`);
+      remove.addEventListener('click', () => {
+        rows.splice(rows.indexOf(row), 1);
+        renderRows();
+        refresh();
+        addButton.focus();
+      });
+      head.append(remove);
+    }
+
+    const titleInput = el('input');
+    titleInput.type = 'text';
+    titleInput.maxLength = 200;
+    titleInput.value = row.title;
+    titleInput.addEventListener('input', () => { row.title = titleInput.value; refresh(); });
+    const titleField = field(`${prefix}-title`, 'Title', titleInput);
+    titleField.classList.add('field--title');
+
+    const textInput = el('textarea');
+    textInput.rows = 2;
+    textInput.maxLength = 1000;
+    textInput.value = row.text;
+    textInput.addEventListener('input', () => { row.text = textInput.value; refresh(); });
+
+    select.addEventListener('change', () => { row.treatAs = select.value; refresh(); });
+    box.append(head, titleField, field(`${prefix}-text`, 'Text', textInput));
+    views.push({ row, select, titleField, titleInput });
+    return box;
+  };
+  const renderRows = () => {
+    views = [];
+    rowsEl.replaceChildren(...rows.map(buildRow));
+  };
+
+  const setReviewing = (reviewing) => {
+    card.textField.hidden = reviewing;
+    card.banner.hidden = reviewing;
+    card.actions.hidden = reviewing;
+  };
+  const close = () => {
+    panel.remove();
+    footer.remove();
+    setReviewing(false);
+    reviewButton.focus();
+  };
+
+  const approveSplit = async () => {
+    // A disabled button never fires in a browser; the check keeps a stray call from sending an invalid split.
+    if (busy || approve.disabled) {
+      return;
+    }
+    const body = buildSplitBody(law, {
+      title: card.title.value,
+      notes: card.notes.value,
+      categoryId: card.category.value === '' ? undefined : Number(card.category.value),
+      parentText: parentText.value,
+      rows,
+    });
+    const laws = countCorollaries(rows) + 1;
+    busy = true;
+    setBusy(footer, true);
+    let reply;
+    try {
+      reply = await api(`/api/v1/admin/laws/${law.id}/split`, { method: 'POST', body: JSON.stringify(body) });
+      if (!isLawReply(reply)) {
+        throw new ApiError('The server reply could not be read. Reload the list to check the law.', 0);
+      }
+    } catch (error) {
+      await recoverFromSaveError(error, law, item, footer);
+      busy = false;
+      refresh();
+      return;
+    }
+
+    // Counts change by the number of laws published, so the list is reloaded rather than patched.
+    const thanks = describeThankYou(reply.thank_you);
+    const ok = await load({}, false);
+    say(ok
+      ? `Law #${law.id} was split into ${laws} laws.${thanks}`
+      : `Law #${law.id} was split into ${laws} laws, but the list could not refresh. Click a tab to reload.${thanks}`, !ok);
+    if (ok) {
+      messageEl.focus();
+    }
+  };
+
+  addButton.addEventListener('click', () => {
+    rows.push({ title: '', text: '', treatAs: 'corollary', manual: true });
+    renderRows();
+    refresh();
+    views[views.length - 1].titleInput.focus();
+  });
+  parentText.addEventListener('input', refresh);
+  cancel.addEventListener('click', close);
+  approve.addEventListener('click', approveSplit);
+
+  renderRows();
+  refresh();
+  setReviewing(true);
+  card.textField.after(panel);
+  card.actions.after(footer);
+  heading.focus();
+}
+
 function renderLaw(law, serverCategories = state.categories) {
   const item = el('li', 'law card card--section');
   const head = el('div', 'law-head card-header');
@@ -277,8 +487,9 @@ function renderLaw(law, serverCategories = state.categories) {
     try {
       const updated = reply.data;
       const thanks = describeThankYou(reply.thank_you);
-      // A list refresh that ran during the save (or is still running) cannot be patched locally.
-      const concurrent = inFlightLoads > 0 || loadSeq !== seqAtStart || !item.isConnected;
+      // A list refresh that ran during the save (or is still running) cannot be patched locally, and neither can a
+      // save that moved the law's corollaries along with it.
+      const concurrent = inFlightLoads > 0 || loadSeq !== seqAtStart || !item.isConnected || reply.cascaded > 0;
       loadSeq += 1;
       if (concurrent) {
         const ok = await load({}, false);
@@ -321,13 +532,25 @@ function renderLaw(law, serverCategories = state.categories) {
   }
   addAction('Save edits', '', undefined);
 
+  const textField = field(`text-${law.id}`, 'Law', text);
   const body = el('div', 'card-body');
-  body.append(
-    field(`title-${law.id}`, 'Title', title),
-    field(`text-${law.id}`, 'Law', text),
-    field(`category-${law.id}`, 'Category', category),
-    field(`notes-${law.id}`, 'Admin notes', notes),
-  );
+  body.append(field(`title-${law.id}`, 'Title', title), textField);
+  if (law.corollary_candidates) {
+    const banner = el('div', 'split-banner');
+    const reviewButton = el('button', 'btn', 'Review split');
+    reviewButton.type = 'button';
+    reviewButton.addEventListener('click', () => openSplitReview({
+      law,
+      item,
+      card: { textField, banner, actions, title, notes, category },
+      reviewButton,
+    }));
+    const note = el('p', 'split-banner-text');
+    note.append(el('strong', null, describeCandidates(law.corollary_candidates)), ' Split them so each becomes its own law, linked to this one.');
+    banner.append(note, reviewButton);
+    body.append(banner);
+  }
+  body.append(field(`category-${law.id}`, 'Category', category), field(`notes-${law.id}`, 'Admin notes', notes));
   item.append(head, body, actions);
   return item;
 }
