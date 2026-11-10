@@ -11,9 +11,19 @@ export function registerSubmitLaw(server: McpServer, api: MurphysLawsClient): vo
       title: z.string().optional().describe('Optional title for the law (e.g. "Murphy\'s Law of Debugging")'),
       author: z.string().optional().describe('Name of the person who coined or submitted this law'),
       category_slug: z.string().optional().describe('Category slug to file the law under. Use list_categories to see available slugs.'),
+      corollaries: z
+        .array(
+          z.object({
+            title: z.string().max(200).optional().describe('Optional name for the corollary (e.g. "The Ignition Corollary")'),
+            text: z.string().min(10).max(1000).describe('The corollary text (10-1000 characters)'),
+          }),
+        )
+        .max(5)
+        .optional()
+        .describe('Up to 5 corollaries: consequences that follow from the law. They are reviewed and published together with it.'),
     },
-    async ({ text, title, author, category_slug }) => {
-      const result = await api.submitLaw({ text, title, author, category_slug });
+    async ({ text, title, author, category_slug, corollaries }) => {
+      const result = await api.submitLaw({ text, title, author, category_slug, ...(corollaries ? { corollaries } : {}) });
 
       if (result.kind === 'success') {
         const lines = [
@@ -23,6 +33,7 @@ export function registerSubmitLaw(server: McpServer, api: MurphysLawsClient): vo
           `Text: "${result.data.text}"`,
           `Author: ${author?.trim() || 'Anonymous'}`,
           `Category: ${category_slug || '(none)'}`,
+          ...result.data.corollaries.map((corollary, index) => `Corollary ${index + 1} (ID: ${corollary.id}): "${corollary.text}"`),
           `Status: ${result.data.status}`,
           '',
           'The law is now in the review queue and will be published after manual approval.',

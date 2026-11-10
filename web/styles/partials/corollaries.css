@@ -28,6 +28,11 @@
   gap: var(--space-3);
 }
 
+.corollary-list-footer {
+  margin: var(--space-4) 0 0;
+  color: var(--muted-fg);
+}
+
 .corollary-card {
   display: flex;
   align-items: flex-start;
@@ -131,4 +136,104 @@
   color: var(--muted-fg);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+/* ==========================
+   Corollaries in the submit form
+   The optional fieldset on the submit form: one box per corollary, a counter, and the hint that moves bullets written
+   in the law text into boxes. Semantic tokens only, so dark mode follows the theme.
+   ========================== */
+
+.submit-corollaries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-xl);
+  background: color-mix(in oklab, var(--bg) 96%, var(--fg) 4%);
+}
+
+.submit-corollaries-title {
+  padding: 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+}
+
+.submit-corollary-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-lg);
+  background: var(--bg);
+}
+
+.submit-corollary-hint[hidden] {
+  display: none;
+}
+
+.submit-corollary-hint-text {
+  margin: 0;
+  font-weight: var(--font-semibold);
+}
+
+.submit-corollary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.submit-corollary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-lg);
+  background: var(--bg);
+}
+
+.submit-corollary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.submit-corollary-label {
+  font-weight: var(--font-semibold);
+}
+
+.submit-corollary-remove {
+  min-width: var(--component-control-min-size);
+  min-height: var(--component-control-min-size);
+  padding: 0;
+  justify-content: center;
+}
+
+.submit-corollary-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+@media (width <= 480px) {
+  .submit-corollaries {
+    padding: var(--space-3);
+  }
+
+  .submit-corollary {
+    padding: var(--space-3);
+  }
 }

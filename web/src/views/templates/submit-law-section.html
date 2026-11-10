@@ -10,6 +10,7 @@
     <li>Keep it short, memorable, and specific.</li>
     <li>Include attribution when you know the original author or source.</li>
     <li>Search first so duplicates do not crowd out sharper versions.</li>
+    <li>If your law has follow-on consequences, add each one as its own corollary below.</li>
   </ul>
   <div data-good-law-examples>
     <p><strong>Specific beats vague:</strong> "The backup you need is the one you forgot to test" is stronger than "computers fail."</p>
@@ -35,6 +36,37 @@
       <option value="">Choose a category (optional)</option>
     </select>
   </div>
+  <fieldset class="form-group submit-corollaries" data-corollaries aria-describedby="submit-corollaries-help">
+    <legend class="submit-corollaries-title">Corollaries <span class="small text-muted-fg">(optional)</span></legend>
+    <p id="submit-corollaries-help" class="form-helper small text-muted-fg">A corollary follows from your law. Add one per box rather than listing them in the law text, so each can be found and voted on.</p>
+    <div class="submit-corollary-hint" data-corollary-hint hidden>
+      <p class="submit-corollary-hint-text" data-corollary-hint-text>Looks like your text includes corollaries.</p>
+      <button type="button" class="btn outline" data-action="move-corollaries">Move them into the boxes</button>
+    </div>
+    <div class="submit-corollary-rows" data-corollary-rows></div>
+    <div class="submit-corollary-footer">
+      <button type="button" class="btn outline" data-action="add-corollary">+ Add a corollary</button>
+      <span class="small text-muted-fg" data-corollary-count role="status">0 of 5 added</span>
+    </div>
+    <template data-corollary-template>
+      <div class="submit-corollary" data-corollary-row>
+        <div class="submit-corollary-head">
+          <span class="submit-corollary-label" data-corollary-label>Corollary</span>
+          <button type="button" class="btn outline submit-corollary-remove" data-action="remove-corollary" aria-label="Remove corollary">
+            <span class="icon" data-icon="close" aria-hidden="true"></span>
+          </button>
+        </div>
+        <label class="form-label small text-muted-fg" data-corollary-title-label>Name (optional)</label>
+        <input type="text" class="form-control" maxlength="200" data-corollary-title autocomplete="off">
+        <label class="form-label small text-muted-fg" data-corollary-text-label>Text</label>
+        <textarea class="form-control" rows="2" maxlength="1000" data-corollary-text></textarea>
+        <div class="form-helper">
+          <span>10-1000 characters</span>
+          <span class="submit-char-counter" data-corollary-counter>0 / 1000</span>
+        </div>
+      </div>
+    </template>
+  </fieldset>
   <div class="form-group">
     <label for="submit-author" class="form-label">Your Name (optional)</label>
     <input id="submit-author" type="text" placeholder="How should we credit you?" class="form-control">

@@ -458,6 +458,12 @@ typography, and size tokens to the shipped primitives:
   parent-banner is the "Corollary of" link above the title on a corollary's own
   page. All three render from `web/src/utils/corollaries.ts`, so the app and the
   static site share one structure.
+- Corollaries in the submit form: corollary-fieldset and corollary-field. The
+  fieldset is the optional "Corollaries" group on the submit form; each
+  corollary-field is one box (name, text, a 1000-character counter and a 44 px
+  remove button), up to five, with an "N of 5 added" counter and a hint that
+  moves corollary-labeled bullets from the law text into boxes. They are built
+  by `web/src/components/submit-law.ts` from `submit-law-section.html`.
 - Feedback: calculator result, message, notification, and vote group.
 - Navigation: brand badge, breadcrumb, and pagination.
 - Back to top: a floating 44 px circular icon button (`.back-to-top`, bottom

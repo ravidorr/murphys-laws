@@ -16,7 +16,12 @@ import { readBody, PayloadTooLargeError } from '../../src/utils/http-helpers.ts'
 const TOKEN = 't'.repeat(40);
 
 describe('AdminController', () => {
-  let service: { listLaws: ReturnType<typeof vi.fn>; updateLaw: ReturnType<typeof vi.fn>; markApprovalEmailSent: ReturnType<typeof vi.fn> };
+  let service: {
+    listLaws: ReturnType<typeof vi.fn>;
+    updateLaw: ReturnType<typeof vi.fn>;
+    markApprovalEmailSent: ReturnType<typeof vi.fn>;
+    publishedCorollaries: ReturnType<typeof vi.fn>;
+  };
   let controller: AdminController;
   let emailService: { isConfigured: ReturnType<typeof vi.fn>; sendLawApprovedEmail: ReturnType<typeof vi.fn> };
   let req: { headers: Record<string, string>; method?: string };
@@ -34,6 +39,7 @@ describe('AdminController', () => {
     process.env.ADMIN_API_TOKEN = TOKEN;
     service = {
       markApprovalEmailSent: vi.fn(),
+      publishedCorollaries: vi.fn(() => []),
       listLaws: vi.fn(() => ({ data: [], total: 0, counts: {} })),
       updateLaw: vi.fn(() => ({ outcome: 'updated', law: { id: 5 }, previousStatus: 'in_review' })),
     };
@@ -304,6 +310,7 @@ describe('AdminController', () => {
           title: 'T',
           text: 'Law text of enough length',
           name: 'Ann',
+          corollaries: [],
         });
         expect(thankYou()).toEqual({ status: 'queued' });
         expect(service.markApprovalEmailSent).toHaveBeenCalledWith(5);

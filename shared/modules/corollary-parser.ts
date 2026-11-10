@@ -54,7 +54,7 @@ function toItem(bullet: string): CorollaryItem {
   if (COROLLARY_LABEL.test(bullet)) {
     const match = LABEL_AND_TEXT.exec(bullet);
     if (match) {
-      return { title: match[1].trim(), text: match[2].trim(), labeled: true };
+      return { title: match[1]!.trim(), text: match[2]!.trim(), labeled: true };
     }
   }
   return { title: null, text: bullet, labeled: false };

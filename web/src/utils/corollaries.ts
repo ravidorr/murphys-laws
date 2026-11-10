@@ -101,6 +101,7 @@ export function renderCorollarySection(corollaries: readonly Corollary[], { inte
         <span class="corollary-list-count small">${corollaryCountLabel(corollaries.length)}</span>
       </div>
       <div class="corollary-list-items" data-corollaries-list>${renderCorollaryCards(corollaries, { interactive })}</div>
+      <p class="corollary-list-footer small">Know another consequence? <a href="/submit" data-submit-link>Add a corollary</a> when you submit a law.</p>
     </section>`;
 }
 

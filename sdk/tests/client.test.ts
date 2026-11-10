@@ -249,6 +249,39 @@ describe('MurphysLawsClient', () => {
     expect(body).toEqual({ text: 'law text here', category_id: 7 });
   });
 
+  it('submitLaw sends corollaries as given and returns the ones the server created', async () => {
+    queue(
+      jsonResponse(201, {
+        id: 5,
+        title: null,
+        text: 'law text here',
+        status: 'in_review',
+        corollaries: [{ id: 6, title: 'The Retry Corollary', text: 'The second attempt fails differently.' }],
+        message: 'ok',
+      }),
+    );
+    const client = clientWith();
+    const result = await client.submitLaw({
+      text: 'law text here',
+      corollaries: [{ title: 'The Retry Corollary', text: 'The second attempt fails differently.' }],
+    });
+    const body = JSON.parse(String(calls[0]!.init?.body));
+    expect(body).toEqual({
+      text: 'law text here',
+      corollaries: [{ title: 'The Retry Corollary', text: 'The second attempt fails differently.' }],
+    });
+    expect(result.kind === 'success' && result.data.corollaries).toEqual([
+      { id: 6, title: 'The Retry Corollary', text: 'The second attempt fails differently.' },
+    ]);
+  });
+
+  it('submitLaw returns an empty corollary list when the server answers without one', async () => {
+    queue(jsonResponse(201, { id: 1, title: '', text: 'law text here', status: 'pending', message: 'ok' }));
+    const result = await clientWith().submitLaw({ text: 'law text here' });
+    expect(result.kind === 'success' && result.data.corollaries).toEqual([]);
+    expect(JSON.parse(String(calls[0]!.init?.body))).not.toHaveProperty('corollaries');
+  });
+
   it('submitLaw surfaces rate limit responses', async () => {
     queue(jsonResponse(429, { error: 'Too many', retryAfter: 42 }));
     const client = clientWith();

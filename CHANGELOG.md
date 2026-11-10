@@ -41,6 +41,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Submitters can add corollaries when they submit a law, and the moderation queue treats a law and its corollaries as
+  one submission. `POST /api/v1/laws` accepts an optional `corollaries` list (at most 5; each `text` 10-1000
+  characters, optional `title` up to 200; no repeats of each other or the law text; the body is capped at 32 KB, 413
+  above it) and answers 201 with the created `corollaries`. They are created in review in the same transaction as the
+  law, share its category and are credited by name only: the email stays on the law, so only the law is thanked. The
+  moderator's new-submission email lists them, and the thank-you sent on approval lists the ones that went live. In
+  `GET /api/v1/admin/laws` a corollary whose law is in the same filtered set is no longer a card of its own: it is
+  attached to the law as `children` (any status), searching a corollary's text returns the law, and the "In review" count
+  and the list total count submissions, not rows (Published and Rejected still count rows). The moderation page shows
+  the corollaries nested under the law as editable rows with "Reject this corollary", and the buttons read "Approve
+  all N" and "Reject all"; corollary edits are saved first, then the law, and the existing status cascade publishes or
+  rejects the rest. The submit form gains an optional Corollaries group (up to five boxes with a counter, a
+  "Submit law with N corollaries" button, and a hint that moves corollary-labeled bullets typed into the law text into
+  boxes), and the corollaries section of a law page links to it with "Add a corollary". The SDK `submitLaw`
+  accepts `corollaries`, the CLI `submit` takes a repeatable `--corollary`, and the MCP `submit_law` tool takes
+  `corollaries`. The design contract gains `corollary-fieldset` and `corollary-field`. Backend bumped to `2.3.78`; web to
+  `3.4.73`; SDK to `0.2.3`; CLI to `0.2.0`; MCP to `1.3.0`; root to `2.6.175`.
 - Corollaries on the law page. `GET /api/v1/laws/:id` now returns `corollaries` (published children of a published
   parent, in the order they were linked, with vote counts) and `corollary_of` (the published parent, or null); list rows
   carry `corollary_of_id`, and `exclude_corollaries` uses the same published-parent rule, so a corollary whose parent

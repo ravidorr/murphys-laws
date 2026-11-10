@@ -289,12 +289,60 @@ describe('runCli', () => {
             kind: 'success',
             ok: true,
             status: 201,
-            data: { id: 1, title: 'T', text: 'Long enough law text here', status: 'pending', message: 'ok' },
+            data: { id: 1, title: 'T', text: 'Long enough law text here', status: 'pending', corollaries: [], message: 'ok' },
           }),
         },
       );
       expect(code).toBe(EXIT_SUCCESS);
       expect(stdout.output).toContain('Submitted law #1');
+    });
+
+    it('sends each --corollary, prints the created ones, and omits the field when none are given', async () => {
+      const captured: unknown[] = [];
+      const behavior = {
+        submitLaw: async (input: { corollaries?: unknown }) => {
+          captured.push(input);
+          return {
+            kind: 'success' as const,
+            ok: true as const,
+            status: 201 as const,
+            data: {
+              id: 7,
+              title: '',
+              text: 'Long enough law text here',
+              status: 'in_review',
+              corollaries: input.corollaries ? [{ id: 8, title: null, text: 'first corollary text' }, { id: 9, title: null, text: 'second corollary text' }] : [],
+              message: 'ok',
+            },
+          };
+        },
+      };
+      const code = await run(['submit', 'Long enough law text here', '--corollary', 'first corollary text', '--corollary', 'second corollary text'], behavior);
+      expect(code).toBe(EXIT_SUCCESS);
+      expect(captured[0]).toMatchObject({ corollaries: [{ text: 'first corollary text' }, { text: 'second corollary text' }] });
+      expect(stdout.output).toContain('Corollary 1: #8 first corollary text');
+      expect(stdout.output).toContain('Corollary 2: #9 second corollary text');
+
+      stdout.output = '';
+      await run(['submit', 'Long enough law text here'], behavior);
+      expect(captured[1]).not.toHaveProperty('corollaries');
+      expect(stdout.output).not.toContain('Corollary 1');
+    });
+
+    it('rejects more than five corollaries and any outside 10-1000 characters before calling the API', async () => {
+      let called = false;
+      const behavior = { submitLaw: async () => { called = true; throw new Error('should not be called'); } };
+      const six = Array.from({ length: 6 }, () => ['--corollary', 'a corollary long enough']).flat();
+      expect(await run(['submit', 'Long enough law text here', ...six], behavior)).toBe(EXIT_USAGE);
+      expect(stderr.output).toContain('at most 5 corollaries');
+
+      stderr.output = '';
+      expect(await run(['submit', 'Long enough law text here', '--corollary', 'short'], behavior)).toBe(EXIT_USAGE);
+      expect(stderr.output).toContain('corollary 1 must be 10-1000 characters (got 5)');
+
+      stderr.output = '';
+      expect(await run(['submit', 'Long enough law text here', '--corollary', 'x'.repeat(1001)], behavior)).toBe(EXIT_USAGE);
+      expect(called).toBe(false);
     });
 
     it('uses --text flag when provided', async () => {
@@ -306,7 +354,7 @@ describe('runCli', () => {
             kind: 'success',
             ok: true,
             status: 201,
-            data: { id: 2, title: '', text: 'another long enough text', status: 'pending', message: 'ok' },
+            data: { id: 2, title: '', text: 'another long enough text', status: 'pending', corollaries: [], message: 'ok' },
           };
         },
       });
@@ -413,7 +461,7 @@ describe('runCli', () => {
           kind: 'success',
           ok: true,
           status: 201,
-          data: { id: 3, title: '', text: 'a valid length law text', status: 'pending', message: 'ok' },
+          data: { id: 3, title: '', text: 'a valid length law text', status: 'pending', corollaries: [], message: 'ok' },
         }),
       });
       expect(code).toBe(EXIT_SUCCESS);

@@ -3,6 +3,7 @@ import { canOfferSplit, parseCorollaries, type CorollaryItem } from '../../../sh
 import {
   COROLLARY_RELATION,
   createCorollaryChildren,
+  getCorollaries,
   hasCorollaries,
   isChild,
   LAW_RELATION_ERROR_STATUS,
@@ -70,7 +71,18 @@ export interface CorollaryCandidates {
   items: CorollaryItem[];
 }
 
+/** A corollary of a submission, nested under its parent in the review queue. Any status, so a rejected one stays visible. */
+export interface AdminChildLaw {
+  id: number;
+  title: string | null;
+  text: string;
+  status: AdminLawStatus;
+  updated_at: string;
+}
+
 export interface AdminListedLaw extends AdminLaw {
+  /** The law's corollaries in their original order, on every law that has any. They are not listed as cards of their own. */
+  children?: AdminChildLaw[];
   /** Only on in-review top-level laws whose text has a parent sentence followed by bullets. A seed, never applied unreviewed. */
   corollary_candidates?: CorollaryCandidates;
 }
@@ -115,6 +127,21 @@ export type AdminSplitResult =
 
 const NOW = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
 
+/**
+ * True for a law that is a card of its own in the queue for this status filter: everything except a corollary whose
+ * law is also in the filtered set. Its placeholders are filled from `params`.
+ */
+function topLevelCondition(status: AdminLawStatus | 'all'): { sql: string; params: string[] } {
+  const parentStatus = status === 'all' ? '' : ' AND p.status = ?';
+  return {
+    sql: `NOT EXISTS (
+    SELECT 1 FROM law_relations nr JOIN laws p ON p.id = nr.to_law_id
+    WHERE nr.from_law_id = l.id AND nr.relation_type = ?${parentStatus}
+  )`,
+    params: status === 'all' ? [COROLLARY_RELATION] : [COROLLARY_RELATION, status],
+  };
+}
+
 const LAW_COLUMNS = 'id, title, text, status, admin_notes, first_seen_file_path, approval_email_sent_at, created_at, updated_at';
 
 export class AdminLawService {
@@ -124,27 +151,42 @@ export class AdminLawService {
     this.db = db;
   }
 
+  /**
+   * One page of the review queue. A corollary whose law is also in the filtered set is not a card of its own: it is
+   * attached to its law as `children`, so a submission is one card whatever its size. Searching for a corollary's text
+   * finds its law. The same rule feeds the "In review" count, so the badge and the list total agree.
+   */
   listLaws({ status, q, limit, offset }: AdminListParams) {
-    const conditions: string[] = [];
-    const params: (string | number)[] = [];
+    const topLevel = topLevelCondition(status);
+    const conditions: string[] = [topLevel.sql];
+    const params: (string | number)[] = [...topLevel.params];
 
     if (status !== 'all') {
-      conditions.push('status = ?');
+      conditions.push('l.status = ?');
       params.push(status);
     }
     if (q) {
       const like = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
-      conditions.push("(title LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\')");
-      params.push(like, like);
+      conditions.push(
+        `(l.title LIKE ? ESCAPE '\\' OR l.text LIKE ? ESCAPE '\\' OR l.id IN (
+          SELECT r.to_law_id FROM law_relations r JOIN laws c ON c.id = r.from_law_id
+          WHERE r.relation_type = ? AND (c.title LIKE ? ESCAPE '\\' OR c.text LIKE ? ESCAPE '\\')))`,
+      );
+      params.push(like, like, COROLLARY_RELATION, like, like);
     }
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const where = `WHERE ${conditions.join(' AND ')}`;
 
-    const { total } = this.db.prepare(`SELECT COUNT(*) AS total FROM laws ${where}`).get(...params) as { total: number };
+    const { total } = this.db.prepare(`SELECT COUNT(*) AS total FROM laws l ${where}`).get(...params) as { total: number };
     const rows = this.db
-      .prepare(`SELECT ${LAW_COLUMNS} FROM laws ${where} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`)
+      .prepare(`SELECT ${LAW_COLUMNS} FROM laws l ${where} ORDER BY l.created_at DESC, l.id DESC LIMIT ? OFFSET ?`)
       .all(...params, limit, offset) as AdminLawRow[];
 
-    return { data: this.attachCandidates(this.attachDetails(rows)), total, counts: this.statusCounts(), categories: this.listCategories() };
+    return {
+      data: this.attachChildren(this.attachCandidates(this.attachDetails(rows))),
+      total,
+      counts: this.statusCounts(),
+      categories: this.listCategories(),
+    };
   }
 
   /** Every category a moderator may pick, in the order shown in the selector. */
@@ -210,7 +252,7 @@ export class AdminLawService {
       const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
       return {
         outcome: 'updated',
-        law: this.attachCandidates(this.attachDetails([row]))[0],
+        law: this.attachChildren(this.attachCandidates(this.attachDetails([row])))[0],
         previousStatus: before.status,
         previousCategoryIds,
         isCorollary: isChild(this.db, id),
@@ -292,6 +334,11 @@ export class AdminLawService {
       }
       throw error;
     }
+  }
+
+  /** The corollaries a thank-you may mention: only those that are published together with the law. */
+  publishedCorollaries(id: number): RelatedLaw[] {
+    return getCorollaries(this.db, id);
   }
 
   /** Records the thank-you without touching updated_at, so open admin pages do not see a false conflict. */
@@ -380,6 +427,7 @@ export class AdminLawService {
     });
   }
 
+  /** Published and Rejected count rows. In review counts submissions: a corollary waiting with its law is not one. */
   private statusCounts(): Record<AdminLawStatus, number> {
     const counts: Record<AdminLawStatus, number> = { published: 0, in_review: 0, rejected: 0 };
     const rows = this.db.prepare('SELECT status, COUNT(*) AS n FROM laws GROUP BY status').all() as { status: AdminLawStatus; n: number }[];
@@ -387,7 +435,33 @@ export class AdminLawService {
     for (const row of rows) {
       counts[row.status] = row.n;
     }
+    const topLevel = topLevelCondition('in_review');
+    counts.in_review = (
+      this.db.prepare(`SELECT COUNT(*) AS n FROM laws l WHERE l.status = 'in_review' AND ${topLevel.sql}`).get(...topLevel.params) as { n: number }
+    ).n;
     return counts;
+  }
+
+  /** Attaches each law's corollaries, in the order they were linked, whatever their status. */
+  private attachChildren<T extends AdminLaw>(laws: T[]): (T & { children?: AdminChildLaw[] })[] {
+    if (laws.length === 0) {
+      return laws;
+    }
+    const placeholders = laws.map(() => '?').join(',');
+    const byParent = new Map<number, AdminChildLaw[]>();
+    for (const row of this.db
+      .prepare(
+        `SELECT r.to_law_id AS parent_id, c.id, c.title, c.text, c.status, c.updated_at
+         FROM law_relations r JOIN laws c ON c.id = r.from_law_id
+         WHERE r.relation_type = ? AND r.to_law_id IN (${placeholders})
+         GROUP BY r.to_law_id, c.id
+         ORDER BY MIN(r.id)`,
+      )
+      .all(COROLLARY_RELATION, ...laws.map((law) => law.id)) as (AdminChildLaw & { parent_id: number })[]) {
+      const { parent_id: parentId, ...child } = row;
+      byParent.set(parentId, [...(byParent.get(parentId) ?? []), child]);
+    }
+    return laws.map((law) => (byParent.has(law.id) ? { ...law, children: byParent.get(law.id) } : law));
   }
 
   private attachDetails(rows: AdminLawRow[]): AdminLaw[] {

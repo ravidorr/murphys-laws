@@ -1206,7 +1206,7 @@ describe('admin page', () => {
       click(action('Approve'));
       await flush();
       expect(fetchMock).toHaveBeenCalledTimes(3);
-      expect($('message').textContent).toBe('Law #1 updated.');
+      expect($('message').textContent).toBe('Law #1 updated. 2 corollaries moved with it.');
       expect(button('Published (7)')).not.toBeNull();
     });
 
@@ -1218,6 +1218,248 @@ describe('admin page', () => {
       await flush();
       expect($('message').textContent).toContain('Approve the law instead');
       expect([...document.querySelectorAll('.actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    });
+  });
+
+  describe('a submission: a law with the corollaries its submitter sent', () => {
+    const child = (id: number, over: Record<string, unknown> = {}) => ({ id, title: `Name ${id}`, text: `Corollary text number ${id}`, status: 'in_review', updated_at: `c${id}`, ...over });
+    const submission = (over: Record<string, unknown> = {}) => law({ id: 1, children: [child(11), child(12), child(13, { status: 'rejected' })], ...over });
+    const input = (id: string) => document.getElementById(id) as HTMLInputElement & HTMLTextAreaElement;
+    const type = (id: string, value: string) => {
+      input(id).value = value;
+      input(id).dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const requests = () => fetchMock.mock.calls.slice(1).map(([url, init]) => `${init?.method ?? 'GET'} ${url}${init?.body ? ` ${init.body}` : ''}`);
+    const open = async (card = submission()) => {
+      await boot(jsonResponse(listReply([card])));
+      await connect();
+    };
+
+    it('shows one card with the corollaries nested as editable rows, a count pill and wording for all of them', async () => {
+      await open();
+      expect(document.querySelectorAll('.law').length).toBe(1);
+      expect(document.querySelector('.pill-count')?.textContent).toBe('1 law + 2 corollaries');
+      const section = document.querySelector('.children') as HTMLElement;
+      expect(section.getAttribute('aria-labelledby')).toBe(section.querySelector('h3')?.id);
+      expect(section.querySelector('h3')?.textContent).toBe('Corollaries submitted with this law');
+      const rows = [...section.querySelectorAll('.child-row')];
+      expect(rows.map((r) => r.querySelector('legend')?.textContent)).toEqual(['Corollary 1', 'Corollary 2', 'Corollary 3']);
+      expect(input('child-11-title').value).toBe('Name 11');
+      expect(input('child-11-text').value).toBe('Corollary text number 11');
+      expect(document.querySelector('label[for="child-11-text"]')?.textContent).toBe('Text');
+      expect(action('Approve all 3')).not.toBeNull();
+      expect(action('Reject all')).not.toBeNull();
+      expect(action('Approve')).toBeNull();
+      expect(document.querySelector('.actions-note')?.textContent).toBe('Rejecting the law rejects its corollaries');
+    });
+
+    it('locks a rejected corollary, keeps it visible and gives it no Reject button', async () => {
+      await open();
+      const rejected = document.querySelectorAll('.child-row')[2] as HTMLElement;
+      expect(rejected.classList.contains('is-rejected')).toBe(true);
+      expect(rejected.querySelector('.pill-rejected')).not.toBeNull();
+      expect(rejected.querySelector('button')).toBeNull();
+      expect(input('child-13-text').disabled).toBe(true);
+      expect(input('child-13-title').disabled).toBe(true);
+      expect([...document.querySelectorAll('.child-row')[0].querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Reject this corollary']);
+      expect(document.querySelector('.child-row button')?.getAttribute('aria-label')).toBe('Reject corollary 1');
+    });
+
+    it('uses the plain wording and no note for a law with no live corollary or none at all', async () => {
+      await open(submission({ children: [child(11, { status: 'rejected' })] }));
+      expect(action('Approve')).not.toBeNull();
+      expect(action('Reject')).not.toBeNull();
+      expect(document.querySelector('.pill-count')).toBeNull();
+      expect(document.querySelector('.actions-note')).toBeNull();
+    });
+
+    it('shows no note on a published law with corollaries, which offers Move to review', async () => {
+      await open(submission({ status: 'published' }));
+      expect(action('Move to review')).not.toBeNull();
+      expect(document.querySelector('.actions-note')).toBeNull();
+      expect(document.querySelectorAll('.child-row').length).toBe(3);
+    });
+
+    it('approves all: saves the corollaries first with their own guards, then the law, then reloads', async () => {
+      await open();
+      type('child-12-text', ' The edited second corollary ');
+      type('child-11-title', '');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
+        .mockResolvedValueOnce(jsonResponse({ data: child(12) }))
+        .mockResolvedValueOnce(jsonResponse({ data: submission({ status: 'published' }), cascaded: 2, thank_you: { status: 'queued' } }))
+        .mockResolvedValueOnce(jsonResponse(listReply([], { total: 0, counts: { in_review: 0, published: 7, rejected: 1 } })));
+      click(action('Approve all 3'));
+      await flush();
+
+      expect(requests()).toEqual([
+        'POST /api/v1/admin/laws/11 {"title":null,"updated_at":"c11"}',
+        'POST /api/v1/admin/laws/12 {"text":"The edited second corollary","updated_at":"c12"}',
+        'POST /api/v1/admin/laws/1 {"status":"published","updated_at":"v1"}',
+        expect.stringContaining('GET /api/v1/admin/laws?status=in_review'),
+      ]);
+      expect($('message').textContent).toBe('Law #1 updated. 2 corollaries moved with it. Thank-you email is being sent (delivery is not confirmed).');
+      expect(button('Published (7)')).not.toBeNull();
+    });
+
+    it('approves all with no edits in one request, then reloads', async () => {
+      await open();
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: submission({ status: 'published' }), cascaded: 1 }))
+        .mockResolvedValueOnce(jsonResponse(listReply([])));
+      click(action('Approve all 3'));
+      await flush();
+      expect(requests()).toEqual(['POST /api/v1/admin/laws/1 {"status":"published","updated_at":"v1"}', expect.stringContaining('GET ')]);
+      expect($('message').textContent).toContain('1 corollary moved with it.');
+    });
+
+    it('reloads after a save of a law whose corollaries it shows, even when none moved', async () => {
+      await open();
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: submission({ admin_notes: 'x' }) }))
+        .mockResolvedValueOnce(jsonResponse(listReply([submission({ admin_notes: 'x' })])));
+      type('notes-1', 'x');
+      click(action('Save edits'));
+      await flush();
+      expect(requests()).toHaveLength(2);
+      expect($('message').textContent).toBe('Law #1 updated.');
+    });
+
+    it('rejects all in one request, which rejects the corollaries on the server', async () => {
+      await open();
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: submission({ status: 'rejected' }), cascaded: 2 }))
+        .mockResolvedValueOnce(jsonResponse(listReply([])));
+      click(action('Reject all'));
+      await flush();
+      expect(requests()[0]).toBe('POST /api/v1/admin/laws/1 {"status":"rejected","updated_at":"v1"}');
+      expect($('message').textContent).toContain('2 corollaries moved with it.');
+    });
+
+    it('saves only corollary edits and reloads, without touching the law', async () => {
+      await open();
+      type('child-11-text', 'A corollary rewritten by the moderator');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
+        .mockResolvedValueOnce(jsonResponse(listReply([submission()])));
+      click(action('Save edits'));
+      await flush();
+      expect(requests()).toEqual([
+        'POST /api/v1/admin/laws/11 {"text":"A corollary rewritten by the moderator","updated_at":"c11"}',
+        expect.stringContaining('GET '),
+      ]);
+      expect($('message').textContent).toBe('Law #1 updated.');
+    });
+
+    it('says when a corollary-only save was kept but the list could not refresh', async () => {
+      await open();
+      type('child-11-text', 'A corollary rewritten by the moderator');
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: child(11) })).mockResolvedValueOnce(jsonResponse({ error: 'boom' }, 500));
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('Law #1 was saved, but the list could not refresh. Click a tab to reload.');
+    });
+
+    it('reports no changes when nothing on the card differs', async () => {
+      await open();
+      click(action('Save edits'));
+      await flush();
+      expect($('message').textContent).toBe('Law #1 has no changes.');
+      expect(requests()).toEqual([]);
+    });
+
+    it('stops before any request when a corollary field would be refused, naming the corollary', async () => {
+      await open();
+      type('child-12-text', 'short');
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toBe('Corollary 2 must be between 10 and 1000 characters.');
+      expect($('message').classList.contains('is-error')).toBe(true);
+      expect(requests()).toEqual([]);
+    });
+
+    it('stops at the first corollary the server refuses and does not approve the law', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      type('child-12-text', 'Second edited corollary text');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
+        .mockResolvedValueOnce(jsonResponse({ error: 'Corollary text is not allowed' }, 400));
+      click(action('Approve all 3'));
+      await flush();
+      expect(requests()).toHaveLength(2);
+      expect($('message').textContent).toBe('Corollary text is not allowed');
+      expect([...document.querySelectorAll('.actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    });
+
+    it.each([
+      [409, 'Corollary changed'],
+      [404, 'Law not found'],
+    ])('reloads when a corollary save answers %s', async (code, error) => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error }, code)).mockResolvedValueOnce(jsonResponse(listReply([submission()])));
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toBe('Corollary #11 changed since you loaded it. The list was reloaded; apply your edit again.');
+      expect(requests()).toHaveLength(2);
+    });
+
+    it('keeps the server message when the list also cannot be reloaded after a stale corollary', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Gone' }, 409)).mockResolvedValueOnce(jsonResponse({ error: 'x' }, 429));
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toBe('Gone');
+    });
+
+    it('rejects one corollary on its own, then reloads and says edits were discarded', async () => {
+      await open();
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(12, { status: 'rejected' }) }))
+        .mockResolvedValueOnce(jsonResponse(listReply([submission({ children: [child(11), child(12, { status: 'rejected' }), child(13, { status: 'rejected' })] })])));
+      click(document.querySelectorAll('.child-row')[1].querySelector('button'));
+      await flush();
+
+      expect(requests()[0]).toBe('POST /api/v1/admin/laws/12 {"status":"rejected","updated_at":"c12"}');
+      expect($('message').textContent).toBe('Corollary #12 was rejected. Unsaved edits on the card were discarded.');
+      expect(action('Approve all 2')).not.toBeNull();
+      expect(document.querySelectorAll('.child-row.is-rejected').length).toBe(2);
+    });
+
+    it('re-enables the card and shows why when a single reject fails, and recovers from a stale corollary', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Server problem' }, 500));
+      click(document.querySelector('.child-row button'));
+      await flush();
+      expect($('message').textContent).toBe('Server problem');
+      expect([...document.querySelectorAll('.law button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'stale' }, 409)).mockResolvedValueOnce(jsonResponse(listReply([submission()])));
+      click(document.querySelector('.child-row button'));
+      await flush();
+      expect($('message').textContent).toContain('Corollary #11 changed since you loaded it');
+    });
+
+    it('says the reject was saved when the list cannot refresh afterwards', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: child(11, { status: 'rejected' }) })).mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+      click(document.querySelector('.child-row button'));
+      await flush();
+      expect($('message').textContent).toBe('Corollary #11 was rejected, but the list could not refresh. Click a tab to reload.');
+    });
+
+    it('renders corollary text as text, never as HTML', async () => {
+      await open(submission({ children: [child(11, { title: '<b>t</b>', text: '<img src=x onerror="window.pwned=1"> corollary' })] }));
+      expect(document.querySelector('.child-row img')).toBeNull();
+      expect(input('child-11-text').value).toContain('<img src=x');
+    });
+
+    it('treats a card without a children list as an ordinary law', async () => {
+      await open(law());
+      expect(document.querySelector('.children')).toBeNull();
+      expect(action('Approve')).not.toBeNull();
     });
   });
 });

@@ -226,6 +226,95 @@ describe('admin API through the real server and migrated database', () => {
     });
   });
 
+  describe('submitting corollaries with a law and reviewing them as one submission', () => {
+    const flush = () => new Promise((resolve) => setImmediate(resolve));
+    const ONE = 'The engine restarts slowly when someone behind you is honking.';
+    const TWO = 'The green lasts just long enough for you to miss it.';
+    let submitted: { id: number; corollaries: { id: number }[] };
+
+    const queue = async (extra = '') => (await request('GET', `/api/v1/admin/laws?status=in_review${extra}`, { token: TOKEN })).json();
+    const statuses = () => [submitted.id, ...submitted.corollaries.map((c) => c.id)].map((id) => (db.prepare('SELECT status FROM laws WHERE id = ?').get(id) as { status: string }).status);
+
+    beforeEach(async () => {
+      db.prepare('DELETE FROM laws WHERE id = ?').run(lawId);
+      const reply = await request('POST', '/api/v1/laws', {
+        body: { title: 'Start-Stop', text: 'A red light turns green right after you stop watching it.', author: 'Ringo', email: 'ringo@example.com', corollaries: [{ title: 'The Ignition Corollary', text: ONE }, { text: TWO }] },
+      });
+      expect(reply.status).toBe(201);
+      submitted = reply.json();
+      await flush();
+    });
+
+    it('answers with the created corollaries and emails the moderator one message that lists them', () => {
+      expect(submitted.corollaries).toHaveLength(2);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      const mail = mockSendMail.mock.calls[0][0];
+      expect(mail.to).toBe('admin@murphys-laws.com');
+      expect(mail.text).toContain(`Corollary 1: The Ignition Corollary - ${ONE}`);
+      expect(mail.html).toContain(TWO);
+    });
+
+    it('shows one card with nested corollaries and a badge that counts the submission once', async () => {
+      const body = await queue();
+      expect(body.data.map((l: { id: number }) => l.id)).toEqual([submitted.id]);
+      expect(body.total).toBe(1);
+      expect(body.counts.in_review).toBe(1);
+      expect(body.data[0].children.map((c: { text: string }) => c.text)).toEqual([ONE, TWO]);
+      expect((await queue('&q=honking')).data.map((l: { id: number }) => l.id)).toEqual([submitted.id]);
+    });
+
+    it('approves the law and publishes every corollary in one step, thanking the submitter once and listing them', async () => {
+      mockSendMail.mockClear();
+      const approved = await request('POST', `/api/v1/admin/laws/${submitted.id}`, { token: TOKEN, body: { status: 'published' } });
+      await flush();
+
+      expect(approved.status).toBe(200);
+      expect(approved.json().cascaded).toBe(2);
+      expect(statuses()).toEqual(['published', 'published', 'published']);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      const mail = mockSendMail.mock.calls[0][0];
+      expect(mail.to).toEqual({ name: '', address: 'ringo@example.com' });
+      expect(mail.text).toContain(ONE);
+      expect(mail.text).toContain(`/law/${submitted.corollaries[1].id}`);
+
+      const page = (await request('GET', `/api/v1/laws/${submitted.id}`)).json();
+      expect(page.corollaries.map((c: { id: number }) => c.id)).toEqual(submitted.corollaries.map((c) => c.id));
+      expect((await queue()).counts.in_review).toBe(0);
+    });
+
+    it('rejects one corollary on its own, then approves the rest, and leaves the rejected one out of the thank-you', async () => {
+      mockSendMail.mockClear();
+      const [first, second] = submitted.corollaries;
+      expect((await request('POST', `/api/v1/admin/laws/${first.id}`, { token: TOKEN, body: { status: 'rejected' } })).status).toBe(200);
+      const card = (await queue()).data[0];
+      expect(card.children.map((c: { status: string }) => c.status)).toEqual(['rejected', 'in_review']);
+      expect((await queue()).counts.in_review).toBe(1);
+
+      const edit = await request('POST', `/api/v1/admin/laws/${second.id}`, { token: TOKEN, body: { text: `${TWO} Edited.`, updated_at: card.children[1].updated_at } });
+      expect(edit.status).toBe(200);
+      await request('POST', `/api/v1/admin/laws/${submitted.id}`, { token: TOKEN, body: { status: 'published' } });
+      await flush();
+
+      expect(statuses()).toEqual(['published', 'rejected', 'published']);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      const mail = mockSendMail.mock.calls[0][0];
+      expect(mail.text).toContain(`${TWO} Edited.`);
+      expect(mail.text).not.toContain(ONE);
+    });
+
+    it('rejects the whole submission with its corollaries', async () => {
+      const rejected = await request('POST', `/api/v1/admin/laws/${submitted.id}`, { token: TOKEN, body: { status: 'rejected' } });
+      expect(rejected.json().cascaded).toBe(2);
+      expect(statuses()).toEqual(['rejected', 'rejected', 'rejected']);
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses an oversized or malformed submission body', async () => {
+      expect((await request('POST', '/api/v1/laws', { raw: JSON.stringify({ text: 'A perfectly fine law text.', pad: 'x'.repeat(33 * 1024) }) })).status).toBe(413);
+      expect((await request('POST', '/api/v1/laws', { body: { text: 'A perfectly fine law text.', corollaries: [{ text: 'short' }] } })).status).toBe(400);
+    });
+  });
+
   it('answers 404 for an unknown law', async () => {
     const reply = await request('POST', '/api/v1/admin/laws/999999', { token: TOKEN, body: { status: 'rejected' } });
     expect(reply.status).toBe(404);

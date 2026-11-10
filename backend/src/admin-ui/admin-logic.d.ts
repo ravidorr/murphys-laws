@@ -55,3 +55,21 @@ export function buildSplitBody(
   law: AdminLawLike & { updated_at?: string },
   edits: { title?: string; notes?: string; categoryId?: number; parentText: string; rows: SplitRow[] },
 ): Record<string, unknown>;
+
+export interface AdminChild {
+  id: number;
+  title: string | null;
+  text: string;
+  status: string;
+  updated_at?: string;
+}
+export interface AdminSubmissionLike extends AdminLawLike {
+  children?: AdminChild[];
+}
+export type ChildValues = Record<number, { title: string; text: string }>;
+export function liveChildren(law: AdminSubmissionLike): AdminChild[];
+export function describeSubmission(law: AdminSubmissionLike): string;
+export function describeQueueActions(law: AdminSubmissionLike): { approve: string; reject: string };
+export function buildChildUpdates(law: AdminSubmissionLike, values: ChildValues): { id: number; body: Record<string, string | number | null> }[];
+export function validateChildEdits(law: AdminSubmissionLike, values: ChildValues): string[];
+export function describeCascade(cascaded: unknown): string;

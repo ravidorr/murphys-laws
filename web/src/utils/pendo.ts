@@ -28,6 +28,7 @@ export type PendoTrackEventName =
   | 'calculator_result_shared'
   | 'law_submitted'
   | 'law_submission_failed'
+  | 'law_corollary_added'
   | 'law_duplicate_detected'
   | 'experiment_exposed'
   | 'content_exported'

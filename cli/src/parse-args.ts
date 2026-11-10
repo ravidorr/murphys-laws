@@ -12,6 +12,8 @@ export interface ParsedArgs {
   command: string | undefined;
   positionals: string[];
   options: Record<string, string>;
+  /** Every `--corollary` value, in the order given. The flag may be repeated. */
+  corollaries: string[];
 }
 
 export class UsageError extends Error {
@@ -31,6 +33,9 @@ const GLOBAL_BOOL_FLAGS = new Set([
   '--version',
   '-v',
 ]);
+
+/** Flags that may appear more than once; their values are collected in order instead of the last one winning. */
+const REPEATABLE_FLAGS = new Set(['--corollary']);
 
 export const COMMAND_VALUE_FLAGS = new Set([
   '--limit',
@@ -54,6 +59,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   };
   const positionals: string[] = [];
   const options: Record<string, string> = {};
+  const corollaries: string[] = [];
   let command: string | undefined;
 
   let i = 0;
@@ -119,12 +125,27 @@ export function parseArgs(argv: string[]): ParsedArgs {
         i++;
         continue;
       }
+      if (REPEATABLE_FLAGS.has(key)) {
+        corollaries.push(value);
+        i++;
+        continue;
+      }
       if (COMMAND_VALUE_FLAGS.has(key)) {
         options[key.slice(2)] = value;
         i++;
         continue;
       }
       throw new UsageError(`Unknown flag: ${key}`);
+    }
+
+    if (REPEATABLE_FLAGS.has(arg)) {
+      const value = argv[i + 1];
+      if (value === undefined) {
+        throw new UsageError(`Missing value for ${arg}`);
+      }
+      corollaries.push(value);
+      i += 2;
+      continue;
     }
 
     if (COMMAND_VALUE_FLAGS.has(arg)) {
@@ -149,7 +170,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     i++;
   }
 
-  return { flags, command, positionals, options };
+  return { flags, command, positionals, options, corollaries };
 }
 
 export function parseIntOption(

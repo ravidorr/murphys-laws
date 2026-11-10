@@ -25,6 +25,7 @@ Options:
   --title <string>        Title for submit
   --author <string>       Author for submit
   --text <string>         Text for submit (alternative to positional)
+  --corollary <string>    Corollary of the submitted law (repeat up to 5 times)
   -h, --help              Show this help
   -v, --version           Show CLI version
 

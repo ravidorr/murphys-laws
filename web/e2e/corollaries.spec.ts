@@ -80,3 +80,73 @@ test('the corollaries list fits a phone screen', async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
 });
+
+test('the Add a corollary link on a law page opens the submit form', async ({ page }) => {
+  await page.goto('/law/901');
+
+  await page.locator('section.corollary-list').getByRole('link', { name: 'Add a corollary' }).click();
+  await expect(page).toHaveURL(/\/submit$/);
+  await expect(page.getByRole('group', { name: /Corollaries/ })).toBeVisible();
+});
+
+test.describe('submitting a law with corollaries', () => {
+  const lawText = 'A red light turns green right after you stop watching it.';
+  const first = 'The engine restarts slowly when someone behind you is honking.';
+  const second = 'The green lasts just long enough for you to miss it.';
+
+  test.beforeEach(async ({ page }) => {
+    await page.route(/\/api\/v1\/categories(\?.*)?$/, (route) => route.fulfill({ json: { data: [] } }));
+    await page.route(/\/api\/v1\/laws\/duplicates/, (route) => route.fulfill({ json: { data: [], text: '', limit: 5 } }));
+  });
+
+  test('adds two corollaries, labels the button after them and sends them with the law', async ({ page }) => {
+    let sent: Record<string, unknown> | null = null;
+    await page.route(/\/api\/v1\/laws$/, async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      sent = route.request().postDataJSON();
+      return route.fulfill({
+        status: 201,
+        json: { id: 9001, title: null, text: lawText, status: 'in_review', corollaries: [{ id: 9002, title: 'The Ignition Corollary', text: first }, { id: 9003, title: null, text: second }], message: 'ok' }
+      });
+    });
+    await page.goto('/submit');
+
+    await page.getByLabel(/Law Text/).fill(lawText);
+    await page.getByRole('button', { name: '+ Add a corollary' }).click();
+    await page.getByLabel('Name (optional)').first().fill('The Ignition Corollary');
+    await page.getByLabel('Text', { exact: true }).first().fill(first);
+    await page.getByRole('button', { name: '+ Add a corollary' }).click();
+    await page.getByLabel('Text', { exact: true }).nth(1).fill(second);
+    await page.getByLabel(/I release this law/).check();
+
+    await expect(page.getByText('2 of 5 added')).toBeVisible();
+    const submit = page.locator('#submit-btn');
+    await expect(submit).toHaveText('Submit law with 2 corollaries');
+    await submit.click();
+
+    await expect(page.locator('.submit-message')).toContainText('Your law and its 2 corollaries have been submitted');
+    expect(sent).toMatchObject({
+      text: lawText,
+      corollaries: [{ title: 'The Ignition Corollary', text: first }, { text: second }]
+    });
+  });
+
+  test('moves bullets typed into the law text into boxes, and the form fits a phone screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/submit');
+
+    await page.getByLabel(/Law Text/).fill(`${lawText}\n\n• The Ignition Corollary: ${first}\n• The Green-Light Corollary: ${second}`);
+    await expect(page.getByText('Looks like your text includes 2 corollaries.')).toBeVisible();
+    await page.getByRole('button', { name: 'Move them into the boxes' }).click();
+
+    await expect(page.getByText(/2 of 5 added/)).toBeVisible();
+    await expect(page.getByLabel(/Law Text/)).toHaveValue(lawText);
+    await expect(page.getByLabel('Text', { exact: true }).first()).toHaveValue(first);
+    // The page's hidden spam-trap field is wider than a phone, so measure the corollaries group itself
+    const overflow = await page.evaluate(() => {
+      const right = document.querySelector('[data-corollaries]')!.getBoundingClientRect().right;
+      return right > window.innerWidth;
+    });
+    expect(overflow).toBe(false);
+  });
+});
