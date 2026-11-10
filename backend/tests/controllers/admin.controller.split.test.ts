@@ -148,6 +148,31 @@ describe('AdminController split and corollary rules', () => {
       });
     });
 
+    it('lists the title among the logged fields when it was given, and ignores unknown extra fields', async () => {
+      await split(body({ title: 'T', status: 'rejected', corollary_of: 3 }));
+      expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string).fields).toEqual(['text', 'title']);
+      expect(service.splitLaw.mock.calls[0][1]).not.toHaveProperty('status');
+      expect(service.splitLaw.mock.calls[0][1]).not.toHaveProperty('corollary_of');
+    });
+
+    it.each([
+      [{ updated_at: undefined }, 'updated_at is required'],
+      [{ parent_text: 'x'.repeat(9) }, 'Law text must be between 10 and 1000 characters'],
+      [{ corollaries: [] }, 'Provide between 1 and 5 corollaries'],
+      [{ corollaries: [1, 2, 3, 4, 5, 6].map((n) => ({ title: null, text: `Corollary text number ${n}` })) }, 'Provide between 1 and 5 corollaries'],
+      [{ corollaries: [{ title: 'x'.repeat(201), text: ONE }] }, 'Corollary 1 title must be at most 200 characters'],
+      [{ corollaries: [{ title: 'A', text: ONE }, { title: 'B', text: ONE }] }, 'Corollary 2 repeats another corollary or the law text'],
+      [{ category_id: 0 }, 'category_id must be a positive integer'],
+      [{ category_id: -1 }, 'category_id must be a positive integer'],
+      [{ category_id: 1.5 }, 'category_id must be a positive integer'],
+      [{ category_id: null }, 'category_id must be a positive integer'],
+      [{ admin_notes: 'x'.repeat(2001) }, 'admin_notes must be at most 2000 characters'],
+    ])('answers 400 with the exact message for %j', async (over, message) => {
+      await split(body(over));
+      expect(status()).toBe(400);
+      expect(payload()).toEqual({ error: message });
+    });
+
     it('logs without category fields when the category was not changed', async () => {
       await split(body());
       expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string)).toMatchObject({ fields: ['text'], thankYou: 'queued' });

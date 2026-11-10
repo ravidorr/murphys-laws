@@ -180,6 +180,7 @@ async function refillIfEmpty(lawId) {
 /** 409 and 404 leave a stale card behind, so the list is brought back in line with the server. */
 async function recoverFromSaveError(error, law, item, actions) {
   if (error.status === 409) {
+    setBusy(actions, false);
     const ok = await load({}, false);
     say(ok
       ? `Law #${law.id} changed since you loaded it. The list was reloaded; apply your edit again.`
@@ -187,6 +188,7 @@ async function recoverFromSaveError(error, law, item, actions) {
     return;
   }
   if (error.status === 400 && error.message === 'Unknown category') {
+    setBusy(actions, false);
     const ok = await load({}, false);
     say(ok
       ? 'That category no longer exists. The list was reloaded; pick a category again.'
@@ -219,7 +221,7 @@ function categoryOptions(law, serverCategories) {
 }
 
 /**
- * The inline split review for a law whose text holds bullets. It takes over the card's Law field and footer until the
+ * The inline split review for a law whose text holds bullets. It takes over the card's Law field, banner and footer until the
  * moderator approves or cancels; the title, category and notes fields of the card are reused, not repeated.
  * Nothing is split unless the moderator approves, and the server applies exactly the body built here.
  */
@@ -374,9 +376,9 @@ function openSplitReview({ law, item, card, reviewButton }) {
       parentText: parentText.value,
       rows,
     });
-    const laws = countCorollaries(rows) + 1;
     busy = true;
     setBusy(footer, true);
+    panel.inert = true;
     let reply;
     try {
       reply = await api(`/api/v1/admin/laws/${law.id}/split`, { method: 'POST', body: JSON.stringify(body) });
@@ -386,19 +388,29 @@ function openSplitReview({ law, item, card, reviewButton }) {
     } catch (error) {
       await recoverFromSaveError(error, law, item, footer);
       busy = false;
+      panel.inert = false;
       refresh();
+      if (panel.isConnected) {
+        // The button that had focus was disabled during the request; give focus back to it.
+        (approve.disabled ? cancel : approve).focus();
+      }
       return;
     }
 
-    // Counts change by the number of laws published, so the list is reloaded rather than patched.
+    // The split is saved from here on, so nothing below may leave the review open and resubmittable.
+    const laws = (Array.isArray(reply.corollaries) ? reply.corollaries.length : countCorollaries(rows)) + 1;
     const thanks = describeThankYou(reply.thank_you);
     const ok = await load({}, false);
-    say(ok
-      ? `Law #${law.id} was split into ${laws} laws.${thanks}`
-      : `Law #${law.id} was split into ${laws} laws, but the list could not refresh. Click a tab to reload.${thanks}`, !ok);
     if (ok) {
+      say(`Law #${law.id} was split into ${laws} laws.${thanks}`);
       messageEl.focus();
+      return;
     }
+    // The list could not refresh, so the card still on screen is stale: put it back as it was.
+    busy = false;
+    panel.inert = false;
+    close();
+    say(`Law #${law.id} was split into ${laws} laws, but the list could not refresh. Click a tab to reload.${thanks}`, true);
   };
 
   addButton.addEventListener('click', () => {
@@ -504,7 +516,9 @@ function renderLaw(law, serverCategories = state.categories) {
       if (change.removed) {
         item.remove();
       } else {
-        item.replaceWith(renderLaw(updated));
+        // The split seed belongs to the saved text; the saved reply does not carry it, so keep it while the text is unchanged.
+        const keepsSeed = law.corollary_candidates && updated.status === 'in_review' && updated.text === law.text;
+        item.replaceWith(renderLaw(keepsSeed ? { ...updated, corollary_candidates: law.corollary_candidates } : updated));
       }
       say(`Law #${law.id} updated.${thanks}`);
       await refillIfEmpty(law.id);
@@ -539,12 +553,19 @@ function renderLaw(law, serverCategories = state.categories) {
     const banner = el('div', 'split-banner');
     const reviewButton = el('button', 'btn', 'Review split');
     reviewButton.type = 'button';
-    reviewButton.addEventListener('click', () => openSplitReview({
-      law,
-      item,
-      card: { textField, banner, actions, title, notes, category },
-      reviewButton,
-    }));
+    reviewButton.addEventListener('click', () => {
+      // The review starts from the saved text, so an unsaved edit to the Law field would be lost on approval.
+      if (text.value.trim() !== law.text.trim()) {
+        say(`Law #${law.id}: save or undo your edit to the law text before reviewing the split.`, true);
+        return;
+      }
+      openSplitReview({
+        law,
+        item,
+        card: { textField, banner, actions, title, notes, category },
+        reviewButton,
+      });
+    });
     const note = el('p', 'split-banner-text');
     note.append(el('strong', null, describeCandidates(law.corollary_candidates)), ' Split them so each becomes its own law, linked to this one.');
     banner.append(note, reviewButton);

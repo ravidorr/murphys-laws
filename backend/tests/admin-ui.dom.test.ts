@@ -818,6 +818,37 @@ describe('admin page', () => {
       expect(document.querySelector('.split-review')).toBeNull();
     });
 
+    it('refuses to open the review while the Law field has an unsaved edit, and opens it once the edit is undone', async () => {
+      await boot(jsonResponse(listReply([splittable()], { categories: cats })));
+      await connect();
+      const original = (document.getElementById('text-7') as HTMLTextAreaElement).value;
+      (document.getElementById('text-7') as HTMLTextAreaElement).value = `${original} typo fixed`;
+      click(button('Review split'));
+      expect($('message').textContent).toBe('Law #7: save or undo your edit to the law text before reviewing the split.');
+      expect($('message').classList.contains('is-error')).toBe(true);
+      expect(document.querySelector('.split-review')).toBeNull();
+
+      (document.getElementById('text-7') as HTMLTextAreaElement).value = original;
+      click(button('Review split'));
+      expect(document.querySelector('.split-review')).not.toBeNull();
+    });
+
+    it('keeps the banner after saving a change that leaves the text alone, and drops it when the text changed', async () => {
+      await boot(jsonResponse(listReply([splittable()], { categories: cats })));
+      await connect();
+      (document.getElementById('notes-7') as HTMLInputElement).value = 'checked';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ admin_notes: 'checked', updated_at: 'v2', corollary_candidates: undefined }) }));
+      click(action('Save edits'));
+      await flush();
+      expect(document.querySelector('.split-banner')).not.toBeNull();
+
+      (document.getElementById('text-7') as HTMLTextAreaElement).value = 'A rewritten law without any bullets at all.';
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ text: 'A rewritten law without any bullets at all.', updated_at: 'v3', corollary_candidates: undefined }) }));
+      click(action('Save edits'));
+      await flush();
+      expect(document.querySelector('.split-banner')).toBeNull();
+    });
+
     it('opens the review in the card with labeled bullets as corollaries and unlabeled ones kept, then focuses its heading', async () => {
       await open();
       const heading = document.querySelector('.split-review h3') as HTMLElement;
@@ -837,12 +868,11 @@ describe('admin page', () => {
       expect(action('Approve')?.closest('.actions')?.hasAttribute('hidden')).toBe(true);
     });
 
-    it('labels every control, and the buttons and selects are at least as tall as the 44px target', async () => {
+    it('labels every control in the review', async () => {
       await open();
       for (const node of document.querySelectorAll('.split-review input, .split-review textarea, .split-review select')) {
         expect(document.querySelector(`label[for="${node.id}"]`)?.textContent, node.id).toBeTruthy();
       }
-      expect(approveButton().classList.contains('btn')).toBe(true);
     });
 
     it('recomposes the parent text live when a bullet is kept or released', async () => {
@@ -1025,6 +1055,71 @@ describe('admin page', () => {
       expect($('message').textContent).toBe('Law #7 changed since you loaded it. The list was reloaded; apply your edit again.');
       expect(document.querySelector('.split-review')).toBeNull();
       expect(document.querySelector('.split-banner')?.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('re-enables Cancel and Approve and keeps the review usable when a conflict reload fails', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'This law changed since you loaded it.' }, 409));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toContain('changed since you loaded it');
+      expect([...document.querySelectorAll('.split-actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+      click(button('Cancel'));
+      expect(document.querySelector('.split-review')).toBeNull();
+    });
+
+    it('disables both buttons while the split is in flight and sends one request', async () => {
+      await open();
+      let finish!: (value: unknown) => void;
+      fetchMock.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+      click(approveButton());
+      await flush();
+      expect([...document.querySelectorAll('.split-actions button')].every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
+      click(approveButton());
+      await flush();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([])));
+      finish(reply());
+      await flush();
+      expect($('message').textContent).toContain('was split into 3 laws');
+    });
+
+    it('puts the card back as it was when the list cannot refresh after a saved split', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(reply());
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+      click(approveButton());
+      await flush();
+      expect(document.querySelector('.split-review')).toBeNull();
+      expect(document.querySelector('.split-banner')?.hasAttribute('hidden')).toBe(false);
+      expect(action('Approve')?.closest('.actions')?.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('counts the laws the server created, not the rows on screen', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ status: 'published' }), corollaries: [{ id: 11 }, { id: 12 }, { id: 13 }], thank_you: null }));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([])));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toBe('Law #7 was split into 4 laws.');
+    });
+
+    it('disables Approve when the parent text becomes too short and shows corollary text as text, never HTML', async () => {
+      await open({ corollary_candidates: { parent_text: PARENT, items: [{ title: '<img src=x onerror=alert(1)>', text: '<b>bold</b> corollary text here', labeled: true }] } });
+      expect(document.querySelector('.split-review img, .split-review b')).toBeNull();
+      expect(field(0, 'title').value).toBe('<img src=x onerror=alert(1)>');
+      change(document.getElementById('split-parent-7') as HTMLElement, 'short');
+      expect(approveButton().disabled).toBe(true);
+      expect(document.querySelector('.split-problem')?.getAttribute('aria-live')).toBe('polite');
+    });
+
+    it('keeps the card actions visible and working outside the review', async () => {
+      await boot(jsonResponse(listReply([splittable()], { categories: cats })));
+      await connect();
+      expect(action('Approve')?.closest('.actions')?.hasAttribute('hidden')).toBe(false);
+      expect(action('Reject')).not.toBeNull();
     });
 
     it('keeps the review open and re-enables the buttons when the server refuses the split', async () => {

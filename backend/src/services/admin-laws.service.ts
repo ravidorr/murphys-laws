@@ -3,6 +3,7 @@ import { canOfferSplit, parseCorollaries, type CorollaryItem } from '../../../sh
 import {
   COROLLARY_RELATION,
   createCorollaryChildren,
+  hasCorollaries,
   isChild,
   LAW_RELATION_ERROR_STATUS,
   LawRelationError,
@@ -173,7 +174,7 @@ export class AdminLawService {
     sets.push(`updated_at = ${NOW}`);
 
     const apply = this.db.transaction((): AdminUpdateResult => {
-      const before = this.db.prepare('SELECT status FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus } | undefined;
+      const before = this.db.prepare('SELECT status, updated_at FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus; updated_at: string } | undefined;
       if (!before) {
         return { outcome: 'not_found' };
       }
@@ -181,7 +182,10 @@ export class AdminLawService {
       const publishing = update.status === 'published' && before.status !== 'published';
       const unpublishedParent = publishing ? this.findUnpublishedParent(id) : undefined;
       if (unpublishedParent !== undefined) {
-        return { outcome: 'parent_not_published', parentId: unpublishedParent };
+        // A page that is out of date gets the reload that a conflict triggers, not a refusal about a state it never saw.
+        return update.expectedUpdatedAt !== undefined && update.expectedUpdatedAt !== before.updated_at
+          ? { outcome: 'conflict' }
+          : { outcome: 'parent_not_published', parentId: unpublishedParent };
       }
 
       if (update.categoryId !== undefined && !this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(update.categoryId)) {
@@ -221,16 +225,28 @@ export class AdminLawService {
    * broken corollary rule, rolls the whole split back and leaves the law exactly as it was.
    */
   splitLaw(id: number, split: AdminSplitInput): AdminSplitResult {
+    // The controller enforces the same limit; a caller that skips it would otherwise publish the law with nothing split.
+    if (split.corollaries.length === 0) {
+      return { outcome: 'invalid', status: 400, message: 'A split needs at least one corollary' };
+    }
     const apply = this.db.transaction((): AdminSplitResult => {
-      const before = this.db.prepare('SELECT status FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus } | undefined;
+      const before = this.db.prepare('SELECT status, updated_at FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus; updated_at: string } | undefined;
       if (!before) {
         return { outcome: 'not_found' };
       }
       if (before.status !== 'in_review') {
-        return { outcome: 'invalid', status: 400, message: 'Only a law in review can be split' };
+        // A law that someone else already split, approved or rejected is a stale page, not a bad request: the admin page
+        // reloads on a conflict. Only a law the page could have seen as current is refused for its status.
+        return before.updated_at === split.expectedUpdatedAt
+          ? { outcome: 'invalid', status: 400, message: 'Only a law in review can be split' }
+          : { outcome: 'conflict' };
       }
       if (split.categoryId !== undefined && !this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(split.categoryId)) {
         return { outcome: 'invalid_category' };
+      }
+      if (hasCorollaries(this.db, id)) {
+        // Its existing corollaries would stay in review while the parent is published, and would count toward the maximum.
+        return { outcome: 'invalid', status: 400, message: 'A law that already has corollaries cannot be split; approve it instead' };
       }
       const previousCategoryIds = this.categoryIdsOf(id);
 
@@ -253,7 +269,10 @@ export class AdminLawService {
       if (split.categoryId !== undefined) {
         this.replaceCategory(id, split.categoryId);
       }
-      const submitter = this.db.prepare('SELECT name FROM attributions WHERE law_id = ? ORDER BY id LIMIT 1').get(id) as { name: string | null } | undefined;
+      // The first attribution that has a name: an email-only row ahead of it must not drop the credit.
+      const submitter = this.db
+        .prepare("SELECT name FROM attributions WHERE law_id = ? AND trim(coalesce(name, '')) != '' ORDER BY id LIMIT 1")
+        .get(id) as { name: string } | undefined;
       const children = createCorollaryChildren(this.db, id, split.corollaries, {
         status: 'published',
         categoryIds: this.categoryIdsOf(id),
@@ -304,8 +323,8 @@ export class AdminLawService {
   }
 
   /**
-   * Carries a parent's status change to its corollaries (plan section 2.2). Rejected corollaries never come back on
-   * their own, so the count is what really moved.
+   * Carries a parent's status change to its corollaries. Rejected corollaries never come back on their own.
+   * Returns the number of corollary rows actually updated.
    *  - the parent leaves published: its published corollaries follow it (to review or to rejected);
    *  - the parent is approved: its in-review corollaries are published;
    *  - the parent is rejected: its in-review corollaries are rejected too.
@@ -331,22 +350,28 @@ export class AdminLawService {
       .run(to, ...moving, parentId, COROLLARY_RELATION).changes;
   }
 
-  /** Adds the split seed to in-review laws that are not themselves corollaries. */
+  /** Adds the split seed to in-review laws that have no corollary relation on either side. */
   private attachCandidates(laws: AdminLaw[]): AdminListedLaw[] {
     const reviewable = laws.filter((law) => law.status === 'in_review');
     if (reviewable.length === 0) {
       return laws;
     }
     const placeholders = reviewable.map(() => '?').join(',');
-    const children = new Set(
-      (
-        this.db
-          .prepare(`SELECT DISTINCT from_law_id FROM law_relations WHERE relation_type = ? AND from_law_id IN (${placeholders})`)
-          .all(COROLLARY_RELATION, ...reviewable.map((law) => law.id)) as { from_law_id: number }[]
-      ).map((r) => r.from_law_id),
-    );
+    const ids = reviewable.map((law) => law.id);
+    // A corollary cannot be split, and a law that already has corollaries (for example submitted ones) would get a
+    // second set of children from the same bullets.
+    const related = new Set<number>();
+    for (const r of this.db
+      .prepare(
+        `SELECT from_law_id, to_law_id FROM law_relations
+         WHERE relation_type = ? AND (from_law_id IN (${placeholders}) OR to_law_id IN (${placeholders}))`,
+      )
+      .all(COROLLARY_RELATION, ...ids, ...ids) as { from_law_id: number; to_law_id: number }[]) {
+      related.add(r.from_law_id);
+      related.add(r.to_law_id);
+    }
     return laws.map((law): AdminListedLaw => {
-      if (law.status !== 'in_review' || children.has(law.id)) {
+      if (law.status !== 'in_review' || related.has(law.id)) {
         return law;
       }
       const parsed = parseCorollaries(law.text);

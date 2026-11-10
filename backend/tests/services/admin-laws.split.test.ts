@@ -59,6 +59,12 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       }
     });
 
+    it('does not offer a split for a law that already has corollaries', () => {
+      const parent = insertLaw(null, bulleted, 'in_review');
+      link(insertLaw(null, 'A submitted corollary of the parent law', 'in_review'), parent);
+      expect(admin.listLaws({ status: 'in_review', q: '', limit: 100, offset: 0 }).data.find((l) => l.id === parent)).not.toHaveProperty('corollary_candidates');
+    });
+
     it('does not offer a split for a law that is already a corollary', () => {
       const parent = insertLaw(null, 'A parent law with enough words in it', 'published');
       const child = insertLaw(null, bulleted, 'in_review');
@@ -178,14 +184,54 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       expect(db.prepare('SELECT COUNT(*) AS n FROM law_relations WHERE to_law_id = ?').get(id)).toEqual({ n: 0 });
     });
 
-    it('lets only one of two identical splits win', () => {
+    it('lets only one of two identical splits win, and answers the loser with a conflict so the page reloads', () => {
       const id = make();
       const first = admin.splitLaw(id, input());
       const second = admin.splitLaw(id, input());
       expect(first.outcome).toBe('split');
-      // The second sees a published law, which can no longer be split.
-      expect(second.outcome).toBe('invalid');
+      // The law is already published and its updated_at moved on: the second page is stale, not malformed.
+      expect(second).toEqual({ outcome: 'conflict' });
       expect(db.prepare('SELECT COUNT(*) AS n FROM law_relations WHERE to_law_id = ?').get(id)).toEqual({ n: 2 });
+    });
+
+    it('refuses to split a law that already has corollaries, leaving it and them untouched', () => {
+      const id = make();
+      const existing = insertLaw(null, 'A submitted corollary of the parent law', 'in_review');
+      link(existing, id);
+      const before = row(id);
+      expect(admin.splitLaw(id, input())).toEqual({
+        outcome: 'invalid',
+        status: 400,
+        message: 'A law that already has corollaries cannot be split; approve it instead',
+      });
+      expect(row(id)).toEqual(before);
+      expect(statusOf(existing)).toBe('in_review');
+    });
+
+    it('refuses a split with no corollaries before touching anything', () => {
+      const id = make();
+      const before = row(id);
+      expect(admin.splitLaw(id, input({ corollaries: [] }))).toEqual({ outcome: 'invalid', status: 400, message: 'A split needs at least one corollary' });
+      expect(row(id)).toEqual(before);
+    });
+
+    it.each([
+      ['an email-only row ahead of a named one', [[null, 'email', 'a@example.com'], ['Ringo', 'text', null]], 'Ringo'],
+      ['a blank name', [['   ', 'email', 'a@example.com']], null],
+      ['a missing name', [[null, 'email', 'a@example.com']], null],
+      ['a handle as contact', [['Ringo', 'url', 'https://example.com/ringo']], 'Ringo'],
+    ])('credits children by name only with %s', (_name, rows, expected) => {
+      const id = make(null);
+      for (const [name, type, value] of rows as [string | null, string, string | null][]) {
+        db.prepare('INSERT INTO attributions (law_id, name, contact_type, contact_value) VALUES (?, ?, ?, ?)').run(id, name, type, value);
+      }
+      const result = admin.splitLaw(id, input());
+      const children = result.outcome === 'split' ? result.children : [];
+      for (const child of children) {
+        const credits = db.prepare('SELECT name, contact_type, contact_value FROM attributions WHERE law_id = ?').all(child.id);
+        expect(credits).toEqual(expected === null ? [] : [{ name: expected, contact_type: 'text', contact_value: null }]);
+        expect(row(child.id).approval_email_sent_at).toBeNull();
+      }
     });
 
     it('reports a missing law', () => {
@@ -217,13 +263,12 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       expect(row(child)).toEqual(before);
     });
 
-    it('rolls everything back when the parent would exceed five corollaries', () => {
+    it('rolls everything back when a direct caller sends more than five corollaries', () => {
       const id = make();
-      for (let i = 0; i < 4; i += 1) link(insertLaw(null, `Existing in-review corollary number ${i}`, 'in_review'), id);
       const before = row(id);
       const lawCount = (db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n;
 
-      const result = admin.splitLaw(id, input());
+      const result = admin.splitLaw(id, input({ corollaries: items(...[1, 2, 3, 4, 5, 6].map((n) => `Corollary text number ${n}`)) }));
       expect(result).toMatchObject({ outcome: 'invalid', status: 400, message: 'A law can have at most 5 corollaries' });
       expect(row(id)).toEqual(before);
       expect((db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n).toBe(lawCount);
@@ -235,7 +280,14 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       const lawCount = (db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n;
       db.exec("CREATE TRIGGER fail_relation BEFORE INSERT ON law_relations WHEN NEW.note = 'Corollary 2' BEGIN SELECT RAISE(ABORT, 'boom'); END;");
 
-      expect(() => admin.splitLaw(id, input())).toThrow('boom');
+      const counts = () => db.prepare('SELECT (SELECT COUNT(*) FROM law_categories) AS cats, (SELECT COUNT(*) FROM attributions) AS credits').get();
+      const [first] = categories();
+      db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, first.id);
+      const countsBefore = counts();
+
+      expect(() => admin.splitLaw(id, input({ parentText: 'Zebrafish parent text that must not stay behind' }))).toThrow('boom');
+      expect(counts()).toEqual(countsBefore);
+      expect(db.prepare("SELECT rowid FROM laws_fts WHERE laws_fts MATCH 'zebrafish'").all()).toEqual([]);
       expect(row(id)).toEqual(before);
       expect((db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n).toBe(lawCount);
       expect(db.prepare('SELECT COUNT(*) AS n FROM law_relations WHERE to_law_id = ?').get(id)).toEqual({ n: 0 });
@@ -348,6 +400,32 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       expect(childStatuses()).toEqual(['rejected', 'in_review', 'rejected']);
     });
 
+    it('only moves the corollaries of this parent, never other parents\' or other relation types', () => {
+      setup('published');
+      const other = insertLaw('Other parent', 'Another parent law with enough text', 'published');
+      const otherChild = insertLaw(null, 'A published corollary of the other parent', 'published');
+      link(otherChild, other);
+      const commentary = insertLaw(null, 'A published comment on the first parent law', 'published');
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COMMENT_ON')").run(commentary, parent);
+
+      const result = admin.updateLaw(parent, { status: 'rejected' });
+      expect(result.outcome === 'updated' && result.cascaded).toBe(2);
+      expect([otherChild, commentary].map(statusOf)).toEqual(['published', 'published']);
+
+      admin.updateLaw(other, { status: 'in_review' });
+      admin.updateLaw(parent, { status: 'published' });
+      expect(statusOf(otherChild)).toBe('in_review');
+      expect(statusOf(commentary)).toBe('published');
+    });
+
+    it('brings published corollaries back as in review, then published, across a round trip of the parent', () => {
+      setup('published');
+      admin.updateLaw(parent, { status: 'in_review' });
+      expect(childStatuses()).toEqual(['in_review', 'in_review', 'rejected']);
+      admin.updateLaw(parent, { status: 'published' });
+      expect(childStatuses()).toEqual(['published', 'published', 'rejected']);
+    });
+
     describe('publishing a child', () => {
       it.each(['in_review', 'rejected'])('is refused with the parent %s, and nothing changes', (parentStatus) => {
         setup(parentStatus);
@@ -355,6 +433,12 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
         const result = admin.updateLaw(review, { status: 'published', adminNotes: 'never saved' });
         expect(result).toEqual({ outcome: 'parent_not_published', parentId: parent });
         expect(row(review)).toEqual(before);
+      });
+
+      it('answers a stale page with a conflict instead of the parent refusal', () => {
+        setup('in_review');
+        expect(admin.updateLaw(review, { status: 'published', expectedUpdatedAt: 'stale' })).toEqual({ outcome: 'conflict' });
+        expect(admin.updateLaw(review, { status: 'published', expectedUpdatedAt: GUARD })).toEqual({ outcome: 'parent_not_published', parentId: parent });
       });
 
       it('is allowed when the parent is published', () => {

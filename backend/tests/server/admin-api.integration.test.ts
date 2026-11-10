@@ -171,6 +171,19 @@ describe('admin API through the real server and migrated database', () => {
       expect(await candidates()).toBeUndefined();
     });
 
+    it('accepts a large valid split under the 64 KB cap while a plain update stays under 16 KB', async () => {
+      const law = await candidates();
+      const long = (n: number) => `${'中'.repeat(990)} ${n}`;
+      const body = {
+        updated_at: law.updated_at,
+        parent_text: law.corollary_candidates.parent_text,
+        corollaries: [1, 2, 3, 4, 5].map((n) => ({ title: '题'.repeat(200), text: long(n) })),
+      };
+      expect(Buffer.byteLength(JSON.stringify(body))).toBeGreaterThan(16 * 1024);
+      expect((await request('POST', `/api/v1/admin/laws/${submitted}`, { token: TOKEN, raw: JSON.stringify({ admin_notes: 'x'.repeat(17 * 1024) }) })).status).toBe(413);
+      expect((await request('POST', `/api/v1/admin/laws/${submitted}/split`, { token: TOKEN, body })).status).toBe(200);
+    });
+
     it('answers 409 for a stale page, 400 for a rule violation, 404 for a missing law and 413 for a huge body', async () => {
       const law = await candidates();
       const body = { updated_at: law.updated_at, parent_text: law.corollary_candidates.parent_text, corollaries: [{ title: null, text: 'A single corollary of enough length.' }] };
@@ -195,6 +208,7 @@ describe('admin API through the real server and migrated database', () => {
         token: TOKEN,
         body: { updated_at: law.updated_at, parent_text: law.corollary_candidates.parent_text, corollaries: [{ title: 'One', text: 'The engine restarts slowly behind a horn.' }] },
       });
+      await flush();
       const [child] = split.json().corollaries;
 
       const rejected = await request('POST', `/api/v1/admin/laws/${submitted}`, { token: TOKEN, body: { status: 'rejected' } });

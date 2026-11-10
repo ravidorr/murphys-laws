@@ -129,7 +129,7 @@ describe('admin-logic', () => {
         { title: 'The Green-Light Corollary', text: 'The green lasts just long enough to miss.', labeled: true },
       ],
     };
-    const row = (over: Record<string, unknown> = {}) => ({ title: 'A title', text: 'A corollary of enough length.', treatAs: 'corollary', ...over });
+    const row = (over: Partial<logic.SplitRow> = {}): logic.SplitRow => ({ title: 'A title', text: 'A corollary of enough length.', treatAs: 'corollary', ...over });
     const parent = 'A red light turns green right after you stop watching it.';
 
     it('offers only Corollary and Keep in parent text', () => {
@@ -180,10 +180,10 @@ describe('admin-logic', () => {
       expect(logic.describeCandidates({ parent_text: parent, items: [candidates.items[0]] })).toBe('1 corollary found in the law text.');
       expect(logic.describeCandidates({ parent_text: parent, items: [candidates.items[1]] })).toBe('1 bullet found in the law text, none labeled as a corollary.');
       expect(logic.describeCandidates({ parent_text: parent, items: [candidates.items[1], candidates.items[1]] })).toBe('2 bullets found in the law text, none labeled as a corollary.');
-      expect(logic.describeSplit(2)).toEqual({ button: 'Approve and publish 3 laws', summary: 'Approving publishes 3 laws: the parent and 2 corollaries. Category, author credit and the approval email are shared, and the submitter gets one email.' });
+      expect(logic.describeSplit(2)).toEqual({ button: 'Approve and publish 3 laws', summary: 'Approving publishes 3 laws: the parent and 2 corollaries. Category and author name are copied to each corollary, and the submitter gets one thank-you email, for the parent.' });
       expect(logic.describeSplit(1)).toEqual({
         button: 'Approve and publish 2 laws',
-        summary: 'Approving publishes 2 laws: the parent and 1 corollary. Category, author credit and the approval email are shared, and the submitter gets one email.',
+        summary: 'Approving publishes 2 laws: the parent and 1 corollary. Category and author name are copied to each corollary, and the submitter gets one thank-you email, for the parent.',
       });
       expect(logic.describeSplit(0).button).toBe('Approve and publish the law');
     });

@@ -32,11 +32,12 @@ export function isLawReply(data: unknown): boolean;
 export function describeThankYou(thankYou: { status: string; reason?: string } | null | undefined): string;
 
 export const MAX_COROLLARIES: number;
-export const TREAT_OPTIONS: { value: string; label: string }[];
+export type TreatAs = 'corollary' | 'keep';
+export const TREAT_OPTIONS: { value: TreatAs; label: string }[];
 export interface SplitRow {
   title: string;
   text: string;
-  treatAs: string;
+  treatAs: TreatAs;
   manual?: boolean;
 }
 export interface SplitCandidates {

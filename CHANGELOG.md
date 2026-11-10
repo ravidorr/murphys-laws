@@ -49,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   categories copied; children are credited by name only; one thank-you, for the parent). `GET /api/v1/admin/laws`
   adds `corollary_candidates` to such laws. A parent's status change now carries to its corollaries (leaving
   published moves published corollaries along, approving publishes in-review ones, rejecting rejects them), and a
-  corollary cannot be published while its law is not. Backend bumped to `2.3.74`; root to `2.6.171`.
+  corollary cannot be published while its law is not. A law that already has corollaries is not offered the split, and
+  a page that is out of date gets a 409 so it reloads. Backend bumped to `2.3.75`; root to `2.6.172`.
 - Foundation for first-class corollaries (no visible change yet). A corollary is a law row linked to its parent
   through `law_relations` (child is `from_law_id`, parent is `to_law_id`, type `COROLLARY_OF`).
   `shared/modules/corollary-parser.ts` finds bulleted corollaries in a law's text (markers `•`, `-`, `*`, `–`,

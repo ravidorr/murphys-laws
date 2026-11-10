@@ -525,7 +525,7 @@ select:focus-visible {
   display: none !important;
 }
 
-/* Split review: the banner on a card whose law text holds bullets, and the inline review that replaces the Law field. */
+/* Split review: the banner on a card whose law text holds bullets, and the inline review that replaces the card's Law field, banner and footer. */
 .split-banner {
   display: flex;
   flex-wrap: wrap;
