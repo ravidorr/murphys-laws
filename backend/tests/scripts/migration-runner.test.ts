@@ -255,6 +255,63 @@ describe('scripts/migration-runner.ts', () => {
 
         expect(failure().message).toBe('SQL Error: sqlite3 exited with status 7');
       });
+
+      // A migration far larger than the pipe buffer, so writing it to a sqlite3 that never reads it always fails
+      // with EPIPE. What happened to sqlite3 (the signal, the exit status) must still be what is reported: with a
+      // small migration whether the write fails depends on whether sqlite3 died before or after it, a race.
+      describe('when the write to sqlite3 fails with EPIPE', () => {
+        const hugeMigration = (): void => write(SETUP, `CREATE TABLE t (a INTEGER UNIQUE);\n${Array.from({ length: 20000 }, (_, i) => `INSERT INTO t VALUES (${i + 1000});`).join('\n')}\n`);
+        /** Fails the migration run (two arguments) the way `behaviour` says, and passes the setup queries through. */
+        const unreadingSqlite3 = (behaviour: string): void => {
+          hugeMigration();
+          standIn(`if [ $# -eq 2 ]; then ${behaviour}; fi\nexec ${realSqlite3} "$@"`);
+        };
+        const causeCode = (error: Error): unknown => (error.cause as NodeJS.ErrnoException | undefined)?.code;
+
+        it('reports the signal that stopped sqlite3, not the EPIPE', () => {
+          unreadingSqlite3('kill -9 $$');
+
+          const error = failure();
+
+          expect(causeCode(error)).toBe('EPIPE'); // the write did fail; it is kept as the cause, not the message
+          expect(error.message).toContain(`Migration ${SETUP} failed: sqlite3 was stopped by SIGKILL`);
+          expect(error.message).not.toContain('EPIPE');
+          expect(recorded()).toEqual([]);
+        });
+
+        it('reports the exit status of sqlite3, not the EPIPE', () => {
+          unreadingSqlite3('exit 7');
+
+          const error = failure();
+
+          expect(causeCode(error)).toBe('EPIPE');
+          expect(error.message).toContain(`Migration ${SETUP} failed: sqlite3 exited with status 7`);
+          expect(error.message).not.toContain('EPIPE');
+          expect(recorded()).toEqual([]);
+        });
+
+        it('says sqlite3 left before reading it all, and does not claim a rollback, when it exits 0', () => {
+          unreadingSqlite3('exit 0');
+
+          const error = failure();
+
+          expect(causeCode(error)).toBe('EPIPE');
+          expect(error.message).toContain(`Migration ${SETUP} failed: sqlite3 exited before it had read the whole migration`);
+          expect(error.message).toContain('sqlite3 did not finish');
+          expect(error.message).not.toContain('its transaction was rolled back');
+          expect(recorded()).toEqual([]);
+        });
+      });
+
+      it('names the output limit, not the SIGTERM that Node kills sqlite3 with, when it prints too much', () => {
+        standIn(`if [ $# -eq 2 ]; then head -c 2000000 /dev/zero | tr '\\0' x; sleep 5; fi\nexec ${realSqlite3} "$@"`);
+
+        const message = failure().message;
+
+        expect(message).toContain(`Migration ${SETUP} failed: spawnSync sqlite3 ENOBUFS`);
+        expect(message).not.toContain('SIGTERM');
+        expect(recorded()).toEqual([]);
+      });
     });
   });
 });
