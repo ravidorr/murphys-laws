@@ -57,7 +57,7 @@ describe('parseCorollaries', () => {
     }
   });
 
-  it('does not treat markup or negative numbers as bullets', () => {
+  it('does not treat markup, negative numbers or decimals as bullets', () => {
     const text = `${PARENT}\n**Important** note about this law.\n-5 degrees is cold.\n1.5 liters is plenty.`;
     expect(parseCorollaries(text)).toEqual({ parentText: text, items: [] });
   });
@@ -115,12 +115,64 @@ describe('parseCorollaries', () => {
   it('keeps every bullet when there are more than the allowed maximum', () => {
     const bullets = Array.from({ length: 7 }, (_, i) => `• The Number ${i + 1} Corollary: Detail number ${i + 1}.`);
     const parsed = parseCorollaries([PARENT, '', ...bullets].join('\n'));
-    expect(parsed.items).toHaveLength(7);
+    expect(parsed.items.map((item) => item.text)).toEqual(Array.from({ length: 7 }, (_, i) => `Detail number ${i + 1}.`));
     expect(parsed.items.length).toBeGreaterThan(MAX_COROLLARIES_PER_PARENT);
+    expect(canOfferSplit(parsed)).toBe(true);
   });
 
   it('treats a label with no text after the colon as an unlabeled bullet', () => {
     expect(parseCorollaries(`${PARENT}\n• Corollary:`).items).toEqual([{ title: null, text: 'Corollary:', labeled: false }]);
+  });
+
+  it('does not turn a wrapped line that starts with a year into a bullet', () => {
+    const text = 'Work expands to fill the time\navailable, as of\n2010. Then more.';
+    expect(parseCorollaries(text)).toEqual({ parentText: text, items: [] });
+  });
+
+  it('drops a bare marker with no trailing space, before and after the first bullet', () => {
+    for (const marker of ['•', '-', '*', '–', '1.', '2)']) {
+      const parsed = parseCorollaries(`${PARENT}\n${marker}\n${marker} Real corollary text goes here.\n${marker}`);
+      expect(parsed, marker).toEqual({
+        parentText: PARENT,
+        items: [{ title: null, text: 'Real corollary text goes here.', labeled: false }]
+      });
+    }
+  });
+
+  it('treats a bullet separated by a Unicode line or paragraph separator as a bullet', () => {
+    expect(parseCorollaries(`${PARENT}\u2028• Corollary: Split by a line separator.\u2029• Another one after a paragraph separator.`).items)
+      .toEqual([
+        { title: 'Corollary', text: 'Split by a line separator.', labeled: true },
+        { title: null, text: 'Another one after a paragraph separator.', labeled: false }
+      ]);
+  });
+
+  it('accepts indented bullets and a tab after the marker', () => {
+    expect(parseCorollaries(`${PARENT}\n    • Indented corollary text here.\n\t-\tTabbed corollary text here.`).items.map((i) => i.text))
+      .toEqual(['Indented corollary text here.', 'Tabbed corollary text here.']);
+  });
+
+  it('does not recognize other dash or dot characters as bullet markers', () => {
+    for (const marker of ['—', '◦', '▪', '·']) {
+      const text = `${PARENT}\n${marker} Not a supported marker here.`;
+      expect(parseCorollaries(text), marker).toEqual({ parentText: text, items: [] });
+    }
+  });
+
+  it('labels only bullets whose label ends in the word Corollary followed by a colon', () => {
+    const cases: Array<[string, string | null]> = [
+      ['corollary: lowercase label works.', 'corollary'],
+      ['THE LOUD COROLLARY: Uppercase label works.', 'THE LOUD COROLLARY'],
+      ['Corollary 2: A numbered label is not a corollary label.', null],
+      ['Note: The Odd Corollary: A colon before the word means no label.', null],
+      [`${'a'.repeat(70)} Corollary: A label longer than sixty characters is not a label.`, null]
+    ];
+    for (const [bullet, title] of cases) {
+      const [item] = parseCorollaries(`${PARENT}\n• ${bullet}`).items;
+      expect(item.title, bullet).toBe(title);
+      expect(item.labeled, bullet).toBe(title !== null);
+      if (title === null) expect(item.text, bullet).toBe(bullet);
+    }
   });
 
   it('ignores empty bullets', () => {

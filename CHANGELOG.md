@@ -46,9 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `shared/modules/corollary-parser.ts` finds bulleted corollaries in a law's text (markers `•`, `-`, `*`, `–`,
   `1.`, `1)`; wrapped lines join the bullet above) and exports the shared limits (at most 5 per parent, text 10-1000
   characters, title 200). Migration `023` adds two non-unique indexes on `law_relations`. `law-relations.service.ts`
-  adds `createCorollaryChildren` (atomic; copies the parent's categories; name-only attribution, never an email),
-  `getCorollaries` and `getCorollaryOf` (published on both ends), `isChild` and `linkCorollary` (no duplicate
-  relation, one level only). Backend bumped to `2.3.73`; root to `2.6.170`.
+  adds `createCorollaryChildren` (atomic; copies the categories the caller passes; name-only attribution, never an
+  email), `getCorollaries` and `getCorollaryOf` (published on both ends), `isChild`, `hasCorollaries` and
+  `linkCorollary` (no duplicate relation; one level, one parent, at most 5 per parent). Backend bumped to `2.3.73`;
+  root to `2.6.170`.
 - A `triage-404s` skill (`.claude/skills/triage-404s/SKILL.md`) for the daily report's 404 list. It checks each
   path against the repo and the server logs (read-only, with reported strings quoted as untrusted data), picks
   one verdict per path (already handled, notify about an image, redirect, ignore, fix link or create content,
