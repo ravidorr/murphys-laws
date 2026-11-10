@@ -1,7 +1,7 @@
 /**
  * Detects corollaries inside the text of a submitted law.
  *
- * Pure and dependency free, so the backend (admin split) and the web form (submitter hint) share one rule set.
+ * Pure and dependency free, so the backend (admin split) and the web form (submitter hint) can share one rule set.
  * Detection is by BULLET, not by the word "Corollary": a law whose text is a sentence followed by bulleted lines
  * is a split candidate. The result only ever seeds a review screen; nothing is split without a person's say-so.
  */
@@ -33,9 +33,16 @@ export interface ParsedCorollaries {
   items: CorollaryItem[];
 }
 
-/** `•`, `-`, `*`, `–` (en dash), `1.` or `1)`, followed by whitespace. `**bold**` and `-5` are not bullets. */
-const BULLET_LINE = /^\s*(?:[•*–-]|\d+[.)])\s+(.*)$/;
-/** The same expressions `backend/scripts/build-sqlite.ts` uses for imported laws. */
+/**
+ * `•`, `-`, `*`, `–` (en dash), `1.` or `1)` (one or two digits, so a wrapped line starting with a year is not a
+ * bullet), followed by whitespace or the end of the line. `**bold**`, `-5` and `1.5` are not bullets.
+ */
+const BULLET_LINE = /^\s*(?:[•*–-]|\d{1,2}[.)])(?:\s+(.*))?$/;
+/**
+ * The label expressions `backend/scripts/build-sqlite.ts` uses for imported laws. The import script splits a title
+ * off every bullet that has a colon; the parser does it only for Corollary-labeled bullets, so a bullet such as
+ * `Note: ...` or `Corollary 2: ...` stays whole.
+ */
 const COROLLARY_LABEL = /^([A-Za-z][^:]{0,60})?\s*Corollary\s*:\s*/i;
 const LABEL_AND_TEXT = /^([^:]{3,}?)\s*:\s*(.+)$/;
 
@@ -57,17 +64,19 @@ function toItem(bullet: string): CorollaryItem {
  * Splits law text into the parent sentence and its bullets.
  *
  * Lines after the first bullet that are not bullets themselves (wrapped lines, or a closing paragraph after a blank
- * line) are joined onto the bullet above them, so no text is dropped. Empty bullets are ignored.
+ * line) are joined onto the bullet above them, so no text is dropped; a closing paragraph therefore ends up inside the
+ * last bullet, where the person reviewing the split can edit it. A marker with nothing after it is an empty bullet
+ * and is dropped.
  */
 export function parseCorollaries(input: string): ParsedCorollaries {
-  const lines = input.split(/\r\n|\r|\n/);
+  const lines = input.split(/\r\n|[\r\n\u2028\u2029]/);
   const parentLines: string[] = [];
   const bullets: string[] = [];
 
   for (const line of lines) {
     const bullet = BULLET_LINE.exec(line);
     if (bullet) {
-      bullets.push(bullet[1]);
+      bullets.push(bullet[1] ?? '');
     } else if (bullets.length === 0) {
       parentLines.push(line);
     } else if (line.trim() !== '') {
@@ -79,7 +88,10 @@ export function parseCorollaries(input: string): ParsedCorollaries {
   return { parentText: parentLines.join('\n').trim(), items };
 }
 
-/** True when there is a real parent sentence and at least one bullet to offer as a corollary. */
+/**
+ * True when there is a real parent sentence and at least one bullet, so a review screen is worth showing. It does not
+ * check the number of bullets or their lengths: the caller shows those problems and enforces the shared limits.
+ */
 export function canOfferSplit(parsed: ParsedCorollaries): boolean {
   return parsed.items.length > 0 && parsed.parentText.length >= MIN_PARENT_TEXT_LENGTH;
 }

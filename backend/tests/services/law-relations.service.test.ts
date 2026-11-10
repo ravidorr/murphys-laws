@@ -5,11 +5,19 @@ import {
   createCorollaryChildren,
   getCorollaries,
   getCorollaryOf,
+  hasCorollaries,
   isChild,
+  LAW_RELATION_ERROR_STATUS,
   LawRelationError,
   linkCorollary,
   type LawRelationErrorCode
 } from '../../src/services/law-relations.service.ts';
+import {
+  COROLLARY_TEXT_MAX_LENGTH,
+  COROLLARY_TEXT_MIN_LENGTH,
+  COROLLARY_TITLE_MAX_LENGTH,
+  MAX_COROLLARIES_PER_PARENT
+} from '../../../shared/modules/corollary-parser.ts';
 import { createMigratedDb } from '../helpers/migrated-db.ts';
 
 type Db = InstanceType<typeof Database>;
@@ -21,6 +29,7 @@ describe('law-relations service (real migrated schema)', () => {
   let categoryIds: number[];
   /** The migrations seed archive laws, so counts are measured against this baseline. */
   let baseLaws: number;
+  let baseAttributions: number;
 
   const insertLaw = (text: string, status = 'published', title: string | null = null): number =>
     Number(
@@ -34,26 +43,28 @@ describe('law-relations service (real migrated schema)', () => {
   const relations = (): Array<{ from_law_id: number; to_law_id: number; relation_type: string; note: string | null }> =>
     db.prepare('SELECT from_law_id, to_law_id, relation_type, note FROM law_relations ORDER BY id').all() as never;
   const count = (table: string): number => (db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
-  const codeOf = (fn: () => unknown): LawRelationErrorCode | undefined => {
+  const errorOf = (fn: () => unknown): LawRelationError | undefined => {
     try {
       fn();
     } catch (error) {
       expect(error).toBeInstanceOf(LawRelationError);
-      return (error as LawRelationError).code;
+      return error as LawRelationError;
     }
     return undefined;
   };
+  const codeOf = (fn: () => unknown): LawRelationErrorCode | undefined => errorOf(fn)?.code;
 
   beforeEach(() => {
     db = createMigratedDb();
     baseLaws = count('laws');
+    baseAttributions = count('attributions');
     categoryIds = (db.prepare('SELECT id FROM categories ORDER BY id LIMIT 2').all() as Array<{ id: number }>).map((c) => c.id);
   });
   afterEach(() => { db.close(); });
 
   describe('createCorollaryChildren', () => {
     it('creates child laws linked child -> parent as COROLLARY_OF with the child title as the note', () => {
-      const parent = insertLaw('Any fix applied on a Friday will break something by Monday.', 'in_review');
+      const parent = insertLaw('Any fix applied on a Friday will break something by Monday.');
       const created = createCorollaryChildren(
         db,
         parent,
@@ -82,11 +93,14 @@ describe('law-relations service (real migrated schema)', () => {
       const parent = insertLaw('A parent law with enough text.', 'in_review');
       const [child] = createCorollaryChildren(db, parent, [{ title: '   ', text: '  Padded corollary text here.  ' }], OPTIONS);
       expect(child).toEqual({ id: child.id, title: null, text: 'Padded corollary text here.' });
+      const [padded] = createCorollaryChildren(db, parent, [{ title: '  Padded Title  ', text: 'Another padded corollary.' }], OPTIONS);
+      expect(padded.title).toBe('Padded Title');
+      expect(relations().map((r) => r.note)).toEqual([null, 'Padded Title']);
       expect(db.prepare('SELECT status FROM laws WHERE id = ?').get(child.id)).toEqual({ status: 'in_review' });
     });
 
     it('copies the parent categories onto every child once, even when listed twice', () => {
-      const parent = insertLaw('A parent law with enough text.', 'in_review');
+      const parent = insertLaw('A parent law with enough text.');
       const created = createCorollaryChildren(
         db,
         parent,
@@ -99,17 +113,31 @@ describe('law-relations service (real migrated schema)', () => {
       }
     });
 
+    it('refuses a category that does not exist and leaves nothing behind', () => {
+      const parent = insertLaw('A parent law with enough text.', 'in_review');
+      const error = errorOf(() => createCorollaryChildren(db, parent, [{ title: null, text: 'A corollary with enough text.' }], {
+        ...OPTIONS,
+        categoryIds: [categoryIds[0], 999999]
+      }));
+      expect(error).toMatchObject({ code: 'CATEGORY_NOT_FOUND', message: 'Category 999999 not found' });
+      expect(count('laws')).toBe(baseLaws + 1);
+      expect(relations()).toEqual([]);
+    });
+
     it('writes the submitter name only, never an email', () => {
       const parent = insertLaw('A parent law with enough text.', 'in_review');
       db.prepare("INSERT INTO attributions (law_id, name, contact_type, contact_value) VALUES (?, 'Pat Example', 'email', 'pat@example.test')").run(parent);
-      const [child] = createCorollaryChildren(db, parent, [{ title: null, text: 'A corollary with enough text.' }], {
-        status: 'in_review',
-        categoryIds: [],
-        submitterName: '  Pat Example  '
-      });
-      expect(db.prepare('SELECT name, contact_type, contact_value FROM attributions WHERE law_id = ?').all(child.id)).toEqual([
-        { name: 'Pat Example', contact_type: 'text', contact_value: null }
-      ]);
+      const created = createCorollaryChildren(
+        db,
+        parent,
+        [{ title: null, text: 'A corollary with enough text.' }, { title: null, text: 'A second corollary with text.' }],
+        { status: 'in_review', categoryIds: [], submitterName: '  Pat Example  ' }
+      );
+      for (const child of created) {
+        expect(db.prepare('SELECT name, contact_type, contact_value FROM attributions WHERE law_id = ?').all(child.id)).toEqual([
+          { name: 'Pat Example', contact_type: 'text', contact_value: null }
+        ]);
+      }
       expect(db.prepare("SELECT COUNT(*) AS n FROM attributions WHERE contact_value IS NOT NULL AND law_id != ?").get(parent)).toEqual({ n: 0 });
     });
 
@@ -117,7 +145,7 @@ describe('law-relations service (real migrated schema)', () => {
       const parent = insertLaw('A parent law with enough text.', 'in_review');
       createCorollaryChildren(db, parent, [{ title: null, text: 'A corollary with enough text.' }], OPTIONS);
       createCorollaryChildren(db, parent, [{ title: null, text: 'Another corollary with text.' }], { ...OPTIONS, submitterName: '   ' });
-      expect(count('attributions')).toBe(0);
+      expect(count('attributions')).toBe(baseAttributions);
     });
 
     it('returns nothing and writes nothing for an empty list', () => {
@@ -127,7 +155,7 @@ describe('law-relations service (real migrated schema)', () => {
     });
 
     it('indexes the new children for search', () => {
-      const parent = insertLaw('A parent law with enough text.', 'in_review');
+      const parent = insertLaw('A parent law with enough text.');
       const [child] = createCorollaryChildren(db, parent, [{ title: null, text: 'Zebrafish corollary lands butter side down.' }], {
         ...OPTIONS,
         status: 'published'
@@ -158,10 +186,29 @@ describe('law-relations service (real migrated schema)', () => {
           .toBe('PARENT_NOT_FOUND');
       });
 
+      it('refuses a published corollary under a parent that is not published, but allows one in review', () => {
+        const parent = insertLaw('A parent law with enough text.', 'in_review');
+        const child = { title: null, text: 'A corollary with enough text.' };
+        expect(codeOf(() => createCorollaryChildren(db, parent, [child], { ...OPTIONS, status: 'published' }))).toBe('PARENT_NOT_PUBLISHED');
+        expect(count('laws')).toBe(baseLaws + 1);
+        expect(createCorollaryChildren(db, parent, [child], OPTIONS)).toHaveLength(1);
+        db.prepare("UPDATE laws SET status = 'published' WHERE id = ?").run(parent);
+        expect(createCorollaryChildren(db, parent, [{ title: null, text: 'Another corollary with text.' }], { ...OPTIONS, status: 'published' })).toHaveLength(1);
+      });
+
+      it('lets a rejected or in-review corollary keep its slot of the limit', () => {
+        const parent = insertLaw('A parent law with enough text.');
+        const five = Array.from({ length: MAX_COROLLARIES_PER_PARENT }, (_, i) => ({ title: null, text: `Corollary number ${i + 1} of the law.` }));
+        createCorollaryChildren(db, parent, five, OPTIONS);
+        db.prepare("UPDATE laws SET status = 'rejected' WHERE id IN (SELECT from_law_id FROM law_relations)").run();
+        expect(codeOf(() => createCorollaryChildren(db, parent, [{ title: null, text: 'A replacement corollary here.' }], OPTIONS)))
+          .toBe('TOO_MANY_COROLLARIES');
+      });
+
       it('allows five corollaries and refuses a sixth, counting those already linked', () => {
         const parent = insertLaw('A parent law with enough text.');
-        const five = Array.from({ length: 5 }, (_, i) => ({ title: null, text: `Corollary number ${i + 1} of the law.` }));
-        expect(createCorollaryChildren(db, parent, five, OPTIONS)).toHaveLength(5);
+        const five = Array.from({ length: MAX_COROLLARIES_PER_PARENT }, (_, i) => ({ title: null, text: `Corollary number ${i + 1} of the law.` }));
+        expect(createCorollaryChildren(db, parent, five, OPTIONS)).toHaveLength(MAX_COROLLARIES_PER_PARENT);
         expect(codeOf(() => createCorollaryChildren(db, parent, [{ title: null, text: 'One corollary too many here.' }], OPTIONS)))
           .toBe('TOO_MANY_COROLLARIES');
 
@@ -172,31 +219,42 @@ describe('law-relations service (real migrated schema)', () => {
     });
 
     describe('validation', () => {
-      const cases: Array<[string, { title: string | null; text: unknown }]> = [
-        ['text shorter than 10 characters', { title: null, text: '123456789' }],
+      const cases: Array<[string, unknown]> = [
+        ['text shorter than the minimum', { title: null, text: 'x'.repeat(COROLLARY_TEXT_MIN_LENGTH - 1) }],
         ['text that is only whitespace', { title: null, text: '            ' }],
-        ['text longer than 1000 characters', { title: null, text: 'x'.repeat(1001) }],
+        ['text longer than the maximum', { title: null, text: 'x'.repeat(COROLLARY_TEXT_MAX_LENGTH + 1) }],
         ['text that is not a string', { title: null, text: 42 }],
-        ['a title longer than 200 characters', { title: 't'.repeat(201), text: 'A corollary with enough text.' }]
+        ['a title that is not a string', { title: 7, text: 'A corollary with enough text.' }],
+        ['a title longer than the maximum', { title: 't'.repeat(COROLLARY_TITLE_MAX_LENGTH + 1), text: 'A corollary with enough text.' }],
+        ['an entry that is null', null],
+        ['an entry that is not an object', 'A corollary with enough text.']
       ];
       it.each(cases)('rejects %s without inserting anything', (_name, child) => {
         const parent = insertLaw('A parent law with enough text.', 'in_review');
         const before = count('laws');
-        expect(codeOf(() => createCorollaryChildren(db, parent, [
+        const error = errorOf(() => createCorollaryChildren(db, parent, [
           { title: null, text: 'A valid corollary with text.' },
           child as { title: string | null; text: string }
-        ], OPTIONS))).toBe('INVALID_COROLLARY');
+        ], OPTIONS));
+        expect(error).toMatchObject({ code: 'INVALID_COROLLARY', position: 2 });
         expect(count('laws')).toBe(before);
         expect(relations()).toEqual([]);
       });
 
-      it('accepts the boundary lengths and ignores a title that is not a string', () => {
+      it('accepts the boundary lengths and a missing title', () => {
         const parent = insertLaw('A parent law with enough text.', 'in_review');
         const created = createCorollaryChildren(db, parent, [
-          { title: 't'.repeat(200), text: '1234567890' },
-          { title: undefined as unknown as null, text: 'x'.repeat(1000) }
+          { title: 't'.repeat(COROLLARY_TITLE_MAX_LENGTH), text: 'x'.repeat(COROLLARY_TEXT_MIN_LENGTH) },
+          { title: undefined as unknown as null, text: 'x'.repeat(COROLLARY_TEXT_MAX_LENGTH) }
         ], OPTIONS);
-        expect(created.map((c) => [c.title?.length ?? null, c.text.length])).toEqual([[200, 10], [null, 1000]]);
+        expect(created.map((c) => [c.title?.length ?? null, c.text.length])).toEqual([[COROLLARY_TITLE_MAX_LENGTH, COROLLARY_TEXT_MIN_LENGTH], [null, COROLLARY_TEXT_MAX_LENGTH]]);
+      });
+
+      it('rejects a corollaries value that is not a list, without a position', () => {
+        const parent = insertLaw('A parent law with enough text.', 'in_review');
+        const error = errorOf(() => createCorollaryChildren(db, parent, 'not a list' as unknown as [], OPTIONS));
+        expect(error).toMatchObject({ code: 'INVALID_COROLLARY', message: 'Corollaries must be a list' });
+        expect(error?.position).toBeUndefined();
       });
     });
 
@@ -206,20 +264,21 @@ describe('law-relations service (real migrated schema)', () => {
                  BEGIN SELECT RAISE(ABORT, 'boom'); END;`);
       };
       const children = [
-        { title: 'First', text: 'This first corollary is fine.' },
+        { title: 'First', text: 'This zanzibar corollary is fine.' },
         { title: 'Second', text: 'This corollary always fails.' }
       ];
 
       it('leaves nothing behind when one child fails', () => {
-        const parent = insertLaw('A parent law with enough text.', 'in_review');
+        const parent = insertLaw('A parent law with enough text.');
         addBoomTrigger();
         const before = { laws: count('laws'), attributions: count('attributions'), categories: count('law_categories') };
         expect(() => createCorollaryChildren(db, parent, children, { status: 'published', categoryIds, submitterName: 'Pat' })).toThrow('boom');
         expect({ laws: count('laws'), attributions: count('attributions'), categories: count('law_categories') }).toEqual(before);
         expect(relations()).toEqual([]);
+        expect(db.prepare('SELECT rowid FROM laws_fts WHERE laws_fts MATCH ?').all('zanzibar')).toEqual([]);
       });
 
-      it('rolls back with the caller\'s transaction and keeps the caller\'s earlier writes until it rolls back', () => {
+      it('rolls back the caller\'s earlier writes too when a child fails', () => {
         const parent = insertLaw('A parent law with enough text.', 'in_review');
         addBoomTrigger();
         const approve = db.transaction(() => {
@@ -283,9 +342,80 @@ describe('law-relations service (real migrated schema)', () => {
       expect(relations()).toHaveLength(1);
     });
 
-    it('refuses an unknown parent', () => {
+    it('keeps the first note when the relation is repeated with another one', () => {
+      const parent = insertLaw('A parent law with enough text.');
       const child = insertLaw('A corollary with enough text.');
-      expect(codeOf(() => linkCorollary(db, child, 999999, null))).toBe('PARENT_NOT_FOUND');
+      linkCorollary(db, child, parent, 'First note');
+      expect(linkCorollary(db, child, parent, 'Second note')).toBe(false);
+      expect(relations().map((r) => r.note)).toEqual(['First note']);
+    });
+
+    it('refuses an unknown parent and an unknown corollary with a message that names the id', () => {
+      const child = insertLaw('A corollary with enough text.');
+      expect(errorOf(() => linkCorollary(db, child, 999999, null))).toMatchObject({ code: 'PARENT_NOT_FOUND', message: 'Parent law 999999 not found' });
+      const parent = insertLaw('A parent law with enough text.');
+      expect(errorOf(() => linkCorollary(db, 888888, parent, null))).toMatchObject({ code: 'CHILD_NOT_FOUND', message: 'Corollary law 888888 not found' });
+      expect(relations()).toEqual([]);
+    });
+
+    it('refuses a corollary that already belongs to a different parent', () => {
+      const first = insertLaw('The first parent law text.');
+      const second = insertLaw('The second parent law text.');
+      const child = insertLaw('A corollary with enough text.');
+      linkCorollary(db, child, first, null);
+      expect(codeOf(() => linkCorollary(db, child, second, null))).toBe('CHILD_ALREADY_HAS_PARENT');
+      expect(relations()).toHaveLength(1);
+    });
+
+    it('ignores a COMMENT_ON relation when deciding whether a corollary has a parent', () => {
+      const first = insertLaw('The first parent law text.');
+      const second = insertLaw('The second parent law text.');
+      const child = insertLaw('A corollary with enough text.');
+      link(child, first, 'COMMENT_ON');
+      expect(linkCorollary(db, child, second, null)).toBe(true);
+    });
+
+    it('refuses a published corollary under a parent that is not published', () => {
+      const parent = insertLaw('A parent law with enough text.', 'in_review');
+      const published = insertLaw('A published corollary text.');
+      const pending = insertLaw('A corollary still in review.', 'in_review');
+      expect(codeOf(() => linkCorollary(db, published, parent, null))).toBe('PARENT_NOT_PUBLISHED');
+      expect(linkCorollary(db, pending, parent, null)).toBe(true);
+    });
+
+    it('refuses a sixth corollary, but lets an existing corollary be linked again at the limit', () => {
+      const parent = insertLaw('A parent law with enough text.');
+      const children = Array.from({ length: MAX_COROLLARIES_PER_PARENT }, (_, i) => insertLaw(`Existing corollary number ${i + 1}.`));
+      for (const child of children) linkCorollary(db, child, parent, null);
+      expect(linkCorollary(db, children[0], parent, null)).toBe(false);
+      expect(codeOf(() => linkCorollary(db, insertLaw('One corollary too many here.'), parent, null))).toBe('TOO_MANY_COROLLARIES');
+      expect(relations()).toHaveLength(MAX_COROLLARIES_PER_PARENT);
+    });
+  });
+
+  describe('LawRelationError', () => {
+    it('maps every code to an HTTP status, with not-found answering 404', () => {
+      expect(LAW_RELATION_ERROR_STATUS.PARENT_NOT_FOUND).toBe(404);
+      expect(LAW_RELATION_ERROR_STATUS.CHILD_NOT_FOUND).toBe(404);
+      expect(Object.values(LAW_RELATION_ERROR_STATUS).every((status) => status === 400 || status === 404)).toBe(true);
+    });
+
+    it('carries the position only when one is given', () => {
+      expect(new LawRelationError('INVALID_COROLLARY', 'x', 3).position).toBe(3);
+      expect(new LawRelationError('INVALID_COROLLARY', 'x').position).toBeUndefined();
+    });
+  });
+
+  describe('hasCorollaries', () => {
+    it('is true for a parent of a COROLLARY_OF relation only', () => {
+      const parent = insertLaw('A parent law with enough text.');
+      const child = insertLaw('A corollary with enough text.');
+      const other = insertLaw('Another law with enough text.');
+      link(child, parent);
+      link(other, child, 'COMMENT_ON');
+      expect(hasCorollaries(db, parent)).toBe(true);
+      expect(hasCorollaries(db, child)).toBe(false);
+      expect(hasCorollaries(db, 999999)).toBe(false);
     });
   });
 
@@ -323,6 +453,27 @@ describe('law-relations service (real migrated schema)', () => {
       link(first, parent);
       link(second, parent);
       expect(getCorollaries(db, parent).map((c) => c.id)).toEqual([third, first, second]);
+    });
+
+    it('orders by the first relation of each corollary even when a duplicate edge comes later', () => {
+      const parent = insertLaw('A parent law with enough text.');
+      const a = insertLaw('The first listed corollary.');
+      const b = insertLaw('The second listed corollary.');
+      link(a, parent);
+      link(b, parent);
+      link(a, parent);
+      expect(getCorollaries(db, parent).map((c) => c.id)).toEqual([a, b]);
+    });
+
+    it('returns freshly created corollaries in the order given', () => {
+      const parent = insertLaw('A parent law with enough text.');
+      const created = createCorollaryChildren(db, parent, [
+        { title: 'One', text: 'The first created corollary.' },
+        { title: 'Two', text: 'The second created corollary.' },
+        { title: 'Three', text: 'The third created corollary.' }
+      ], { ...OPTIONS, status: 'published' });
+      expect(getCorollaries(db, parent).map((c) => c.id)).toEqual(created.map((c) => c.id));
+      expect(getCorollaries(db, parent).map((c) => c.title)).toEqual(['One', 'Two', 'Three']);
     });
 
     it('returns only corollaries that are published, when the parent is published', () => {

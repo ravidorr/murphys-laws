@@ -30,7 +30,7 @@ describe('migration 023: law_relations indexes', () => {
   beforeEach(() => { db = createMigratedDb({ before: '023' }); });
   afterEach(() => { db.close(); });
 
-  it('creates both indexes, non-unique, on (id, relation_type) pairs', () => {
+  it('creates both indexes, non-unique, on (from_law_id, relation_type) and (to_law_id, relation_type)', () => {
     expect(indexes()).toEqual({});
     db.exec(MIGRATION_SQL);
     expect(indexes()).toEqual({
@@ -58,10 +58,10 @@ describe('migration 023: law_relations indexes', () => {
   it('is part of the full migration set, and the planner uses the new indexes', () => {
     const full = createMigratedDb();
     try {
-      expect(Object.keys(
-        (full.prepare("SELECT name FROM pragma_index_list('law_relations') WHERE origin = 'c'").all() as Array<{ name: string }>)
-          .reduce<Record<string, true>>((acc, r) => ({ ...acc, [r.name]: true }), {})
-      ).sort()).toEqual(['idx_law_relations_from', 'idx_law_relations_to']);
+      const names = (full.prepare("SELECT name FROM pragma_index_list('law_relations') WHERE origin = 'c'").all() as Array<{ name: string }>)
+        .map((r) => r.name)
+        .sort();
+      expect(names).toEqual(['idx_law_relations_from', 'idx_law_relations_to']);
       const plan = (sql: string): string =>
         (full.prepare(`EXPLAIN QUERY PLAN ${sql}`).all() as Array<{ detail: string }>).map((r) => r.detail).join('\n');
       expect(plan("SELECT 1 FROM law_relations WHERE to_law_id = 1 AND relation_type = 'COROLLARY_OF'")).toContain('idx_law_relations_to');

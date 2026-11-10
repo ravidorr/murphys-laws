@@ -2,7 +2,8 @@
 --
 -- Corollaries are law rows linked to their parent through law_relations: the child is from_law_id, the parent is
 -- to_law_id, and relation_type is 'COROLLARY_OF'. Reading a parent's corollaries filters on (to_law_id, relation_type);
--- finding the parent of a corollary, and the one-level depth rule, filter on (from_law_id, relation_type).
+-- finding the parent of a corollary filters on (from_law_id, relation_type). The one-level rule checks both
+-- directions (is this law a corollary, does it have corollaries), so it uses both indexes.
 --
 -- Both indexes are deliberately NOT unique: imported data may already hold duplicate edges, and a unique index would
 -- make this migration fail on them. Uniqueness is enforced in code (INSERT ... WHERE NOT EXISTS).
