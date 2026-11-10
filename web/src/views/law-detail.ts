@@ -694,7 +694,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       return;
     }
 
-    // The "Add a corollary" link opens the submit form in the app unless the user asked for a new tab
+    // The "submit a law" link in the corollaries section opens the submit form in the app unless the user asked for a new tab
     if (t.closest('a[data-submit-link]')) {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
       e.preventDefault();

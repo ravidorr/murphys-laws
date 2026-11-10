@@ -10,7 +10,7 @@ This document outlines additional tasks and potential improvements for the Murph
 ## Site data
 
 - [ ] **Let a visitor add a corollary to a law that is already published:** the submit form only creates a new law
-  together with its corollaries, so the "Add a corollary" link on a law page opens that form. Attaching one to an
+  together with its corollaries, so the "submit a law" link in the corollaries section of a law page opens that form. Attaching one to an
   existing law needs a parent field on the submit API, the same moderation path as the other corollaries, and a rule
   for who may do it (published laws were left out of the first version on purpose).
 
