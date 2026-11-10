@@ -20,6 +20,7 @@ export {
   buildUniqueLawSeo,
   cutAtWord,
   isGenericLawTitle,
+  lawDisplayTitle,
   truncateTitle
 } from '@shared/modules/law-seo.ts';
 export type { LawSeo, LawSeoInput, LawSeoOptions } from '@shared/modules/law-seo.ts';

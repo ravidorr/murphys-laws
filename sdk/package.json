@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "TypeScript SDK for the Murphy's Laws public REST API",
   "type": "module",
   "main": "dist/index.js",

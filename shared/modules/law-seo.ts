@@ -96,6 +96,15 @@ function lawBaseName(law: LawSeoInput): string {
   return text || `Murphy's Law #${law.id}`;
 }
 
+/**
+ * A short name for listing a law where the page title would be too long, such as a corollary card or the banner on a
+ * corollary's page. Laws with a generic title ("Corollary", "Murphy's Law") are named from their text, the same way
+ * their head title is, so a list of corollaries does not read "Corollary, Corollary, Corollary".
+ */
+export function lawDisplayTitle(law: LawSeoInput, max = 90): string {
+  return cutAtWord(lawBaseName(law), max);
+}
+
 function buildLawDescription(law: LawSeoInput, disambiguate: boolean): string {
   let description = collapseWhitespace(law.text || '');
   if (!description) {

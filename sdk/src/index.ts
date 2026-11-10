@@ -3,6 +3,8 @@ export type { MurphysLawsClientOptions, FetchLike } from './client.js';
 export { ApiError } from './errors.js';
 export type {
   Attribution,
+  Corollary,
+  CorollaryParent,
   Law,
   LawsPage,
   LawOfDay,

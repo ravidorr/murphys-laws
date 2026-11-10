@@ -133,6 +133,25 @@
   box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);
 }
 
+/* Corollaries - dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .corollary-card {
+    background: color-mix(in oklab, var(--bg) 88%, white 12%);
+  }
+
+  :root:not([data-theme="light"]) .parent-banner-title {
+    color: var(--dark-link);
+  }
+}
+
+:root[data-theme="dark"] .corollary-card {
+  background: color-mix(in oklab, var(--bg) 88%, white 12%);
+}
+
+:root[data-theme="dark"] .parent-banner-title {
+  color: var(--dark-link);
+}
+
 :root[data-theme="dark"] .section-card {
   background: color-mix(in oklab, var(--bg) 88%, white 12%);
   box-shadow: 0 1px 0 var(--shadow-white-subtle) inset, 0 8px 24px var(--shadow-dark);

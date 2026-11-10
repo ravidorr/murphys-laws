@@ -44,7 +44,7 @@ The following items were identified during comprehensive UX, UI, Accessibility, 
 - [ ] **Calculator Outreach:** Pitch the 'Buttered Toast Landing Calculator' to physics and science education blogs as a fun, interactive teaching tool to generate fresh backlinks.
 
 ## SEO Recommendations (Content & Technical)
-- [ ] **Law Page H1 for Generic Titles:** About 1,892 laws are titled "Murphy's Law" or "Corollary", so their visible H1 is identical. The head title and schema now come from the law text. Decide whether the H1 should too, or retitle the laws in the database.
+- [ ] **Law Page H1 for Generic Titles:** About 1,892 laws are titled "Murphy's Law" or "Corollary", so their visible H1 is identical. The head title and schema now come from the law text. Decide whether the H1 should too, or retitle the laws in the database. (Corollary cards, the "Corollary of" banner and the corollary breadcrumb already name such laws from their text via `lawDisplayTitle`; the H1 of every law page, corollaries included, is still the stored title.)
 - [ ] **Long Article Titles:** `/why-murphys-law-feels-true` and `/murphys-law-project-management` have titles over 60 characters (editorial pun headlines) that search results will truncate.
 - [ ] **Small Category Pages:** `/category/murphys-marine-corps-laws` and `/category/murphys-sport-laws` stay under 150 words because they hold few laws. Merge or enrich them.
 - [ ] **Internal Linking Improvements:** (Every law page is now linked from other pages in the static HTML; the rest is still open.) Add "related categories" links on category pages, cross-link calculators from relevant law pages, and add "See also" sections to content pages.

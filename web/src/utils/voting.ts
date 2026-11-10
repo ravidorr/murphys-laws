@@ -126,7 +126,8 @@ export async function toggleVote(lawId: string | number, voteType: VoteType, sur
 export function addVotingListeners(el: HTMLElement): void {
   el.addEventListener('click', async (e) => {
     const t = e.target;
-    if (!(t instanceof HTMLElement)) return;
+    // Element, not HTMLElement: the thumb icon inside a vote button is an SVG
+    if (!(t instanceof Element)) return;
 
     // Handle vote buttons (use closest so clicks on button inner icon/count still work)
     const voteBtn = t.closest('button[data-vote]');
@@ -141,7 +142,7 @@ export function addVotingListeners(el: HTMLElement): void {
         const result = await toggleVote(lawId, voteType, 'law_card');
 
         // Update vote counts in UI
-        const lawCard = voteBtn.closest('.law-card-mini');
+        const lawCard = voteBtn.closest('.law-card-mini, .corollary-card');
         if (lawCard) {
           const upBtn = lawCard.querySelector('[data-vote="up"]');
           const downBtn = lawCard.querySelector('[data-vote="down"]');

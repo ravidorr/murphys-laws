@@ -463,6 +463,22 @@ export function buildComponents(
       rounded: '{rounded.xl}',
       typography: '{typography.body-md}',
     },
+    'corollary-list': {
+      textColor: '{colors.fg}',
+      typography: '{typography.body-md}',
+    },
+    'corollary-card': {
+      backgroundColor: '{colors.surface}',
+      textColor: '{colors.fg}',
+      rounded: '{rounded.xl}',
+      typography: '{typography.body-md}',
+    },
+    'parent-banner': {
+      backgroundColor: '{colors.bg}',
+      textColor: '{colors.fg}',
+      rounded: '{rounded.xl}',
+      typography: '{typography.body-sm}',
+    },
     'proof-point': {
       textColor: '{colors.fg}',
       typography: '{typography.body-sm}',

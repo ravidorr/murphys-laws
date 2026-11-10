@@ -17,6 +17,8 @@ import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-foun
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
 import { CALCULATOR_META_DESCRIPTIONS, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
+import { renderCorollarySection, renderParentBanner, corollaryDisplayTitle } from '../src/utils/corollaries.ts';
+import type { Corollary, CorollaryParent } from '../src/types/app.d.ts';
 import { buildBreadcrumbList, buildCanonicalUrl, buildUniqueLawSeo, buildLawSeo, truncateTitle } from '../src/utils/seo.ts';
 import type { BreadcrumbItem, LawSeo } from '../src/utils/seo.ts';
 import { oembedDiscoveryLink } from '../../shared/modules/law-embed.ts';
@@ -36,6 +38,8 @@ interface Law {
   category_slug?: string;
   category_name?: string;
   category_context?: string | null;
+  /** Id of the published law this one is a corollary of, as the law list reports it. */
+  corollary_of_id?: number | null;
   upvotes?: number;
   downvotes?: number;
   score?: number;
@@ -585,8 +589,54 @@ function getLawAttributionName(law: Law): string | null {
   return law.author || law.attribution || null;
 }
 
-function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = []): string {
+/** What a law page shows about its corollaries: the ones under it, or the law it belongs to. */
+interface CorollaryContext {
+  corollaries: Corollary[];
+  parent: CorollaryParent | null;
+}
+
+/**
+ * Index the corollary relations the law list already reports (`corollary_of_id`, which the API sets only for a
+ * published parent), so no law page needs an extra request. Children are listed in id order, which is the order the
+ * importer and the admin split created and linked them in; the API orders by link order, so the two differ only for a
+ * law that was linked to its parent after higher-numbered siblings. A child is listed under the one parent the list
+ * names; one whose parent is not in the list stops the build, so a page never links to a law that has no page.
+ */
+function buildCorollaryIndex(laws: Law[]): Map<number, CorollaryContext> {
+  const lawsById = new Map(laws.map((law) => [law.id, law]));
+  const index = new Map<number, CorollaryContext>();
+  const contextFor = (id: number): CorollaryContext => {
+    let context = index.get(id);
+    if (!context) {
+      context = { corollaries: [], parent: null };
+      index.set(id, context);
+    }
+    return context;
+  };
+  for (const child of [...laws].sort((left, right) => left.id - right.id)) {
+    if (child.corollary_of_id == null) continue;
+    const parent = lawsById.get(child.corollary_of_id);
+    // The API reports corollary_of_id only for a published parent, and every published law is in the list, so a
+    // missing parent means the list and the relations disagree. Stop, like the other list consistency checks do.
+    if (!parent) {
+      throw new Error(`Law ${child.id} is a corollary of law ${child.corollary_of_id}, which the law API did not list; refusing to generate pages that link to a missing law.`);
+    }
+    contextFor(parent.id).corollaries.push({
+      id: child.id,
+      title: child.title ?? null,
+      text: child.text ?? '',
+      upvotes: child.upvotes ?? 0,
+      downvotes: child.downvotes ?? 0
+    });
+    contextFor(child.id).parent = { id: parent.id, title: parent.title ?? null, text: parent.text ?? '' };
+  }
+  return index;
+}
+
+function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = [], corollaryContext?: CorollaryContext): string {
   const title = law.title || "Murphy's Law";
+  const parent = corollaryContext?.parent ?? null;
+  const corollaries = corollaryContext?.corollaries ?? [];
   const attributionName = getLawAttributionName(law);
   const sourceStatus = attributionName
     ? `Attributed to ${escapeHtml(attributionName)}`
@@ -608,9 +658,11 @@ function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = []): string 
           <li><a href="/">Home</a></li>
           <li><a href="/browse">Browse</a></li>
           ${categorySlug ? `<li><a href="/category/${escapeHtml(categorySlug)}">${escapeHtml(categoryName)}</a></li>` : ''}
-          <li aria-current="page">${escapeHtml(title)}</li>
+          ${parent ? `<li><a href="/law/${parent.id}">${escapeHtml(corollaryDisplayTitle(parent))}</a></li>` : ''}
+          <li aria-current="page">${escapeHtml(parent ? corollaryDisplayTitle({ ...law, text: law.text ?? '' }) : title)}</li>
         </ol>
       </nav>
+      ${parent ? renderParentBanner(parent) : ''}
       <article class="card card--section law-detail-card">
         <header class="card-header">
           <h1 class="card-title">${escapeHtml(title)}</h1>
@@ -625,6 +677,7 @@ function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = []): string 
           </div>
         </div>
       </article>
+      ${renderCorollarySection(corollaries, { interactive: false })}
       <section class="section card card--section section-card mb-12" aria-labelledby="law-context-heading">
         <div class="section-header">
           <h2 id="law-context-heading" class="section-title" data-section-title="In context"><span class="accent-text">In</span> context</h2>
@@ -849,7 +902,7 @@ async function validateGeneratedOutput(): Promise<void> {
 /**
  * Generate HTML page for a single law with correct OG meta tags
  */
-function generateLawPage(law: Law, template: string, relatedLaws: Law[] = [], seo: LawSeo = buildLawSeo(law)): string {
+function generateLawPage(law: Law, template: string, relatedLaws: Law[] = [], seo: LawSeo = buildLawSeo(law), corollaryContext?: CorollaryContext): string {
   let pageHtml = template;
   
   const title = seo.headline;
@@ -869,7 +922,7 @@ function generateLawPage(law: Law, template: string, relatedLaws: Law[] = [], se
   const attributionName = getLawAttributionName(law);
 
   // Build static content for law detail page
-  const staticContent = buildStaticLawDetailContent(law, relatedLaws);
+  const staticContent = buildStaticLawDetailContent(law, relatedLaws, corollaryContext);
   
   // Inject content into main
   pageHtml = pageHtml.replace(
@@ -1344,6 +1397,7 @@ async function main(): Promise<void> {
     throw new Error(`${unknownCategory.length} laws are in a category the category API does not list (for example law ${unknownCategory[0]!.id} in "${unknownCategory[0]!.category_slug}")`);
   }
   const lawSeoById = buildUniqueLawSeo(laws);
+  const corollaryIndex = buildCorollaryIndex(laws);
   const lawsByCategorySlug = new Map<string, Law[]>();
   const uncategorizedLaws: Law[] = [];
   for (const law of laws) {
@@ -1781,7 +1835,7 @@ ${articleArchive.featuredLaws}
     const relatedLaws = law.category_slug
       ? pickRelatedLaws(law, lawsByCategorySlug.get(law.category_slug) || [])
       : [];
-    const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)));
+    const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)), corollaryIndex.get(law.id));
     await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
   }
   console.log(`Generated ${laws.length} law detail pages.`);
@@ -1941,5 +1995,6 @@ export {
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
   pickRelatedLaws,
-  renderLawLinkList
+  renderLawLinkList,
+  buildCorollaryIndex
 };

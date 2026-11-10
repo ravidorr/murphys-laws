@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import { safeParseJsonArray } from '../utils/helpers.ts';
+import { getCorollaries, getCorollaryOf, COROLLARY_RELATION } from './law-relations.service.ts';
 import { isUsefulDuplicateMatch, scoreDuplicateSimilarity } from '../../../shared/modules/duplicate-similarity.ts';
 
 type Db = InstanceType<typeof Database>;
@@ -65,6 +66,15 @@ interface LawDbRow {
   category_ids?: number[];
   category_id?: number | null;
   [key: string]: unknown;
+}
+
+/** A corollary as the law page lists it. */
+interface CorollaryCard {
+  id: number;
+  title: string | null;
+  text: string;
+  upvotes: number;
+  downvotes: number;
 }
 
 interface LawCategoryRow {
@@ -164,7 +174,10 @@ export class LawService {
         COALESCE((SELECT MAX(v.created_at) FROM votes v WHERE v.law_id = l.id), l.created_at) AS last_voted_at,
         (SELECT c.id FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_id,
         (SELECT c.slug FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_slug,
-        (SELECT c.title FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_name
+        (SELECT c.title FROM law_categories lc JOIN categories c ON c.id = lc.category_id WHERE lc.law_id = l.id ORDER BY c.id LIMIT 1) AS category_name,
+        (SELECT r.to_law_id FROM law_relations r JOIN laws p ON p.id = r.to_law_id
+          WHERE r.from_law_id = l.id AND r.relation_type = '${COROLLARY_RELATION}' AND p.status = 'published'
+          ORDER BY r.id LIMIT 1) AS corollary_of_id
       FROM laws l
       WHERE l.status = 'published'`;
 
@@ -178,8 +191,10 @@ export class LawService {
     const like = `%${q}%`;
     const attributionLike = `%${attribution}%`;
 
-    // Exclude corollaries: laws that are the "from" side of a COROLLARY_OF relation
-    const noCorollaryCondition = " AND NOT EXISTS (SELECT 1 FROM law_relations r WHERE r.from_law_id = l.id AND r.relation_type = 'COROLLARY_OF')";
+    // Exclude corollaries: laws that are the "from" side of a COROLLARY_OF relation whose parent is published. A
+    // corollary under an unpublished parent has no page to point at, so it stays listed as an ordinary law (the same
+    // published-parent rule that sets corollary_of_id).
+    const noCorollaryCondition = ` AND NOT EXISTS (SELECT 1 FROM law_relations r JOIN laws p ON p.id = r.to_law_id WHERE r.from_law_id = l.id AND r.relation_type = '${COROLLARY_RELATION}' AND p.status = 'published')`;
 
     // Build parameter arrays
     const countParams = [];
@@ -326,6 +341,9 @@ export class LawService {
       }
 
 
+      law.corollaries = this.getCorollariesWithVotes(id);
+      law.corollary_of = getCorollaryOf(this.db, id);
+
       if (this.hasAnnotationsTable()) {
         const editorial = this.db.prepare(`
           SELECT explanation, practical_example, source_label, source_url, reviewed_at
@@ -336,6 +354,29 @@ export class LawService {
     }
 
     return law as LawRow | undefined;
+  }
+
+  /** Published corollaries of a published parent, with the vote counts the law page shows on each card. */
+  private getCorollariesWithVotes(parentId: number): CorollaryCard[] {
+    const children = getCorollaries(this.db, parentId);
+    if (children.length === 0) return [];
+    const placeholders = children.map(() => '?').join(', ');
+    const rows = this.db
+      .prepare(
+        `SELECT law_id,
+                SUM(vote_type = 'up') AS upvotes,
+                SUM(vote_type = 'down') AS downvotes
+         FROM votes WHERE law_id IN (${placeholders}) GROUP BY law_id`
+      )
+      .all(...children.map((child) => child.id)) as { law_id: number; upvotes: number; downvotes: number }[];
+    const votes = new Map(rows.map((row) => [row.law_id, row]));
+    return children.map((child) => ({
+      id: child.id,
+      title: child.title,
+      text: child.text,
+      upvotes: votes.get(child.id)?.upvotes ?? 0,
+      downvotes: votes.get(child.id)?.downvotes ?? 0
+    }));
   }
 
   async getRandomLaw(): Promise<LawRow | undefined> {

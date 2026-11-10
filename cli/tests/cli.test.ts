@@ -182,6 +182,18 @@ describe('runCli', () => {
       expect(stdout.output).toContain('#9');
     });
 
+    it('prints the corollaries of the law', async () => {
+      const code = await run(['get', '9'], {
+        getLaw: async () => ({
+          ...law,
+          corollaries: [{ id: 11, title: 'The Ignition Corollary', text: 'Restart feels slow.', upvotes: 1, downvotes: 0 }],
+        }),
+      });
+      expect(code).toBe(EXIT_SUCCESS);
+      expect(stdout.output).toContain('Corollaries (1):');
+      expect(stdout.output).toContain('#11 The Ignition Corollary');
+    });
+
     it('supports --json', async () => {
       const code = await run(['get', '9', '--json'], { getLaw: async () => law });
       expect(JSON.parse(stdout.output).id).toBe(9);

@@ -6,7 +6,7 @@ import { formatLaw } from '../format.js';
 export function registerGetLaw(server: McpServer, api: MurphysLawsClient): void {
   server.tool(
     'get_law',
-    "Get a specific Murphy's Law by its ID. Use this to look up a law found in search results.",
+    "Get a specific Murphy's Law by its ID, including its corollaries (or the law it is a corollary of). Use this to look up a law found in search results.",
     {
       law_id: z.number().int().positive().describe('The ID of the law to retrieve'),
     },

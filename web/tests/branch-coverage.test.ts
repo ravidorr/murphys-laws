@@ -300,6 +300,24 @@ describe('Branch Coverage Tests', () => {
       fetchSpy.mockRestore();
     });
 
+    it('votes when the click lands on the SVG icon inside the button', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ upvotes: 2, downvotes: 0 }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      );
+      const container = document.createElement('div');
+      container.innerHTML = `
+        <div class="law-card-mini">
+          <button data-vote="up" data-law-id="77"><svg viewBox="0 0 8 8"><path d="M0 0h8v8z"></path></svg><span class="count-num">1</span></button>
+          <button data-vote="down" data-law-id="77"><span class="count-num">0</span></button>
+        </div>
+      `;
+      addVotingListeners(container);
+      container.querySelector('svg')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+      await vi.waitFor(() => expect(container.querySelector('[data-vote="up"] .count-num')?.textContent).toBe('2'));
+      fetchSpy.mockRestore();
+    });
+
     it('handles toggleVote rejection without throwing', async () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
       const container = document.createElement('div');

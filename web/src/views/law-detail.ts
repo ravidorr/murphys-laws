@@ -22,6 +22,7 @@ import { getDefaultLawContext } from '../utils/law-context-copy.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { trackPendoEvent, getPagePath } from '@utils/pendo.ts';
 import { HOME_MODULE_ORDER_EXPERIMENT, trackExperimentOutcome } from '@utils/experiments.ts';
+import { renderCorollarySection, renderParentBanner, corollaryDisplayTitle } from '@utils/corollaries.ts';
 import { getLawDetailInternalLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement, Law } from '../types/app.ts';
 
@@ -77,6 +78,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   const loadingState = el.querySelector('[data-loading]');
   const lawContent = el.querySelector('[data-law-content]');
   const lawCardContainer = el.querySelector('[data-law-card-container]');
+  const parentBannerContainer = el.querySelector('[data-parent-banner]');
+  const corollariesContainer = el.querySelector('[data-corollaries-container]');
   const notFoundState = el.querySelector('[data-not-found]');
   const notFoundTemplate = el.querySelector('[data-not-found-template]');
   const lawCardTemplate = el.querySelector('[data-law-card-template]');
@@ -332,7 +335,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       if (law.category_slug && law.category_name) {
         items.push({ label: law.category_name, nav: 'category', param: law.category_slug, href: `/category/${law.category_slug}` });
       }
-      items.push({ label: lawTitle });
+      if (law.corollary_of) {
+        items.push({ label: corollaryDisplayTitle(law.corollary_of), nav: 'law', param: String(law.corollary_of.id), href: `/law/${law.corollary_of.id}` });
+        items.push({ label: corollaryDisplayTitle(law) });
+      } else {
+        items.push({ label: lawTitle });
+      }
       const breadcrumb = Breadcrumb({
         items,
         onNavigate
@@ -346,6 +354,15 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     trackExperimentOutcome(HOME_MODULE_ORDER_EXPERIMENT, 'law_detail_open');
 
     lawCardContainer?.replaceChildren();
+
+    // Corollary pieces come with the law, so they need no request of their own
+    /* v8 ignore start -- both containers are always provided by the component template */
+    if (parentBannerContainer && corollariesContainer) {
+    /* v8 ignore stop */
+      parentBannerContainer.innerHTML = law.corollary_of ? renderParentBanner(law.corollary_of) : '';
+      corollariesContainer.innerHTML = renderCorollarySection(law.corollaries ?? [], { interactive: true });
+      hydrateIcons(corollariesContainer as HTMLElement);
+    }
 
     /* v8 ignore start -- lawCardContainer is always provided by the component template */
     if (lawCardContainer) {
@@ -475,6 +492,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       // Silently fail - related laws are not critical
     }
   }
+
+  // One listener for the life of the view: the list inside is replaced on every render
+  /* v8 ignore else -- @preserve; corollariesContainer is required by the law-detail template */
+  if (corollariesContainer instanceof HTMLElement) addVotingListeners(corollariesContainer);
 
   showLoading();
   el.setAttribute('aria-busy', 'true');
@@ -661,6 +682,18 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       return;
     }
 
+    // Corollary cards and the parent banner link to law pages; open them in the app unless the user asked for a new tab
+    const corollaryLink = t.closest('a[data-corollary-link], a[data-parent-link]');
+    if (corollaryLink) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      if (corollaryLink.hasAttribute('data-corollary-link')) {
+        trackProductEvent('law.corollary_click', { surface: 'law_detail' });
+      }
+      onNavigate('law', corollaryLink.getAttribute('data-law-id')!);
+      return;
+    }
+
     // Handle related law card clicks
     const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
     if (lawCard && lawCard.dataset.lawId) {
@@ -672,6 +705,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     }
 
     const navBtn = t.closest('[data-nav]');
+    // The breadcrumb navigates with its own handler (and the link's param); handling it here too would navigate twice
+    if (navBtn?.closest('.breadcrumb')) return;
     if (navBtn) {
       const navTarget = navBtn.getAttribute('data-nav');
       /* v8 ignore start -- nav elements always have a data-nav attribute set in the template */

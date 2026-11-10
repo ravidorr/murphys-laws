@@ -1,4 +1,6 @@
 declare module '@scripts/ssg' {
+  import type { Corollary, CorollaryParent } from './app.d.ts';
+
   export interface ContentPageMeta {
     slug: string;
     file: string;
@@ -16,6 +18,7 @@ declare module '@scripts/ssg' {
     category_slug?: string;
     category_name?: string;
     category_context?: string | null;
+    corollary_of_id?: number | null;
     upvotes?: number;
     downvotes?: number;
     score?: number;
@@ -55,7 +58,12 @@ declare module '@scripts/ssg' {
   export function buildStaticSubmitContent(): string;
   export function buildStaticCalculatorContent(kind: 'sods-law' | 'buttered-toast'): string;
   export function applyPageMetadata(html: string, metadata: PageMetadata): string;
-  export function generateLawPage(law: StaticLaw, template: string, relatedLaws?: StaticLaw[], seo?: { title: string; description: string; headline: string }): string;
+  export interface StaticCorollaryContext {
+    corollaries: Corollary[];
+    parent: CorollaryParent | null;
+  }
+  export function generateLawPage(law: StaticLaw, template: string, relatedLaws?: StaticLaw[], seo?: { title: string; description: string; headline: string }, corollaryContext?: StaticCorollaryContext): string;
+  export function buildCorollaryIndex(laws: StaticLaw[]): Map<number, StaticCorollaryContext>;
   export function buildSitemapXml(input: {
     baseUrl: string;
     laws: StaticLaw[];
@@ -71,7 +79,7 @@ declare module '@scripts/ssg' {
     requireCategoryLink?: boolean;
     requireContentFigure?: boolean;
   }): string[];
-  export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[]): string;
+  export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[], corollaryContext?: StaticCorollaryContext): string;
   export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string };
   export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
   export function buildNotFoundPage(template: string, laws: StaticLaw[]): string;

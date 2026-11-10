@@ -62,6 +62,14 @@ describe('FeedService', () => {
         featured_date DATE,
         PRIMARY KEY (law_id, featured_date)
       );
+
+      CREATE TABLE law_relations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_law_id INTEGER NOT NULL,
+        to_law_id INTEGER NOT NULL,
+        relation_type TEXT NOT NULL,
+        note TEXT
+      );
     `);
 
     lawService = new LawService(db);

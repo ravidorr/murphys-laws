@@ -154,7 +154,7 @@ export const OPENAPI_SPEC = {
           {
             name: 'exclude_corollaries',
             in: 'query',
-            description: 'Exclude corollary laws (1 or true)',
+            description: 'Exclude corollary laws whose parent law is published (1 or true)',
             schema: { type: 'string', enum: ['1', 'true'] },
           },
         ],
@@ -692,6 +692,37 @@ export const OPENAPI_SPEC = {
           category_name: { type: 'string', nullable: true },
           similarity: { type: 'number', minimum: 0, maximum: 1 },
           match_type: { type: 'string', enum: ['exact', 'fuzzy'] },
+          corollary_of_id: {
+            type: 'integer',
+            nullable: true,
+            description: 'List rows only: id of the published law this one is a corollary of, or null.',
+          },
+          corollary_of: {
+            type: 'object',
+            nullable: true,
+            description: 'Single-law reads only: the published law this one is a corollary of, or null.',
+            required: ['id', 'title', 'text'],
+            properties: {
+              id: { type: 'integer' },
+              title: { type: 'string', nullable: true },
+              text: { type: 'string' },
+            },
+          },
+          corollaries: {
+            type: 'array',
+            description: 'Single-law reads only: published corollaries of this law, in the order they were linked, which is the original bullet order for imported laws.',
+            items: {
+              type: 'object',
+              required: ['id', 'title', 'text', 'upvotes', 'downvotes'],
+              properties: {
+                id: { type: 'integer' },
+                title: { type: 'string', nullable: true },
+                text: { type: 'string' },
+                upvotes: { type: 'integer' },
+                downvotes: { type: 'integer' },
+              },
+            },
+          },
           editorial: {
             type: 'object',
             properties: {

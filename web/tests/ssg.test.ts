@@ -31,7 +31,8 @@ import {
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
   pickRelatedLaws,
-  renderLawLinkList
+  renderLawLinkList,
+  buildCorollaryIndex
 } from '@scripts/ssg';
 
 const metadataTemplate = `<!doctype html><html><head>
@@ -614,6 +615,89 @@ describe('SSG SEO output', () => {
   it('advertises the oEmbed endpoint on every law page', () => {
     const html = generateLawPage({ id: 31, title: 'Hofstadter', text: 'It takes longer.' }, lawTemplate);
     expect(html).toContain('<link rel="alternate" type="application/json+oembed" href="https://murphys-laws.com/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F31"');
+  });
+
+  describe('corollaries', () => {
+    const parent = { id: 10, title: 'The Start-Stop Synchronicity', text: 'A red light turns green one second after the engine stops.', category_slug: 'cars', category_name: 'Cars' };
+    const second = { id: 12, title: 'Corollary', text: 'The light stays green just long enough to miss it.', upvotes: 2, downvotes: 1, corollary_of_id: 10 };
+    const first = { id: 11, title: 'The Ignition Corollary', text: 'The restart feels twice as long with a horn behind you.', upvotes: 4, downvotes: 0, corollary_of_id: 10 };
+    const orphan = { id: 13, title: 'Corollary', text: 'A corollary whose parent is not published.', corollary_of_id: 99 };
+    const index = buildCorollaryIndex([second, parent, first, { id: 14, text: 'A plain law.', corollary_of_id: null }]);
+
+    it('indexes children under their parent in id order and the parent under each child', () => {
+      expect(index.get(10)?.corollaries.map((child) => child.id)).toEqual([11, 12]);
+      expect(index.get(10)?.corollaries[1]).toEqual({ id: 12, title: 'Corollary', text: second.text, upvotes: 2, downvotes: 1 });
+      expect(index.get(10)?.parent).toBeNull();
+      expect(index.get(11)?.parent).toEqual({ id: 10, title: 'The Start-Stop Synchronicity', text: parent.text });
+      expect(index.get(11)?.corollaries).toEqual([]);
+    });
+
+    it('ignores laws that are not corollaries', () => {
+      expect(index.has(14)).toBe(false);
+    });
+
+    it('stops the build when a child names a parent the list does not have', () => {
+      expect(() => buildCorollaryIndex([orphan])).toThrow(/Law 13 is a corollary of law 99/);
+    });
+
+    it('fills in missing fields on a child and its parent', () => {
+      const sparse = buildCorollaryIndex([{ id: 1 }, { id: 2, corollary_of_id: 1 }]);
+      expect(sparse.get(1)?.corollaries).toEqual([{ id: 2, title: null, text: '', upvotes: 0, downvotes: 0 }]);
+      expect(sparse.get(2)?.parent).toEqual({ id: 1, title: null, text: '' });
+    });
+
+    it('renders the Corollaries section into a parent page, above Related laws', () => {
+      const html = buildStaticLawDetailContent(parent, [], index.get(10));
+      expect(html).toContain('class="corollary-list');
+      expect(html).toContain('2 consequences of this law');
+      expect(html).toContain('<a href="/law/11" data-corollary-link data-law-id="11">The Ignition Corollary</a>');
+      expect(html).toContain('<a href="/law/12" data-corollary-link data-law-id="12">The light stays green just long enough to miss it</a>');
+      expect(html).toContain('2 up, 1 down');
+      expect(html).not.toContain('<button');
+      expect(html).not.toContain('class="parent-banner"');
+      expect(html.indexOf('corollary-list')).toBeLessThan(html.indexOf('related-laws-heading'));
+    });
+
+    it('renders the parent banner and breadcrumb into a corollary page', () => {
+      const html = buildStaticLawDetailContent({ ...first, category_slug: 'cars', category_name: 'Cars' }, [], index.get(11));
+      expect(html).toContain('<a class="parent-banner" href="/law/10"');
+      expect(html).toContain('Corollary of');
+      expect(html).toContain('<li><a href="/law/10">The Start-Stop Synchronicity</a></li>');
+      expect(html).toContain('<li aria-current="page">The Ignition Corollary</li>');
+      expect(html).not.toContain('class="corollary-list');
+    });
+
+    it('names a generic-title corollary from its text in the breadcrumb', () => {
+      const html = buildStaticLawDetailContent({ ...second }, [], index.get(12));
+      expect(html).toContain('<li aria-current="page">The light stays green just long enough to miss it</li>');
+      expect(html).toContain('<h1 class="card-title">Corollary</h1>');
+    });
+
+    it('escapes the parent title in the static breadcrumb and banner', () => {
+      const html = buildStaticLawDetailContent(
+        { ...first },
+        [],
+        { corollaries: [], parent: { id: 10, title: '<b>x</b>', text: 'Parent text that is long enough.' } }
+      );
+      expect(html).toContain('<li><a href="/law/10">&lt;b&gt;x&lt;/b&gt;</a></li>');
+      expect(html).toContain('<span class="parent-banner-title">&lt;b&gt;x&lt;/b&gt;</span>');
+      expect(html).not.toContain('<b>x');
+    });
+
+    it('renders no corollary markup for a law without any', () => {
+      const html = buildStaticLawDetailContent({ id: 20, title: 'Plain', text: 'A plain law.' });
+      expect(html).not.toContain('corollary');
+      expect(html).not.toContain('parent-banner');
+      expect(html).toContain('<li aria-current="page">Plain</li>');
+    });
+
+    it('keeps the self-canonical and adds no new structured data on a corollary page', () => {
+      const withContext = generateLawPage(first, lawTemplate, [], undefined, index.get(11));
+      const without = generateLawPage(first, lawTemplate);
+      expect(withContext).toContain('<link rel="canonical" href="https://murphys-laws.com/law/11">');
+      expect(withContext.match(/application\/ld\+json/g)).toEqual(without.match(/application\/ld\+json/g));
+      expect(withContext).toContain('parent-banner');
+    });
   });
 
   describe('buildSitemapXml', () => {
