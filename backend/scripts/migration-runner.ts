@@ -21,8 +21,8 @@ interface SqliteResult {
 /**
  * Run the sqlite3 CLI against `dbPath` with `-bail`, so the first failing statement stops the run (without it the
  * CLI reports the error and carries on, through a closing COMMIT). The SQL goes in on stdin, or as one argument.
- * The exit status and stderr are captured: sqlite3 can exit early, and a large input then fails to write with
- * EPIPE, which says nothing about the real error.
+ * The exit status and stderr are captured: sqlite3 can stop before it has read its input, and writing the rest then
+ * fails with EPIPE, which says nothing about the real error (see `failureReason`).
  */
 function runSqlite(dbPath: string, { input, sql }: { input?: string; sql?: string }): SqliteResult {
   const args = ['-bail', dbPath, ...(sql === undefined ? [] : [sql])];
@@ -30,16 +30,27 @@ function runSqlite(dbPath: string, { input, sql }: { input?: string; sql?: strin
   return { status: result.status, signal: result.signal, stdout: result.stdout ?? '', stderr: result.stderr ?? '', spawnError: result.error };
 }
 
+/** Exit status 0 and no spawn error: an exit 0 that left part of the input unread (EPIPE) did not run it all. */
 function succeeded(result: SqliteResult): boolean {
-  return result.status === 0;
+  return result.status === 0 && result.spawnError === undefined;
 }
 
-/** Why a run failed: sqlite3's own stderr when it printed one, otherwise what the operating system reported. */
+/**
+ * Why a run failed: sqlite3's own stderr when it printed one; otherwise the spawn error Node reported, when it is
+ * a real cause (sqlite3 not installed, or its output over the buffer limit); otherwise what became of the process
+ * (the signal that stopped it, or its exit status).
+ *
+ * EPIPE is the exception. It is only a consequence of sqlite3 closing its input before all of it was written, so it
+ * is never the reason. Whether Node reports it at all depends on whether sqlite3 had stopped before or after the
+ * write, so putting it first would hide the real cause and make the message change from run to run.
+ */
 function failureReason(result: SqliteResult): string {
   const stderr = result.stderr.trim();
   if (stderr) return stderr;
-  if (result.spawnError) return result.spawnError.message;
+  const spawnError = result.spawnError as NodeJS.ErrnoException | undefined;
+  if (spawnError && spawnError.code !== 'EPIPE') return spawnError.message;
   if (result.signal) return `sqlite3 was stopped by ${result.signal}`;
+  if (spawnError && result.status === 0) return 'sqlite3 exited before it had read the whole migration';
   return `sqlite3 exited with status ${String(result.status)}`;
 }
 
@@ -131,10 +142,11 @@ function describeFailure(filename: string, sql: string, result: SqliteResult): s
   const line = /near line (\d+)/i.exec(reason);
   const where = line ? ` near line ${line[1]}` : '';
   const statement = line ? `\nFailing statement:\n${statementAt(sql, Number(line[1]))}\n` : '\n';
-  // Only claim what is known: when sqlite3 exited by itself, -bail stopped it at the failure and it rolled the
-  // open transaction back; when it was killed or never started, nothing is known to have run.
+  // Only claim what is known: when sqlite3 failed by itself, -bail stopped it at the failure and it rolled the
+  // open transaction back; when it was killed, never started, or exited 0 without reading it all (the only way
+  // a run that failed has status 0), nothing is known to have run.
   const outcome =
-    result.status === null
+    result.status === null || result.status === 0
       ? 'sqlite3 did not finish, so the migration is not recorded in schema_migrations; an unfinished transaction is rolled back the next time the database is opened.'
       : 'sqlite3 stopped there: nothing after it ran and its transaction was rolled back, so the migration is not recorded in schema_migrations.';
   return `Migration ${filename} failed${where}: ${reason}${statement}${outcome}`;
