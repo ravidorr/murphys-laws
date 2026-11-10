@@ -81,10 +81,10 @@ test('the corollaries list fits a phone screen', async ({ page }) => {
   expect(overflow).toBe(false);
 });
 
-test('the Add a corollary link on a law page opens the submit form', async ({ page }) => {
+test('the submit a law link in the corollaries section opens the submit form', async ({ page }) => {
   await page.goto('/law/901');
 
-  await page.locator('section.corollary-list').getByRole('link', { name: 'Add a corollary' }).click();
+  await page.locator('section.corollary-list').getByRole('link', { name: 'submit a law' }).click();
   await expect(page).toHaveURL(/\/submit$/);
   await expect(page.getByRole('group', { name: /Corollaries/ })).toBeVisible();
 });

@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all N" and "Reject all"; corollary edits are saved first, then the law, and the existing status cascade publishes or
   rejects the rest. The submit form gains an optional Corollaries group (up to five boxes with a counter, a
   "Submit law with N corollaries" button, and a hint that moves corollary-labeled bullets typed into the law text into
-  boxes), and the corollaries section of a law page links to it with "Add a corollary". The SDK `submitLaw`
+  boxes), and the corollaries section of a law page links to it ("Corollaries are added when you submit a law"; it opens the form for a new law, not an existing one). The SDK `submitLaw`
   accepts `corollaries`, the CLI `submit` takes a repeatable `--corollary`, and the MCP `submit_law` tool takes
   `corollaries`. The design contract gains `corollary-fieldset` and `corollary-field`. Backend bumped to `2.3.78`; web to
   `3.4.73`; SDK to `0.2.3`; CLI to `0.2.0`; MCP to `1.3.0`; root to `2.6.175`.
